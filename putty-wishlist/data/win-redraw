@@ -21,6 +21,12 @@ far are on NT-series OSs, and my (JTN) attempts to reproduce on 98SE
 didn't show anything).
 
 <p>
+(I (JTN) have a vague recollection about some misgivings and our
+return value from window/dialog functions, or similar, compared to the
+docs on MSDN, although this was years ago. I wonder if that could be
+causing this?)
+
+<p>
 Reports:
 
 <ul>
