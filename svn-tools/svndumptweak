@@ -5,6 +5,8 @@ import sys
 import string
 import types
 
+buttress = 1 # HACK: track the rename of `buttress' to `halibut'
+
 # Transform pathnames to be the way I like them. Returns `None' if
 # the pathname is an unnecessary parent and should be removed.
 def trans(path):
@@ -44,6 +46,7 @@ def trans(path):
     ('branches', None),
     ('tags', None),
     ('trunk', None),
+    ('trunk/halibut', 'buttress'),
     ('trunk/', ''),
     ('tags/beta-0-*/putty', 'putty-0.*'),
     ('tags/beta-0-*', None),
@@ -82,6 +85,8 @@ def trans(path):
     ('branches/richard/golem', 'golem-import-branch'),
     ('branches/richard', None),
     ]
+    if not buttress:
+	replacements.remove(('trunk/halibut', 'buttress'))
     if path[:1] == "/":
 	leadslash = "/"
 	path = path[1:]
@@ -166,8 +171,10 @@ class RevTweaker:
 	self.tree = {}
 	self.trans = trans
 	self.name = name
-    def pathfind(self, path, action, typ=None):
-	tree = self.tree
+	self.prevrev = "0"
+	self.prevrev_tree = {}
+    def pathfind(self, path, action, typ=None, tree=None):
+	if tree == None: tree = self.tree
 	#print "find:", path, action, typ
 	if path[:1] == "/":
 	    path = path[1:] # strip off leading slash
@@ -201,11 +208,55 @@ class RevTweaker:
 	return val
 
     def tweak(self, revhdr, contents):
+	global buttress
 	print self.name, "revision:", revhdr.hdrdict["Revision-number"]
 	created = {}
+	self.prevrev_tree = copy(self.tree)
+	magicchangelist = []
 	# Pass 1: convert a copy from or to a moribund path into a
 	# mkdir plus a set of subcopies.
 	contents2 = []
+	if buttress and len(contents) > 0 and \
+	string.find(revhdr.data, "Rename Buttress") >= 0:
+	    # Recognise the commit in which Buttress became Halibut,
+	    # and take special action.
+	    newlump = Lump()
+	    newlump.sethdr("Node-path", "halibut")
+	    newlump.sethdr("Node-action", "add")
+	    newlump.sethdr("Node-copyfrom-rev", self.prevrev)
+	    newlump.sethdr("Node-copyfrom-path", "buttress")
+	    contents2.append(newlump)
+	    newlump = Lump()
+	    newlump.sethdr("Node-path", "buttress")
+	    newlump.sethdr("Node-action", "delete")
+	    contents2.append(newlump)
+	    # And specially move halibut.h and halibut.sl.
+	    #newlump = Lump()
+	    #newlump.sethdr("Node-path", "halibut/buttress.h")
+	    #newlump.sethdr("Node-action", "delete")
+	    #contents2.append(newlump)
+	    newlump = Lump()
+	    newlump.sethdr("Node-path", "halibut/halibut.h")
+	    newlump.sethdr("Node-action", "add")
+	    newlump.sethdr("Node-copyfrom-rev", self.prevrev)
+	    newlump.sethdr("Node-copyfrom-path", "buttress/buttress.h")
+	    contents2.append(newlump)
+	    #newlump = Lump()
+	    #newlump.sethdr("Node-path", "halibut/misc/buttress.sl")
+	    #newlump.sethdr("Node-action", "delete")
+	    #contents2.append(newlump)
+	    newlump = Lump()
+	    newlump.sethdr("Node-path", "halibut/misc/halibut.sl")
+	    newlump.sethdr("Node-action", "add")
+	    newlump.sethdr("Node-copyfrom-rev", self.prevrev)
+	    newlump.sethdr("Node-copyfrom-path", "buttress/misc/buttress.sl")
+	    contents2.append(newlump)
+	    # Now just remember that when we make changes to those
+	    # two files, we should call them `change' rather than
+	    # `add'.
+	    magicchangelist = ["trunk/halibut/halibut.h", "trunk/halibut/misc/halibut.sl"]
+	    # And start calling things `halibut' from then on.
+	    buttress = 0
 	stack = contents[:]
 	while len(stack) > 0:
 	    lump = stack[0]
@@ -214,9 +265,11 @@ class RevTweaker:
 	    action = lump.hdrdict["Node-action"]
 	    print self.name, "tweak:", path, action
 	    if action == "add":
+		if path in magicchangelist:
+		    lump.hdrdict["Node-action"] = "change"
 		if lump.hdrdict.has_key("Node-copyfrom-path"):
 		    srcpath = lump.hdrdict["Node-copyfrom-path"]
-		    srcnode = self.pathfind(srcpath, "find")
+		    srcnode = self.pathfind(srcpath, "find", tree=self.prevrev_tree)
 		    if self.trans(path) == None or self.trans(srcpath) == None:
 			newlist = []
 			assert type(srcnode) == types.DictType
@@ -236,8 +289,6 @@ class RevTweaker:
 			    newlump.sethdr("Node-copyfrom-path", \
 			    srcpath + "/" + key)
 			    newlist.append(newlump)
-			    srcsub = self.pathfind(srcpath+"/"+key, "find")
-			    #self.pathfind(path+"/"+key, action, (srcsub,))
 			    created[path+"/"+key] = newlump
 			stack = newlist + stack
 		    else:
@@ -288,6 +339,9 @@ class RevTweaker:
 	    contents3.append(newlump)	    
 
 	contents[:] = contents3
+
+	# Record previous revision number.
+	self.prevrev = revhdr.hdrdict["Revision-number"]
 
 fr = open("svn.dump", "r")
 fw = open("svn-tweaked.dump", "w")
