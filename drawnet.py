@@ -631,12 +631,19 @@ for v1, v2 in tabpos.values():
     # What we do here, at each end of the tab, is to find all
     # existing lines coming from that point. Add to that the
     # imaginary line that would have appeared if I'd placed face f2
-    # adjacent to f1 and made this edge into a folded one. Then
-    # work out which of those many lines limits the angle of the
-    # tab end most, trim to 90 degrees if nothing else has already
-    # done so (tabs that flare back out _look_ silly!), subtract a
-    # little bit for general safety margin, and that's the angle at
-    # one end of the tab.
+    # adjacent to f1 and made this edge into a folded one.
+    # 
+    # Also, check the adjacent edge in f2 and see whether it also
+    # has a tab glued on to it; if so, add the imaginary line to
+    # the centroid of f2. (This ensures that tabs which are not
+    # adjacent in the net, but which glue on to adjacent edges of
+    # another face when assembled, do not overlap on that face.)
+    # 
+    # Then work out which of those many lines limits the angle of
+    # the tab end most, trim to 90 degrees if nothing else has
+    # already done so (tabs that flare back out _look_ silly!),
+    # subtract a little bit for general safety margin, and that's
+    # the angle at one end of the tab.
     tablines = []
     for v, vv in (v1,v2), (v2,v1):
 	vid = facepos[f1].vid[v]
@@ -645,16 +652,34 @@ for v1, v2 in tabpos.values():
 	for vid2 in vidconn[vid]:
 	    if vid2 != facepos[f1].vid[vv]:
 		pts.append(vids[vid2])
-	# Look in the unused placement data for f2, and find the
-	# location of the vertex on the other side of v from vv.
-	if (v, vv) in faceedges[f2]:
-	    i = faceedges[f2].index((v,vv))
-	    v3 = faceedges[f2][i-1][0] # 0 -> -1 works OK
-	else:
-	    i = faceedges[f2].index((vv,v))
-	    v3 = faceedges[f2][(i+1)%len(faceedges[f2])][1]
-	assert v3 != v and v3 != vv
-	pts.append(facepos[f1].adjacent[f2].vpos[v3])
+        # Look in the unused placement data for f2, and find the
+        # location of the vertex on the other side of v from vv.
+        if (v, vv) in faceedges[f2]:
+            i = faceedges[f2].index((v,vv))
+            v3 = faceedges[f2][i-1][0] # 0 -> -1 works OK
+        else:
+            i = faceedges[f2].index((vv,v))
+            v3 = faceedges[f2][(i+1)%len(faceedges[f2])][1]
+        assert v3 != v and v3 != vv
+        pts.append(facepos[f1].adjacent[f2].vpos[v3])
+	# See if another tab appears adjacent to this one on f2.
+        if v == v1:
+            # Our tabpos is (v,vv). Therefore the other tab appears
+            # on f2 if (v3,v) is also in tabpos.values().
+            otheredge = (v3,v)
+        else:
+            # Our tabpos is (vv,v); so we're looking for (v,v3);
+            otheredge = (v,v3)
+        if tabpos.get((v,v3), None) == otheredge or \
+        tabpos.get((v3,v), None) == otheredge:
+            # Add the centroid of f2 (average of all the vertices) to
+            # the points-to-avoid list.
+            cx = cy = cn = 0
+            for vx, vy in facepos[f1].adjacent[f2].vpos.values():
+                cx = cx + vx
+                cy = cy + vy
+                cn = cn + 1.0
+            pts.append((cx/cn, cy/cn))
 	# Finally, we take one more precaution. If any other tabbed
 	# edges share a vertex with this one, we include the angle
 	# bisector between this edge and that. This ensures that
