@@ -1,0 +1,27 @@
+Summary: The mythical DLL Plugin Interface
+Class: wish
+Difficulty: tricky
+Priority: low
+Content-type: text/x-html-body
+
+<p>
+Since we know a lot of people really appreciate PuTTY's small size,
+we try to preserve that small size. Unfortunately, there are some
+features which simply can't be implemented without a <em>lot</em> of
+code.
+
+<p>
+Therefore, we would like PuTTY to have an interface that allows
+plugins in the form of DLLs. These plugins would be completely
+optional; if PuTTY didn't find any plugins when it started up, it
+would go ahead and run without them, and you just wouldn't get any
+of the features supported in the plugins. If you needed to fit PuTTY
+into a small space (such as a floppy), you could include only those
+plugins you really needed - or none at all.
+
+<p>
+Quite how this plugin interface should fit together is unclear. In
+particular, since methods of DLL linkage and dynamic loading tend to
+be very platform-specific, it would be hard to design a plugin
+interface which would allow us to port the plugins bodily to other
+platforms (when we eventually get round to doing any ports).

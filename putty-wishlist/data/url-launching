@@ -1,0 +1,28 @@
+Summary: Launch URLs in the PuTTY window by clicking on them
+Class: wish
+Difficulty: tricky
+Priority: low
+Depends: scripting
+Content-type: text/x-html-body
+
+<p>
+One of the most common features we are asked for is the ability for
+PuTTY to recognise URLs displayed in its terminal window, and pass
+them to the configured default web browser when you click on them.
+
+<p>
+This is not a very well-specified feature, since it can be hard to
+determine exactly where a URL ends and the following text begins.
+Therefore, it would seem sensible to implement this as a script,
+after we get a scripting language written. That way, the regular
+expressions used for URL recognition would be available to the user
+so that if they didn't quite work right they could easily be tweaked.
+
+<p>
+In the meantime, you might find
+<a href="http://www.chiark.greenend.org.uk/~sgtatham/winurl/>WinURL</a>
+a useful tool. It allows you to select a URL in PuTTY (automatically
+copying it to the clipboard), and then click on the WinURL icon in
+the System Tray, and have the URL automatically launched for you.
+It's not quite as good as a one-click launch, but it's a lot better
+than pasting into a browser window by hand.
