@@ -1,5 +1,5 @@
 #! /usr/bin/perl
-# $Id: bugs2html,v 1.6 2002/05/10 22:54:31 jacob Exp $
+# $Id: bugs2html,v 1.7 2002/07/18 13:18:12 ben Exp $
 
 use FileHandle;
 use POSIX;
@@ -32,7 +32,7 @@ print INDEX <<EOH;
 <HTML><HEAD>
 <TITLE>PuTTY Known Bugs and Wish List</TITLE>
 </HEAD>
-<link rel="stylesheet" type="text/css" href="sitestyle.css" name="PuTTY Home Page Style">
+<link rel="stylesheet" type="text/css" href="$baseurl/sitestyle.css" name="PuTTY Home Page Style">
 <BODY>
 <h1 align=center>PuTTY Known Bugs and Wish List</h1>
 
@@ -130,7 +130,7 @@ sub bug2html {
 <HTML><HEAD>
 <TITLE>PuTTY @{[$hdrs->{class}]} $bugname</TITLE>
 </HEAD>
-<link rel="stylesheet" type="text/css" href="sitestyle.css" name="PuTTY Home Page Style">
+<link rel="stylesheet" type="text/css" href="$baseurl/sitestyle.css" name="PuTTY Home Page Style">
 <BODY>
 <h1 align=center>PuTTY @{[$hdrs->{class}]} $bugname</h1>
 
