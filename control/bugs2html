@@ -1,5 +1,5 @@
 #! /usr/bin/perl
-# $Id: bugs2html,v 1.17 2003/01/14 11:38:25 simon Exp $
+# $Id: bugs2html,v 1.18 2003/01/14 12:41:12 jacob Exp $
 
 use FileHandle;
 use POSIX;
@@ -375,9 +375,10 @@ EOH
 	print HTML qq[<p><pre>$body</pre>];
     }
 
+    my $class = ($hdrs->{class} or "artifact");
     print HTML <<EOF;
 <p><a href="http://cvs.tartarus.org/putty-wishlist/data/$bugname">
-Audit trail</a> for this @{[$hdrs->{class}]}.
+Audit trail</a> for this $class.
 <p><hr>If you want to comment on this web site, see the
 <a href="feedback.html">Feedback page</a>.
 <br>
