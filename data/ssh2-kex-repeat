@@ -1,0 +1,24 @@
+Summary: Ability to initiate SSH2 key re-exchange
+Class: semi-bug
+Priority: medium
+Difficulty: tricky
+Depends: ssh2-kex-data
+Content-type: text/x-html-body
+
+<p>
+Either side of an SSH2 connection may initiate a key re-exchange.
+Not all servers bother to do this, although I suspect most are happy
+to accept a re-exchange initiated by the client.
+
+<p>
+PuTTY currently never initiates a re-exchange; it relies on the
+server to do so, and responds to it when it does. This doesn't
+always happen - at least some versions of the OpenSSH server follow
+the same policy, which means a re-exchange never occurs. We really
+ought to initiate re-exchange ourselves if the server doesn't.
+
+<p>
+Before this can be done, we need to fix <a
+href="ssh2-kex-data.html">ssh2-kex-data</a>, since otherwise the
+chances of receiving a data packet from the server just after
+sending our KEXINIT would be unacceptably high.
