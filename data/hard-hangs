@@ -28,7 +28,8 @@ please resume it or close the debugger first."
 can occur hours into an established connection.
 <li>It's claimed that the PuTTY backend is still functional (sending
 keepalives, etc).
-<li>Might only happen with SSH? (1 and 2)
+<li>Looks like it only happens with SSH (1 and 2)
+<li>May be absent in 0.49?
 </ul>
 
 <p>
@@ -36,6 +37,16 @@ If I had to make a guess, I'd investigate some of the trickery we use
 to get noise for random numbers. My notes also suggest that I thought
 someone thought that sound might be implicated, but I can't find any
 evidence for that now.
+
+<p>
+We've had
+<a href="http://groups.google.com/groups?q=msgid%3Ae3374ad6.0402240535.2acd46e5%40posting.google.com">one suggestion</a>
+that Office 2002 may be implicated. If you can corroborate or falsify
+that, please let us know.
+
+<p>
+If someone can debug one of the hanging PuTTY processes and tell us
+where it's got stuck, that would be good too.
 
 Reports:
 <ul>
