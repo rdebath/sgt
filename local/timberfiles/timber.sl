@@ -1362,6 +1362,7 @@ define timber_mimedec() {
         insert("\240\n");
         % Read the file back in as a decoded part
         run_shell_cmd(timber_prefix_prog + " 160 " + tmp);
+        timber_remove(tmp);
         % This is for display/reply purposes, so we should insert a
         % newline here in case there wasn't one on the end of the
         % decoded data
