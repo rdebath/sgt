@@ -1,5 +1,5 @@
 % -*- mode: slang; mode: fold -*-
-% Simon Tatham: version $Revision: 1.24 $
+% Simon Tatham: version $Revision: 1.25 $
 
 %{{{ load Emacs keybindings to start with
 
@@ -115,7 +115,12 @@ setkey("goto_line_cmd", "^Xg");
 enable_top_status_line (0);
 
 #ifdef MSWINDOWS
+#ifexists destroy_menubar
 destroy_menubar();
+#endif
+#ifexists w32_destroy_menubar
+w32_destroy_menubar();
+#endif
 #endif
 
 %}}}
@@ -322,7 +327,7 @@ ADD_NEWLINE = 0;                       % add newline to file if not present
 IGNORE_BEEP = 1;                       % beep terminal during error messages
 _traceback = 0;                        % don't dump traceback on S-Lang errors
 WRAP_INDENTS = 0;                      % don't indent next line after wrapping
-#ifndef MSDOS OS2
+#ifndef MSDOS OS2 MSWINDOWS
 OUTPUT_RATE    = 0;
 #endif
 Fold_Mode_Ok = 1;
@@ -1121,6 +1126,19 @@ define rot13() {
     translate_region ();
 }
 add_completion("rot13");
+
+%}}}
+%{{{ Standard exit hook to allow multiple exit hook registrations
+
+% This is a generally useful exit hook. On an attempt to exit Jed,
+% it calls `eval' on the string variable `exit_hook_code'. If this calls
+% error() at any point then exit will be abandoned. This allows multiple
+% exit hooks to be registered by appending them to the string.
+variable sgtatham_exit_hook = 1; % flag it as defined
+variable exit_hook_code = ".";
+define exit_hook() {
+    eval(exit_hook_code);
+}
 
 %}}}
 %{{{ the pathologically clean-minded M-x polish, which clears *scratch*
