@@ -121,7 +121,7 @@ class myparser(htmllib.HTMLParser):
 	a = makedict(attrs)
 	target = a.get("href", "")
 	#print target
-	if target[:31] == "http://www.livejournal.com/talk":
+	if target[:26] == "http://www.livejournal.com":
 	    self.formatter.setstate(0)
 	    self.dodgy_href = 1
 	    #print "dodgy href started"
