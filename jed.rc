@@ -1,5 +1,5 @@
 % -*- mode: slang; mode: fold -*-
-% Simon Tatham: version $Revision: 1.18 $
+% Simon Tatham: version $Revision: 1.19 $
 
 %{{{ load Emacs keybindings to start with
 
@@ -528,7 +528,7 @@ define jedrc_default_mode() {
 Default_Mode = &jedrc_default_mode;
 
 %}}}
-%{{{ M-x q, Q, rq and sig
+%{{{ M-x q, Q, rq/sq/qq and sig
 
 % for e-mail and news: quote a paragraph
 define q() {
@@ -623,6 +623,145 @@ define rq() {
             break;
         bol();
     }
+}
+
+% Re-cast a multilevel quoted paragraph in my attribution style
+define sq() {
+    variable qlevel, mlevel, ignorelevel, seen, snippet, dodown, top;
+    variable realtop;
+
+    bol();
+    if (eolp())
+        break;
+
+    while ((what_char() != '\n') and (bobp() == 0)) {
+        go_up(1);
+        bol();
+    }
+    if (what_char() == '\n')
+        go_down(1);
+    bol();
+
+    realtop = create_user_mark();
+    EXIT_BLOCK {
+        goto_user_mark(realtop);
+    }
+
+    % The effect we want is as follows: an _attribution line_ is defined
+    % as a line of quoting level N (may be 0) that occurs before any lines
+    % of quoting level N+1 that _aren't attributions_. (That proviso is
+    % really important: it causes the whole transformation to become
+    % idempotent, and makes it continue to work when it sees a mixture of
+    % this attribution style and the traditional one.)
+
+    % The algorithm we adopt is as follows: we scan down the paragraph and
+    % find the maximum quoting level M. We then scan down the paragraph
+    % again and take out all the lines before the first M-level line that
+    % aren't (M-1) level, i.e. _aren't_ attributions. Then we proceed
+    % further down until we see a non-M-level line and insert all those
+    % lines we took out. This will cause the M-level lines to be preceded
+    % only by their attribution at the top of the paragraph. We then
+    % repeat the whole process starting from just below the M-level lines.
+    %
+    % Because of the possibility of interleaved text, we ignore all lines
+    % of a quoting level we have already dealt with in subsequent steps.
+
+    ignorelevel = -1;
+    top = create_user_mark();
+    forever {
+        mlevel = 0;
+        % Scan to find M.
+        goto_user_mark(top);
+        while ((what_char() != '\n') and (eobp() == 0)) {
+            % Measure the quoting level of the line.
+            qlevel = 0;
+            while (what_char() == '>') {
+                qlevel++;
+                go_right_1();
+                skip_white();
+                if (eolp() or what_char() != '>') {
+                    break;
+                }
+            }
+            if ((ignorelevel < 0 or qlevel < ignorelevel) and
+                mlevel < qlevel)
+                mlevel = qlevel;
+
+            !if (down(1))
+                break;
+            bol();
+        }
+
+        % If M == 0, we've finished.
+        if (mlevel == 0)
+            break;
+
+        % Having found M, move all things above the first M line that aren't
+        % level M-1 to just after the first contiguous block of M lines.
+        seen = 0;
+        snippet = "";
+        goto_user_mark(top);
+        while ((what_char() != '\n') and (eobp() == 0)) {
+            % Measure the quoting level of the line.
+            qlevel = 0;
+            while (what_char() == '>') {
+                qlevel++;
+                go_right_1();
+                skip_white();
+                if (eolp() or what_char() != '>') {
+                    break;
+                }
+            }
+            dodown = 1;
+            % If we haven't yet seen an M line...
+            if (seen == 0) {
+                if (qlevel == mlevel) {
+                    % ... and this is one, then now we have. :-)
+                    seen = 1;
+                } else if (qlevel != mlevel-1) {
+                    % ... but if this isn't M or M-1 then snip it.
+                    bol(); push_mark(); eol(); snippet += bufsubstr() + "\n";
+                    bol(); push_mark(); eol(); go_right_1(); del_region();
+                    dodown = 0;
+                }
+            } else {
+                % If we have seen an M line, then we stop if this isn't one.
+                if (qlevel != mlevel) {
+                    bol();
+                    top = create_user_mark();
+                    insert(snippet);
+                    snippet = "";
+                    break;
+                }
+            }
+
+            if (dodown) {
+                !if (down(1)) {
+                    eol();
+                    break;
+                }
+            }
+            bol();
+        }
+
+        % Robustness: if we've reached end of paragraph and the snippet
+        % hasn't been pasted, paste it.
+        if (snippet != "") {
+            !if (bolp())
+                insert("\n");          % just in case EOF
+            insert(snippet);
+        }
+
+        pop_spot();
+
+        ignorelevel = mlevel;
+    }
+}
+
+% do all quoting things
+define qq() {
+    rq();
+    sq();
 }
 
 % the core routine to actually insert the sig text
