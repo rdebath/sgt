@@ -21,6 +21,10 @@ enum {
     err_nomemory,		       /* no arguments */
     err_optnoarg,		       /* option `-%s' requires an argument */
     err_nosuchopt,		       /* unrecognised option `-%s' */
+    err_nodb,                          /* db doesn't exist, try init-db */
+    err_dbexists,                      /* db _does_ exist, can't init */
+    err_noopendb,                      /* unable to open db */
+    err_dberror,                       /* generic db error */
 };
 
 /*
@@ -45,6 +49,13 @@ void licence(void);
 /*
  * version.c
  */
-const char *const version;
+extern const char *const version;
+
+/*
+ * sqlite.c
+ */
+extern char *dbpath;
+void db_init(void);
+void db_close(void);
 
 #endif

@@ -4,23 +4,43 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
 #include "timber.h"
+
+void run_command(int argc, char **argv)
+{
+    assert(argc > 0);
+
+    if (!strcmp(argv[0], "init-db")) {
+	db_init();
+    }
+}
 
 int main(int argc, char **argv) {
     int nogo;
     int errs;
+    int parsing_opts;
+    char **arguments = NULL;
+    int narguments = 0, argsize = 0;
+    char *homedir;
 
     /*
      * Set up initial (default) parameters.
      */
     nogo = errs = FALSE;
 
+    homedir = getenv("HOME");
+    if (homedir == NULL) homedir = "/";
+    dbpath = smalloc(strlen(homedir) + 20);
+    sprintf(dbpath, "%s%s.timber/db", homedir,
+            homedir[strlen(homedir)-1] == '/' ? "" : "/");
+
     /*
      * Parse command line arguments.
      */
     while (--argc) {
 	char *p = *++argv;
-	if (*p == '-') {
+	if (*p == '-' && parsing_opts) {
 	    /*
 	     * An option.
 	     */
@@ -89,12 +109,7 @@ int main(int argc, char **argv) {
 			break;
 		    }
 		    break;
-		    /*
-		     * FIXME. Put cases here for single-char
-		     * options that require parameters. An example
-		     * is shown, commented out.
-		     */
-		  /* case 'o': */
+		  case 'D':
 		    /*
 		     * Option requiring parameter.
 		     */
@@ -111,13 +126,11 @@ int main(int argc, char **argv) {
 		     * Now c is the option and p is the parameter.
 		     */
 		    switch (c) {
-			/*
-			 * A sample option requiring an argument:
-			 *
-		         * case 'o':
-			 *   ofile = p;
-			 *   break;
-			 */
+                      case 'D':
+                        sfree(dbpath);
+                        dbpath = smalloc(1+strlen(p));
+                        strcpy(dbpath, p);
+                        break;
 		    }
 		    p = NULL;	       /* prevent continued processing */
 		    break;
@@ -137,6 +150,12 @@ int main(int argc, char **argv) {
 	    /*
 	     * A non-option argument.
 	     */
+	    if (narguments >= argsize) {
+		argsize = narguments + 32;
+		arguments = srealloc(arguments, argsize * sizeof(*arguments));
+	    }
+	    arguments[narguments++] = p;
+	    parsing_opts = FALSE;
 	}
     }
 
@@ -148,7 +167,12 @@ int main(int argc, char **argv) {
     /*
      * Do the work.
      */
-    printf("FIXME: put some activity here\n");
+    if (narguments == 0)
+	usage();
+    else
+	run_command(narguments, arguments);
+
+    db_close();
 
     return 0;
 }
