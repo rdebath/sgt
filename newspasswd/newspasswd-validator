@@ -1,0 +1,24 @@
+#!/usr/bin/perl 
+
+$| = 1;
+
+chomp ($pass = <>);
+
+open PWFILE, $ENV{"HOME"} . "/.newspasswd" or do {
+  print "-no .newspasswd\n";
+  exit 1;
+};
+chomp ($crypted = <PWFILE>);
+chomp ($auth = <PWFILE>);
+close PWFILE;
+
+if ($crypted ne crypt($pass, $crypted)) {
+  print "-authentication refused\n";
+  exit 1;
+}
+
+print "+ok\n";
+
+print "AUTHINFO GENERIC $auth\n";
+$ENV{"NNTP_AUTH_FDS"} = "0.1";
+exec $auth;

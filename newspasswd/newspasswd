@@ -1,0 +1,59 @@
+#!/usr/bin/perl 
+
+use POSIX;
+
+$auth = $ENV{"NNTPAUTH"};
+
+if ($auth ne "") {
+  while (1) {
+    print STDERR "Use existing NNTPAUTH setting (\"$auth\")? [yn] ";
+    chomp ($yn = <STDIN>);
+    $auth = "", last if $yn =~ /^n/i;
+    last if $yn =~ /^y/i;
+  }
+}
+
+if ($auth eq "") {
+  print STDERR "Enter an NNTPAUTH setting: ";
+  chomp($auth = <STDIN>);
+}
+
+print STDERR "Using NNTPAUTH setting \"$auth\".\n";
+
+$termios = POSIX::Termios->new;   $newtermios = POSIX::Termios->new;
+$termios->getattr();              $newtermios->getattr();
+
+$newtermios->setlflag ($newtermios->getlflag & ~&POSIX::ECHO);
+$newtermios->setattr (&POSIX::TCSANOW);
+print STDERR "Choose a news password: ";
+$passwd = <STDIN>;
+chomp $passwd;
+print STDERR "\n";
+$termios->setattr (&POSIX::TCSANOW);
+
+open R, "/dev/random";
+read R, $a, 8;
+close R;
+@l = unpack "L*", $a;
+
+@salt = ();
+for ($i = 0; $i < 4; $i++) {
+  for ($j = 0; $j < 2; $j++) {
+    $k = $l[$j] & 0x3F;
+    $l[$j] >>= 6;
+    push @salt, $k;
+  }
+}
+$salt = pack "C*", @salt;
+$salt =~ y/\0-\77/0-9A-Za-z+\//;
+$salt = '$1$' . $salt;
+$crypted = crypt($passwd, $salt);
+if (substr($crypted, 0, length $salt) ne $salt) {
+  # md5 passwords unsupported. Bummer.
+  $crypted = crypt($passwd, substr($salt, 3, 2));
+}
+
+umask 077;
+open FILE, ">" . $ENV{"HOME"} . "/.newspasswd";
+print FILE "$crypted\n$auth\n";
+close FILE;
