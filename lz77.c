@@ -224,7 +224,7 @@ void lz77_compress(struct LZ77Context *ctx, unsigned char *data, int len) {
 char *test1 = "Pease porridge hot, pease porridge cold, pease porridge"
     " in the pot, nine days old.";
 char *test2 = "oojamaflip fooj x fooj foojamaflip flip flop";
-char *test3 = "yip yip piggy yip spod spod chickypig";
+char *test3 = "yip yip yip yip piggy yip spod spod chickypig";
 
 void match(struct LZ77Context *ctx, int distance, int len) {
     printf("<%d,%d>", distance, len);
