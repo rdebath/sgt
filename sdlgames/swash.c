@@ -729,6 +729,15 @@ int swash_width(char *text)
     return width;
 }
 
+void swash_centre(int xmin, int xmax, int y, char *text,
+		  void (*plot)(void *ctx, int x, int y), void *plotctx)
+{
+    int w;
+    w = swash_width(text);
+    swash_text((xmin + xmax - w)/2, y, text, plot, plotctx);
+}
+
+
 #ifdef TESTMODE
 
 #define MAXWIDTH 400
