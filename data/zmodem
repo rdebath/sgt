@@ -11,6 +11,6 @@ transfer mechanisms in the PuTTY suite; but if someone were to do
 the work for us we might accept it.
 
 <p>
-Then again, it might be better if it went in as a DLL plugin.
+Then again, it might be better if it went in as a
+<a href="mdpi.html">DLL plugin</a>.
 Depends how big it is, I think.
-
