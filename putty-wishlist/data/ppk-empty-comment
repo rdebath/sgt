@@ -1,0 +1,19 @@
+Summary: Trouble with empty PPK key comments
+Class: bug
+Difficulty: fun
+Priority: medium
+Present-in: 0.53b
+Content-type: text/x-html-body
+
+<p>
+Certain forms of empty key comment in PPK files can cause PuTTY to
+throw an assertion failure (terminal.c, line 3769, len &gt; 0 for
+0.53b) (and possibly crash?). Apparently such files can be generated
+by PuTTYgen.
+
+<p>
+For more details:
+<ul>
+<li><code>000801c2a3bf$a6b5ab80$5f00a8c0@gabba.world</code>
+<li><code>20030105014246.6485.2902@hm-web2.solinus.com</code>
+</ul>
