@@ -167,6 +167,11 @@ void rfc2047(const char *text, int length, parser_output_fn_t output,
 	    spot_encoded_word(text, length))
 	    /* do not output anything */;
 	else if (text - startpoint > 0)
+	    /*
+	     * FIXME: What I could really do with here would be
+	     * code that (optionally) destroyed double quotes and
+	     * backslashed characters.
+	     */
 	    output(outctx, startpoint, text-startpoint, TYPE_HEADER_TEXT,
 		   default_charset);
     }
