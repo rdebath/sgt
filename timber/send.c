@@ -143,7 +143,17 @@ struct send_output_ctx {
     int ncharsets;
     struct buffer headers, pre2047;
     int pre2047type;
+    int gotdate, gotmid;
 };
+
+static void send_info_fn(void *vctx, struct message_parse_info *info)
+{
+    struct send_output_ctx *ctx = (struct send_output_ctx *)vctx;
+    if (info->type == PARSE_MESSAGE_ID && info->header == H_MESSAGE_ID)
+	ctx->gotmid = TRUE;
+    else if (info->type == PARSE_DATE)
+	ctx->gotdate = TRUE;
+}
 
 static void send_output_fn(void *vctx, const char *text, int len,
 			   int type, int charset)
@@ -231,10 +241,11 @@ void send(int charset, char *message, int msglen)
     buffer_init(&ctx.headers);
     buffer_init(&ctx.pre2047);
     ctx.pre2047type = TYPE_HEADER_DECODED_TEXT;
+    ctx.gotmid = ctx.gotdate = FALSE;
     wrap_init(&ctx.wrap);
 
     parse_message(message, msglen, send_output_fn, &ctx,
-		  null_info_fn, NULL, charset);
+		  send_info_fn, NULL, charset);
     /* Ensure the last RFC2047 string has been finished, just in case. */
     send_output_fn(&ctx, "", 0, TYPE_HEADER_TEXT, CS_ASCII);
 
@@ -248,6 +259,44 @@ void send(int charset, char *message, int msglen)
 	     ctx.headers.text[ctx.headers.length-2] == '\n'));
 
     printf("%.*s", ctx.headers.length, ctx.headers.text);
+
+    /*
+     * Invent a Date header if it isn't already present.
+     */
+    if (!ctx.gotdate) {
+	time_t t, lt, gt;
+	struct tm tm, tm2, gtm;
+	int totaldiff;
+
+	static const char weekdays[4*7] =
+	    "Sun\0Mon\0Tue\0Wed\0Thu\0Fri\0Sat\0";
+	static const char months[4*12] =
+	    "Jan\0Feb\0Mar\0Apr\0May\0Jun\0Jul\0Aug\0Sep\0Oct\0Nov\0Dec\0";
+
+	t = time(NULL);
+	if (getenv("OOH")) t += 86400 * 120;
+	tm = *localtime(&t);
+	/*
+	 * Finding the difference between this and UTC is fiddly,
+	 * because the DST and the actual time difference must be
+	 * handled separately. First find the DST difference:
+	 */
+	tm2 = tm;
+	tm2.tm_isdst = 0;
+	lt = mktime(&tm2);
+	/* Now the difference between t and lt is the DST difference. */
+	gtm = *gmtime(&lt);
+	gtm.tm_isdst = 0;	       /* just to make absolutely sure! */
+	gt = mktime(&gtm);
+	/* Now the difference between lt and gt is the TZ difference. */
+	totaldiff = (int)difftime(t, lt) - (int)difftime(lt, gt);
+
+	printf("Date: %s, %d %s %d %02d:%02d:%02d %c%02d%02d\n",
+	       weekdays+4*tm.tm_wday, tm.tm_mday, months+4*tm.tm_mon,
+	       1900+tm.tm_year, tm.tm_hour, tm.tm_min, tm.tm_sec,
+	       (totaldiff > 0 ? '-' : '+'),
+	       abs(totaldiff)/3600, abs(totaldiff)/60%60);
+    }
 }
 
 void send_from_stdin(int charset)

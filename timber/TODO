@@ -4,9 +4,7 @@ Mail sending plan of action
 So. I now have code which parses the input message and RFC2047s the
 headers. Things left to do:
 
- - Invent Date and Message-ID headers if not already present.
-    + easiest way to tell if they're already present is to hook into
-      the info output from parse_message()!
+ - Invent Message-ID header if not already present.
 
  - Figure out how to extract and parse pseudo-headers.
     + One option is to have rfc822.c pass a set of lexed_header
@@ -35,6 +33,27 @@ headers. Things left to do:
 	 re-editing of a queued message, we need to be able to
 	 reverse all the above transformations in some fashion.
 	 Hmmm.
+       * Most of it's reasonable enough; re-editing a queued (or
+	 postponed) message is just a slightly different way of
+	 constructing a composer buffer. The only interesting bit is
+	 reversing the MIME transformation, and by far the simplest
+	 answer there is not to bother - we _keep_ the Attach
+	 headers and the message body as entered by the user until
+	 the time of actual sending.
+	  * Now wait a minute. What's the point of doing and
+	    reversing the header transformations at all, in that
+	    case? Answer: it's an RFC822 compliance / charset thing.
+	    If we store the queued or postponed message buffer
+	    exactly as the user was editing it, then they lose their
+	    postponed messages if they change front end _charsets_.
+	    By transforming into RFC822, we arrange that the message
+	    can be re-edited in a different charset.
+	  * Therefore, the same must apply to the message body; we
+	    need to at least _state_ what charset it was last edited
+	    in, so that we can do a translation when constructing
+	    the composer buffer for re-editing.
+	  * Should we do this using real MIME headers, or would it
+	    be simpler to invent another pseudo-header?
     + process Categories, and fcc the message.
     + pass to /usr/lib/sendmail.
 
