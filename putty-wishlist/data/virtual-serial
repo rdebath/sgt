@@ -1,0 +1,16 @@
+Summary: Virtual serial port over SSH
+Class: wish
+Priority: never
+Difficulty: tricky
+Content-type: text/x-html-body
+
+<pre>
+>What would be really great would be for a way of running a VPN over a
+>PuTTY link.
+>My current thinking is that a virtual modem driver that runs plink to
+>establish an asci link with the target server. Then ppp can be ran on
+>the remote machine just like modem dialups.
+</pre>
+
+<p>My (bjh) feeling is that this shouldn't need any work on our part, since the
+driver ought to be able to invoke Plink itself, like CVS <i>et al</i> do.
