@@ -5,7 +5,9 @@ Difficulty: tricky
 Content-type: text/x-html-body
 
 <p>
-SRP support, as an alternative to pure password authentication.
+<a href="http://srp.stanford.edu/">SRP</a> support in SSH, as an
+alternative to pure password authentication. (As implemented by
+<a href="http://www.net.lut.ac.uk/psst">LSH</a>.)
 Possibly also in Telnet.
 
 <p>
@@ -15,10 +17,11 @@ The SRP exchange convinces each side that the other side knows the
 same password, without requiring either side to give the password
 away to the other - so if you use SRP authentication, you can safely
 type your password in even if you don't know the remote host key is
-correct. Moreover, the current drafts of SRP authentication in SSH
+correct. Moreover, the current
+<a href="http://cvs.lysator.liu.se/viewcvs/viewcvs.cgi/lsh/doc/srp-spec.nroff?cvsroot=lsh">drafts</a>
+of SRP authentication in SSH
 then use the SRP shared secret to authenticate the SSH host key - so
 that even if you aren't sure the host key belongs to the host you
 think it does, you can at least be sure that it does belong to a
 machine which knows your password. This would be a massive
 improvement in the SSH host key model.
-
