@@ -1,6 +1,6 @@
 # -*- mode: sh; mode: fold -*-
 # Simon Tatham's standardised chunk of .bashrc
-# $Revision: 1.18 $
+# $Revision: 1.19 $
 
 #{{{ I don't like .bash_history files. They wet their nests.
 unset HISTFILE
@@ -145,6 +145,8 @@ bashrc_do_bindings() {
   set -- '"\\C-xM": "\001\013timber\n"'
   bind "`echo -e "$1"`"
   set -- '"\\C-xm": "\001\013timber '\'\''\n"'
+  bind "`echo -e "$1"`"
+  set -- '"\\C-x\\C-m": "\001\013timber -f "'
   bind "`echo -e "$1"`"
 }
 bashrc_do_bindings
