@@ -13,4 +13,6 @@ in the 6x range, perhaps based on the current compatibility level set
 by DECSCL.  Maybe it should even be configurable -- it is on a VT420.
 
 We've had a report of this causing problems with entry of greek text, and
-a suggested replacement: <000801c3a54f$1cc29720$befba8c0@semantix.private.gr>.
+a suggested replacement: <000801c3a54f$1cc29720$befba8c0@semantix.private.gr>
+(suggesting CSI ? 62 ; 1 ; 2 ; 6 ; 7 ; 8 ; 9 c). Haven't analysed this
+solution yet.
