@@ -2,19 +2,25 @@
 
 # cmdline arguments
 finger=no
-while test $# -gt 0; do
+done=no
+while test $# -gt 0 -a "$done" != "yes"; do
   case $1 in
-    -f) finger=yes;;
+    -f) finger=yes; shift;;
+    -*) echo "Unknown option $1" >&2; shift;;
+    *) done=yes
   esac
-  shift
 done
 
 # output width
-set -- `stty 2>/dev/null | tr -s ';\n' '\n\n' | grep columns`
-cols=${3-80}
+getwidth() {
+  set -- `stty 2>/dev/null | tr -s ';\n' '\n\n' | grep columns`
+  cols=${3-80}
+}
+getwidth   # it's a function so as not to trash $*
 
 # do the job
-(if test $finger = no; then
+{
+ if test $finger = no; then
   location=http://mono.org/newweb/utils/users_on.shtml
   perl -e "use LWP::Simple; print get('$location')" |
     perl -n -e '%cmap=("black"=>"K","blue"=>"B","green"=>"G","red"=>"R",' \
@@ -34,4 +40,11 @@ cols=${3-80}
    finger userson@mono.org |
      perl -ne 's/\^\[/\033/g, s/\^\]/\035/g, print if $ok; $ok=1 if /^Plan:/'
  fi
-) | mtribs -b49 -s`expr $cols - 1`
+} | mtribs -b49 -s`expr $cols - 1` | {
+  if test $# -gt 0; then
+    perl -e 'foreach $i (@ARGV) {$q{$i}=1;} while (<STDIN>) {' \
+         -e 'print if (/^.([a-z0-9_\-]+)/ and $q{$1}) or /^\d+ users/ }' "$@"
+  else
+    cat
+  fi
+}

@@ -15,7 +15,4 @@ arkady mormegil
 EOF
 `
 ME='anakin narg'
-mfinger "$@" |
-  perl -e 'foreach $i (@ARGV) {$q{$i}=1;} while (<STDIN>) {' \
-       -e 'print if (/^.([a-z0-9_\-]+)/ and $q{$1}) or /^\d+ users/ }' \
-       $FRIENDS $ME
+mfinger $FRIENDS $ME
