@@ -98,6 +98,19 @@ their usage instructions:
    already be duals of each other. This program is probably most
    useful when applied to the files in the `regular' subdirectory.
 
+ - isometry.py expects nine arguments forming a matrix, followed by
+   two optional arguments specifying an input file and an output
+   file (as usual, it will default to standard input and output if
+   those arguments are absent). From its input file, it expects to
+   read a polyhedron description as output by either nfaces.py or
+   nvertices.py. To its output file, it writes another polyhedron
+   description, which is the result of transforming the input
+   polyhedron using the supplied matrix. The input matrix must be
+   orthogonal (i.e. represent an isometry of 3D space). This might
+   be useful if for some specific purpose you need a 3D model of,
+   say, an icosahedron resting on one of its faces rather than on
+   one of its edges.
+
 In the `examples' directory I supply a set of pre-generated point
 sets and polyhedron descriptions:
 
