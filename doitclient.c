@@ -452,7 +452,7 @@ void showversion(void)
     char *v;
     extern char doitlib_revision[];
 
-    v = makeversion(versionbuf, "$Revision: 1.9 $");
+    v = makeversion(versionbuf, "$Revision: 1.10 $");
     if (v)
 	printf("doitclient revision %s", v);
     else
@@ -477,6 +477,9 @@ char *do_path_translate(char *arg, int verbose)
     }
 
 #ifndef HAVE_NO_REALPATH
+#if !defined PATH_MAX && defined MAXPATHLEN
+#define PATH_MAX MAXPATHLEN
+#endif
     path2 = malloc(PATH_MAX);
     path = realpath(arg, path2);
     if (!path) {
@@ -961,6 +964,8 @@ int main(int argc, char **argv)
 	    if (verbose)
 		fprintf(stderr, "doit: received clipboard data length %d\n",
 			clen);
+            if (clen == 0)
+                break;
 	    msg = do_fetch_n(sock, ctx, clen, &len);
 	    p = msg;
 	    if (verbose)
