@@ -63,10 +63,22 @@ if verbose:
     print "Output:", ret
 
 if ljproto.ljok(ret):
+    tryit = 0
+    interval = string.atoi(ret["interval"])
+    if ret["lastupdate"] == "":
+	# This appears to indicate that checkfriends is bust, and
+	# so we should retrieve the URL.
+	nonemsg = "no visible change; checkfriends was uninformative"
+	tryit = 1
+	if interval <= 0 or interval > 300:
+	    interval = 300 # in this case, we don't trust the interval either
     if ret["new"] == "1":
 	# The checkfriends protocol tells us there is something
 	# new. If we have date delimiters, we now check the real
 	# friends page to see if it's actually correct or not.
+	nonemsg = "no visible change, although checkfriends reported one"
+	tryit = 1
+    if tryit:
 	new = 1
 	urlguts = "www.livejournal.com/users/"+ljproto.ljusername()+"/friends"
 	if date_start != "" and date_stop != "":
@@ -90,7 +102,7 @@ if ljproto.ljok(ret):
 			break
 	    f.close()
 	    if date != "" and date == lastrealdate:
-		print "no visible change, although checkfriends reported one"
+		print nonemsg
 		new = 0
 	    if date != "": lastrealdate = date
 	if new:
@@ -102,7 +114,7 @@ if ljproto.ljok(ret):
     if date_stop != "\n":
 	f.write("date-stop " + date_stop + "\n")
     f.write("checkfriends-last-return " + ret["lastupdate"] + "\n")
-    f.write("last-call " + str(time.time() + string.atoi(ret["interval"])) + "\n")
+    f.write("last-call " + str(time.time() + interval) + "\n")
     if lastrealdate != "":
 	f.write("last-real-date " + lastrealdate + "\n")
     f.close()
