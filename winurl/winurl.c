@@ -34,6 +34,8 @@ char const *winurl_appname = "WinURL";
 #define IDM_ABOUT    0x0020
 #define IDM_LAUNCH   0x0030
 
+#define IDHOT_LAUNCH 0x0010
+
 static HMENU systray_menu;
 
 static int CALLBACK AboutProc(HWND hwnd, UINT msg,
@@ -86,6 +88,16 @@ extern void systray_shutdown(void) {
     res = Shell_NotifyIcon(NIM_DELETE, &tnid); 
 
     DestroyMenu(systray_menu);
+}
+
+int hotkey_init(void)
+{
+    return RegisterHotKey(winurl_hwnd, IDHOT_LAUNCH, MOD_WIN, 'W');
+}
+
+void hotkey_shutdown(void)
+{
+    UnregisterHotKey(winurl_hwnd, IDHOT_LAUNCH);
 }
 
 void do_launch_url(void)
@@ -243,6 +255,10 @@ static LRESULT CALLBACK WndProc (HWND hwnd, UINT message,
             menuinprogress = 0;
         }
 	break;
+      case WM_HOTKEY:
+	if (wParam == IDHOT_LAUNCH)
+	    do_launch_url();
+	return 0;
       case WM_COMMAND:
 	if ((wParam & ~0xF) == IDM_CLOSE) {
 	    SendMessage(hwnd, WM_CLOSE, 0, 0);
@@ -305,11 +321,17 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int show) {
 
 	ShowWindow (winurl_hwnd, SW_HIDE);
 
+	if (!hotkey_init()) {
+	    MessageBox(winurl_hwnd, "Unable to register hot key",
+		       "WinURL Warning", MB_ICONWARNING | MB_OK);
+	}
+
 	while (GetMessage (&msg, NULL, 0, 0) == 1) {
 	    TranslateMessage (&msg);
 	    DispatchMessage (&msg);
 	}
 	
+	hotkey_shutdown();
 	systray_shutdown();
     }
 
