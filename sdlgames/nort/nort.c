@@ -44,6 +44,11 @@ int puttext(int x, int y, int c, char const *text)
     }
 }
 
+int centretext(int y, int c, char const *text)
+{
+    puttext(160-4*(strlen(text)), y, c, text);
+}
+
 int drawline(int x1, int y1, int x2, int y2, int c)
 {
     int dx, dy, lx, ly, sx, sy, dl, ds, d, i;
@@ -211,7 +216,6 @@ int play_game(void)
 {
     int x, y, c;
     int i, p, gameover;
-    char const startstring[] = "BOTH PLAYERS PRESS X TO START";
     int scrfill;
 
     /*
@@ -227,13 +231,14 @@ int play_game(void)
 	    else
 		plot(x, y, 0);
 	}
-    puttext(160 - 4*(sizeof(startstring)-1), 100, WEAPON_COLOUR, startstring);
-
+    centretext(100, WEAPON_COLOUR, "BOTH PLAYERS PRESS \"START\" TO START");
+    centretext(190, WEAPON_COLOUR, "(Press \"START\" to return to the");
+    centretext(200, WEAPON_COLOUR, "menu once the game is over.)");
     scr_done();
 
     /*
-     * Now wait until we see the X button (joystick button 1) both
-     * pressed and released on each controller.
+     * Now wait until we see the Start button (joystick button 9)
+     * both pressed and released on each controller.
      */
     {
 	int flags = 0;
@@ -242,7 +247,7 @@ int play_game(void)
 	while (flags != 15 && SDL_WaitEvent(&event)) {
 	    switch(event.type) {
 	      case SDL_JOYBUTTONDOWN:
-		if (event.jbutton.button == 1) {
+		if (event.jbutton.button == 9) {
 		    if (event.jbutton.which == 0)
 			flags |= 1;
 		    else if (event.jbutton.which == 1)
@@ -250,11 +255,18 @@ int play_game(void)
 		}
 		break;
 	      case SDL_JOYBUTTONUP:
-		if (event.jbutton.button == 1) {
-		    if (event.jbutton.which == 0)
+		if (event.jbutton.button == 9) {
+		    if (event.jbutton.which == 0) {
 			flags |= 4;
-		    else if (event.jbutton.which == 1)
+			scr_prep();
+			centretext(120, 1, "Player 1 ready");
+			scr_done();
+		    } else if (event.jbutton.which == 1) {
 			flags |= 8;
+			scr_prep();
+			centretext(130, 2, "Player 2 ready");
+			scr_done();
+		    }
 		}
 		break;
 	      case SDL_KEYDOWN:
@@ -264,9 +276,43 @@ int play_game(void)
 	}
     }
 
+    /*
+     * Wait for a second before starting the game, to give the
+     * second player who pressed Start time to move back to the
+     * main buttons.
+     */
     scr_prep();
-    for (x = 0; x < sizeof(startstring)-1; x++)
-	puttext(160 - 4*(sizeof(startstring)-1) + x*8, 100, 0, "\x7F");
+    centretext(160, WEAPON_COLOUR, "GAME STARTING");
+    scr_done();
+
+    for (i = 0; i < 50; i++) {
+	SDL_Event event;
+
+	/*
+	 * Listen to waiting events in case ESC was pressed.
+	 */
+	while (SDL_PollEvent(&event)) {
+	    int action;
+
+	    switch(event.type) {
+	      case SDL_KEYDOWN:
+		/* Standard catch-all quit-on-escape clause. */
+		if (event.key.keysym.sym == SDLK_ESCAPE)
+		    exit(1);
+	    }
+	}
+	vsync();
+    }
+
+    scr_prep();
+    /* Re-clear the screen to wipe out all the administrative text. */
+    for (x = 0; x < 320; x++)
+	for (y = 0; y < 240; y++) {
+	    if (x == 0 || x == 319 || y == 0 || y == 239)
+		plot(x, y, WEAPON_COLOUR);
+	    else
+		plot(x, y, 0);
+	}
     scr_done();
 
     /*
@@ -612,7 +658,7 @@ int play_game(void)
     /*
      * Now the game is over. Restore the colour palette (in case
      * one or more players were cloaked at the time of the game
-     * ending) and then just wait for a button press (either
+     * ending) and then just wait for a Start button press (either
      * player) before continuing.
      */
     cloak(0);
@@ -623,7 +669,8 @@ int play_game(void)
 	while (!done && SDL_WaitEvent(&event)) {
 	    switch(event.type) {
 	      case SDL_JOYBUTTONDOWN:
-		done = 1;
+		if (event.jbutton.button == 9)
+		    done = 1;
 		break;
 	      case SDL_KEYDOWN:
 		if (event.key.keysym.sym == SDLK_ESCAPE)
@@ -682,13 +729,11 @@ int main_menu(void)
     else
 	menumin = 2;		       /* only Setup and Quit allowed */
 
-#define centre(y,text) puttext(160-4*(strlen((text))),y,WEAPON_COLOUR,(text))
-    centre(50, "NORT");
-    centre(66, "A SPL@ Production");
+    centretext(50, WEAPON_COLOUR, "NORT");
+    centretext(66, WEAPON_COLOUR, "A SPL@ Production");
 
     for (i = menumin; i < menulen; i++)
-	centre(menu[i].y, menu[i].text);
-#undef centre
+	centretext(menu[i].y, WEAPON_COLOUR, menu[i].text);
 
     /*
      * Display the scores.
