@@ -1,0 +1,50 @@
+Summary: Manual public key authentication causes crash
+Class: bug
+Priority: high
+Absent-in: 0.53b 2003-01-31
+Present-in: 2003-02-03 2003-02-04
+
+A couple of people have reported recent snapshots crashing.
+
+I can reproduce this using 2003-02-03 and 2003-02-04, connecting with:
+ - SSH-2 and RSA authentication
+ - SSH-2 and DSA authentication
+ - SSH-1 and RSA authentication
+(direct, not using Pageant), but not with password for either
+protocol. Crashes regardless of whether offered key is valid.
+
+Using Pageant (2003-02-04, SSH-2, RSA), I can successfully
+authenticate (no crash).
+
+Selection of SSH packet log up to the crash point (for SSH-2):
+
+Event Log: Writing new session log (SSH packets mode) to file: ...\putty.log
+Event Log: Looking up host "ssh.example.com"
+Event Log: Connecting to ssh.example.com port 22
+Event Log: Server version: SSH-1.99-OpenSSH_3.4 NetBSD_Secure_Shell-20020626
+Event Log: We claim version: SSH-2.0-PuTTY-Snapshot-2003-02-04
+Event Log: Using SSH protocol version 2
+Event Log: Doing Diffie-Hellman group exchange
+Event Log: Doing Diffie-Hellman key exchange
+Event Log: Host key fingerprint is:
+Event Log: ssh-rsa 1024 XX:XX:XX:XX:XX:XX:XX:XX:XX:XX:XX:XX:XX:XX:XX:XX
+Event Log: Initialised AES-256 client->server encryption
+Event Log: Initialised AES-256 server->client encryption
+Event Log: Initialised zlib (RFC1950) compression
+Event Log: Initialised zlib (RFC1950) decompression
+Outgoing packet type 5 / 0x05 (SSH2_MSG_SERVICE_REQUEST)
+  00000000  00 00 00 0c 73 73 68 2d 75 73 65 72 61 75 74 68  ....ssh-userauth
+Incoming packet type 6 / 0x06 (SSH2_MSG_SERVICE_ACCEPT)
+  00000000  00 00 00 0c 73 73 68 2d 75 73 65 72 61 75 74 68  ....ssh-userauth
+Outgoing packet type 50 / 0x32 (SSH2_MSG_USERAUTH_REQUEST)
+  00000000  00 00 00 05 XX XX XX XX XX 00 00 00 0e 73 73 68  ....xxxxx....ssh
+  00000010  2d 63 6f 6e 6e 65 63 74 69 6f 6e 00 00 00 04 6e  -connection....n
+  00000020  6f 6e 65                                         one
+
+For the above crash, Dr Watson shows the fault on the instruction at
+43c720, but I don't know that's very useful.
+
+SSH-1 packet log ends:
+
+Event Log: Sent username "xxxxx"
+Incoming packet type 15 / 0x0f (SSH1_SMSG_FAILURE)
