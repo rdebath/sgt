@@ -156,7 +156,7 @@ struct mime_details {
     char *major, *minor;	       /* dynamically allocated */
     enum { NO_ENCODING, QP, BASE64, UUENCODE } transfer_encoding;
     int charset;
-    int cd_inline;
+    enum { UNSPECIFIED, INLINE, ATTACHMENT } disposition;
     /*
      * A file name can come from a `name' parameter in
      * Content-Type, or a `filename' parameter in
@@ -255,6 +255,7 @@ time_t unfmt_date(const char *buf);
  */
 const char *header_name(int header_id);
 const char *encoding_name(int encoding);
+const char *disposition_name(int disposition);
 int write_wrapped(int fd, char *data, int length);
 
 /*

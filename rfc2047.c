@@ -136,8 +136,24 @@ void rfc2047(const char *text, int length, parser_output_fn_t output,
 		tlen = 0;
 	    }
 
-	    if (tlen > 0)
-		output(outctx, wbuf2, tlen, TYPE_HEADER_TEXT, charset);
+	    if (tlen > 0) {
+		/*
+		 * Contents of an encoded-word should be output
+		 * _almost_ unchanged. The sole exception is that
+		 * we disallow (omit) newlines.
+		 */
+		const char *p, *q;
+		p = wbuf2;
+		while (p < wbuf2 + tlen) {
+		    q = p;
+		    while (q < wbuf2 + tlen && *q != '\n')
+			q++;
+		    output(outctx, p, q - p, TYPE_HEADER_TEXT, charset);
+		    while (q < wbuf2 + tlen && *q == '\n')
+			q++;
+		    p = q;
+		}
+	    }
 	    if (wbuf2)
 		sfree(wbuf2);
 

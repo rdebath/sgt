@@ -254,7 +254,7 @@ void recurse_mime_part(const char *base, struct mime_record *mr,
 	   mr->md.major, mr->md.minor,
 	   mr->md.transfer_encoding, mr->md.charset,
 	   mr->md.offset, mr->md.length,
-	   mr->md.cd_inline ? "inline" : "attachment",
+	   disposition_name(mr->md.disposition),
 	   mr->md.filename, mr->md.boundary,
 	   mr->description_len, mr->rawdescription);
 #endif
@@ -1215,7 +1215,7 @@ void init_mime_record(struct mime_record *mr)
     mr->md.minor = smalloc(6); strcpy(mr->md.minor, "plain");
     mr->md.transfer_encoding = NO_ENCODING;
     mr->md.charset = CS_ASCII;
-    mr->md.cd_inline = FALSE;
+    mr->md.disposition = UNSPECIFIED;
     mr->md.filename_location = NO_FNAME;
     mr->md.filename = NULL;
     mr->md.boundary = NULL;
@@ -1344,9 +1344,9 @@ void parse_content_disp(struct lexed_header *lh, struct mime_details *md)
      */
     if ((!lh[0].is_punct && lh[0].length > 0)) {
 	if (!istrlencmp(lh[0].token, lh[0].length, SL("inline"))) {
-	    md->cd_inline = TRUE;
+	    md->disposition = INLINE;
 	} else if (!istrlencmp(lh[0].token, lh[0].length, SL("attachment"))) {
-	    md->cd_inline = FALSE;
+	    md->disposition = ATTACHMENT;
 	}
 	lh++;
     }
@@ -1617,7 +1617,7 @@ void test_info_fn(void *ctx, struct message_parse_info *info)
 	       info->u.md.major, info->u.md.minor,
 	       charset_to_localenc(info->u.md.charset),
 	       encoding_name(info->u.md.transfer_encoding),
-	       info->u.md.cd_inline ? "inline" : "attachment");
+	       disposition_name(info->u.md.disposition));
 	if (info->u.md.filename)
 	    printf("           filename=%s\n", info->u.md.filename);
 	if (info->u.md.description)

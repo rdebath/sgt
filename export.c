@@ -14,7 +14,7 @@ void export_message(char *ego)
 
     location = message_location(ego);
     if (!location)
-	error(err_nosuchmsg);
+	error(err_nosuchmsg, ego);
     else {
 	message = store_retrieve(location, &msglen);
 	if (!message)
