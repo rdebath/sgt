@@ -1,4 +1,4 @@
-;; -*- lisp-mode -*-
+;; -*- mode: lisp; mode: fold -*-
 ;;
 ;; Simon Tatham's standardised Sawfish setup file.
 ;;
@@ -7,8 +7,8 @@
 ;;
 ;;   (load (concat (getenv "HOME") "/src/local/sawfish.jl") nil t t)
 
-;; Mouse actions on window title/border:
-;;
+;; Mouse actions on window title/border {{{
+
 ;;  - On the title bar, dragging moves the window, unless you
 ;;    double-click first in which case it resizes.
 ;;  - On the window border, dragging resizes the window, unless you
@@ -43,11 +43,15 @@
 )
 (unbind-keys border-keymap "Button2-Click")
 
-;; I like left-Windows-x to minimise windows. My usual .xsession setup
-;; tends to xmodmap that key as Hyper.
+;; }}}
+;; Left-Windows + x to minimise windows {{{
+
 (bind-keys window-keymap
   "H-x" 'iconify-window
 )
+
+;; }}}
+;; Some variable settings {{{
 
 ;; In _general_, I approve of programs stating their own window
 ;; position. I'll override that for specific window types that
@@ -58,11 +62,13 @@
 ;; which looks ugly.
 (setq sp-padding 6)
 
-;; On creation of new windows, fiddle with their properties.
+;; }}}
+;; On creation of new windows, fiddle with their properties {{{
+
 (define (sgt-add-window w)
-  ;; Mozilla 1.6 has a nasty habit of trying to place all its
-  ;; windows at (0,0). Ignore its specified position and let Sawfish
-  ;; DTRT.
+  ;; Some applications have a nasty habit of trying to place all
+  ;; their windows at (0,0). Identify those apps' windows, ignore
+  ;; their specified positions, and let Sawfish DTRT.
   (when (or
          (equal (caddr (get-x-property w 'WM_CLASS)) "Gecko\0Mozilla-bin\0")
          (equal (caddr (get-x-property w 'WM_CLASS)) "gnotravex\0Gnotravex\0")
@@ -71,6 +77,9 @@
   )
 )
 (add-hook 'add-window-hook sgt-add-window)
+
+;; }}}
+;; My personalised focus handling {{{
 
 ;; Fun new focus mode. Acts like `enter-only' in _almost_ all cases,
 ;; except that when a new window is created _underneath_
@@ -146,3 +155,5 @@
 
 ;; Set it as the default.
 (setq focus-mode 'sgt-enter-only)
+
+;; }}}
