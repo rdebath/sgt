@@ -20,16 +20,19 @@ $bugdir = "../data";
 #
 require "./config.pl";
 
-# This array maps releases to snapshot dates - it's used to
+# This array maps releases to snapshot dates/revs - it's used to
 # automatically mark bugs which were fixed before the relevant
-# snapshot date as also being fixed in a release.
-# (It's only used for recent releases - old ones are all
-# be explicitly marked in the wishlist data. Obviously branch
-# releases need special handling.)
+# snapshot date/rev as also being fixed in a release.
+# (Date and/or rev are only necessary for releases made since
+# these capabilities were added to this script - older releases
+# are all explicitly marked in the wishlist data.)
+# Obviously branch releases need special handling here.
 @releases = (
-    [ "0.54",   "2004-02-12" ],
-    [ "0.55",   "2004-08-02" ],
-    [ "0.56",   "2004-10-13" ]      # branch date -- released on 2004-10-26
+    [ "0.54", "2004-02-12" ],
+    [ "0.55", "2004-08-02" ],
+    [ "0.56", "2004-10-13" ],     # branch date -- released on 2004-10-26
+    [ "0.57", "2004-10-13" ]      # released on 2005-02-20, from 0.56 branch
+  # [ "0.58", "YYYY-MM-DD", "rXXXX" ] : populate with trunk rev
 );
 
 %classdesc =
@@ -526,13 +529,17 @@ sub add_release_fixes {
     my @extra_fixed = ();
     return unless exists ($bugs{$bug}->{"hdrs"}->{"fixed-in"});
     foreach my $ver (split(' ', $bugs{$bug}->{"hdrs"}->{"fixed-in"})) {
-        next unless $ver =~ m/^\d\d\d\d-\d\d-\d\d$/;
         map {
-            my ($rel, $rel_date) = @$_;
+            my ($rel, $rel_date, $rel_rev) = @$_;
             # Textual comparison works for snapshot dates.
-            # We add the release version in parentheses so that it's
-            # distinguishable from one in the source data.
-            push @extra_fixed, "($rel)" if ($ver le $rel_date);
+            # For revisions we have to compare numerically.
+            if (($ver =~ m/^\d{4}-\d{2}-\d{2}$/ and $ver le $rel_date) or
+                (defined($rel_rev) and $ver =~ m/^r\d+$/ and
+                 substr($ver,1) <= substr($rel_rev,1))) {
+                # We add the release version in parentheses so that it's
+                # distinguishable from one in the source data.
+                push @extra_fixed, "($rel)";
+            }
         } @releases;
     }
     $bugs{$bug}->{"hdrs"}->{"fixed-in"} =
@@ -559,7 +566,8 @@ sub classifyver {
     my ($ver) = @_;
     $ver =~ s/^\((.*)\)$/$1/;   # remove "auto-generated" hint
     my $name;
-    if   ($ver =~ m/^\d{4}-\d{2}-\d{2}$/) { $name = "current snapshots"; }
+    if   ($ver =~ m/^\d{4}-\d{2}-\d{2}$/ ||
+          $ver =~ m/^r\d+$/)              { $name = "current snapshots"; }
     else                                  { $name = "release " . $ver; }
     return $name;
 }
