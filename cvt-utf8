@@ -4,6 +4,54 @@ import sys
 import string
 import os
 import anydbm
+import zlib
+
+class zip_untangler:
+    def __init__(self, file, datasofar):
+        self.file = file
+        assert len(datasofar) < 30
+        self.header = datasofar
+        self.data = ""
+        self.dataleft = None
+        self.decompress = zlib.decompressobj()
+        # Zlib header bytes, expected by decompress obj but not
+        # present in zip file
+        self.decompress.decompress("\x78\x9c")
+
+    def readline(self):
+        if self.dataleft == None:
+            while len(self.header) < 30:
+                s = self.file.read(30 - len(self.header))
+                assert s != ""
+                self.header = self.header + s
+            # Name length and extra length.
+            namelen = 256 * ord(self.header[27]) + ord(self.header[26])
+            extralen = 256 * ord(self.header[29]) + ord(self.header[28])
+            while len(self.header) < 30 + namelen + extralen:
+                s = self.file.read(30 + namelen + extralen - len(self.header))
+                assert s != ""
+                self.header = self.header + s
+            self.dataleft = \
+            256 * (256 * (256 * ord(self.header[21]) + ord(self.header[20])) \
+            + ord(self.header[19])) + ord(self.header[18])
+        k = string.find(self.data, "\n")
+        while k < 0:
+            rlen = self.dataleft
+            if rlen > 4096: rlen = 4096
+            if rlen == 0: break
+            d = self.file.read(rlen)
+            if d == "": break
+            self.dataleft = self.dataleft - rlen
+            self.data = self.data + self.decompress.decompress(d)
+            k = string.find(self.data, "\n")
+        if k < 0:
+            ret = self.data
+            self.data = ""
+            return ret
+        else:
+            ret = self.data[:k+1]
+            self.data = self.data[k+1:]
+            return ret
 
 def hexstr(x):
     s = hex(x)
@@ -191,6 +239,9 @@ if args == []:
     print "       cvt-utf8 --fetch-build <outfile>"
     print "                          "+\
     "build unicode db by download from unicode.org"
+    print "       cvt-utf8 --fetch-build-unihan <outfile>"
+    print "                          "+\
+    "build Unihan db by download from unicode.org"
     sys.exit(0)
 
 if args[0] == "-o" or args[0] == "--output":
@@ -228,21 +279,39 @@ if args[0] == "--build" or args[0] == "--fetch-build":
     db.close()
     sys.exit(0)
 
-if args[0] == "--build-unihan":
-    if len(args) != 3:
-	print "cvt-utf8: --build expects two filename arguments"
-	sys.exit(1)
-    infile = open(args[1], "r")
-    outfile = args[2]
+if args[0] == "--build-unihan" or args[0] == "--fetch-build-unihan":
+    if args[0] == "--build-unihan":
+        if len(args) != 3:
+            print "cvt-utf8: --build expects two filename arguments"
+            sys.exit(1)
+        infile = open(args[1], "r")
+        s = infile.read(1)
+        # Unihan.txt starts with a hash. If this file starts with a
+        # P, we assume it's a zip file ("PK").
+        if s == "P":
+            infile = zip_untangler(infile, s)
+            s = ""
+        outfile = args[2]
+    else:
+	if len(args) != 2:
+	    print "cvt-utf8: --fetch-build-unihan expects one filename argument"
+	    sys.exit(1)
+	import urllib
+	infile = urllib.urlopen("ftp://ftp.unicode.org/Public/UNIDATA/Unihan.zip")
+        # We know this one is zipped.
+        infile = zip_untangler(infile, "")
+	outfile = args[1]
+        s = ""
     db = anydbm.open(outfile, "n")
     while 1:
-	s = infile.readline()
+	s = s + infile.readline()
 	if s == "": break
 	while s[-1:] == "\r" or s[-1:] == "\n":
 	    s = s[:-1]
 	sa = string.split(s, "\t")
 	if len(sa) == 3 and sa[1] == "kDefinition" and sa[0][:2] == "U+":
 	    db[sa[0][2:]] = sa[2]
+        s = ""
     db.close()
     sys.exit(0)
 
