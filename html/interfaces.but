@@ -1,18 +1,17 @@
 \cfg{xhtml-leaf-level}{0}
-
 \cfg{chapter}{Section}
-
 \cfg{text-title-align}{left}
-
 \cfg{text-indent}{0}
-
-\cfg{text-chapter-numeric}{no}
-
+\cfg{text-chapter-numeric}{yes}
+\cfg{text-chapter-suffix}{. }
 \cfg{text-chapter-underline}{-}
-
-\cfg{text-section-numeric}{0}{no}
-
+\cfg{text-section-numeric}{0}{yes}
+\cfg{text-section-suffix}{0}{. }
 \cfg{text-section-underline}{0}{-}
+\cfg{xhtml-chapter-numeric}{yes}
+\cfg{xhtml-chapter-suffix}{. }
+\cfg{xhtml-section-numeric}{0}{yes}
+\cfg{xhtml-section-suffix}{. }
 
 \cfg{xhtml-address-start}{Copyright &copy; 1999 Simon Tatham.
 <br>This document is
