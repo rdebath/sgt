@@ -59,14 +59,13 @@ int listener_newthread(SOCKET sock, int port, SOCKADDR_IN remoteaddr) {
     
     while (1) {
         len = recv(sock, buf, sizeof(buf), 0);
+        if (len <= 0)
+            goto done;
         if (cmdsize < cmdlen + len + 1) {
             cmdsize = cmdlen + len + 1 + 256;
             cmdline = realloc(cmdline, cmdsize);
-            if (!cmdline) {
-                closesocket(sock);
-                free(nonce);
-                return 0;
-            }
+            if (!cmdline)
+                goto done;
         }
         memcpy(cmdline+cmdlen, buf, len);
         cmdline[cmdlen+len] = '\0';
@@ -93,6 +92,8 @@ int listener_newthread(SOCKET sock, int port, SOCKADDR_IN remoteaddr) {
     } else {
         send(sock, "-auth failed\r\n", 14, 0);
     }
+
+    done:
     free(nonce);
     closesocket(sock);
     return 0;
