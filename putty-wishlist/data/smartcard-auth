@@ -7,3 +7,8 @@ Content-type: text/x-html-body
 <p>It's been suggested that PuTTY could use RSA keys held on a smartcard for
 authentication.  This would require interfacing with smartcard APIs and
 suchlike, and might be an application for the <a href="mdpi.html">MDPI</a>.
+
+<p>Alternatively, it might be better to integrate smartcard support into
+an SSH agent, either as part of Pageant or as a plug-in replacement for it.
+After all, the purpose of a smartcard is to generate cryptographic signatures
+on demand, which is what an SSH agent does too.
