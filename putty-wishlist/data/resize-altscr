@@ -1,0 +1,28 @@
+Summary: Resizing window has nasty effects on alternate screen
+Class: wish
+Difficulty: fun
+Priority: low
+Present-in: 2003-01-14
+Content-type: text/x-html-body
+
+<p>
+Suppose you run a server-side application which switches to the
+alternate terminal screen. While running this application, you
+decide you could do with some more vertical space, so you make the
+window taller. A SIGWINCH is sent to the remote process and it
+adjusts to the new screen size; no problem there.
+
+<p>
+Now, when you quit the application and the primary terminal screen
+is restored, something weird seems to happen. It looks to me as if
+the previous contents of the primary screen are restored somewhere
+near the bottom of the now-taller window, while the cursor is
+restored somewhere near the top.
+
+<p>
+I'm not entirely sure how this <em>should</em> be handled - for
+instance, there's an argument in favour of pulling lines out of the
+scrollback and putting them back into the primary screen, as happens
+when you resize without the alternate screen active. But certainly
+it would be a good start for the cursor position to match up to the
+screen contents!
