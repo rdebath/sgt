@@ -11,7 +11,7 @@ char *dbpath;
 int main(int argc, char **argv) {
     int nogo;
     int errs;
-    enum { NONE, INIT, ADD, LIST } command;
+    enum { NONE, INIT, ADD, LIST, CRON } command;
     char *args[2];
     int nargs = 0;
     char *homedir;
@@ -89,6 +89,7 @@ int main(int argc, char **argv) {
 		  case 'L':
 		  case 'a':
 		  case 'l':
+		  case 'C':
 		    /*
 		     * Option requiring no parameter.
 		     */
@@ -110,6 +111,9 @@ int main(int argc, char **argv) {
 			break;
 		      case 'l':
 			command = LIST;
+			break;
+		      case 'C':
+			command = CRON;
 			break;
 		    }
 		    break;
@@ -185,6 +189,9 @@ int main(int argc, char **argv) {
 	break;
       case LIST:
 	caltrap_list(nargs, args, lenof(args));
+	break;
+      case CRON:
+	caltrap_cron(nargs, args, lenof(args));
 	break;
     }
 

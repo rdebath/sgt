@@ -41,7 +41,7 @@ int list_entries(Date sd, Date ed)
 {
     struct list_ctx ctx;
     ctx.last = sd - 1;
-    db_list_entries(sd, ed, list_callback, &ctx);
+    db_list_entries(sd, 0, ed, 0, list_callback, &ctx);
     list_upto(&ctx, ed);
 }
 
@@ -51,7 +51,7 @@ int caltrap_list(int nargs, char **args, int nphysargs)
     Time t;
 
     if (nargs > 2)
-	fatal(err_addargno);
+	fatal(err_listargno);
     assert(nargs <= nphysargs);
 
     if (nargs == 0) {
