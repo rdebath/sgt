@@ -40,5 +40,5 @@ string length is sanity-checked against the packet length before use.
 This bug was discovered by an anonymous contributor to
 <a href="http://www.idefense.com/">iDEFENSE</a>'s
 <a href="http://www.idefense.com/poi/teams/vcp.jsp">Vulnerability
-Contributor Program</a>. It will be documented by iDEFENSE in a
-forthcoming advisory.
+Contributor Program</a>. It is documented in iDEFENSE's advisory
+<a href="http://www.idefense.com/application/poi/display?id=155&type=vulnerabilities&flashstatus=false">10.27.04</a>.
