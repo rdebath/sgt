@@ -63,7 +63,10 @@
   ;; Mozilla 1.6 has a nasty habit of trying to place all its
   ;; windows at (0,0). Ignore its specified position and let Sawfish
   ;; DTRT.
-  (when (equal (caddr (get-x-property w 'WM_CLASS)) "Gecko\0Mozilla-bin\0")
+  (when (or
+         (equal (caddr (get-x-property w 'WM_CLASS)) "Gecko\0Mozilla-bin\0")
+         (equal (caddr (get-x-property w 'WM_CLASS)) "gnotravex\0Gnotravex\0")
+        )
    (window-put w 'ignore-program-position t)
   )
 )
