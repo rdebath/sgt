@@ -75,12 +75,14 @@ static const int sine[40] = {
 
 static int no_quit_option = 0;
 
-struct pixel pixels[MAXPIX];
-struct player players[2];
-struct bullet bullets[2][MAXBUL];
-int firstfreepixel;
-Image bk_after;
-int space, planet, balls;
+static struct pixel pixels[MAXPIX];
+static struct player players[2];
+static struct bullet bullets[2][MAXBUL];
+static int firstfreepixel;
+static Image bk_after;
+static int space, planet, balls;
+
+static void do_menu(int which_joy);
 
 static void score_text_plot(void *ctx, int x, int y, int on)
 {
@@ -109,9 +111,40 @@ static void show_scores(void)
     }
 }
 
+static int init_player(int p)
+{
+    if (space) {
+	players[p].x = (p ? SSX2 : SSX1) << 16;
+	players[p].y = SSY << 16;
+	players[p].a = 32 * p + 16;
+	players[p].landed = FALSE;
+	players[p].invuln = !planet;
+	if (balls) {
+	    bullets[p][0].xb = players[p].x + (1-2*p) * (BALLSTART<<16);
+	    bullets[p][0].yb = players[p].y;
+	    bullets[p][0].dxb = bullets[p][0].dyb = 0;
+	}
+    } else {
+	players[p].x = (p ? LSX2 : LSX1) << 16;
+	players[p].y = LSY << 16;
+	players[p].a = 0;
+	players[p].landed = TRUE;
+	players[p].invuln = FALSE;
+    }
+    players[p].aa = players[p].a >> 1;
+    players[p].dx = players[p].dy = 0;
+    players[p].after = MAXAFTER;
+    players[p].agrow = 0;
+    players[p].firedelay = 0;
+    players[p].death = 0;
+}
+
 static void init_game(void)
 {
     int p, q;
+
+    rocket_do_palette(space);
+    rocket_make_background(space, planet);
 
     for (p = 0; p < MAXPIX; p++)
 	pixels[p].free = TRUE;
@@ -119,6 +152,7 @@ static void init_game(void)
     firstfreepixel = 0;
 
     for (p = 0; p < 2; p++) {
+	init_player(p);
 	for (q = 0; q < MAXBUL; q++) {
 	    bullets[p][q].free = TRUE;
 	    if (q == 0)
@@ -128,11 +162,9 @@ static void init_game(void)
 	}
 
 	players[p].spr = makesprite(17, 17, 255);
-	players[p].score = 0;
 	players[p].lastscorewidth = 0;
     }
 
-    scr_prep();
     bar(0, 0, SCR_WIDTH - 1, SCR_HEIGHT - 1, 0);
     drawimage(rocket_bkgnd_image,0,0,-1);
     bk_after = makeimage(2, 9, 0, 0);
@@ -151,8 +183,8 @@ static void init_game(void)
 
     bar(AFTERX1,AFTERYTOP,AFTERX1-1+MAXAFTER,AFTERYBOT,1);
     bar(AFTERX2,AFTERYTOP,AFTERX2+1-MAXAFTER,AFTERYBOT,1);
+
     show_scores();
-    scr_done();
 }
 
 static void invsqgrav(int x, int y, int *dx, int *dy)
@@ -231,34 +263,6 @@ static int check(Image img, int x, int y, int *death)
 	*death = DEATHTIME;
 }
 
-static int init_player(int p)
-{
-    if (space) {
-	players[p].x = (p ? SSX2 : SSX1) << 16;
-	players[p].y = SSY << 16;
-	players[p].a = 32 * p + 16;
-	players[p].landed = FALSE;
-	players[p].invuln = !planet;
-	if (balls) {
-	    bullets[p][0].xb = players[p].x + (1-2*p) * (BALLSTART<<16);
-	    bullets[p][0].yb = players[p].y;
-	    bullets[p][0].dxb = bullets[p][0].dyb = 0;
-	}
-    } else {
-	players[p].x = (p ? LSX2 : LSX1) << 16;
-	players[p].y = LSY << 16;
-	players[p].a = 0;
-	players[p].landed = TRUE;
-	players[p].invuln = FALSE;
-    }
-    players[p].aa = players[p].a >> 1;
-    players[p].dx = players[p].dy = 0;
-    players[p].after = MAXAFTER;
-    players[p].agrow = 0;
-    players[p].firedelay = 0;
-    players[p].death = 0;
-}
-
 static void play_game(void)
 {
     int p;
@@ -267,15 +271,23 @@ static void play_game(void)
     int thrust;
     float rr;
 
+    for (p = 0; p < 2; p++)
+	players[p].score = 0;
+
+    space = planet = balls = 0;	       /* FIXME: menu system */
+    scr_prep();
+    init_game();
+    scr_done();
+
+    scnew = 0;
+
+    /* We come back here using a (gasp) GOTO, if the arena changes. */
+    start:
+
     if (space)
 	bulletmaxy = (SCR_HEIGHT-12) << 16;
     else
 	bulletmaxy = (SCR_HEIGHT-20) << 16;
-
-    for (p = 0; p < 2; p++)
-	init_player(p);
-
-    scnew = 0;
 
     while (1) {
 
@@ -293,6 +305,12 @@ static void play_game(void)
 		    /* Standard catch-all quit-on-escape clause. */
 		    if (event.key.keysym.sym == SDLK_ESCAPE)
 			exit(1);
+		    break;
+		  case SDL_JOYBUTTONDOWN:
+		    if (event.jbutton.button == 8) {
+			do_menu(event.jbutton.which);
+			goto start;
+		    }
 		}
 	    }
 	}
@@ -640,6 +658,298 @@ static void play_game(void)
     }
 }
 
+/* ----------------------------------------------------------------------
+ * Menu system for changing arenas, resetting scores etc.
+ */
+
+struct menu {
+    Image background;		       /* so menu can be undrawn */
+    int x, y, w, h;		       /* dimensions of menu itself */
+    char *entries[10];		       /* 10 is a reasonable maximum */
+    int actions[10];		       /* associated numeric IDs */
+    char *title;
+    int nentries;
+    int fg;			       /* foreground player colour */
+    int bg;			       /* background player colour */
+};
+
+static void menu_text_plot(void *ctx, int x, int y, int on)
+{
+    if (on)
+	plot(x, y, 1);
+}
+
+static struct menu *new_menu(int x, int y, int player, char *title)
+{
+    struct menu *ret = malloc(sizeof(struct menu));
+    ret->x = x;
+    ret->y = y;
+    ret->h = 20;
+    ret->nentries = 0;
+    ret->background = NULL;
+    ret->title = title;
+    ret->w = 50 + data_width(title);
+    if (player == 0) {
+	ret->fg = 140; ret->bg = 40;
+    } else {
+	ret->fg = 141; ret->bg = 41;
+    }
+    return ret;
+}
+
+static void free_menu(struct menu *m)
+{
+    assert(m->background == NULL);
+    free(m);
+}
+
+static void add_to_menu(struct menu *m, char *text, int action)
+{
+    int wid;
+    assert(m->nentries < lenof(m->entries));
+    m->entries[m->nentries] = text;
+    m->actions[m->nentries] = action;
+    m->nentries++;
+    wid = 50 + data_width(text);
+    if (m->w < wid)
+	m->w = wid;
+    m->h += 12;
+}
+
+static void display_menu(struct menu *m, int selected)
+{
+    int i;
+
+    if (!m->background) {
+	m->background = makeimage(m->w, m->h, 0, 0);
+	pickimage(m->background, m->x, m->y);
+    }
+    bar(m->x, m->y, m->x+m->w-1, m->y+m->h-1, m->fg);
+    bar(m->x+2, m->y+2, m->x+m->w-3, m->y+m->h-3, 0);
+    data_text(m->title, m->x + (m->w - data_width(m->title))/2, m->y+3,
+	      menu_text_plot, NULL);
+    for (i = 0; i < m->nentries; i++) {
+	bar(m->x + 3, m->y + 18 + i*12, m->x + m->w - 4, m->y + 28 + i*12,
+	    (i == selected ? m->bg : 0));
+	data_text(m->entries[i],
+		  m->x + (m->w - data_width(m->entries[i]))/2, m->y+19+i*12,
+		  menu_text_plot, NULL);
+    }
+}
+
+static void vanish_menu(struct menu *m)
+{
+    if (m->background) {
+	drawimage(m->background, m->x, m->y, -1);
+	free(m->background);
+	m->background = NULL;
+    }
+}
+
+static int select_menu(struct menu *m, int y, int which_joy)
+{
+    int prevval = 0;
+
+    while (1) {
+	SDL_Event event;
+	int pushed = 0;
+	int redraw = 0;
+
+	scr_prep();
+	display_menu(m, y);
+	scr_done();
+
+	while (SDL_WaitEvent(&event)) {
+	    int action;
+
+	    switch(event.type) {
+	      case SDL_KEYDOWN:
+		/* Standard catch-all quit-on-escape clause. */
+		if (event.key.keysym.sym == SDLK_ESCAPE)
+		    exit(1);
+		break;
+	      case SDL_JOYAXISMOTION:
+		if (event.jaxis.which == which_joy && event.jaxis.axis == 1) {
+		    int val = event.jaxis.value / JOY_THRESHOLD;
+
+		    if (val < 0 && prevval >= 0) {
+			y = (y+m->nentries-1) % m->nentries;
+			redraw = 1;
+		    } else if (val > 0 && prevval <= 0) {
+			y = (y+1) % m->nentries;
+			redraw = 1;
+		    }
+		    prevval = val;
+		}
+		break;
+	      case SDL_JOYBUTTONDOWN:
+		if (event.jbutton.which == which_joy) {
+		    pushed = 1;
+		}
+		break;
+	    }
+	    if (pushed || redraw) break;
+	}
+	if (pushed)
+	    return m->actions[y];
+    }
+}
+
+static void adjust_screen(int which_joy)
+{
+    struct menu *adjust;
+    char adjust_dx[40], adjust_dy[40];
+    int dx, dy, prevval[2];
+
+    adjust = new_menu(SCR_WIDTH/2, SCR_HEIGHT/3, which_joy, "ADJUST SCREEN");
+    strcpy(adjust_dx, "DX = 99999");
+    strcpy(adjust_dy, "DY = 99999");
+    add_to_menu(adjust, adjust_dx, 1);
+    add_to_menu(adjust, adjust_dy, 2);
+
+    dx = get_dx();
+    dy = get_dy();
+    prevval[0] = prevval[1] = 0;
+
+    while (1) {
+	SDL_Event event;
+	int pushed = 0;
+	int redraw = 0;
+	char buf[20];
+
+	sprintf(adjust_dx, "DX = %d", dx);
+	sprintf(adjust_dy, "DY = %d", dy);
+	scr_prep();
+	display_menu(adjust, -1);
+	scr_done();
+
+	while (SDL_WaitEvent(&event)) {
+	    int action;
+
+	    switch(event.type) {
+	      case SDL_KEYDOWN:
+		/* Standard catch-all quit-on-escape clause. */
+		if (event.key.keysym.sym == SDLK_ESCAPE)
+		    exit(1);
+		break;
+	      case SDL_JOYAXISMOTION:
+		if (event.jaxis.which == which_joy &&
+		    (event.jaxis.axis | 1) == 1) {
+		    int val = event.jaxis.value / JOY_THRESHOLD;
+		    int axis = event.jaxis.axis;
+
+		    if (val < 0 && prevval[axis] >= 0) {
+			if (axis == 0) dx--; else dy--;
+			redraw = 1;
+		    } else if (val > 0 && prevval[axis] <= 0) {
+			if (axis == 0) dx++; else dy++;
+			redraw = 1;
+		    }
+		    prevval[axis] = val;
+		}
+		break;
+	      case SDL_JOYBUTTONDOWN:
+		if (event.jbutton.which == which_joy) {
+		    pushed = 1;
+		}
+		break;
+	    }
+	    if (pushed || redraw) break;
+	}
+
+	if (pushed) break;
+	set_dx(dx); set_dy(dy);
+    }
+
+    scr_prep();
+    vanish_menu(adjust);
+    scr_done();
+
+    free_menu(adjust);
+}
+
+static void do_menu(int which_joy)
+{
+    struct menu *options, *arenas;
+    enum { RETURN, ZEROSCORES, ARENA, SCRADJUST, EXIT };
+    int opt = 0;
+
+    options = new_menu(SCR_WIDTH/3, SCR_HEIGHT/4, which_joy, "OPTIONS MENU");
+    add_to_menu(options, "RETURN TO GAME", RETURN);
+    add_to_menu(options, "ZERO SCORES", ZEROSCORES);
+    add_to_menu(options, "SELECT ARENA", ARENA);
+    add_to_menu(options, "ADJUST SCREEN", SCRADJUST);
+    if (!no_quit_option)
+	add_to_menu(options, "EXIT GAME", EXIT);
+
+    arenas = new_menu(SCR_WIDTH/2, SCR_HEIGHT/3, which_joy, "SELECT ARENA");
+    add_to_menu(arenas, "LAND", 0);
+    add_to_menu(arenas, "SPACE", 1);
+    add_to_menu(arenas, "ORBIT", 3);
+    add_to_menu(arenas, "WHIRLY THINGS", 5);
+
+    while (1) {
+	opt = select_menu(options, opt, which_joy);
+	if (opt == RETURN) {
+	    /*
+	     * Just wait a moment until the user isn't pressing any
+	     * vital buttons any more; otherwise the game will
+	     * resume with an unexpected thrust on the part of the
+	     * player operating the menus.
+	     */
+	    while (SDL_JoystickGetButton(joys[which_joy], 1)) {
+		SDL_Event event;
+
+		SDL_WaitEvent(&event);
+
+		switch(event.type) {
+		  case SDL_KEYDOWN:
+		    /* Standard catch-all quit-on-escape clause. */
+		    if (event.key.keysym.sym == SDLK_ESCAPE)
+			exit(1);
+		    break;
+		}
+	    }
+
+	    scr_prep();
+	    vanish_menu(options);
+	    scr_done();
+	    break;
+	}
+	if (opt == EXIT) {
+	    exit(0);
+	}
+	if (opt == ZEROSCORES) {
+	    int p;
+	    for (p = 0; p < 2; p++)
+		players[p].score = 0;
+	    scr_prep();
+	    vanish_menu(options);
+	    init_game();
+	    display_menu(options, opt);
+	    scr_done();
+	}
+	if (opt == ARENA) {
+	    int arena = select_menu(arenas, 0, which_joy);
+	    scr_prep();
+	    vanish_menu(arenas);
+	    space = !!(arena & 1);
+	    planet = !!(arena & 2);
+	    balls = !!(arena & 4);
+	    vanish_menu(options);
+	    init_game();
+	    display_menu(options, opt);
+	    scr_done();
+	}
+	if (opt == SCRADJUST) {
+	    adjust_screen(which_joy);
+	}
+    }
+
+    free_menu(arenas);
+    free_menu(options);
+}
+
 int main(int argc, char **argv)
 {
     int p;
@@ -660,12 +970,6 @@ setbuf(debugfp, NULL);
     joys[0] = SDL_JoystickOpen(0);
     joys[1] = SDL_JoystickOpen(1);
 
-    space = planet = balls = 0;	       /* FIXME: menu system */
-
-    rocket_do_palette(space);
-    rocket_make_background(space, planet);
-    init_game();
-    
     /*
      * Get rid of the initial event queue from opening the
      * joysticks (a bunch of button-up events).
