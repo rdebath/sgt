@@ -3,6 +3,7 @@ Class: semi-bug
 Difficulty: taxing
 Priority: medium
 Present-in: 0.56 2005-01-13
+Content-type: text/x-html-body
 
 <p>
 We get occasional reports of failure to redraw parts of the PuTTY
