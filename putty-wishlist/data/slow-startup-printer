@@ -16,6 +16,15 @@ reachable (e.g. shared from a machine that is currently switched off).
 This may be intermittent rather than reliable. (Win2K Pro SP3)
 
 <p>
+We've not reproduced this so far (I've tried on Win2K pro), but a
+workaround appears to be to remove the offending printers.
+
+<p>
+Alternatively, snapshots 2003-08-22 and later try less hard to find
+printers and this has been reported to work.
+
+<p>
+<em>Gory details:</em>
 PuTTY calls Windows functions to enumerate all suitable printers
 (regardless of whether any attempt is made to <em>use</em> the ANSI
 printing functionality):
