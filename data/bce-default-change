@@ -3,6 +3,7 @@ Priority: low
 Class: wish
 Difficulty: fun
 Content-type: text/x-html-body
+Fixed-in: 2002-10-14
 
 <p>
 Perhaps the default for the `Use background colour to erase screen'
