@@ -32,6 +32,10 @@ def wrap_optimal(list):
 	print lens
     n = len(list)
     z = []
+    if owidth != None:
+	opt_width = owidth
+    else:
+	opt_width = width
     for i in range(n-1, -1, -1):
 	if verbose:
 	    print "wrapping from word", i
@@ -44,13 +48,22 @@ def wrap_optimal(list):
 	    if wid > width:
 		break
 	    if j >= len(z):
-		cost = 0
-		if verbose:
-		    print j, "words: end of line, cost", cost
+		if wid <= opt_width:
+		    # We allow the last line to be short without
+		    # penalty, although we still penalise it for being
+		    # longer than opt_width.
+		    cost = 0
+		    if verbose:
+			print j, "words: end of line, cost", cost
+		else:
+		    cost = (opt_width-wid) ** 2
+		    if verbose:
+			print j, "words: end of line but long, cost", cost
 	    else:
-		cost = (width-wid) ** 2 + z[j].cost
+		thiscost = (opt_width-wid) ** 2
+		cost = thiscost + z[j].cost
 		if verbose:
-		    print j, "words: cost", (width-wid) ** 2, "+", z[j].cost, "=", cost
+		    print j, "words: cost", thiscost, "+", z[j].cost, "=", cost
 	    if bestcost == None or bestcost >= cost:
 		bestcost = cost
 		best = j
@@ -86,6 +99,7 @@ def dofile(f):
 	wrapfn(para)
 
 width = 72
+owidth = None
 verbose = 0
 wrapfn = wrap_optimal
 
@@ -94,13 +108,15 @@ for arg in sys.argv[1:]:
     if arg[0] == "-":
 	if arg[:2] == "-w":
 	    width = string.atoi(arg[2:])
+	elif arg[:2] == "-o":
+	    owidth = string.atoi(arg[2:])
 	elif arg[:2] == "-v":
 	    verbose = 1
 	elif arg[:2] == "-g":
 	    wrapfn = wrap_greedy
 	else:
 	    print "wrap: unknown option " + arg[:2]
-	    print "usage: wrap [-v] [-g] [-wWIDTH] [file [file...]]"
+	    print "usage: wrap [-v] [-g] [-wWIDTH] [-oOPTWITH] [file [file...]]"
 	    sys.exit(0)
     else:
 	donefile = 1
