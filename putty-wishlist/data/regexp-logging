@@ -2,7 +2,7 @@ Summary: Selective logging based on regular expressions
 Class: wish
 Priority: low
 Difficulty: tricky
-Content-type: x-html-body
+Content-type: text/x-html-body
 
 <pre>
 >Regex logging
