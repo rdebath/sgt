@@ -2,12 +2,23 @@
 
 $url = `xcopy -r`;
 
-# Strip leading spaces.
-$url =~ s/^[\s\240]*//;
-# Strip every \n, plus any spaces just after that \n.
-$url =~ s/\n[\s\240]*//gs;
-# Prepend `http://' if there's no leading protocol prefix.
-$url = "http://" . $url unless $url =~ /^[a-zA-Z]+:/;
+if ($ARGV[0] eq "-g") {
+    # Construct a Google search URL.
+    $url =~ s/\n/ /gs;
+    $url =~ s/[\s\240]+/ /g;
+    $url =~ s/[^0-9a-zA-Z]/$& eq " " ? "+" : sprintf "%%%02x", ord $&/eg;
+
+    $url = "http://www.google.com/search?q=" . $url;
+} else {
+
+    # Strip leading spaces.
+    $url =~ s/^[\s\240]*//;
+    # Strip every \n, plus any spaces just after that \n.
+    $url =~ s/\n[\s\240]*//gs;
+    # Prepend `http://' if there's no leading protocol prefix.
+    $url = "http://" . $url unless $url =~ /^[a-zA-Z]+:/;
+    
+}
 
 # Mozilla is a bit weird about launching URLs. If we just run
 # `mozilla $url' it runs the risk of converting an _existing_
@@ -20,5 +31,5 @@ open(STDERR, ">/dev/null");
 system "mozilla", "-remote", "openurl($url,new-window)";
 
 if ($? != 0) {
-  exec "mozilla", $url;
+    exec "mozilla", $url;
 }
