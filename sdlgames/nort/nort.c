@@ -257,15 +257,19 @@ int play_game(void)
 	      case SDL_JOYBUTTONUP:
 		if (event.jbutton.button == 9) {
 		    if (event.jbutton.which == 0) {
-			flags |= 4;
-			scr_prep();
-			centretext(120, 1, "Player 1 ready");
-			scr_done();
+			if (flags & 1) {
+			    flags |= 4;
+			    scr_prep();
+			    centretext(120, 1, "Player 1 ready");
+			    scr_done();
+			}
 		    } else if (event.jbutton.which == 1) {
-			flags |= 8;
-			scr_prep();
-			centretext(130, 2, "Player 2 ready");
-			scr_done();
+			if (flags & 2) {
+			    flags |= 8;
+			    scr_prep();
+			    centretext(130, 2, "Player 2 ready");
+			    scr_done();
+			}
 		    }
 		}
 		break;
@@ -710,9 +714,11 @@ int main_menu(void)
 	{162, "Exit NORT", MM_QUIT},
     };
 
-    int menumin, i, j, flags = 0, prevval = 0, redraw;
+    int menumin, j, flags = 0, prevval = 0, redraw;
     int menulen = (no_quit_option ? lenof(menu)-1 : lenof(menu));
-    int x, y, c1, c2;
+    int x, y;
+    int action;
+    int index[2];
     SDL_Event event;
 
     /*
@@ -732,8 +738,8 @@ int main_menu(void)
     centretext(50, WEAPON_COLOUR, "NORT");
     centretext(66, WEAPON_COLOUR, "A SPL@ Production");
 
-    for (i = menumin; i < menulen; i++)
-	centretext(menu[i].y, WEAPON_COLOUR, menu[i].text);
+    for (j = menumin; j < menulen; j++)
+	centretext(menu[j].y, WEAPON_COLOUR, menu[j].text);
 
     /*
      * Display the scores.
@@ -756,7 +762,7 @@ int main_menu(void)
 
     scr_done();
 
-    i = menumin;
+    index[0] = index[1] = menumin;
     redraw = 1;
 
     /*
@@ -764,29 +770,36 @@ int main_menu(void)
      * immediately.
      */
     event.type = SDL_USEREVENT;
+    action = MM_QUIT;
     SDL_PushEvent(&event);
 
     while (flags != 3 && SDL_WaitEvent(&event)) {
 
 	switch(event.type) {
 	  case SDL_JOYBUTTONDOWN:
-	    if (event.jbutton.button == 1)
-		flags |= 1;
+	    flags |= 1;
 	    break;
 	  case SDL_JOYBUTTONUP:
-	    if (event.jbutton.button == 1)
+	    {
+		int which = event.jbutton.which;
+		if (which != 0 && which != 1) break;   /* just in case! */
+		if (!(flags & 1)) break;
 		flags |= 2;
+		action = menu[index[which]].action;
+	    }
 	    break;
 	  case SDL_JOYAXISMOTION:
 	    if (event.jaxis.axis == 1) {
 		int val = event.jaxis.value / JOY_THRESHOLD;
+		int which = event.jaxis.which;
+		if (which != 0 && which != 1) break;   /* just in case! */
 		if (val < 0 && prevval >= 0) {
-		    if (--i < menumin)
-			i = menulen-1;
+		    if (--index[which] < menumin)
+			index[which] = menulen-1;
 		    redraw = 1;
 		} else if (val > 0 && prevval <= 0) {
-		    if (++i >= menulen)
-			i = menumin;
+		    if (++index[which] >= menulen)
+			index[which] = menumin;
 		    redraw = 1;
 		}
 		prevval = val;
@@ -801,16 +814,17 @@ int main_menu(void)
 	if (redraw) {
 	    scr_prep();
 	    for (j = menumin; j < menulen; j++) {
-		c1 = (j == i ? 1 : 0);
-		c2 = (j == i ? 2 : 0);
-		drawline(159-52, menu[j].y-3, 159-48, menu[j].y-3, c1);
-		drawline(159-52, menu[j].y-3, 159-52, menu[j].y+1, c1);
-		drawline(159-52, menu[j].y+9, 159-48, menu[j].y+9, c2);
-		drawline(159-52, menu[j].y+9, 159-52, menu[j].y+5, c2);
-		drawline(159+52, menu[j].y-3, 159+48, menu[j].y-3, c2);
-		drawline(159+52, menu[j].y-3, 159+52, menu[j].y+1, c2);
-		drawline(159+52, menu[j].y+9, 159+48, menu[j].y+9, c1);
-		drawline(159+52, menu[j].y+9, 159+52, menu[j].y+5, c1);
+		int c = 0;
+		if (j == index[0]) c |= 1;
+		if (j == index[1]) c |= 2;
+		drawline(159-52, menu[j].y-3, 159-48, menu[j].y-3, c);
+		drawline(159-52, menu[j].y-3, 159-52, menu[j].y+1, c);
+		drawline(159-52, menu[j].y+9, 159-48, menu[j].y+9, c);
+		drawline(159-52, menu[j].y+9, 159-52, menu[j].y+5, c);
+		drawline(159+52, menu[j].y-3, 159+48, menu[j].y-3, c);
+		drawline(159+52, menu[j].y-3, 159+52, menu[j].y+1, c);
+		drawline(159+52, menu[j].y+9, 159+48, menu[j].y+9, c);
+		drawline(159+52, menu[j].y+9, 159+52, menu[j].y+5, c);
 	    }
 	    scr_done();
 	    redraw = 0;
@@ -818,7 +832,7 @@ int main_menu(void)
 
     }
 
-    return menu[i].action;
+    return action;
 }
 
 void button_symbol(int x, int y, int button)
