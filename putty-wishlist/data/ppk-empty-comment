@@ -3,7 +3,7 @@ Class: bug
 Difficulty: fun
 Priority: medium
 Absent-in: 0.52
-Present-in: 0.53b 2002-10-07 2003-01-04
+Present-in: 0.53b 2002-10-07 2003-01-04 2003-06-29
 Content-type: text/x-html-body
 
 <p>
@@ -22,3 +22,12 @@ For more details:
 <li><code>7A4B87D07376A54897E467B6ACD98B569F0C23@MBSP04.services.sp.trw.com</code>
 <li><code>001501c34423$ca8984a0$c600a8c0@Anya</code> (with attached PPK)
 </ul>
+
+<p>
+<em>Update (JTN):</em> I've reproduced this with PuTTY and PuTTYgen
+2003-06-29, connecting to "SSH-1.99-OpenSSH_3.4p1 Debian 1:3.4p1-1"
+with SSH-2 and a passphrase'd RSA2 key which was configured on the
+server. No crash. The comment part of the PPK file looks like:
+
+<p><pre>0030                         43 6f 6d 6d 65 6e 74 3a           Comment:
+0040 20 0d 0a                                           ..             </pre>
