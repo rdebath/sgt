@@ -3,7 +3,7 @@ Class: bug
 Difficulty: fun
 Priority: high
 Present-in: 0.56
-Fixed-in: 2005-01-07
+Fixed-in: 2005-01-08
 Content-type: text/x-html-body
 
 <p>
@@ -19,7 +19,7 @@ configuring OpenSSH to use k-i for even basic password authentication
 these days, and not enabling PasswordAuthentication at all by default.
 
 <p>
-As of 2005-01-07, PuTTY will continue to attempt keyboard-interactive
+As of 2005-01-08, PuTTY will continue to attempt keyboard-interactive
 authentication as long as the server continues to offer it, in
 preference to password authentication, unless the server refuses it
 outright. (If this is a problem for you, you can disable attempts to
