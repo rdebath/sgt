@@ -204,7 +204,9 @@ variable timber_boringhdrs =
 ":X-Originating-IP:X-VM-VHeader:X-VM-Last-Modified:X-VM-IMAP-Retrieved:" +
 ":X-VM-POP-Retrieved:X-VM-Bookmark:X-VM-v5-Data:X-VM-Labels:" +
 ":X-VM-Summary-Format:X-Lotus-FromDomain:Content-Disposition:" +
-":X-MIMETrack:";
+":X-MIMETrack:Content-Class:Thread-Topic:Thread-Index:List-Id:" +
+":Content-Transfer-Encoding:X-MS-Has-Attach:X-MS-TNEF-Correlator" +
+":X-Mailman-Version:X-BeenThere:";
 
 %}}}
 %{{{ Non-user-configurable variables
@@ -393,6 +395,10 @@ $1 = "Timber";
     % We'll make / a search function, just because it is in so many
     % readonly text viewing applications.
     definekey("search_forward", "/", $1);
+
+    % ^X c counts the messages in the folder.
+    definekey("timber_count", "^XC", $1);
+    definekey("timber_count", "^Xc", $1);
 }
 
 %}}}
@@ -1474,6 +1480,29 @@ define timber_prevmsg() {
     } while (what_char() != '*' and not bobp());
     if (timber_la("* ") and not timber_la("* [end]"))
         timber_unfold();
+}
+
+%}}}
+%{{{ timber_count(): count messages in a Timber buffer
+
+define timber_count() {
+    variable count = 0;
+    variable current = 0;
+    variable line = what_line();
+
+    push_spot();
+    EXIT_BLOCK { pop_spot(); }
+    bob();
+    while (not eobp()) {
+	go_down_1();
+	if (what_char() == '*') {
+	    !if (timber_la("* [end]"))
+		count++;
+	    if (what_line() == line)
+		current = count;
+	}
+    }
+    message(sprintf("You are on message %d of %d", current, count));
 }
 
 %}}}
