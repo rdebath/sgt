@@ -1,0 +1,17 @@
+Summary: Option to have Alt key set the meta bit
+Class: wish
+Priority: medium
+Content-type: text/x-html-body
+
+<p>
+At present, the Alt key causes keys it's combined with to be sent preceded
+by ESC.  This is interpreted as a "meta" key by GNUish programs like 
+Emacs, but some others (notably NetHack) don't understand this convention,
+and expect "meta" to set the top bit of the character instead.  There should
+probably be an option to enable this behaviour.
+
+<p>
+When I (BJH) last mentioned this to Simon, he asked what should be done
+about keys that transmit multiple characters (<i>e.g.</i> function keys).
+I think the best move is probably to have them entirely unaffected by
+Alt in this mode.
