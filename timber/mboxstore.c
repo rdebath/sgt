@@ -126,14 +126,16 @@ static int write_mbox(int fd, char *data, int length, int beginning)
 		qlen = length;
 	    }
 	}
+	beginning = FALSE;
 
 	/*
 	 * Now advance to the next newline.
 	 */
 	p = memchr(data, '\n', length);
-	if (p)
+	if (p) {
+	    p++;		       /* eat the newline as well */
 	    length -= (p-data), qlen += (p-data), data = p;
-	else
+	} else
 	    qlen += length, length = 0;
     }
 
@@ -150,7 +152,7 @@ static int write_mbox(int fd, char *data, int length, int beginning)
 
 static char *mbox_store_literal_inner(char *boxname, char *message, int msglen)
 {
-    int boxnum;
+    int boxnum, need_set;
     int ret, fd, beginning;
     struct stat st;
     int maxsize, size;
@@ -158,35 +160,40 @@ static char *mbox_store_literal_inner(char *boxname, char *message, int msglen)
 
     boxnum = cfg_get_int("current-mbox");
     maxsize = cfg_get_int("mbox-maxsize");
-    sprintf(boxname, "%s/mbox%d", dirpath, boxnum);
 
-    /*
-     * See if our current mbox has space in it.
-     */
-    ret = stat(boxname, &st);
-    if (ret < 0) {
-	if (errno == ENOENT)
-	    size = 0;		       /* current mbox is empty */
-	else {
-	    error(err_perror, boxname, "stat");
-	    return NULL;	       /* failed to store message */
-	}
-    }
-    size = st.st_size;
-    /*
-     * Special case: a single message that's too big always goes in
-     * its own mbox.
-     */
-    if (size > 0 && size + msglen > maxsize) {
+    boxnum--;			       /* to counter first `boxnum++' below */
+    need_set = FALSE;
+    do {
 	boxnum++;
 	sprintf(boxname, "%s/mbox%d", dirpath, boxnum);
-    }
+	if (need_set)
+	    cfg_set_int("current-mbox", boxnum);
+	need_set = TRUE;
+
+	/*
+	 * See if our current mbox has space in it.
+	 */
+	ret = stat(boxname, &st);
+	if (ret < 0) {
+	    if (errno == ENOENT)
+		size = 0;	       /* current mbox is empty */
+	    else {
+		error(err_perror, boxname, "stat");
+		return NULL;	       /* failed to store message */
+	    }
+	} else
+	    size = st.st_size;
+	/*
+	 * Special case: a single message that's too big always goes in
+	 * its own mbox.
+	 */
+    } while (size > 0 && size + msglen > maxsize);
 
     /*
      * So now we know which mbox it's going into. Open the mbox and
      * put it there.
      */
-    fd = open(boxname, O_CREAT, 0700);
+    fd = open(boxname, O_RDWR | O_CREAT, 0600);
     if (fd < 0) {
 	error(err_perror, boxname, "open");
 	return NULL;		       /* failed to store message */

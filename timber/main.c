@@ -25,7 +25,9 @@ void run_command(int argc, char **argv)
     }
 
     if (!strcmp(argv[0], "import-mbox")) {
-	
+	int i;
+	for (i = 1; i < argc; i++)
+	    import_mbox_folder(argv[i]);
     }
 }
 
