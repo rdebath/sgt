@@ -60,6 +60,8 @@ void db_init(void);
 void db_close(void);
 int cfg_get_int(char *key);
 char *cfg_get_str(char *key);
+void cfg_set_str(char *key, char *str);
+void cfg_set_int(char *key, int val);
 
 /*
  * main.c
@@ -86,5 +88,10 @@ const struct storage mbox_store;
  */
 int cfg_default_int(char *key);
 char *cfg_default_str(char *key);
+
+/*
+ * mboxread.c
+ */
+void import_mbox_folder(char *folder);
 
 #endif

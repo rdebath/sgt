@@ -38,8 +38,8 @@ void db_init(void)
     sqlite_exec(db,
 		"CREATE TABLE config ("
 		"  key TEXT UNIQUE ON CONFLICT REPLACE,"
-		"  value TEXT);"
-		, sqlite_null_callback, NULL, &err);
+		"  value TEXT);",
+		sqlite_null_callback, NULL, &err);
     if (err) fatal(err_dberror, err);
 
     sqlite_close(db);
@@ -91,6 +91,9 @@ void db_open(void)
     struct stat sb;
     char *err;
 
+    if (db)
+	return;			       /* already open! */
+
     dbpath = smalloc(5 + strlen(dirpath));
     sprintf(dbpath, "%s/db", dirpath);
 
@@ -114,8 +117,8 @@ static char *cfg_get_internal(char *key)
     sqlite_get_table_printf(db, "SELECT value FROM config WHERE key = '%q'",
 			    &table, &rows, &cols, &err, key);
     if (err) fatal(err_dberror, err);
-    assert(cols == 1);
     if (rows > 0) {
+	assert(cols == 1);
 	ret = smalloc(1+strlen(table[1]));
 	strcpy(ret, table[1]);
     } else
@@ -144,4 +147,24 @@ char *cfg_get_str(char *key)
 	return val;
     } else
 	return val;
+}
+
+void cfg_set_str(char *key, char *str)
+{
+    char *err;
+
+    db_open();
+
+    sqlite_exec_printf(db, "INSERT INTO config VALUES ( '%q', '%q' );",
+		       sqlite_null_callback, NULL, &err,
+		       key, str);
+    if (err) fatal(err_dberror, err);
+}
+
+void cfg_set_int(char *key, int val)
+{
+    char str[64];
+
+    sprintf(str, "%d", val);
+    cfg_set_str(key, str);
 }

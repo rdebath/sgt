@@ -1,17 +1,16 @@
 Loose ends from coding
 ----------------------
 
- - Write the actual mbox import code.
-    * read an mbox, message by message.
+ - Now we can read an mbox and import into our mbox-like mail store,
+   the next step is to build the index as we go along.
+    * put message indexing into the db schema.
     * parse the message far enough to get hold of anything we need
       to store in the schema. Message-ID, subject, date, parent at
       least. And, eek, starting points and types of attachments.
        + the schema should store UTF-8, I fear. Which means we have
 	 to do the RFC 2047 parsing of headers here.
-    * feed each message to store_literal(), and stick the string
-      that comes back in the database too.
-
- - Put message indexing into the db schema.
+    * having fed each message to store_literal(), the string that
+      comes back needs to go in the database too.
 
 Functions required of the back end
 ----------------------------------
