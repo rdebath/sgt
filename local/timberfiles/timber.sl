@@ -1257,11 +1257,11 @@ define timber_viewattach() {
             % the MIME types file.
             if (ext == NULL) {
                 ext = "";              % default
-                fp = fopen(timber_mimetypes, "r");
+                fp = fopen(expand_filename(timber_mimetypes), "r");
                 if (fp != NULL) {
                     while (-1 != fgets(&buf, fp)) {
                         buf = strcompress(buf, " \t\n");
-                        array = strchop(buf, " \t\n");
+                        array = strchop(buf, ' ', 0);
                         if (length(array) > 1 and array[0] == type)
                             ext = "." + array[1];
                     }
