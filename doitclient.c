@@ -348,7 +348,7 @@ int main(int argc, char **argv)
     FILE *fp;
     char fname[FILENAME_MAX];
     char pbuf[256];
-    char *msg, *dir;
+    char *msg, *dir, *path;
 
     unsigned long hostaddr;
     char *secret = NULL;
@@ -633,9 +633,12 @@ int main(int argc, char **argv)
             fprintf(stderr, "doit: \"wf\" requires an argument\n");
             exit(EXIT_FAILURE);
         }
-        arg = path_translate(arg);
+        dir = getenv("PWD");
+        path = malloc(2+strlen(dir)+strlen(arg));
+        sprintf(path, "%s/%s", dir, arg);
+        path = path_translate(path);
         do_doit_send_str(sock, ctx, "ShellExecute\n");
-        do_doit_send_str(sock, ctx, arg);
+        do_doit_send_str(sock, ctx, path);
         do_doit_send_str(sock, ctx, "\n");
         break;
       case WIN:
