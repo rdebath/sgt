@@ -29,3 +29,9 @@ in my terminal session:
 <p>Appears to be occur regardless of whether there's an X server to connect to.
 When I do have an X server running, it doesn't appear to see any traffic
 when attempting X forwarding through a proxy.
+
+<p>PuTTY behaves as though the X connection is being opened then slammed shut:
+<p><pre>2002-10-17 18:07:24     Received X11 connect request
+2002-10-17 18:07:24     opening X11 forward connection succeeded
+2002-10-17 18:07:24     Opened X11 forward channel
+2002-10-17 18:07:24     Forwarded X11 connection terminated</pre>
