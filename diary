@@ -1,0 +1,656 @@
+#!/usr/bin/env python
+
+import sys
+import os
+import tempfile
+import string
+import time
+import ljproto
+
+# Utility routines.
+def isint(s):
+    try:
+	n = int(s)
+	return 1
+    except ValueError:
+	return 0
+
+# Read input.
+
+TSIMPLE = 0
+TOPEN = 1
+TCLOSE = 2
+WORD = 3
+WHITE = 4
+NL = 5
+PARA = 6
+EOF = 7
+
+# Tokenise. Potential tokens are
+#
+#  - A simple tag, such as {Q}. Return is (TCLOSED,"Q").
+#  - An opening tag, such as {q. Return is (TOPEN,"q").
+#  - A closing tag (}). Return is (TCLOSE,).
+#  - A word. Return is (WORD,"word").
+#  - Some whitespace. Return is (WHITE," ").
+#  - A lone newline. Return is (NL,).
+#  - A paragraph separator. Return is (PARA,).
+#  - EOF. Return is (EOF,).
+
+class tokeniser:
+    def __init__(self, file):
+	self.file = file
+	self.currchar = ""
+	self.pushback = ""
+	self.token = None
+
+    def char(self):
+	if self.currchar == "":
+	    if self.pushback != "":
+		self.currchar = self.pushback
+		self.pushback = ""
+	    else:
+		self.currchar = self.file.read(1)
+		if self.currchar == "{":
+		    c = self.file.read(1)
+		    if c != "{":
+			self.pushback = c
+			self.currchar = "{{"
+		elif self.currchar == "}":
+		    c = self.file.read(1)
+		    if c != "}":
+			self.pushback = c
+			self.currchar = "}}"
+	return self.currchar
+
+    def nextchar(self):
+	self.currchar = ""
+	return self.char()
+
+    def readtoken(self):
+	c = self.char()
+	if c == "":
+	    return (EOF,)
+	if c == "\n":
+	    if self.nextchar() == "\n":
+		self.nextchar()
+		return (PARA,)
+	    return (NL,)
+	if c == "}}":
+	    self.nextchar()
+	    return (TCLOSE,)
+	if c == "{{":
+	    ret = ""
+	    while 1:
+		c = self.nextchar()
+		if len(c) == 1 and not (c in string.whitespace):
+		    ret = ret + c
+		else:
+		    break
+	    if c == "}}":
+		self.nextchar()
+		return (TSIMPLE, ret)
+	    else:
+		if (len(c) == 1 and c in string.whitespace):
+		    self.nextchar()
+		return (TOPEN, ret)
+	if c in string.whitespace:
+	    ret = c
+	    while 1:
+		c = self.nextchar()
+		if len(c) != 1 or not (c in string.whitespace):
+		    break
+		ret = ret + c
+	    return (WHITE, ret)
+	# Anything remaining is WORD.
+	ret = c
+	while 1:
+	    c = self.nextchar()
+	    if len(c) == 1 and not (c in string.whitespace):
+		ret = ret + c
+	    else:
+		break
+	    if c == "-":
+		# A hyphen breaks, but only _after_ adding it to the word.
+		self.nextchar() # eat the hyphen
+		break
+	return (WORD, ret)
+
+    def curr(self):
+	if self.token == None:
+	    self.token = self.readtoken()
+	return self.token
+    
+    def next(self):
+	self.token = None
+	return self.curr()
+
+    def expect(self, list):
+	t = self.curr()
+	if not (t[0] in list):
+	    sys.stderr.write("unexpected token type\n")
+	    return 0
+	else:
+	    return 1
+
+# Paragraph states are:
+#  - PNORMAL is a normal wrapped paragraph.
+#  - PPRE is a preformatted paragraph (<pre> in HTML).
+#  - PBULLET is a bulletted paragraph.
+#  - PMBREAK is a mono-break paragraph.
+#  - PTITLE is a title paragraph.
+PNORMAL = 1
+PPRE = 2
+PBULLET = 3
+PMBREAK = 4
+PTITLE = 5
+# Mono attribute definitions.
+mono_colours = "AAAAAAAAKRGYBMCW" # 0-7 normal, 8-15 coloured
+ATTR_BOLD = 1
+ATTR_UNDER = 2
+ATTR_FG = 0xF0
+ATTR_FGSHIFT = 4
+ATTR_FOOTNOTE = 0x90
+ATTR_QUOTED = 0xB0
+# Mono (text,attr,break) combinations for quote prefixes.
+monoquotes = [("", 0, 0), ("  ", ATTR_QUOTED, 0), ("> ", ATTR_QUOTED, 0)]
+class output:
+    def __init__(self):
+	self.mono = []
+	self.html = ""
+	self.subj = ""
+	self.quotestate = 0
+        self.monoquote = monoquotes[0]
+	self.in_ul = 0
+        self.timestamp = now
+        self.mono_new_edit()
+        self.mono_bullet = 0
+	self.firstpara = 1
+	pass
+
+    def mono_blankline(self):
+        if len(self.mono) > 0 and self.mono[-1] != "":
+            self.mono.append("")
+
+    def mono_new_edit(self):
+        lt = time.localtime(self.timestamp)
+        self.timestamp = self.timestamp + 1
+        self.mono_blankline()
+        msgline = "Message: %08X" % self.timestamp
+        msgline = msgline + " " * 23
+        msgline = msgline + time.strftime("(%a %b %e %H:%M:%S %Y)", lt)
+        self.mono.append(msgline)
+        self.mono.append("\031") # ^Y means paste in nameline
+        self.mono.append("")
+
+    def mono_add_word(self, text, attrs, isbreak):
+        self.mono_words.append((text, attrs, isbreak))
+
+    def mono_append(self, attr, word):
+        text = word[0]
+        sw = len(text)
+        if (word[1] & ATTR_FG) != (attr & ATTR_FG):
+            text = "\007C" + \
+            mono_colours[(word[1] & ATTR_FG) >> ATTR_FGSHIFT] + text
+        if (word[1] & ATTR_UNDER) != (attr & ATTR_UNDER):
+            text = ["\007u","\007U"][(word[1] & ATTR_UNDER) != 0] + text
+        if (word[1] & ATTR_BOLD) != (attr & ATTR_BOLD):
+            text = ["\007b","\007B"][(word[1] & ATTR_BOLD) != 0] + text
+        return word[1], len(text), sw, text
+
+    def mono_wrap_optimal(self, list, i1, i2, width=79, owidth=72):
+        class holder:
+	    "container class"
+	    pass
+        n = len(list)
+        z = []
+        if owidth != None:
+	    opt_width = owidth
+        else:
+	    opt_width = width
+        for i in range(n-1, -1, -1):
+            if i == 0:
+                attr, realwid, scrwid, text = self.mono_append(0, i1)
+            else:
+                attr, realwid, scrwid, text = self.mono_append(0, i2)
+	    best = None
+	    bestcost = None
+	    z = [holder()] + z
+	    for j in range(1, n-i+1):
+                attr, rw, sw, text = self.mono_append(attr, list[i+j-1])
+                realwid = realwid + rw
+                scrwid = scrwid + sw
+                if i+j < n and list[i+j][2] == 0:
+                    continue # can't wrap here; don't bother trying
+	        if realwid > width:
+		    break
+	        if j >= len(z):
+		    if scrwid <= opt_width:
+		        # We allow the last line to be short without
+		        # penalty, although we still penalise it for being
+		        # longer than opt_width.
+		        cost = 0
+		    else:
+		        cost = (opt_width-scrwid) ** 2
+	        else:
+		    thiscost = (opt_width-scrwid) ** 2
+		    cost = thiscost + z[j].cost
+	        if bestcost == None or bestcost >= cost:
+		    bestcost = cost
+		    best = j
+	    if best == None:
+	        z[0].cost = 0
+	        z[0].n = n - i
+	    else:
+	        z[0].cost = bestcost
+	        z[0].n = best
+        i = 0
+        ret = []
+        while i < len(list):
+	    n = z[i].n
+            if i == 0:
+                attr, rw, sw, text = self.mono_append(0, i1)
+            else:
+                attr, rw, sw, text = self.mono_append(0, i2)
+            for word in list[i:i+n]:
+                attr, rw, sw, extratext = self.mono_append(attr, word)
+                text = text + extratext
+            ret.append(text)
+	    i = i + n
+            if i < len(list) and list[i][2] == 1:
+                i = i + 1
+        return ret
+
+    def mono_show_para(self):
+        quot = self.monoquote
+        if self.mono_bullet == 1:
+            i1 = (quot[0] + " - ", quot[1], quot[2])
+            i2 = (quot[0] + "   ", quot[1], quot[2])
+        elif self.mono_bullet == 2:
+            i1 = i2 = (quot[0] + "   ", quot[1], quot[2])
+        else:
+            i1 = i2 = quot
+        list = self.mono_wrap_optimal(self.mono_words, i1, i2)
+        self.mono.extend(list)
+
+    def htmlsafe(self, text):
+	text = string.replace(text, "&", "&amp;")
+	text = string.replace(text, "<", "&lt;")
+	text = string.replace(text, ">", "&gt;")
+	text = string.replace(text, "\"", "&quot;")
+	return text
+
+    def quote_state(self, n):
+	if self.quotestate != n:
+	    if self.quotestate != 0:
+		self.html = self.html + "</blockquote>"
+	    if n == 1:
+		self.html = self.html + "<blockquote style=\"padding-left: 1.2em; margin-left: 1em\">"
+	    elif n == 2:
+		self.html = self.html + "<blockquote style=\"border-left: 0.2em solid; padding-left: 1em; margin-left: 1em\">"
+	    self.quotestate = n
+            self.monoquote = monoquotes[n]
+
+    def ljcut(self, text):
+	if text == None:
+	    self.html = self.html + "</lj-cut>"
+	elif text == []:
+	    self.html = self.html + "<lj-cut>"
+	else:
+	    strtext = ""
+	    for i in text:
+		if i[0] == WORD or i[0] == WHITE:
+		    strtext = strtext + i[1]
+	    self.html = self.html + "<lj-cut text=\"" + self.htmlsafe(strtext) + "\">"
+
+    def finish(self):
+	self.mono_blankline()
+
+    def begin_para(self, typ):
+	self.html_ok = 1
+	self.mono_ok = 1
+	self.html_title = 0
+        self.mono_attr = self.monoquote[1]
+        self.mono_bullet = 0
+
+	if typ == PBULLET:
+	    if not self.in_ul: self.html = self.html + "<ul>"
+	    self.html = self.html + "<li>"
+	    self.in_ul = 1
+            self.mono_bullet = 1
+	else:
+	    if self.in_ul: self.html = self.html + "</ul>"
+	    self.in_ul = 0
+
+	if typ == PPRE:
+	    self.html = self.html + "<pre><code>"
+	if typ == PMBREAK:
+	    self.html_ok = 0
+            self.mono_new_edit()
+	if typ == PTITLE:
+	    self.html_ok = 0
+	    self.html_title = 1
+            self.mono_attr = self.mono_attr | ATTR_UNDER
+	if typ == PNORMAL and not self.firstpara:
+	    self.html = self.html + "<p>"
+	self.firstpara = 0
+
+        self.mono_words = []
+
+    def end_para(self, typ):
+        bullet = 0
+	if typ == PPRE:
+	    self.html = self.html + "</code></pre>"
+	if typ == PNORMAL:
+	    self.html = self.html + "</p>"
+	if typ == PBULLET:
+	    self.html = self.html + "</li>"
+        self.mono_show_para()
+        self.mono_blankline()
+
+    def footnote(self, text):
+	if self.html_ok:
+	    self.html = self.html + "<span style=\"color: red\">["+text+"]</span>"
+        if self.mono_ok:
+            self.mono_add_word("["+text+"]", ATTR_FOOTNOTE, 0)
+
+    def line_break(self):
+	if self.html_ok:
+	    self.html = self.html + "<br>"
+        if self.mono_ok:
+            self.mono_show_para()
+            self.mono_words = []
+
+    def quote(self, opening):
+	self.html = self.html + "&quot;"
+        self.mono_add_word(["'","`"][opening != 0], self.mono_attr, 0)
+        # '
+
+    def emph(self, on):
+	if on:
+	    self.html = self.html + "<em>"
+	else:
+	    self.html = self.html + "</em>"
+        self.mono_add_word("_", self.mono_attr, 0)
+
+    def bold(self, on):
+	if on:
+	    self.html = self.html + "<b>"
+            self.mono_attr = self.mono_attr | ATTR_BOLD
+	else:
+	    self.html = self.html + "</b>"
+            self.mono_attr = self.mono_attr & ~ATTR_BOLD
+
+    def url(self, text):
+	self.html = self.html + "<a href=\"" + text + "\">" + self.htmlsafe(text) + "</a>"
+        self.mono_show_para()
+        if self.mono_bullet == 1:
+            self.mono_bullet = 2
+        self.mono_blankline()
+        monotext = "\007B\007U\007CB" + text
+        spaces = (79 - len(text)) / 2
+        if spaces > 79 - len(monotext):
+            spaces = 79 - len(monotext)
+        self.mono.append(" " * spaces + monotext)
+        self.mono_blankline()
+        self.mono_words = []
+
+    def posturlmode(self, on):
+        self.mono_ok = (on == 0)
+	pass
+
+    def end_title(self):
+        self.mono_attr = self.mono_attr & ~ATTR_UNDER
+	pass
+
+    def word(self, text):
+	if self.html_ok:
+	    self.html = self.html + self.htmlsafe(text)
+	elif self.html_title:
+	    self.subj = self.subj + text
+        if self.mono_ok:
+            self.mono_add_word(text, self.mono_attr, 0)
+
+    def whitespace(self, text):
+	if self.html_ok:
+	    self.html = self.html + self.htmlsafe(text)
+	elif self.html_title:
+	    self.subj = self.subj + text
+        if self.mono_ok:
+            self.mono_add_word(text, self.mono_attr, 1)
+
+# Now actually read the markup.
+
+def rdinput(file):
+    t = tokeniser(file)
+    o = output()
+
+    # Tokens which immediately end a paragraph.
+    endpara = [
+    (TSIMPLE,"Q"), (TSIMPLE,"q"), (TSIMPLE,"/q"), (TSIMPLE,"/Q"),
+    (TSIMPLE,"pre"), (TSIMPLE,"b"),
+    (TOPEN, "ljcut"), (TOPEN, "mbreak"), (TOPEN, "t"),
+    (PARA,), (EOF,)]
+
+    while 1:
+	# We begin in start-of-paragraph state, where paragraph-
+	# level directives such as {Q} take effect.
+	para_type = PNORMAL
+	stack = [] # open tags in the paragraph
+
+	while 1:
+	    tok = t.curr()
+	    if tok == (EOF,):
+		o.finish()
+		return o
+	    elif tok == (TSIMPLE, "Q"):
+		t.next()
+		o.quote_state(2)
+	    elif tok == (TSIMPLE, "q"):
+		t.next()
+		o.quote_state(1)
+	    elif tok == (TSIMPLE, "/Q") or tok == (TSIMPLE, "/q"):
+		t.next()
+		o.quote_state(0)
+	    elif tok == (TSIMPLE, "pre"):
+		t.next()
+		para_type = PPRE
+	    elif tok == (TSIMPLE, "b"):
+		tok2 = t.next()
+		para_type = PBULLET
+		# Special case: eat whitespace immediately following a bullet.
+		if tok2[0] == WHITE:
+		    t.next()
+	    elif tok == (TOPEN, "ljcut"):
+		text = []
+		tok = t.next()
+		while tok != (TCLOSE,):
+		    if t.expect((WORD, WHITE, NL)):
+			text.append(tok)
+		    tok = t.next()
+		t.next() # swallow the close
+		o.ljcut(text)
+	    elif tok == (TSIMPLE, "/ljcut"):
+		t.next() # swallow the close
+		o.ljcut(None)
+	    elif tok == (TOPEN, "mbreak"):
+		t.next()
+		stack = ["mbreak"]
+		para_type = PMBREAK
+		break
+	    elif tok == (TOPEN, "t"):
+		t.next()
+		stack = ["t"]
+		para_type = PTITLE
+		break
+	    elif tok == (NL,) or tok == (PARA,) or tok == (WHITE,):
+		t.next()
+		pass # ignore these between paragraphs
+	    else:
+		# Oh, all right; drop into mid-para mode.
+		break
+
+	# Now we're in a paragraph.
+	o.begin_para(para_type)
+	while 1:
+	    tok = t.curr()
+	    if tok in endpara:
+		o.end_para(para_type)
+		if tok[0] == PARA or tok[0] == EOF:
+		    t.next()
+		break
+	    if tok[0] == TSIMPLE:
+		t.next()
+		if isint(tok[1]):
+		    o.footnote(tok[1])
+		elif tok[1] == "br":
+		    tok2 = t.curr()
+		    # Skip line break just before end of paragraph.
+		    if not (tok2 in endpara):
+			o.line_break()
+		    # Eat a real line break immediately following a {br}.
+		    if tok2[0] == NL:
+			t.next()
+		else:
+		    sys.stderr.write("unknown tag `" + tok[1] + "'\n")
+	    elif tok[0] == TOPEN:
+		if tok[1] == "url":
+		    tok = t.next()
+		    url = ""
+		    mode = 1
+		    while tok != (EOF,) and tok != (TCLOSE,):
+			if mode == 1 and tok[0] == WORD:
+			    url = url + tok[1]
+			    tok = t.next()
+			elif mode == 1:
+			    o.url(url)
+			    if tok[0] == WHITE or tok[0] == NL:
+				t.next()
+			    o.posturlmode(1)
+			    # Subsequent stuff inside this element
+			    # will be treated normally.
+			    stack = stack + ["url"]
+			    break
+		else:
+		    stack = stack + [tok[1]]
+		    t.next()
+		    if tok[1] == "q":
+			o.quote(1)
+		    elif tok[1] == "e":
+			o.emph(1)
+		    elif tok[1] == "b":
+			o.bold(1)
+		    else:
+			sys.stderr.write("unknown tag `" + tok[1] + "'\n")
+	    elif tok[0] == TCLOSE:
+		t.next()
+		if len(stack) == 0:
+		    sys.stderr.write("unexpected `}'\n")
+		else:
+		    s = stack[-1]
+		    stack = stack[:-1]
+		    if s == "q":
+			o.quote(0)
+		    elif s == "e":
+			o.emph(0)
+		    elif s == "b":
+			o.bold(0)
+		    elif s == "url":
+			o.posturlmode(0)
+		    elif s == "t":
+			o.end_title()
+		    elif s == "mbreak":
+			o.end_para(para_type)
+			break
+	    elif tok[0] == WORD:
+                tok2 = t.next()
+		o.word(tok[1])
+                if tok2[0] == WORD:
+                    o.whitespace("") # discretionary break
+	    elif para_type == PPRE and tok[0] == NL:
+		t.next()
+		o.line_break()
+	    elif para_type == PPRE and tok[0] == WHITE:
+		t.next()
+		o.whitespace(tok[1])
+	    elif tok[0] == NL or tok[0] == WHITE:
+		t.next()
+		o.whitespace(" ")
+
+# Main program.
+#  - Get a filename on stdin; invent a temp name if none given.
+#  - Run an editor over the file if it's new or empty.
+#  - Prompt for action: preview Mono, preview HTML, or post.
+
+need_edit = 1
+if len(sys.argv) > 1:
+    fname = sys.argv[1]
+    try:
+	s = os.stat(fname)
+	if s[6] > 0:
+	    need_edit = 0
+    except OSError:
+	pass
+else:
+    fname = tempfile.mktemp()
+    need_edit = 1
+
+if need_edit:
+    os.system(os.environ["VISUAL"] + " " + fname)
+
+while 1:
+    sys.stdout.write("Edit again, preview Mono, preview Html, Post? [EMHP] ")
+    try:
+	s = sys.stdin.readline()
+    except KeyboardInterrupt:
+	s = ""
+    if s == "":
+	print
+	print "Quitting."
+	break
+    s = string.lower(s)
+    if s == "e\n":
+	os.system(os.environ["VISUAL"] + " " + fname)
+	continue
+
+    now = time.time()
+    nowlocal = time.localtime()
+
+    f = open(fname, "r")
+    out = rdinput(f)
+    f.close()
+
+    if s == "m\n":
+	f = os.popen("mtribs | less -r", "w")
+	for i in out.mono:
+	    f.write(i + "\n")
+	f.close()
+    elif s == "h\n":
+	f = os.popen("fold -w79 | less -r", "w")
+	f.write("Subject: " + out.subj + "\n\n")
+	f.write(out.html)
+	f.close()
+    elif s == "p\n":
+	f = open(os.environ["HOME"] + "/src/lj/diary.data", "w")
+	for i in out.mono:
+	    f.write(i + "\n")
+	f.write("Message: 7fffffff\nFrom: (dummy edit)\nPlease ignore this.\n")
+	f.close()
+	print "Mono text written to diary.data file for pasting."
+	print "Don't forget to have your nameline in the ^Y paste buffer!"
+	dict = {"mode":"postevent", "lineendings":"unix"}
+	dict["event"] = out.html
+	if out.subj != "":
+	    dict["subject"] = out.subj
+	dict["year"] = time.strftime("%Y", nowlocal)
+	dict["mon"] = time.strftime("%m", nowlocal)
+	dict["day"] = time.strftime("%d", nowlocal)
+	dict["hour"] = time.strftime("%H", nowlocal)
+	dict["min"] = time.strftime("%M", nowlocal)
+	#dict["security"] = "private"
+	ret = ljproto.ljcall(dict)
+	if not ljproto.ljok(ret):
+	    print "Unable to post to LJ: " + ljproto.ljerror(ret)
+	else:
+	    print "Posted to LJ; itemid =", ret["itemid"]
+	break
