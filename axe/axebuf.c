@@ -75,9 +75,7 @@ void bufblkpropmake(void *state, bt_element_t av, nodecomponent *dest)
 void bufblkpropmerge(void *state, nodecomponent *s1, nodecomponent *s2,
 		     nodecomponent *dest)
 {
-    dest[0].i = s2[0].i;
-    if (s1)
-	dest[0].i += s1[0].i;
+    dest[0].i = s2[0].i + (s1 ? s1[0].i : 0);
 }
 
 static buffer *buf_new_from_bt(btree *bt)
@@ -304,6 +302,47 @@ static void buf_insert_bt(buffer *buf, btree *bt, int pos)
     buf->bt = buf_bt_join(buf->bt, right);
 }
 
+static int bufblklensearch(void *tstate, void *sstate, int ntrees,
+			   nodecomponent **props, int *counts,
+			   bt_element_t *elts, int *is_elt)
+{
+    int *output = (int *)sstate;
+    int i, size = 0;
+
+    for (i = 0; i < ntrees; i++) {
+	struct bufblk *blk;
+
+	if (props[i])
+	    size += props[i][0].i;
+
+	if (i < ntrees-1) {
+	    blk = (struct bufblk *)elts[i];
+
+	    size += blk->len;
+	}
+    }
+
+    *output = size;
+
+    /* Actual return value doesn't matter */
+    *is_elt = TRUE;
+    return 1;
+}
+
+static int buf_bt_length(btree *bt)
+{
+    int length;
+
+    bt_propfind(bt, bufblklensearch, &length, NULL);
+
+    return length;
+}
+
+extern int buf_length(buffer *buf)
+{
+    return buf_bt_length(buf->bt);
+}
+
 extern buffer *buf_new_empty(void)
 {
     buffer *buf = (buffer *)malloc(sizeof(buffer));
@@ -372,7 +411,7 @@ extern void buf_insert_data(buffer *buf, void *vdata, int len, int pos)
 {
     btree *bt = buf_bt_new();
     int nblocks, blklen1, extra;
-    int i;
+    int i, origlen = len;
     unsigned char *data = (unsigned char *)vdata;
 
     nblocks = len / ((BLKMIN + BLKMAX)/2);
@@ -398,9 +437,11 @@ extern void buf_insert_data(buffer *buf, void *vdata, int len, int pos)
 	len -= blklen;
 
 	bt_addpos(bt, blk, i);
+	assert(origlen == buf_bt_length(bt) + len);
     }
 
     assert(len == 0);
+    assert(origlen == buf_bt_length(bt));
 
     buf_insert_bt(buf, bt, pos);
 }
@@ -448,39 +489,4 @@ extern void buf_paste(buffer *buf, buffer *cutbuffer, int pos)
 {
     btree *bt = bt_clone(cutbuffer->bt);
     buf_insert_bt(buf, bt, pos);
-}
-
-static int bufblklensearch(void *tstate, void *sstate, int ntrees,
-			   nodecomponent **props, int *counts,
-			   bt_element_t *elts, int *is_elt)
-{
-    int *output = (int *)sstate;
-    int i, size = 0;
-
-    for (i = 0; i < ntrees; i++) {
-	struct bufblk *blk;
-
-	size += counts[i];
-
-	if (i < ntrees-1) {
-	    blk = (struct bufblk *)elts[i];
-
-	    size += blk->len;
-	}
-    }
-
-    *output = size;
-
-    /* Actual return value doesn't matter */
-    *is_elt = TRUE;
-    return 1;
-}
-
-extern int buf_length(buffer *buf)
-{
-    int length;
-
-    bt_propfind(buf->bt, bufblklensearch, &length, NULL);
-
-    return length;
 }
