@@ -11,7 +11,7 @@ static char *helptext[] = {
 };
 
 static char *usagetext[] = {
-    "usage: caltrap -a <date> [<time>]",
+    "usage: caltrap -a [<options>] <date> [<time>]",
     "                 [<date> [<time>]]   add entry (enter text on stdin)",
     "       caltrap -l <date> [<date>]    list entries (for a date or range)",
     "       caltrap -C <time> <cmd>       list entries in the next <time>",
@@ -19,8 +19,11 @@ static char *usagetext[] = {
     "       caltrap --init                set up an empty database",
     "       caltrap --dump                dump database contents as text",
     "       caltrap --load [<file>]       reload a database dump",
-    "options:",
+    "Global options:",
     "       -D <dbpath>                   use a db other than ~/.caltrapdb",
+    "Options to -a:",
+    "       -t (HOL1|HOL2|HOL3|EVENT)     set type of calendar entry",
+    "       -R <period>[/<length>]        make this a repeating entry",
     NULL
 };
 

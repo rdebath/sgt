@@ -1,7 +1,14 @@
 Caltrap wish list
 -----------------
 
- - Ability to enter repeated events other than by db frobbing.
+ - Ability to edit and remove entries given their id.
+    + for starters we need a modified listing mode which _shows_ the
+      ids, then! Perhaps `-l -v', or `-L'.
+       * may also need to explicitly show behind-the-scenes entries
+	 such as textless things (weekends spring to mind).
+    + this ability is a necessary prerequisite for TODO tracking,
+      because otherwise there's no way to mark a TODO as done once
+      you've done it.
 
  - Concoct a script to set up UK public holidays for a given year.
    This should be separate from Caltrap proper; probably a shell
@@ -11,15 +18,6 @@ Caltrap wish list
     + should these show up as multiple-day in the listing if they're
       type EVENT? Unclear. Depends on what I'm going to use them
       for!
-
- - Ability to edit and remove entries given their id.
-    + for starters we need a modified listing mode which _shows_ the
-      ids, then! Perhaps `-l -v', or `-L'.
-       * may also need to explicitly show behind-the-scenes entries
-	 such as textless things (weekends spring to mind).
-    + this ability is a necessary prerequisite for TODO tracking,
-      because otherwise there's no way to mark a TODO as done once
-      you've done it.
 
  - TODO tracking
     + we have type TODO in the db schema; start using it.
