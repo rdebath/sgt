@@ -21,5 +21,8 @@ interested to know why :-)
 Ports of <code>psftp</code> and <code>pscp</code> are also now available.
 
 <p>
+We do not yet have Unix ports of Puttygen and Pageant.
+
+<p>
 See also the
 <a href="http://www.chiark.greenend.org.uk/~sgtatham/putty/faq.html#A.2.2">FAQ</a>.
