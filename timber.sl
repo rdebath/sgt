@@ -283,11 +283,9 @@ $1 = "Timber";
     definekey("timber_selattach", "^[R", $1);
     definekey("timber_selattach", "^[r", $1);
 
-    % Disallow ^X^C in Timber buffers: you _might_ want to bomb out of
-    % Jed while running Timber, but you probably don't. People who really
-    % do can switch to *scratch* and do it there, or use M-x, or something.
-    % Just to show they really mean it.
-    definekey("timber_dontexit", "^X^C", $1);
+    % We'll make / a search function, just because it is in so many
+    % readonly text viewing applications.
+    definekey("search_forward", "/", $1);
 }
 
 %}}}
@@ -324,13 +322,51 @@ $1 = "TimberC";
     definekey("timber_attach", "^XA", $1);
     definekey("timber_bcc_self", "^Os", $1);
     definekey("timber_bcc_self", "^OS", $1);
-    definekey("timber_dontexit", "^X^C", $1);
 }
 %}}}
 %{{{ The highlighting mode for Timber composers
 #ifndef TIMBER_TIMBERC_LOADED
 () = evalfile("timberc.sl");
 #endif
+%}}}
+%{{{ timber_exitfunc: protect against exiting Jed with active Timber buffers
+
+% Timber expects a special kind of exit hook to be defined. Simon
+% Tatham's personal .jedrc defines this, but Timber must define it if
+% it's not already defined. The global variable sgtatham_exit_hook is
+% defined if the correct exit hook is installed.
+
+#ifnexists sgtatham_exit_hook
+% This is a generally useful exit hook. On an attempt to exit Jed,
+% it calls `eval' on the string variable `exit_hook_code'. If this calls
+% error() at any point then exit will be abandoned. This allows multiple
+% exit hooks to be registered by appending them to the string.
+variable sgtatham_exit_hook = 1; % flag it as defined
+variable exit_hook_code = ".";
+define exit_hook() {
+    eval(exit_hook_code);
+}
+#endif
+
+exit_hook_code += " timber_exitfunc";
+
+define timber_exitfunc() {
+    variable buf;
+    loop (buffer_list()) {
+        buf = ();
+        setbuf(buf);
+        if (
+#ifexists blocal_var_exists
+            blocal_var_exists("timber_foldername")
+#else
+            substr(buf, 1, 3) == "[T]"
+#endif
+            ) {
+                error("Timber is still running in this Jed!");
+            }
+    }
+}
+
 %}}}
 %{{{ timber_create_blocal_var: hack to support change to create_blocal_var
 
@@ -358,15 +394,6 @@ define timber_strchopr(s, delim, quote) {
         alen;
     } else
         strchopr (s, delim, quote);
-}
-
-%}}}
-%{{{ timber_dontexit(): for accidental ^X^C
-
-% Used when the user mistakenly tries to exit Jed without shutting down
-% Timber correctly first.
-define timber_dontexit() {
-    error("You probably didn't mean to do ^X^C while Timber was running!");
 }
 
 %}}}
@@ -863,7 +890,7 @@ define timber_updatemail() {
         pop_spot();
         return;
     }
-    mb = get_blocal_var("foldername");
+    mb = get_blocal_var("timber_foldername");
     fullinbox = dircat(timber_folders, timber_inbox);
     if (strcmp(mb, timber_inbox) and strcmp(mb, fullinbox)) {
         error("This is not your inbox!");
@@ -1438,8 +1465,8 @@ define timber_open_folder(name) {
 	message(Sprintf("Inventing empty folder `%s'.", name, 1));
     }
 
-    timber_create_blocal_var("foldername", 's');
-    set_blocal_var(fname, "foldername");
+    timber_create_blocal_var("timber_foldername", 's');
+    set_blocal_var(fname, "timber_foldername");
 
     timber_foldall(); % fold up everything
     bob();
@@ -1550,7 +1577,7 @@ define timber_expunge() {
     }
 
     % Now we have expunged things, we should checkpoint.
-    fname = get_blocal_var("foldername");
+    fname = get_blocal_var("timber_foldername");
     from = create_user_mark();
     fbuf = whatbuf();
     tbuf = "*timbertmp*";
@@ -1599,7 +1626,7 @@ define timber_expunge() {
 % Quit a Timber buffer, expunging and closing the associated folder.
 define timber_qlose() {
     timber_expunge();
-    timber_release_lock(get_blocal_var("foldername"));
+    timber_release_lock(get_blocal_var("timber_foldername"));
     setbuf_info(getbuf_info & ~1); % clear modified bit to make delbuf silent
     delbuf(whatbuf());
     timber_buffers_fewer();
