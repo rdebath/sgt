@@ -99,8 +99,16 @@ void text(struct frontend_instance *inst, int x, int y, char *str)
 		  str, strlen(str));
 }
 
-void block(struct frontend_instance *inst, int x, int y, int col, int type)
+void block(struct frontend_instance *inst, int area,
+	   int x, int y, int col, int type)
 {
+    assert(area != AREA_HOLD);
+    if (area == AREA_MAIN) {
+	x++;
+    } else if (area == AREA_NEXT) {
+	x += PLAY_WIDTH + 3;
+	y++;
+    }
     x *= SQUARE_SIDE;
     y *= SQUARE_SIDE;
     if (col < 0) {

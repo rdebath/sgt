@@ -37,6 +37,12 @@ extern char *pentris_shapes[18+1];
  * 
  * `init_shape' returns FALSE if there was no space to place the
  * new piece - which is of course the game-over condition.
+ * 
+ * `try_hold' moves a piece into the hold cell, or swaps the piece in
+ * the hold cell with the current falling piece. It can never cause
+ * game-over, because it will fail rather than do anything lethal;
+ * like the other `try' functions, it will return TRUE if
+ * successful
  */
 struct ntris_instance *init_game(struct frontend_instance *fe,
 				 int width, int height, char **shapeset);
@@ -46,6 +52,7 @@ int try_move_right(struct ntris_instance *inst);
 int try_anticlock(struct ntris_instance *inst);
 int try_clockwise(struct ntris_instance *inst);
 int try_reflect(struct ntris_instance *inst);
+int try_hold(struct ntris_instance *inst);
 int softdrop(struct ntris_instance *inst);
 void harddrop(struct ntris_instance *inst);
 
@@ -55,8 +62,18 @@ void harddrop(struct ntris_instance *inst);
  * block on the screen at the given coordinates (measured in block
  * widths), in the given colour. `type' specifies the borders on
  * the block, as a combination of the flags given below.
+ * 
+ * `area' indicates which of several different drawing areas the
+ * block is to be drawn in. The possible values are enumerated below.
  */
-void block(struct frontend_instance *inst, int x, int y, int col, int type);
+void block(struct frontend_instance *inst, int area,
+	   int x, int y, int col, int type);
+
+enum {
+    AREA_MAIN,			       /* the main playing area */
+    AREA_HOLD,			       /* the holding cell */
+    AREA_NEXT 			       /* the next-piece display */
+};
 
 /*
  * These flags indicate the highlighting required on each block
