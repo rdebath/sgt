@@ -16,6 +16,10 @@
 
 #define lenof(x) ( sizeof((x)) / sizeof(*(x)) )
 
+#define CAT2(x,y) x ## y
+#define CAT1(x,y) CAT2(x,y)
+#define cassert(x) enum { CAT1(c_assert_,__LINE__) = 1 / (x) }
+
 /*
  * Explanation of one slightly odd piece of terminology below:
  * `ego' is the name for an internal identifier used to uniquely
@@ -98,6 +102,7 @@ void cfg_set_int(char *key, int val);
 void parse_for_db(const char *ego, const char *location,
 		  const char *message, int msglen);
 char *message_location(const char *ego);
+struct mime_details *find_mime_parts(const char *ego, int *nparts);
 
 /*
  * main.c
@@ -108,13 +113,14 @@ extern char *dirpath;
  * store.c
  */
 struct storage {
-    char *(*store_literal)(char *message, int msglen);
+    char *(*store_literal)(char *message, int msglen, char *separator);
     void (*store_init)(void);
-    char *(*store_retrieve)(const char *location, int *msglen);
+    char *(*store_retrieve)(const char *location, int *msglen,
+			    char **separator);
 };
-char *store_literal(char *message, int msglen);
+char *store_literal(char *message, int msglen, char *separator);
 void store_init(void);
-char *store_retrieve(const char *location, int *msglen);
+char *store_retrieve(const char *location, int *msglen, char **separator);
 
 /*
  * mboxstore.c
@@ -154,20 +160,10 @@ struct mime_details {
      * This structure describes details of a single MIME part.
      */
     char *major, *minor;	       /* dynamically allocated */
-    enum { NO_ENCODING, QP, BASE64, UUENCODE } transfer_encoding;
+    enum { NO_ENCODING, QP, BASE64 } transfer_encoding;
     int charset;
     enum { UNSPECIFIED, INLINE, ATTACHMENT } disposition;
-    /*
-     * A file name can come from a `name' parameter in
-     * Content-Type, or a `filename' parameter in
-     * Content-Disposition. The former is deprecated in favour of
-     * the latter (as stated in RFC 2046), so the latter takes
-     * priority. Hence, we track at all times where our current
-     * filename has come from.
-     */
-    enum { NO_FNAME, CT_NAME, CD_FILENAME } filename_location;
     char *filename;		       /* dynamically allocated */
-    char *boundary;		       /* dynamically allocated */
     char *description;		       /* dynamically allocated */
     /*
      * These two define the substring of the message itself which
@@ -225,6 +221,7 @@ typedef void (*parser_output_fn_t)(void *ctx, const char *text, int len,
 enum {				       /* values for above `type' argument */
     TYPE_HEADER_NAME,
     TYPE_HEADER_TEXT,
+    TYPE_ATTACHMENT_ID_LINE,
     TYPE_BODY_TEXT
 };
 typedef void (*parser_info_fn_t)(void *ctx, struct message_parse_info *info);
@@ -256,11 +253,31 @@ time_t unfmt_date(const char *buf);
 const char *header_name(int header_id);
 const char *encoding_name(int encoding);
 const char *disposition_name(int disposition);
+int header_val(const char *header_name);
+int encoding_val(const char *encoding_name);
+int disposition_val(const char *disposition_name);
 int write_wrapped(int fd, char *data, int length);
+void init_mime_details(struct mime_details *md);
+void free_mime_details(struct mime_details *md);
+char *dupstr(const char *s);
+int istrlencmp(const char *s1, int l1, const char *s2, int l2);
+int istrcmp(const char *s1, const char *s2);
+
 
 /*
  * export.c
  */
 void export_message(char *ego);
+
+/*
+ * display.c
+ */
+enum { DISPLAY_BARE, DISPLAY_ANSI };
+void display_message(char *ego, int charset, int type);
+
+/*
+ * boringhdr.c
+ */
+int is_boring_hdr(const char *hdr, int len);
 
 #endif

@@ -47,6 +47,16 @@ struct mime_record {
     const char *rawdescription;	       /* the one in md isn't const */
     int description_len;	       /* for while description is still raw */
     struct mime_details md;
+    /*
+     * A file name can come from a `name' parameter in
+     * Content-Type, or a `filename' parameter in
+     * Content-Disposition. The former is deprecated in favour of
+     * the latter (as stated in RFC 2046), so the latter takes
+     * priority. Hence, we track at all times where our current
+     * filename has come from.
+     */
+    enum { NO_FNAME, CT_NAME, CD_FILENAME } filename_location;
+    char *boundary;		       /* dynamically allocated */
 };
 struct header_type {
     /* Special case: header_name might begin with `*'
@@ -96,9 +106,9 @@ void recurse_mime_part(const char *base, struct mime_record *md,
 struct lexed_header *lex_header(char const *header, int length, int type);
 void init_mime_record(struct mime_record *md);
 void free_mime_record(struct mime_record *md);
-void parse_content_type(struct lexed_header *lh, struct mime_details *md);
-void parse_content_disp(struct lexed_header *lh, struct mime_details *md);
-void parse_content_transfer(struct lexed_header *lh, struct mime_details *md);
+void parse_content_type(struct lexed_header *lh, struct mime_record *mr);
+void parse_content_disp(struct lexed_header *lh, struct mime_record *mr);
+void parse_content_transfer(struct lexed_header *lh, struct mime_record *mr);
 int unquote(const char *in, int inlen, int dblquot, char *out);
 void info_addr(parser_info_fn_t info, void *infoctx,
 	       const char *addr, int addrlen,
@@ -107,9 +117,6 @@ void info_addr(parser_info_fn_t info, void *infoctx,
 char *rfc2047_to_utf8_string(const char *text, int len,
 			     int structured, int default_charset);
 int latoi(const char *text, int len);
-
-int istrlencmp(const char *s1, int l1, const char *s2, int l2);
-int istrcmp(const char *s1, const char *s2);
 
 /*
  * This is the main message-parsing function. It produces two
@@ -141,11 +148,7 @@ void parse_message(const char *message, int msglen,
      * we receive a malformatted mail, our goal is to make as much
      * sense of it as we still can, not to refuse to read it at
      * all. Thus, we skip over any line containing something that
-     * doesn't look like a proper header. In particular, it is
-     * entirely possible that we will be passed a message extracted
-     * from an mbox folder, in which case the `From ' separator
-     * line will still be at the top and we should definitely not
-     * choke on that.
+     * doesn't look like a proper header.
      */
 
     int pass;
@@ -255,12 +258,12 @@ void recurse_mime_part(const char *base, struct mime_record *mr,
 	   mr->md.transfer_encoding, mr->md.charset,
 	   mr->md.offset, mr->md.length,
 	   disposition_name(mr->md.disposition),
-	   mr->md.filename, mr->md.boundary,
+	   mr->md.filename, mr->boundary,
 	   mr->description_len, mr->rawdescription);
 #endif
 
     if (!istrcmp(mr->md.major, "multipart") &&
-	mr->md.transfer_encoding == NO_ENCODING && mr->md.boundary != NULL) {
+	mr->md.transfer_encoding == NO_ENCODING && mr->boundary != NULL) {
 
 	/*
 	 * Go through a multipart looking for instances of the
@@ -269,13 +272,13 @@ void recurse_mime_part(const char *base, struct mime_record *mr,
 
 	const char *partstart = NULL, *partend = NULL;
 	const char *here = base + mr->md.offset, *end = here + mr->md.length;
-	int blen = strlen(mr->md.boundary);
+	int blen = strlen(mr->boundary);
 	int done = FALSE;
 
 	while (here < end && !done) {
 	    if (end - here > blen+2 &&
 		here[0] == '-' && here[1] == '-' &&
-		!istrlencmp(here+2, blen, mr->md.boundary, blen)) {
+		!istrlencmp(here+2, blen, mr->boundary, blen)) {
 		int got = FALSE;
 
 		partend = here;
@@ -844,18 +847,18 @@ void parse_headers(char const *base, char const *message, int msglen,
 		break;
 	      case CONTENT_TYPE:
 		if (pass == 0)
-		    parse_content_type(lh, &mr->md);
+		    parse_content_type(lh, mr);
 		break;
 	      case CONTENT_DISPOSITION:
 		/*
 		 * Content-Disposition is defined in RFC 2183.
 		 */
 		if (pass == 0)
-		    parse_content_disp(lh, &mr->md);
+		    parse_content_disp(lh, mr);
 		break;
 	      case CONTENT_TRANSFER_ENCODING:
 		if (pass == 0)
-		    parse_content_transfer(lh, &mr->md);
+		    parse_content_transfer(lh, mr);
 		break;
 	      case CONTENT_DESCRIPTION:
 		if (pass == 0) {
@@ -1217,17 +1220,9 @@ struct lexed_header *lex_header(char const *header, int length, int type)
 
 void init_mime_record(struct mime_record *mr)
 {
-    mr->md.major = smalloc(5); strcpy(mr->md.major, "text");
-    mr->md.minor = smalloc(6); strcpy(mr->md.minor, "plain");
-    mr->md.transfer_encoding = NO_ENCODING;
-    mr->md.charset = CS_ASCII;
-    mr->md.disposition = UNSPECIFIED;
-    mr->md.filename_location = NO_FNAME;
-    mr->md.filename = NULL;
-    mr->md.boundary = NULL;
-    mr->md.description = NULL;
-    mr->md.offset = 0;
-    mr->md.length = 0;
+    init_mime_details(&mr->md);
+    mr->filename_location = NO_FNAME;
+    mr->boundary = NULL;
     mr->next = NULL;
     mr->rawdescription = 0;
     mr->description_len = 0;
@@ -1235,14 +1230,11 @@ void init_mime_record(struct mime_record *mr)
 
 void free_mime_record(struct mime_record *mr)
 {
-    sfree(mr->md.major);
-    sfree(mr->md.minor);
-    sfree(mr->md.filename);
-    sfree(mr->md.boundary);
-    sfree(mr->md.description);
+    free_mime_details(&mr->md);
+    sfree(mr->boundary);
 }
 
-void parse_content_type(struct lexed_header *lh, struct mime_details *md)
+void parse_content_type(struct lexed_header *lh, struct mime_record *mr)
 {
     /*
      * If the first three tokens are a word, a slash and another
@@ -1252,14 +1244,14 @@ void parse_content_type(struct lexed_header *lh, struct mime_details *md)
 	( lh[1].is_punct && lh[1].length > 0 && *lh[1].token == '/') &&
 	(!lh[2].is_punct && lh[2].length > 0)) {
 	int i;
-	md->major = smalloc(1+lh[0].length);
+	mr->md.major = smalloc(1+lh[0].length);
 	for (i = 0; i < lh[0].length; i++)
-	    md->major[i] = tolower(lh[0].token[i]);
-	md->major[lh[0].length] = '\0';
-	md->minor = smalloc(1+lh[2].length);
+	    mr->md.major[i] = tolower(lh[0].token[i]);
+	mr->md.major[lh[0].length] = '\0';
+	mr->md.minor = smalloc(1+lh[2].length);
 	for (i = 0; i < lh[2].length; i++)
-	    md->minor[i] = tolower(lh[2].token[i]);
-	md->minor[lh[2].length] = '\0';
+	    mr->md.minor[i] = tolower(lh[2].token[i]);
+	mr->md.minor[lh[2].length] = '\0';
 	lh += 3;
     }
 
@@ -1293,56 +1285,54 @@ void parse_content_type(struct lexed_header *lh, struct mime_details *md)
 		assert(csl <= lh[2].length);
 		cset[csl] = '\0';
 
-		md->charset = charset_upgrade(charset_from_mimeenc(cset));
+		mr->md.charset = charset_upgrade(charset_from_mimeenc(cset));
 	    } else if (!istrlencmp(lh[0].token, lh[0].length, SL("name"))) {
-		if (md->filename_location != CD_FILENAME) {
+		if (mr->filename_location != CD_FILENAME) {
 		    int len;
 
-		    sfree(md->filename);
-		    md->filename = smalloc(1 + lh[2].length);
+		    sfree(mr->md.filename);
+		    mr->md.filename = smalloc(1 + lh[2].length);
 		    len = unquote(lh[2].token, lh[2].length, TRUE,
-				  md->filename);
+				  mr->md.filename);
 		    assert(len <= lh[2].length);
-		    md->filename[len] = '\0';
+		    mr->md.filename[len] = '\0';
 
-		    md->filename_location = CT_NAME;
+		    mr->filename_location = CT_NAME;
 		}
 	    } else if (!istrlencmp(lh[0].token,lh[0].length,SL("boundary"))) {
 		int len;
 
-		sfree(md->boundary);
-		md->boundary = smalloc(1 + lh[2].length);
+		sfree(mr->boundary);
+		mr->boundary = smalloc(1 + lh[2].length);
 		len = unquote(lh[2].token, lh[2].length, TRUE,
-			      md->boundary);
+			      mr->boundary);
 		assert(len <= lh[2].length);
-		md->boundary[len] = '\0';
+		mr->boundary[len] = '\0';
 	    }
 	    lh += 3;
 	}
     }
 }
 
-void parse_content_transfer(struct lexed_header *lh, struct mime_details *md)
+void parse_content_transfer(struct lexed_header *lh, struct mime_record *mr)
 {
     /*
      * Content-Transfer-Encoding is incredibly simple.
      */
     if (!lh[0].is_punct && lh[0].length > 0) {
 	if (!istrlencmp(lh[0].token, lh[0].length, SL("quoted-printable"))) {
-	    md->transfer_encoding = QP;
+	    mr->md.transfer_encoding = QP;
 	} else if (!istrlencmp(lh[0].token, lh[0].length, SL("base64"))) {
-	    md->transfer_encoding = BASE64;
-	} else if (!istrlencmp(lh[0].token, lh[0].length, SL("x-uuencode"))) {
-	    md->transfer_encoding = UUENCODE;
+	    mr->md.transfer_encoding = BASE64;
 	} else if (!istrlencmp(lh[0].token, lh[0].length, SL("7bit")) ||
 		   !istrlencmp(lh[0].token, lh[0].length, SL("8bit")) ||
 		   !istrlencmp(lh[0].token, lh[0].length, SL("binary"))) {
-	    md->transfer_encoding = NO_ENCODING;
+	    mr->md.transfer_encoding = NO_ENCODING;
 	}
     }
 }
 
-void parse_content_disp(struct lexed_header *lh, struct mime_details *md)
+void parse_content_disp(struct lexed_header *lh, struct mime_record *mr)
 {
     /*
      * If the first token is a word, we can collect the disposition
@@ -1350,9 +1340,9 @@ void parse_content_disp(struct lexed_header *lh, struct mime_details *md)
      */
     if ((!lh[0].is_punct && lh[0].length > 0)) {
 	if (!istrlencmp(lh[0].token, lh[0].length, SL("inline"))) {
-	    md->disposition = INLINE;
+	    mr->md.disposition = INLINE;
 	} else if (!istrlencmp(lh[0].token, lh[0].length, SL("attachment"))) {
-	    md->disposition = ATTACHMENT;
+	    mr->md.disposition = ATTACHMENT;
 	}
 	lh++;
     }
@@ -1382,14 +1372,14 @@ void parse_content_disp(struct lexed_header *lh, struct mime_details *md)
 	    if (!istrlencmp(lh[0].token, lh[0].length, SL("filename"))) {
 		int len;
 
-		sfree(md->filename);
-		md->filename = smalloc(1 + lh[2].length);
+		sfree(mr->md.filename);
+		mr->md.filename = smalloc(1 + lh[2].length);
 		len = unquote(lh[2].token, lh[2].length, TRUE,
-			      md->filename);
+			      mr->md.filename);
 		assert(len <= lh[2].length);
-		md->filename[len] = '\0';
+		mr->md.filename[len] = '\0';
 
-		md->filename_location = CD_FILENAME;
+		mr->filename_location = CD_FILENAME;
 	    }
 	    lh += 3;
 	}
@@ -1424,34 +1414,6 @@ int unquote(const char *in, int inlen, int dblquot, char *out)
     }
 
     return out - orig_out;
-}
-
-int istrlencmp(const char *s1, int l1, const char *s2, int l2)
-{
-    int cmp;
-
-    while (l1 > 0 && l2 > 0) {
-	cmp = tolower(*s1) - tolower(*s2);
-	if (cmp)
-	    return cmp;
-	s1++, l1--;
-	s2++, l2--;
-    }
-
-    /*
-     * We've reached the end of one or both strings.
-     */
-    if (l1 > 0)
-	return +1;		       /* s1 is longer, therefore is greater */
-    else if (l2 > 0)
-	return -1;		       /* s2 is longer */
-    else
-	return 0;
-}
-
-int istrcmp(const char *s1, const char *s2)
-{
-    return istrlencmp(s1, strlen(s1), s2, strlen(s2));
 }
 
 struct utf8_string_output_ctx {

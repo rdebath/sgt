@@ -45,6 +45,7 @@ CHARSET += superset
 
 MODULES := main malloc error help licence version sqlite mboxstore store
 MODULES += config mboxread rfc822 rfc2047 base64 qp date misc export
+MODULES += display boringhdr
 
 CSMODULES := $(addprefix cs-,$(CHARSET))
 OBJECTS := $(addsuffix .o,$(MODULES) $(CSMODULES))
