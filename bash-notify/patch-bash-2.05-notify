@@ -1,6 +1,6 @@
-diff -ur bash-2.05.orig/builtins/set.def bash-2.05/builtins/set.def
---- bash-2.05.orig/builtins/set.def	Thu Jul  1 15:56:52 2004
-+++ bash-2.05/builtins/set.def	Thu Jul  1 15:57:07 2004
+diff -ur bash-2.05.original/builtins/set.def bash-2.05/builtins/set.def
+--- bash-2.05.original/builtins/set.def	Fri Dec 17 09:56:54 2004
++++ bash-2.05/builtins/set.def	Fri Dec 17 09:56:59 2004
 @@ -93,6 +93,8 @@
              noexec       same as -n
              noglob       same as -f
@@ -18,9 +18,9 @@ diff -ur bash-2.05.orig/builtins/set.def bash-2.05/builtins/set.def
    { "posix", &posixly_correct, set_posix_mode, (Function *)NULL },
  #if defined (READLINE)
    { "emacs", (int *)NULL, set_edit_mode, get_edit_mode },
-diff -ur bash-2.05.orig/flags.c bash-2.05/flags.c
---- bash-2.05.orig/flags.c	Thu Jul  1 15:56:52 2004
-+++ bash-2.05/flags.c	Thu Jul  1 15:57:07 2004
+diff -ur bash-2.05.original/flags.c bash-2.05/flags.c
+--- bash-2.05.original/flags.c	Fri Dec 17 09:56:54 2004
++++ bash-2.05/flags.c	Fri Dec 17 09:56:59 2004
 @@ -127,6 +127,9 @@
  /* Non-zero means that we allow comments to appear in interactive commands. */
  int interactive_comments = 1;
@@ -31,9 +31,9 @@ diff -ur bash-2.05.orig/flags.c bash-2.05/flags.c
  #if defined (RESTRICTED_SHELL)
  /* Non-zero means that this shell is `restricted'.  A restricted shell
     disallows: changing directories, command or path names containing `/',
-diff -ur bash-2.05.orig/flags.h bash-2.05/flags.h
---- bash-2.05.orig/flags.h	Thu Jul  1 15:56:52 2004
-+++ bash-2.05/flags.h	Thu Jul  1 15:57:07 2004
+diff -ur bash-2.05.original/flags.h bash-2.05/flags.h
+--- bash-2.05.original/flags.h	Fri Dec 17 09:56:54 2004
++++ bash-2.05/flags.h	Fri Dec 17 09:56:59 2004
 @@ -45,7 +45,8 @@
    just_one_command, unbound_vars_is_error, echo_input_at_read,
    echo_command_at_execute, no_invisible_vars, noclobber,
@@ -44,9 +44,9 @@ diff -ur bash-2.05.orig/flags.h bash-2.05/flags.h
  
  #if 0
  extern int lexical_scoping;
-diff -ur bash-2.05.orig/jobs.c bash-2.05/jobs.c
---- bash-2.05.orig/jobs.c	Thu Jul  1 15:56:52 2004
-+++ bash-2.05/jobs.c	Thu Jul  1 15:57:07 2004
+diff -ur bash-2.05.original/jobs.c bash-2.05/jobs.c
+--- bash-2.05.original/jobs.c	Fri Dec 17 09:56:54 2004
++++ bash-2.05/jobs.c	Fri Dec 17 09:57:11 2004
 @@ -2259,6 +2259,8 @@
    return (result);
  }
@@ -72,20 +72,28 @@ diff -ur bash-2.05.orig/jobs.c bash-2.05/jobs.c
  
    return (children_exited);
  }
-@@ -2831,6 +2840,9 @@
+@@ -2831,6 +2840,18 @@
    if (shell_tty != fileno (stderr))
      SET_CLOSE_ON_EXEC (shell_tty);
  
 +  if (pipe(sigchld_pipe) < 0) {
 +      sigchld_pipe[0] = sigchld_pipe[1] = -1;
++  } else {
++      dup2(sigchld_pipe[0], 254);
++      close(sigchld_pipe[0]);
++      sigchld_pipe[0] = 254;
++      dup2(sigchld_pipe[1], 253);
++      close(sigchld_pipe[1]);
++      sigchld_pipe[1] = 253;
++      fcntl(sigchld_pipe[0], F_SETFD, FD_CLOEXEC);
++      fcntl(sigchld_pipe[1], F_SETFD, FD_CLOEXEC);
 +  }
    set_signal_handler (SIGCHLD, sigchld_handler);
  
    change_flag ('m', job_control ? '-' : '+');
-Only in bash-2.05: jobs.c.orig
-diff -ur bash-2.05.orig/parse.y bash-2.05/parse.y
---- bash-2.05.orig/parse.y	Thu Jul  1 15:56:52 2004
-+++ bash-2.05/parse.y	Thu Jul  1 15:57:07 2004
+diff -ur bash-2.05.original/parse.y bash-2.05/parse.y
+--- bash-2.05.original/parse.y	Fri Dec 17 09:56:54 2004
++++ bash-2.05/parse.y	Fri Dec 17 09:56:59 2004
 @@ -35,6 +35,7 @@
  #endif
  
@@ -231,4 +239,3 @@ diff -ur bash-2.05.orig/parse.y bash-2.05/parse.y
  #if defined (JOB_CONTROL)
        /* This can cause a problem when reading a command as the result
  	 of a trap, when the trap is called from flush_child.  This call
-Only in bash-2.05: parse.y.orig
