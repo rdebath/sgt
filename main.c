@@ -62,6 +62,18 @@ void run_command(int argc, char **argv)
 	    charset = charset_from_localenc(argv[1]);
 	send_from_stdin(charset);
     }
+
+    if (!strcmp(argv[0], "contact-names")) {
+	int i;
+	for (i = 1; i < argc; i++)
+	    ab_display_name(atoi(argv[i]));
+    }
+
+    if (!strcmp (argv[0], "set-contact-name")) {
+	if (1 < argc) {
+	    ab_set_name (atoi(argv[1]), (2 < argc) ? argv[2] : NULL);
+	}
+    }
 }
 
 int main(int argc, char **argv) {
