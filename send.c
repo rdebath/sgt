@@ -274,7 +274,6 @@ void send(int charset, char *message, int msglen)
 	    "Jan\0Feb\0Mar\0Apr\0May\0Jun\0Jul\0Aug\0Sep\0Oct\0Nov\0Dec\0";
 
 	t = time(NULL);
-	if (getenv("OOH")) t += 86400 * 120;
 	tm = *localtime(&t);
 	/*
 	 * Finding the difference between this and UTC is fiddly,
