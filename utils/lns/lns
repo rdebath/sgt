@@ -26,21 +26,71 @@
 
 use Cwd;
 
+$usage =
+  "usage: lns [flags] srcfile destfile\n".
+  "   or: lns [flags] srcfile [srcfile...] destdir\n".
+  "where: -a               create symlinks with absolute path names\n".
+  "       -f               overwrite existing symlink at target location\n".
+  "       -F               like -f, but works even if target is link to dir\n".
+  "       -v               verbosely log activity (repeat for more verbosity)\n".
+  "       -q               suppress error messages on failure\n".
+  " also: lns --version    report version number\n" .
+  "       lns --help       display this help text\n" .
+  "       lns --licence    display (MIT) licence text\n";
+
+$licence =
+  "lns is copyright 1999,2004 Simon Tatham.\n" .
+  "\n" .
+  "Permission is hereby granted, free of charge, to any person\n" .
+  "obtaining a copy of this software and associated documentation files\n" .
+  "(the \"Software\"), to deal in the Software without restriction,\n" .
+  "including without limitation the rights to use, copy, modify, merge,\n" .
+  "publish, distribute, sublicense, and/or sell copies of the Software,\n" .
+  "and to permit persons to whom the Software is furnished to do so,\n" .
+  "subject to the following conditions:\n" .
+  "\n" .
+  "The above copyright notice and this permission notice shall be\n" .
+  "included in all copies or substantial portions of the Software.\n" .
+  "\n" .
+  "THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND,\n" .
+  "EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF\n" .
+  "MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND\n" .
+  "NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS\n" .
+  "BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN\n" .
+  "ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN\n" .
+  "CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\n" .
+  "SOFTWARE.\n";
+
 $abs=$force=$quiet=$verbose=$FILE=0;
 while ($_=shift @ARGV) {
   last if /^--$/;
-  unshift (@ARGV, $_), last unless /^-/;
-  $abs=1 if /a/;
-  $force=1 if /f/;
-  $quiet=1 if /q/;
-  $verbose=1 if /v/;
-  $force=$FILE=1 if /F/;
-  die "$0: unrecognised option character $1\n" if /^-[afqvF]*([^afqvF])/;
+  unshift (@ARGV, $_), last unless /^-(.*)/;
+  if ($1 eq "-help") {
+    print STDERR $usage;
+    exit 0;
+  } elsif ($1 eq "-version") {
+    if ('$Revision$' =~ /Revision:\s+(\d+)/) {
+	print "lns revision $1\n";
+    } else {
+	print "lns: unknown revision\n";
+    }
+    exit 0;
+  } elsif ($1 eq "-licence" or $1 eq "-license") {
+    print $licence;
+    exit 0;
+  } else {
+    foreach $opt (split //, $1) {
+	if ($opt eq "a") { $abs=1; }
+	elsif ($opt eq "f") { $force=1; }
+	elsif ($opt eq "q") { $quiet=1; }
+	elsif ($opt eq "v") { $verbose++; }
+	elsif ($opt eq "F") { $force=$FILE=1; }
+	else { die "$0: unrecognised option '-$1'\n"; }
+    }
+  }
 }
 
-(warn "usage: $0 [-afqvF] file1 file2\n" .
-      "   or: $0 [-afqv] file1 [file2...] dir\n"),
-  exit 0 if $#ARGV < 1;
+die $usage if $#ARGV < 1;
 
 die "$0: multiple source files specified with -F option\n"
   if $#ARGV > 1 && $FILE;
@@ -150,7 +200,6 @@ sub relname {
 	   /^(.*)\/((\.|\.\.[^\/]+|\.?[^\/\.][^\/]*)\/\.\.)(\/.*)?$/)
     {
 	my ($pre, $dir, $frag, $post) = ($1,$2,$3,$4);
-	#print "$pre:$dir:$frag:$post\n";
 	my $log = "transforming $target -> ";
 	if (-l "$pre/$frag") {
 	    my $linktext = readlink "$pre/$frag";
@@ -165,7 +214,7 @@ sub relname {
 	}
 	$target = "/" if $target eq ""; # special case
 	$log .= "$target";
-	warn "$0: $log\n" if $verbose;
+	warn "$0: $log\n" if $verbose > 1;
     }
 
     # Now we have replaced $target with a pathname equivalent to

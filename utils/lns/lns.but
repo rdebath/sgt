@@ -1,0 +1,199 @@
+\cfg{man-identity}{lns}{1}{2004-11-21}{Simon Tatham}{Simon Tatham}
+
+\title Man page for \cw{lns}
+
+\U NAME
+
+\cw{lns} - symbolic link creation utility
+
+\U SYNOPSIS
+
+\c lns [ flags ] srcfile destfile
+\e bbb   iiiii   iiiiiii iiiiiiii
+\c lns [ flags ] srcfile [srcfile...] destdir
+\e bbb   iiiii   iiiiiii  iiiiiii     iiiiiii
+
+\U DESCRIPTION
+
+\cw{lns} creates symbolic links.
+
+The standard command \cw{ln -s} also does this, but it interprets
+its first argument as the literal text to be placed in the symlink.
+If your current working directory is not the same as the target
+directory, this can get confusing. For example, to create a symlink
+to a file \cw{hello.c} in a subdirectory \cw{programs}, you would
+have to write \c{ln -s ../hello.c programs}, even though
+\cw{hello.c} is actually in your current directory, not one level
+up. In particular, this is unhelpful because it makes it difficult
+to use tab completion to set up the command line.
+
+\cw{lns} solves this problem, by creating symlinks using the obvious
+semantics you would expect from \cw{mv} or \cw{cp}. All of its
+arguments are expected to be either absolute path names, or relative
+to the \e{current} working directory. So, in the above example, you
+would write \c{lns hello.c programs/hello.c} or just \c{lns hello.c
+programs}, exactly as you would have done if the command had been
+\cw{cp}; and \cw{lns} will figure out for itself that the literal
+text of the symlink needs to be \c{../hello.c}.
+
+\U ARGUMENTS
+
+If you provide precisely two arguments to \cw{lns}, and the second
+one is not a directory (or a symlink to a directory), then \cw{lns}
+will interpret the second argument as a destination file name, and
+create its target link with precisely that name.
+
+If the second argument is a directory, \cw{lns} will assume you want
+a link created \e{inside} that directory, with the same filename as
+the source file. If you supply more than two arguments, \cw{lns}
+will \e{expect} the final argument to a directory, and will do this
+for each of the other arguments.
+
+(This behaviour is intended to mimic \cw{cp} as closely as
+possible.)
+
+The source file(s) are not required to exist. \cw{lns} will create
+links to their locations whether they actually exist or not; if you
+create them later, the links will point to them.
+
+\U OPTIONS
+
+\dt \cw{-a}
+
+\dd Create symlinks with absolute path names (beginning with a
+slash). Normally, \cw{lns} will create relative symlinks. Relative
+symlinks are often more useful: if a parent directory of both the
+link and its target is moved to a new location, a relative symlink
+will still work while an absolute one will fail.
+
+\dt \cw{-f}
+
+\dd Overwrite an existing symlink at the target location. Normally,
+\cw{lns} will warn and refuse to do anything if the target location
+is already occupied by a symlink to a file; using \cw{-f} will cause
+it to replace the existing link with its new one.
+
+\lcont{
+
+If the target location is occupied by something that is \e{not} a
+symlink, \cw{lns} will refuse to overwrite it no matter what options
+you supply.
+
+If you specify precisely two arguments, and the second is a symlink
+to a directory, \cw{lns} will treat it as a destination directory
+rather than a destination file, even if \cw{-f} is specified. Use
+\cw{-F}, described next, to override this.
+
+}
+
+\dt \cw{-F}
+
+\dd Like \cw{-f}, but additionally forces \cw{lns} to interpret its
+second argument as a destination \e{file} name rather than a
+destination directory. This option is useful for overriding an
+existing link to one directory with a link to a different one.
+
+\dt \cw{-v}
+
+\dd Verbose mode: makes \cw{lns} talk about what it is doing. You
+can make it more verbose by adding a second instance of \cw{-v}.
+
+\dt \cw{-q}
+
+\dd Quiet mode: prevents \cw{lns} from printing an error message if
+the link target already exists.
+
+\U EXAMPLES
+
+In simple situations, \cw{lns} can be used pretty much as you would
+use \cw{cp}. For example, suppose you start in directory \cw{dir}
+and issue the following commands:
+
+\c $ lns file1 subdir
+\e   bbbbbbbbbbbbbbbb
+\c $ lns file2 ..
+\e   bbbbbbbbbbbb
+\c $ lns subdir/file3 subdir2/subsubdir
+\e   bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+\c $ lns subdir2/file4 subdir2/subsubdir
+\e   bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+
+Assuming all the subdirectories mentioned actually exist, this will
+create the following symlinks:
+
+\b \cw{subdir/file1}, with link text \cq{../file1}.
+
+\b \cw{../file2}, with link text \cq{dir/file2}.
+
+\b \cw{subdir2/subsubdir/file3}, with link text
+\cq{../../subdir/file3}.
+
+\b \cw{subdir3/subsubdir/file4}, with link text \cq{../file4}.
+
+Note that in each case \cw{lns} has constructed the \e{shortest}
+relative link it could manage: it did not mindlessly create the
+fourth link with text \cq{../../subdir/file4}.
+
+You can specify a target file name instead of a target directory.
+For example, the following command has the same effect as the first
+of the list above:
+
+\c $ lns file1 subdir/file1
+\e   bbbbbbbbbbbbbbbbbbbbbb
+
+Now suppose there is another file called \cw{file1} in \cw{subdir2},
+and you want to change the link in \cw{subdir} to point to that.
+Normally \cw{lns} will give you an error:
+
+\c $ lns subdir2/file1 subdir
+\e   bbbbbbbbbbbbbbbbbbbbbbbb
+\c lns: failed to link subdir2/file1 to subdir/file1: target exists
+
+You can override this error by using \cw{-f}:
+
+\c $ lns -f subdir2/file1 subdir
+\e   bbbbbbbbbbbbbbbbbbbbbbbbbbb
+
+This will overwrite the existing link \cw{subdir/file1} with a new
+one whose text reads \cq{../subdir2/file1}.
+
+Now let's create some symlinks to \e{directories}. Again, this is
+simple to begin with:
+
+\c $ lns subdir2 subdir3
+\c   bbbbbbbbbbbbbbbbbbb
+
+This creates a symlink called \cw{subdir3} with text \cq{subdir2}.
+
+In order to overwrite this directory, the \cw{-F} option is likely
+to be useful. Suppose I now want the link \cw{subdir3} to point at
+\cw{subdir} instead of \cw{subdir2}. If I do this:
+
+\c $ lns -f subdir subdir3
+\c   bbbbbbbbbbbbbbbbbbbbb
+
+then \cw{lns} will immediately notice that the second argument
+\cw{subdir3} is (a symlink to) a directory, and will therefore
+assume that it was intended to be the directory \e{containing} the
+new link. So it will create a file \cw{subdir3/subdir} (equivalent
+to \cw{subdir/subdir}, of course, since \cw{subdir3} is currently a
+symlink to \cw{subdir}) with link text \cw{../subdir}.
+
+In order to overwrite the directory symlink correctly, you need the
+\cw{-F} option:
+
+\c $ lns -F subdir subdir3
+\c   bbbbbbbbbbbbbbbbbbbbb
+
+\cw{-F} tells \cw{lns} that you really want the new symlink to be
+\e{called} \cw{subdir3}, not to be \e{in the directory}
+\cw{subdir3}; and it also implies the \cw{-f} option to force
+overwriting. So now you get what you wanted: the previous symlink
+\cw{subdir3} is replaced with one whose link text reads \cq{subdir}.
+
+\U LICENCE
+
+\cw{lns} is free software, distributed under the MIT licence. Type
+\cw{lns --licence} to see the full licence text.
+
+\versionid $Id$
