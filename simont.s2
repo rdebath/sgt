@@ -12,6 +12,9 @@ propgroup colors {
         des = "Entry text color";
         s1color = "page_text";
     }
+    property Color entry_text_fiction { 
+        des = "Entry text color for entries marked with class=\"fiction\"";
+    }
     property Color page_link { 
         des = "Link color";
         s1color = "page_link";
@@ -86,6 +89,7 @@ propgroup text {
 # Set default colors
 set entry_back = "#ffffff";
 set entry_text = "#000000";
+set entry_text_fiction = "#006000";
 set page_link = "#0000ff";
 set page_vlink = "#0000ff";
 set page_alink = "#00ffff";
@@ -130,6 +134,9 @@ font-size: 8pt;
 }
 .caption, .index {
 color: $*stronger_text;
+}
+.fiction {
+color: $*entry_text_fiction;
 }
 .comments {
 font-size: 8pt;
