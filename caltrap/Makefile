@@ -11,6 +11,8 @@ endif
 all:
 	@test -d $(BUILDDIR) || mkdir $(BUILDDIR)
 	@make -C $(BUILDDIR) -f ../Makefile REALBUILD=yes
+clean:
+	@test -d $(BUILDDIR) && make -C $(BUILDDIR) -f ../Makefile REALBUILD=yes clean
 else
 
 # The `real' makefile part.
@@ -23,8 +25,7 @@ else
 CFLAGS += -g
 endif
 
-
-
+CFLAGS += -Wall
 
 ifndef VER
 ifdef VERSION
@@ -38,7 +39,7 @@ endif
 SRC := ../
 
 MODULES := main malloc error help licence version add list datetime sqlite
-MODULES += cron dump
+MODULES += cron dump tree234 misc
 
 OBJECTS := $(addsuffix .o,$(MODULES))
 DEPS := $(addsuffix .d,$(MODULES))
@@ -55,6 +56,9 @@ version.o: FORCE
 	$(CC) $(VDEF) -MD -c $(SRC)version.c
 
 FORCE: # phony target to force version.o to be rebuilt every time
+
+clean:
+	rm -f *.o caltrap
 
 -include $(DEPS)
 

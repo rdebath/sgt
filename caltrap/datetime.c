@@ -2,9 +2,29 @@
  * datetime.c - date and time handling functions for Caltrap
  */
 
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
 #include <time.h>
 #include <assert.h>
 #include "caltrap.h"
+
+#define DURATION_WEEK (7*24*60*60)
+#define DURATION_DAY (24*60*60)
+#define DURATION_HOUR (60*60)
+#define DURATION_MINUTE (60)
+#define DURATION_SECOND (1)
+
+static const struct {
+    Duration d;
+    char c;
+} duration_chars[] = {
+    {DURATION_WEEK, 'w'},
+    {DURATION_DAY, 'd'},
+    {DURATION_HOUR, 'h'},
+    {DURATION_MINUTE, 'm'},
+    {DURATION_SECOND, 's'},
+};
 
 static const int mtab[] = {
     0,				       /* buffer entry (months start at 1) */
@@ -118,11 +138,148 @@ Time parse_time(char *str)
     return (h * 60 + m) * 60 + s;
 }
 
+int parse_datetime(char *str, Date *d, Time *t)
+{
+    char *tstr;
+    Date rd;
+    Time rt;
+
+    tstr = str + strcspn(str, " ");
+    if (*tstr)
+	tstr++;
+
+    rd = parse_date(str);
+    rt = parse_time(tstr);
+
+    if (rd == INVALID_DATE || rt == INVALID_TIME)
+	return 0;
+
+    *d = rd;
+    *t = rt;
+    return 1;
+}
+
+Duration parse_duration(char *str)
+{
+    Duration ret = 0;
+    int got_one = FALSE;
+
+    if (*str == '-' && str[1] == '\0')
+	return 0;		       /* special case */
+
+    while (1) {
+	int n, i;
+
+	str += strspn(str, " ,");
+	if (!*str)
+	    break;
+
+	if (*str < '0' || *str > '9')
+	    return INVALID_DURATION;
+
+	n = atoi(str);
+	str += strspn(str, "0123456789");
+
+	for (i = 0; i < lenof(duration_chars); i++) {
+	    if (duration_chars[i].c == *str) {
+		ret += duration_chars[i].d * n;
+		str++;
+		got_one = TRUE;
+		break;
+	    }
+	}
+
+	if (i == lenof(duration_chars))
+	    return INVALID_DURATION;
+    }
+
+    if (!got_one)
+	return INVALID_DURATION;
+
+    return ret;
+}
+
+void add_to_datetime(Date *d, Time *t, Duration dur)
+{
+    *d += (dur / 86400);
+    *t += (dur % 86400);
+    *d += (*t / 86400);
+    *t %= 86400;
+}
+
+Duration datetime_diff(Date d1, Time t1, Date d2, Time t2)
+{
+    Duration ret;
+    ret = d1 - d2;
+    ret *= 86400;
+    ret += t1 - t2;
+    return ret;
+}
+
+int datetime_cmp(Date d1, Time t1, Date d2, Time t2)
+{
+    if (d1 < d2)
+	return -1;
+    else if (d1 > d2)
+	return +1;
+    else if (t1 < t2)
+	return -1;
+    else if (t1 > t2)
+	return +1;
+    else
+	return 0;
+}
+
+char *format_datetime(Date d, Time t)
+{
+    char *dfmt, *tfmt, *ret;
+
+    dfmt = format_date(d);
+    tfmt = format_time(t);
+    ret = smalloc(2 + strlen(dfmt) + strlen(tfmt));
+    sprintf(ret, "%s %s", dfmt, tfmt);
+    sfree(dfmt);
+    sfree(tfmt);
+
+    return ret;
+}
+
+char *format_duration(Duration d)
+{
+    char result[512], *p, *ret;
+    int i;
+
+    p = result;
+
+    if (d == 0) {
+	*p++ = '-';
+	p++;
+    } else {
+
+	for (i = 0; i < lenof(duration_chars); i++) {
+	    if (d >= duration_chars[i].d) {
+		p += sprintf(p, "%lld%c,", d / duration_chars[i].d,
+			     duration_chars[i].c);
+		d %= duration_chars[i].d;
+	    }
+	}
+
+	assert(d == 0);
+    }
+
+    assert(p > result);
+
+    ret = smalloc(p - result);
+    memcpy(ret, result, p - result - 1);
+    ret[p - result - 1] = '\0';
+
+    return ret;
+}
+
 void now(Date *dd, Time *tt)
 {
     time_t t;
     struct tm tm;
-    Date ret;
 
     t = time(NULL);
     tm = *localtime(&t);

@@ -4,51 +4,44 @@
 
 #include <assert.h>
 #include <stdio.h>
+#include <ctype.h>
+#include <stdlib.h>
 #include "caltrap.h"
 
-struct dump_ctx {
-    int id;
-};
-
-static void dump_callback(void *vctx, Date d, Time t, char *msg)
+static void dump_callback(void *vctx, struct entry *ent)
 {
-    struct dump_ctx *ctx = (struct dump_ctx *)vctx;
+    char *dfmt1, *dfmt2, *tfmt1, *tfmt2, *len, *per;
 
-    char *dfmt1, *dfmt2, *tfmt1, *tfmt2;
-    if (t != NO_TIME) {
-	dfmt1 = format_date(d);
-	tfmt1 = format_time(t);
-	dfmt2 = format_date(d);
-	tfmt2 = format_time(t);
-    } else {
-	dfmt1 = format_date(d);
-	tfmt1 = format_time(0);
-	dfmt2 = format_date(d+1);
-	tfmt2 = format_time(0);
-    }
+    dfmt1 = format_date(ent->sd);
+    tfmt1 = format_time(ent->st);
+    dfmt2 = format_date(ent->ed);
+    tfmt2 = format_time(ent->et);
+    len = format_duration(ent->length);
+    per = format_duration(ent->period);
+
     /*
      * Forwards compatibility with what will be the new database
      * schema: our fields here are ID, start date, start time, end
      * date, end time, length, repeat period, type and message.
      */
-    printf("%d %s %s %s %s - - EVENT %s\n", ctx->id++, 
-	   dfmt1, tfmt1, dfmt2, tfmt2, msg);
+    printf("%d %s %s %s %s %s %s %s %s\n", ent->id,
+	   dfmt1, tfmt1, dfmt2, tfmt2, len, per, type_to_name(ent->type),
+	   ent->description);
     sfree(dfmt1);
     sfree(tfmt1);
     sfree(dfmt2);
     sfree(tfmt2);
+    sfree(len);
+    sfree(per);
 }
 
-int caltrap_dump(int nargs, char **args, int nphysargs)
+void caltrap_dump(int nargs, char **args, int nphysargs)
 {
-    struct dump_ctx ctx;
-
     if (nargs > 0)
 	fatal(err_dumpargno);
     assert(nargs <= nphysargs);
 
-    ctx.id = 0;
-    db_dump_entries(dump_callback, &ctx);
+    db_dump_entries(dump_callback, NULL);
 }
 
 /*
@@ -74,7 +67,7 @@ static char *fgetline(FILE *fp)
     return ret;
 }
 
-int caltrap_load(int nargs, char **args, int nphysargs)
+void caltrap_load(int nargs, char **args, int nphysargs)
 {
     FILE *fp;
     char *text;
@@ -96,72 +89,68 @@ int caltrap_load(int nargs, char **args, int nphysargs)
 
     while ( (text = fgetline(fp)) != NULL ) {
 	char *p, *q;
-	Date d1, d2;
-	Time t1, t2;
+	struct entry ent;
 
 	p = text;
 
-	q = p; while (*q && !isspace(*q)) q++; if (*q) q++;
-	/* p now points to the id; we ignore */
+	q = p; while (*q && !isspace(*q)) q++; if (*q) *q++ = '\0';
+	/* p now points to the id */
+	ent.id = atoi(p);
 	p = q;
 
-	q = p; while (*q && !isspace(*q)) q++; if (*q) q++;
+	q = p; while (*q && !isspace(*q)) q++; if (*q) *q++ = '\0';
 	/* p now points to the start date */
-	d1 = parse_date(p);
-	if (d1 == INVALID_DATE)
+	ent.sd = parse_date(p);
+	if (ent.sd == INVALID_DATE)
 	    fatal(err_loadfmt);
 	p = q;
 
-	q = p; while (*q && !isspace(*q)) q++; if (*q) q++;
+	q = p; while (*q && !isspace(*q)) q++; if (*q) *q++ = '\0';
 	/* p now points to the start time */
-	t1 = parse_time(p);
-	if (t1 == INVALID_TIME)
+	ent.st = parse_time(p);
+	if (ent.st == INVALID_TIME)
 	    fatal(err_loadfmt);
 	p = q;
 
-	q = p; while (*q && !isspace(*q)) q++; if (*q) q++;
+	q = p; while (*q && !isspace(*q)) q++; if (*q) *q++ = '\0';
 	/* p now points to the end date */
-	d2 = parse_date(p);
-	if (d2 == INVALID_DATE)
+	ent.ed = parse_date(p);
+	if (ent.ed == INVALID_DATE)
 	    fatal(err_loadfmt);
 	p = q;
 
-	q = p; while (*q && !isspace(*q)) q++; if (*q) q++;
+	q = p; while (*q && !isspace(*q)) q++; if (*q) *q++ = '\0';
 	/* p now points to the end time */
-	t2 = parse_time(p);
-	if (t2 == INVALID_TIME)
+	ent.et = parse_time(p);
+	if (ent.et == INVALID_TIME)
 	    fatal(err_loadfmt);
 	p = q;
 
-	q = p; while (*q && !isspace(*q)) q++; if (*q) q++;
-	/* p now points to the length; we expect `-' for none */
-	if (!strcmp(p, "-"))
+	q = p; while (*q && !isspace(*q)) q++; if (*q) *q++ = '\0';
+	/* p now points to the length */
+	ent.length = parse_duration(p);
+	if (ent.length == INVALID_DURATION)
 	    fatal(err_loadfmt);
 	p = q;
 
-	q = p; while (*q && !isspace(*q)) q++; if (*q) q++;
-	/* p now points to the repeat period; we expect `-' for none */
-	if (!strcmp(p, "-"))
+	q = p; while (*q && !isspace(*q)) q++; if (*q) *q++ = '\0';
+	/* p now points to the repeat period */
+	ent.period = parse_duration(p);
+	if (ent.period == INVALID_DURATION)
 	    fatal(err_loadfmt);
 	p = q;
 
-	q = p; while (*q && !isspace(*q)) q++; if (*q) q++;
-	/* p now points to the type; we expect "EVENT" */
-	if (!strcmp(p, "EVENT"))
-	    fatal(err_loadfmt);
+	q = p; while (*q && !isspace(*q)) q++; if (*q) *q++ = '\0';
+	/* p now points to the type */
+	ent.type = name_to_type(p);
 	p = q;
 
 	/*
 	 * Now p points to the message, so we can go ahead and add
 	 * the entry to our database.
 	 */
-	if (d2 == d1+1 && t1 == 0 && t2 == 0) {
-	    db_add_entry(d1, NO_TIME, p);
-	} else if (d2 == d1 && t2 == t1) {
-	    db_add_entry(d1, t1, p);
-	} else {
-	    fatal(err_loadfmt);
-	}
+	ent.description = p;
+	db_add_entry(&ent);
     }
 
     if (!is_stdin)

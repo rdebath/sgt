@@ -11,7 +11,7 @@ struct cron_ctx {
     FILE *fp;
 };
 
-static void cron_callback(void *vctx, Date d, Time t, char *msg)
+static void cron_callback(void *vctx, struct entry *ent)
 {
     struct cron_ctx *ctx = (struct cron_ctx *)vctx;
     char *dfmt, *tfmt;
@@ -30,37 +30,36 @@ static void cron_callback(void *vctx, Date d, Time t, char *msg)
                 ctx->d1fmt, ctx->t1fmt, ctx->d2fmt, ctx->t2fmt);
     }
 
-    dfmt = format_date_full(d);
-    tfmt = format_time(t);
-    fprintf(ctx->fp, "%s %s %s\n", dfmt, tfmt, msg);
+    dfmt = format_date_full(ent->sd);
+    tfmt = format_time(ent->st);
+    fprintf(ctx->fp, "%s %s %s\n", dfmt, tfmt, ent->description);
     sfree(dfmt);
     sfree(tfmt);
 }
 
-int caltrap_cron(int nargs, char **args, int nphysargs)
+void caltrap_cron(int nargs, char **args, int nphysargs)
 {
     Date d, d2;
-    Time t, t2, diff;
-    char msg[512];
+    Time t, t2;
+    Duration diff;
     struct cron_ctx ctx;
 
     if (nargs != 2)
 	fatal(err_cronargno);
     assert(nargs <= nphysargs);
 
-    diff = parse_time(args[0]);
-    if (diff == INVALID_TIME)
-        fatal(err_time, args[0]);
+    diff = parse_duration(args[0]);
+    if (diff == INVALID_DURATION)
+        fatal(err_duration, args[0]);
 
     now(&d, &t);
-
-    t2 = t + diff;
-    d2 = d + (t2 / 86400);
-    t2 %= 86400;
+    d2 = d;
+    t2 = t;
+    add_to_datetime(&d2, &t2, diff);
 
     ctx.fp = NULL;
     ctx.cmd = args[1];
-    ctx.tfmt = format_time(diff);
+    ctx.tfmt = format_duration(diff);
     ctx.d1fmt = format_date_full(d);
     ctx.t1fmt = format_time(t);
     ctx.d2fmt = format_date_full(d2);
