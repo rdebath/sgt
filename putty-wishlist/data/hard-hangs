@@ -1,11 +1,11 @@
-Summary: Hard hangs on Win2000/XP
+Summary: PuTTY becomes unresponsive / unkillable on Win2000/XP
 Class: semi-bug
 Difficulty: taxing
 Content-type: text/x-html-body
 Present-in: 0.52 2002-02-24 0.53b 0.54
 
 <p>
-Apparently, for some people, PuTTY randomly hangs hard with
+Apparently, for some people, PuTTY randomly becomes unresponsive with
 Win2000/XP.
 
 <p>
