@@ -17,3 +17,6 @@ applications depend on both of these behaviours.
 Neither of these should be PuTTY's default - they would break plenty
 of more modern applications - but setting them as configurable
 options would be nice.
+
+<p>
+Patch (unreviewed): <code>20031004001955.GE28811@dbz.icequake.net</code>
