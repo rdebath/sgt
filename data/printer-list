@@ -11,3 +11,7 @@ printing support doesn't work too well on all systems. You can still
 type a printer name into the combo box and expect it to work. We've
 received various suggested fixes, but we haven't understood / tested
 them thoroughly yet.
+
+<p>
+(While we're looking at this, it's been pointed out that having an
+option to go with the Windows default printer would be nice.)
