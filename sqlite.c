@@ -288,6 +288,7 @@ static const char *const ab_schema[] = {
 
     "CREATE TABLE attr_values ("
     "  attribute_id INTEGER,"
+    "  since DATETIME NOT NULL,"  /* inclusive */
     "  until DATETIME,"  /* exclusive */
     "  value VARCHAR NOT NULL"
     ");"
@@ -618,12 +619,45 @@ static void ab_set_attr (int contact_id,
 	    sprintf (attribute_id, "%d", sqlite_last_insert_rowid(ab->handle));
 	}
 	sql_exec_printf (ab,
-			 "INSERT INTO attr_values (attribute_id, value) "
-			 "VALUES ('%q', '%q')",
-			 attribute_id, new_value);
+			 "INSERT INTO attr_values (attribute_id, value, since)"
+			 " VALUES ('%q', '%q', '%q')",
+			 attribute_id, new_value, now);
     }
     sql_transact (ab, commit_transaction);
     sfree(attribute_id);
+}
+
+
+void ab_display_attr_history (const char *contact_id,
+			      const char *attr_type)
+     /*  This should really be two separate functions.  We may want times
+	 printed as local time, not UTC.  The function that calls
+	 sql_get_table_printf() should also call sqlite_free_table().
+      */
+{
+    char **table;
+    int rows, cols;
+    int row;
+    const int cid = atoi(contact_id);
+
+    sql_open(ab);
+    sql_get_table_printf (ab,
+			  "SELECT since, until, value "
+			  "FROM attributes, attr_values "
+			  "WHERE contact_id = %d AND type = '%q' AND "
+			  "attributes.attribute_id = attr_values.attribute_id "
+			  "ORDER BY until",
+			  &table, &rows, &cols,
+			  cid, attr_type);
+    assert (3 == cols);
+
+    for (row = 1; row <= rows; ++row) {
+	printf ("%d:", cid);
+	printf ("%s:", table[row * cols]);
+	printf (table[1 + row * cols] ? "%s:" : ":", table[1 + row * cols]);
+	printf ("%s\n", table[2 + row * cols]);
+    }
+    sqlite_free_table(table);
 }
 
 
@@ -642,4 +676,3 @@ void ab_change_attr (const char *contact_id,
 {
     ab_set_attr (atoi(contact_id), attr_type, new_value);
 }
-

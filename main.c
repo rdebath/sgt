@@ -71,6 +71,11 @@ void run_command(int argc, char **argv)
 	for (i = 2; i < argc; ++i) ab_display_attr (argv[i], argv[1]);
     }
 
+    if (!strcmp (argv[0], "contact-history")) {
+	int i;
+	for (i = 2; i < argc; ++i) ab_display_attr_history (argv[i], argv[1]);
+    }
+
     if (!strcmp (argv[0], "set-contact")) {
 	if (2 < argc) {
 	    ab_change_attr (argv[2], argv[1], (3 < argc) ? argv[3] : NULL);
