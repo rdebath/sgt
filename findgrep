@@ -21,6 +21,9 @@
 # default for the kind of work I do with this script. To inhibit auto-
 # generation of the -n option, pass -N as the first option to findgrep.
 #
+# A special case in the arguments: if only one find argument is present,
+# then it is assumed to be a wildcard that wants ". -name" before it.
+#
 # Example invocations:
 #
 #   findgrep foo          . -name '*.c'   # find args can have wildcards
@@ -29,6 +32,7 @@
 #   findgrep -N foo       . -name '*.c'   # don't print line numbers
 #   findgrep -e --begin-- . -name '*.txt' # use -e for patterns starting "-"
 #   findgrep -l foo       . -name '*.c'   # just list file names
+#   findgrep foo_func     '*.[chs]'       # don't need ". -name"
 
 # ---------------------------------------------------------------------
 
@@ -56,12 +60,15 @@ if test "$1" = "-N"; then n=; shift; else n=-n; fi
 # Count the arguments.
 do_count "$@"
 
+# Special case: if only one find argument, assume ". -name" before it.
+if test "$count" = "1"; then findextraargs=". -name"; else findextraargs=; fi
+
 # Now do the job. To get the find arguments, we shift once for each
 # `z' in $nfirst. To get the grep arguments, we rotate $1 to the back
 # for each `z' in $nfirst (so we've moved the find args to the front
 # and the grep args to the back), and then shift by $count (losing
 # the find args).
 (for foo in $nfirst; do shift; done;
- find "$@") |
+ find $findextraargs "$@") |
 (for foo in $nfirst; do set -- "$@" "$1"; shift; done; shift $count;
  xargs -n 25 grep $n "$@" /dev/null)
