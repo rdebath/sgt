@@ -3,6 +3,7 @@ Class: wish
 Difficulty: fun
 Priority: low
 Present-in: 2003-01-14
+Fixed-in: 2003-03-08
 Content-type: text/x-html-body
 
 <p>
@@ -26,3 +27,6 @@ scrollback and putting them back into the primary screen, as happens
 when you resize without the alternate screen active. But certainly
 it would be a good start for the cursor position to match up to the
 screen contents!
+
+<p><b>SGT, 2003-03-07</b>: Just accepted a patch from Richard
+Boulton which fixes this.
