@@ -116,7 +116,7 @@ for arg in sys.argv[1:]:
 	    wrapfn = wrap_greedy
 	else:
 	    print "wrap: unknown option " + arg[:2]
-	    print "usage: wrap [-v] [-g] [-wWIDTH] [-oOPTWITH] [file [file...]]"
+	    print "usage: wrap [-v] [-g] [-wWIDTH] [-oOPTWIDTH] [file [file...]]"
 	    sys.exit(0)
     else:
 	donefile = 1
