@@ -1,7 +1,7 @@
 COMPILE = $(CC) $(CFLAGS) -I. -MD -c -o $@ $<
 
 sdlgames: selector.o linuxrc.o nort.o sumo.o \
-          sdlstuff.o game256.o swash.o beebfont.o
+          sdlstuff.o game256.o swash.o beebfont.o utils.o
 	$(CC) $(LFLAGS) -o $@ $^ -lSDL -lpthread
 
 selector.o: selector.c; $(COMPILE)
@@ -11,6 +11,7 @@ linuxrc.o: linuxrc/linuxrc.c; $(COMPILE) -Dmain=linuxrc_main
 sdlstuff.o: sdlstuff.c; $(COMPILE)
 game256.o: game256.c; $(COMPILE)
 swash.o: swash.c; $(COMPILE)
+utils.o: utils.c; $(COMPILE)
 beebfont.o: beebfont.c; $(COMPILE)
 
 clean:
