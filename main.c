@@ -23,7 +23,7 @@ void run_command(int argc, char **argv)
 	ret = mkdir(dirpath, 0700);
 	if (ret < 0)
 	    fatal(err_perror, dirpath, "mkdir");
-	db_init();
+	sql_init_all();
 	store_init();
     }
 
@@ -221,7 +221,7 @@ int main(int argc, char **argv) {
     else
 	run_command(narguments, arguments);
 
-    db_close();
+    sql_close_all();
 
     return 0;
 }

@@ -103,8 +103,8 @@ extern const char *const version;
 /*
  * sqlite.c
  */
-void db_init(void);
-void db_close(void);
+void sql_init_all(void);
+void sql_close_all(void);
 int cfg_get_int(char *key);
 char *cfg_get_str(char *key);
 void cfg_set_str(char *key, char *str);

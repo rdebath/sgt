@@ -237,37 +237,58 @@ static const char *db_schema[] = {
     "  PRIMARY KEY (ego));",
 };
 
-static struct database db[1] = { DATABASE ("db", db_schema) };
+
+static const char *const ab_schema[] = {
+    "CREATE TABLE contacts ("
+    "  contact_id INTEGER PRIMARY KEY"
+    ");",
+    "INSERT INTO contacts VALUES (0);",
+
+    "CREATE TABLE attributes ("
+    "  contact_id INTEGER,"
+    "  value VARCHAR"
+    ");",
+};
 
 
-void db_init(void)
+static struct database db[] = {
+    DATABASE ("db", db_schema),
+    DATABASE ("ab", ab_schema)
+};
+static struct database *const ab = &db[1];
+
+
+void sql_init_all(void)
 {
     sql_init(db);
+    sql_init(ab);
 }
 
-void db_begin(void)
+void sql_close_all(void)
+{
+    sql_close(db);
+    sql_close(ab);
+}
+
+
+
+/*
+ *  Message index database.
+ */
+
+static void db_begin(void)
 {
     sql_transact (db, begin_transaction);
 }
 
-void db_rollback(void)
-{
-    sql_transact (db, rollback_transaction);
-}
-
-void db_commit(void)
+static void db_commit(void)
 {
     sql_transact (db, commit_transaction);
 }
 
-void db_close(void)
+static void db_open(void)
 {
-  sql_close(db);
-}
-
-void db_open(void)
-{
-  sql_open(db);
+    sql_open(db);
 }
 
 static char *cfg_get_internal(char *key)
