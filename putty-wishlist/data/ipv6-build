@@ -1,0 +1,18 @@
+Summary: We should provide IPv6-enabled binaries.
+Class: wish
+Priority: medium
+Difficulty: taxing
+Content-type: text/x-html-body
+
+<p>
+PuTTY has IPv6 support in the codebase, but it's not compiled in to
+the binaries we release. We don't currently have the headers and
+libraries needed to compile with IPv6 support, and haven't yet got
+round to getting hold of them. (Therefore, we don't test the IPv6
+support, either.)
+
+<p>
+In the meantime,
+<a href="http://unfix.org/projects/ipv6/">unfix.org</a> makes
+available some binaries compiled with -DIPV6. But note that we haven't
+personally checked them, and can't vouch for their trustworthiness.
