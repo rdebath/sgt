@@ -1,5 +1,5 @@
 #! /usr/bin/perl
-# $Id: bugs2html,v 1.34 2004/10/14 00:18:22 jacob Exp $
+# $Id: bugs2html,v 1.35 2004/10/14 01:02:22 jacob Exp $
 
 use FileHandle;
 use POSIX;
@@ -72,6 +72,10 @@ foreach $bugfile (glob("$bugdir/*")) {
         "cvs"  => `cvs status $bugfile`
     };
     add_release_fixes($bugname);
+}
+
+foreach my $bug (keys %bugs) {
+    knit_dependencies($bug);
 }
 
 foreach my $bug (keys %bugs) {
@@ -470,8 +474,14 @@ EOH
 	$h eq "priority" && ($desc = $prioritydesc{$hdrs->{$h}});
 	$h eq "difficulty" && ($desc = $difficultydesc{$hdrs->{$h}});
 	print HTML "<b>$h</b>: ";
-        if ($h eq "depends") {
-            print HTML map "<a href=\"$_.html\">$_</a>", (split ' ', $hdrs->{$h});
+        if (($h eq "depends") || ($h eq "blocks")) {
+            print HTML join " ", (map
+            {
+                my $r = "<a href=\"$_.html\">$_</a>";
+                $r = "<em>$r</em>"
+                    if !defined($bugs{$_}->{"hdrs"}->{"fixed-in"});
+                $r;
+            } (split ' ', $hdrs->{$h}));
 	} elsif (defined($desc)) {
 	    print HTML "<i>@{[$hdrs->{$h}]}:</i> $desc";
 	} else {
@@ -526,6 +536,20 @@ sub add_release_fixes {
     }
     $bugs{$bug}->{"hdrs"}->{"fixed-in"} =
         join " ", $bugs{$bug}->{"hdrs"}->{"fixed-in"}, @extra_fixed;
+}
+
+# For a given bug, adds symmetrical "blocks" pseudo-headers to other
+# bugs pointed at by this bug's "depends" header.
+sub knit_dependencies {
+    my ($bug) = @_;
+    foreach my $dep (split(' ', $bugs{$bug}->{"hdrs"}->{"depends"})) {
+        my @blocks = ();
+        if (defined($bugs{$dep}->{"hdrs"}->{"blocks"})) {
+            push @blocks, (split(' ', $bugs{$dep}->{"hdrs"}->{"blocks"}));
+        }
+        push @blocks, $bug unless grep(($_ eq $bug), @blocks);
+        $bugs{$dep}->{"hdrs"}->{"blocks"} = join " ", @blocks;
+    }
 }
 
 # Given a version string, return a canonical textual name
