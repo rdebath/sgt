@@ -1,5 +1,5 @@
 #! /usr/bin/perl
-# $Id: bugs2html,v 1.14 2003/01/03 17:38:47 ben Exp $
+# $Id: bugs2html,v 1.15 2003/01/10 12:14:36 simon Exp $
 
 use FileHandle;
 use POSIX;
@@ -71,7 +71,8 @@ nest(<<EOF);
 <a href="$baseurl/maillist.html">Updates</a> |
 <a href="$baseurl/feedback.html">Feedback</a> |
 <a href="$baseurl/changes.html">Changes</a> |
-<b>Wishlist</b></p>
+<b>Wishlist</b> |
+<a href="$baseurl/team.html">Team</a></p>
 
 <p>
 This is the list of bugs that need fixing, and features that want
