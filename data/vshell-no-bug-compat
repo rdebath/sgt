@@ -16,6 +16,12 @@ string (presented by
 is mistakenly triggering the HMAC bug compatibility mode.
 
 <p>
-(It might also be nice if users could force particular bug
-compatibility modes on or off in the configuration, as well as having
-them automatically detected.)
+A workaround in the current snapshots is to manually turn off
+detection of the bug (SSH / Bugs panel, "Miscomputes SSH2 HMAC
+keys").
+
+<p>
+A better solution would be to use the wildcard engine we already
+have for PS*P internally to match version strings. (This depends on
+our being able to reconstruct exactly which version strings we should
+be matching, of course!)
