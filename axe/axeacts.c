@@ -3,7 +3,6 @@
 #include <string.h>
 #include <ctype.h>
 
-#include <slang.h>
 #include "axe.h"
 
 static void act_exit (void);
@@ -95,24 +94,24 @@ static void act_exit(void) {
     if (modified) {
 	int c;
 
-	SLsmg_gotorc (SLtt_Screen_Rows-1, 0);
-	SLsmg_erase_eol ();
-	SLsmg_set_color (COL_MINIBUF);
-	SLsmg_write_string (question);
-	SLsmg_refresh();
+	display_moveto (display_rows-1, 0);
+	display_clear_to_eol ();
+	display_set_colour (COL_MINIBUF);
+	display_write_str (question);
+	display_refresh();
 	do {
 #if defined(unix) && !defined(GO32)
 	    if (update_required) {
 		update();
-		SLsmg_gotorc (SLtt_Screen_Rows-1, 0);
-		SLsmg_erase_eol ();
-		SLsmg_set_color (COL_MINIBUF);
-		SLsmg_write_string (question);
-		SLsmg_refresh();
+		display_moveto (display_rows-1, 0);
+		display_clear_to_eol ();
+		display_set_colour (COL_MINIBUF);
+		display_write_str (question);
+		display_refresh();
 	    }
 	    safe_update = TRUE;
 #endif
-	    c = SLang_getkey();
+	    c = display_getkey();
 #if defined(unix) && !defined(GO32)
 	    safe_update = FALSE;
 #endif
@@ -136,14 +135,14 @@ static void act_save(void) {
 
     if (!backed_up) {
 	if (!backup_file()) {
-	    SLtt_beep();
+	    display_beep();
 	    strcpy (message, "Unable to back up file!");
 	    return;
 	}
 	backed_up = TRUE;
     }
     if (!save_file()) {
-	SLtt_beep();
+	display_beep();
 	strcpy (message, "Unable to save file!");
 	return;
     }
@@ -289,7 +288,7 @@ static void act_bottom (void) {
 
 static void act_togins(void) {
     if (look_mode || fix_mode) {
-	SLtt_beep();
+	display_beep();
 	sprintf(message, "Can't engage Insert mode when in %s mode",
 		(look_mode ? "LOOK" : "FIX"));
 	insert_mode = FALSE;	       /* safety! */
@@ -309,7 +308,7 @@ void act_self_ins(void) {
     unsigned char c;
 
     if (look_mode) {
-	SLtt_beep();
+	display_beep();
 	strcpy (message, "Can't modify file in LOOK mode");
 	return;
     }
@@ -322,14 +321,14 @@ void act_self_ins(void) {
 	else if (last_char >= 'a' && last_char <= 'f')
 	    last_char -= 'a'-10;
 	else {
-	    SLtt_beep();
+	    display_beep();
 	    strcpy(message, "Not a valid character when in hex editing mode");
 	    return;
 	}
     }
 
     if ( (!insert || edit_type == 2) && cur_pos == file_size) {
-	SLtt_beep();
+	display_beep();
 	strcpy(message, "End of file reached");
 	return;
     }
@@ -362,7 +361,7 @@ void act_self_ins(void) {
 	buf_overwrite_data(filedata, &c, 1, cur_pos);
 	modified = TRUE;
     } else {
-	SLtt_beep();
+	display_beep();
 	strcpy(message, "End of file reached");
     }
     act_right();
@@ -370,7 +369,7 @@ void act_self_ins(void) {
 
 static void act_delete(void) {
     if (!insert_mode || (edit_type!=2 && cur_pos==0)) {
-	SLtt_beep();
+	display_beep();
 	strcpy (message, "Can't delete while not in Insert mode");
     } else if (cur_pos > 0 || edit_type == 2) {
 	act_left();
@@ -383,7 +382,7 @@ static void act_delete(void) {
 
 static void act_delch(void) {
     if (!insert_mode) {
-	SLtt_beep();
+	display_beep();
 	strcpy (message, "Can't delete while not in Insert mode");
     } else if (cur_pos < file_size) {
 	buf_delete (filedata, 1, cur_pos);
@@ -395,7 +394,7 @@ static void act_delch(void) {
 
 static void act_mark (void) {
     if (look_mode) {
-	SLtt_beep();
+	display_beep();
 	strcpy (message, "Can't cut or paste in LOOK mode");
 	marking = FALSE;	       /* safety */
 	return;
@@ -408,12 +407,12 @@ static void act_cut (void) {
     long marktop, marksize;
 
     if (!marking || mark_point==cur_pos) {
-	SLtt_beep();
+	display_beep();
 	strcpy (message, "Set mark first");
 	return;
     }
     if (!insert_mode) {
-	SLtt_beep();
+	display_beep();
 	strcpy (message, "Can't cut while not in Insert mode");
 	return;
     }
@@ -441,7 +440,7 @@ static void act_copy (void) {
     int marktop, marksize;
 
     if (!marking) {
-	SLtt_beep();
+	display_beep();
 	strcpy (message, "Set mark first");
 	return;
     }
@@ -463,7 +462,7 @@ static void act_paste (void) {
     cutsize = buf_length (cutbuffer);
     if (!insert_mode) {
 	if (cur_pos + cutsize > file_size) {
-	    SLtt_beep();
+	    display_beep();
 	    strcpy (message, "Too close to end of file to paste");
 	    return;
 	}
@@ -497,13 +496,13 @@ static void act_goto (void) {
 
     position = parse_num (buffer, &error);
     if (error) {
-	SLtt_beep();
+	display_beep();
 	strcpy (message, "Unable to parse position value");
 	return;
     }
 
     if (position < 0 || position > file_size) {
-	SLtt_beep();
+	display_beep();
 	strcpy (message, "Position is outside bounds of file");
 	return;
     }
@@ -549,7 +548,7 @@ static void act_search (void) {
     } else {
 	len = parse_quoted (buffer);
 	if (len == -1) {
-	    SLtt_beep();
+	    display_beep();
 	    strcpy (message, "Invalid escape sequence in search string");
 	    return;
 	}
@@ -586,11 +585,10 @@ static void act_search (void) {
 }
 
 static void act_recentre (void) {
-    top_pos = cur_pos - (SLtt_Screen_Rows-2)/2 * width;
+    top_pos = cur_pos - (display_rows-2)/2 * width;
     if (top_pos < 0)
 	top_pos = 0;
     top_pos = begline(top_pos);
-    SLsmg_touch_lines (0, SLtt_Screen_Rows);
 }
 
 static void act_width (void) {
@@ -605,7 +603,7 @@ static void act_width (void) {
 	return;
     w = parse_num (buffer, &error);
     if (error) {
-	SLtt_beep();
+	display_beep();
 	strcpy (message, "Unable to parse width value");
 	return;
     }
@@ -632,7 +630,7 @@ static void act_offset (void) {
 	return;
     o = parse_num (buffer, &error);
     if (error) {
-	SLtt_beep();
+	display_beep();
 	strcpy (message, "Unable to parse offset value");
 	return;
     }

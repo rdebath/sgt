@@ -78,6 +78,7 @@ static char *default_rc[] = {
     "bind toggle-insert ^@R",
 #endif
     "bind change-mode ^M",
+    "bind change-mode ^J",
     "bind quote-next ^Q",
     "bind toggle-status ^XH",
     "bind toggle-status ^Xh",
