@@ -1,6 +1,6 @@
 # -*- mode: sh; mode: fold -*-
 # Simon Tatham's standardised chunk of .bashrc
-# $Revision: 1.44 $
+# $Revision: 1.45 $
 
 #{{{ I don't like .bash_history files. They wet their nests.
 unset HISTFILE
@@ -443,12 +443,11 @@ alias xlsfonts='bashrc_a_shopts="$SHELLOPTS"; set -f; xlsfonts'
 rfc() {
   local filename
   local host
-  host="sunsite.org.uk"
+  host="www.ietf.org"
   while test $# -gt 0; do
     case $1 in
       -h) host="$2"; shift;;
-      -i) host=www.ietf.org;;
-      --help) echo "Usage: rfc [-i] [-h hostname] [index | rfc-number]";
+      --help) echo "Usage: rfc [-h hostname] [index | rfc-number]";
               return 0;;
       -*) echo Unrecognised option "$1" >&2; return 1 ;;
       *) if test "$1" = "index"; then
