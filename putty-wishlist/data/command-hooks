@@ -1,0 +1,16 @@
+Summary: Hooks to run external commands (e.g. after forwarding set up)
+Class: wish
+Difficulty: fun
+Priority: medium
+Content-type: text/x-html-body
+
+<p>
+We occasionally get asked for the ability to run external commands at
+various points in PuTTY's operation. One particularly common request
+is for some way to invoke a command after authentication has completed
+and port forwarding has been set up, to start an application that's
+dependent on the forwarding being in place.
+
+<p>
+Possibly an application for <a href="scripting.html">scripting</a>,
+although many common cases wouldn't need that level of flexibility.
