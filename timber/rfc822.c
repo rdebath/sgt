@@ -155,7 +155,7 @@ void parse_message(const char *message, int msglen,
     struct mime_record *toplevel_part;
     int default_charset = CS_CP1252;
 
-    toplevel_part = smalloc(sizeof(struct mime_record));
+    toplevel_part = snew(struct mime_record);
 
     init_mime_record(toplevel_part);
 
@@ -300,7 +300,7 @@ void recurse_mime_part(const char *base, struct mime_record *mr,
 
 		    if (partstart) {
 			struct mime_record *this_part;
-			this_part = smalloc(sizeof(struct mime_record));
+			this_part = snew(struct mime_record);
 			init_mime_record(this_part);
 			**next = this_part;
 			*next = &this_part->next;
@@ -332,7 +332,7 @@ void recurse_mime_part(const char *base, struct mime_record *mr,
 	 * irrelevant.
 	 */
 	struct mime_record *this_part;
-	this_part = smalloc(sizeof(struct mime_record));
+	this_part = snew(struct mime_record);
 	init_mime_record(this_part);
 	**next = this_part;
 	*next = &this_part->next;
@@ -622,7 +622,7 @@ void parse_headers(char const *base, char const *message, int msglen,
 			}
 			if (displen > 0) {
 			    int i;
-			    dispdata = smalloc(displen);
+			    dispdata = snewn(displen, char);
 			    i = 0;
 			    while (lh3 < lh2-3) {
 				memcpy(dispdata+i, lh3->token,
@@ -668,7 +668,7 @@ void parse_headers(char const *base, char const *message, int msglen,
 			    struct message_parse_info inf;
 			    inf.type = PARSE_MESSAGE_ID;
 			    inf.header = hdr->header_id;
-			    inf.u.string = smalloc(1+lh[1].length);
+			    inf.u.string = snewn(1+lh[1].length, char);
 			    memcpy(inf.u.string, lh[1].token, lh[1].length);
 			    inf.u.string[lh[1].length] = '\0';
 			    info(infoctx, &inf);
@@ -1145,7 +1145,7 @@ struct lexed_header *lex_header(char const *header, int length, int type)
 	 */
 	if (retlen >= retsize) {
 	    retsize = retlen + 64;
-	    ret = srealloc(ret, retsize * sizeof(*ret));
+	    ret = sresize(ret, retsize, struct lexed_header);
 	}
 	tok = &ret[retlen];
 	retlen++;
@@ -1242,11 +1242,11 @@ void parse_content_type(struct lexed_header *lh, struct mime_record *mr)
 	( lh[1].is_punct && lh[1].length > 0 && *lh[1].token == '/') &&
 	(!lh[2].is_punct && lh[2].length > 0)) {
 	int i;
-	mr->md.major = smalloc(1+lh[0].length);
+	mr->md.major = snewn(1+lh[0].length, char);
 	for (i = 0; i < lh[0].length; i++)
 	    mr->md.major[i] = tolower(lh[0].token[i]);
 	mr->md.major[lh[0].length] = '\0';
-	mr->md.minor = smalloc(1+lh[2].length);
+	mr->md.minor = snewn(1+lh[2].length, char);
 	for (i = 0; i < lh[2].length; i++)
 	    mr->md.minor[i] = tolower(lh[2].token[i]);
 	mr->md.minor[lh[2].length] = '\0';
@@ -1276,7 +1276,7 @@ void parse_content_type(struct lexed_header *lh, struct mime_record *mr)
 	     * parameter is one we know how to handle.
 	     */
 	    if (!istrlencmp(lh[0].token, lh[0].length, SL("charset"))) {
-		char *cset = smalloc(1 + lh[2].length);
+		char *cset = snewn(1 + lh[2].length, char);
 		int csl;
 
 		csl = unquote(lh[2].token, lh[2].length, TRUE, cset);
@@ -1289,7 +1289,7 @@ void parse_content_type(struct lexed_header *lh, struct mime_record *mr)
 		    int len;
 
 		    sfree(mr->md.filename);
-		    mr->md.filename = smalloc(1 + lh[2].length);
+		    mr->md.filename = snewn(1 + lh[2].length, char);
 		    len = unquote(lh[2].token, lh[2].length, TRUE,
 				  mr->md.filename);
 		    assert(len <= lh[2].length);
@@ -1301,7 +1301,7 @@ void parse_content_type(struct lexed_header *lh, struct mime_record *mr)
 		int len;
 
 		sfree(mr->boundary);
-		mr->boundary = smalloc(1 + lh[2].length);
+		mr->boundary = snewn(1 + lh[2].length, char);
 		len = unquote(lh[2].token, lh[2].length, TRUE,
 			      mr->boundary);
 		assert(len <= lh[2].length);
@@ -1371,7 +1371,7 @@ void parse_content_disp(struct lexed_header *lh, struct mime_record *mr)
 		int len;
 
 		sfree(mr->md.filename);
-		mr->md.filename = smalloc(1 + lh[2].length);
+		mr->md.filename = snewn(1 + lh[2].length, char);
 		len = unquote(lh[2].token, lh[2].length, TRUE,
 			      mr->md.filename);
 		assert(len <= lh[2].length);
@@ -1444,7 +1444,7 @@ void utf8_string_output(void *vctx, const char *text, int len,
 					       &outstate, NULL)) > 0) {
 	    if (ctx->textlen + midret >= ctx->textsize) {
 		ctx->textsize = ctx->textlen + midret + 256;
-		ctx->text = srealloc(ctx->text, ctx->textsize);
+		ctx->text = sresize(ctx->text, ctx->textsize, char);
 	    }
 	    memcpy(ctx->text + ctx->textlen, outbuf, midret);
 	    ctx->textlen += midret;
@@ -1481,7 +1481,7 @@ void info_addr(parser_info_fn_t info, void *infoctx,
     /*
      * `addr' must not.
      */
-    inf.u.addr.address = smalloc(1+addrlen);
+    inf.u.addr.address = snewn(1+addrlen, char);
     memcpy(inf.u.addr.address, addr, addrlen);
     inf.u.addr.address[addrlen] = '\0';
 
@@ -1608,7 +1608,7 @@ int main(void)
 
 	if (msgsize - msglen < 1024) {
 	    msgsize = msglen + 1024;
-	    message = srealloc(message, msgsize);
+	    message = sresize(message, msgsize, char);
 	}
 
 	ret = read(0, message + msglen, msgsize - msglen);

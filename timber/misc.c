@@ -121,8 +121,8 @@ int write_wrapped(int fd, char *data, int length)
 
 void init_mime_details(struct mime_details *md)
 {
-    md->major = smalloc(5); strcpy(md->major, "text");
-    md->minor = smalloc(6); strcpy(md->minor, "plain");
+    md->major = dupstr("text");
+    md->minor = dupstr("plain");
     md->transfer_encoding = NO_ENCODING;
     md->charset = CS_ASCII;
     md->disposition = UNSPECIFIED;
@@ -142,7 +142,7 @@ void free_mime_details(struct mime_details *md)
 
 char *dupstr(const char *s)
 {
-    char *ret = smalloc(1+strlen(s));
+    char *ret = snewn(1+strlen(s), char);
     strcpy(ret, s);
     return ret;
 }

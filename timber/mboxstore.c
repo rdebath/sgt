@@ -29,7 +29,7 @@ static int mbox_lockfd = -1;
 static int mbox_write_lock(void)
 {
     struct flock lock;
-    char *lockname = smalloc(200 + strlen(dirpath));
+    char *lockname = snewn(200 + strlen(dirpath), char);
     sprintf(lockname, "%s/lockfile", dirpath);
 
     mbox_lockfd = open(lockname, O_RDWR);
@@ -257,7 +257,7 @@ static char *mbox_store_literal_inner(char *boxname,
      */
     {
 	char *ret;
-	ret = smalloc(80);
+	ret = snewn(80, char);
 	sprintf(ret, "mbox%d:%d:%d",
 		boxnum, (int)oldlen, (int)(newlen - oldlen));
 	return ret;
@@ -272,7 +272,7 @@ static char *mbox_store_literal_inner(char *boxname,
 static char *mbox_store_literal(char *message, int msglen, char *separator)
 {
     char *ret;
-    char *boxname = smalloc(200 + strlen(dirpath));
+    char *boxname = snewn(200 + strlen(dirpath), char);
 
     if (!mbox_write_lock()) {
 	return NULL;
@@ -301,7 +301,7 @@ static char *mbox_store_retrieve(const char *location, int *msglen,
     *p++ = '\0';
     offset = atoi(p);
     length = atoi(q);
-    boxname = smalloc(200 + strlen(locmod) + strlen(dirpath));
+    boxname = snewn(200 + strlen(locmod) + strlen(dirpath), char);
     sprintf(boxname, "%s/%s", dirpath, locmod);
 
     fd = open(boxname, O_RDONLY);
@@ -313,7 +313,7 @@ static char *mbox_store_retrieve(const char *location, int *msglen,
 	error(err_perror, boxname, "lseek");
 	goto cleanup;
     }
-    message = smalloc(length);
+    message = snewn(length, char);
     msgoff = 0;
     while (msgoff < length) {
 	int ret;
@@ -340,7 +340,7 @@ static char *mbox_store_retrieve(const char *location, int *msglen,
 	    p++;
 	if (p < message+length) {
 	    *p++ = '\0';
-	    *separator = smalloc(p-message);
+	    *separator = snewn(p-message, char);
 	    strcpy(*separator, message);
 	}
     }
@@ -377,7 +377,7 @@ static char *mbox_store_retrieve(const char *location, int *msglen,
 
 static void mbox_store_init(void)
 {
-    char *lockname = smalloc(200 + strlen(dirpath));
+    char *lockname = snewn(200 + strlen(dirpath), char);
     sprintf(lockname, "%s/lockfile", dirpath);
 
     if (creat(lockname, 0600) < 0)

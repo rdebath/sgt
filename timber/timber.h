@@ -74,6 +74,16 @@ void *srealloc(void *p, int size);
 void sfree(void *p);
 
 /*
+ * Direct use of smalloc within the code should be avoided where
+ * possible, in favour of these type-casting macros which ensure
+ * you don't mistakenly allocate enough space for one sort of
+ * structure and assign it to a different sort of pointer.
+ */
+#define snew(type) ((type *)smalloc(sizeof(type)))
+#define snewn(n, type) ((type *)smalloc((n)*sizeof(type)))
+#define sresize(ptr, n, type) ((type *)srealloc(ptr, (n)*sizeof(type)))
+
+/*
  * help.c
  */
 void help(void);

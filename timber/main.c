@@ -67,7 +67,7 @@ int main(int argc, char **argv) {
 
     homedir = getenv("HOME");
     if (homedir == NULL) homedir = "/";
-    dirpath = smalloc(strlen(homedir) + 20);
+    dirpath = snewn(strlen(homedir) + 20, char);
     sprintf(dirpath, "%s%s.timber", homedir,
             homedir[strlen(homedir)-1] == '/' ? "" : "/");
 
@@ -189,7 +189,7 @@ int main(int argc, char **argv) {
 	     */
 	    if (narguments >= argsize) {
 		argsize = narguments + 32;
-		arguments = srealloc(arguments, argsize * sizeof(*arguments));
+		arguments = sresize(arguments, argsize, char *);
 	    }
 	    arguments[narguments++] = p;
 	    parsing_opts = FALSE;

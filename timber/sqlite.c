@@ -27,7 +27,7 @@ void db_init(void)
     sqlite *db;
     char *err;
 
-    dbpath = smalloc(5 + strlen(dirpath));
+    dbpath = snewn(5 + strlen(dirpath), char);
     sprintf(dbpath, "%s/db", dirpath);
 
     db = sqlite_open(dbpath, 0666, &err);
@@ -185,7 +185,7 @@ void db_open(void)
     if (db)
 	return;			       /* already open! */
 
-    dbpath = smalloc(5 + strlen(dirpath));
+    dbpath = snewn(5 + strlen(dirpath), char);
     sprintf(dbpath, "%s/db", dirpath);
 
     if (stat(dbpath, &sb) < 0 && errno == ENOENT)
@@ -405,8 +405,7 @@ char *message_location(const char *ego)
     if (err) fatal(err_dberror, err);
     if (rows > 0) {
 	assert(cols == 1);
-	ret = smalloc(1+strlen(table[1]));
-	strcpy(ret, table[1]);
+	ret = dupstr(table[1]);
     } else
 	ret = NULL;
     sqlite_free_table(table);
@@ -431,7 +430,7 @@ struct mime_details *find_mime_parts(const char *ego, int *nparts)
     if (err) fatal(err_dberror, err);
     if (rows > 0) {
 	assert(cols == 10);
-	ret = smalloc((rows) * sizeof(struct mime_details));
+	ret = snewn(rows, struct mime_details);
 	for (i = 1; i < rows+1; i++) {
 	    ret[i-1].major = dupstr(table[cols*i + 0]);
 	    ret[i-1].minor = dupstr(table[cols*i + 1]);

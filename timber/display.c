@@ -31,7 +31,7 @@ int mime_parts_overlap(const struct mime_details *md1,
  */
 int *mime_part_parents(const struct mime_details *md, int nmd)
 {
-    int *ret = smalloc(nmd * sizeof(int));
+    int *ret = snewn(nmd, int);
     int i, j;
 
     ret[0] = -1;		       /* special case */
@@ -374,7 +374,7 @@ void display_message(char *ego, int charset, int type, int full)
 		buflen += strlen(md[i].minor);
 		buflen += strlen(charsetstr);
 
-		buf = smalloc(buflen);
+		buf = snewn(buflen, char);
 		p = buf;
 		k = i;
 		while (parents[k] >= mindisp) {
@@ -420,13 +420,13 @@ void display_message(char *ego, int charset, int type, int full)
 		    declen = md[i].length;
 		    break;
 		  case QP:
-		    dbuffer = smalloc(md[i].length);
+		    dbuffer = snewn(md[i].length, char);
 		    declen = qp_decode(message + md[i].offset, md[i].length,
 				       dbuffer, FALSE);
 		    decoded = dbuffer;
 		    break;
 		  case BASE64:
-		    dbuffer = smalloc(base64_decode_length(md[i].length));
+		    dbuffer = snewn(base64_decode_length(md[i].length), char);
 		    declen = base64_decode(message + md[i].offset,
 					   md[i].length, dbuffer);
 		    decoded = dbuffer;
@@ -458,7 +458,7 @@ void display_message(char *ego, int charset, int type, int full)
 			 * Part k has ended.
 			 */
 			int buflen = 40+2*nmd;
-			char *buf = smalloc(buflen);
+			char *buf = snewn(buflen, char);
 			char *p = buf;
 
 			l = k;
