@@ -615,18 +615,43 @@ static int play_game(void)
 	    if (dying[i]>0) {
 		if (dying[i]<dead) dying[i]++;
 	    } else {
+		int axis, accel, brake, fire, friction;
+		axis = SDL_JoystickGetAxis(joys[i], 0) / JOY_THRESHOLD;
+		accel = SDL_JoystickGetButton(joys[i], 1);   /* X */
+		brake = SDL_JoystickGetButton(joys[i], 0);   /* Square */
+		fire = SDL_JoystickGetButton(joys[i], 3);   /* Triangle */
+
+		/*
+		 * The player can fire whenever they like, as long
+		 * as they aren't already dying. Even if their
+		 * centre point is off solid ground and they can't
+		 * do anything _else_, they can still fire, in the
+		 * hope of the recoil saving them.
+		 */
+		if (fire && !pfire[i]) {
+		    jj = -1;
+		    for (j = 0; j < MAX_BULLETS; j++)
+			if(!ba[i][j]) {
+			    jj = j;
+			    break;
+			}
+		    if (jj != -1) {
+			bx[i][j] = x[i]+622592+sine[angle[i]+9]*165;
+			by[i][j] = y[i]+622592-sine[angle[i]]*165;
+			bvx[i][j] = 38*sine[angle[i]+9];
+			bvy[i][j] = -38*sine[angle[i]];
+			ba[i][j] = TRUE;
+			vx[i] = vx[i]-4*sine[angle[i]+9];
+			vy[i] = vy[i]+4*sine[angle[i]];
+		    }
+		}
+		pfire[i] = fire;
 
 		/*
 		 * If the player's centre point is on solid ground,
-		 * they can steer.
+		 * they can steer, accelerate and brake.
 		 */
-
 		if (player_can_steer(x[i], y[i])) {
-		    int axis, accel, brake, fire, friction;
-		    axis = SDL_JoystickGetAxis(joys[i], 0) / JOY_THRESHOLD;
-		    accel = SDL_JoystickGetButton(joys[i], 1);   /* X */
-		    brake = SDL_JoystickGetButton(joys[i], 0);   /* Square */
-		    fire = SDL_JoystickGetButton(joys[i], 3);   /* Triangle */
 		    if (axis < 0) rangle[i] = (rangle[i]+1) % 72;
 		    if (axis > 0) rangle[i] = (rangle[i]+71) % 72;
 		    angle[i] = rangle[i] >> 1;
@@ -639,40 +664,19 @@ static int play_game(void)
 			vx[i] = vx[i]+sine[angle[i]+9];
 			vy[i] = vy[i]-sine[angle[i]];
 		    }
-		    if (fire && !pfire[i]) {
-			jj = -1;
-			for (j = 0; j < MAX_BULLETS; j++)
-			    if(!ba[i][j]) {
-				jj = j;
-				break;
-			    }
-			if (jj != -1) {
-			    bx[i][j] = x[i]+622592+sine[angle[i]+9]*165;
-			    by[i][j] = y[i]+622592-sine[angle[i]]*165;
-			    bvx[i][j] = 38*sine[angle[i]+9];
-			    bvy[i][j] = -38*sine[angle[i]];
-			    ba[i][j] = TRUE;
-			    vx[i] = vx[i]-4*sine[angle[i]+9];
-			    vy[i] = vy[i]+4*sine[angle[i]];
-			}
-		    }
-		    pfire[i] = fire;
+		}
+
+		if (player_is_alive(x[i], y[i])) {
 		    check_mirrors(x[i], y[i], &vx[i], &vy[i]);
 		    x[i] = x[i]+vx[i];
 		    y[i] = y[i]+vy[i];
 		} else {
-		    if (player_is_alive(x[i], y[i])) {
-			check_mirrors(x[i], y[i], &vx[i], &vy[i]);
-			x[i] = x[i]+vx[i];
-			y[i] = y[i]+vy[i];
-		    } else {
-			makedeath(i,angle[i]);
-			dying[i] = 1;
-			gameover = 1;
-		    }
+		    makedeath(i,angle[i]);
+		    dying[i] = 1;
+		    gameover = 1;
 		}
 		clip(&x[i], &y[i], &vx[i], &vy[i]);
-}
+	    }
 	}
 
 	dx = x[1]-x[0]; dx = sign(dx)*(abs(dx) >> 16);
