@@ -1,6 +1,11 @@
 Release FIXME
 -------------
 
+ - Makefile adjustments: ensure bogus stuff left in `levels'
+   directory doesn't get hit by `make install', and ensure it
+   doesn't get hit by tarball generator either. The `CVS' directory,
+   for example.
+
 Release 1.03
 ------------
 
