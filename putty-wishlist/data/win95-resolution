@@ -19,6 +19,10 @@ all the apps except Plink linked against WinSock 1.)
 The error reported is "<tt>ssh_init: Host does not exist</tt>".
 
 <p>
+I (JTN) have had a brief look at the 0.56 name resolution code and
+can't see anything obviously wrong or potentially dubious about it.
+
+<p>
 Reports:
 <ul>
 <li><tt>E1Bq1Ni-00053V-00@smtp6.mindspring.com</tt> (looks like
