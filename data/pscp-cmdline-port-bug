@@ -1,0 +1,25 @@
+Summary: -P option sometimes ignored by PSCP
+Class: bug
+Difficulty: fun
+Priority: high
+Absent-in: 0.52
+Present-in: 0.53
+Fixed-in: 2002-10-08
+Content-type: text/x-html-body
+
+<p>
+There have been a lot of reports that the <tt>-P port</tt>
+command-line argument is ignored in PSCP 0.53 (with it instead using
+port 22 regardless).
+
+<p>
+This occurs whenever the protocol is not explicitly set to SSH in a
+saved session. For most people, the likely cause is use of a hostname
+which doesn't correspond to a saved session; PSCP picks up the Default
+Settings, which currently have a factory default protocol of Telnet.
+
+<p>
+Workarounds are therefore to either create a saved session for the
+relevant host or to set up SSH as the default protocol in Default
+Settings. Additionally, this should be fixed in the development
+snapshots.
