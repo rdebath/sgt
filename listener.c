@@ -23,6 +23,9 @@
  *    socket, the port number the connection arrived on, and the
  *    address of the remote end of the connection.
  *
+ *  - `listener_cmdline' is a function called at startup with the
+ *    program's command line.
+ *
  *  - resource 200 should be an icon.
  */
 
@@ -37,6 +40,7 @@
 extern char const *listener_appname;
 extern int listener_nports;
 extern int const *listener_ports;
+extern void listener_cmdline(char *cmdline);
 extern int listener_newthread(SOCKET sock, int port, SOCKADDR_IN remoteaddr);
 
 HINSTANCE listener_instance;
@@ -181,6 +185,8 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int show) {
 
     listener_instance = inst;
 
+    listener_cmdline(cmdline);
+
     winsock_ver = MAKEWORD(1, 1);
     if (WSAStartup(winsock_ver, &wsadata)) {
 	MessageBox(NULL, "Unable to initialise WinSock", "WinSock Error",
@@ -219,7 +225,7 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int show) {
 
     setup_sockets();
 
-    ShowWindow (listener_hwnd, show);
+    ShowWindow (listener_hwnd, SW_SHOWMINIMIZED);
 
     while (GetMessage (&msg, NULL, 0, 0) == 1) {
         TranslateMessage (&msg);
