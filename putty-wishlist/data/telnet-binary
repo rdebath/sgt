@@ -2,7 +2,7 @@ Summary: PuTTY doesn't support the BINARY option
 Class: bug
 Priority: medium
 Difficulty: fun
-Present-in: 0.53b 2002-12-29
+Present-in: 0.53b 2002-12-19
 Content-type: text/x-html-body
 
 <p>
@@ -12,3 +12,8 @@ PuTTY doesn't support the TELNET
 (section 3.3.3)
 states that TELNET implementations MUST support it, so its absence is
 a bug.
+
+<p>
+SGT, 2002-12-19: I've checked in an implementation which should
+appear in 2002-12-20 and beyond, but it's untested as yet so I won't
+mark this fixed for the moment.
