@@ -215,11 +215,7 @@ def do(args):
     if len(list) > 0:
 	process_utf8(liststepper(list))
 
-args = sys.argv[1:]
-output_analysis = 1
-han_translations = 0
-
-if args == [] or args == ["--help"] or args == ["--help-admin"]:
+def usage(arg):
     print "Usage: cvt-utf8 [flags] <hex UTF-8 bytes and/or U+codepoints>"
     print "  e.g. cvt-utf8 e2 82 ac"
     print "    or cvt-utf8 U+20ac"
@@ -232,7 +228,7 @@ if args == [] or args == ["--help"] or args == ["--help-admin"]:
     print "Also:  cvt-utf8 --test       run Markus Kuhn's decoder stress tests" #'
     print "       cvt-utf8 --input (or -i)"
     print "                             read, analyse and decode UTF-8 from stdin"
-    if args == ["--help-admin"]:
+    if arg == "--help-admin":
         print "       cvt-utf8 --help       display user help text"
         print "       cvt-utf8 --help-admin display admin help text (this one)"
         print "       cvt-utf8 --build <infile> <outfile>"
@@ -248,82 +244,150 @@ if args == [] or args == ["--help"] or args == ["--help-admin"]:
     else:
         print "       cvt-utf8 --help       display this help text"
         print "       cvt-utf8 --help-admin display admin help text"
-    sys.exit(0)
+    print "       cvt-utf8 --version    report version number"
+    print "       cvt-utf8 --licence    display (MIT) licence text"
 
-if args[0] == "-o" or args[0] == "--output":
-    output_analysis = 0
-    args = args[1:]
+def licence():
+    print "cvt-utf8 is copyright 2002-2004 Simon Tatham."
+    print ""
+    print "Permission is hereby granted, free of charge, to any person"
+    print "obtaining a copy of this software and associated documentation files"
+    print "(the \"Software\"), to deal in the Software without restriction,"
+    print "including without limitation the rights to use, copy, modify, merge,"
+    print "publish, distribute, sublicense, and/or sell copies of the Software,"
+    print "and to permit persons to whom the Software is furnished to do so,"
+    print "subject to the following conditions:"
+    print ""
+    print "The above copyright notice and this permission notice shall be"
+    print "included in all copies or substantial portions of the Software."
+    print ""
+    print "THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND,"
+    print "EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF"
+    print "MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND"
+    print "NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS"
+    print "BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN"
+    print "ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN"
+    print "CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE"
+    print "SOFTWARE."
 
-if args[0] == "-h" or args[0] == "--han":
-    han_translations = 1
-    args = args[1:]
-
-if args[0] == "--build" or args[0] == "--fetch-build":
-    if args[0] == "--build":
-	if len(args) != 3:
-	    print "cvt-utf8: --build expects two filename arguments"
-	    sys.exit(1)
-	infile = open(args[1], "r")
-	outfile = args[2]
+def version():
+    rev = "$Revision$"
+    rev = string.replace(rev, " ", "")
+    rev = string.replace(rev, "$", "")
+    revs = string.split(rev, ":")
+    if len(revs) > 1:
+	print "cvt-utf8 revision %s" % revs[1]
     else:
-	if len(args) != 2:
-	    print "cvt-utf8: --fetch-build expects one filename argument"
-	    sys.exit(1)
-	import urllib
-	infile = urllib.urlopen("http://www.unicode.org/Public/UNIDATA/UnicodeData.txt")
-	outfile = args[1]
-    # Now build the database.
-    if outfile[-3:] == ".db":
-	print "cvt-utf8: warning: you should not append .db to db name"
+	print "cvt-utf8: unknown version"
 
-    db = anydbm.open(outfile, "n")
-    while 1:
-	s = infile.readline()
-	if s == "": break
-	ss = string.split(s, ";")[0]
-	db[ss] = s
-    db.close()
+args = sys.argv[1:]
+output_analysis = 1
+han_translations = 0
+mode = "cmdline"
+
+if args == []:
+    usage("")
     sys.exit(0)
 
-if args[0] == "--build-unihan" or args[0] == "--fetch-build-unihan":
-    if args[0] == "--build-unihan":
-        if len(args) != 3:
-            print "cvt-utf8: --build expects two filename arguments"
-            sys.exit(1)
-        infile = open(args[1], "r")
-        s = infile.read(1)
-        # Unihan.txt starts with a hash. If this file starts with a
-        # P, we assume it's a zip file ("PK").
-        if s == "P":
-            infile = zip_untangler(infile, s)
-            s = ""
-        outfile = args[2]
+while len(args) > 0 and args[0][:1] == "-":
+    if args[0] == "--help" or args[0] == "--help-admin":
+	usage(args[0])
+	sys.exit(0)
+
+    elif args[0] == "--licence" or args[0] == "--license":
+	licence()
+	sys.exit(0)
+
+    elif args[0] == "--version":
+	version()
+	sys.exit(0)
+
+    elif args[0] == "-o" or args[0] == "--output":
+	output_analysis = 0
+	args = args[1:]
+
+    elif args[0] == "-h" or args[0] == "--han":
+	han_translations = 1
+	args = args[1:]
+
+    elif args[0] == "--build" or args[0] == "--fetch-build":
+	if args[0] == "--build":
+	    if len(args) != 3:
+		print "cvt-utf8: --build expects two filename arguments"
+		sys.exit(1)
+	    infile = open(args[1], "r")
+	    outfile = args[2]
+	else:
+	    if len(args) != 2:
+		print "cvt-utf8: --fetch-build expects one filename argument"
+		sys.exit(1)
+	    import urllib
+	    infile = urllib.urlopen("http://www.unicode.org/Public/UNIDATA/UnicodeData.txt")
+	    outfile = args[1]
+	# Now build the database.
+	if outfile[-3:] == ".db":
+	    print "cvt-utf8: warning: you should not append .db to db name"
+
+	db = anydbm.open(outfile, "n")
+	while 1:
+	    s = infile.readline()
+	    if s == "": break
+	    ss = string.split(s, ";")[0]
+	    db[ss] = s
+	db.close()
+	sys.exit(0)
+
+    elif args[0] == "--build-unihan" or args[0] == "--fetch-build-unihan":
+	if args[0] == "--build-unihan":
+	    if len(args) != 3:
+		print "cvt-utf8: --build expects two filename arguments"
+		sys.exit(1)
+	    infile = open(args[1], "r")
+	    s = infile.read(1)
+	    # Unihan.txt starts with a hash. If this file starts with a
+	    # P, we assume it's a zip file ("PK").
+	    if s == "P":
+		infile = zip_untangler(infile, s)
+		s = ""
+	    outfile = args[2]
+	else:
+	    if len(args) != 2:
+		print "cvt-utf8: --fetch-build-unihan expects one filename argument"
+		sys.exit(1)
+	    import urllib
+	    infile = urllib.urlopen("ftp://ftp.unicode.org/Public/UNIDATA/Unihan.zip")
+	    # We know this one is zipped.
+	    infile = zip_untangler(infile, "")
+	    outfile = args[1]
+	    s = ""
+	# Now build the database.
+	if outfile[-3:] == ".db":
+	    print "cvt-utf8: warning: you should not append .db to db name"
+
+	db = anydbm.open(outfile, "n")
+	while 1:
+	    s = s + infile.readline()
+	    if s == "": break
+	    while s[-1:] == "\r" or s[-1:] == "\n":
+		s = s[:-1]
+	    sa = string.split(s, "\t")
+	    if len(sa) == 3 and sa[1] == "kDefinition" and sa[0][:2] == "U+":
+		db[sa[0][2:]] = sa[2]
+	    s = ""
+	db.close()
+	sys.exit(0)
+
+    elif args[0] == "--test":
+	mode = "test"
+	args = args[1:]
+
+    elif args[0] == "--input" or args[0] == "-i":
+	mode = "input"
+	args = args[1:]
+
     else:
-	if len(args) != 2:
-	    print "cvt-utf8: --fetch-build-unihan expects one filename argument"
-	    sys.exit(1)
-	import urllib
-	infile = urllib.urlopen("ftp://ftp.unicode.org/Public/UNIDATA/Unihan.zip")
-        # We know this one is zipped.
-        infile = zip_untangler(infile, "")
-	outfile = args[1]
-        s = ""
-    # Now build the database.
-    if outfile[-3:] == ".db":
-	print "cvt-utf8: warning: you should not append .db to db name"
-
-    db = anydbm.open(outfile, "n")
-    while 1:
-	s = s + infile.readline()
-	if s == "": break
-	while s[-1:] == "\r" or s[-1:] == "\n":
-	    s = s[:-1]
-	sa = string.split(s, "\t")
-	if len(sa) == 3 and sa[1] == "kDefinition" and sa[0][:2] == "U+":
-	    db[sa[0][2:]] = sa[2]
-        s = ""
-    db.close()
-    sys.exit(0)
+	sys.stderr.write("cvt-utf8: unknown argument '%s'" % args[0])
+	sys.exit(1)
 
 locations = []
 locations.append("/usr/share/unicode/unicode")
@@ -349,7 +413,7 @@ if han_translations:
     handb = anydbm.open(hanloc, "r")
     # this has been explicitly required, so we don't squelch exceptions
 
-if args[0] == "--test":
+if mode == "test":
     do(["CE","BA","E1","BD","B9","CF","83","CE","BC","CE","B5"])
     do(["00"])
     do(["C2","80"])
@@ -449,7 +513,7 @@ if args[0] == "--test":
     do(["ED","AF","BF","ED","BF","8F"])
     do(["EF","BF","BE"])
     do(["EF","BF","BF"])
-elif args[0] == "--input" or args[0] == "-i":
+elif mode == "input":
     def getchar():
 	s = sys.stdin.read(1)
 	if s == "":

@@ -40,6 +40,69 @@ int sellen, selsize;
 int reading;                           /* read instead of writing? */
 int convert_to_ctext = True;	       /* Xmb convert to compound text? */
 
+const char usagemsg[] =
+    "usage: xcopy [ -r ] [ -u | -c ] [ -C ]\n"
+    " also: xcopy --version              report version number\n"
+    "       xcopy --help                 display this help text\n"
+    "       xcopy --licence              display the (MIT) licence text\n"
+    "where: -r     read X selection and print on stdout\n"
+    "       no -r  read stdin and store in X selection\n"
+    "       -u     work with UTF8_STRING type selections\n"
+    "       -c     work with COMPOUND_TEXT type selections\n"
+    "       -C     suppress automatic conversion to COMPOUND_TEXT\n"
+    ;
+
+void usage(void) {
+    fputs(usagemsg, stdout);
+}
+
+const char licencemsg[] =
+    "xcopy is copyright 2001-2004 Simon Tatham.\n"
+    "\n"
+    "Permission is hereby granted, free of charge, to any person\n"
+    "obtaining a copy of this software and associated documentation files\n"
+    "(the \"Software\"), to deal in the Software without restriction,\n"
+    "including without limitation the rights to use, copy, modify, merge,\n"
+    "publish, distribute, sublicense, and/or sell copies of the Software,\n"
+    "and to permit persons to whom the Software is furnished to do so,\n"
+    "subject to the following conditions:\n"
+    "\n"
+    "The above copyright notice and this permission notice shall be\n"
+    "included in all copies or substantial portions of the Software.\n"
+    "\n"
+    "THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND,\n"
+    "EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF\n"
+    "MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND\n"
+    "NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS\n"
+    "BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN\n"
+    "ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN\n"
+    "CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\n"
+    "SOFTWARE.\n"
+    ;
+
+void licence(void) {
+    fputs(licencemsg, stdout);
+}
+
+void version(void) {
+#define SVN_REV "$Revision$"
+    char rev[sizeof(SVN_REV)];
+    char *p, *q;
+
+    strcpy(rev, SVN_REV);
+
+    for (p = rev; *p && *p != ':'; p++);
+    if (*p) {
+        p++;
+        while (*p && isspace(*p)) p++;
+        for (q = p; *q && *q != '$'; q++);
+        if (*q) *q = '\0';
+        printf("xcopy revision %s\n", p);
+    } else {
+        printf("xcopy: unknown version\n");
+    }
+}
+
 int main(int ac, char **av) {
     int n;
     int eventloop;
@@ -62,6 +125,15 @@ int main(int ac, char **av) {
             mode = CTEXT;
         } else if (!strcmp(p, "-C")) {
             convert_to_ctext = False;
+        } else if (!strcmp(p, "--help")) {
+	    usage();
+	    return 0;
+        } else if (!strcmp(p, "--version")) {
+            version();
+	    return 0;
+        } else if (!strcmp(p, "--licence") || !strcmp(p, "--license")) {
+            licence();
+	    return 0;
 	} else if (*p=='-') {
 	    error ("unrecognised option `%s'", p);
 	} else {

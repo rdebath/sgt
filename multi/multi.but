@@ -204,3 +204,8 @@ script which contains the core idea of this program. It takes a
 single Perl argument followed by filenames, and invokes Perl's
 internal \cw{rename} function. \cw{multi} is a complete rewrite of
 this basic idea, supplying more options and configurability.
+
+\H{multi-manpage-licence} LICENCE
+
+\cw{multi} is free software, distributed under the MIT licence. Type
+\cw{multi --licence} to see the full licence text.

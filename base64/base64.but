@@ -66,7 +66,13 @@ line break in the middle of the data at all.
 
 The base64 encoding converts between a group of three plaintext
 bytes and a group of four encoded bytes. \cw{base64} does not
-support breaking an encoded group across a line. Therefore, the
-\e{width} parameter passed to \cw{-c} must be a multiple of 4.
+support breaking an encoded group across a line (although it can
+handle it as input if it receives it). Therefore, the \e{width}
+parameter passed to \cw{-c} must be a multiple of 4.
 
 }
+
+\H{base64-manpage-licence} LICENCE
+
+\cw{base64} is free software, distributed under the MIT licence.
+Type \cw{base64 --licence} to see the full licence text.

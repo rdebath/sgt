@@ -127,7 +127,65 @@ Chinese text meaning \q{Traditional Chinese}:
 \c                               midst of; hit (target); attain
 \c U-00006587  E6 96 87          <han> literature, culture, writing
 
-\H{cvt-utf8-manpage-bugs} BUGS
+\H{cvt-utf8-manpage-admin} ADMINISTRATION
 
-Command-line option processing is very basic. In particular, \cw{-h}
-must come before \cw{-i} or it will not be recognised.
+In order to print the \cw{unicode.org} official name of each
+character, \cw{cvt-utf8} requires file mapping code points to names.
+This file is in DBM database format, for rapid lookup.
+
+This database file is accessed using the Python \cw{anydbm} module,
+so its precise file name will vary depending on what flavours of DBM
+you have installed. The name Python knows it by is \cq{unicode}; it
+may actually be called \cq{unicode.db} or something similar.
+
+\cw{cvt-utf8} generates this DBM file itself starting from the
+Unicode Character Database, in the form of the file
+\cw{UnicodeData.txt} supplied by \cw{unicode.org}. It supports two
+administrative options for this purpose:
+
+\c cvt-utf8 --build /path/to/UnicodeData.txt /path/to/unicode
+
+Given a copy of \cw{UnicodeData.txt} on disk, this mode will create
+the DBM file and store it in a place of your choice.
+
+\c cvt-utf8 --fetch-build /path/to/unicode
+
+If you have a direct Internet connection, this will automatically
+download the text file from \cw{unicode.org} and process it straight
+into the DBM file.
+
+There is a second DBM file, known to Python as \cw{unihan}, which is
+required to support the \cw{-h} option. This one is built from the
+Unihan Database, distributed by \cw{unicode.org} as a zip file
+containing a text file \cw{Unihan.txt}.
+
+If you already have \cw{Unihan.txt} on your system, you can build
+\cw{cvt-utf8}'s \cw{unihan} DBM file like this:
+
+\c cvt-utf8 --build-unihan /path/to/Unihan.txt /path/to/unihan
+
+Or, again, \cw{cvt-utf8} can automatically download it from
+\cw{unicode.org}, unpack the zip file on the fly, and write the DBM
+straight out:
+
+\c cvt-utf8 --fetch-build-unihan /path/to/unihan
+
+\cw{cvt-utf8} expects to find these database files in one of the
+following locations:
+
+\c /usr/share/unicode
+\c /usr/lib/unicode
+\c /usr/local/share/unicode
+\c /usr/local/lib/unicode
+\c $HOME/share/unicode
+\e iiiii
+\c $HOME/lib/unicode
+\e iiiii
+
+If either of these files is not found, \cw{cvt-utf8} will still
+perform the rest of its functions.
+
+\H{cvt-utf8-manpage-licence} LICENCE
+
+\cw{cvt-utf8} is free software, distributed under the MIT licence.
+Type \cw{cvt-utf8 --licence} to see the full licence text.

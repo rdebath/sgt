@@ -102,3 +102,8 @@ Automatic conversion between compound text and UTF-8 is not
 currently supported. There are Xlib functions to do it, although
 they don't appear to work very well (missing out many characters
 which they could have converted).
+
+\H{xcopy-manpage-licence} LICENCE
+
+\cw{xcopy} is free software, distributed under the MIT licence. Type
+\cw{xcopy --licence} to see the full licence text.
