@@ -1,0 +1,23 @@
+Summary: Support for public key distribution subsystem
+Class: wish
+Difficulty: tricky
+Priority: low
+Content-type: text/x-html-body
+
+<p>
+<a href="http://www.vandyke.com/">VanDyke</a> are pushing an
+implementation-independent subsystem <code>publickey@vandyke.com</code>
+for the distribution of public keys over SSH-2 connections. See
+<a href="http://www.ietf.org/internet-drafts/draft-galb-secsh-publickey-subsystem-01.txt">draft-galb-secsh-publickey-subsystem-01</a>
+(current at time of writing).
+
+<p>
+We get quite a lot of mail from people having trouble setting up PK on
+their server. Perhaps we should have some form of support for this, on
+general principles of encouraging public-key auth. Need to think about
+what form it would take.
+
+<p>
+VanDyke have implementations (their own software, and a 
+<a href="https://secure.vandyke.com/vandyke-php-bin/public_keys.php">patch for OpenSSH</a>).
+I don't know whether anyone else does.
