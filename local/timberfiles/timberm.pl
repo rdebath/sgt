@@ -35,8 +35,9 @@ if ($type eq "text/html") {
 } elsif ($type eq "text/plain") {
   # A sensible `decoding' step for plain text is to wrap its lines to about
   # 75 columns, since some people will persist in sending mail with each
-  # paragraph on a single line.
+  # paragraph on a single line. We'll also detab, while we're here.
   while (<F>) {
+    1 while s/\t/" " x (8 - (length $`) % 8)/e;
     s/^[ \240]// if $stripspace;
     chomp;
     while (length $_ > 75) {
