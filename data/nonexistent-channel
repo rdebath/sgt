@@ -1,0 +1,21 @@
+Summary: `nonexistent channel -1' crashes
+Class: bug
+Content-type: text/x-html-body
+Present-in: 0.52 2002-03-14
+
+<p>
+We're getting occasional reports of PuTTY sessions dying with
+messages like "Server sent disconnect message: received data for
+nonexistent channel -1". Reports so far:
+<ul>
+<li>
+OpenSSH-1.2.3 on Debian potato, 0.52 on W2K, port forwarding "mapping
+port 993 to 3993" (don't know which way)
+<br>"Server sent disconnect message: received data for nonexistent
+channel -1"
+</li>
+<li>
+"SSH-1.99-OpenSSH_2.9.9p2", 2002-03-14 on XP Pro
+<br>"Server sent disconnect message. Received ieof for nonexistent channel -1"
+</li>
+</ul>
