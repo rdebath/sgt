@@ -1,5 +1,5 @@
 #! /usr/bin/perl
-# $Id: bugs2html,v 1.35 2004/10/14 01:02:22 jacob Exp $
+# $Id: bugs2html,v 1.36 2004/10/26 18:16:11 simon Exp $
 
 use FileHandle;
 use POSIX;
@@ -29,6 +29,7 @@ require "./config.pl";
 @releases = (
     [ "0.54",   "2004-02-12" ],
     [ "0.55",   "2004-08-02" ]
+    [ "0.56",   "2004-10-25" ]
 );
 
 %classdesc =
