@@ -8,3 +8,10 @@ Content-type: text/x-html-body
 PSFTP could do with more features: options and wildcards to ls (-l
 etc), and perhaps recursive transfer of whole directories like scp.
 (After all, we can <em>do</em> this in SFTP already!)
+
+<p>
+If we implement the recursion stuff, could do with pulling it out
+from scp.c into something more common.
+
+<p>
+Need to think about reget-type operation with mget?
