@@ -29,3 +29,8 @@ access to it, IIRC) were:
 <li>Deleting the hidden putty.GID file that appears alongside the PuTTY
    help files the first time they're used doesn't appear to help.
 </ul>
+
+The precise crash (on Win98SE at least) is: "WINHLP32 caused an
+invalid page fault in module WINHLP32.EXE at 0167:004099ba." (A
+<a href="http://groups.google.com/groups?q=%220167%3A004099ba%22">Google Groups search</a>
+finds an apparently unrelated reference, so it's not just us.)
