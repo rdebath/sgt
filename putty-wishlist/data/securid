@@ -1,0 +1,17 @@
+Summary: ssh.com SecurID authentication
+Priority: low
+Class: wish
+Difficulty: taxing
+Content-Type: text/x-html-body
+
+<p>
+Several people have asked for support for the implementation of
+<a href="http://www.rsasecurity.com/products/securid/index.html">SecurID</a>
+in ssh.com's server.
+
+<p>
+Unfortunately, for reasons best known to themselves, ssh.com have
+chosen to define this as a private authentication method
+`securid-1@ssh.com' (rather than using for instance
+keyboard-interactive authentication). We haven't seen a spec for this
+method, so can't implement it in PuTTY.
