@@ -1,0 +1,40 @@
+Summary: Blank known passwords by default in SSH packet log
+Class: wish
+Priority: low
+Difficulty: fun
+Content-Type: text/x-html-body
+
+<p>
+Proposal for the SSH packet log we use for debugging: add a checkbox
+(enabled by default) which causes known password fields to be blanked
+out, as we recommend that people do manually at the moment.
+
+<p>
+95% of the time this information isn't useful for our diagnosis, and
+blanking it out manually is error-prone (it's not unknown for someone
+to blank out the text portion but forget the hex dump, for example).
+If we suspect that the information will be useful, we can always
+instruct our correspondent to uncheck the box.
+
+<p>
+This would also mean that people could turn logging on
+semi-permanently for intermittent problems and not have to be so
+careful with the log files.
+
+<p>
+Need to correctly handle things like keyboard-interactive
+authentication, of course.
+
+<p>
+A similar option (but not enabled by default) would be to blank the
+data (`payload') fields - again, this information isn't often useful,
+and it would reduce the care that has to be taken with log files.
+
+<p>
+Obviously this isn't completely secure - even a blanked-out log file
+contains a fair amount of information that's useful to an attacker.
+But it's probably a net improvement.
+
+<p>
+As of Sep 2002, I (JTN) had a 90% complete patch to do this. I should
+revive it and commit it.
