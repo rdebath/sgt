@@ -38,6 +38,7 @@ int sellen, selsize;
 
 /* functional parameters */
 int reading;                           /* read instead of writing? */
+int convert_to_ctext = True;	       /* Xmb convert to compound text? */
 
 int main(int ac, char **av) {
     int n;
@@ -59,6 +60,8 @@ int main(int ac, char **av) {
             mode = UTF8;
         } else if (!strcmp(p, "-c")) {
             mode = CTEXT;
+        } else if (!strcmp(p, "-C")) {
+            convert_to_ctext = False;
 	} else if (*p=='-') {
 	    error ("unrecognised option `%s'", p);
 	} else {
@@ -274,7 +277,8 @@ void run_X(void) {
                                      ev.xselectionrequest.property, strtype,
                                      8, PropModeReplace, seltext, sellen);
                     e2.xselection.property = ev.xselectionrequest.property;
-                } else if (ev.xselectionrequest.target == compound_text_atom) {
+                } else if (ev.xselectionrequest.target == compound_text_atom &&
+			   convert_to_ctext) {
                     XTextProperty tp;
                     XmbTextListToTextProperty (disp, &seltext, 1,
                                                XCompoundTextStyle, &tp);
