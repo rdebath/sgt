@@ -68,8 +68,8 @@ found, try compiling with -DHAVE_NO_REALPATH.
 
 Install `doitclient' somewhere on your Unix PATH. You may optionally
 want to symlink the binary to some of the alternative names `wf',
-`win', `wcmd', `wclip' and `www'. (What each of these does is
-explained below.)
+`win', `wcmd', `wclip', `www' and `wpath'. (What each of these does
+is explained below.)
 
 Setting up a shared secret
 --------------------------
@@ -268,3 +268,7 @@ run (for example) `win notepad'.
    you might also want a program that does the same thing to the X
    selection. I have one of those too, but it's out of scope for
    this documentation :-)
+
+ - `wpath' does not connect to your server at all; it just performs
+   Unix-to-Windows path name translation on the argument you give
+   it, and prints the translated path name on its standard output.
