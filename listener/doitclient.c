@@ -231,6 +231,7 @@ enum {
     WWW,                               /* start a browser */
     WCLIP,                             /* read/write the clipboard */
     WCMD,                              /* run a process with output */
+    WIN,                               /* just run a process */
 };
 
 int parse_cmd(char *verb)
@@ -239,6 +240,7 @@ int parse_cmd(char *verb)
     if (!strcmp(verb, "www")) return WWW;
     if (!strcmp(verb, "wclip")) return WCLIP;
     if (!strcmp(verb, "wcmd")) return WCMD;
+    if (!strcmp(verb, "win")) return WIN;
     return NOTHING;
 }
 
@@ -633,6 +635,15 @@ int main(int argc, char **argv)
         }
         arg = path_translate(arg);
         do_doit_send_str(sock, ctx, "ShellExecute\n");
+        do_doit_send_str(sock, ctx, arg);
+        do_doit_send_str(sock, ctx, "\n");
+        break;
+      case WIN:
+        if (!arg) {
+            fprintf(stderr, "doit: \"win\" requires an argument\n");
+            exit(EXIT_FAILURE);
+        }
+        do_doit_send_str(sock, ctx, "CreateProcessNoWait\n");
         do_doit_send_str(sock, ctx, arg);
         do_doit_send_str(sock, ctx, "\n");
         break;
