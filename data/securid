@@ -1,4 +1,4 @@
-Summary: ssh.com SecurID authentication (`securid-1@ssh.com')
+Summary: SecurID authentication (`securid-1@ssh.com' etc)
 Priority: low
 Class: wish
 Difficulty: taxing
@@ -6,7 +6,7 @@ Content-Type: text/x-html-body
 
 <p>
 Several people have asked for support for the implementation of
-<a href="http://www.rsasecurity.com/products/securid/index.html">SecurID</a>
+<a href="http://www.rsasecurity.com/node.asp?id=1156">SecurID</a>
 in ssh.com's server.
 
 <p>
@@ -17,3 +17,13 @@ method `securid-1@ssh.com', it appears that more recent versions use
 <p>
 We haven't seen a spec for the private method, so can't implement it
 in PuTTY.
+
+<p>
+(There appears to be
+<a href="http://www.cswl.com/whiteppr/white/ssh.html">another spec</a>
+for a custom method `secure-id', although I don't believe it's ever
+been discussed by the
+<a href="http://www.ietf.org/html.charters/secsh-charter.html">SSH working group</a>
+or presented as an Internet-Draft, so that method name syntax is
+inappropriate. I'm not aware of any servers that implement it,
+either.)
