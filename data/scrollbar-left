@@ -1,0 +1,13 @@
+Summary: Scroll bar on the left of the PuTTY window
+Class: wish
+Difficulty: tricky
+Priority: low
+Content-type: text/plain
+
+> I was wondering if you could add to the puTTY Configuration menu the
+> ability to choose which side of the puTTY window (right or left) the
+> vertical scrollbar is attached to?
+
+I've looked at this, but from the documentation it looked very much to
+me like a left-handed scrollbar was only available on right-to-left
+Windows versions (Arabic and Hebrew).
