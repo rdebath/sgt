@@ -33,7 +33,29 @@ not updating, which happens sometimes):
 For features planned for the next release (and already available in
 the development snapshots), see the <a href="wishlist/">wishlist page</a>.
 
-<p>These features are new in beta 0.54 (released 2004-02-12):
+<p>These features are new in beta 0.55 (released 2004-08-03):
+
+<ul>
+<li>Security fix: a vulnerability discovered by Core Security
+Technologies (advisory number CORE-2004-0705), potentially allowing
+arbitrary code execution on the client by a malicious server
+<em>before host key verification</em>, has been fixed.
+<li>Bug fix: General robustness of the SSH1 implementation has been improved,
+which may have fixed further potential security problems although we
+are not aware of any specific ones.
+<li>Bug fix: Random noise generation was hanging some computers and
+interfering with other processes' precision timing, and should now
+not do so.
+<li>Bug fix: dead key support should work better.
+<li>Bug fix: a terminal speed is now sent to the SSH server.
+<li>Bug fix: removed a spurious diagnostic message in Plink.
+<li>Bug fix: the `-load' option in PSCP and PSFTP should work better.
+<li>Bug fix: X forwarding on the Unix port can now talk to Unix
+sockets as well as TCP sockets.
+<li>Bug fix: various crashes and assertion failures fixed..
+</ul>
+
+<p>These features were new in beta 0.54 (released 2004-02-12):
 
 <ul>
 <li>
