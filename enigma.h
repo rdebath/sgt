@@ -105,6 +105,7 @@ void levelset_free(levelset *);
 
 void *smalloc(size_t size);
 void *srealloc(void *q, size_t size);
+void sfree(void *q);
 char *dupstr(char *str);
 
 /*
@@ -125,13 +126,15 @@ levelset *levelset_load(char *);
 
 /*
  * From savefile.c, routines to load and save a user's progress and
- * saved positions.
+ * saved positions, plus a routine to load a move sequence for
+ * replay.
  */
 gamestate *savepos_load(levelset *set, char *user, int savenum);
 void savepos_del(levelset *set, char *user, int savenum);
 void savepos_save(levelset *set, char *user, int savenum, gamestate *state);
 progress progress_load(levelset *set, char *user);
 void progress_save(levelset *set, char *user, progress p);
+char *sequence_load(char *fname);
 
 /*
  * From misc.c, miscellaneous things.
@@ -151,6 +154,9 @@ void screen_level_init(void);
 void screen_level_finish(void);
 void screen_level_display(gamestate *s, char *message);
 int screen_level_getmove(void);
+int screen_movie_getmove(void);
+void screen_error_box(char *);
+char *screen_ask_movefile(void);
 int screen_main_menu(levelset *set, gamestate **saves,
 		     int maxlev, int startlev);
 int screen_saveslot_ask(char action, gamestate **saves, int defslot);
