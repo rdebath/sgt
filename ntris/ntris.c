@@ -51,6 +51,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <assert.h>
 
 #include "ntris.h"
 
@@ -291,6 +292,7 @@ struct ntris_instance {
     unsigned char (*playarea)[2];
     int currshape, holdshape, shapecolour, shape_x, shape_y;
     int nextshape[10];
+    int scores[NUM_SCORES];
     int hold_used;
 };
 
@@ -427,11 +429,19 @@ struct ntris_instance *init_game(struct frontend_instance *fe,
     inst->shapecolour = inst->ss->colours[inst->currshape];
     for (i = 0; i < NNEXT; i++)
 	inst->nextshape[i] = rand_shape(inst);
+    for (i = 0; i < NUM_SCORES; i++)
+	inst->scores[i] = 0;
     inst->holdshape = -1;	       /* hold cell starts off empty */
 
     inst->fe = fe;
 
     return inst;
+}
+
+int get_score(struct ntris_instance *inst, int which)
+{
+    assert(which >= 0 && which < NUM_SCORES);
+    return inst->scores[which];
 }
 
 int try_move_left(struct ntris_instance *inst)
@@ -573,7 +583,7 @@ int try_hold(struct ntris_instance *inst)
     return TRUE;
 }
 
-static int check_lines(struct ntris_instance *inst)
+static void check_lines(struct ntris_instance *inst)
 {
     int src, targ;
     int count = 0;
@@ -631,7 +641,14 @@ static int check_lines(struct ntris_instance *inst)
 	}
     }
 
-    return count;
+    switch (count) {
+      case 1: inst->scores[SCORE_SINGLE]++; break;
+      case 2: inst->scores[SCORE_DOUBLE]++; break;
+      case 3: inst->scores[SCORE_TRIPLE]++; break;
+      case 4: inst->scores[SCORE_TETRIS]++; break;
+      case 5: inst->scores[SCORE_PENTRIS]++; break;
+    }
+    inst->scores[SCORE_LINES] += count;
 }
 
 static void postdrop(struct ntris_instance *inst)

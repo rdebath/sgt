@@ -203,6 +203,34 @@ static const int keys[] = {
     SDLK_LSHIFT, SDLK_SPACE
 };
 
+static void do_score(int y, char *title, int score, int evenifzero)
+{
+    char buf[40];
+    char buf2[40];
+    int i;
+
+    if (score == 0 && !evenifzero)
+	return;
+    sprintf(buf, "%-7.7s%5u", title, score);
+
+    i = strlen(buf);
+    buf2[i] = '\0';
+    while (i--) buf2[i] = '\377';
+
+    puttext(10, y, 0, buf2);
+    puttext(10, y, 255, buf);
+}
+
+static void do_scores(struct ntris_instance *ti)
+{
+    do_score(100, "Lines", get_score(ti, SCORE_LINES), 1);
+    do_score(116, "Single", get_score(ti, SCORE_SINGLE), 0);
+    do_score(126, "Double", get_score(ti, SCORE_DOUBLE), 0);
+    do_score(136, "Triple", get_score(ti, SCORE_TRIPLE), 0);
+    do_score(146, "Tetris", get_score(ti, SCORE_TETRIS), 0);
+    do_score(156, "Pentris", get_score(ti, SCORE_PENTRIS), 0);
+}
+
 static void play_game(void)
 {
     struct ntris_instance *ti;
@@ -379,7 +407,9 @@ static void play_game(void)
 		ret = init_shape(ti);
 		if (!ret)
 		    break;
-		/* FIXME: count score, level up, change dropinterval */
+		do_scores(ti);
+
+		/* FIXME: potentially level up and thus change dropinterval */
 		dropinhibit = 1;
 	    }
 	    untildrop = dropinterval;

@@ -42,7 +42,7 @@ extern char *pentris_shapes[18+1];
  * the hold cell with the current falling piece. It can never cause
  * game-over, because it will fail rather than do anything lethal;
  * like the other `try' functions, it will return TRUE if
- * successful
+ * successful.
  */
 struct ntris_instance *init_game(struct frontend_instance *fe,
 				 int width, int height, char **shapeset);
@@ -55,6 +55,23 @@ int try_reflect(struct ntris_instance *inst);
 int try_hold(struct ntris_instance *inst);
 int softdrop(struct ntris_instance *inst);
 void harddrop(struct ntris_instance *inst);
+
+/*
+ * `get_score' returns some aspect of the score in the current
+ * game. There are a variety of score counters which count a
+ * variety of different conditions, and the `which' parameter
+ * requests a particular one.
+ */
+enum {
+    SCORE_LINES,		       /* basic line count */
+    SCORE_SINGLE,		       /* lines cleared one at a time */
+    SCORE_DOUBLE,		       /* lines cleared two at a time */
+    SCORE_TRIPLE,		       /* lines cleared three at a time */
+    SCORE_TETRIS,		       /* lines cleared four at a time */
+    SCORE_PENTRIS,		       /* lines cleared five at a time */
+    NUM_SCORES			       /* (used internally in ntris.c) */
+};
+int get_score(struct ntris_instance *inst, int which);
 
 /*
  * This query function tells the front end the largest dimension of
