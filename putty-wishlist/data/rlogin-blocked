@@ -1,0 +1,16 @@
+Summary: Cannot rlogin to host after uncleanly terminated connection
+Class: bug
+Present-in: 0.53b 2003-06-05
+Content-type: text/x-html-body
+
+<p>
+If a PuTTY rlogin connection to a given remote system is terminated
+uncleanly (e.g., by closing the PuTTY window), further attempts to
+rlogin to that host result in a "PuTTY Fatal Error: Network error:
+Address already in use" for several minutes.
+
+<p>
+I've observed this on Win2K with Red Hat Linux i386 7.1
+(in.rlogind from rsh-server-0.17-2.5). The original reporter observed
+it on NT4SP6a, server OS "Linux (several versions), HP-UX (several
+versions)".
