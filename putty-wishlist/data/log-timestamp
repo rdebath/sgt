@@ -1,0 +1,13 @@
+Summary: Timestamps in logs
+Class: wish
+Difficulty: tricky
+Priority: low
+
+Timestamps would occasionally be useful in the log files PuTTY
+produces.
+
+Deciding where to put timestamps in SSH packet logs is trivial --
+packet starts and Event Log entries.
+
+Some people want timestamping in raw terminal logs. This is a rather
+harder design problem.
