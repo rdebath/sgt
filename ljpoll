@@ -40,7 +40,8 @@ if verbose:
 
 if ljproto.ljok(ret):
     if ret["new"] == "1":
-	print "You have new LJ content!" 
+	print "New entries at www.livejournal.com/users/" + \
+	ljproto.ljusername() + "/friends"
     f = open(cfg, "w")
     f.write(ret["lastupdate"] + "\n")
     f.write(str(time.time() + string.atoi(ret["interval"])) + "\n")

@@ -65,3 +65,21 @@ def ljok(dict):
 def ljerror(dict):
     "Return the error message from an unsuccessful LJ call."
     return dict.get("errmsg", "Server failed to return an error code")
+
+def ljusername():
+    "Retrieve the user's LJ login name."
+    cfg = os.environ["HOME"] + "/.ljscan/login"
+    f = open(cfg, "r")
+    try:
+	while 1:
+	    s = f.readline()
+	    if s == "":
+		break
+	    s = chomp(s)
+	    i = string.find(s, " ")
+	    assert i > 0
+	    if s[:i] == "user":
+		return s[i+1:]
+    finally:
+	f.close()
+    return None
