@@ -3,7 +3,8 @@ dist:
 		-exec mkdir -p ./polyhedra/{} \;
 	find . -name CVS -prune -o -path ./polyhedra -prune -o \
 		-name .cvsignore -prune -o -name '*.pyc' -prune -o \
-		-name '*.ps' -prune -o -name '*~' -prune -o -type f \
+		-name '*.ps' -prune -o -name '*~' -prune -o \
+		-name polyhedra.tar.gz -prune -o -type f \
 		-exec ln -s $$PWD/{} ./polyhedra/{} \;
 	tar chzvf polyhedra.tar.gz polyhedra
 	rm -rf polyhedra
