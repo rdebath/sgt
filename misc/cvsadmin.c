@@ -24,5 +24,6 @@ struct group *getgrnam(const char *name)
 	char buf[FILENAME_MAX < 512 ? 512 : FILENAME_MAX];
 	struct group *(*real_getgrnam) (const char *name);
 	real_getgrnam = dlsym(RTLD_NEXT, "getgrnam");
+	return real_getgrnam(name);
     }
 }
