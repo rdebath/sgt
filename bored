@@ -1,0 +1,32 @@
+#!/usr/bin/env python
+
+import os
+import sys
+
+f = open(os.environ["HOME"] + "/.bored", "r")
+maxlen = 0
+commands = []
+while 1:
+    s = f.readline()
+    if s == "": break
+    while s[-1:] in ["\r","\n"]: s = s[:-1]
+    commands.append(s)
+    if maxlen < len(s): maxlen = len(s)
+
+maxlen = maxlen + 4
+
+for command in commands:
+    p = os.popen(command + " 2>&1", "r")
+    output = []
+    while 1:
+	s = p.readline()
+	if s == "": break
+	output.append(s)
+    p.close()
+    prefix = ("["+command+"]" + " " * maxlen)[:maxlen]
+    if len(output) > 0:
+	for s in output:
+	    sys.stdout.write(prefix+s)
+	    prefix = " " * maxlen
+    else:
+	sys.stdout.write(prefix + "nothing to report\n")
