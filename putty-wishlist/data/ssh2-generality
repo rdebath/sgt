@@ -32,3 +32,8 @@ Similarly, perhaps we should also support running (e.g.) psftp
 sessions over an existing connection rather than forcing a new TCP/SSH
 connection, using the same sort of inter-process communication as with
 Pageant. Needs careful implementation to avoid opening security holes.
+
+<p>
+<b>SGT, 2004-10-13</b>: Just checked in the easy bit. PuTTY and
+Plink can now avoid running a command (equivalent to OpenSSH's
+<code>-N</code> option, and indeed enabled by the same switch).
