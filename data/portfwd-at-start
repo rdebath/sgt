@@ -115,5 +115,5 @@ ask" in another prompt.
 <b>SGT, 2004-11-27</b>: I've rearchitected the SSH back end
 somewhat, so that it's now a hybrid of coroutine-based sequential
 code and random dispatch-table handling of incoming packets. This
-<em>ought to solve this problem, although I'm unable to immediately
+<em>ought</em> to solve this problem, although I'm unable to immediately
 test it.
