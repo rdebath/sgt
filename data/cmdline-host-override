@@ -1,0 +1,13 @@
+Summary: -load overrides a host name specified on the command line
+Class: bug
+Priority: medium
+Difficulty: fun
+Content-type: text/x-html-body
+
+<p>
+If both <code>-load</code> and a hostname are specified on PuTTY's command
+line, the hostname from the saved session takes precedence, which it
+shouldn't.  This is because bare hostnames aren't passed through
+<code>cmdline_process_param()</code> in the same way that (e.g.) bare port
+numbers are, so they end up being trampled by
+<code>cmdline_process_saved()</code>.
