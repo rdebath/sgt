@@ -3,6 +3,7 @@ Class: bug
 Priority: medium
 Difficulty: fun
 Content-type: text/x-html-body
+Fixed-in: 2003-03-07
 
 <pre>
 xterm sets the WINDOWID environment variable to the Window ID.  Since
@@ -18,4 +19,4 @@ variable.
 </pre>
 <p>Richard Boulton has a
 <a href="http://www.tartarus.org/~richard/putty-patches/#patch_pterm_windowid">
-patch</a> for this.
+patch</a> for this, which has now been applied.
