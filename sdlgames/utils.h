@@ -11,3 +11,8 @@ void line(int x1, int y1, int x2, int y2,
  * with x >= 0, y > 0 and y >= x.
  */
 void circle(int r, void (*plot)(void *, int, int), void *ctx);
+
+/*
+ * Return a random integer in the range [0, n).
+ */
+int randupto(int n);
