@@ -11,12 +11,14 @@ while 1:
     if args[0] == "-s":
         action = "sem"
         args = args[1:]
-    if args[0] == "-p":
+    elif args[0] == "-p":
         action = "parse"
         args = args[1:]
     elif args[0] == "-l":
         action = "lex"
         args = args[1:]
+    elif args[0] == "-":
+        args = []
     if args == [] or args[0][:1] != "-":
         break
 
@@ -32,7 +34,7 @@ if action == "lex":
         token = l.get()
         if token == None:
             break
-        print token.type, "`" + token.text + "'"
+        print c_lex.lex_names[token.type], "`" + token.text + "'"
     sys.exit(0)
 else:
     tree = c_parse.parse(l)

@@ -33,7 +33,7 @@ lt_lparen = _enum()           ; lex_names[lt_lparen] = "`('"
 lt_rparen = _enum()           ; lex_names[lt_rparen] = "`)'"
 lt_lbrace = _enum()           ; lex_names[lt_lbrace] = "`{'"
 lt_rbrace = _enum()           ; lex_names[lt_rbrace] = "`}'"
-lt_dot = _enum()              ; lex_names[lt_dot] = "`,'"
+lt_dot = _enum()              ; lex_names[lt_dot] = "`.'"
 lt_arrow = _enum()            ; lex_names[lt_arrow] = "`->'"
 lt_increment = _enum()        ; lex_names[lt_increment] = "`++'"
 lt_decrement = _enum()        ; lex_names[lt_decrement] = "`--'"
@@ -191,8 +191,8 @@ class lexer:
     re_white = re.compile(r"^[ \t\n\r\v\f]+")
     re_char = re.compile(r"^L?'([^'\\\n]|\\(['" + '"' + r"\?\\abfnrtv]|[0-7][0-7]?[0-7]?|x[0-9a-fA-F]+))+'")
     re_str = re.compile(r'^L?"([^"\\\n]|\\(["' + "'" + r'\?\\abfnrtv]|[0-7][0-7]?[0-7]?|x[0-9a-fA-F]+))+"')
-    re_punct = re.compile(r"^(\[|\]|{|}|\(|\)|\.|->|\+\+|--|&|\*|\+|-|~|!|/|%|" +
-    r"<<|>>|<|>|<=|>=|==|!=|\^|\||&&|\?|:|;|\.\.\.|=|\*=|/=|%=|\+=|-=|<<=|>>=|&=|" +
+    re_punct = re.compile(r"^(\[|\]|{|}|\(|\)|\.\.\.|->|\+\+|--|&|\*|\+|-|~|!|/|%|" +
+    r"<<|>>|<|>|<=|>=|==|!=|\^|\||&&|\?|:|;|\.|=|\*=|/=|%=|\+=|-=|<<=|>>=|&=|" +
     r"\^=|\|=|\|\||,|#|##|<:|:>|<%|%>|%:|%:%:)")
 
     def __init__(self):

@@ -61,6 +61,55 @@ pt_assignment_expression = _enum()
 pt_constant_expression = _enum()
 pt_END = _enum()
 
+pt_names = {}
+pt_names[pt_translation_unit] = "translation_unit"
+pt_names[pt_function_definition] = "function_definition"
+pt_names[pt_declaration_list] = "declaration_list"
+pt_names[pt_declaration] = "declaration"
+pt_names[pt_init_declarator_list] = "init_declarator_list"
+pt_names[pt_init_declarator] = "init_declarator"
+pt_names[pt_declaration_specifiers] = "declaration_specifiers"
+pt_names[pt_storage_class_qualifier] = "storage_class_qualifier"
+pt_names[pt_type_qualifier] = "type_qualifier"
+pt_names[pt_type_qualifier_list] = "type_qualifier_list"
+pt_names[pt_function_specifier] = "function_specifier"
+pt_names[pt_type_specifier] = "type_specifier"
+pt_names[pt_specifier_qualifier_list] = "specifier_qualifier_list"
+pt_names[pt_struct_or_union_specifier] = "struct_or_union_specifier"
+pt_names[pt_struct_declaration_list] = "struct_declaration_list"
+pt_names[pt_struct_declaration] = "struct_declaration"
+pt_names[pt_struct_declarator_list] = "struct_declarator_list"
+pt_names[pt_struct_declarator] = "struct_declarator"
+pt_names[pt_enum_specifier] = "enum_specifier"
+pt_names[pt_enumerator_list] = "enumerator_list"
+pt_names[pt_enumerator] = "enumerator"
+pt_names[pt_parameter_type_list] = "parameter_type_list"
+pt_names[pt_parameter_declaration] = "parameter_declaration"
+pt_names[pt_identifier_list] = "identifier_list"
+pt_names[pt_initializer] = "initializer"
+pt_names[pt_initializer_list] = "initializer_list"
+pt_names[pt_designation] = "designation"
+pt_names[pt_designator] = "designator"
+pt_names[pt_type_name] = "type_name"
+pt_names[pt_declarator] = "declarator"
+pt_names[pt_pointer] = "pointer"
+pt_names[pt_direct_declarator] = "direct_declarator"
+pt_names[pt_null_statement] = "null_statement"
+pt_names[pt_compound_statement] = "compound_statement"
+pt_names[pt_labeled_statement] = "labeled_statement"
+pt_names[pt_selection_statement] = "selection_statement"
+pt_names[pt_iteration_statement] = "iteration_statement"
+pt_names[pt_jump_statement] = "jump_statement"
+pt_names[pt_primary_expression] = "primary_expression"
+pt_names[pt_postfix_expression] = "postfix_expression"
+pt_names[pt_argument_expression_list] = "argument_expression_list"
+pt_names[pt_unary_expression] = "unary_expression"
+pt_names[pt_cast_expression] = "cast_expression"
+pt_names[pt_binary_expression] = "binary_expression"
+pt_names[pt_conditional_expression] = "conditional_expression"
+pt_names[pt_assignment_expression] = "assignment_expression"
+pt_names[pt_constant_expression] = "constant_expression"
+
 class node:
     "Node in the raw parse tree"
     def __init__(self,type):
@@ -71,14 +120,14 @@ class node:
     def extend(self,items):
         self.list.extend(items)
     def display(self, level):
-        print "  " * level + repr(self.type)
+        print "  " * level + pt_names[self.type]
         for i in self.list:
             if i == None:
                 print "  " * (level+1) + "None"
             elif self.__class__ == i.__class__:
                 i.display(level+1)
             else:
-                print "  " * (level+1) + "%d" % i.type + " `" + i.text + "'"
+                print "  " * (level+1) + lex_names[i.type] + " `" + i.text + "'"
 
 class err_generic_parse_error:
     def __init__(self):
@@ -173,7 +222,10 @@ def parse(lex, errfunc=defaulterrfunc):
             # declarator. If we then see '=' or ',' or ';' we are parsing a
             # declaration, otherwise we are parsing a function_definition.
             ds = self.declaration_specifiers()
-            dcl = self.declarator(1) # non-abstract only
+            if self.peektype() == lt_semi:
+                dcl = None
+            else:
+                dcl = self.declarator(1) # non-abstract only
             t = self.peektype()
             if t == lt_assign or t == lt_comma or t == lt_semi:
                 n = self.declaration(ds, dcl)
@@ -433,6 +485,7 @@ def parse(lex, errfunc=defaulterrfunc):
             n.append(self.parameter_declaration())
             while self.peektype() == lt_comma:
                 self.eat(lt_comma)
+                t = self.peek()
                 if self.peektype() == lt_ellipsis:
                     n.append(self.get())
                     break
@@ -441,7 +494,7 @@ def parse(lex, errfunc=defaulterrfunc):
 
         def parameter_declaration(self):
             n = self.node(pt_parameter_declaration)
-            n.append(self.declaration_specifiers())#
+            n.append(self.declaration_specifiers())
             t = self.peektype()
             if t == lt_comma or t == lt_rparen:
                 return n
@@ -562,11 +615,14 @@ def parse(lex, errfunc=defaulterrfunc):
                 t = self.peektype()
                 if t != lt_lparen and t != lt_lbracket:
                     break
-                self.get()
+                n.append(self.get())
                 if t == lt_lparen:
-                    # either parameter_type_list or identifer_list
-                    if self.peektype() == lt_ident:
+                    # either parameter_type_list or identifer_list or nothing
+                    tt = self.peektype()
+                    if tt == lt_ident:
                         n.append(self.identifier_list())
+                    elif tt == lt_rparen:
+                        n.append(None)
                     else:
                         n.append(self.parameter_type_list())
                     self.eat(lt_rparen)
