@@ -4,9 +4,6 @@
 
 # TODO:
 #
-#  - Make locking interact sensibly with undo.
-#     * Undoing a move that touches a locked square must unlock it.
-#     * Alternatively, disable undo completely?
 #  - Game parameters. Wrapping borders, controllable grid size.
 #    Probably also controllable on-screen size while we're at it.
 #  - The original occasionally has barriers between squares within
@@ -286,16 +283,23 @@ class NetGame:
     def move(self, x, y, action, undo=FALSE):
         assert(not self.moveinprogress)
 
-	if action == 0:
-	    # Just toggle the lock on the square.
-	    self.arena[x][y] = self.arena[x][y] ^ LOCK
-	    self.fullredraw = TRUE
-	    small_redraw()
-	    return
+        if undo:
+            # In undo mode, action 0 is an actual NOP so isn't
+            # treated specially; and a move touching a locked
+            # square automatically unlocks it.
+            self.arena[x][y] = self.arena[x][y] &~ LOCK
 
-	# Locked squares can't be accidentally moved.
-	if self.arena[x][y] & LOCK:
-	    return
+        else:
+            if action == 0:
+                # Just toggle the lock on the square.
+                self.arena[x][y] = self.arena[x][y] ^ LOCK
+                self.fullredraw = TRUE
+                small_redraw()
+                return
+
+            # Locked squares can't be accidentally moved.
+            if self.arena[x][y] & LOCK:
+                return
 
         self.movex = x
         self.movey = y
