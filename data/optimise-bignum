@@ -17,3 +17,5 @@ Windows builds, which are done with MS Visual C.
 It would be nice if we could enable the C bit of the optimisation on
 more processors. In particular, it might be handy on the Mac port, if
 any of the slower Mac processors can get anything out of it.
+
+Patch for MSVC (unreviewed): <20050331164047.GA24174@clipper.ens.fr>
