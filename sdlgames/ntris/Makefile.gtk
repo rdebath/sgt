@@ -1,10 +1,10 @@
 all: 4tris 5tris
 
-4tris: ntris.c
-	gcc -g -o 4tris ntris.c `gtk-config --cflags --libs`
+4tris: ntris.c ntrisgtk.c
+	gcc -Wall -g -o 4tris ntris.c ntrisgtk.c `gtk-config --cflags --libs`
 
-5tris: ntris.c
-	gcc -g -o 5tris ntris.c -DSHAPESET=pentris_shapes \
+5tris: ntris.c ntrisgtk.c
+	gcc -Wall -g -o 5tris ntris.c ntrisgtk.c -DSHAPESET=pentris_shapes \
 	`gtk-config --cflags --libs`
 
 clean:
