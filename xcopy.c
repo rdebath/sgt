@@ -142,7 +142,7 @@ char *ucasename = "XCopy";
 
 Display *disp = NULL;
 Window ourwin = None;
-Atom compound_text_atom;
+Atom compound_text_atom, targets_atom;
 int screen, wwidth, wheight;
 
 Atom strtype = XA_STRING;
@@ -174,6 +174,9 @@ int init_X(void) {
 	if (!strtype)
 	    error ("unable to get COMPOUND_TEXT property");
     }
+    targets_atom = XInternAtom(disp, "TARGETS", False);
+    if (!targets_atom)
+        error ("unable to get TARGETS property");
 
     /* get the screen and root-window */
     screen = DefaultScreen (disp);
@@ -288,6 +291,17 @@ void run_X(void) {
                                      tp.format, PropModeReplace,
                                      tp.value, tp.nitems);
                     e2.xselection.property = ev.xselectionrequest.property;
+                } else if (ev.xselectionrequest.target == targets_atom) {
+                    Atom targets[2];
+                    int len = 0;
+                    targets[len++] = strtype;
+                    if (strtype != compound_text_atom && convert_to_ctext)
+                        targets[len++] = compound_text_atom;
+                    XChangeProperty (disp, ev.xselectionrequest.requestor,
+                                     ev.xselectionrequest.property,
+                                     ev.xselectionrequest.target,
+                                     32, PropModeReplace,
+                                     (unsigned char *)targets, len);
                 } else {
                     e2.xselection.property = None;
                 }
