@@ -185,9 +185,14 @@ enum {
     ( (a)==ACT_FASTLEFT || (a)==ACT_FASTRIGHT || (a)==ACT_SOFTDROP)
 
 static const int actions[4+10] = {
+    /* left, right, up, down */
     ACT_LEFT, ACT_RIGHT, -1, ACT_SOFTDROP,
-    ACT_REFLECT, ACT_ANTICLOCK, -1, ACT_CLOCKWISE,
-    -1, -1, -1, -1, -1, -1
+    /* square, x, triangle, circle */
+    ACT_HARDDROP, ACT_ANTICLOCK, ACT_REFLECT, ACT_CLOCKWISE,
+    /* L1, R1, L2, R2 */
+    ACT_HOLD, ACT_HOLD, -1, -1,
+    /* select, start */
+    -1, -1
 };
 
 static void play_game(void)
@@ -219,7 +224,7 @@ static void play_game(void)
      * Main game loop. We go round this once every frame.
      */
     while (1) {
-	int left, right, anticlock, clockwise, reflect, dropping;
+	int left, right, anticlock, clockwise, reflect, dropsoft, drophard;
 	int dx, dy;
 	SDL_Event event;
 
@@ -258,7 +263,8 @@ static void play_game(void)
 	    if (SDL_JoystickGetButton(joys[0], i))
 		pressed[4+i] = 1;
 
-	left = right = anticlock = clockwise = reflect = dropping = 0;
+	left = right = anticlock = clockwise = 0;
+	reflect = dropsoft = drophard = 0;
 
 	for (i = 0; i < lenof(pressed); i++) {
 	    int tmp = pressed[i];
@@ -279,20 +285,22 @@ static void play_game(void)
 	    if (pressed[i] && actions[i] == ACT_REFLECT)
 		reflect = 1;
 	    if (pressed[i] && actions[i] == ACT_SOFTDROP)
-		dropping = 1;
+		dropsoft = 1;
+	    if (pressed[i] && actions[i] == ACT_HARDDROP)
+		drophard = 1;
 	}
 
 	if (dropinhibit) {
-	    if (!dropping)
+	    if (!dropsoft)
 		dropinhibit = 0;
-	    dropping = 0;
+	    dropsoft = 0;
 	}
 
 	/*
 	 * Check the drop timer.
 	 */
 	if (--untildrop < 0)
-	    dropping = 1;
+	    dropsoft = 1;
 
 	/*
 	 * Now do the various actions.
@@ -308,8 +316,14 @@ static void play_game(void)
 	    try_anticlock(ti);
 	if (reflect)
 	    try_reflect(ti);
-	if (dropping) {
-	    int ret = drop(ti);
+	if (dropsoft || drophard) {
+	    int ret;
+	    if (drophard) {
+		ret = 1;
+		harddrop(ti);
+	    } else {
+		ret = softdrop(ti);
+	    }
 	    if (ret) {
 		ret = init_shape(ti);
 		if (!ret)

@@ -444,7 +444,7 @@ gint timer_func(gpointer data)
     inst->rpressed = KEY_PRESSED(' ');
 
     if (KEY_PRESSED('/') && !inst->down_disabled) {
-	if (drop(inst->ti)) {
+	if (softdrop(inst->ti)) {
 	    init_shape(inst->ti);      /* FIXME: check for game-over! */
             inst->down_disabled = TRUE;
         }

@@ -26,11 +26,14 @@ extern char *pentris_shapes[18+1];
  * piece was successful (so a front end could, for instance, choose
  * what noise to make).
  * 
- * `drop' is a one-space soft drop, and returns TRUE if it caused
- * the piece to finish its dropping (in which case line checking
- * and an arena redraw will also have been done). Of course, after
- * `drop' returns TRUE, you will almost certainly want to call
- * `init_shape' again.
+ * `softdrop' is a one-space soft drop, and returns TRUE if it
+ * caused the piece to finish its dropping (in which case line
+ * checking and an arena redraw will also have been done). Of
+ * course, after `softdrop' returns TRUE, you will almost certainly
+ * want to call `init_shape' again.
+ * 
+ * `harddrop' is an all-the-way instantaneous drop, and therefore
+ * it is always successful and returns nothing.
  * 
  * `init_shape' returns FALSE if there was no space to place the
  * new piece - which is of course the game-over condition.
@@ -43,7 +46,8 @@ int try_move_right(struct ntris_instance *inst);
 int try_anticlock(struct ntris_instance *inst);
 int try_clockwise(struct ntris_instance *inst);
 int try_reflect(struct ntris_instance *inst);
-int drop(struct ntris_instance *inst);
+int softdrop(struct ntris_instance *inst);
+void harddrop(struct ntris_instance *inst);
 
 /*
  * The game logic will call back to this function in response to
