@@ -1,5 +1,5 @@
 % -*- mode: slang; mode: fold -*-
-% Simon Tatham: version $Revision: 1.39 $
+% Simon Tatham: version $Revision: 1.40 $
 
 %{{{ load Emacs keybindings to start with
 
@@ -306,6 +306,9 @@ define c_mode_hook() %{{{
     definekey("insert_openbrace_cmd", "{", keymap);
     definekey("insert_shutbrace_cmd", "}", keymap);
     definekey("c_multiline_comment", "^XC", keymap);
+    definekey("jedrc_c_format_paragraph", "^[Q", keymap);
+    definekey("jedrc_c_format_paragraph", "^[q", keymap);
+    unset_buffer_hook("par_sep");
 }
 %}}}
 
@@ -979,7 +982,7 @@ if (jedrc_is_in_lib("buttress.sl")) { %{{{
 %{{{ ESC 0 inserts `0', so we can type eight zeros using ALT-8 ALT-0
 setkey(". 48 insert_char", "^[0");
 %}}}
-%{{{ Somewhat different text-mode format-paragraph function
+%{{{ Somewhat different text and C mode format-paragraph functions
 
 define jedrc_on_white() {
     variable i = what_char();
@@ -989,10 +992,17 @@ define jedrc_on_white() {
         return 0;
 }
 
-define text_item1st() {
+define jedrc_item1st(prefix) {
     push_spot();
     EXIT_BLOCK { pop_spot(); }
     bol();
+    if (prefix != "") {
+	skip_white();
+	if (looking_at(prefix))
+	    go_right(strlen(prefix));
+	else
+	    return 0;
+    }
     if (jedrc_on_white()) {
         skip_white();
         if (looking_at("-") or looking_at("*") or
@@ -1013,22 +1023,30 @@ define text_item1st() {
     return 0;
 }
 
-define text_parsep() {
+define jedrc_parsep(prefix) {
     push_spot();
     bol_skip_white();
+    if (prefix != "") {
+	if (looking_at(prefix)) {
+	    go_right(strlen(prefix));
+	} else {
+	    pop_spot();
+	    return 1;
+	}
+    }
     eolp();
     pop_spot();
 }
 
-define text_format_paragraph() {
-    variable mkbot, mktop, item, i, j;
-    if (text_parsep())
+define jedrc_format_paragraph(prefix) {
+    variable mkbot, mktop, item, i, j, thisprefix, prefixlen;
+    if (jedrc_parsep(prefix))
         return;
     push_spot();
     while (1) {
         !if (down(1))
             break;
-        if (text_item1st() or text_parsep()) {
+        if (jedrc_item1st(prefix) or jedrc_parsep(prefix)) {
             up(1);
             break;
         }
@@ -1039,11 +1057,11 @@ define text_format_paragraph() {
     pop_spot();
     push_spot();
     while (1) {
-        if (text_item1st())
+        if (jedrc_item1st(prefix))
             break;
         !if (up(1))
             break;
-        if (text_parsep()) {
+        if (jedrc_parsep(prefix)) {
             go_down(1);
             break;
         }
@@ -1051,7 +1069,24 @@ define text_format_paragraph() {
     bol();
     insert("\n");
     mktop = create_user_mark();
-    item = text_item1st();
+    item = jedrc_item1st(prefix);
+    prefixlen = 0;
+    if (prefix != "") {
+	bol();
+	while (not eolp()) {
+	    push_mark();
+	    push_mark();
+	    skip_white();
+	    if (looking_at(prefix))
+		go_right(strlen(prefix));
+	    prefixlen = what_column();
+	    thisprefix = bufsubstr();
+	    del_region();
+	    eol();
+	    go_right_1();
+	}
+	goto_user_mark(mktop);
+    }
     if (item) {
         skip_white();
         skip_chars("^ \t");
@@ -1071,11 +1106,22 @@ define text_format_paragraph() {
         insert("\n");
         whitespace(());
     }
+    WRAP -= prefixlen;
     call("format_paragraph");
+    WRAP += prefixlen;
     if (item) {
         pop_spot();
         deln(left(j));
         whitespace(j);
+    }
+    if (prefix != "") {
+	goto_user_mark(mktop);
+	bol();
+	while (not eolp()) {
+	    insert(thisprefix);
+	    eol();
+	    go_right_1();
+	}
     }
     goto_user_mark(mkbot);
     deln(1);
@@ -1084,9 +1130,31 @@ define text_format_paragraph() {
     pop_spot();
 }
 
+define jedrc_c_get_prefix() {
+    push_spot();
+    EXIT_BLOCK { pop_spot(); }
+    bol();
+    skip_white();
+    if (looking_at("//")) {
+	return "// ";
+    }
+    return "* ";
+}
+
+define jedrc_text_format_paragraph() {
+    jedrc_format_paragraph("");
+}
+define jedrc_c_format_paragraph() {
+    jedrc_format_paragraph(jedrc_c_get_prefix());
+}
+
+define jedrc_text_parsep() {
+    return jedrc_parsep("");
+}
+
 $1 = "text";
 !if (keymap_p($1)) make_keymap($1);
-definekey("text_format_paragraph", "\eQ", $1);
+definekey("jedrc_text_format_paragraph", "\eQ", $1);
 define text_mode_hook() {
     variable buf;
     use_keymap("text");
@@ -1095,7 +1163,7 @@ define text_mode_hook() {
          (strcmp(".article", substr(buf, 1, 8)) and
           strcmp(".letter", substr(buf, 1, 7))))
         use_syntax_table("TimberC");
-    set_buffer_hook("par_sep", "text_parsep");
+    set_buffer_hook("par_sep", "jedrc_text_parsep");
     runhooks("jedrc_text_mode_hook");
 }
 
