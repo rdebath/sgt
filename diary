@@ -82,6 +82,8 @@ ATTR_QUOTED = 0xB0
 monoquotes = [("", 0, 0), ("  ", ATTR_QUOTED, 0), ("> ", ATTR_QUOTED, 0)]
 # Regexp matching dangerous things to put at the start of a line.
 monodanger = re.compile(r'^[A-Z][A-Za-z]*:')
+# Maximum length of a Mono edit.
+MONO_EDIT_MAX = 98
 class output:
     def __init__(self):
 	self.mono = []
@@ -108,7 +110,7 @@ class output:
         lt = time.localtime(self.timestamp)
         self.timestamp = self.timestamp + 1
         self.mono_blankline()
-	if len(self.mono) - self.mono_last_edit_start >= 98:
+	if len(self.mono) - self.mono_last_edit_start >= MONO_EDIT_MAX:
 	    msg = "Mono edit at line %d is too long!" % (self.mono_last_edit_start+1)
 	    self.warnings.append(msg)
 	self.mono_last_edit_start = len(self.mono)
@@ -247,7 +249,7 @@ class output:
 
     def finish(self):
 	self.mono_blankline()
-	if len(self.mono) - self.mono_last_edit_start >= 48:
+	if len(self.mono) - self.mono_last_edit_start >= MONO_EDIT_MAX:
 	    msg = "Mono edit at line %d is too long!" % (self.mono_last_edit_start+1)
 	    self.warnings.append(msg)
 
