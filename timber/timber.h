@@ -113,6 +113,7 @@ void parse_for_db(const char *ego, const char *location,
 		  const char *message, int msglen);
 char *message_location(const char *ego);
 struct mime_details *find_mime_parts(const char *ego, int *nparts);
+void ab_display_attr_history (const char *contact_id, const char *attr_type);
 void ab_display_attr (const char *contact_id, const char *attr_type);
 void ab_change_attr (const char *contact_id, const char *attr_type,
 		     const char *new_value);
