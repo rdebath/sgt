@@ -73,8 +73,9 @@ the <code>GetSystemPowerStatus()</code> call disabled, and has reported
 that the problem seems to have gone away.
 
 <p>
-So, it looks as if this source of noise should be removed (there are
+This source of noise has now been removed as of 2004-03-18 (there were
 <a href="ntpd-slowdown.html">other good reasons</a> too).
+Please let us know if this appears to solve (or not!) the problem.
 
 <p>
 (Perhaps we've been getting more reports recently because modern BIOI /
