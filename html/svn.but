@@ -84,8 +84,9 @@ repository administration, i.e. having a separate locks tree).
 (To be fair, version control in some sense \e{inherently} requires
 participants to trust one another, since each one checks in code
 which the others usually just compile and run. But at least you
-\e{know} when you're doing that; CVSROOT scripts seem more dangerous
-to me since not every CVS user even needs to know they're there...)
+\e{know} when you're doing that; \cw{CVSROOT} scripts seem more
+dangerous to me since not every CVS user even needs to know they're
+there...)
 
 So I was rather hoping Subversion could do better. Initially, it
 didn't look promising. The HTTP-based access methods didn't suit me:
