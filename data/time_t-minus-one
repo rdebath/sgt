@@ -11,4 +11,8 @@ indicates that time() couldn't return the correct answer.  Doing this
 invokes undefined behaviour (a GPF on Windows), which is Bad.  PuTTY
 should do something more sensible when presented with (time_t)-1.
 
+In current versions of Windows this manifests when the system clock is
+set to dates around 2038.
+
+Ref: <20020211221424.GA12404@boerde.de>
 Ref: <001f01c2d091$74f19560$af00a8c0@dual>
