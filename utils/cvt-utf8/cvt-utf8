@@ -216,16 +216,16 @@ def do(args):
 	process_utf8(liststepper(list))
 
 def usage(arg):
-    print "Usage: cvt-utf8 [flags] <hex UTF-8 bytes and/or U+codepoints>"
+    print "usage: cvt-utf8 [flags] <hex UTF-8 bytes and/or U+codepoints>"
     print "  e.g. cvt-utf8 e2 82 ac"
     print "    or cvt-utf8 U+20ac"
     print "    or cvt-utf8 U-10ffff"
     print ""
-    print "Flags: -o or --output        just output well-formed UTF-8 instead of"
+    print "where: -o or --output        just output well-formed UTF-8 instead of"
     print "                             an analysis of the input data"
     print "       -h or --han           also give Han definitions from unihan db"
     print ""
-    print "Also:  cvt-utf8 --test       run Markus Kuhn's decoder stress tests" #'
+    print " also: cvt-utf8 --test       run Markus Kuhn's decoder stress tests" #'
     print "       cvt-utf8 --input (or -i)"
     print "                             read, analyse and decode UTF-8 from stdin"
     if arg == "--help-admin":

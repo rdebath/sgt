@@ -42,14 +42,14 @@ int convert_to_ctext = True;	       /* Xmb convert to compound text? */
 
 const char usagemsg[] =
     "usage: xcopy [ -r ] [ -u | -c ] [ -C ]\n"
-    " also: xcopy --version              report version number\n"
-    "       xcopy --help                 display this help text\n"
-    "       xcopy --licence              display the (MIT) licence text\n"
     "where: -r     read X selection and print on stdout\n"
     "       no -r  read stdin and store in X selection\n"
     "       -u     work with UTF8_STRING type selections\n"
     "       -c     work with COMPOUND_TEXT type selections\n"
     "       -C     suppress automatic conversion to COMPOUND_TEXT\n"
+    " also: xcopy --version              report version number\n"
+    "       xcopy --help                 display this help text\n"
+    "       xcopy --licence              display the (MIT) licence text\n"
     ;
 
 void usage(void) {
