@@ -1,6 +1,18 @@
 /*
  * sumo - a small game involving powered snooker balls attempting
  * to knock one another off a table.
+ * 
+ * TODO:
+ * 
+ *  - PS2 adjust-screen feature
+ *  - Means of quitting that doesn't depend on the potentially
+ *    absent PS2 keyboard
+ *  - Might be nice to have some alternative arena shapes
+ *    available, if we aren't going to support the command-line
+ *    full configuration.
+ *  - We are really suffering from lack of double-buffering. I
+ *    wonder if SDL (or indeed the Linux kernel at all) can be
+ *    persuaded to do some for us.
  */
 
 #include <stdio.h>
