@@ -20,3 +20,6 @@ CSI <code>3</code> <code>J</code>.  We could do the same.
 <p>
 It's been suggested that screen clears could do this. If so, it would
 have to be configurable, and disabled by default.
+
+<p>
+Patch (unreviewed): <code>3F82D4D8.3080404@pi3.informatik.uni-mannheim.de</code>
