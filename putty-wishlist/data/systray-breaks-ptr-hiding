@@ -21,3 +21,12 @@ messages to be sent when nothing had actually changed. As of tomorrow's
 snapshot, PuTTY will ignore such messages. Hopefully this will solve
 the original problem; if it works for you it'd be nice if you could
 tell us.
+
+<p>
+(Aside: the mouse pointer occasionally seems to get shown on my Win98SE
+system - as a pointer, not an I-beam - and then isn't hidden by
+subsequent typing. I think it may momentarily be an hourglass first.
+It's sometimes caused by playing a <code>.WAV</code> file for a bell,
+and sometimes happens for no apparent reason. This doesn't appear to
+be visible to the usual PuTTY show/hide pointer mechanisms
+(<code>show_mouseptr()</code>), so isn't fixed by the above change.)
