@@ -1,0 +1,36 @@
+Summary: Default to SSH-2 protocol instead of SSH-1
+Class: wish
+Priority: medium
+Difficulty: fun
+Content-type: text/x-html-body
+Fixed-in: 2002-10-14
+
+<p>
+Version 2 of the SSH protocol has various security and other
+enhancements over SSH1. We should encourage its use.
+
+<p>
+One way of doing this is to make SSH-2 the default protocol (currently
+it's SSH-1). Note that while PuTTY will fall back to SSH-1 if
+necessary, this <em>is</em> potentially a user-visible change, as
+if SSH-2 is chosen users will be prompted about new host keys.
+(Perhaps the host key dialogue should indicate which keys we
+<em>do</em> have? See also <a href="hostkey-policy.html">`hostkey-policy'</a>.)
+
+<p>
+Conversely, many upgrading users won't see this change, as it's only
+the `factory default' that changes; if they've got saved settings with
+SSH-1 selected then that won't change.
+
+<p>
+In future we might consider `turning off' SSH-1 by default (i.e.,
+making `2 only' the default). Can't reasonably do this until SSH-2 is
+practically ubiquitous.
+
+<p>
+Our documentation should probably discuss the security implications of
+using SSH-1, too.
+
+<p>
+<em>Update:</em> Even Debian stable includes SSH-2 support now, so 
+we can reasonably get away with this. Fixed in snapshots.
