@@ -1,20 +1,30 @@
 STARTFONT 2.1
-COMMENT  
-COMMENT  Public domain font. Share and enjoy.
-COMMENT  
-COMMENT  WARNING:  This bdf file was generated from a font server using
-COMMENT  fstobdf.  The resulting font is subject to the same copyright,
-COMMENT  license, and trademark restrictions as the original font.  The
-COMMENT  authors and distributors of fstobdf disclaim all liability for
-COMMENT  misuse of the program or its output.
-COMMENT  
-FONT -Simon-Fixed-Medium-R-Normal--15-140-75-75-C-90-ISO8859-1
+COMMENT
+COMMENT  This is the Tektite font, out of the VFONT utility by clySmic
+COMMENT  Software. It's been heavily modified: the 0 and the * have been
+COMMENT  altered, a load of new characters have been drawn to conform to
+COMMENT  the ISO-8859-1 character set, and of course it's had a format
+COMMENT  conversion done on it.
+COMMENT
+COMMENT  All these modifications were done by Simon Tatham, who asserts
+COMMENT  no copyright.
+COMMENT
+COMMENT  The original VFONT copyright says:
+COMMENT
+COMMENT    VFONT is copyright 1991, 1993, 1998 by clySmic software, and is
+COMMENT    released as "Freeware".
+COMMENT
+COMMENT    You may copy the program and distribute it without charge.  You may
+COMMENT    not sell or otherwise charge for VFONT. However, users' groups may
+COMMENT    charge a small fee (not to exceed $10) for media and postage.
+COMMENT
+FONT -clySmic-Tektite-Medium-R-Normal--15-140-75-75-C-90-ISO8859-1
 SIZE 14 75 75
 FONTBOUNDINGBOX 9 15 0 -3
 STARTPROPERTIES 24
 FONTNAME_REGISTRY ""
-FOUNDRY "Simon"
-FAMILY_NAME "Fixed"
+FOUNDRY "clySmic"
+FAMILY_NAME "Tektite"
 WEIGHT_NAME "Medium"
 SLANT "R"
 SETWIDTH_NAME "Normal"
@@ -27,8 +37,8 @@ SPACING "C"
 AVERAGE_WIDTH 90
 CHARSET_REGISTRY "ISO8859"
 CHARSET_ENCODING "1"
-COPYRIGHT "Public domain font. Share and enjoy."
-FONT "-Simon-Fixed-Medium-R-Normal--15-140-75-75-C-90-ISO8859-1"
+COPYRIGHT "Portions copyright 1991,1993,1998 clySmic Software."
+FONT "-clySmic-Tektite-Medium-R-Normal--15-140-75-75-C-90-ISO8859-1"
 WEIGHT 10
 RESOLUTION 103
 X_HEIGHT 12
