@@ -99,9 +99,11 @@ int main(int argc, char **argv) {
 			msg = "GAME OVER";
 		    } else if (gs->status == COMPLETED) {
 			msg = "LEVEL COMPLETE";
-			p.levnum = gs->levnum;
-			p.date = time(NULL);
-			progress_save(set, user, p);
+			if (p.levnum < gs->levnum) {
+			    p.levnum = gs->levnum;
+			    p.date = time(NULL);
+			    progress_save(set, user, p);
+			}
 		    } else {
 			msg = "!INTERNAL ERROR!";
 		    }
