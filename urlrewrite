@@ -1,0 +1,32 @@
+#!/usr/bin/env python
+
+import urlparse
+import string
+import sys
+
+url = sys.argv[1]
+
+t = urlparse.urlparse(url)
+
+if t[0] == "http" and t[1] == "www.livejournal.com" and t[2][:7] == "/users/":
+    # For any link which deals in someone's actual journal, we want
+    # to ensure `style=mine' is one of the query variables if there
+    # isn't already a style setting.
+    #
+    # Oh, except that _my_ journal is exempt!
+    if t[2][:14] != "/users/simont/":
+        if t[4] == "":
+            queries = []
+        else:
+            queries = string.split(t[4], "&")
+        found=0
+        for s in queries:
+            if s[:6] == "style=":
+                found=1
+                break
+        if not found:
+            queries = queries + ["style=mine"]
+            tl = list(t)
+            tl[4] = string.join(queries, "&")
+            t = tuple(tl)
+            print urlparse.urlunparse(t)
