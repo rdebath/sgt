@@ -1,0 +1,26 @@
+Summary: PuTTY's placement of PUTTY.RND is non-optimal on Windows
+Class: semi-bug
+Difficulty: fun
+Priority: medium
+Content-type: text/x-html-body
+
+<p>
+PuTTY attempts to store its random number seed file
+<code>PUTTY.RND</code> in a sensible place (such as the user's home
+directory), as described in the
+<a href="http://www.chiark.greenend.org.uk/~sgtatham/putty/faq.html#A.4.2">FAQ</a>.
+
+<p>
+However, we've had various reports that this isn't working as
+designed, and that <code>PUTTY.RND</code> is ending up in
+<code>C:\</code>. This has been reported on Windows 2000 and XP.
+
+<p>
+Suggested alternative from
+<code>001201c32fd3$8c5484a0$bc1eb440@hyperwolf</code>: use one of the
+paths returned by <code>SHGetFolderPath</code> (requires some faffing
+wrt old Windows versions).
+
+<p>
+(If this is fixed, perhaps we should continue to support
+<em>reading</em> the files from their old locations.)
