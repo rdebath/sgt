@@ -75,3 +75,9 @@ Reports:
     <br>SSH packet log attached - protocol looks fine (although it has extra
     IGNORE messages interspersed, unlike previous)
 </ul>
+
+<p>
+<b>SGT, 2005-01-07</b>: Simplest answer, I think, is to use
+<code>sk_set_frozen()</code> to ensure that the SSH connection in
+question doesn't accept any more data while we're in the middle of
+asking the user about something.
