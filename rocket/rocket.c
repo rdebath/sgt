@@ -456,10 +456,12 @@ static void play_game(void)
 	    if (pl->death)
 		continue;
 
-	    kfire = SDL_JoystickGetButton(joys[p], 3);   /* Circle */
+	    kfire = (SDL_JoystickGetButton(joys[p], 3) ||   /* circle */
+		     SDL_JoystickGetButton(joys[p], 0));    /* square */
 	    axis = SDL_JoystickGetAxis(joys[p], 0) / JOY_THRESHOLD;
 	    kthrust = SDL_JoystickGetButton(joys[p], 1);   /* X */
-	    kburner = SDL_JoystickGetButton(joys[p], 4);   /* L1 */
+	    kburner = (SDL_JoystickGetButton(joys[p], 4) ||   /* L1 */
+		       SDL_JoystickGetButton(joys[p], 5));    /* R1 */
 
 	    if (kfire || axis || kthrust || kburner)
 		pl->invuln = FALSE;
