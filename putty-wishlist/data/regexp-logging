@@ -9,7 +9,7 @@ Content-type: x-html-body
 >   Actually if I had any sense, I'd just grep putty's log instead, I
 >   guess.  It'd still be nice to grab matching text and save to a   
 >   separate file directly though, maybe with a timestamp or something.  I
->   want the moon on a stick, me.
+>   want <a href="moon-on-stick.html">the moon on a stick</a>, me.
 </pre>
 
 <p>If we were to do this, we'd need to be able to handle having arbitrarily
