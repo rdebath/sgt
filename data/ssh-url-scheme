@@ -16,3 +16,6 @@ Content-type: text/x-html-body
   for a new one.  If someone specifies and registers such a URL scheme,
   support for it will almost certainly be added to PuTTY.
 
+<p>
+<em>Update:</em> a set of URL schemes has been proposed in
+<a href="http://www.ietf.org/internet-drafts/draft-ietf-secsh-scp-sftp-ssh-uri-00.txt">draft-ietf-secsh-scp-sftp-ssh-uri-00</a>.
