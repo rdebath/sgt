@@ -1,0 +1,11 @@
+summary: Multiple Change Settings dialogues cause crash
+difficulty: fun
+class: bug
+priority: medium
+Content-type: text/plain
+
+If you open multiple simultaneous Change Settings dialogue boxes from
+the same PuTTY session, PuTTY crashes when you close one of them.
+
+We should restrict Change Settings so you can only have one at a time!
+
