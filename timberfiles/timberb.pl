@@ -154,7 +154,7 @@ sub multipart {
   my ($level, $sep, $data, $type) = @_;
   local $_;
   my ($ret, $attach, $conttype, $contenc, $contdesc, $contname);
-  my ($end, $blank, @data, $h, $raw, $cooked);
+  my ($end, $blank, @data, $h, $raw, $cooked, $pfx);
 
   $data =~ y/\n/\r/;
   @data = split /\r/, $data, -1;
@@ -185,13 +185,26 @@ sub multipart {
     $innersep = "";
     $_ = $data[0];
     last if $_ eq $end;
-    while (defined $_ and /./) {
-      $attach .= "+" . $_ . "\n";
+    $pfx = "+";
+    while (defined $_) {
+      if (!/./) {
+	# We've reached a blank line, separating the MIME headers
+	# from the attachment body. This is mostly fine, but if the
+	# attachment is of type message/rfc822 then we must
+	# continue header processing in case the message itself is
+	# multipart.
+	if ($conttype eq "message/rfc822" and $pfx eq "+") {
+	  $pfx = " ";
+	} else {
+	  last;
+	}
+      }
+      $attach .= $pfx . $_ . "\n";
       /^Content-type: ([^\/; ]+\/[^\/; ]+)/i and do {
         $conttype = $1;
         while ($data[1] =~ /^\s/) {
           shift @data;
-          $attach .= "+" . $data[0] . "\n";
+          $attach .= $pfx . $data[0] . "\n";
           $_ .= $data[0];
         }
         /name="?([^"]*)/i and $contname = $1;
@@ -202,6 +215,7 @@ sub multipart {
         } else {
           $innersep = "";
         }
+        $realconttype = $conttype if $pfx eq "+";
       };
       /^Content-disposition: /i and do {
         /filename="?([^"]*)/i and $contfname = $1;
@@ -219,15 +233,15 @@ sub multipart {
       shift @data;
       $_ = $data[0];
     }
-    $ret .= "! " . ("  " x $level) . lc $conttype;
+    $ret .= "! " . ("  " x $level) . lc $realconttype;
     $ret .= sprintf " (%s)", lc $contenc if $contenc ne "";
     $ret .= " name=`$contname'" if $contname ne "";
     $ret .= " filename=`$contfname'" if $contname eq "" and $contfname ne "";
     $ret .= " desc=`$contdesc'" if $contdesc ne "";
     # Possibly recurse. We may have to:
     #  - recurse directly if this is a multipart (done)
-    #  - decode, do headers, and _then_ potentially recurse if this is
-    #    a message/rfc822 (FIXME: not done yet, and _hard_)
+    #  - do headers and _then_ potentially recurse if this is a
+    #    message/rfc822.
     if ($conttype =~ /^multipart\//i) {
       $ret .= "\n" . $attach . " \n";
       chomp $raw;
