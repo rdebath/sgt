@@ -1,5 +1,23 @@
 #!/usr/bin/env python
 
+# Todo list:
+#
+# - Line editing and recall in bottom-line input.
+# - Sessions without write access: be able to start them, and know what
+#   your session is when deciding whether to allow adding.
+# - "Menu  [ESC]= Utilities and Exit"
+# - Remember: you can (or should be able to) press [ESC] _anywhere_.
+# - Implement missing features in editor.
+# - Set Your Options (grogname and maybe others)
+# - View MOTD.
+# - View Edit Log.
+# - Update menus when index is re-read. Be sure never to allow a user's
+#   own contributions (or new items) to be marked unread by default.
+# - Graceful (naive-newbie-friendly) handling of nonexistence of config
+#   files.
+# - Ability to use an external editor.
+# - Documentation :-)
+
 import sys
 import string
 import time
@@ -928,7 +946,7 @@ def editor(title, inittext):
 		    if x > len(ret[y]): x = len(ret[y]) # FIXME: fix x
 		else:
 		    x = len(ret[y])
-	    elif c == ord("\006") or c == curses.KEY_LEFT:
+	    elif c == ord("\002") or c == curses.KEY_LEFT:
 		if x > 0:
 		    x = x - 1
 		elif y > 0:
@@ -1138,20 +1156,6 @@ def indexupdate(c, items, lastseq):
     items = parseindex(index, items)
     return items, lastseq
 
-# Todo list:
-#
-# Introduce ESC N (or at least ESC Something) for start-brand-new-item.
-#
-# Line editing and recall in bottom-line input.
-#
-# Accumulated FIXMEs from elsewhere in the code:
-# - Check session has write access when deciding whether to print [A]:Add
-# - "Menu  [ESC]= Utilities and Exit"
-# - Implement missing features in editor.
-# - Set Your Options (grogname and maybe others)
-# - View MOTD.
-# - View Edit Log.
-
 c = rgtpclient.RGTPConnection(host=server, port=port, plogfile=logfile)
 c.setsecret(secretpath)
 c.login(rcfile["userid"])
@@ -1237,7 +1241,7 @@ try:
 		    action, grogname, subject = addpage(4, grogname, "", subject)
         else:
 	    curses.beep() # NYI specials
-        # FIXME: youropts, newitem, motd and editlog
+        # FIXME: youropts, motd and editlog
 finally:
     endcurses()
 saveindex(indexpath, items, lastseq)
