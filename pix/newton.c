@@ -28,8 +28,9 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 
-#define VERSION "$Revision: 1.2 $"
+#define VERSION "$Revision: 1.3 $"
 
 #define TRUE 1
 #define FALSE 0
@@ -267,6 +268,9 @@ struct Params {
     ComplexList roots;
     struct Colours *colours;
     int nfade, limit;
+    double minfade;                    /* minimum colour intensity for fade */
+    int cyclic;                        /* do colours cycle, or asymptote? */
+    int blur;                          /* are iteration boundaries blurred? */
 };
 
 static int toint(double d) {
@@ -279,9 +283,10 @@ static int toint(double d) {
 
 int plot(struct Params params) {
     int i, j, k;
-    Complex z, w, d;
+    Complex z, w, d, prevz;
     struct Bitmap bm;
     int icount, root;
+    double iflt, fade;
     const double tolerance = 1e-10;
 
     bmpinit(&bm, params.outfile, params.width, params.height);
@@ -291,6 +296,7 @@ int plot(struct Params params) {
             z.i = params.y0 + (params.y1-params.y0) * i / params.height;
             z.r = params.x0 + (params.x1-params.x0) * j / params.width;
             w = z;
+            prevz = z;
 
             /*
              * For each point, begin an iteration at z.
@@ -309,6 +315,7 @@ int plot(struct Params params) {
                 }
                 if (root >= 0)
                     break;
+                prevz = z;
 
                 /*
                  * Newton-Raphson on a polynomial is very easy.
@@ -363,15 +370,57 @@ int plot(struct Params params) {
                 }
             }
 
+            if (params.blur) {
+                /*
+                 * Adjust the integer iteration count by an ad-hoc
+                 * measure of the `fractional iteration count'. We
+                 * guess at this by calculating how far between the
+                 * one value of z and the next the tolerance level
+                 * appeared: if one value of z was only just
+                 * outside the tolerance level and the next was way
+                 * inside it, we add virtually zero to the
+                 * iteration count, but if one value was miles
+                 * outside the tolerance level and the next was
+                 * only just inside it we add almost 1.
+                 * 
+                 * This is done on a logarithmic scale, because
+                 * tests show that works much better.
+                 */
+                double dist0 = cdistsquared(prevz, params.roots.list[k]);
+                double dist1 = cdistsquared(z, params.roots.list[k]);
+                double logt, log0, log1, proportion;
+                if (dist1 < tolerance && dist0 > tolerance) {
+                    logt = log(tolerance);
+                    log0 = log(dist0);
+                    log1 = log(dist1);
+                    proportion = (logt - log0) / (log1 - log0);
+                } else
+                    proportion = 0;
+                iflt = icount + proportion;
+            } else {
+                iflt = icount;
+            }
+
+            if (params.cyclic) {
+                fade = 1.0 - fmod(iflt, params.nfade) / ((double)params.nfade);
+            } else {
+                fade = pow(1.0 - 1.0 / params.nfade, iflt);
+            }
+            fade = params.minfade + (1.0 - params.minfade) * fade;
+
+            /*
+             * 
+             */
+
             /*
              * Now colour according to icount and root.
              */
             {
                 struct RGB c;
-                double fade;
                 c = colfind(params.colours, root);
-                fade = 1.0 - (icount % params.nfade) / (1.0 * params.nfade);
                 fade *= 256.0;
+                if (fade > 255.0)
+                    fade = 255.0;
                 bmppixel(&bm, toint(c.r*fade),
                          toint(c.g*fade), toint(c.b*fade));
             }
@@ -487,6 +536,22 @@ int parseflt(char const *string, double *d, char const *name) {
 	return 1;
 }
 
+int parsebool(char const *string, int *d, char const *name) {
+    if (!strcmp(string, "yes") ||
+        !strcmp(string, "true") ||
+        !strcmp(string, "verily")) {
+        *d = 1;
+        return 1;
+    } else if (!strcmp(string, "no") ||
+               !strcmp(string, "false") ||
+               !strcmp(string, "nowise")) {
+        *d = 0;
+        return 1;
+    }
+    fprintf(stderr, "newton: unable to parse %s `%s'\n", name, string);
+    return 0;
+}
+
 int main(int ac, char **av) {
     char const *usagemsg[] = {
 	"usage: newton [options] [roots]",
@@ -499,6 +564,9 @@ int main(int ac, char **av) {
 	"       -S, --scale NNN         image scale (ie pixel spacing)",
 	"       -l, --limit 256         maximum limit on iterations",
 	"       -f, --fade 16           how many shades of each colour",
+	"       -F, --minfade 0.4       dimmest shade of each colour to use",
+	"       -C, --cyclic yes        allocate colours cyclically",
+	"       -B, --blur no           blur out iteration boundaries",
 	"       -c, --colours 1,0,0:0,1,0  colours for roots",
 	"       -v, --verbose           report details of what is done",
 	" - if only one of -x and -y specified, will compute the other so",
@@ -510,8 +578,9 @@ int main(int ac, char **av) {
     int verbose = FALSE;
     char *outfile = NULL;
     int imagex = 0, imagey = 0;
-    double xcentre, ycentre, xrange, yrange, scale;
-    int gotxcentre, gotycentre, gotxrange, gotyrange, gotscale;
+    double xcentre, ycentre, xrange, yrange, scale, minfade;
+    int gotxcentre, gotycentre, gotxrange, gotyrange, gotscale, gotminfade;
+    int cyclic = -1, blur = -1;
     struct Colours *colours = NULL;
     int done_args = FALSE;
     int fade = -1, limit = -1;
@@ -551,7 +620,10 @@ int main(int ac, char **av) {
 		    {"--scale", 'S'},
 		    {"--limit", 'l'},
 		    {"--fade", 'f'},
+		    {"--minfade", 'F'},
 		    {"--colours", 'c'},
+		    {"--cyclic", 'C'},
+		    {"--blur", 'B'},
 		    {"--verbose", 'v'},
 		    {"--help", 'h'},
 		    {"--version", 'V'},
@@ -621,6 +693,11 @@ int main(int ac, char **av) {
 			return EXIT_FAILURE;
 		    gotxrange = TRUE;
 		    break;
+		  case 'F':	       /* --minfade */
+		    if (!parseflt(val, &minfade, "minimum fade value"))
+			return EXIT_FAILURE;
+		    gotminfade = TRUE;
+		    break;
 		  case 'y':	       /* --yrange */
 		    if (!parseflt(val, &yrange, "y range"))
 			return EXIT_FAILURE;
@@ -641,6 +718,14 @@ int main(int ac, char **av) {
 			return EXIT_FAILURE;
 		    gotscale = TRUE;
 		    break;
+                  case 'C':            /* --cyclic */
+                    if (!parsebool(val, &cyclic, "cyclic setting"))
+                        return EXIT_FAILURE;
+                    break;
+                  case 'B':            /* --blur */
+                    if (!parsebool(val, &blur, "blur setting"))
+                        return EXIT_FAILURE;
+                    break;
 		  case 'c':	       /* --colours */
 		    colours = colread(val);
 		    if (!colours) {
@@ -781,6 +866,17 @@ int main(int ac, char **av) {
          * If no limit given, default to 256.
          */
         par.limit = limit > 0 ? limit : 256;
+
+        /*
+         * If no minfade given, default to 0.4.
+         */
+        par.minfade = gotminfade ? minfade : 0.4;
+
+        /*
+         * cyclic and blur default to true and false respectively.
+         */
+        par.cyclic = cyclic >= 0 ? cyclic : 1;
+        par.blur = blur >= 0 ? blur : 0;
 
 	i = plot(par) ? EXIT_SUCCESS : EXIT_FAILURE;
 
