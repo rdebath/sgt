@@ -11,8 +11,7 @@ features (as used by UnixWare etc).  Some of these are supported by PuTTY now.
 <h2>Colours</h2>
 There are various escape sequences which set the default colours used for
 various kinds of text  PuTTY currently only supports the one for setting the
-default foreground and background (as of 2003-06-16), and gets even that wrong
-(it interprets it as setting the <em>current</em> forground and background).
+default foreground and background (as of 2003-06-16).
 From <code><a href="http://groups.google.com/groups?q=msgid%3Ab1dhv1$s98$1%40hyppo.gu.net">comp.security.ssh</a></code>:
 <pre>Select foreground color              \027[=PsF
 Select background color              \027[=PsG
