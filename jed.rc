@@ -1,5 +1,5 @@
 % -*- mode: slang; mode: fold -*-
-% Simon Tatham: version $Revision: 1.60 $
+% Simon Tatham: version $Revision: 1.61 $
 
 %{{{ load Emacs keybindings to start with
 
@@ -423,6 +423,22 @@ define armasm_mode_hook() %{{{
     keymap = what_keymap();
     definekey("jedrc_armasm_format_paragraph", "^[Q", keymap);
     definekey("jedrc_armasm_format_paragraph", "^[q", keymap);
+#ifexists unset_buffer_hook
+    unset_buffer_hook("par_sep");
+#endif
+}
+
+%}}}
+
+%}}}
+%{{{ redefine bits of Lisp mode
+
+define lisp_mode_hook() %{{{
+{
+    variable keymap;
+    keymap = what_keymap();
+    definekey("jedrc_lisp_format_paragraph", "^[Q", keymap);
+    definekey("jedrc_lisp_format_paragraph", "^[q", keymap);
 #ifexists unset_buffer_hook
     unset_buffer_hook("par_sep");
 #endif
@@ -1338,6 +1354,9 @@ define jedrc_armasm_format_paragraph() {
 }
 define jedrc_perl_format_paragraph() {
     jedrc_format_paragraph("# ");
+}
+define jedrc_lisp_format_paragraph() {
+    jedrc_format_paragraph(";; ");
 }
 
 define jedrc_text_parsep() {
