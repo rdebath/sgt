@@ -1,0 +1,13 @@
+Summary: Change PuTTY's default protocol from Telnet to SSH
+Class: wish
+Difficulty: fun
+Priority: low
+Content-type: text/x-html-body
+
+<p>
+SSH is much more common than it was when this default was originally
+chosen.
+
+<p>
+As usual with default changes, this won't affect saved sessions, nor
+people who've saved Default Settings.
