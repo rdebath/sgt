@@ -3,6 +3,7 @@ Class: wish
 Priority: medium
 Difficulty: fun
 Content-Type: text/x-html-body
+Fixed-in: 2003-01-13
 
 <p>
 Terminal settings that are modifiable from "Change Settings" but
@@ -12,3 +13,16 @@ changes such a setting, then when they hit Apply they get a message
 box: "You have modified the initial state of the Foo setting. This
 change will take effect the next time your terminal is reset. Do you
 want to force it to take effect immediately as well? [yes] [no]".
+
+<p>
+<b>SGT, 2003-01-14</b>: Recent code cleanups had the side effect of
+allowing me to detect changes in these features, so I arranged that
+the current state automatically gets updated when you change such a
+feature in mid-session. I didn't bother with the message box; it
+seemed excessive for such a small thing.
+
+<p>
+Just for reference, at the time of fixing, the full list of such
+features is: auto wrap mode, DEC origin mode, background-colour
+erase, whether blinking text really blinks, and the character
+classes for double-click word-at-a-time selection.
