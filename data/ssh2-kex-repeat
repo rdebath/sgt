@@ -4,6 +4,7 @@ Priority: medium
 Difficulty: tricky
 Depends: ssh2-kex-data
 Content-type: text/x-html-body
+Fixed-in: 2004-11-28
 
 <p>
 Either side of an SSH2 connection may initiate a key re-exchange.
