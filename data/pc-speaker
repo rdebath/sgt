@@ -8,6 +8,7 @@ Among the many bell options we already support, it would be nice to
 support the built-in PC speaker. Unfortunately this seems to be
 non-trivial: on Win95-series systems this can apparently be done
 using MessageBeep(0xFFFFFFFF), but on NT-series systems this doesn't
-do anything different from MessageBeep(MB_OK) and there's some other
-system call that will do it. So we'd need to auto-detect which kind
+do anything different from MessageBeep(MB_OK).  Meanwhile on NT,
+Beep(Freq, Duration) uses the PC speaker, but that plays the default
+sound on Win95. So we'd need to auto-detect which kind
 of system we were running on.
