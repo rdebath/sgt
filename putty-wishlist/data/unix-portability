@@ -19,3 +19,8 @@ People occasionally send us patches to make the Unix port more portable.
 
    * Solaris
      20040217181156.GM17353@granzeau.com
+
+   * Mac OS X
+     dhbecker-0uHkTAZ3waS4IzZ253W5cgjfAlrQMYu@mailblocks.com
+
+Apparently PuTTY is now in the FreeBSD ports tree.
