@@ -20,6 +20,9 @@ def splitpath(s):
 def joinpath(list, prefix=""):
     return prefix + string.join(list, "/")
 
+def catpath(path1, path2, prefix=""):
+    return joinpath(splitpath(path1) + splitpath(path2), prefix)
+
 # Now here's a class that tracks a directory tree, storing a
 # user-provided value at each node.
 #
@@ -34,47 +37,69 @@ class DirTree:
     # subdirectories have a tuple containing (userdata,
     # next-level-dict) as their value; entries representing files
     # just have a 1-tuple containing (userdata,).
-    def __init__(self):
-	self.topdir = {}
+    def __init__(self, clone=None):
+	"Initialise an empty dir tree, or clone from `clone' if present."
+	def copy(tree):
+	    if type(tree) != types.DictType:
+		return tree
+	    ret = {}
+	    for key, val in tree.items():
+		if len(val) == 2:
+		    ret[key] = (val[0], copy(val[1]))
+		else:
+		    ret[key] = val
+	    return ret
 
-    def mkdir(self, path, data):
+	if clone == None:
+	    self.topdir = {}
+	else:
+	    self.topdir = copy(clone.topdir)
+
+    def _searchto(self, path):
 	ps = splitpath(path)
 	d = self.topdir
 	for s in ps[:-1]:
 	    d = d[s][1]
 	s = ps[-1]
+	return d, s
+
+    def mkdir(self, path, data=None):
+	d, s = self._searchto(path)
 	assert not d.has_key(s)
 	d[s] = (data, {})
 
-    def mkfile(self, path, data):
-	ps = splitpath(path)
-	d = self.topdir
-	for s in ps[:-1]:
-	    d = d[s][1]
-	s = ps[-1]
+    def mkfile(self, path, data=None):
+	d, s = self._searchto(path)
 	assert not d.has_key(s)
 	d[s] = (data,)
 
     def find(self, path):
-	ps = splitpath(path)
-	d = self.topdir
-	for s in ps[:-1]:
-	    d = d[s][1]
-	s = ps[-1]
+	d, s = self._searchto(path)
 	assert d.has_key(s)
 	return d[s][0]
 
+    def filetype(self, path):
+	d, s = self._searchto(path)
+	assert d.has_key(s)
+	if len(d[s]) > 1:
+	    return "d"
+	else:
+	    return "f"
+
     def delete(self, path):
-	ps = splitpath(path)
-	d = self.topdir
-	for s in ps[:-1]:
-	    d = d[s][1]
-	s = ps[-1]
+	d, s = self._searchto(path)
 	assert d.has_key(s)
 	del d[s]
 
-# A class to handle a single lump of RFC822-ish-headers-plus-data
-# read from an SVN dump file.
+    def filenames(self, path):
+	d, s = self._searchto(path + "/flibble")
+	return d.keys()
+
+    def copy(self):
+	return DirTree(self)
+
+# A class and some functions to handle a single lump of
+# RFC822-ish-headers-plus-data read from an SVN dump file.
 
 class Lump:
     def __init__(self):
@@ -190,18 +215,66 @@ def write_lump(f, lump):
     lump.hdrdict.has_key("Content-length"):
 	f.write("\n")
 
+# Higher-level class that makes use of the above to filter dump
+# file fragments a whole revision at a time.
 
+class Filter:
+    def __init__(self):
+	self.dirtree = DirTree()
+	self.revisions = {}
+
+    def docopy(self, stree, spath, dtree, dpath):
+	typ = stree.filetype(spath)
+	if typ == "f":
+	    dtree.mkfile(dpath)
+	else:
+	    dtree.mkdir(dpath)
+	    files = stree.filenames(spath)
+	    for file in files:
+		self.docopy(stree, catpath(spath, file), \
+		dtree, catpath(dpath, file))
+
+    def track(self, revhdr, contents):
+	for lump in contents:
+	    action = lump.hdrdict["Node-action"]
+	    path = lump.hdrdict["Node-path"]
+	    sys.stderr.write("%s %s\n" % (action, path))
+	    if action == "add":
+		if lump.hdrdict.has_key("Node-copyfrom-path"):
+		    srcrev = string.atoi(lump.hdrdict["Node-copyfrom-rev"])
+		    srcpath = lump.hdrdict["Node-copyfrom-path"]
+		    # Must find the source dir subtree, _as it
+		    # existed in the given revision_, and copy it
+		    # in full.
+		    srctree = self.revisions[srcrev]
+		    self.docopy(srctree, srcpath, self.dirtree, path)
+		elif lump.hdrdict["Node-kind"] == "dir":
+		    self.dirtree.mkdir(path)
+		else:
+		    self.dirtree.mkfile(path)
+	    elif action == "change":
+		self.dirtree.find(path) # verify it exists
+	    elif action == "delete":
+		self.dirtree.delete(path)
+	
+	# Must now clone the entire dir tree and store it in a
+	# revisions array, in case a future copy needs to access
+	# this version of the tree.
+	revnum = string.atoi(revhdr.hdrdict["Revision-number"])
+	self.revisions[revnum] = self.dirtree.copy()
 
 fr = sys.stdin
 fw = sys.stdout
 
-# Dump file header.
+# Pass the dump-file header through unchanged.
 lump = read_lump(fr)
 while not lump.hdrdict.has_key("Revision-number"):
     write_lump(fw, lump)
     lump = read_lump(fr)
 
 revhdr = lump
+
+filt = Filter()
 
 while revhdr != None:
     # Read revision header.
@@ -216,6 +289,7 @@ while revhdr != None:
 	contents.append(lump)
 
     # Alter the contents of the revision.
+    filt.tweak(revhdr, contents)
 
     # Write out revision.
     write_lump(fw, revhdr)
