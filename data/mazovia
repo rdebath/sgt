@@ -22,7 +22,7 @@ there are a couple of questions still to be answered:
 <ul>
 
 <li>Code point <code>0x9B</code>: corresponds to Polish currency
-zloty, symbol "z&#0142;", for which a single code point does not
+zloty, symbol "z&#x0142;", for which a single code point does not
 exist in Unicode. Plan to map this to U+FFFD REPLACEMENT CHARACTER
 (we're assured it's not very important).
 
