@@ -16,3 +16,9 @@ emulation to be implemented.
 <p>
 The best you can do currently is copy and paste from the PuTTY window
 to another program, and print from there. 
+
+<p>
+Alternatively,
+<a href="http://www.pcmag.com/article2/0,4149,8418,00.asp">PrintNow</a>
+will apparently cause Alt+PrintScreen to print the current window
+display to a printer (instead of just copying it to the clipboard).
