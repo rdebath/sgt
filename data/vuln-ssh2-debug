@@ -1,0 +1,44 @@
+Summary: Vulnerability: crafted SSH2_MSG_DEBUG can cause remote code execution
+Class: vulnerability
+Difficulty: fun
+Priority: high
+Absent-in: 0.51
+Present-in: 0.52 0.53 0.53b 0.54 0.55
+Fixed-in: 2004-10-23 0.56
+Content-type: text/x-html-body
+
+<p>
+Many versions of PuTTY prior to 0.56 have a memory corruption
+vulnerability in their treatment of received debug messages in SSH
+protocol version 2 (SSH2_MSG_DEBUG).
+
+<p>
+This message is handled in <code>ssh2_rdpkt()</code>. A string length
+is read from the SSH packet and clipped to the length of a buffer.
+However, the string length is stored as a signed integer, and there is
+no protection against its being large enough to be stored as a
+negative number. This will bypass the length checking and appear as a
+large positive number once again to the subsequent
+<code>memcpy()</code>, causing a memory overflow. Code execution has
+been demonstrated as a result of this overflow.
+
+<p>
+This bug is <b>EXTREMELY SEVERE</b>. PuTTY can process debug messages
+at any time in the protocol, including during the initial key exchange
+phase. Therefore, this bug can be exploited by a malicious server,
+<em>before</em> the client has received and verified a host key
+signature. So this attack can be performed by a man-in-the-middle
+between the SSH client and server, and the normal host key protections
+against MITM attacks are bypassed. Even if you trust the server you
+<em>think</em> you are connecting to, you are not safe.
+
+<p>
+This bug does not affect SSH protocol version 1, as the SSH2_MSG_DEBUG
+string length is sanity-checked against the packet length before use.
+
+<p>
+This bug was discovered by an anonymous contributor to
+<a href="http://www.idefense.com/">iDEFENSE</a>'s
+<a href="http://www.idefense.com/poi/teams/vcp.jsp">Vulnerability
+Contributor Program</a>. It will be documented by iDEFENSE in a
+forthcoming advisory.
