@@ -114,7 +114,7 @@ class nullfile:
     def write(*a):
 	pass
 
-def analyse(var, how, file):
+def analyse(var, how, scoring, file):
     # Analyse a given game variant.
 
     # First prepare a list of all game states, sorted by number of
@@ -135,8 +135,15 @@ def analyse(var, how, file):
 	states.append((count, state, name))
     states.sort()
 
-    winprob = {}
-    winprob[()] = 1.0 # special case: total win
+    # This hash stores the value of each position, as it's
+    # computed. If we're playing for maximum expected score, the
+    # value of the empty position is the full score of 45; if we're
+    # playing to win, the value is 1 (winning is a certainty).
+    value = {}
+    if scoring:
+	value[()] = 45.0 # special case: total win
+    else:
+	value[()] = 1.0 # special case: total win
 
     # Now work through each state in the given order, figuring out
     # the optimal strategy and the winning probability in each one.
@@ -144,7 +151,12 @@ def analyse(var, how, file):
 	# Header.
 	file.write("  " + name + ":\n")
 
-	ptotal = 0
+	# Compute the score for this position.
+	score = 45.0
+	for i in state:
+	    score = score - i
+
+	vtotal = 0
 
 	# For each possible die roll...
 	for s, r, n in var.dierolls:
@@ -165,60 +177,79 @@ def analyse(var, how, file):
 		    continue
 
 		# We have a valid move.
-		possibles.append((winprob[tuple(newstate)], move, newstate))
+		possibles.append((value[tuple(newstate)], move, newstate))
 
 	    # Sort the possible moves into descending order of
 	    # goodness.
 	    possibles.sort()
 	    possibles.reverse()
 
-	    # Determine the probability of winning the game from
-	    # this state on this die roll.
+	    # Determine the value of this state after this die
+	    # roll.
 	    if how == "best":
 		# Choose the best possibility.
 		if len(possibles) == 0:
-		    p = 0 # no valid move, we lose
+		    # No valid move. If we're playing to win, the
+		    # value of this position is 0; if we're playing
+		    # for maximum score, the value is whatever the
+		    # sum of the flipped flaps is.
+		    if scoring:
+			v = float(score)
+		    else:
+			v = 0.0
 		else:
-		    p = possibles[0][0]
+		    v = possibles[0][0]
 	    elif how == "random":
-		# Choose a random possibility. I.e. our probability
+		# Choose a random possibility. I.e. our value
 		# averages all the possible moves.
-		p = 0
-		for wp, move, newstate in possibles:
-		    p = p + wp
+		v = 0
+		for val, move, newstate in possibles:
+		    v = v + val
 		if len(possibles) > 0:
-		    p = p / len(possibles)
+		    v = v / len(possibles)
+		else:
+		    if scoring:
+			v = float(score)
+		    else:
+			v = 0.0
 
-	    # Add this to the average win probability for this
-	    # state.
-	    ptotal = ptotal + p * n
+	    # Add this to the average value for this state.
+	    vtotal = vtotal + v * n
 
 	    # Output the list of possible moves in order.
 	    if len(possibles) == 0:
-		file.write(" LOSE\n")
+		if scoring:
+		    file.write(" END(%d)\n" % score)
+		else:
+		    file.write(" LOSE\n")
 	    else:
-		for wp, move, newstate in possibles:
-		    file.write(" %s(%.3f)" % (movestr(move), wp))
+		for val, move, newstate in possibles:
+		    file.write(" %s(%.3f)" % (movestr(move), val))
 		file.write("\n")
 
 	# Now determine the overall win probability.
-	winprob[state] = ptotal / var.d
-	file.write("    Win chance: %.3f\n\n" % winprob[state])
+	value[state] = vtotal / var.d
+	file.write("    Position value: %.3f\n\n" % value[state])
 
-    # Return value of the analyse routine is the overall winning
-    # probability.
-    return winprob[(1,2,3,4,5,6,7,8,9)]
+    # Return value of the analyse routine is the value of the
+    # starting position.
+    return value[(1,2,3,4,5,6,7,8,9)]
 
 for variant in sally, becky:
-    title = "Analysis of " + variant.name
-    print title
-    print "=" * len(title)
-    print
-    # Print out a full strategic analysis of the variant.
-    bestprob = analyse(variant, "best", sys.stdout)
-    # Find the probability of a random player winning.
-    randprob = analyse(variant, "random", nullfile())
-    print "  Winning probability with perfect play = %.3f" % bestprob
-    print "  Winning probability with random play  = %.3f" % randprob
-    print "  Skill factor = %.3f" % (bestprob / randprob)
-    print
+    for scoring in 0, 1:
+	title = "Analysis of " + variant.name
+	if scoring:
+	    title = title + " (with scoring)"
+	else:
+	    title = title + " (playing to win)"
+	print title
+	print "=" * len(title)
+	print
+	# Print out a full strategic analysis of the variant.
+	bestprob = analyse(variant, "best", scoring, sys.stdout)
+	# Find the probability of a random player winning.
+	randprob = analyse(variant, "random", scoring, nullfile())
+	print "  Game value with perfect play = %.3f" % bestprob
+	print "  Game value with random play  = %.3f" % randprob
+	print "  Skill factor = %.3f" % (bestprob / randprob)
+	print
