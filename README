@@ -148,3 +148,6 @@ subject, and a Makefile which constructs all the supporting image
 files out of the data in the `examples' subdirectory. The Makefile
 expects to be run under GNU make, and also requires Ghostscript,
 Netpbm and ImageMagick to be installed.
+
+The `misc' subdirectory contains additional polyhedra of interest
+which didn't belong anywhere else in particular.
