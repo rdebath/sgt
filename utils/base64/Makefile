@@ -20,5 +20,5 @@ release: base64.1
 	ln -s ../../base64.1 reltmp/base64
 	ln -s ../../base64.but reltmp/base64
 	ln -s ../../Makefile reltmp/base64
-	tar -C reltmp -chzvf $(DESTDIR)/base64.tar.gz base64
+	tar -C reltmp -chzf $(DESTDIR)/base64.tar.gz base64
 	rm -rf reltmp

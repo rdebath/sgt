@@ -17,5 +17,5 @@ release: cvt-utf8.1
 	ln -s ../../cvt-utf8.1 reltmp/cvt-utf8
 	ln -s ../../cvt-utf8.but reltmp/cvt-utf8
 	ln -s ../../Makefile reltmp/cvt-utf8
-	tar -C reltmp -chzvf $(DESTDIR)/cvt-utf8.tar.gz cvt-utf8
+	tar -C reltmp -chzf $(DESTDIR)/cvt-utf8.tar.gz cvt-utf8
 	rm -rf reltmp

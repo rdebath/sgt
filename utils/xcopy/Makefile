@@ -22,7 +22,7 @@ release: xcopy.1
 	ln -s ../../xcopy.1 reltmp/xcopy
 	ln -s ../../xcopy.but reltmp/xcopy
 	ln -s ../../Makefile reltmp/xcopy
-	tar -C reltmp -chzvf $(DESTDIR)/xcopy.tar.gz xcopy
+	tar -C reltmp -chzf $(DESTDIR)/xcopy.tar.gz xcopy
 	rm -rf reltmp
 
 
