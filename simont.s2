@@ -1,10 +1,5 @@
 # -*-s2-*-
 
-# TODO:
-#
-#  - IWBNI we could give individual comment posters back their
-#    deletion links. Can't see how to find out, though.
-
 layerinfo type = "layout";
 layerinfo name = "SimonT";
 
@@ -612,6 +607,7 @@ function EntryPage::print_comment (Comment c) {
     var int indent = $c.depth * 20;
     var Color background; var Color color;
     var int cwidth = $*box_width - $indent;
+    var Link lnk;
 
     if ($cwidth < $*box_width*2/3) {
         $cwidth = $*box_width*2/3;
@@ -677,10 +673,13 @@ function EntryPage::print_comment (Comment c) {
     print "<a href='$c.reply_url'>Reply to this</a>";
     if ($c.parent_url != "") { " | <a href='$c.parent_url'>Parent</a>"; }
     if ($c.thread_url != "") { " | <a href='$c.thread_url'>Thread</a>"; }
-    if (viewer_is_owner()) {
-        """ | <a href="$*SITEROOT/delcomment.bml?journal=$c.journal.username""";
-        """&id=$c.talkid">Delete</a>""";
-    }
+
+    $lnk = $c->get_link("delete_comment");
+    if ($lnk.url != "") { " | <a href='$lnk.url'>Delete</a>"; }
+    $lnk = $c->get_link("screen_comment");
+    if ($lnk.url != "") { " | <a href='$lnk.url'>Screen</a>"; }
+    $lnk = $c->get_link("unscreen_comment");
+    if ($lnk.url != "") { " | <a href='$lnk.url'>Unscreen</a>"; }
     """</tr></table></td></tr></table></td></tr></table></td></tr>""";
 }
 
