@@ -21,6 +21,15 @@ think if we build the conversion capability into PuTTYgen, there
 will be no need to bloat PuTTY itself with the same code.)
 
 <p>
-As of 2002-05-12, PuTTYgen now supports importing of OpenSSH's key
-format. We don't yet support exporting, or ssh.com's format, but we
-plan to.
+As of 2002-05-19, PuTTYgen supports import/export of both OpenSSH and
+ssh.com key formats. We've still got a couple of outstanding problem
+reports, though:
+
+<ul>
+<li>Exporting OpenSSH key (RSA), passphrase appears to be exported
+incorrectly.
+<br><tt>15605.12548.474812.778142@yakisoba.forte-intl.com</tt>
+<li>2002-06-05, importing OpenSSH DSA key, crash after entering
+passphrase (includes offending key and crash dump).
+<br><tt>uit4ooqxe.fsf@MtDiablo.com</tt>
+</ul>
