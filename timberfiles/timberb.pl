@@ -107,7 +107,7 @@ while (1) {
         $read = 1;
         if ($h =~ /boundary\s*=\s*"([^"]*)"/i) {
           $mimesep = "--$1";
-        } elsif ($h =~ /boundary\s*=\s*([^ \t;]*)/) {
+        } elsif ($h =~ /boundary\s*=\s*([^ \t;]*)/i) {
           $mimesep = "--$1";
         } else {
           $mimesep = "";
