@@ -1207,6 +1207,8 @@ define jedrc_item1st(prefix) {
 }
 
 define jedrc_parsep(prefix) {
+    variable buf;
+
     push_spot();
     bol_skip_white();
     if (prefix != "") {
@@ -1217,13 +1219,15 @@ define jedrc_parsep(prefix) {
 	    return 1;
 	}
     }
+    buf = whatbuf();
     if (looking_at("-- "))
 	go_right(3);
     else if (looking_at("--This line, and those below, will be ignored--") and
-	     whatbuf() == "svn-commit.tmp")
+	     substr(buf, 1, 11) == "svn-commit." and
+	     substr(buf, strlen(buf)-3, 4) == ".tmp")
 	go_right(47);
     else if (looking_at("CVS: ----------------------------------------------------------------------") and
-	     substr(whatbuf(), 1, 3) == "cvs")
+	     substr(buf, 1, 3) == "cvs")
 	go_right(75);
     eolp();
     pop_spot();
