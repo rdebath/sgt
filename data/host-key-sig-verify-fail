@@ -13,11 +13,12 @@ SSH server. They've been difficult to reproduce.
   <br>WinXP, 0.55, "OpenSSH_3.6.1p2 Debian 1:3.6.1p2-9" &amp;
   "OpenSSH_3.8.1p1 Debian 1:3.8.1p1-8"; problem went away on its own
   after a while
-  <br>With packet log, as yet not analysed
+  <br>With packet log
 <li><tt>&lt;<a href="http://groups-beta.google.com/group/comp.security.ssh/msg/8b535d56a3f40158">1107146212.080831.145250@z14g2000cwz.googlegroups.com</a>&gt;
   <br>WinXP, 2005-01-31:r5331 and "older versions"; unknown server; appears
   specific to client machine
 <li><tt>&lt;200503171416120713.0B297B13@mail.liveplaylearn.com&gt;
   <br>0.56/0.57, "OpenSSH_3.4p1"
-  <br>With packet log, as yet not analysed
+  <br><tt>&lt;200503181604010835.10B29C1C@mail.liveplaylearn.com&gt;:
+  <br>Packet log and exchange hash, as yet not analysed
 </ul>
