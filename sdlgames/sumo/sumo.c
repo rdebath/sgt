@@ -409,20 +409,20 @@ static void check_mirrors(int x, int y, int *dx, int *dy)
     *dy = vy;
 }
 
-static void clip(int *x, int *y)
+static void clip(int *x, int *y, int *vx, int *vy)
 {
     switch (arena) {
       case LAVA_PLATFORM:
-	if (*x<0) *x = 0;
-	if (*y<0) *y = 0;
-	if (*x>(221 << 16)-1) *x = (221 << 16)-1;
-	if (*y>(221 << 16)-1) *y = (221 << 16)-1;
+	if (*x<0) { *x = 0; if (*vx < 0) *vx = 0; }
+	if (*y<0) { *y = 0; if (*vy < 0) *vy = 0; }
+	if (*x>(221 << 16)-1) { *x = (221 << 16)-1; if (*vx > 0) *vx = 0; }
+	if (*y>(221 << 16)-1) { *y = (221 << 16)-1; if (*vy > 0) *vy = 0; }
 	break;
       case THE_CRUCIBLE:
-	if (*x < (5 << 16)) *x = 5 << 16;
-	if (*y < (25 << 16)) *y = 25 << 16;
-	if (*x > (216 << 16)-1) *x = (216 << 16)-1;
-	if (*y > (196 << 16)-1) *y = (196 << 16)-1;
+	if (*x < (5 << 16)) { *x = 5 << 16; if (*vx < 0) *vx = 0; }
+	if (*y < (25 << 16)) { *y = 25 << 16; if (*vy < 0) *vy = 0; }
+	if (*x > (216 << 16)-1) { *x = (216 << 16)-1; if (*vx > 0) *vx = 0; }
+	if (*y > (196 << 16)-1) { *y = (196 << 16)-1; if (*vy > 0) *vy = 0; }
 	break;
     }
     
@@ -671,8 +671,8 @@ static int play_game(void)
 			gameover = 1;
 		    }
 		}
-		clip(&x[i], &y[i]);
-	    }
+		clip(&x[i], &y[i], &vx[i], &vy[i]);
+}
 	}
 
 	dx = x[1]-x[0]; dx = sign(dx)*(abs(dx) >> 16);
