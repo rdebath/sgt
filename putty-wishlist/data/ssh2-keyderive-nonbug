@@ -1,0 +1,13 @@
+Summary: SSH 2.0.13 apparently doesn't have key-derivation bug
+Status: bug
+Priority: medium
+Difficulty: fun
+Content-type: text/x-html-body
+Present-in: 0.53 2002-10-07
+
+<p>Apparently, while PuTTY believes that SSH 2.0.* have the SSH2 key-derivation
+bug, 2.0.13 (host OS/hardware not specified) doesn't, and this causes
+the expected decryption failures.  The current OpenSSH code suggests that
+the bug is only present in versions before SSH 2.0.11.
+
+<p>Ref: <code>&lt;Pine.SGI.3.96.1021008003747.69817B-100000@serdis.dis.ulpgc.es&gt</code>
