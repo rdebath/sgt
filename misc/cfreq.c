@@ -128,6 +128,27 @@ int cfreq_slookup(CFreq c, int sym) {
     return count;
 }
 
+/*
+ * Return a symbol index given a cumulative frequency.
+ */
+int cfreq_whichsym(CFreq c, int n) {
+    int ch, i, j;
+
+    assert(0 <= n && n < c->arrays[c->n][0]);
+
+    ch = 0;
+    for (i = c->n-1; i >= 0; i--) {
+	j = c->arrays[i][ch];
+	if (n < j) {
+	    ch = ch * 2;
+	} else {
+	    ch = ch * 2 + 1;
+	    n = n - j;
+	}
+    }
+    return ch;
+}
+
 int main(void) {
     /*
      * To test this, we create a cumulative frequency table of 13
@@ -141,6 +162,7 @@ int main(void) {
     CFreq c;
     int i, j, n, ret;
     int a[13];			       /* a simple frequency table */
+    int total;
 
     c = cfreq_new(13);
     for (i = 0, n = 1; i < 13; i++, n *= 3) {
@@ -169,6 +191,19 @@ int main(void) {
 	ret = cfreq_slookup(c, i);
 	printf("    single %2d: %10d  should be %10d\n", i, ret, a[i]);
 	assert(ret == a[i]);
+    }
+
+    /*
+     * Finally, test all possible frequency->symbol transitions.
+     */
+    j = 0;
+    for (i = 0; i < 13; i++) {
+	ret = cfreq_whichsym(c, j);
+	printf("    freq->sym %10d: %2d  should be %2d\n", j, ret, i);
+	j += a[i] - 1;
+	ret = cfreq_whichsym(c, j);
+	printf("    freq->sym %10d: %2d  should be %2d\n", j, ret, i);
+	j++;
     }
 
     return 0;
