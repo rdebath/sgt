@@ -452,7 +452,7 @@ void showversion(void)
     char *v;
     extern char doitlib_revision[];
 
-    v = makeversion(versionbuf, "$Revision: 1.8 $");
+    v = makeversion(versionbuf, "$Revision: 1.9 $");
     if (v)
 	printf("doitclient revision %s", v);
     else
@@ -823,7 +823,7 @@ int main(int argc, char **argv)
         }
 
 	if (verbose)
-	    printf("doit: doing lookup on server name %s\n", prehost);
+	    fprintf(stderr, "doit: doing lookup on server name %s\n", prehost);
         a = inet_addr(prehost);
         if (a == (unsigned long)-1 || a == (unsigned long)0xFFFFFFFF) {
             h = gethostbyname(prehost);
@@ -837,7 +837,7 @@ int main(int argc, char **argv)
         memcpy(&hostaddr, h->h_addr, sizeof(hostaddr));
 
 	if (verbose)
-	    printf("doit: found server name %s\n", h->h_name);
+	    fprintf(stderr, "doit: found server name %s\n", h->h_name);
         select_hostcfg(h->h_name);
     }
 
@@ -855,7 +855,7 @@ int main(int argc, char **argv)
         return 1;
 
     if (verbose)
-	printf("doit: made connection\n");
+	fprintf(stderr, "doit: made connection\n");
 
     doit_perturb_nonce(ctx, "client", 6);
     {
@@ -875,7 +875,7 @@ int main(int argc, char **argv)
     free(data);
 
     if (verbose)
-	printf("doit: exchanged nonces\n");
+	fprintf(stderr, "doit: exchanged nonces\n");
 
     switch (cmd) {
       case WF:
