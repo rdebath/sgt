@@ -1,0 +1,19 @@
+Summary: Support for Unicode above U+FFFF
+Class: wish
+Difficulty: tricky
+Priority: low
+Depends: compressed-scrollback
+Content-type: text/x-html-body
+
+<p>
+Currently, PuTTY only allocates 16 bits per character cell to the
+Unicode code point, which only permits us to represent up to U+FFFF.
+According to a correspondent (2003), "CJK users will want support for
+plane 2 (and it's looking more likely that it the ideographs will
+spill onto yet another plane)".
+
+<p>
+(If we implement
+<a href="unicode-combining.html">Unicode combining characters</a>,
+could we in principle do this with surrogates, effectively using a
+UTF-16 encoding internally?)
