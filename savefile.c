@@ -173,9 +173,10 @@ void savepos_save(levelset *set, char *user, int savenum, gamestate *state) {
 	/* unable to write save file */
 	return;
     }
+#ifndef _WIN32
     /* Now let's be very sure the file mode came out right. */
     fchmod(fileno(fp), 0600);
-
+#endif
     fprintf(fp, "Level: %d\nMoves: %d\nGold: %d\nTotalGold: %d\n",
 	    state->levnum, state->movenum, state->gold_got,
 	    state->gold_total);
@@ -263,9 +264,10 @@ void progress_save(levelset *set, char *user, progress p) {
 	/* unable to write progress file */
 	return;
     }
+#ifndef _WIN32
     /* Now let's be very sure the file mode came out right. */
     fchmod(fileno(fp), 0640);
-
+#endif
     fmt_date(datebuf, p.date);
     fprintf(fp, "Level: %d\nDate: %s\n", p.levnum, datebuf);
 

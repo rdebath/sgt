@@ -13,8 +13,11 @@
  */
 
 #include <stdio.h>
-#include CURSES_HDR
-
+#ifdef CURSES_HDR
+#  include CURSES_HDR
+#else
+#  include "curses.h"
+#endif
 #include "enigma.h"
 
 #ifndef HAS_ATTR_T
