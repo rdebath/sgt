@@ -1,0 +1,14 @@
+Summary: Better diagnostics on failure to load private key file
+Class: wish
+Difficulty: fun
+Priority: low
+
+Currently some failures to load private key files (PPK) result in
+messages like "Couldn't load private key".
+
+These are failures such as hash/MAC verification and format errors,
+which seems wrong. A better error reporting channel would be nice.
+
+(NB that hash/MAC verification errors will only be visible as such for
+passphraseless keys, since for encrypted keys tampering is
+indistinguishable from an incorrect passphrase.)
