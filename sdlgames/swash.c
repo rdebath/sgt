@@ -181,8 +181,8 @@ static int swash_random_bit(unsigned *seed)
     return crcword & 1;
 }
 
-int swash_text(int x, int y, char *text,
-	       void (*plot)(void *ctx, int x, int y), void *plotctx)
+void swash_text(int x, int y, char *text,
+		void (*plot)(void *ctx, int x, int y), void *plotctx)
 {
     /*
      * We optimise globally along the string to find the best
@@ -361,9 +361,8 @@ int swash_text(int x, int y, char *text,
 			     * feature against our hx field, but
 			     * other than that we're done already.
 			     */
-			    if (!opts[i+1][k].chr && rf != (rf & chr->hx)) {
-				debug(("  rightmost char has rx illegal\n",
-				       &opts[i+1][k]));
+			    if (rf != (rf & chr->hx)) {
+				debug(("  rightmost char has rx illegal\n"));
 				continue;
 			    }
 
@@ -718,6 +717,8 @@ int main(int argc, char **argv)
     for (i = 0; i < HEIGHT; i++) {
 	printf("%.*s\n", maxx-minx, buffer[i]+minx);
     }
+
+    return 0;
 }
 
 #endif
