@@ -15,7 +15,7 @@ all: doit.exe
 doit.exe: listener.obj doit.obj doit.res
 	link $(LFLAGS) -out:doit.exe listener.obj doit.obj doit.res $(LIBS)
 
-doit.res: doit.rc doit.ico
+doit.res: doit.rc doit.ico doitsmall.ico
 	rc -r doit.rc
 
 clean:
