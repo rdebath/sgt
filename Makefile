@@ -44,7 +44,7 @@ CHARSET += sbcsdat shiftjis slookup toucs utf16 utf7 utf8 xenc
 CHARSET += superset
 
 MODULES := main malloc error help licence version sqlite mboxstore store
-MODULES += config mboxread rfc822 rfc2047 base64 qp
+MODULES += config mboxread rfc822 rfc2047 base64 qp date
 
 CSMODULES := $(addprefix cs-,$(CHARSET))
 OBJECTS := $(addsuffix .o,$(MODULES) $(CSMODULES))
