@@ -118,11 +118,16 @@ void do_launch_url(void)
 	goto error;		       /* out of memory */
     }
 
-    for (p = s, q = t; *p; p++) {
+    p = s;
+    while (p[0] && (isspace((unsigned char)(p[0])) || p[0] == '\xA0'))
+       p++;
+    q = t;
+
+    for (; *p; p++) {
 	if (*p != '\n')
 	    *q++ = *p;
 	else {
-	    while (p[1] && isspace((unsigned char)(p[1])))
+           while (p[1] && (isspace((unsigned char)(p[1])) || p[1] == '\xA0'))
 		p++;
 	}
     }
