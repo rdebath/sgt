@@ -1,0 +1,38 @@
+Summary: Use of MS Crypto API on Windows
+Difficulty: tricky
+Priority: low
+Depends: mdpi
+Content-type: text/x-html-body
+
+<p>
+We did once have 
+<a href="http://cvs.tartarus.org/putty/Attic/mscrypto.c">some sort of
+optional support</a> for the Microsoft Crypto API, but it rotted, and
+didn't support all the algorithms we needed (eg Blowfish), so was
+eventually removed.
+
+<p>
+Quoth Simon:
+<blockquote>
+My other concern about CryptoAPI is the whole idea of handing a
+MS-controlled function a pointer and saying `here, take a look at my
+plaintext'. Not that I think MS is likely to be bugging that
+function (as it were) at the moment, but there's no point in making
+it <em>easy</em> for someone to install a modified DLL and trojan all
+cryptography done in the system.
+</blockquote>
+
+<p>
+On the other hand, it might be good to be able to make use of the
+thermal noise-based random number generators now appearing in some
+commodity chipsets such as the 
+<a href="http://www.intel.com/design/chipsets/datashts/290658.htm?iid=ipp_810chpst+info_ds_fwh&">Intel 810 FWH</a>.
+These might be exposed through the Crypto API.
+
+<p>
+May also be relevant to <a href="smartcard-auth.html">`smartcard-auth'</a>.
+
+<p>
+Any support would have to be optional (controlled by configuration
+option? Test for presence of API?). Probably an application for the
+<a href="mdpi.html">MDPI</a>.
