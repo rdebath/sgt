@@ -7,6 +7,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
+#include <unistd.h>
 
 #include <sys/time.h>
 #include <sys/types.h>
@@ -29,6 +31,19 @@ char *dupstr(char *s)
     }
     strcpy(ret, s);
     return ret;
+}
+
+char *get_pwd(void)
+{
+    char *buf, *ret;
+    int size = FILENAME_MAX;
+
+    buf = malloc(size);
+    while ( (ret = getcwd(buf, size)) == NULL && errno == ERANGE) {
+        size *= 2;
+        buf = realloc(buf, size);
+    }
+    return buf;
 }
 
 void *read_secret_file(char *fname, int *len) {
@@ -633,7 +648,7 @@ int main(int argc, char **argv)
             fprintf(stderr, "doit: \"wf\" requires an argument\n");
             exit(EXIT_FAILURE);
         }
-        dir = getenv("PWD");
+        dir = get_pwd();
         path = malloc(2+strlen(dir)+strlen(arg));
         sprintf(path, "%s/%s", dir, arg);
         path = path_translate(path);
@@ -684,7 +699,7 @@ int main(int argc, char **argv)
             exit(EXIT_FAILURE);
         }
         do_doit_send_str(sock, ctx, "CreateProcessWithOutput\ncmd /c ");
-        dir = path_translate(getenv("PWD"));
+        dir = path_translate(get_pwd());
         if (dir[0] && dir[1] == ':') {
             do_doit_send(sock, ctx, dir, 2);
             do_doit_send_str(sock, ctx, " & ");
