@@ -1045,6 +1045,8 @@ bt_element_t bt_propfind(btree *bt, searchfn_t search, void *sstate,
 
     n = bt_read_lock_root(bt);
 
+    count = 0;
+
     while (n) {
 	int ntrees = bt_subtrees(bt, n);
 
@@ -1285,8 +1287,9 @@ bt_element_t bt_delpos(btree *bt, int pos)
     nroot = TRUE;
     saved_n = NULL;
 
-    if (pos < 0 || pos >= bt_node_count(bt, n)) {
-	bt_write_unlock(bt, n);
+    if (!n || pos < 0 || pos >= bt_node_count(bt, n)) {
+	if (n)
+	    bt_write_unlock(bt, n);
 	return NULL;
     }
 
@@ -1850,7 +1853,7 @@ btree *bt_splitpos(btree *bt, int index, int before)
 {
     btree *ret;
     node_addr na;
-    int count;
+    int count, nd;
     nodeptr n;
 
     n = bt_read_lock_root(bt);
@@ -1865,6 +1868,10 @@ btree *bt_splitpos(btree *bt, int index, int before)
 	na = bt->root;
 	bt->root = ret->root;
 	ret->root = na;
+
+	nd = bt->depth;
+	bt->depth = ret->depth;
+	ret->depth = nd;
     }
     return ret;
 }
