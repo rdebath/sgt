@@ -23,9 +23,10 @@ use Socket;
 use FileHandle;
 
 $usage =
-  "usage: nntpid [ -v ] <message-id>\n" .
-  "   or: nntpid [ -v ] <newsgroup> <article-number>\n" .
+  "usage: nntpid [ -v ] [ -d ] <message-id>\n" .
+  "   or: nntpid [ -v ] [ -d ] <newsgroup> <article-number>\n" .
   "where: -v                  verbose (print interaction with news server)\n" .
+  "       -d                  direct output (don't consider using PAGER)\n" .
   " also: nntpid --version    report version number\n" .
   "       nntpid --help       display this help text\n" .
   "       nntpid --licence    display (MIT) licence text\n";
@@ -53,9 +54,13 @@ $licence =
   "CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\n" .
   "SOFTWARE.\n";
 
+$pager = 1;
+$verbose = 0;
+
 while ($ARGV[0] =~ /^-(.+)$/) {
   shift @ARGV;
-  $verbose=1, next if $1 eq "v";
+  $verbose = 1, next if $1 eq "v";
+  $pager = 0, next if $1 eq "d";
   if ($1 eq "-help") {
     print STDERR $usage;
     exit 0;
@@ -106,15 +111,26 @@ $code =~ /^2\d\d/ or die "no initial greeting from server\n";
 # some servers require a GROUP before an ARTICLE command
 &docmd("GROUP $group");
 &docmd("ARTICLE $mid");
+$art = "";
 while (1) {
   &getline;
   s/[\r\n]//g;
   last if /^\.$/;
   s/^\.//;
-  print STDOUT "$_\n";
+  $art .= "$_\n";
 }
 &docmd("QUIT");
 close S;
+
+if ($pager and -t STDOUT) {
+    $pagername = $ENV{"PAGER"};
+    $pagername = "more" unless defined $pagername;
+    open PAGER, "| $pagername";
+    print PAGER $art;
+    close PAGER;
+} else {
+    print $art;
+}
 
 sub putline {
   my ($line) = @_;

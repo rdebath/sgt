@@ -8,10 +8,10 @@
 
 \U SYNOPSIS
 
-\c nntpid [ -v ] message-id
-\e bbbbbb   bb   iiiiiiiiii
-\c nntpid [ -v ] newsgroup-name article-number
-\e bbbbbb   bb   iiiiiiiiiiiiii iiiiiiiiiiiiii
+\c nntpid [ -v ] [ -d ] message-id
+\e bbbbbb   bb     bb   iiiiiiiiii
+\c nntpid [ -v ] [ -d ] newsgroup-name article-number
+\e bbbbbb   bb     bb   iiiiiiiiiiiiii iiiiiiiiiiiiii
 
 \U DESCRIPTION
 
@@ -29,6 +29,15 @@ newsgroup. Article numbers are assigned internally by a particular
 news server, so they will be different on other servers carrying the
 same group.
 
+By default, \cw{nntpid} will try to display the article using a
+pager (\cw{more}(1), unless you have specified an alternative in the
+environment variable \cw{PAGER}). This is partly for convenience,
+and partly a mild security measure: it gives you some protection
+against the news article potentially containing control sequences
+that cause unexpected behaviour in your terminal. If \cw{nntpid}
+detects that its standard output is not a terminal, however, it will
+bypass the pager and just write out the article directly.
+
 \U ARGUMENTS
 
 If you specify one argument, \cw{nntpid} assumes it is a Message-ID.
@@ -45,6 +54,11 @@ as a newsgroup name, and the second as an article number.
 
 \dd Verbose mode. In this mode, \cw{nntpid} will log its entire
 conversation with the news server on standard error.
+
+\dt \cw{-d}
+
+\dd Direct output. In this mode, \cw{nntpid} will write the article
+straight to standard output without bothering to try using a pager.
 
 \U AUTHENTICATION
 
