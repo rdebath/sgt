@@ -210,7 +210,7 @@ variable timber_boringhdrs =
 ":X-Spam-Level:X-Spam-Status:List-Help:List-Post:List-Unsubscribe:" +
 ":List-Subscribe:List-Archive:X-MailScanner:X-MailScanner-SpamCheck:" +
 ":Importance:X-OriginalArrivalTime:X-Accept-Language:X-nlh_msg:" +
-":X-nlh_thread:";
+":X-nlh_thread:X-Received:X-Sieve:";
 
 %}}}
 %{{{ Non-user-configurable variables
