@@ -14,3 +14,6 @@ I've observed this on Win2K with Red Hat Linux i386 7.1
 (in.rlogind from rsh-server-0.17-2.5). The original reporter observed
 it on NT4SP6a, server OS "Linux (several versions), HP-UX (several
 versions)".
+
+<p>
+Patch (unreviewed): <code>5fc25d0d5ffaa003@mayday.cix.co.uk</code>
