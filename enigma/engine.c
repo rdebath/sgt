@@ -258,8 +258,8 @@ gamestate *make_move (gamestate *state, char key) {
 	j = pto + pdp;
 	k = ret->leveldata[j];
 	if (k != ' ' && k != '.' &&
-	    (k != '!' || !pdy) &&
-	    (k != '=' || !pdx))
+	    (k != '!' || !pdy || i == '8' || i == 'o') &&
+	    (k != '=' || !pdx || i == '8' || i == 'o'))
 	    return ret;		       /* do nothing */
 
 	/*
@@ -589,7 +589,7 @@ gamestate *make_move (gamestate *state, char key) {
 
 char *validate(level *level, char *buffer, int buflen)
 {
-    int x, y, x1, y1, xO = -1, yO = -1, nt = 0;
+    int x, y, x1, y1, xO = -1, yO = -1, xP = -1, yP = -1, nt = 0;
     int c, c1, badsemiwall;
     int w = level->width, h = level->height;
     char internalbuf[256];	       /* big enough for any of our sprintfs */
@@ -628,6 +628,43 @@ char *validate(level *level, char *buffer, int buflen)
 		buffer[buflen-1] = '\0';
 		return buffer;		
 	    }
+
+	    /*
+	     * Ensure there is at most one secondary player
+	     * starting point.
+	     */
+	    if (c == 'O') {
+		if (xO == -1 && yO == -1)
+		    xO = x, yO = y;
+		else {
+		    sprintf(internalbuf, "multiple `O's at line %d column %d"
+			    " and line %d column %d", yO, xO, y, x);
+		    strncpy(buffer, internalbuf, buflen);
+		    buffer[buflen-1] = '\0';
+		    return buffer;
+		}
+	    }
+
+	    /*
+	     * Ensure there is precisely one primary player
+	     * starting point.
+	     */
+	    if (c == '@') {
+		if (xP == -1 && yP == -1)
+		    xP = x, yP = y;
+		else {
+		    sprintf(internalbuf, "multiple `@'s at line %d column %d"
+			    " and line %d column %d", yP, xP, y, x);
+		    strncpy(buffer, internalbuf, buflen);
+		    buffer[buflen-1] = '\0';
+		    return buffer;
+		}
+	    }
+
+	    /*
+	     * Count teleporters.
+	     */
+	    if (c == '#') nt++;
 
 	    switch (c) {
 	      case 'v': case 'X':
@@ -682,28 +719,14 @@ char *validate(level *level, char *buffer, int buflen)
 		buffer[buflen-1] = '\0';
 		return buffer;
 	    }
-
-	    /*
-	     * Ensure there is at most one secondary player
-	     * starting point.
-	     */
-	    if (c == 'O') {
-		if (xO == -1 && yO == -1)
-		    xO = x, yO = y;
-		else {
-		    sprintf(internalbuf, "multiple `O's at line %d column %d"
-			    " and line %d column %d", yO, xO, y, x);
-		    strncpy(buffer, internalbuf, buflen);
-		    buffer[buflen-1] = '\0';
-		    return buffer;
-		}
-	    }
-
-	    /*
-	     * Count teleporters.
-	     */
-	    if (c == '#') nt++;
 	}
+
+    if (xP == -1 && yP == -1) {
+	sprintf(internalbuf, "no `@' in level");
+	strncpy(buffer, internalbuf, buflen);
+	buffer[buflen-1] = '\0';
+	return buffer;
+    }
 
     /*
      * There should be exactly 0 or 2 teleporters.
