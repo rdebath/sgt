@@ -83,7 +83,7 @@ while (1) {
       if (lc $2 eq "multipart") {
         chomp ($h = $_);
         $_ = <STDIN>;
-        while ($_ and /^\s/) {
+        while ($_ and /^[^\S\n]/) {
           $h .= $_;
           chomp $h;
           $phdr .= "|$_";
