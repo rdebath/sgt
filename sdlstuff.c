@@ -5,10 +5,15 @@
 
 #include <stdlib.h>
 #include <fcntl.h>
-#include <linux/ps2/dev.h>
 #include <sys/time.h>
 
+#ifdef PS2
+#include <linux/ps2/dev.h>
+#endif /* PS2 */
+
 #include <SDL/SDL.h>
+
+#include "sdlstuff.h"
 
 #define min(x,y) ((x)<(y)?(x):(y))
 #define max(x,y) ((x)>(y)?(x):(y))
@@ -23,6 +28,8 @@ long long bigclock(void)
     gettimeofday(&tv, NULL);
     return ((long long)tv.tv_sec) * 1000000LL + tv.tv_usec;
 }
+
+#ifdef PS2
 
 /* ----------------------------------------------------------------------
  * PS2 `dx'-setting code. This is to fiddle with the screen
@@ -112,13 +119,17 @@ void set_dy(int dy)
     close(ps2gs_fd);
 }
 
+#endif /* PS2 */
+
 /* ----------------------------------------------------------------------
  * main program.
  */
 
+#ifdef PS2
 int dx, dy;
-long long sparetime;
 int evfd = -1;
+#endif /* PS2 */
+long long sparetime;
 SDL_Surface *screen;
 
 int cleaned_up = 0;
@@ -127,9 +138,11 @@ void cleanup(void)
 {
     if (!cleaned_up) {
 	SDL_Quit();
+#ifdef PS2
 	set_dx(dx);
 	set_dy(dy);
 	if (evfd >= 0) close(evfd);
+#endif /* PS2 */
     }
     cleaned_up = 1;
 }
@@ -148,12 +161,14 @@ void fill_audio(void *udata, Uint8 *stream, int len)
 
 int setup(void)
 {
+#ifdef PS2
     evfd = open("/dev/ps2event", O_RDONLY);
     if (evfd < 0) { perror("/dev/ps2event: open"); return 1; }
     ioctl(evfd, PS2IOC_ENABLEEVENT, PS2EV_VSYNC);
-
     dx = get_dx();
     dy = get_dy();
+#endif /* PS2 */
+
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK);
     cleaned_up = 0;
     atexit(cleanup);
@@ -161,7 +176,8 @@ int setup(void)
     /*
      * Set the video mode up.
      */
-    screen = SDL_SetVideoMode(640, 240, 8, SDL_SWSURFACE);
+    screen = SDL_SetVideoMode(SCR_WIDTH*XMULT, SCR_HEIGHT*YMULT,
+			      8, SDL_SWSURFACE);
     if (!screen) {
 	printf("SDL screen initialisation error: %s\n", SDL_GetError());
 	return 1;
@@ -171,7 +187,22 @@ int setup(void)
 
 int vsync(void)
 {
+#ifdef PS2
     ioctl(evfd, PS2IOC_WAITEVENT, PS2EV_VSYNC);
+#else
+    static int last_vsync, last_vsync_used = 0;
+    int time_now, next_vsync;
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    time_now = 1000000 * tv.tv_sec + tv.tv_usec;
+    if (!last_vsync_used)
+	last_vsync = time_now;
+    next_vsync = last_vsync + 20000;
+    if (next_vsync - time_now > 0)
+	usleep(next_vsync - time_now);
+    last_vsync = next_vsync;
+    last_vsync_used = 1;
+#endif
 }
 
 int scr_prep(void)
@@ -260,7 +291,8 @@ int main(int argc, char **argv)
     /*
      * Set the video mode up.
      */
-    screen = SDL_SetVideoMode(640, 240, 8, SDL_SWSURFACE);
+    screen = SDL_SetVideoMode(SCR_WIDTH*XMULT, SCR_HEIGHT*YMULT,
+			      8, SDL_SWSURFACE);
     if (!screen) {
 	printf("SDL screen initialisation error: %s\n", SDL_GetError());
 	return 1;
@@ -269,8 +301,8 @@ int main(int argc, char **argv)
 
     if (SDL_MUSTLOCK(screen))
 	SDL_LockSurface(screen);
-    for (x = 0; x < 640; x++) {
-	for (y = 0; y < 240; y++) {
+    for (x = 0; x < SCR_WIDTH*XMULT; x++) {
+	for (y = 0; y < SCR_HEIGHT*YMULT; y++) {
 	    putpixel(screen, x, y,
 		     SDL_MapRGB(screen->format, (x*10)&255,
 				(y*10)&255, ((x+y+frame)*10)&255));
@@ -282,24 +314,24 @@ int main(int argc, char **argv)
     SDL_PauseAudio(0);
 
     for (frame = 1; frame < 256; frame++) {
-	SDL_Rect r1 = { 0, 0, 639, 240 };
-	SDL_Rect r2 = { 1, 0, 639, 240 };
+	SDL_Rect r1 = { 0, 0, SCR_WIDTH*XMULT-1, SCR_HEIGHT*YMULT };
+	SDL_Rect r2 = { 1, 0, SCR_WIDTH*XMULT-1, SCR_HEIGHT*YMULT };
 	
 	if (SDL_MUSTLOCK(screen))
 	    SDL_LockSurface(screen);
-//	for (x = 0; x < 640; x++) {
-	    for (y = 0; y < 240; y++) {
+//	for (x = 0; x < SCR_WIDTH*XMULT; x++) {
+	    for (y = 0; y < SCR_HEIGHT*YMULT; y++) {
 		memmove(screen->pixels + y * screen->pitch,
 			screen->pixels + y * screen->pitch + screen->format->BytesPerPixel,
-			639 * screen->format->BytesPerPixel);
-		putpixel(screen, 639, y, 0);
-		//putpixel(screen, x, y, (x==639 ? 0 :
+			(SCR_WIDTH*XMULT-1) * screen->format->BytesPerPixel);
+		putpixel(screen, SCR_WIDTH*XMULT-1, y, 0);
+		//putpixel(screen, x, y, (x==SCR_WIDTH*XMULT-1 ? 0 :
 		//			getpixel(screen, x+1, y)));
 	    }
 //	}
 	if (SDL_MUSTLOCK(screen))
 	    SDL_UnlockSurface(screen);
-	//SDL_UpdateRect(screen, frame*2, 0, 2, 240);
+	//SDL_UpdateRect(screen, frame*2, 0, 2, SCR_HEIGHT*YMULT);
 	SDL_Flip(screen);
 	{
 	    long long t = bigclock();

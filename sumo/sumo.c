@@ -479,7 +479,7 @@ static int game_screen(void)
 
 static void plotpoint(void *ctx, int x, int y)
 {
-    scrdata[640*y+2*x] = scrdata[640*y+2*x+1] = (int)ctx;
+    plot(x,y,(int)ctx);
 }
 
 static int score(int sc, int x, int y)
@@ -937,6 +937,7 @@ static int play_game(void)
 
 }
 
+#ifdef PS2
 static int adjust_screen(int which)
 {
     int border = (which == 0 ? 130 : 134);
@@ -1030,6 +1031,7 @@ static int adjust_screen(int which)
 
     free(img);
 }
+#endif /* PS2 */
 
 static int arena_menu(int which)
 {
@@ -1149,7 +1151,9 @@ static int options_menu(int which)
     menu[nmenu].text = "RETURN TO GAME"; menu[nmenu++].action = RETURN;
     menu[nmenu].text = "RESET SCORES"; menu[nmenu++].action = RESET;
     menu[nmenu].text = "SELECT ARENA"; menu[nmenu++].action = ARENA;
+#ifdef PS2
     menu[nmenu].text = "ADJUST SCREEN"; menu[nmenu++].action = ADJUST;
+#endif /* PS2 */
     if (!no_quit_option) {
 	menu[nmenu].text = "EXIT SUMO"; menu[nmenu++].action = QUIT;
     }
@@ -1230,7 +1234,9 @@ static int options_menu(int which)
 		goto restart;
 	    }
 	}
+#ifdef PS2
 	if (pushed && menu[mpos].action == ADJUST) adjust_screen(which);
+#endif /* PS2 */
 	if (pushed && menu[mpos].action == RESET) { sc1=sc2=0; show_scores();}
     }
 
