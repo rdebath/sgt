@@ -3,10 +3,8 @@
 import urllib
 import string
 import os
-import sha
 import time
-import htmllib
-import formatter
+import xmllib
 import sys
 
 # Restore a sensible response to HTTP errors.
@@ -28,112 +26,32 @@ def makedict(attrs):
 
 transtable = string.maketrans("\240", " ")
 
-class mysha:
-    def __init__(self):
-	self.sha = sha.new()
-	self.hdata = ""
-	
-    def update(self, data):
-	data = string.translate(data, transtable)
-	self.sha.update(data)
-	self.hdata = self.hdata + data
-    
-    def hexdigest(self):
-	return self.sha.hexdigest()
+def chomp(s):
+    if s[-1:] == "\n":
+	s = s[:-1]
+    return s
 
-    def data(self):
-	return self.hdata
-
-    def datalen(self):
-	return len(self.hdata)
-
-class myfmt(formatter.NullFormatter):
-    def __init__(self, sha):
-	formatter.NullFormatter.__init__(self)
-	self.sha = sha
-	self.accepting = 1
-	self.queuedata = ""
-
-    def add(self, data):
-	#print "data length", len(data), "state = ", self.accepting
-	if self.accepting == 1:
-	    self.sha.update(data)
-	elif self.accepting == 2:
-	    self.queuedata = self.queuedata + data
-	    if len(self.queuedata) > 10:
-		#print "flushing queue"
-		self.sha.update(self.queuedata)
-		self.queuedata = ""
-		self.accepting = 1
-
-    def setstate(self, state):
-	if self.accepting == 2 and state == 1:
-	    #print "manually flushing queue"
-	    self.sha.update(self.queuedata)
-	self.accepting = state
-	self.queuedata = ""
-
-    def add_flowing_data(self, data):
-	self.add(data)
-
-    def add_literal_data(self, data):
-	self.add(data)
-
-class myparser(htmllib.HTMLParser):
-    def __init__(self, sha):
-	htmllib.HTMLParser.__init__(self, myfmt(sha))
-	self.dodgy_href = 0
-	self.clean = 0
-
-    def start_font(self, attrs):
-	a = makedict(attrs)
-	size = a.get("size", "0")
-	# Any negative size indicates text that's smaller than the
-	# text around it, which may include comment sections. Also
-	# size="1" means the smallest conveniently available
-	# absolute size and may also include comment sections.
-	if size[:1] == "-" or size == "1":
-	    #print "font tag started"
-	    self.formatter.setstate(0)
-
-    def end_font(self):
-	#print "font tag ended"
-	self.formatter.setstate(1)
-
-    def start_blockquote(self, attrs):
-	# Blockquote elements are sometimes used to show poll
-	# results, so we need to filter them out. Crude, but I
-	# doubt it'll severely impact anything else which will
-	# actually cause a problem.
-	self.formatter.setstate(0)
-
-    def end_blockquote(self):
-	self.formatter.setstate(1)
-
-    # To avoid sending those footnotes ([1] [2] etc) to the
-    # formatter for hrefs, we reimplement start_a and end_a
-    # ourselves. Currently they do nothing. In future I might add a
-    # feature where they track hrefs to the talkread/talkpost CGIs
-    # in order to more intelligently filter out the `n comments'
-    # stuff.
-
-    def start_a(self, attrs):
-	a = makedict(attrs)
-	target = a.get("href", "")
-	#print target
-	if target[:26] == "http://www.livejournal.com":
-	    self.formatter.setstate(0)
-	    self.dodgy_href = 1
-	    #print "dodgy href started"
-    
-    def end_a(self):
-	if self.dodgy_href:
-	    self.formatter.setstate(2)
-	    self.dodgy_href = 0
-	    #print "dodgy href ended"
-
-    def end_html(self):
-	self.clean = 1
+def gettopdate(page):
+    class myparser(xmllib.XMLParser):
+	def __init__(self):
+	    xmllib.XMLParser.__init__(self)
+	    self.topdate = ""
+	    self.state = 0
+	def unknown_starttag(self, tag, attrs):
+	    if tag == "pubDate" and self.state == 0:
+		self.state = 1
+	def unknown_endtag(self, tag):
+	    if tag == "pubDate" and self.state == 1:
+		self.state = 2
+	def handle_data(self, data):
+	    if self.state == 1:
+		self.topdate = self.topdate + data
+    p = myparser()
+    p.feed(page)
+    if p.state == 2:
+	return p.topdate
+    else:
+	return None
 
 # Read config file to get list of users.
 ljusers = []
@@ -172,7 +90,7 @@ for i in sys.argv[1:]:
 	if i == "-n":
 	    scan = 0
 	elif i == "-v":
-	    verbose = 1
+	    verbose = verbose + 1
 	else:
 	    print "ignoring unrecognised command-line argument:", i
     else:
@@ -189,7 +107,7 @@ if len(args) > 0:
 	print "ignoring argument \""+i+"\": not in "+ljdir+"config"
     ljusers = ljusers2
 
-template = "http://www.livejournal.com/users/%s/"
+template = "http://www.livejournal.com/users/%s/data/rss/"
 
 now = time.time()
 nowstr = str(now)
@@ -200,10 +118,18 @@ samelist = []
 faillist = []
 reportlist = []
 
+# xmllib apparently doesn't approve of UTF-8 in its input. That's
+# OK, because we don't actually need any of the UTF-8 encoded data
+# - dates are in plain ASCII.
+translator = \
+string.maketrans(string.join(map(chr, range(128,256)), ""), 128 * ".")
+
 for t in ljusers:
     username, description = t
     if scan:
 	url = template % username
+	if verbose > 1:
+	    print "Fetching", url
 	try:
 	    f = urllib.urlopen(url)
 	    data = f.read()
@@ -211,27 +137,18 @@ for t in ljusers:
 	except IOError, e:
 	    print "Fetching", username+":", str(e)
 	    data = "" # this will already be treated as failure to retrieve
-	p = myparser(mysha())
-	p.feed(data)
-	p.close()
-	h = p.formatter.sha.hexdigest()
-	hdata = p.formatter.sha.data()
+	data = string.translate(data, translator)
+	d = gettopdate(data)
 
-    # So username t has journal hash h. Compare this with the last
+    # So username t has topmost date d. Compare this with the last
     # update and see if it's changed.
     try:
-	f = open(ljdir + "hash." + username, "r")
-	oldhash = f.readline()
+	f = open(ljdir + "date." + username, "r")
+	olddate = chomp(f.readline())
+	oldtime = chomp(f.readline())
 	f.close()
-	oa = string.split(oldhash)
-	if len(oa) == 2:
-	    oldhash = oa[0]
-	    oldtime = oa[1]
-	else:
-	    oldhash = ""
-	    oldtime = None
     except IOError:
-	oldhash = ""
+	olddate = ""
 	oldtime = None
 
     if not scan:
@@ -240,20 +157,16 @@ for t in ljusers:
 	    newlist.append((None, description))
 	else:
 	    reportlist.append((float(oldtime), description))
-    elif p.formatter.sha.datalen() < 128 or not p.clean:
+    elif d == None:
 	# Basic error handling: in case of failure to retrieve the
-	# page, or in case the page was pathetically small (meaning
-	# that it probably says `Timeout retrieving page' or
-	# `Sorry, we're having problems'), or in case the transfer
-	# was interrupted half-way through and we never saw
-	# </html>, just add to the `failed retrieval' list.
+	# page, just add to the `failed retrieval' list.
 	faillist.append((None, description))
 	writeout = 0
-    elif oldhash == "":
+    elif olddate == "":
 	# The entry didn't previously exist. Add to the `new' list.
 	newlist.append((now, description))
 	writeout = 1
-    elif oldhash != h:
+    elif olddate != d:
 	# The entry has been modified. Add to the `changed' list.
 	changelist.append((now, description))
 	writeout = 1
@@ -268,12 +181,11 @@ for t in ljusers:
 	except OSError:
 	    pass
 	try:
-	    os.rename(ljdir + "hash." + username, ljdir + "old." + username)
+	    os.rename(ljdir + "date." + username, ljdir + "old." + username)
 	except OSError:
 	    pass
-	f = open(ljdir + "hash." + username, "w")
-	f.write(h + " " + nowstr + "\n")
-	f.write(hdata)
+	f = open(ljdir + "date." + username, "w")
+	f.write(d + "\n" + nowstr + "\n")
 	f.close()
 
 # Right. Now sort the lists.
