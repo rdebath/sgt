@@ -264,6 +264,27 @@ void recurse_mime_part(const char *base, struct mime_details *md,
 		    here++;	       /* eat the newline */
 	    }
 	}
+    } else if (!istrlencmp(md->major, md->majorlen, SL("message")) &&
+	       !istrlencmp(md->minor, md->minorlen, SL("rfc822")) &&
+	       md->transfer_encoding == NO_ENCODING) {
+	/*
+	 * We recurse into message/rfc822 to find the type of the
+	 * message _body_ (which might in turn hold multiparts).
+	 * 
+	 * Although this is in theory a full RFC822 message, we
+	 * only parse it for its MIME headers; the rest is
+	 * irrelevant.
+	 */
+	struct mime_details this_part;
+	init_mime_details(&this_part);
+	this_part.charset = default_charset;
+	parse_headers(md->startpoint, md->length,
+		      FALSE, 1, default_charset,
+		      null_output_fn, NULL,
+		      null_info_fn, NULL, &this_part);
+	recurse_mime_part(base, &this_part, default_charset,
+			  info, infoctx);
+	free_mime_details(&this_part);
     }
 }
 
