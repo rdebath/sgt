@@ -20,7 +20,7 @@ MacOS. We had a port half-finished at one point, but it isn't clear
 how applicable that code would be to the current state of PuTTY.
 
 <li>
-Windows CE, and/or EPOC or other PDA operating systems. Decent SSH
-clients for PDAs seem to be in short supply (unless you install a
-Java virtual machine and MindTerm).
+Windows CE (aka PocketPC), and/or EPOC or other PDA operating systems.
+Decent SSH clients for PDAs seem to be in short supply (unless you
+install a Java virtual machine and MindTerm).
 </ul>
