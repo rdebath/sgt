@@ -146,7 +146,7 @@ def confrac(n, d, e=1, output=sys.stdout):
     d1, dk = 1, 0
     nl, dl = n-e, d
     ng, dg = n+e, d
-    while dl != 0:
+    while dl != 0 and dg != 0:
         i = nl / dl
         if i != ng / dg:
             break
