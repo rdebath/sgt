@@ -291,7 +291,12 @@ static const char *const ab_schema[] = {
     "  since DATETIME NOT NULL,"  /* inclusive */
     "  until DATETIME,"  /* exclusive */
     "  value VARCHAR NOT NULL"
-    ");"
+    ");",
+
+    "CREATE TABLE attr_types ("
+    "  type VARCHAR PRIMARY KEY"
+    ");",
+    "INSERT INTO attr_types VALUES ('name');"
 };
 
 
@@ -590,10 +595,21 @@ static void ab_set_attr (int contact_id,
 			 const char *new_value)
 {
     char *attribute_id;
+    char *type_ref;
     char now[DATEBUF_MAX];
 
     assert (attr_type);
     sql_open(ab);
+
+    type_ref = sql_get_value_printf (ab,
+				     "SELECT type FROM attr_types "
+				     "WHERE type = '%q'",
+				     attr_type);
+    if (!type_ref) {
+	fatal (err_internal,
+	       "No such attribute in address book database");
+    }
+    sfree(type_ref);
     sql_transact (ab, begin_transaction);
 
     fmt_date (time(NULL), now);
