@@ -142,6 +142,7 @@ struct send_output_ctx {
     const int *charset_list;
     int ncharsets;
     struct buffer headers, pre2047;
+    int pre2047type;
 };
 
 static void send_output_fn(void *vctx, const char *text, int len,
@@ -166,9 +167,10 @@ static void send_output_fn(void *vctx, const char *text, int len,
     }
     ctx->curr_input_charset = charset;
 
-    if (type == TYPE_HEADER_DECODED) {
+    if (is_type_header_decoded(type)) {
 	output_charset = CS_UTF8;
 	buf = &ctx->pre2047;
+	ctx->pre2047type = type;
     } else {
 	if (ctx->pre2047.length > 0) {
 	    char *post2047 =
@@ -228,6 +230,7 @@ void send(int charset, char *message, int msglen)
     ctx.ncharsets = lenof(charset_list);
     buffer_init(&ctx.headers);
     buffer_init(&ctx.pre2047);
+    ctx.pre2047type = TYPE_HEADER_DECODED_TEXT;
     wrap_init(&ctx.wrap);
 
     parse_message(message, msglen, send_output_fn, &ctx,

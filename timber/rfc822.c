@@ -241,7 +241,8 @@ void parse_message(const char *message, int msglen,
 		mr->md.description =
 		    rfc2047_to_utf8_string(mr->rawdescription,
 					   mr->description_len,
-					   FALSE, default_charset);
+					   TYPE_HEADER_DECODED_TEXT,
+					   default_charset);
 
 	    inf.type = PARSE_MIME_PART;
 	    inf.header = 0;
@@ -848,7 +849,8 @@ void parse_headers(char const *base, char const *message, int msglen,
 		    inf.header = hdr->header_id;
 		    inf.u.string =
 			rfc2047_to_utf8_string(r, message - r,
-					       FALSE, default_charset);
+					       TYPE_HEADER_DECODED_TEXT,
+					       default_charset);
 		    info(infoctx, &inf);
 		    sfree(inf.u.string);
 		}
@@ -894,7 +896,8 @@ void parse_headers(char const *base, char const *message, int msglen,
 		break;
 	      case ENCODED_ANYWHERE:
 		rfc2047_decode(r, message - r, output, outctx,
-			       FALSE, TRUE, default_charset);
+			       TYPE_HEADER_DECODED_TEXT,
+			       TRUE, default_charset);
 		break;
 	      case ENCODED_COMMENTS:
 		/*
@@ -929,7 +932,8 @@ void parse_headers(char const *base, char const *message, int msglen,
 			    r++;
 			}
 			rfc2047_decode(p, r-p, output, outctx,
-				       TRUE, TRUE, default_charset);
+				       TYPE_HEADER_DECODED_COMMENT,
+				       TRUE, default_charset);
 			p = r;
 		    } else if (*r == '"') {
 			r++;
@@ -1068,7 +1072,8 @@ void parse_headers(char const *base, char const *message, int msglen,
 			    int end;
 			    if (rfc2047able)
 				rfc2047_decode(p, q-p, output, outctx,
-					       TRUE, TRUE, default_charset);
+					       TYPE_HEADER_DECODED_PHRASE,
+					       TRUE, default_charset);
 			    else
 				output(outctx, p, q-p,
 				       TYPE_HEADER_TEXT,
@@ -1085,7 +1090,10 @@ void parse_headers(char const *base, char const *message, int msglen,
 				q++;
 			    }
 			    rfc2047_decode(p, q-p, output, outctx,
-					   TRUE, TRUE, default_charset);
+					   (end == ')' ?
+					    TYPE_HEADER_DECODED_COMMENT :
+					    TYPE_HEADER_DECODED_PHRASE),
+					   TRUE, default_charset);
 			    if (q == rr)
 				break;
 			    output(outctx, q, 1,
@@ -1475,13 +1483,13 @@ void utf8_string_output(void *vctx, const char *text, int len,
     }
 }
 char *rfc2047_to_utf8_string(const char *text, int len,
-			     int structured, int default_charset)
+			     int type, int default_charset)
 {
     struct utf8_string_output_ctx ctx;
 
     ctx.text = NULL;
     ctx.textlen = ctx.textsize = 0;
-    rfc2047_decode(text, len, utf8_string_output, &ctx, structured,
+    rfc2047_decode(text, len, utf8_string_output, &ctx, type,
 		   FALSE, default_charset);
     utf8_string_output(&ctx, "\0", 1, TYPE_HEADER_TEXT, CS_UTF8);
     return ctx.text;
@@ -1499,8 +1507,9 @@ void info_addr(parser_info_fn_t info, void *infoctx,
     /*
      * `name' must be fed through RFC2047 parsing.
      */
-    inf.u.addr.display_name = rfc2047_to_utf8_string(name, namelen,
-						     TRUE, default_charset);
+    inf.u.addr.display_name =
+	rfc2047_to_utf8_string(name, namelen, TYPE_HEADER_DECODED_PHRASE,
+			       default_charset);
     /*
      * `addr' must not.
      */

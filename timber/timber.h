@@ -237,10 +237,16 @@ typedef void (*parser_output_fn_t)(void *ctx, const char *text, int len,
 enum {				       /* values for above `type' argument */
     TYPE_HEADER_NAME,
     TYPE_HEADER_TEXT,
-    TYPE_HEADER_DECODED,
+    TYPE_HEADER_DECODED_TEXT,
+    TYPE_HEADER_DECODED_PHRASE,
+    TYPE_HEADER_DECODED_COMMENT,
     TYPE_ATTACHMENT_ID_LINE,
     TYPE_BODY_TEXT
 };
+#define is_type_header_text(t)    ( (t) >= TYPE_HEADER_TEXT && \
+				    (t) <= TYPE_HEADER_DECODED_COMMENT )
+#define is_type_header_decoded(t) ( (t) >= TYPE_HEADER_DECODED_TEXT && \
+				    (t) <= TYPE_HEADER_DECODED_COMMENT )
 typedef void (*parser_info_fn_t)(void *ctx, struct message_parse_info *info);
 
 void null_output_fn(void *ctx, const char *text, int len,
@@ -255,7 +261,7 @@ void parse_message(const char *message, int msglen,
  * rfc2047.c
  */
 void rfc2047_decode(const char *text, int length, parser_output_fn_t output,
-		    void *outctx, int structured, int display,
+		    void *outctx, int type, int display,
 		    int default_charset);
 char *rfc2047_encode(const char *text, int length, int input_charset,
 		     const int *output_charsets, int ncharsets,

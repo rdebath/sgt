@@ -79,12 +79,12 @@ static int spot_encoded_word(const char *text, int length)
  * larger actual header.)
  * 
  * It works its way along the header, finding and decoding encoded-
- * words and passing them to the provided output function (always
- * with type TYPE_HEADER_DECODED). Any text which isn't part of an
- * encoded-word is output using the provided default charset.
+ * words and passing them to the provided output function. Any text
+ * which isn't part of an encoded-word is output using the provided
+ * default charset.
  */
 void rfc2047_decode(const char *text, int length, parser_output_fn_t output,
-		    void *outctx, int structured, int display,
+		    void *outctx, int type, int display,
 		    int default_charset)
 {
     int quoting = FALSE;
@@ -150,7 +150,7 @@ void rfc2047_decode(const char *text, int length, parser_output_fn_t output,
 		    q = p;
 		    while (q < wbuf2 + tlen && *q != '\n')
 			q++;
-		    output(outctx, p, q - p, TYPE_HEADER_DECODED, charset);
+		    output(outctx, p, q - p, type, charset);
 		    while (q < wbuf2 + tlen && *q == '\n')
 			q++;
 		    p = q;
@@ -173,8 +173,8 @@ void rfc2047_decode(const char *text, int length, parser_output_fn_t output,
 	 * Special case: if we did see an encoded-word, and the
 	 * whitespace following it is immediately followed by
 	 * another encoded-word, we may avoid outputting the
-	 * whitespace. If `structured' is set, this is from a
-	 * structured field so we always avoid outputting the
+	 * whitespace. If `type' indicates this is from a
+	 * structured field, we always avoid outputting the
 	 * whitespace; if not, it's from an unstructured field so
 	 * we only skip the whitespace if it is precisely "\n ".
 	 * (This is RFC2047's way of allowing multiple separate
@@ -201,7 +201,7 @@ void rfc2047_decode(const char *text, int length, parser_output_fn_t output,
 	while (length > 0 && *text != '=')
 	    text++, length--;
 	if (elen > 0 &&
-	    (structured ||
+	    (type != TYPE_HEADER_DECODED_TEXT ||
 	     (text - startpoint == 2 &&
 	      startpoint[0] == '\n' &&
 	      startpoint[1] == ' ')) &&
@@ -210,16 +210,17 @@ void rfc2047_decode(const char *text, int length, parser_output_fn_t output,
 	else if (text - startpoint > 0) {
 	    if (display) {
 		output(outctx, startpoint, text-startpoint,
-		       TYPE_HEADER_DECODED, default_charset);
+		       type, default_charset);
 	    } else {
 		const char *p = startpoint;
 		while (p < text) {
 		    if (*p == '\n' ||
-			(structured && (*p == '"' || (FWS(*p) && !quoting) ||
-					(*p == '\\' && p+1 < text)))) {
+			((type != TYPE_HEADER_DECODED_TEXT) &&
+			 (*p == '"' || (FWS(*p) && !quoting) ||
+			  (*p == '\\' && p+1 < text)))) {
 			if (p > startpoint)
 			    output(outctx, startpoint, p-startpoint,
-				   TYPE_HEADER_DECODED, default_charset);
+				   type, default_charset);
 			startpoint = p+1;
 			if (*p == '"')
 			    quoting = !quoting;
@@ -232,8 +233,7 @@ void rfc2047_decode(const char *text, int length, parser_output_fn_t output,
 			     * FWS not in a quoted string by a
 			     * single space.
 			     */
-			    output(outctx, " ", 1,
-				   TYPE_HEADER_DECODED, CS_ASCII);
+			    output(outctx, " ", 1, type, CS_ASCII);
 			    while (p < text && FWS(*p))
 				p++;
 			    startpoint = p;
@@ -244,7 +244,7 @@ void rfc2047_decode(const char *text, int length, parser_output_fn_t output,
 		}
 		if (p > startpoint)
 		    output(outctx, startpoint, p-startpoint,
-			   TYPE_HEADER_DECODED, default_charset);
+			   type, default_charset);
 	    }
 	}
     }
