@@ -17,10 +17,22 @@ completed. I can't easily imagine a standards decision that would
 invalidate that behaviour.
 
 <p>
-There has been some discussion of this issue on
-<a href="ftp://ftp.ietf.org/ietf-mail-archive/secsh/">IETF SECSH</a>
-(see for instance the thread "Key Re-Exchange" starting on 4 Apr 2001),
-but no consensus appears to have been reached.
+There has been (repeated) discussion of this issue on
+<a href="ftp://ftp.ietf.org/ietf-mail-archive/secsh/">IETF SECSH</a>:
+<ul>
+  <li>Thread 'Key Re-Exchange' starting 4 Apr 2001
+  <li>Thread 'Some questions about "SSH Transport Layer Encryption Modes"' starting 16 Oct 2003
+  <li>Thread 'data during rekey?' starting 1 Dec 2003
+</ul>
+
+<p>
+The consensus seems to be drifting towards "suspending transport of
+user data while rekey negotiation is in progress", and having any
+nonblocking rekey as a protocol extension; but as of version -17 of
+the transport draft there's no sign of this appearing in the actual
+documents. People have also muttered about the receiving end
+continuing to accept data encrypted using the "old" keys; presumably
+some limit would want to be placed on that.
 
 <p>
 Symptoms of this:
