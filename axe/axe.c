@@ -29,9 +29,51 @@
  *     + er, how exactly do we deal with the problem of saving over
  * 	 a file which we're maintaining references to?
  * 
- *  - Other possibilities:
- *     + undo (!!!)
- *     + reverse search
+ *  - Undo!
+ *     + this actually doesn't seem _too_ horrid. For a start, one
+ * 	 simple approach would be to clone the entire buffer B-tree
+ * 	 every time we perform an operation! That's actually not
+ * 	 _too_ expensive, if we maintain a limit on the number of
+ * 	 operations we may undo.
+ *     + I had also thought of cloning the tree we insert for each
+ * 	 buf_insert_data and cloning the one removed for each
+ * 	 buf_delete_data (both must be cloned for an overwrite),
+ * 	 but I'm not convinced that simply cloning the entire thing
+ * 	 isn't a superior option.
+ * 
+ *  - Reverse search.
+ *     + need to construct a reverse DFA.
+ *     + probably should construct both every time, so that you can
+ * 	 search forward for a thing and then immediately change
+ * 	 your mind and search backward for the same thing.
+ * 
+ *  - In-place editing.
+ *     + this is an extra option when running in Fix mode. It
+ * 	 causes a change of semantics when saving: instead of
+ * 	 constructing a new backup file and writing it over the old
+ * 	 one, we simply seek within the original file and write out
+ * 	 all the pieces that have changed.
+ *     + Primarily useful for editing disk devices directly
+ * 	 (yikes!).
+ *     + I had intended to suggest that in Fix mode this would be
+ * 	 nice and easy, since every element of the buffer tree is
+ * 	 either a literal block (needs writing) or a from-file
+ * 	 block denoting the same file _in the same position_.
+ * 	 However, this is not in fact the case because you can cut
+ * 	 and paste, so it's not that easy.
+ *     + So I'm forced to the conclusion that when operating in
+ * 	 this mode, it becomes illegal to cut and paste from-file
+ * 	 blocks: they must be loaded in full at some point.
+ * 	  * Thinking ahead about multiple-buffer operation: it
+ * 	    would be a bad idea to keep a from-file block
+ * 	    referencing /dev/hda and paste it into another ordinary
+ * 	    buffer. But _also_ it would be a bad idea to paste a
+ * 	    from-file block referencing a file stored _on_ /dev/hda
+ * 	    into the in-place buffer dealing with /dev/hda itself.
+ * 	  * So I'm forced to another odd conclusion, which is that
+ * 	    from-file blocks must be eliminated in _two_ places:
+ * 	    when copying a cut buffer _from_ an in-place buffer,
+ * 	    _and_ when pasting a cut buffer _into_ one.
  */
 
 #include <stdio.h>
