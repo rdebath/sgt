@@ -384,7 +384,7 @@ char *path_translate(char *path)
     int i, pathlen;
 
     if (!cfg)
-        return path;
+        return dupstr(path);
 
     if (*path && path[strlen(path)-1] == '/')
         path = dupstr(path);
@@ -460,7 +460,7 @@ void showversion(void)
     char *v;
     extern char doitlib_revision[];
 
-    v = makeversion(versionbuf, "$Revision: 1.14 $");
+    v = makeversion(versionbuf, "$Revision: 1.15 $");
     if (v)
 	printf("doitclient revision %s", v);
     else
@@ -803,9 +803,11 @@ int main(int argc, char **argv)
      * Find out what host we should be connecting to.
      */
     {
-        char *e, *prehost;
-        int len;
+        char *e, *prehost, *servername;
+        int len, gotaddr;
         struct hostent *h;
+        struct in_addr ia;
+        char ipaddr_buf[16];
         unsigned long a;
 
         e = getenv("DOIT_HOST");
@@ -813,7 +815,7 @@ int main(int argc, char **argv)
             prehost = dupstr(e);
 	    if (verbose)
 		fprintf(stderr,
-			"doit: finding server using DOIT_HOST=%s\n", e);
+			"doit: finding host using DOIT_HOST=%s\n", e);
         } else {
             e = getenv("SSH_CLIENT");
             if (e != NULL) {
@@ -822,7 +824,7 @@ int main(int argc, char **argv)
                 prehost[len] = '\0';
 		if (verbose)
 		    fprintf(stderr,
-			    "doit: finding server using SSH_CLIENT=%s\n", e);
+			    "doit: finding host using SSH_CLIENT=%s\n", e);
             } else {
                 e = getenv("DISPLAY");
                 if (e != NULL) {
@@ -831,32 +833,115 @@ int main(int argc, char **argv)
                     prehost[len] = '\0';
 		    if (verbose)
 			fprintf(stderr,
-				"doit: finding server using DISPLAY=%s\n", e);
+				"doit: finding host using DISPLAY=%s\n", e);
                 } else {
-		    fprintf(stderr, "doit: unable to find server; try setting"
+		    fprintf(stderr, "doit: unable to find host; try setting"
 			    " DOIT_HOST\n");
 		    return 1;
 		}
             }
         }
 
-	if (verbose)
-	    fprintf(stderr, "doit: doing lookup on server name %s\n", prehost);
+        /*
+         * Now we look at $DOIT_SERVER, which might tell us the
+         * server name to use for looking up path translations in
+         * .doitrc. Failing that, we find the canonical name of the
+         * host and use that.
+         */
+        servername = getenv("DOIT_SERVER");
+        if (servername && verbose)
+            fprintf(stderr, "doit: server name is explicitly specified: "
+                    "DOIT_SERVER=%s\n", servername);
+
+        /*
+         * Now we do the DNS phase. We might need this for two
+         * reasons:
+         * 
+         *  - if we don't have a server name, we must do a lookup
+         *    to find the canonical form of `prehost', and use that
+         *    as our server name. In this situation we _must_
+         *    perform a DNS operation, even if we have a literal IP
+         *    address for the host, because we want the canonical
+         *    name. (But we can leave it as an IP address if the
+         *    reverse lookup fails. No point penalising people who
+         *    haven't got any DNS at all.)
+         * 
+         *  - if `prehost' is not a literal IP, we need to do a DNS
+         *    lookup so we know where to connect to, and this is a
+         *    fatal error if it fails.
+         */
+
         a = inet_addr(prehost);
-        if (a == (unsigned long)-1 || a == (unsigned long)0xFFFFFFFF) {
-            h = gethostbyname(prehost);
+        gotaddr = 0;
+        if (a != (unsigned long)-1 && a != (unsigned long)0xFFFFFFFF)
+            gotaddr = 1;
+
+        h = NULL;
+        if (!gotaddr || !servername) {
+            if (verbose)
+                fprintf(stderr, "doit: doing DNS lookup on host name %s\n",
+                        prehost);
+            if (!gotaddr) {
+                h = gethostbyname(prehost);
+            } else {
+                h = gethostbyaddr((const char *)&a, sizeof(a), AF_INET);
+            }
         } else {
-            h = gethostbyaddr((const char *)&a, sizeof(a), AF_INET);
+            if (verbose)
+                fprintf(stderr, "doit: we have host IP and explicit"
+                        " server name; DNS not needed\n");
         }
         if (!h) {
-            perror(prehost);
-            return -1;
+            /*
+             * If we actually _did_ DNS, report the error and
+             * potentially die.
+             */
+            if (!gotaddr || !servername) {
+                char *err = strerror(errno);
+                if (verbose)
+                    fprintf(stderr, "doit: DNS lookup failed: %s\n", err);
+                /*
+                 * This is only a fatal error if !gotaddr.
+                 */
+                if (!gotaddr) {
+                    perror(prehost);
+                    return -1;
+                }
+            }
+            /*
+             * If necessary, we can let our canonical server name
+             * be a dotted-decimal IP address. No great loss.
+             */
+            if (!servername) {
+                ia.s_addr = a;
+                strcpy(ipaddr_buf, inet_ntoa(ia));
+                servername = ipaddr_buf;
+            }
+        } else {
+            if (gotaddr) {
+                ia.s_addr = a;
+            } else {
+                memcpy(&ia, h->h_addr, sizeof(ia));
+            }
+            hostaddr = ia.s_addr;
+            if (!servername) {
+                servername = h->h_name;
+            }
         }
-        memcpy(&hostaddr, h->h_addr, sizeof(hostaddr));
 
 	if (verbose)
-	    fprintf(stderr, "doit: found server name %s\n", h->h_name);
-        select_hostcfg(h->h_name);
+	    fprintf(stderr, "doit: searching .doitrc for server name %s\n",
+                    servername);
+        select_hostcfg(servername);
+
+        e = getenv("DOIT_PORT");
+        if (e != NULL)
+            port = atoi(e);
+	if (verbose) {
+            ia.s_addr = hostaddr;
+	    fprintf(stderr, "doit: connecting to host %s port %d\n",
+                    inet_ntoa(ia), port);
+        }
     }
 
     secretdata = read_secret_file(secret, &secretlen);
