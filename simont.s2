@@ -2,7 +2,8 @@
 
 # TODO:
 #
-#  - Deletion links for comments?
+#  - IWBNI we could give individual comment posters back their
+#    deletion links. Can't see how to find out, though.
 
 layerinfo type = "layout";
 layerinfo name = "SimonT";
@@ -676,6 +677,10 @@ function EntryPage::print_comment (Comment c) {
     print "<a href='$c.reply_url'>Reply to this</a>";
     if ($c.parent_url != "") { " | <a href='$c.parent_url'>Parent</a>"; }
     if ($c.thread_url != "") { " | <a href='$c.thread_url'>Thread</a>"; }
+    if (viewer_is_owner()) {
+        """ | <a href="$*SITEROOT/delcomment.bml?journal=$c.journal.username""";
+        """&id=$c.talkid">Delete</a>""";
+    }
     """</tr></table></td></tr></table></td></tr></table></td></tr>""";
 }
 
