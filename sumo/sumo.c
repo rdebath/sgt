@@ -1047,6 +1047,7 @@ static int arena_menu(int which)
     } menu[3];
     int nmenu = 0;
     int h, y, i, mpos, prevval;
+    int ret;
 
     menu[nmenu].text = "LAVA PLATFORM"; menu[nmenu++].arena = LAVA_PLATFORM;
     menu[nmenu].text = "THE CRUCIBLE"; menu[nmenu++].arena = THE_CRUCIBLE;
@@ -1118,7 +1119,11 @@ static int arena_menu(int which)
 	}
 
 	if (pushed) {
-	    arena = menu[mpos].arena;
+	    if (arena != menu[mpos].arena) {
+		ret = 1;
+		arena = menu[mpos].arena;
+	    } else
+		ret = 0;
 	    break;
 	}
     }
@@ -1128,6 +1133,8 @@ static int arena_menu(int which)
     scr_done();
 
     free(img);
+
+    return ret;
 }
 
 static int options_menu(int which)
@@ -1154,6 +1161,11 @@ static int options_menu(int which)
     h = 39 + 16*nmenu;
     y = (200 - h) / 2;
 
+    mpos = 0;
+    prevval = 0;
+
+    restart:
+
     img = makeimage(120, h, 0, 0);
     pickimage(img, 100, y);
 
@@ -1162,9 +1174,6 @@ static int options_menu(int which)
     bar(102, y+2, 217, y+h-3, 0);
     
     swash_centre(100, 219, y+7, "OPTIONS MENU", plotpoint, (void *)26);
-
-    mpos = 0;
-    prevval = 0;
 
     scr_done();
 
@@ -1216,7 +1225,13 @@ static int options_menu(int which)
 
 	if (pushed && menu[mpos].action == QUIT) exit(1);
 	if (pushed && menu[mpos].action == RETURN) break;
-	if (pushed && menu[mpos].action == ARENA) arena_menu(which);
+	if (pushed && menu[mpos].action == ARENA) {
+	    if (arena_menu(which)) {
+		free(img);
+		setup_arena();
+		goto restart;
+	    }
+	}
 	if (pushed && menu[mpos].action == ADJUST) adjust_screen(which);
 	if (pushed && menu[mpos].action == RESET) { sc1=sc2=0; show_scores();}
     }
@@ -1298,7 +1313,6 @@ setbuf(debugfp, NULL);
 			     * pressed it.
 			     */
 			    options_menu(event.jbutton.which);
-			    setup_arena();
 			} else {
 			    pushed = 1;
 			}
