@@ -1,0 +1,13 @@
+Summary: PuTTY should paste when the paste button is released
+Class: wish
+Priority: low
+Difficulty: fun
+Content-type: text/x-html-body
+
+<p>At present, PuTTY pastes text when it receives a button-down event for
+whichever button is configured for paste.  Normally in Windows, actions
+that are triggered by a click happen on the button-up event instead, and
+moving the pointer out of the control being clicked on before the button-up
+causes the action not to occur.  xterm does something slightly different, in
+that it pastes on button-up, but doesn't seem to cancel if the pointer moves
+outside the window.
