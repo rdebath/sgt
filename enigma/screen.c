@@ -252,8 +252,8 @@ int screen_movie_getmove(void) {
 	if (i >= 'A' && i <= 'Z')
 	    i += 'a' - 'A';
 	if (i == ' ') i = 'f';
-	if (i == KEY_LEFT) i = '+';
-	if (i == KEY_RIGHT) i = '-';
+	if (i == KEY_LEFT) i = '-';
+	if (i == KEY_RIGHT) i = '+';
 	if (i == '\033') i = 'q';
     } while (i != 'f' && i != 'b' && i != '+' && i != '-' &&
 	     i != '>' && i != '<' && i != 'q');
