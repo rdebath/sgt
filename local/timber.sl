@@ -1,4 +1,4 @@
-% timber.sl   -*- slang -*-
+% timber.sl    -*- mode: slang; mode: fold -*-
 %
 % a mail user agent embedded in jed
 
@@ -7,7 +7,7 @@
 % rules of line hiding/showing. It contains an entire mail folder, in
 % a processed form from which the original form may be reconstructed.
 
-% Further TODO items:
+%{{{ TODO list
 %
 % fix: hitting backspace on last (blank) line of mime message will never
 %   fold message however often you do it
@@ -26,6 +26,8 @@
 % better mailbox locking: option to open a locked box readonly
 % better mailbox locking: research atomicity under NFS
 % better mailbox locking: let user specify something about how it's done
+%}}}
+%{{{ User-configurable variables
 
 % This variable may be reassigned in `.timberrc'. It gives
 % the name of the special mail folder where new unread mail is
@@ -75,6 +77,10 @@ variable timber_fetch_prog = "perl " + dircat(JED_ROOT,"bin/timber.pl");
 % the full pathname of the program which decodes MIME encodings.
 variable timber_mime_prog = "perl " + dircat(JED_ROOT,"bin/timberm.pl");
 
+% This variable may be reassigned in `.timberrc'. It gives
+% the full pathname of the program which adds line prefixes.
+variable timber_prefix_prog = "perl " + dircat(JED_ROOT,"bin/timbere.pl");
+
 % This variable may, and almost certainly should, be reassigned
 % in `.timberrc'. It gives a comma-separated list of e-mail
 % addresses that Timber views as belonging to the user (which will
@@ -105,6 +111,9 @@ variable timber_boringhdrs =
 ":X-Automatically-Sent-By:X-MIME-Autoconverted:X-MimeOLE:X-Envelope-To:" +
 ":X-Originating-IP:";
 
+%}}}
+%{{{ Non-user-configurable variables
+
 % The version number of Timber.
 variable timber_version = "v0.2";
 
@@ -113,6 +122,10 @@ variable timber_headerline =
 "Flags Lin  Size  Date  From                 Subject\n";
 variable timber_mimehdr =
 "Multipart MIME message\n";
+
+%}}}
+
+%{{{ Buffer-tracking mechanism for `timber_only'
 
 % This is used to determine whether Timber was invoked using `timber_only',
 % in which case closing the last Timber buffer should trigger exit of Jed.
@@ -132,9 +145,11 @@ define timber_buffers_fewer() {
 	exit_jed();
 }
 
-$1 = "Timber";
+%}}}
 
-% The keymap for a Timber buffer.
+%{{{ The keymap for a Timber buffer
+
+$1 = "Timber";
 !if (keymap_p($1)) {
     make_keymap($1);
 
@@ -229,9 +244,23 @@ $1 = "Timber";
     definekey("timber_fullhdr", "H", $1);
     definekey("timber_fullhdr", "h", $1);
 
-    % M (MIME) shows the whole of a MIME part, including the headers.
-    definekey("timber_fullmime", "M", $1);
-    definekey("timber_fullmime", "m", $1);
+    % MH (mime-headers) shows all the headers of a MIME part.
+    definekey("timber_fullmime", "MH", $1);
+    definekey("timber_fullmime", "Mh", $1);
+    definekey("timber_fullmime", "mH", $1);
+    definekey("timber_fullmime", "mh", $1);
+
+    % MD (mime-decode) pipes a MIME part through a decoding program.
+    definekey("timber_mimedec", "MD", $1);
+    definekey("timber_mimedec", "Md", $1);
+    definekey("timber_mimedec", "mD", $1);
+    definekey("timber_mimedec", "md", $1);
+
+    % MR (mime-revert) removes any decoded variant of a MIME part.
+    definekey("timber_mimerev", "MR", $1);
+    definekey("timber_mimerev", "Mr", $1);
+    definekey("timber_mimerev", "mR", $1);
+    definekey("timber_mimerev", "mr", $1);
 
     % A (attachment) saves a MIME part to a file, decoding if required.
     definekey("timber_saveattach", "A", $1);
@@ -248,7 +277,8 @@ $1 = "Timber";
     definekey("timber_dontexit", "^X^C", $1);
 }
 
-% The highlighting mode for Timber.
+%}}}
+%{{{ The highlighting mode for Timber
 create_syntax_table ($1);
 set_syntax_flags ($1, 0);
 #ifdef HAS_DFA_SYNTAX
@@ -256,27 +286,22 @@ enable_highlight_cache("timber.dfa", $1);
 define_highlight_rule("^[FM].*$", "comment", $1);
 define_highlight_rule("^\\|[^: ]*[: ]", "Qkeyword", $1);
 define_highlight_rule("^\\+.*$", "preprocess", $1);
-define_highlight_rule("^ -- $", "keyword", $1);
-define_highlight_rule("^ > *> *>.*$", "preprocess", $1);
-define_highlight_rule("^ > *>.*$", "comment", $1);
-define_highlight_rule("^ >.*$", "string", $1);
-define_highlight_rule("^ .*$", "normal", $1);
+define_highlight_rule("^[ \240]-- $", "keyword", $1);
+define_highlight_rule("^[ \240]> *> *>.*$", "preprocess", $1);
+define_highlight_rule("^[ \240]> *>.*$", "comment", $1);
+define_highlight_rule("^[ \240]>.*$", "string", $1);
+define_highlight_rule("^[ \240].*$", "normal", $1);
 define_highlight_rule("^\\* ..D.*$", "dollar", $1);
 define_highlight_rule("^\\! [^\\[].*$", "delimiter", $1);
 define_highlight_rule("^\\* [^\\[].*$", "string", $1);
-define_highlight_rule("^. \\[end\\]$", "comment", $1);
+define_highlight_rule("^[\\*\\!] \\[end\\]$", "comment", $1);
 define_highlight_rule(".*$", "normal", $1);
 build_highlight_table($1);
 #endif
-
-% The highlighting mode for Timber composers.
-#ifndef TIMBER_TIMBERC_LOADED
-() = evalfile("timberc.sl");
-#endif
+%}}}
+%{{{ The keymap for a Timber composer buffer
 
 $1 = "TimberC";
-
-% The keymap for a Timber composer buffer.
 !if (keymap_p($1)) {
     make_keymap($1);
     definekey("timber_sendmsg", "^X^S", $1);
@@ -285,6 +310,13 @@ $1 = "TimberC";
     definekey("timber_bcc_self", "^OS", $1);
     definekey("timber_dontexit", "^X^C", $1);
 }
+%}}}
+%{{{ The highlighting mode for Timber composers
+#ifndef TIMBER_TIMBERC_LOADED
+() = evalfile("timberc.sl");
+#endif
+%}}}
+%{{{ timber_dontexit(): for accidental ^X^C
 
 % Used when the user mistakenly tries to exit Jed without shutting down
 % Timber correctly first.
@@ -292,14 +324,44 @@ define timber_dontexit() {
     error("You probably didn't mean to do ^X^C while Timber was running!");
 }
 
+%}}}
+%{{{ timber_undefined(): for undefined keys
+
 % Used when a key is pressed which has no effect in Timber.
 define timber_undefined() {
     error("Key undefined. Press `?' for help");
 }
 
-% Utility routines: toggle the buffer's read-only status (and other flags).
+%}}}
+%{{{ timber_tmpnam() (neither Jed nor S-Lang provides tmpnam :-( )
+variable timber_tmpnam_counter = 0;
+variable timber_tmpdir = NULL;
+define timber_tmpnam() {
+    if (timber_tmpdir == NULL) {
+        timber_tmpdir = getenv("TEMP");
+        if (timber_tmpdir == NULL) {
+            timber_tmpdir = getenv("TMP");
+            if (timber_tmpdir == NULL) {
+                timber_tmpdir = getenv("TMPDIR");
+                if (timber_tmpdir == NULL) {
+                    timber_tmpdir = "/tmp";
+                }
+            }
+        }
+    }
+    timber_tmpnam_counter += 1;
+    return dircat(timber_tmpdir, sprintf("%dtimber.%d", getpid(),
+                                         timber_tmpnam_counter));
+}
+%}}}
+%{{{ timber_ro() and timber_rw()
+
+% Utility routines: toggle the buffer's read-only status (and other flags)
 define timber_ro() { setbuf_info((getbuf_info() | 0x109) & ~0x22); }
 define timber_rw() { setbuf_info(getbuf_info() & ~8); }
+
+%}}}
+%{{{ timber_fetchmail(): the fetch-mail interface
 
 % Fetch mail from /var/spool/mail/$USER, with proper locking, and transfer
 % it to the given folder. This will be done by calling an external process.
@@ -309,6 +371,8 @@ define timber_fetchmail() {
 			timber_fetch_prog,
 			dircat(timber_folders, timber_inbox), 2));
 }
+%}}}
+%{{{ timber_acquire_lock() and timber_release_lock(): mailbox locking
 
 % Acquire a lock on a filename. Returns 1 if successful, 0 if locked already.
 define timber_acquire_lock(fname) {
@@ -330,6 +394,8 @@ define timber_release_lock(fname) {
 	fname = dircat(timber_folders, fname);
     rmdir(fname);
 }
+%}}}
+%{{{ timber_la() and timber_ila(): text processing routines
 
 % Replacement for `looking_at' which is always case sensitive.
 define timber_la(s) {
@@ -358,6 +424,9 @@ define timber_ila(s) {
     CASE_SEARCH = 0;
     return looking_at(s);
 }
+
+%}}}
+%{{{ timber_getheader(): return the contents of a header field
 
 % Return the contents of a header field. Cursor is assumed to be positioned
 % just beyond the colon.
@@ -392,10 +461,13 @@ define timber_getheader(processed) {
     return result;
 }
 
+%}}}
+%{{{ timber_issep(): detect a message separator line
+
 % Detect a message separator line. Theoretically we need only require that
 % the line begins "From ", but in practice some mail systems aren't strict
 % about quoting other such lines, so we'll detect the exact date format.
-define timber_issep() {
+define timber_issep() { %{{{
     variable s;
     !if (timber_la("From "))
         return 0;
@@ -410,7 +482,10 @@ define timber_issep() {
                       "[0-9]:[0-9][0-9]:[0-9][0-9] ", 1))
         return 0;
     return 1;
-}
+} %}}}
+
+%}}}
+%{{{ timber_enbuf() to process just-loaded mailbox data
 
 % Convert a buffer containing a raw mail folder into a buffer containing
 % a Timber-style mail folder.
@@ -657,6 +732,8 @@ define timber_enbuf() {
 	pop_spot();
     }
 }
+%}}}
+%{{{ timber_blankfolder(): make an empty folder buffer
 
 % Given an empty buffer, fabricate an empty Timber folder inside it.
 define timber_blankfolder() {
@@ -665,6 +742,9 @@ define timber_blankfolder() {
     insert(timber_headerline);
     insert("* [end]\n");    
 }
+
+%}}}
+%{{{ timber_foldall(): fold all messages up
 
 % Given a Timber mail-folder buffer, fold everything right up so just
 % the message summary lines are visible.
@@ -683,6 +763,9 @@ define timber_foldall() {
     }
     bob();
 }
+
+%}}}
+%{{{ timber_updatemail(): update a folder with new mail
 
 % Update a mail folder (ought to be `mbox') with extra data.
 define timber_updatemail() {
@@ -727,6 +810,9 @@ define timber_updatemail() {
     timber_ro(); % make buffer read-only
 }
 
+%}}}
+%{{{ timber_header_key(): FIXME
+
 % Return the header field present on the line.
 define timber_header_key() {
     % Separator header is special.
@@ -741,10 +827,13 @@ define timber_header_key() {
     pop_spot();
 }
 
+%}}}
+%{{{ timber_unfold(): FIXME
+
 % Unfold the message or attachment under the cursor. If it's a message,
 % we must ensure the Status line says RO.
 define timber_unfold() {
-    variable header, h2, c, showing, firstpart;
+    variable header, h2, c, showing, firstpart, leadchr;
 
     bol();
     while (is_line_hidden() and not bobp()) {
@@ -759,6 +848,7 @@ define timber_unfold() {
 	go_down_1();
 	showing = 1;
 	firstpart = 1;
+        leadchr = '\0';
 	while (what_char() != '*' and not eobp()) {
 	    c = what_char();
 	    if (c == '|') {
@@ -772,13 +862,26 @@ define timber_unfold() {
 		if (c == '!' and firstpart) {
 		    firstpart = 0;
 		    showing = 1;
+                    leadchr = '\0';
 		} else if (timber_la("! [end]")) {
 		    showing = 1;
+                    leadchr = '\0';
 		} else
 		    showing = 0;
 		set_line_hidden(0);
-	    } else if (c != '+' and showing)
-		set_line_hidden(0);
+	    } else if (c != '+' and showing) {
+                if (leadchr == '\0' and (c == '\240' or c == ' ')) {
+                    leadchr = c;
+                    set_line_hidden(0);
+                } else if (c == leadchr) {
+                    set_line_hidden(0);
+                } else if (c == ' ' and leadchr == '\240') {
+                    % Show the first space line after a decoded part.
+                    set_line_hidden(0);
+                    % Then inhibit showing of the rest.
+                    leadchr = '\1';
+                }
+            }
 	    if (timber_ila("|Status: ")) {
 		go_right(9);
 		push_mark(); eol(); del_region();
@@ -800,10 +903,20 @@ define timber_unfold() {
 	go_down_1();
 	showing = 1;
 	firstpart = 1;
+        leadchr = '\0';
 	while (what_char() != '!' and what_char() != '*' and not eobp()) {
 	    c = what_char();
-	    if (c == ' ')
+            if (leadchr == '\0' and (c == '\240' or c == ' ')) {
+                leadchr = c;
+                set_line_hidden(0);
+            } else if (c == leadchr) {
 		set_line_hidden(0);
+            } else if (c == ' ' and leadchr == '\240') {
+                % Show the first space line after a decoded part.
+                set_line_hidden(0);
+                % Then inhibit showing of the rest.
+                leadchr = '\1';
+            }
 	    eol();
 	    go_right_1();
 	}
@@ -811,6 +924,9 @@ define timber_unfold() {
 	bol();
     }
 }
+
+%}}}
+%{{{ timber_press_ret(): FIXME
 
 % RETURN was pressed. If at top, move to the first unread message; then
 % call timber_unfold.
@@ -840,6 +956,9 @@ define timber_press_ret() {
     timber_unfold();
 }
 
+%}}}
+%{{{ timber_bom(): FIXME
+
 % Move to the top of the current message.
 define timber_bom() {
     bol();
@@ -848,6 +967,9 @@ define timber_bom() {
 	bol();
     }
 }
+
+%}}}
+%{{{ timber_fullhdr(): FIXME
 
 % Unhide _all_ headers in the current message.
 define timber_fullhdr() {
@@ -863,6 +985,9 @@ define timber_fullhdr() {
     pop_spot();
     recenter(1);
 }
+
+%}}}
+%{{{ timber_fullmime(): FIXME
 
 % Unhide _all_ of the current MIME part.
 define timber_fullmime() {
@@ -893,144 +1018,136 @@ define timber_fullmime() {
     pop_spot();
 }
 
+%}}}
+%{{{ timber_get_mimepart(): FIXME
+
+% Place user marks at each end of the current MIME part. Will use a
+% decoded variant if `use_decoded' is TRUE, otherwise will always go
+% for the original transfer encoding.
+%
+% Returns (markattop, markatbottom, encoding).
+define timber_get_mimepart(use_decoded) {
+    variable encoding = "7BIT";	       % default
+    variable headerchr, leadchr;
+    variable mark, top, bottom;
+
+    mark = create_user_mark();
+
+    bol();
+    while (what_char() != '!' and what_char() != 'M'
+	   and what_char() != '*' and not bobp()) {
+	go_up_1();
+	bol();
+    }
+
+    if (what_char() == 'M' or bobp()) {
+	goto_user_mark(mark);
+	error("Not in a MIME attachment.");
+	return (NULL, NULL, "");
+    }
+
+    if (what_char() == '*')
+	headerchr = '|';
+    else
+	headerchr = '+';	
+
+    eol();
+    go_right_1();
+    while (what_char == headerchr and not eolp()) {
+	go_right_1();
+	if (timber_ila("Content-Transfer-Encoding: ")) {
+	    go_right(27);
+	    push_mark();
+	    eol();
+	    encoding = strup(bufsubstr());
+	}
+	eol();
+	go_right_1();
+    }
+
+    if (use_decoded) {
+        % This might be decoded or it might not be: select our lead char
+        % accordingly.
+        leadchr = what_char();             % either ' ' or '\240'
+    } else {
+        % Skip the decoded version if any.
+        while (what_char == '\240' and not eolp()) {
+            eol();
+            go_right_1();
+        }
+        leadchr = ' ';
+    }
+
+    % Now we should be at the top of the message text. Skip the
+    % initial blank line.
+    eol();
+    if (what_column() == 2)
+	go_right_1();
+    else
+	bol();
+
+    top = create_user_mark();
+
+    % Now move down to the end of the message text.
+    while (what_char == leadchr and not eolp()) {
+	eol();
+	go_right_1();
+    }
+
+    % Trash the trailing blank line.
+    go_left_1();
+    if (what_column() == 2)
+	bol();
+    else
+	go_right_1();
+
+    bottom = create_user_mark();
+
+    return (top, bottom, encoding);
+}
+
+%}}}
+%{{{ timber_saveattach(): FIXME
+
 % Save the current MIME part (or whole message, if non-multipart) to a file.
 define timber_saveattach() {
-    variable mark;
-    variable encoding = "7BIT";	       % default
-    variable headerchr;
-    variable file;
+    variable mark, top, bot;
+    variable file, encoding;
 
     file = read_file_from_mini("File to save attachment to:");
     !if (strlen (extract_filename(file))) return;
-
     mark = create_user_mark();
-    bol();
-    while (what_char() != '!' and what_char() != 'M'
-	   and what_char() != '*' and not bobp()) {
-	go_up_1();
-	bol();
+    (top, bot, encoding) = timber_get_mimepart(0);
+    !if (top == NULL) {
+        goto_user_mark(top);
+        push_mark();
+        goto_user_mark(bot);
+        % We have an attachment in the marked region. Save it.
+        pipe_region(timber_mime_prog + " - " + encoding + " " + file);
     }
-
-    if (what_char() == 'M' or bobp()) {
-	goto_user_mark(mark);
-	error("Not in a MIME attachment.");
-	return;
-    }
-
-    if (what_char() == '*')
-	headerchr = '|';
-    else
-	headerchr = '+';	
-
-    eol();
-    go_right_1();
-    while (what_char == headerchr and not eolp()) {
-	go_right_1();
-	if (timber_ila("Content-Transfer-Encoding: ")) {
-	    go_right(27);
-	    push_mark();
-	    eol();
-	    encoding = strup(bufsubstr());
-	}
-	eol();
-	go_right_1();
-    }
-
-    % Now we should be at the top of the message text. Skip the
-    % initial blank line.
-    eol();
-    if (what_column() == 2)
-	go_right_1();
-    else
-	bol();
-
-    push_mark();
-
-    % Now move down to the end of the message text.
-    while (what_char == ' ' and not eolp()) {
-	eol();
-	go_right_1();
-    }
-
-    % Trash the trailing blank line.
-    go_left_1();
-    if (what_column() == 2)
-	bol();
-    else
-	go_right_1();
-
-    % We have an attachment in the marked region. Save it.
-    pipe_region(timber_mime_prog + " - " + encoding + " " + file);
-
     goto_user_mark(mark);
 }
 
+%}}}
+%{{{ timber_selattach(): FIXME
+
 % Select the current MIME part.
 define timber_selattach() {
-    variable mark, mark2;
-    variable encoding = "7BIT";	       % default
-    variable headerchr;
-    variable file;
+    variable mark, top, bot;
 
     mark = create_user_mark();
-    bol();
-    while (what_char() != '!' and what_char() != 'M'
-	   and what_char() != '*' and not bobp()) {
-	go_up_1();
-	bol();
+    (top, bot, ) = timber_get_mimepart(1);
+    if (top == NULL) {
+        goto_user_mark(mark);
+    } else {
+        goto_user_mark(top);
+        set_mark_cmd();
+        goto_user_mark(bot);
     }
-
-    if (what_char() == 'M' or bobp()) {
-	goto_user_mark(mark);
-	error("Not in a MIME attachment.");
-	return;
-    }
-
-    if (what_char() == '*')
-	headerchr = '|';
-    else
-	headerchr = '+';	
-
-    eol();
-    go_right_1();
-    while (what_char == headerchr and not eolp()) {
-	go_right_1();
-	if (timber_ila("Content-Transfer-Encoding: ")) {
-	    go_right(27);
-	    push_mark();
-	    eol();
-	    encoding = strup(bufsubstr());
-	}
-	eol();
-	go_right_1();
-    }
-
-    % Now we should be at the top of the message text. Skip the
-    % initial blank line.
-    eol();
-    if (what_column() == 2)
-	go_right_1();
-    else
-	bol();
-
-    mark2 = create_user_mark();
-
-    % Now move down to the end of the message text.
-    while (what_char == ' ' and not eolp()) {
-	eol();
-	go_right_1();
-    }
-
-    % Trash the trailing blank line.
-    go_left_1();
-    if (what_column() == 2)
-	bol();
-    else
-	go_right_1();
-
-    set_mark_cmd();
-    goto_user_mark(mark2);
 }
+
+%}}}
+%{{{ timber_fold(): FIXME
 
 % Fold up the message or attachment under the cursor.
 define timber_fold() {
@@ -1105,6 +1222,94 @@ define timber_fold() {
     pop_spot();
 }
 
+%}}}
+%{{{ timber_mimedec(): decode a MIME part
+
+define timber_mimedec() {
+    variable mark, top, bottom, encoding, tmp;
+
+    mark = create_user_mark();
+    (top, bottom, encoding) = timber_get_mimepart(1);
+    if (top == NULL) {
+        goto_user_mark(mark);
+    } else {
+        goto_user_mark(top);
+        if (timber_la(" ")) {
+            % Decode from content transfer encoding
+
+            % Perform the decode to a temporary file
+            tmp = timber_tmpnam();
+            goto_user_mark(top);
+            push_mark();
+            goto_user_mark(bottom);
+            pipe_region(timber_mime_prog + " - " + encoding + " " + tmp);
+
+            % Remove any existing decoded part
+            goto_user_mark(top);
+            if (timber_la("\240")) {
+                push_mark();
+                while (timber_la("\240")) {
+                    go_down_1();
+                    bol();
+                }
+                timber_rw();
+                del_region();
+                timber_ro();
+            }
+
+            timber_rw();
+            % Put on an initial blank \240 line
+            go_up_1();
+            bol();
+            insert("\240\n");
+            % Read the file back in as a decoded part
+            run_shell_cmd(timber_prefix_prog + " 160 " + tmp);            
+            timber_ro();
+
+            % Get the new folding correct
+            timber_fold();
+            timber_unfold();
+        } else {
+            % Decode from content type
+        }
+    }
+}
+
+%}}}
+%{{{ timber_mimerev(): revert to fully encoded MIME form
+
+define timber_mimerev() {
+    variable mark, top;
+
+    mark = create_user_mark();
+    (top,,) = timber_get_mimepart(1);
+    if (top == NULL) {
+        goto_user_mark(mark);
+    } else {
+        % Remove any decoded part
+        goto_user_mark(top);
+        go_up_1();
+        bol();
+        if (timber_la("\240")) {
+            push_mark();
+            while (timber_la("\240")) {
+                go_down_1();
+                bol();
+            }
+            timber_rw();
+            del_region();
+            timber_ro();
+
+            % Get the new folding correct
+            timber_fold();
+            timber_unfold();
+        }
+    }
+}
+
+%}}}
+%{{{ timber_open_folder(): FIXME
+
 % Create a new buffer, in Timber mode, and open a mail folder therein.
 define timber_open_folder(name) {
     variable modename = "Timber";
@@ -1142,6 +1347,9 @@ define timber_open_folder(name) {
     timber_ro(); % make buffer read-only
 }
 
+%}}}
+%{{{ timber_nextmsg(): FIXME
+
 % Move to the next message, by folding whatever we're currently on and
 % unfolding the next.
 define timber_nextmsg() {
@@ -1154,6 +1362,9 @@ define timber_nextmsg() {
     if (timber_la("* ") and not timber_la("* [end]"))
         timber_unfold();
 }
+
+%}}}
+%{{{ timber_prevmsg(): FIXME
 
 % Move to the previous message, by folding whatever we're currently on
 % and unfolding the one before.
@@ -1169,6 +1380,9 @@ define timber_prevmsg() {
         timber_unfold();
 }
 
+%}}}
+%{{{ timber_delete(): FIXME
+
 % Mark the current message as deleted. Fold it as well (deleted messages
 % are unlikely to be ones people are interested in).
 define timber_delete() {
@@ -1183,6 +1397,9 @@ define timber_delete() {
     }
 }
 
+%}}}
+%{{{ timber_undelete(): FIXME
+
 % Mark the current message as not deleted.
 define timber_undelete() {
     push_spot();
@@ -1196,6 +1413,9 @@ define timber_undelete() {
     }
     pop_spot();
 }
+
+%}}}
+%{{{ timber_expunge(): FIXME
 
 % Expunge all deleted messages and checkpoint a buffer to disk.
 define timber_expunge() {
@@ -1273,6 +1493,9 @@ define timber_expunge() {
     bob();
 }
 
+%}}}
+%{{{ timber_qlose(): FIXME
+
 % Quit a Timber buffer, expunging and closing the associated folder.
 define timber_qlose() {
     timber_expunge();
@@ -1281,6 +1504,9 @@ define timber_qlose() {
     delbuf(whatbuf());
     timber_buffers_fewer();
 }
+
+%}}}
+%{{{ timber_readfolder(): FIXME
 
 % Read a folder name.
 define timber_readfolder(prompt) {
@@ -1294,6 +1520,9 @@ define timber_readfolder(prompt) {
     setbuf_info(f,d,b,flags);
 }
 
+%}}}
+%{{{ timber_goto(): FIXME
+
 % Open a new Timber folder-buffer.
 define timber_goto() {
     variable file;
@@ -1306,6 +1535,9 @@ define timber_goto() {
 	error(file + " is locked by another Timber!");
     }
 }
+
+%}}}
+%{{{ timber_moveto(): FIXME
 
 % Move to another folder.
 define timber_moveto() {
@@ -1324,6 +1556,9 @@ define timber_moveto() {
 	error(file + " is locked by another Timber!");
     }
 }
+
+%}}}
+%{{{ timber_savetobuf(): FIXME
 
 % Save a message to another Timber buffer.
 define timber_savetobuf(buffer) {
@@ -1359,6 +1594,9 @@ define timber_savetobuf(buffer) {
 
     setbuf(frombuf);
 }
+
+%}}}
+%{{{ timber_appendmsg(): FIXME
 
 % Write a message, in non-Timber-buffer form, to the end of a file.
 define timber_appendmsg(file) {
@@ -1400,6 +1638,9 @@ define timber_appendmsg(file) {
     delbuf(tbuf);
 }
 
+%}}}
+%{{{ timber_save(): FIXME
+
 % Save a message to another Timber folder. Will check whether the folder
 % is already open in another buffer.
 define timber_save() {
@@ -1428,6 +1669,9 @@ define timber_save() {
     message(Sprintf("Saved message to folder %s.", file, 1));
 }
 
+%}}}
+%{{{ timber_export(): FIXME
+
 % Export a message to a file.
 define timber_export() {
     variable file;
@@ -1442,6 +1686,9 @@ define timber_export() {
 
     message(Sprintf("Exported message to file %s.", file, 1));
 }
+
+%}}}
+%{{{ timber_yesno (): FIXME
 
 % Get a yes/no response from the user. The one in site.sl is ugly.
 define timber_yesno (prompt)
@@ -1459,6 +1706,9 @@ define timber_yesno (prompt)
 	if (c != '\r' and c != '\n') beep();
     }
 }
+
+%}}}
+%{{{ timber_sendmsg(): FIXME
 
 % Send a message.
 define timber_sendmsg() {
@@ -1484,6 +1734,9 @@ define timber_sendmsg() {
     }
 }
 
+%}}}
+%{{{ timber_killmsg(): FIXME
+
 % Kill (cancel) a composer buffer.
 define timber_killmsg() {
     !if (timber_yesno("Abandon composition of this message? [yn] "))
@@ -1493,6 +1746,9 @@ define timber_killmsg() {
     delbuf(whatbuf());
     timber_buffers_fewer();
 }
+
+%}}}
+%{{{ timber_open_composer(): FIXME
 
 % Open a composer buffer.
 define timber_open_composer() {
@@ -1516,6 +1772,9 @@ define timber_open_composer() {
     insert(timber_custom_headers);
 }
 
+%}}}
+%{{{ timber_real_addr(): FIXME
+
 % Get the actual address part out of a freeform address segment. Ie
 % return only what's in angle brackets if anything is, and otherwise
 % remove what's in round brackets if anything is.
@@ -1534,6 +1793,9 @@ define timber_real_addr(addr) {
     } else
 	return addr;
 }
+
+%}}}
+%{{{ timber_contains_addr(): FIXME
 
 % Return nonzero if the address in `addr' is somewhere in the comma-
 % separated list `list'.
@@ -1555,6 +1817,9 @@ define timber_contains_addr(list, addr) {
     }
     return 0;
 }
+
+%}}}
+%{{{ timber_insert_hdr(): FIXME
 
 % Insert a header line into a buffer. Wrap at commas if possible and
 % desirable.
@@ -1583,6 +1848,9 @@ define timber_insert_hdr(header) {
     insert(header + "\n");
 }
 
+%}}}
+%{{{ timber_bcc_self(): FIXME
+
 % Add a Bcc-to-self line in a composition.
 define timber_bcc_self() {
     push_spot();
@@ -1594,6 +1862,9 @@ define timber_bcc_self() {
     insert("Bcc: " + timber_bcc_addr + "\n");
     pop_spot();
 }
+
+%}}}
+%{{{ timber_reply_common(): FIXME
 
 % Begin composition of a reply message. `all' is 1 if reply-to-all
 % is enabled.
@@ -1768,6 +2039,9 @@ define timber_reply_common(all) {
 define timber_reply() { timber_reply_common(0); }
 define timber_reply_all() { timber_reply_common(1); }
 
+%}}}
+%{{{ timber_compose(): FIXME
+
 % Begin composition of a brand new message.
 define timber_compose() {
     timber_open_composer();
@@ -1789,6 +2063,9 @@ define timber_compose() {
     setbuf_info( (getbuf_info() & ~0x303) | 0x20 );
 }
 
+%}}}
+%{{{ timber_open_mbox(): FIXME
+
 % Create the first Timber buffer, pointing at `mbox'.
 define timber_open_mbox() {
     runhooks("timber_hook");
@@ -1799,6 +2076,9 @@ define timber_open_mbox() {
 	error(timber_inbox + " is locked by another Timber!");
     }
 }
+
+%}}}
+%{{{ timber(): FIXME
 
 % The starting command: `M-x timber' either calls timber_open_mbox, if
 % mbox is not already open in a buffer, or moves to the mbox folder and
@@ -1812,6 +2092,9 @@ define timber() {
         timber_open_mbox();
 }
 
+%}}}
+%{{{ timber_only(): FIXME
+
 % An alternative starting command, `timber_only', designed to be
 % invoked as `jed -f timber_only'.
 define timber_only() {
@@ -1819,13 +2102,18 @@ define timber_only() {
     timber();
 }
 
+%}}}
+
+%{{{ Now load the user's .timberrc
+
 % Now run the user's .timberrc file, wherein they can change the
 % various variables and fiddle with things.
 if (file_status(expand_filename("~/.timberrc")) == 1) {
     () = evalfile(expand_filename("~/.timberrc"));
 }
+%}}}
 
-% Miscellaneous notes:
+%{{{ Miscellaneous notes
 %
 % Crib to `Status:' headers.
 %
@@ -1854,3 +2142,5 @@ if (file_status(expand_filename("~/.timberrc")) == 1) {
 % Pine also puts in Date, From, Message-ID (all fabricated by sendmail
 % if you can't be bothered), Mime-Version and Content-Type (we'll have
 % to do this at some stage).
+
+%}}}
