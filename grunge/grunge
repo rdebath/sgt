@@ -322,7 +322,7 @@ def pageitem(indexentry, item, override):
 	if h.y < 0: h.y = 0
 	if h.y > h.ymax: h.y = h.ymax
 	# FIXME: check write access on whole session
-	h.addable = (item.contin == "")
+	h.addable = (indexentry != None and item.contin == "")
 	h.contfrom = (item.contfrom != "")
 	h.continued = (item.contin != "")
 	if h.ymax < 0: h.ymax = 0
@@ -1419,7 +1419,7 @@ try:
 		motd.contribs = [c.motd()]
 		motd.subject = "Message of the Day"
 		motd.itemid = "MOTD"
-		motd.contfrom = motd.contin = None
+		motd.contfrom = motd.contin = ""
 	        aux, override = pageitem(None, motd, 1)
 		assert aux != "a"
         else:
