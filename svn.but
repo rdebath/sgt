@@ -175,7 +175,7 @@ possible risk that an incautiously written access list might allow a
 user to commit to the hook script and grant themself extra
 permissions!
 
-(Also, the pre-commit hook only allows fine-grained \e{commit}
+(Note that the pre-commit hook only allows fine-grained \e{commit}
 control; read access is unlimited no matter what I do. There are one
 or two things for which it would be convenient to be able to change
 this, but they're not vital to me.)
@@ -333,7 +333,8 @@ particular commit, which meant my migration script became specific
 to my particular repository so I can't usefully publish it for other
 people to use.
 
-See also \#{\k{FIXME}} for more problems I had with \c{svn:externals}.
+See \k{using-svn-externals} for more problems I had with
+\c{svn:externals}.
 
 \H{migration-renames} Directory and file renaming
 
