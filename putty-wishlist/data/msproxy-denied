@@ -1,8 +1,9 @@
 Summary: Connections through MS Proxy Server (HTTP) are spuriously denied
 Class: semi-bug
 Priority: medium
-Difficulty: taxing
+Difficulty: fun
 Present-in: 0.53b 2002-12-30
+Fixed-in: 2003-03-19
 Content-type: text/x-html-body
 
 <p>Original report (&lt;007801c2b108$5ad5a200$33db8ad8@alexin.ca&gt;):
@@ -75,3 +76,4 @@ rather than "<code>basic</code>".
 states that the scheme token is case-insensitive, but in the interests of
 being conservative in what we send, PuTTY should probably use
 "<code>Basic</code>".
+<p>This bug should be fixed as of proxy.c rev 1.27.
