@@ -25,3 +25,6 @@ particular, since methods of DLL linkage and dynamic loading tend to
 be very platform-specific, it would be hard to design a plugin
 interface which would allow us to port the plugins bodily to other
 platforms (when we eventually get round to doing any ports).
+
+<p>
+Patch (unreviewed): 404DDD77.9010501@nodomain.org
