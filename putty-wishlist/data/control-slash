@@ -1,6 +1,7 @@
 Summary: Ctrl+/ should send the same as Ctrl+_
 Class: wish
 Content-type: text/x-html-body
+Fixed-in: 2003-01-14
 Priority: medium
 Difficulty: fun
 
@@ -10,4 +11,4 @@ On some terminals, you can type C-_ by typing / while holding down CONTROL.
 </blockquote>
 It would be good if PuTTY supported this.
 <p>
-OSD: Done in window.c but not for any of the other ports.
+OSD: Done in window.c, there for free on Unix, already there on the Mac.
