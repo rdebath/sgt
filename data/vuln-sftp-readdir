@@ -14,7 +14,7 @@ Protocol (SFTP).
 
 <p>
 In order for this vulnerability to be exploited, the user connect to a
-malicious server and issue a <code>ls<code> or <code>dir</code>
+malicious server and issue a <code>ls</code> or <code>dir</code>
 command to PSFTP, or supply the <code>-ls</code> command-line option
 to PSCP.
 
