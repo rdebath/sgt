@@ -1,0 +1,27 @@
+Summary: userauth refused when compression enabled with ssh.com 3.2.0
+Present-in: 2002-07-02 2002-08-04
+Content-type: text/x-html-body
+
+<p>
+We've received reports of the message "Server refused user
+authentication protocol" when attempting to connect to an
+<a href="http://www.ssh.com/products/ssh/">ssh.com</a> server (version
+string "SSH-2.0-3.2.0 SSH Secure Shell (non-commercial)") with
+compression enabled. Connection is fine when compression is disabled.
+
+<p>
+In the code, this message corresponds to not receiving the right
+response to a "ssh-userauth" service request in SSH-2.
+
+<p>
+Reports:
+<ul>
+
+<li>In <tt>comp.security.ssh</tt>:
+<br><tt><a href="http://groups.google.co.uk/groups?hl=en&lr=&ie=ISO-8859-1&q=msgid%3A8baf6ad.0207020407.23ad7afd@posting.google.com">8baf6ad.0207020407.23ad7afd@posting.google.com</a></tt>
+<br>Against 2002-07-02.
+
+<li><tt>000201c23bfa$8db07610$026fa8c0@piii1100</tt>
+<br>Against 2002-08-04 (and 0.52?).
+
+</ul>
