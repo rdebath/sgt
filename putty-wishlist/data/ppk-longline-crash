@@ -1,0 +1,30 @@
+Summary: Long lines in PPK files (e.g. long key comments) can cause crash
+Class: bug
+Difficulty: fun
+Priority: high
+Present-in: 0.52 0.53 0.53b 0.54 0.55 0.56 0.57 2005-03-01
+Fixed-in: 2005-03-02
+Content-type: text/x-html-body
+
+<p>
+Long lines in PuTTY SSH-2 private key (.PPK) files could cause a
+one-byte buffer overflow, potentially leading to a crash. ("Long" here
+means header values or other lines of 128 characters or more.)
+
+<p>
+In practice, this is most likely to occur if a very long comment field
+is specified - I don't think there are any other circumstances under
+which PuTTYgen will generate keys with lines that long.
+
+<p>
+Although this fault has been present ever since SSH-2 public-key
+support was added to PuTTY, the report that led to its discovery
+indicated that it only failed in 0.57. This may be down to a change in
+the compiler version we used between 0.56 and 0.57.
+
+<p>
+Until the next release, if you want to continue to use release
+versions of the PuTTY tools, a workaround is to load any affected key
+into a snapshot version of PuTTYgen, trim the key comment, and then
+save the key back out - it should then work with 0.57 tools. (The key
+format hasn't changed since 0.57.)
