@@ -1,0 +1,38 @@
+Summary: Strange WinSock messages cause failed assertion in tree234.c
+Class: semi-bug
+Priority: medium
+Present-in: 0.53 0.53b 2002-12-09
+Content-type: text/x-html-body
+
+<p>
+A few people have reported seeing the following assertion failure:
+
+<pre>Assertion failed!
+
+Program: C:\Program Files\Putty\putty.exe
+File: tree234.c
+Line: 536
+
+Expression: relation == REL234_LT || relation == REL234_GT</pre>
+
+<p>
+Appears to be dependent on use of port forwarding. Also, "It was
+working fine until a few days ago", "funnily enough this started
+happening in the last couple of weeks", so may be something to do with
+a Windows hotfix or update.
+<a href="http://groups.google.com/groups?as_umsgid=auv6q1$ued$03$1%40news.t-online.com">One report</a>
+indicates that it happens on WinXP but not Win2000; another report is
+against WinME.
+
+<p>
+Reports:
+<ul>
+<li><code>200211231214.AA3343320060@nextgen.net.mt</code>
+<li><code>00c801c29c20$5bce79e0$0301a8c0@jefflap3</code>
+</ul>
+
+<p>
+As far as we can tell this implies that WinSock is sending us unexpected
+messages. As of 2002-12-09, diagnostics have been added of the form
+"Strange WinSock message: wp=00000000 lp=00000002"; the numbers will
+help us to debug the problem.
