@@ -17,7 +17,6 @@
 %   mailers I can find (mutt; pine; vm; Eudora; netscrapemail; others?)
 % get the message size counting right (exclude From line? CRLF?)
 %   message size counting is also not corrected after mimedestroy
-% ESC-UP and ESC-DOWN should move a message around within the folder
 % maybe postpone a composed message
 % maybe fcc
 % bulk-select of messages, perhaps
@@ -293,6 +292,10 @@ $1 = "Timber";
     % M-r (for replying) selects the current MIME part.
     definekey("timber_selattach", "^[R", $1);
     definekey("timber_selattach", "^[r", $1);
+
+    % M-up and M-down move the current message about.
+    definekey("timber_movemsgup", "^[^[[A", $1);
+    definekey("timber_movemsgdown", "^[^[[B", $1);
 
     % We'll make / a search function, just because it is in so many
     % readonly text viewing applications.
@@ -1784,6 +1787,116 @@ define timber_moveto() {
     } else {
 	error(file + " is locked by another Timber!");
     }
+}
+
+%}}}
+%{{{ timber_movemsgup(): exchange a message with the one above it
+
+define timber_movemsgup() {
+    variable here, top, bot, fbuf, tbuf;
+
+    here = create_user_mark();
+    ERROR_BLOCK { goto_user_mark(here); }
+    EXIT_BLOCK { goto_user_mark(here); }
+    % Mark the current message.
+    bol();
+    while (what_char != '*' and not bobp()) { go_up_1(); bol(); }
+    if (bobp()) { error("Not on a message."); return; }
+    top = create_user_mark();
+    eol(); go_right_1();
+    while (what_char != '*' and not eobp()) { eol(); go_right_1(); }
+    if (eobp()) { error("Not on a message."); return; }    
+    bot = create_user_mark();
+    % Find where we want to move it to.
+    goto_user_mark(top); go_up_1(); bol();
+    while (what_char != '*' and not bobp()) { go_up_1(); bol(); }
+    if (bobp()) { error("Message is at top already."); return; }
+
+    % Set up a temporary buffer.
+    fbuf = whatbuf();
+    tbuf = "*timbertmp*";
+    setbuf(tbuf);
+    erase_buffer();
+    setbuf(fbuf);
+
+    % Move the other message. (We want to move the other one rather than
+    % our one so as to preserve `here'.
+    timber_rw();
+    push_mark();
+    push_mark(); 
+    goto_user_mark(top);
+    copy_region(tbuf);
+    del_region();
+    goto_user_mark(bot);
+    insbuf(tbuf);
+    timber_ro();
+
+    % Remove the temporary buffer.
+    setbuf(tbuf);
+    setbuf_info(getbuf_info & ~1); % clear modified bit to make delbuf silent
+    setbuf(fbuf);
+    delbuf(tbuf);
+
+    % Fold the message we have just moved.
+    go_up_1();
+    timber_fold();
+}
+
+%}}}
+%{{{ timber_movemsgdown(): exchange a message with the one below it
+
+define timber_movemsgdown() {
+    variable here, top, bot, fbuf, tbuf;
+    variable specialcase = 0;
+
+    here = create_user_mark();
+    ERROR_BLOCK { goto_user_mark(here); }
+    EXIT_BLOCK { goto_user_mark(here); }
+    % Mark the current message.
+    if (bolp() and what_char == '*') specialcase = 1;
+    bol();
+    while (what_char != '*' and not bobp()) { go_up_1(); bol(); }
+    if (bobp()) { error("Not on a message."); return; }
+    top = create_user_mark();
+    eol(); go_right_1();
+    while (what_char != '*' and not eobp()) { eol(); go_right_1(); }
+    if (eobp()) { error("Not on a message."); return; }    
+    bot = create_user_mark();
+    % Find where we want to move it to.
+    goto_user_mark(bot); eol(); go_right_1();
+    while (what_char != '*' and not eobp()) { eol(); go_right_1(); }
+    if (eobp()) { error("Message is at bottom already."); return; }
+
+    % Set up a temporary buffer.
+    fbuf = whatbuf();
+    tbuf = "*timbertmp*";
+    setbuf(tbuf);
+    erase_buffer();
+    setbuf(fbuf);
+
+    % Move the other message. (We want to move the other one rather than
+    % our one so as to preserve `here'.
+    timber_rw();
+    push_mark();
+    push_mark(); 
+    goto_user_mark(bot);
+    copy_region(tbuf);
+    del_region();
+    goto_user_mark(top);
+    insbuf(tbuf);
+    timber_ro();
+    if (specialcase)
+        here = create_user_mark();
+
+    % Remove the temporary buffer.
+    setbuf(tbuf);
+    setbuf_info(getbuf_info & ~1); % clear modified bit to make delbuf silent
+    setbuf(fbuf);
+    delbuf(tbuf);
+
+    % Fold the message we have just moved.
+    go_up_1();
+    timber_fold();
 }
 
 %}}}
