@@ -23,3 +23,6 @@ pulls lines out of the scrollback just like PuTTY.  I still haven't decided
 whether or not this is evil.  In any case, it should probably be inhibited in
 alternate screen mode, just like copying data into the scrollback is (xterm
 gets this bit wrong).
+
+<p>(cf. <a href="resize-no-truncate.html">`resize-no-truncate'</a> for the
+case where the number of columns is changed.)
