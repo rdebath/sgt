@@ -15,7 +15,6 @@
 #include <slang.h>
 
 #include "axe.h"
-#include "nca.h"
 
 static void init(void);
 static void done(void);
@@ -37,7 +36,7 @@ char *statfmt = hexstatus;
 char last_char;
 char *pname;
 char *filename = NULL;
-NCA filedata, cutbuffer = NULL;
+buffer *filedata, *cutbuffer = NULL;
 int fix_mode = FALSE;
 int look_mode = FALSE;
 int insert_mode = FALSE;
@@ -127,8 +126,6 @@ int main(int argc, char **argv) {
 	fprintf(stderr, "%s: no filename specified\n", pname);
 	return 1;
     }
-
-    filedata = nca_new (NCA_MINBLK, 1);
 
     read_rc();
     if (newoffset != -1)
@@ -222,16 +219,8 @@ static void load_file (char *fname) {
 
     file_size = 0;
     if ( (fp = fopen (fname, "rb")) ) {
-	long len;
-	static char buffer[NCA_MINBLK*3/2];
-	/*
-	 * We've opened the file. Load it.
-	 */
-	while ( (len = fread (buffer, 1, sizeof(buffer), fp)) ) {
-	    nca_insert_array (filedata, buffer, file_size, len);
-	    file_size += len;
-	}
-	fclose (fp);
+	filedata = buf_new_from_file(fp);
+	file_size = buf_length(filedata);
 	sprintf(message, "loaded %s (size %ld == 0x%lX).",
 		fname, file_size, file_size);
 	new_file = FALSE;
@@ -241,6 +230,7 @@ static void load_file (char *fname) {
 		    pname, fname, (look_mode ? "LOOK" : "FIX"));
 	    exit (1);
 	}
+	filedata = buf_new_empty();
 	sprintf(message, "New file %s.", fname);
 	new_file = TRUE;
     }
@@ -264,7 +254,7 @@ int save_file (void) {
 	    if (size > SAVE_BLKSIZ)
 		size = SAVE_BLKSIZ;
 
-	    nca_get_array (buffer, filedata, pos, size);
+	    buf_fetch_data (filedata, buffer, size, pos);
 	    if (size != fwrite (buffer, 1, size, fp)) {
 		fclose (fp);
 		return FALSE;
@@ -353,7 +343,7 @@ void draw_scr (void) {
     if (scrsize > file_size - top_pos)
 	scrsize = file_size - top_pos;
 
-    nca_get_array (scrbuf, filedata, top_pos, scrsize);
+    buf_fetch_data (filedata, scrbuf, scrsize, top_pos);
 
     scrsize += scroff;		       /* hack but it'll work */
 

@@ -1,8 +1,6 @@
 #ifndef AXE_AXE_H
 #define AXE_AXE_H
 
-#include "nca.h"
-
 #ifndef FALSE
 #define FALSE 0
 #endif
@@ -18,9 +16,8 @@
 #define ABORT 7			       /* character code for ^G */
 #endif
 
-#define VER "B2.10"		       /* version, must be 5 chars */
+#define VER "B2.99"		       /* version, must be 5 chars */
 
-#define NCA_MINBLK 8192		       /* can be tuned for performance */
 #define SEARCH_BLK 65536	       /* so can this */
 #define SAVE_BLKSIZ 32768	       /* and this too */
 
@@ -39,10 +36,12 @@
 typedef int (*DFA)[256];
 typedef void (*keyact) (void);
 
+typedef struct buffer buffer;
+
 extern char toprint[256], hex[256][3], message[80];
 extern char decstatus[], hexstatus[], *statfmt;
 extern char last_char, *pname, *filename;
-extern NCA filedata, cutbuffer;
+extern buffer *filedata, *cutbuffer;
 extern int fix_mode, look_mode, insert_mode, edit_type, finished, marking;
 extern long file_size, top_pos, cur_pos, mark_point;
 extern int scrlines, modified, new_file;
@@ -76,5 +75,18 @@ extern void suspend_axe (void);
 
 extern void read_rc (void);
 extern void write_default_rc (void);
+
+extern buffer *buf_new_empty(void);
+extern buffer *buf_new_from_file(FILE *fp);
+extern void buf_free(buffer *buf);
+
+extern void buf_insert_data(buffer *buf, void *data, int len, int pos);
+extern void buf_fetch_data(buffer *buf, void *data, int len, int pos);
+extern void buf_overwrite_data(buffer *buf, void *data, int len, int pos);
+extern void buf_delete(buffer *buf, int len, int pos);
+extern buffer *buf_cut(buffer *buf, int len, int pos);
+extern buffer *buf_copy(buffer *buf, int len, int pos);
+extern void buf_paste(buffer *buf, buffer *cutbuffer, int pos);
+extern int buf_length(buffer *buf);
 
 #endif AXE_AXE_H

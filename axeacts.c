@@ -5,7 +5,6 @@
 
 #include <slang.h>
 #include "axe.h"
-#include "nca.h"
 
 static void act_exit (void);
 static void act_save (void);
@@ -334,12 +333,12 @@ void act_self_ins(void) {
 	if (insert)
 	    c = 0;
 	else
-	    c = * (char *) nca_element (filedata, cur_pos);
+	    buf_fetch_data(filedata, &c, 1, cur_pos);
 	c &= 0xF;
 	c |= 16 * last_char;
 	break;
       case 2:			       /* hex, second digit */
-	c = * (char *) nca_element (filedata, cur_pos);
+	buf_fetch_data(filedata, &c, 1, cur_pos);
 	c &= 0xF0;
 	c |= last_char;
 	insert = FALSE;
@@ -347,11 +346,11 @@ void act_self_ins(void) {
     }
 
     if (insert) {
-	nca_insert_array(filedata, &c, cur_pos, 1);
+	buf_insert_data(filedata, &c, 1, cur_pos);
 	file_size++;
 	modified = TRUE;
     } else if (cur_pos < file_size) {
-	nca_repl_array(filedata, &c, cur_pos, 1);
+	buf_overwrite_data(filedata, &c, 1, cur_pos);
 	modified = TRUE;
     } else {
 	SLtt_beep();
@@ -366,7 +365,7 @@ static void act_delete(void) {
 	strcpy (message, "Can't delete while not in Insert mode");
     } else if (cur_pos > 0 || edit_type == 2) {
 	act_left();
-	nca_delete (filedata, cur_pos, 1);
+	buf_delete (filedata, 1, cur_pos);
 	file_size--;
 	edit_type = !!edit_type;
 	modified = TRUE;
@@ -378,7 +377,7 @@ static void act_delch(void) {
 	SLtt_beep();
 	strcpy (message, "Can't delete while not in Insert mode");
     } else if (cur_pos < file_size) {
-	nca_delete (filedata, cur_pos, 1);
+	buf_delete (filedata, 1, cur_pos);
 	file_size--;
 	edit_type = !!edit_type;
 	modified = TRUE;
@@ -416,8 +415,8 @@ static void act_cut (void) {
 	marksize = -marksize;
     }
     if (cutbuffer)
-	nca_free (cutbuffer);
-    cutbuffer = nca_cut (filedata, marktop, marksize);
+	buf_free (cutbuffer);
+    cutbuffer = buf_cut (filedata, marksize, marktop);
     file_size -= marksize;
     cur_pos = marktop;
     if (cur_pos < 0)
@@ -444,27 +443,25 @@ static void act_copy (void) {
 	marksize = -marksize;
     }
     if (cutbuffer)
-	nca_free (cutbuffer);
-    cutbuffer = nca_copy (filedata, marktop, marksize);
+	buf_free (cutbuffer);
+    cutbuffer = buf_copy (filedata, marksize, marktop);
     marking = FALSE;
 }
 
 static void act_paste (void) {
-    NCA temp;
     int cutsize, new_top;
 
-    cutsize = nca_size (cutbuffer);
-    temp = nca_copy (cutbuffer, 0, cutsize);
+    cutsize = buf_length (cutbuffer);
     if (!insert_mode) {
 	if (cur_pos + cutsize > file_size) {
 	    SLtt_beep();
 	    strcpy (message, "Too close to end of file to paste");
 	    return;
 	}
-	nca_delete (filedata, cur_pos, cutsize);
+	buf_delete (filedata, cutsize, cur_pos);
 	file_size -= cutsize;
     }
-    nca_merge (filedata, temp, cur_pos);
+    buf_paste (filedata, cutbuffer, cur_pos);
     modified = TRUE;
     cur_pos += cutsize;
     file_size += cutsize;
@@ -558,7 +555,7 @@ static void act_search (void) {
 
 	if (size > file_size-posn)
 	    size = file_size-posn;
-	nca_get_array (sblk, filedata, posn, size);
+	buf_fetch_data (filedata, sblk, size, posn);
 	q = sblk;
 	while (size--) {
 	    posn++;
