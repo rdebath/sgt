@@ -1,5 +1,5 @@
 % -*- mode: slang; mode: fold -*-
-% Simon Tatham: version $Revision: 1.22 $
+% Simon Tatham: version $Revision: 1.23 $
 
 %{{{ load Emacs keybindings to start with
 
@@ -91,6 +91,8 @@ define insert_8dig_date(s) {
     variable t = time;
     variable y, m, nm, d;
     d = substr(t,9,2);
+    if (substr(d,1,1) == " ")
+        d = "0" + substr(d,2,1);
     m = substr(t,5,3);
     nm = (is_substr("----Jan-Feb-Mar-Apr-May-Jun-Jul-Aug-Sep-Oct-Nov-Dec-", m)
           / 4);
