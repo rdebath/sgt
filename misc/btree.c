@@ -1865,7 +1865,7 @@ btree *bt_splitpos(btree *bt, int index, int before)
     nodeptr n;
 
     n = bt_read_lock_root(bt);
-    count = bt_node_count(bt, n);
+    count = (n ? bt_node_count(bt, n) : 0);
     bt_read_unlock(bt, n);
 
     if (index < 0 || index > count)
