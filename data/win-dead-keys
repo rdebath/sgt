@@ -21,7 +21,7 @@ documentation isn't clear what type the storage behind the pointer
 should be, but Googling indicates that this usage is not uncommon.
 
 <p>
-<em>However,</em> this breaks the same situation in (French) Win98SE,
+<em>However,</em> this breaks the same situation in (French and German) Win98SE,
 which was working OK before with the <code>WORD[]</code> array. (But
 fixes it for French Win2K.)
 
