@@ -5,9 +5,7 @@ Difficulty: tricky
 Content-type: text/x-html-body
 
 <p>
-<a href="http://srp.stanford.edu/">SRP</a> support in SSH, as an
-alternative to pure password authentication. (As implemented by
-<a href="http://www.net.lut.ac.uk/psst">LSH</a>.)
+SRP support in SSH, as an alternative to pure password authentication.
 Possibly also in Telnet.
 
 <p>
@@ -17,11 +15,20 @@ The SRP exchange convinces each side that the other side knows the
 same password, without requiring either side to give the password
 away to the other - so if you use SRP authentication, you can safely
 type your password in even if you don't know the remote host key is
-correct. Moreover, the current
-<a href="http://cvs.lysator.liu.se/viewcvs/viewcvs.cgi/lsh/doc/srp-spec.nroff?cvsroot=lsh">drafts</a>
-of SRP authentication in SSH
+correct. Moreover, the current drafts of SRP authentication in SSH
 then use the SRP shared secret to authenticate the SSH host key - so
 that even if you aren't sure the host key belongs to the host you
 think it does, you can at least be sure that it does belong to a
 machine which knows your password. This would be a massive
 improvement in the SSH host key model.
+
+<p>
+Resources:
+<ul>
+<li><a href="http://srp.stanford.edu/">Stanford SRP page</a> and RFC2945
+<li><a href="http://cvs.lysator.liu.se/viewcvs/viewcvs.cgi/lsh/doc/srp-spec.nroff?cvsroot=lsh"><tt>draft-nisse-secsh-srp-01</tt></a> (expired) describing how <a href="http://www.net.lut.ac.uk/psst">LSH</a> implements SRP (as a key exchange method)
+<li><tt>draft-tomh-secsh-srp-00</tt> (expired) describes how Tom Holroyd's <a href="http://members.tripod.com/professor_tom/archives/OpenSSH-3.4p1-srp.patch.gz">OpenSSH patch</a> implements SRP (as a userauth method)
+<li>A <a href="http://www.ietf.org/ietf/IPR/WU-SRP">statement</a> on the IPR issues around SRP
+<li>The IETF SECSH mail archive has discussions of the above drafts.
+<li>RFC2944 describes Telnet SRP authentication.
+</ul>
