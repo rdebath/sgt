@@ -1,0 +1,5 @@
+4tris: ntris.c
+	gcc -g -o 4tris ntris.c `gtk-config --cflags --libs`
+
+clean:
+	rm -f *.o 4tris
