@@ -1,6 +1,74 @@
 Loose ends from coding
 ----------------------
 
+ - Next stop is RFC [2]822 parsing.
+    * Does the parser expect to modify the mail on the way past? Not
+      that it would generally want to, but I think removing CRs to
+      normalise into Unix text format is important.
+    * We begin processing each header by reversing header folding
+      (i.e. remove any NL before whitespace). Of course this only
+      happens _inside_ the parser - we don't attempt to modify the
+      incoming message at all after this point.
+
+    * When doing charset processing:
+       + we still need a list of mappings from real charsets to
+	 embrace-and-extend supersets. In particular I'm fairly
+	 convinced that anything labelled US-ASCII or ISO-8859-1
+	 should be decoded as if it were Windows-1252, just in case.
+	  * Also I've seen `ISO-8859-8-I' in the wild. RFC 1556
+	    indicates that the `-I' suffix is to do with
+	    bidirectionality, which means we should probably ignore
+	    it until we have a policy on that. For the moment, I
+	    think, that means that if we don't recognise a charset
+	    name as it is, we should take `-I' or `-E' off the end
+	    and try again. Simple hack for now.
+       + also we still need a list of fallback character mappings.
+	 Ability to _recognise_ the Win1252 quotes won't help if we
+	 can't translate them into something printable in ASCII!
+
+    * Where can RFC 2047 encoded-words go?
+       - `any Subject or Comments header field, any extension
+	 message header field, or any MIME body part field for which
+	 the field body is defined as '*text''.
+	  + Subject
+	  + Comments
+	  + X-*
+	  + some _MIME_ part headers.
+       - any `comment' part (thing in parens)
+          - egads! 822 is vague on where these can actually go, but
+	    2822 strongly suggests they can go bloody anywhere! Or,
+	    at least, anywhere in a structured field. So. Structured
+	    fields include (I think):
+	     + Date (and Resent-Date)
+	     + From (and Resent-From)
+	     + Sender (and Resent-Sender)
+	     + Reply-To (and Resent-Reply-To)
+	     + To (and Resent-To)
+	     + Cc (and Resent-Cc)
+	     + Bcc (and Resent-Bcc)
+	     + Message-ID (??!) (and Resent-Message-ID)
+	     + In-Reply-To
+	     + References
+	     + Return-Path
+	     + Received
+       - any `phrase' part.
+          + In-Reply-To (RFC2822 disagrees, but old form is allowed
+	    as obsolescent)
+	  + References (likewise)
+	  + Keywords
+	  + To
+	  + Resent-To
+	  + Cc
+	  + Resent-Cc
+	  + Bcc
+	  + Resent-Bcc
+	  + Reply-To
+	  + Resent-Reply-To
+	  + From
+	  + Resent-From
+	  + Sender
+	  + Resent-Sender
+
  - Now we can read an mbox and import into our mbox-like mail store,
    the next step is to build the index as we go along.
     * put message indexing into the db schema.
@@ -110,6 +178,11 @@ Functions required of the back end
       where the cursor wants to be left.
     + DESIGN ISSUE: perhaps Attach-Message rather than
       Attach-Enclosed for forwarding?
+    + Point of interest from RFC2822: when constructing a reply
+      buffer we SHOULD add a References header as well as
+      In-Reply-To, and it should be constructed in a newslike manner
+      (i.e. by appending the parent message-ID to the parent's own
+      References field).
 
 Unresolved specification issues:
 
