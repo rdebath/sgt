@@ -4,6 +4,7 @@ Priority: medium
 Difficulty: fun
 Content-type: text/x-html-body
 Present-in: 0.53 2002-10-07
+Fixed-in: 2002-12-19
 
 <p>Apparently, while PuTTY believes that SSH 2.0.* have the SSH2 key-derivation
 bug, 2.0.13 (host OS/hardware not specified) doesn't, and this causes
