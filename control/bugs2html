@@ -1,8 +1,9 @@
 #! /usr/bin/perl
-# $Id: bugs2html,v 1.8 2002/08/22 19:31:40 ben Exp $
+# $Id: bugs2html,v 1.9 2002/09/14 10:33:17 jacob Exp $
 
 use FileHandle;
 use POSIX;
+use English;
 
 $bugdir = "../data";
 $htmldir = "/u2/bjharris/public-html/putty-wishlist";
@@ -27,8 +28,30 @@ $baseurl = "/~sgtatham/putty";
 		   "etc)",
      'mayhem'	=> "Probably impossible");
 
+my @headers = ();
+my $prlevel = my $level = 0;
+
+my %bugs = ();
+$INPUT_RECORD_SEPARATOR = undef;
+foreach $bugfile (glob("$bugdir/*")) {
+    next unless -f $bugfile;
+    open(BF, "< $bugfile") or die "$bugfile: $!";
+    my $data = <BF>;
+    close BF;
+    my ($bugname) = $bugfile =~ m{([^/]*)$};
+    my ($hdr, $body) = $data =~ /^(.*?\n)\n(.*)$/s;
+    $hdr =~ s/\n\s+/ /g;
+    my @hdrs = split /\n/, $hdr;
+    my %hdrs = map { /^(\S*?):\s*(.*)$/; (lc $1, $2) } @hdrs;
+    $bugs{$bugname} = \%hdrs;
+    bug2html($bugname, \%hdrs, $body);
+}
+
+my @fullbuglist = keys %bugs;
+
 open(INDEX, "> $htmldir/index.html") or die "$htmldir/index.html: $!";
-print INDEX <<EOH;
+
+nest(<<EOF);
 <HTML><HEAD>
 <TITLE>PuTTY Known Bugs and Wish List</TITLE>
 </HEAD>
@@ -57,41 +80,58 @@ feature here, it's worth checking the
 <a href="$baseurl/changes.html">Changes page</a>
 before mailing us to ask for the feature; we might have already
 added it since the last release.
-EOH
+EOF
 
-foreach $bugfile (glob("$bugdir/*")) {
-    next unless -f $bugfile;
-    open(BF, "< $bugfile") or die "$bugfile: $!";
-    input_record_separator BF undef;
-    $data = <BF>;
-    close BF;
-    ($bugname) = $bugfile =~ m{([^/]*)$};
-    ($hdr, $body) = $data =~ /^(.*?\n)\n(.*)$/s;
-    $hdr =~ s/\n\s+/ /g;
-    @hdrs = split /\n/, $hdr;
-    %hdrs = map { /^(\S*?):\s*(.*)$/; (lc $1, $2) } @hdrs;
-    bug2html($bugname, \%hdrs, $body);
-    if ($hdrs{priority} eq 'high') {
-	$index{$hdrs{class}} .=
-	    qq[<li><b><a href="$bugname.html">$bugname: $hdrs{summary}] .
-	    qq[</a></b>\n];
-    } else {
-	$index{$hdrs{class}} .=
-	    qq[<li><a href="$bugname.html">$bugname: $hdrs{summary}</a>\n];
-    }
-}
+nest(<<EOF);
+<a name="fixed"><h2>Fixed things</h2></a>
 
-print INDEX <<EOF if $index{'bug'};
+<p>
+These are items we believe to be already fixed in the development
+snapshots.
+EOF
+
+my @fixed = grep(exists($bugs{$_}->{"fixed-in"}), @fullbuglist);
+
+nest(<<EOF);
+<h3>Bugs (and semi-bugs)</h3>
+<ul>
+EOF
+
+my @tmp = grep(($bugs{$_}->{class} eq 'bug' ||
+                $bugs{$_}->{class} eq 'semi-bug'), @fixed);
+subtractbugs(\@fullbuglist, printbugs(\@tmp));
+
+unnest("</ul>\n");
+
+nest(<<EOF);
+<h3>Wishes</h3>
+<ul>
+EOF
+
+my @tmp = grep(($bugs{$_}->{class} eq 'wish'), @fixed);
+subtractbugs(\@fullbuglist, printbugs(\@tmp));
+
+unnest("</ul>\n");
+
+nest(<<EOF);
 <a name="bugs"><h2>Bugs</h2></a>
 
 <p>
 These items are clearly actual problems and I want them fixed.
 <ul>
-$index{'bug'}
-</ul>
 EOF
 
-print INDEX <<EOF if $index{'semi-bug'};
+my @buglist = grep(($bugs{$_}->{class} eq 'bug'), @fullbuglist);
+subtractbugs(\@fullbuglist, \@buglist);
+
+my @tmp = grep(($bugs{$_}->{priority} eq 'high'), @buglist);
+subtractbugs(\@buglist, printbugs(\@tmp, 1));
+
+printbugs(\@buglist);
+
+unnest("</ul>\n");
+
+nest(<<EOF);
 <h2>Semi-bugs</h2>
 
 <p>
@@ -99,11 +139,14 @@ These are things which might be bugs or might not, depending on your
 precise definition of what a bug is.
 
 <ul>
-$index{'semi-bug'}
-</ul>
 EOF
 
-print INDEX <<EOF if $index{'wish'};
+my @tmp = grep(($bugs{$_}->{class} eq 'semi-bug'), @fullbuglist);
+subtractbugs(\@fullbuglist, printbugs(\@tmp));
+
+unnest("</ul>\n");
+
+nest(<<EOF);
 <h2>Wishlist</h2>
 
 <p>
@@ -111,13 +154,80 @@ These are things that have been requested by users or which seem to me like
 a good idea.  Not all of these are likely to be implemented without outside
 help, and some of them will positively never be implemented.
 
-<ul>
-$index{'wish'}
-</ul>
 EOF
 
-print INDEX <<EOF;
-</ul>
+my @wishlist = grep(($bugs{$_}->{class} eq 'wish'), @fullbuglist);
+
+nest(<<EOF);
+<p>
+Features we'd like to include in the next release:
+
+<ul>
+EOF
+
+my @tmp = grep(($bugs{$_}->{priority} eq 'high'),@wishlist);
+subtractbugs(\@fullbuglist, printbugs(\@tmp));
+
+unnest("</ul>\n");
+
+nest(<<EOF);
+<p>
+Plausible features we hope to get round to adding at some point:
+
+<ul>
+EOF
+
+my @tmp = grep(($bugs{$_}->{priority} eq 'medium'),@wishlist);
+subtractbugs(\@fullbuglist, printbugs(\@tmp));
+
+unnest("</ul>\n");
+
+nest(<<EOF);
+<p>
+Features we're not sure about, or which probably won't get added
+unless someone else does the hard work:
+
+<ul>
+EOF
+
+my @tmp = grep(($bugs{$_}->{priority} eq 'low'),@wishlist);
+subtractbugs(\@fullbuglist, printbugs(\@tmp));
+
+unnest("</ul>\n");
+
+nest(<<EOF);
+<h3>Non-wish list</h3>
+
+<p>
+These are features we are actively opposed to seeing in PuTTY. Don't
+bother writing them and sending them to us! If you think you have a
+good argument why they would be good, feel free to plead for them, but
+generally I'll already have a good reason not to do them.
+
+<ul>
+EOF
+
+my @tmp = grep(($bugs{$_}->{priority} eq 'never'),@wishlist);
+subtractbugs(\@fullbuglist, printbugs(\@tmp));
+
+unnest("</ul>\n");
+
+unnest("");
+
+nest(<<EOF);
+<h2>Miscellaneous</h2>
+
+<p>
+Miscategorised bugs/wishes.
+
+<ul>
+EOF
+
+printbugs(\@fullbuglist);
+
+unnest("</ul>\n");
+
+unnest(<<EOF);
 <p><hr>Comments to
 <a href="mailto:putty\@projects.tartarus.org">putty\@projects.tartarus.org</a>
 <br>
@@ -127,6 +237,30 @@ print INDEX <<EOF;
 EOF
 
 close INDEX;
+
+sub nest {
+    my($header) = @_;
+    push @headers, $header;
+    $level++;
+}
+
+sub print_hdrs {
+    for (my $i = $prlevel; $i < $level; $i++) {
+        print INDEX $headers[$i];
+    }
+    $prlevel = $level;
+}
+
+sub unnest {
+    my($trailer) = @_;
+    $level--;
+    if ($prlevel > $level) {
+        print INDEX $trailer;
+        $prlevel = $level;
+    }
+    pop @headers;
+}
+
 
 sub bug2html {
     my($bugname, $hdrs, $body) = @_;
@@ -193,4 +327,35 @@ Audit trail</a> for this @{[$hdrs->{class}]}.
 EOF
 
     close(HTML);
+}
+
+sub printbugs {
+    my ($buglist, $bold) = @_;
+    $bold = 0 unless defined($bold);
+    return unless @$buglist;
+    print_hdrs();
+    foreach $bug (sort @$buglist) {
+        print INDEX bugdesc($bug, $bold);
+    }
+    return $buglist;
+}
+
+sub subtractbugs {
+    my ($from, $buglist) = @_;
+    my %del = ();
+    map { $del{$_}=1 } @$buglist;
+    @$from = grep ((!exists($del{$_})), @$from);
+    return $from;
+}
+
+sub bugdesc {
+    my ($bugname, $bold) = @_;
+    $bold = 0 unless defined($bold);
+    if ($bold) {
+        return qq[<li><b><a href="$bugname.html">$bugname: ] .
+               qq[$bugs{$bugname}->{summary}</a></b>\n];
+    } else {
+        return qq[<li><a href="$bugname.html">$bugname: ] .
+               qq[$bugs{$bugname}->{summary}</a>\n];
+    }
 }
