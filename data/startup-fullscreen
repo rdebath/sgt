@@ -12,3 +12,12 @@ currently there's no way to start it full-screen. There should be.
 While we're at it, we may as have well an option for `maximised', even
 though you can already do that
 <a href="http://www.chiark.greenend.org.uk/~sgtatham/putty/faq.html#A.5.1">by other means</a>.
+
+<p>
+If we're going to do this, we should perhaps also propagate
+maximised-ness and full-screen-ness through Duplicate Session
+(duplicate a currently maximised session and the next one comes up
+that way too). Then again, perhaps not; I'm not sure whether it's
+really helpful to have <em>two</em> full-screen PuTTYs open at once.
+At least one user definitely wants it to work this way for maximised
+windows, though.
