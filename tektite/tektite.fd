@@ -1,6 +1,23 @@
-# Font description for The Font.
-facename TheFont
-copyright Public domain font. Share and enjoy.
+# This is the Tektite font, out of the VFONT utility by clySmic
+# Software. It's been heavily modified: the 0 and the * have been
+# altered, a load of new characters have been drawn to conform to
+# the Windows character set, and of course it's had a format
+# conversion done on it.
+#
+# All these modifications were done by Simon Tatham, who asserts
+# no copyright.
+#
+# The original VFONT copyright says:
+#
+#    VFONT is copyright 1991, 1993, 1998 by clySmic software, and is
+#    released as "Freeware".
+#
+#    You may copy the program and distribute it without charge.  You may
+#    not sell or otherwise charge for VFONT. However, users' groups may 
+#    charge a small fee (not to exceed $10) for media and postage.
+
+facename Tektite
+copyright Portions copyright 1991,1993,1998 clySmic Software.
 
 height 15
 ascent 12
