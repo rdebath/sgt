@@ -611,7 +611,8 @@ void parse_headers(char const *base, char const *message, int msglen,
 			    memcpy(inf.u.mid.mid, lh[1].token, lh[1].length);
 			    inf.u.mid.mid[lh[1].length] = '\0';
 			    inf.u.mid.index = index++;
-			    if (index == 0 || inf.header == H_REFERENCES)
+			    if (inf.u.mid.index == 0 ||
+				inf.header == H_REFERENCES)
 				info(infoctx, &inf);
 			    sfree(inf.u.mid.mid);
 			}
