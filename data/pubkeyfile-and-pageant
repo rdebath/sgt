@@ -1,0 +1,20 @@
+Summary: Pageant + explicit keyfile gives  non-optimal behaviour
+Class: bug
+Difficulty: fun
+Priority: medium
+Present-in: 0.53b
+Content-type: text/x-html-body
+
+<p>
+The behaviour of the PuTTY tools when Pageant is running and a keypair
+is explicitly specified (via <code>-i</code>, configuration or whatever)
+isn't ideal.
+
+<p>
+This is particularly obvious when several keys are valid for a given
+connection (e.g., if one is trying to use a particular key to run
+a particular forced command). However, I suspect the issues aren't
+limited to this case.
+
+<p>
+<em>FIXME: write up suggested fix for above problem</em>
