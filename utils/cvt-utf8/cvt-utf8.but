@@ -129,8 +129,8 @@ Chinese text meaning \q{Traditional Chinese}:
 \U ADMINISTRATION
 
 In order to print the \cw{unicode.org} official name of each
-character, \cw{cvt-utf8} requires file mapping code points to names.
-This file is in DBM database format, for rapid lookup.
+character, \cw{cvt-utf8} requires a file mapping code points to
+names. This file is in DBM database format, for rapid lookup.
 
 This database file is accessed using the Python \cw{anydbm} module,
 so its precise file name will vary depending on what flavours of DBM
