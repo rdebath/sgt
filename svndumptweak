@@ -317,6 +317,26 @@ class RevTweaker:
 		newlump.sethdr("Node-copyfrom-path", "local/"+x)
 		contents2.append(newlump)
 	    timber0 = 0
+	# One other nasty special case: add the svn:externals
+	# property when CVSROOT/modules was modified to include
+	# `charset' as a subdir within `timber' and `halibut'.
+	if self.name == "tweaker" and string.find(revhdr.props, "Include libcharset into") >= 0:
+	    newlump = Lump()
+	    newlump.sethdr("Node-path", "halibut")
+	    newlump.sethdr("Node-kind", "dir")
+	    newlump.sethdr("Node-action", "change")
+	    newlump.props = "K 10\nsvn:ignore\nV 79\nbuild\n*.html\n*.txt\n*.cnt\n*.hlp\n*.gid\n*.GID\n*.log\n*.1\n*.info\n*.info-*\n*.ps\n*.pdf\nK 13\nsvn:externals\nV 48\ncharset   svn://ixion.tartarus.org/main/charset\n\nPROPS-END\n"
+	    newlump.sethdr("Prop-content-length", "%d" % len(newlump.props))
+	    newlump.sethdr("Content-length", "%d" % len(newlump.props))
+	    contents2.append(newlump)
+	    newlump = Lump()
+	    newlump.sethdr("Node-path", "timber")
+	    newlump.sethdr("Node-kind", "dir")
+	    newlump.sethdr("Node-action", "change")
+	    newlump.props = "K 10\nsvn:ignore\nV 26\nbuild\ntimber\n*.notes\ntest*\nK 13\nsvn:externals\nV 48\ncharset   svn://ixion.tartarus.org/main/charset\n\nPROPS-END\n"
+	    newlump.sethdr("Prop-content-length", "%d" % len(newlump.props))
+	    newlump.sethdr("Content-length", "%d" % len(newlump.props))
+	    contents2.append(newlump)
 	stack = contents[:]
 	while len(stack) > 0:
 	    lump = stack[0]
@@ -417,6 +437,7 @@ class RevTweaker:
 	# Write out SVN log message.
 	rev = revhdr.hdrdict["Revision-number"]
 	log = revhdr.propdict.get("svn:log", "")
+	author = revhdr.propdict.get("svn:author", "")
 	while len(log) > 0:
 	    nlpos = string.find(log, "\n")
 	    if nlpos >= 0:
@@ -432,7 +453,8 @@ class RevTweaker:
 	    if lump.propdict.has_key("cvs2svn:cvs-rev"):
 		path = lump.hdrdict["Node-path"]
 		cvsrev = lump.propdict["cvs2svn:cvs-rev"]
-		f.write("rev r" + rev + " " + path + " " + cvsrev + "\n")
+		f.write("rev r" + rev + " " + path + " " + cvsrev + \
+		" " + author + "\n")
 
 fr = open("svn.dump", "r")
 fw = open("svn-tweaked.dump", "w")
