@@ -1,0 +1,161 @@
+#!/bin/sh
+#
+# Directions:
+#       This is a small script to help connecting to Monochrome from a unix
+#       system. In order to use it you should save this mail message into
+#       a file in your login directory (ie 'mono'), then edit the file to
+#       remove any lines before the '#!/bin/sh'.
+#       Finally type 'chmod 755 mono'. <<<<**** IMPORTANT
+#       and from then on you can type 'mono' or './mono' to automatically
+#       connect to the mono machine with the lowest load
+#
+#
+# A simple script that gets information from "daemon" to use for logging into
+# the monochrome cluster
+#
+# (c) Copyright Alistair MacDonald 1994
+#
+# v. 1.0 - 26/4/94 - Based on bouncer v. 1.4
+# v. 1.1 - 29/4/94 - Added NOLOGIN support courtesy of David.
+# v. 1.2 -  3/5/94 - Added 'awk' part to just get machine name (abs)
+# v. 1.3 -  5/5/94 - Added code to allow logins through host _names_
+# v. 1.4 -  8/5/94 - Corrected host name awk command ....
+# v. 1.5 -  9/5/94 - Corrected the bug I introduced when using hostnames.
+#       b- 11/5/94 - Now actually uses hostnames when it says it will ...
+#       c- 01/9/95 - Changed from mono.city.ac.uk to mono.org
+#       d- 09/1/96 - Sleeps 3 seconds after rlogin exits - in case of error.
+#
+echo Initialising system ... Please Wait ...
+
+# See if we're going to use screen or ssh or both...
+screen=no
+one=
+CONNECT='exec telnet'
+unset CEND
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -s) screen=yes;;
+    -ssh) CONNECT='exec ssh -C -x -e none';;
+    -nopty) CONNECT='stty -isig -icanon -echo; cat | ssh -C -x -e none';
+            CEND='; stty isig icanon echo'; unset exec ;;
+    -*) echo "Unknown option $1" ;;
+    *) one=$1;;
+  esac
+  shift
+done
+
+if [ $screen = yes ]
+then
+  scr="screen -ln"
+else
+  scr=
+
+  # Proton and electron apparently don't like term type "linux"
+
+  if [ "$TERM" = "linux" ]
+  then
+    TERM=vt220
+    echo Changing TERM from linux to vt220
+  fi
+
+  if [ "$TERM" = "xterm" ]
+  then
+    TERM=vt220
+    echo Changing TERM from xterm to vt220
+  fi
+
+fi
+
+# export CONNECT
+
+#
+# Set up any specials ....
+# 
+
+if [ a$MNAME = a ]
+then
+  echo Will log in as \"mono\"
+  MNAME=mono
+else
+  echo Logging in as \"$MNAME\"
+fi
+MACHINE=
+
+if [ a$MTERM != a ]
+then
+  TMP_TERM=$TERM
+  TERM=$MTERM
+  echo Terminal reset to $TERM
+  export TERM
+fi
+
+# Check if a machine is supplied
+case "$one" in
+  ne | neutron |\
+  pr | proton |\
+  el | electron |\
+  mu | muon |\
+  ta | tachyon |\
+  enigma |\
+  cr | crimson )
+    MACHINE=`echo $one | sed 's/\..*$//'`
+    MACHINE="$MACHINE.mono.org"
+    echo "Machine $MACHINE supplied on command line." ;;
+  '' ) ;;
+  *) echo "Unknown machine name $one." ;;
+esac
+
+if [ "$MACHINE" = "" ]; then
+  #
+  # Make Contact
+  #
+  echo
+  echo -n "Trying to get a machine ... "
+  MACHINE=`telnet mono.org 99 2>/dev/null`
+  echo 
+
+  set -- $MACHINE
+
+  if [ $# != 9 ]
+  then
+    shift; shift
+    if [ a$one != a-n ]
+    then
+      echo Will connect using hostnames
+      MACHINE=$8
+    else
+      echo Connecting numerically
+      MACHINE=$9
+    fi
+  else
+    echo Could not get a machine
+    MACHINE=NOLOGIN
+  fi
+fi
+
+#
+# Check for login barring ....
+#
+
+if [ $MACHINE != NOLOGIN ]
+then
+  echo "Attempting to make contact with Monochrome ($MACHINE)."
+  $scr sh -c "echo -ne '\033[?7l'; $CONNECT $MACHINE -l $MNAME $CEND"
+  echo "Re-enabling Auto Wrap."
+  echo -ne '\033[?7h'
+else
+  echo Sorry - Logins are disabled at the moment. This is probably due to a
+  echo system upgrade. Please try again later.
+  echo 
+fi
+
+#
+# Final Clear up ....
+#
+if [ a$TMP_TERM != a ]
+then
+  # This isn't strictly necessary, but might as well be here ....
+  TERM=$TMP_TERM
+fi
+exit 0
+# In case any garbage in the mail after this
