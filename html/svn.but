@@ -642,7 +642,7 @@ superior to that of CVS.
 \b FSFS is king, and permits anonymous access with a high confidence
 of security. This means Subversion 1.1.
 
-\b Migrating to CVS is easy if you don't mind the way \cw{cvs2svn}
+\b Migrating from CVS is easy if you don't mind the way \cw{cvs2svn}
 sets things up for you, but gets a lot more difficult the more
 perfectionist you get. However, if you only do it once it's worth
 putting some effort in!
