@@ -3,6 +3,7 @@ Class: bug
 Content-type: text/x-html-body
 Present-in: 0.52 2002-07-31 2002-08-01
 Absent-in: 0.51
+Fixed-in: 2002-08-04
 
 <p>
 Various people have reported PuTTY crashing when connecting to recent
@@ -16,22 +17,6 @@ A workaround is to disable use of keyboard-interactive auth (either in
 PuTTY, or on the server with "ChallengeResponseAuthentication no").
 
 <p>
-Reports:
-<ul>
-
-<li><tt>CGEKLJJONFGKJGAKLKPFMEHDCEAA.wak@xtweb.de</tt>
-<br>Includes SSH packet log.
-
-<li><tt>5.1.1.6.2.20020731075139.022604e8@194.184.65.7</tt> et seq
-
-<li><tt>3D489E95.4090506@alaska.net</tt>
-
-<li><tt>3D497FA8.7010802@cerint.pl</tt>
-<br>Crash on connecting and entering <em>valid</em> OPIE one-time password.
-<br>Includes Dr Watson log, server debug log, registry
-
-</ul>
-
-<p>
-<em>Update:</em> we believe that this will be fixed in the 2002-08-04
-snapshot.
+<em>Update:</em> we believe that this is fixed as of the 2002-08-04
+snapshot (and we've had confirmation from one of the original
+reporters).
