@@ -10,13 +10,12 @@
 #include "caltrap.h"
 #include "tree234.h"
 
-#define line_width 80 /* GROSS CHEAT, FIXME */
-
 struct list_ctx {
     Date cd, last_date_printed, colour_date;
     Time ct;
     tree234 *future;
     char *day_str, *end_str;
+    int line_width;
 };
 
 static int entry_cmp(void *av, void *bv)
@@ -59,7 +58,7 @@ static void print_line(struct list_ctx *ctx, char *fmt, ...)
     n = vprintf(fmt, ap);
     va_end(ap);
 
-    printf("%*s%s\n", (line_width > n ? line_width - n : 0), "",
+    printf("%*s%s\n", (ctx->line_width > n ? ctx->line_width - n : 0), "",
 	   ctx->end_str);
 }
 
@@ -243,6 +242,7 @@ void list_entries(Date sd, Time st, Date ed, Time et)
     ctx.colour_date = NO_DATE;
     ctx.future = newtree234(entry_cmp);
     ctx.day_str = ctx.end_str = "";
+    ctx.line_width = get_line_width();
 
     db_list_entries(sd, st, ed, et, list_callback, &ctx);
     list_upto(&ctx, ed, et);
