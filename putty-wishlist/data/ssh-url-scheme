@@ -5,8 +5,8 @@ Difficulty: taxing
 Content-type: text/x-html-body
 
 <p>
-  Some people would like PuTTY to be able to accept "ssh" (and "raw") URLs
-  on the command-line, in the same way as it accepts "telnet" ones.
+  Some people would like PuTTY to be able to accept "ssh" (and "rlogin", and
+  "raw") URLs on the command-line, in the same way as it accepts "telnet" ones.
 <p>
   At present, though, there is no
   <a href="http://www.iana.org/assignments/uri-schemes">URL scheme</a>
