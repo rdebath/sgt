@@ -1,6 +1,6 @@
 Summary: PSFTP, and PSCP in SFTP mode, transfer files much slower than old-PSCP.
-Difficulty: taxing
-Priority: low
+Difficulty: tricky
+Priority: high
 Class: semi-bug
 Content-Type: text/x-html-body
 
@@ -9,5 +9,8 @@ We believe this is because the SFTP and SSH2 protocols are less efficient at
 bulk data transfer than SCP and SSH1, because every block of data transferred
 requires an acknowledgment from the far end. It would in theory be possible to
 queue several blocks of data to get round this speed problem, but as yet we
-haven't done the coding. If you really want this fixed, feel free to offer to
-help.
+haven't done the coding.
+
+<p>
+<em>Update:</em> As of the 2003-09-30 snapshot, performance should be
+much improved, although there are tweaks still to be done.
