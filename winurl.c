@@ -18,6 +18,7 @@
 #include <windows.h>
 
 #include <stdlib.h>
+#include <ctype.h>
 
 #define IDI_MAINICON 200
 
