@@ -1,5 +1,5 @@
 #! /usr/bin/perl
-# $Id: bugs2html,v 1.33 2004/08/07 15:46:15 jacob Exp $
+# $Id: bugs2html,v 1.34 2004/10/14 00:18:22 jacob Exp $
 
 use FileHandle;
 use POSIX;
@@ -66,9 +66,16 @@ foreach $bugfile (glob("$bugdir/*")) {
     $hdr =~ s/\n\s+/ /g;
     my @hdrs = split /\n/, $hdr;
     my %hdrs = map { /^(\S*?):\s*(.*)$/; (lc $1, $2) } @hdrs;
-    $bugs{$bugname} = \%hdrs;
+    $bugs{$bugname} = {
+        "hdrs" => \%hdrs,
+        "body" => $body,
+        "cvs"  => `cvs status $bugfile`
+    };
     add_release_fixes($bugname);
-    bug2html($bugname, \%hdrs, $body, `cvs status $bugfile`);
+}
+
+foreach my $bug (keys %bugs) {
+    bug2html($bug);
 }
 
 my @fullbuglist = keys %bugs;
@@ -148,9 +155,9 @@ EOF
 
 # Classify fixed bugs by when they were fixed
 my %fixedvers = ();
-foreach my $bug (grep(exists($bugs{$_}->{"fixed-in"}), @fullbuglist)) {
+foreach my $bug (grep(exists($bugs{$_}->{"hdrs"}->{"fixed-in"}), @fullbuglist)) {
     my $class;
-    foreach my $ver (split(' ', $bugs{$bug}->{"fixed-in"})) {
+    foreach my $ver (split(' ', $bugs{$bug}->{"hdrs"}->{"fixed-in"})) {
         $newclass = classifyver($ver);
         $class = $newclass if (!defined($class) ||
                                compareverclass($class, $newclass) > 0);
@@ -172,7 +179,7 @@ EOF
 <ul>
 EOF
 
-    my @tmp = grep(($bugs{$_}->{class} eq 'vulnerability'),
+    my @tmp = grep(($bugs{$_}->{hdrs}->{class} eq 'vulnerability'),
                    @{$fixedvers{$class}});
     subtractbugs(\@fullbuglist, printbugs(\@tmp, 2));
 
@@ -183,8 +190,9 @@ EOF
 <ul>
 EOF
 
-    my @tmp = grep(($bugs{$_}->{class} eq 'bug' ||
-                    $bugs{$_}->{class} eq 'semi-bug'), @{$fixedvers{$class}});
+    my @tmp = grep(($bugs{$_}->{hdrs}->{class} eq 'bug' ||
+                    $bugs{$_}->{hdrs}->{class} eq 'semi-bug'),
+                   @{$fixedvers{$class}});
     subtractbugs(\@fullbuglist, printbugs_diff_ordered(\@tmp));
 
     unnest("</ul>\n");
@@ -194,7 +202,8 @@ EOF
 <ul>
 EOF
 
-    my @tmp = grep(($bugs{$_}->{class} eq 'wish'), @{$fixedvers{$class}});
+    my @tmp = grep(($bugs{$_}->{hdrs}->{class} eq 'wish'),
+                   @{$fixedvers{$class}});
     subtractbugs(\@fullbuglist, printbugs_diff_ordered(\@tmp));
 
     unnest("</ul>\n");
@@ -225,7 +234,8 @@ allow an attacker to gain some level of unauthorised access.
 <ul>
 EOF
 
-my @vulnlist = grep(($bugs{$_}->{class} eq 'vulnerability'), @fullbuglist);
+my @vulnlist = grep(($bugs{$_}->{hdrs}->{class} eq 'vulnerability'),
+                    @fullbuglist);
 subtractbugs(\@fullbuglist, printbugs(\@vulnlist, 2));
 
 unnest("</ul>\n");
@@ -238,10 +248,10 @@ These items are clearly actual problems and I want them fixed.
 <ul>
 EOF
 
-my @buglist = grep(($bugs{$_}->{class} eq 'bug'), @fullbuglist);
+my @buglist = grep(($bugs{$_}->{hdrs}->{class} eq 'bug'), @fullbuglist);
 subtractbugs(\@fullbuglist, \@buglist);
 
-my @tmp = grep(($bugs{$_}->{priority} eq 'high'), @buglist);
+my @tmp = grep(($bugs{$_}->{hdrs}->{priority} eq 'high'), @buglist);
 subtractbugs(\@buglist, printbugs(\@tmp, 1));
 
 printbugs(\@buglist);
@@ -258,10 +268,11 @@ precise definition of what a bug is.
 <ul>
 EOF
 
-my @semibuglist = grep(($bugs{$_}->{class} eq 'semi-bug'), @fullbuglist);
+my @semibuglist = grep(($bugs{$_}->{hdrs}->{class} eq 'semi-bug'),
+                       @fullbuglist);
 subtractbugs(\@fullbuglist, \@semibuglist);
 
-my @tmp = grep(($bugs{$_}->{priority} eq 'high'), @semibuglist);
+my @tmp = grep(($bugs{$_}->{hdrs}->{priority} eq 'high'), @semibuglist);
 subtractbugs(\@semibuglist, printbugs(\@tmp, 1));
 
 printbugs(\@semibuglist);
@@ -278,7 +289,7 @@ help, and some of them will positively never be implemented.
 
 EOF
 
-my @wishlist = grep(($bugs{$_}->{class} eq 'wish'), @fullbuglist);
+my @wishlist = grep(($bugs{$_}->{hdrs}->{class} eq 'wish'), @fullbuglist);
 
 nest(<<EOF);
 <p>
@@ -287,7 +298,7 @@ Features we'd like to include in the next release:
 <ul>
 EOF
 
-my @tmp = grep(($bugs{$_}->{priority} eq 'high'),@wishlist);
+my @tmp = grep(($bugs{$_}->{hdrs}->{priority} eq 'high'),@wishlist);
 subtractbugs(\@fullbuglist, printbugs(\@tmp));
 
 unnest("</ul>\n");
@@ -299,14 +310,14 @@ Plausible features we hope to get round to adding at some point:
 <ul>
 EOF
 
-my @tmp = grep(($bugs{$_}->{priority} eq 'medium'),@wishlist);
+my @tmp = grep(($bugs{$_}->{hdrs}->{priority} eq 'medium'),@wishlist);
 
 foreach my $difficulty ("fun", "tricky", "taxing", "mayhem") {
     nest(<<EOF);
 <li>"$difficulty": $difficultydesc{$difficulty}
 <ul>
 EOF
-    my @tmp2 = grep(($bugs{$_}->{difficulty} eq $difficulty),@tmp);
+    my @tmp2 = grep(($bugs{$_}->{hdrs}->{difficulty} eq $difficulty),@tmp);
     subtractbugs(\@fullbuglist, printbugs(\@tmp2));
 
     unnest("</ul>\n");
@@ -322,14 +333,14 @@ unless someone else does the hard work:
 <ul>
 EOF
 
-my @tmp = grep(($bugs{$_}->{priority} eq 'low'),@wishlist);
+my @tmp = grep(($bugs{$_}->{hdrs}->{priority} eq 'low'),@wishlist);
 
 foreach my $difficulty ("fun", "tricky", "taxing", "mayhem") {
     nest(<<EOF);
 <li>"$difficulty": $difficultydesc{$difficulty}
 <ul>
 EOF
-    my @tmp2 = grep(($bugs{$_}->{difficulty} eq $difficulty),@tmp);
+    my @tmp2 = grep(($bugs{$_}->{hdrs}->{difficulty} eq $difficulty),@tmp);
     subtractbugs(\@fullbuglist, printbugs(\@tmp2));
 
     unnest("</ul>\n");
@@ -349,7 +360,7 @@ generally I'll already have a good reason not to do them.
 <ul>
 EOF
 
-my @tmp = grep(($bugs{$_}->{priority} eq 'never'),@wishlist);
+my @tmp = grep(($bugs{$_}->{hdrs}->{priority} eq 'never'),@wishlist);
 subtractbugs(\@fullbuglist, printbugs(\@tmp));
 
 unnest("</ul>\n");
@@ -387,8 +398,8 @@ close INDEX;
 sub printbugs_diff_ordered {
     my ($buglist) = @_;
     my @tmp = @$buglist;
-    my @hardbugs = grep((defined($bugs{$_}->{difficulty}) && 
-                         $bugs{$_}->{difficulty} ne "fun"), @tmp);
+    my @hardbugs = grep((defined($bugs{$_}->{hdrs}->{difficulty}) && 
+                         $bugs{$_}->{hdrs}->{difficulty} ne "fun"), @tmp);
     subtractbugs(\@tmp, printbugs(\@hardbugs, 1));
     printbugs(\@tmp);
     return $buglist;
@@ -419,7 +430,10 @@ sub unnest {
 
 
 sub bug2html {
-    my($bugname, $hdrs, $body, $cvsstat) = @_;
+    my($bugname) = @_;
+    my $hdrs = $bugs{$bugname}->{"hdrs"};
+    my $body = $bugs{$bugname}->{"body"};
+    my $cvsstat = $bugs{$bugname}->{"cvs"};
     my $class = ($hdrs->{class} or "artifact");
 
     open(HTML, "> $htmldir/$bugname.html") or die "$htmldir/$bugname.html: $!";
@@ -499,8 +513,8 @@ EOF
 sub add_release_fixes {
     my ($bug) = @_;
     my @extra_fixed = ();
-    return unless exists ($bugs{$bug}->{"fixed-in"});
-    foreach my $ver (split(' ', $bugs{$bug}->{"fixed-in"})) {
+    return unless exists ($bugs{$bug}->{"hdrs"}->{"fixed-in"});
+    foreach my $ver (split(' ', $bugs{$bug}->{"hdrs"}->{"fixed-in"})) {
         next unless $ver =~ m/^\d\d\d\d-\d\d-\d\d$/;
         map {
             my ($rel, $rel_date) = @$_;
@@ -510,8 +524,8 @@ sub add_release_fixes {
             push @extra_fixed, "($rel)" if ($ver le $rel_date);
         } @releases;
     }
-    $bugs{$bug}->{"fixed-in"} =
-        join " ", $bugs{$bug}->{"fixed-in"}, @extra_fixed;
+    $bugs{$bug}->{"hdrs"}->{"fixed-in"} =
+        join " ", $bugs{$bug}->{"hdrs"}->{"fixed-in"}, @extra_fixed;
 }
 
 # Given a version string, return a canonical textual name
@@ -587,12 +601,12 @@ sub bugdesc {
     $emph = 0 unless defined($emph);
     if ($emph == 2) {
         return qq[<li><b><i><a href="$bugname.html">$bugname: ] .
-               qq[$bugs{$bugname}->{summary}</a></i></b>\n];
+               qq[$bugs{$bugname}->{hdrs}->{summary}</a></i></b>\n];
     } elsif ($emph == 1) {
         return qq[<li><b><a href="$bugname.html">$bugname: ] .
-               qq[$bugs{$bugname}->{summary}</a></b>\n];
+               qq[$bugs{$bugname}->{hdrs}->{summary}</a></b>\n];
     } else {
         return qq[<li><a href="$bugname.html">$bugname: ] .
-               qq[$bugs{$bugname}->{summary}</a>\n];
+               qq[$bugs{$bugname}->{hdrs}->{summary}</a>\n];
     }
 }
