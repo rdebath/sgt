@@ -5,7 +5,7 @@ import GDK
 import random
 import math
 
-SQUARESIZE = 80
+SQUARESIZE = 40
 NSQUARES = 4
 ISOMETRIC = 0.3  # scale z by this before subtracting from x and y
 
@@ -46,10 +46,13 @@ class CubeGame:
         pos = random.choice(list)
         self.cubex, self.cubey = divmod(pos, NSQUARES)
         self.moveinprogress = FALSE
-        self.moves = 0
+        self.moves = []
         self.completed = FALSE
 
     def draw(self, pixmap):
+
+        self.bbox = [None, None, None, None]
+
         gc = pix.new_gc()
         gc.foreground = grey
         draw_rectangle(pix, gc, TRUE, 0, 0, TOTALSIZE, TOTALSIZE)
@@ -118,8 +121,8 @@ class CubeGame:
             for pt in facecoords[face]:
                 x = dx[0] * pt[0] + dy[0] * pt[1] + dz[0] * pt[2]
                 y = dx[1] * pt[0] + dy[1] * pt[1] + dz[1] * pt[2]
-                points.append((ORIGIN+(cubex+x)*SQUARESIZE,
-                ORIGIN+(cubey+y)*SQUARESIZE))
+                points.append((int(ORIGIN+(cubex+x)*SQUARESIZE),
+                int(ORIGIN+(cubey+y)*SQUARESIZE)))
             # Find out whether these points are in a clockwise or
             # anticlockwise arrangement. If the latter, discard the
             # face because it's facing away from the viewer.
@@ -140,6 +143,16 @@ class CubeGame:
             if dp > 0:
                 # We are going to display this face.
                 facelist.append(cube[face], points)
+                # Update the bounding box for drawing the cube.
+                for p in points:
+                    if self.bbox[0] == None or self.bbox[0] > p[0]:
+                        self.bbox[0] = p[0]
+                    if self.bbox[1] == None or self.bbox[1] > p[1]:
+                        self.bbox[1] = p[1]
+                    if self.bbox[2] == None or self.bbox[2] < p[0]:
+                        self.bbox[2] = p[0]
+                    if self.bbox[3] == None or self.bbox[3] < p[1]:
+                        self.bbox[3] = p[1]
 
         # Fill the faces.
         for colour, points in facelist:
@@ -153,10 +166,19 @@ class CubeGame:
         for colour, points in facelist:
             draw_polygon(pix, gc, FALSE, points)
 
-    def move(self, dx, dy):
-        # Hurry up an existing move if one is still being animated.
-        if self.moveinprogress:
-            self.finish_move()
+        assert self.bbox[0] != None
+        assert self.bbox[1] != None
+        assert self.bbox[2] != None
+        assert self.bbox[3] != None
+
+    def move(self, dx, dy, undo=FALSE):
+        assert(not self.moveinprogress)
+
+        # If this is an undo move, we do the swap _first_.
+        self.moveisundo = undo
+        if undo:
+            self.arena[self.newx][self.newy], self.newcube[B] = \
+            self.newcube[B], self.arena[self.newx][self.newy]
 
         # Make a move on the grid.
         if self.cubex + dx < 0 or self.cubex + dx >= NSQUARES:
@@ -187,14 +209,14 @@ class CubeGame:
         self.newx, self.newy = newx, newy
         self.moveinprogress = TRUE
         self.moveprogress = 0.0
-        if not self.completed:
-            self.moves = self.moves + 1
+        if not self.completed and not undo:
+            self.moves.append((dx,dy))
 
     def finish_move(self):
         # Swap bottom face. (Once the game is completed, we allow
         # the user to arbitrarily roll the fully blue cube around
         # the grid just for fun.)
-        if not self.completed:
+        if not self.completed and not self.moveisundo:
             self.arena[self.newx][self.newy], self.newcube[B] = \
             self.newcube[B], self.arena[self.newx][self.newy]
 
@@ -209,8 +231,16 @@ class CubeGame:
                 complete = FALSE
         self.completed = complete
 
+    def undo(self):
+        if self.completed:
+            return # undo only works within the game
+        if len(self.moves) == 0:
+            return # nothing to undo
+        dx, dy = self.moves.pop()
+        self.move(-dx, -dy, undo=TRUE)
+
     def status(self, statusbar):
-        message = "Moves: %d" % self.moves
+        message = "Moves: %d" % len(self.moves)
         if self.completed:
             message = "COMPLETED! " + message
         statusbar.pop(statusctx)
@@ -221,10 +251,18 @@ def delete_event(window, event=None):
 def destroy_event(win, event=None):
     mainquit()
 
+def small_redraw():
+    bbox0 = game.bbox
+    game.draw(pix)
+    bbox1 = game.bbox
+    #print "progress=", game.moveprogress, "ret=", ret
+    redraw(darea, [min(bbox0[0],bbox1[0]), min(bbox0[1],bbox1[1]),
+    max(bbox0[2],bbox1[2]), max(bbox0[3],bbox1[3])])
+
 def key_event(win, event=None):
     global timer_inst
 
-    if event.keyval == GDK.Escape or event.string == '\021':
+    if event.keyval == GDK.Escape or event.string in ['\021', 'q', 'Q']:
         win.destroy()
         return
 
@@ -232,7 +270,14 @@ def key_event(win, event=None):
         new_game(None)
         return
 
-    if event.keyval == GDK.Up or event.keyval == GDK.KP_Up:
+    # Hurry up an existing move if one is still being animated.
+    if game.moveinprogress:
+        game.finish_move()
+        small_redraw()
+
+    if event.string in ['\032', 'u', 'U']:
+        game.undo()
+    elif event.keyval == GDK.Up or event.keyval == GDK.KP_Up:
         game.move(0, -1)
     elif event.keyval == GDK.Down or event.keyval == GDK.KP_Down:
         game.move(0, +1)
@@ -242,7 +287,10 @@ def key_event(win, event=None):
         game.move(+1, 0)
     else:
         return
-    timeout_add(20, timer, win)
+    game.status(statusbar)
+    if timer_inst != None:
+        timeout_remove(timer_inst)
+    timer_inst = timeout_add(20, timer, win)
 
 def timer(win):
     if not game.moveinprogress:
@@ -256,8 +304,7 @@ def timer(win):
         ret = FALSE
     else:
         ret = TRUE
-    game.draw(pix)
-    redraw(darea)
+    small_redraw()
     return ret
 
 def new_game(menuitem):
@@ -272,9 +319,12 @@ def expose(darea, event=None):
     x, y, w, h = event.area
     darea.draw_pixmap(gc, pix, x, y, x, y, w, h)
 
-def redraw(darea):
+def redraw(darea, rect=[0,0,TOTALSIZE,TOTALSIZE]):
     gc = darea.get_style().white_gc
-    darea.draw_pixmap(gc, pix, 0, 0, 0, 0, TOTALSIZE, TOTALSIZE)
+    x, y, x2, y2 = rect
+    w, h = x2-x+1, y2-y+1
+    if gc != None:
+        darea.draw_pixmap(gc, pix, x, y, x, y, w, h)
 
 win = GtkWindow()
 win.set_title("Cube")
@@ -309,6 +359,8 @@ darea.show()
 win.add(vbox)
 vbox.show()
 
+timer_inst = None
+
 newitem.connect("activate", new_game)
 quititem.connect("activate", delete_event)
 darea.connect("expose_event", expose)
@@ -316,9 +368,7 @@ win.connect("key_press_event", key_event)
 win.connect("delete_event", delete_event)
 win.connect("destroy", destroy_event)
 
-game = CubeGame()
-game.draw(pix)
-game.status(statusbar)
+new_game(None)
 
 win.show()
 
