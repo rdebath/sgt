@@ -89,11 +89,11 @@ int base64_decode_length(int input_length)
     return (input_length + 3) / 4 * 3;
 }
 
-int base64_encode_length(int input_length)
+int base64_encode_length(int input_length, int multiline)
 {
     int atoms = (input_length + 2) / 3;
     int lines = (atoms + 15) / 16;
-    return 4 * atoms + lines;
+    return 4 * atoms + (multiline != 0) * lines;
 }
 
 int base64_decode(const char *input, int length, unsigned char *output)
@@ -166,7 +166,7 @@ int main(void)
 
     for (i = 0; i < lenof(teststrings); i++) {
 
-	elen = base64_encode_length(strlen(teststrings[i]));
+	elen = base64_encode_length(strlen(teststrings[i]), TRUE);
 	assert(elen < sizeof(buf1));
 
 	elen2 = base64_encode(teststrings[i], strlen(teststrings[i]), buf1, 1);

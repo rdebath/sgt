@@ -2,6 +2,7 @@
  * RFC2047 encoded header parser for Timber.
  */
 
+#include <stdio.h>
 #include <string.h>
 #include <assert.h>
 
@@ -79,11 +80,12 @@ static int spot_encoded_word(const char *text, int length)
  * 
  * It works its way along the header, finding and decoding encoded-
  * words and passing them to the provided output function (always
- * with type TYPE_HEADER_TEXT). Any text which isn't part of an
+ * with type TYPE_HEADER_DECODED). Any text which isn't part of an
  * encoded-word is output using the provided default charset.
  */
-void rfc2047(const char *text, int length, parser_output_fn_t output,
-	     void *outctx, int structured, int display, int default_charset)
+void rfc2047_decode(const char *text, int length, parser_output_fn_t output,
+		    void *outctx, int structured, int display,
+		    int default_charset)
 {
     int quoting = FALSE;
 
@@ -148,7 +150,7 @@ void rfc2047(const char *text, int length, parser_output_fn_t output,
 		    q = p;
 		    while (q < wbuf2 + tlen && *q != '\n')
 			q++;
-		    output(outctx, p, q - p, TYPE_HEADER_TEXT, charset);
+		    output(outctx, p, q - p, TYPE_HEADER_DECODED, charset);
 		    while (q < wbuf2 + tlen && *q == '\n')
 			q++;
 		    p = q;
@@ -207,8 +209,8 @@ void rfc2047(const char *text, int length, parser_output_fn_t output,
 	    /* do not output anything */;
 	else if (text - startpoint > 0) {
 	    if (display) {
-		output(outctx, startpoint, text-startpoint, TYPE_HEADER_TEXT,
-		       default_charset);
+		output(outctx, startpoint, text-startpoint,
+		       TYPE_HEADER_DECODED, default_charset);
 	    } else {
 		const char *p = startpoint;
 		while (p < text) {
@@ -217,7 +219,7 @@ void rfc2047(const char *text, int length, parser_output_fn_t output,
 					(*p == '\\' && p+1 < text)))) {
 			if (p > startpoint)
 			    output(outctx, startpoint, p-startpoint,
-				   TYPE_HEADER_TEXT, default_charset);
+				   TYPE_HEADER_DECODED, default_charset);
 			startpoint = p+1;
 			if (*p == '"')
 			    quoting = !quoting;
@@ -230,7 +232,8 @@ void rfc2047(const char *text, int length, parser_output_fn_t output,
 			     * FWS not in a quoted string by a
 			     * single space.
 			     */
-			    output(outctx, " ", 1, TYPE_HEADER_TEXT, CS_ASCII);
+			    output(outctx, " ", 1,
+				   TYPE_HEADER_DECODED, CS_ASCII);
 			    while (p < text && FWS(*p))
 				p++;
 			    startpoint = p;
@@ -241,10 +244,308 @@ void rfc2047(const char *text, int length, parser_output_fn_t output,
 		}
 		if (p > startpoint)
 		    output(outctx, startpoint, p-startpoint,
-			   TYPE_HEADER_TEXT, default_charset);
+			   TYPE_HEADER_DECODED, default_charset);
 	    }
 	}
     }
+}
+
+char *rfc2047_encode(const char *text, int length, int input_charset,
+		     const int *output_charsets, int ncharsets,
+		     int structured, int firstlen)
+{
+    wchar_t *wtext;
+    int wlen;
+    char *atext;
+    int i, output_charset;
+
+    /*
+     * Begin by converting the input text into wide-character
+     * Unicode.
+     */
+    {
+	int wsize;
+	charset_state instate = CHARSET_INIT_STATE;
+	const char *tptr = text;
+	int tlen = length;
+
+	wsize = wlen = 0;
+	wtext = NULL;
+	while (*tptr) {
+	    int ret;
+
+	    if (wlen >= wsize) {
+		wsize = wlen + 512;
+		wtext = srealloc(wtext, wsize * sizeof(wchar_t));
+	    }
+
+	    ret = charset_to_unicode(&tptr, &tlen, wtext+wlen, wsize-wlen-1,
+				     input_charset, &instate, NULL, 0);
+	    if (ret == 0)
+		break;
+	    wlen += ret;
+	}
+
+	wtext[wlen] = '\0';
+    }
+
+    /*
+     * Now we attempt to encode the string in each of the supplied
+     * charsets.
+     * 
+     * Our strategy is rather different depending on whether the
+     * charset is ASCII or not. If it's ASCII, we simply convert
+     * the whole Unicode string to one long ASCII string, and
+     * provided there are no conversion errors we simply return the
+     * result (after first quoting any difficult punctuation if
+     * `structured' is set). But if not, we must separate it into
+     * _multiple_ strings in the output charset, each one
+     * self-contained (started from an initial conversion state and
+     * cleaned up at the end), each one encoding to an RFC2047 word
+     * at most 75 characters long. Or even shorter, if `firstlen'
+     * is set and it's the first word.
+     */
+
+    for (i = 0; i < ncharsets; i++) {
+	int error, *errp;
+	int max_enc_len;
+	const wchar_t *wp;
+	int wl;
+
+	output_charset = output_charsets[i];
+
+	wp = wtext;
+	wl = wlen;
+
+	/*
+	 * We check for charset conversion errors on all charsets
+	 * except the last in the list. When trying the last
+	 * charset, we accept a shoddy job if necessary, because we
+	 * have no other options.
+	 */
+	if (i < ncharsets-1)
+	    errp = &error;
+	else
+	    errp = NULL;
+	error = FALSE;
+
+	atext = NULL;
+
+	if (output_charset == CS_ASCII) {
+	    /*
+	     * Just do sensible charset conversion.
+	     */
+
+	    int asize, alen;
+	    charset_state outstate = CHARSET_INIT_STATE;
+
+	    asize = alen = 0;
+	    atext = NULL;
+
+	    while (*wp) {
+		int ret;
+
+		if (alen >= asize) {
+		    asize = alen + 512;
+		    atext = srealloc(atext, asize);
+		}
+
+		ret = charset_from_unicode(&wp, &wl, atext+alen, asize-alen-1,
+					   output_charset, &outstate, errp);
+		if (ret == 0 || error)
+		    break;
+		alen += ret;
+	    }
+
+	    if (error) {
+		sfree(atext);
+		continue;
+	    }
+
+	    /*
+	     * Successful conversion to ASCII. Terminate the
+	     * string.
+	     */
+	    atext[alen] = '\0';
+
+	    /*
+	     * Quote difficult characters. According to RFC 2822,
+	     * the valid ASCII characters we need not quote are
+	     * !#$%&'*+-/=?^_`{|}~ and alphanumerics. (And space,
+	     * of course.) So if anything other than that shows up
+	     * in the string then we must surround it with double
+	     * quotes; and if any double quotes or backslashes show
+	     * up within the quoted string then we must
+	     * backslash-escape them.
+	     */
+	    if (structured &&
+		atext[strspn(atext,
+			     "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+			     "abcdefghijklmnopqrstuvwxyz"
+			     "0123456789 !#$%&'*+-/=?^_`{|}~")]) {
+		char *atext2, *p, *q;
+
+		/*
+		 * Leave enough room to backslash every character,
+		 * plus the two enclosing quotes and the NUL.
+		 */
+		atext2 = smalloc(strlen(atext) * 2 + 3);
+		p = atext;
+		q = atext2;
+		*q++ = '"';
+		while (*p) {
+		    if (*p == '"' || *p == '\\')
+			*q++ = '\\';
+		    *q++ = *p++;
+		}
+		*q++ = '"';
+		*q++ = '\0';
+
+		sfree(atext);
+		atext = atext2;
+	    }
+
+	    /*
+	     * ... and finish the conversion loop.
+	     */
+	    break;
+
+	} else {
+	    char const *csname = charset_to_mimeenc(output_charset);
+	    int csnamelen = strlen(csname);
+	    char *prefix = "";
+	    int alen = 0;
+
+	    while (*wp) {
+		char rawbuf[100], encbuf[100];
+		int rawlen = 0, enclen;
+		int blen, qlen, enc;
+		charset_state outstate = CHARSET_INIT_STATE;
+
+		/*
+		 * Determine the maximum encoded length of this
+		 * encoded-word.
+		 */
+		if (!*prefix) {	       /* this is the first word */
+		    assert(firstlen <= 75);
+		    max_enc_len = firstlen;
+		} else {
+		    max_enc_len = 75;
+		}
+		max_enc_len -= 7 + csnamelen;   /* =?charset?Q?...?= */
+
+		/*
+		 * Do the conversion from Unicode, slowly and carefully
+		 * to avoid going over the limit.
+		 */
+		while (*wp) {
+		    int ret1, ret2;
+		    const wchar_t *wp2;
+		    charset_state outstate2, outstate3;
+		    int wl;
+
+		    wp2 = wp;
+		    wl = 1;
+		    outstate2 = outstate;
+
+		    /*
+		     * Convert a single character ...
+		     */
+		    ret1 = charset_from_unicode(&wp2, &wl, rawbuf+rawlen,
+						sizeof(rawbuf)-rawlen,
+						output_charset, &outstate2,
+						errp);
+		    if (error)
+			break;
+
+		    /*
+		     * ... and clean up.
+		     */
+		    outstate3 = outstate2;
+		    ret2 = charset_from_unicode(NULL, 0, rawbuf+rawlen+ret1,
+						sizeof(rawbuf)-rawlen-ret1,
+						output_charset, &outstate3,
+						NULL);
+
+		    /*
+		     * If the resulting text is still short enough
+		     * to fit in the encoded-word, then we can
+		     * afford to let the character in (but leave
+		     * out the cleanup data), because we know that
+		     * if the _next_ character doesn't fit then we
+		     * can still clean up sensibly.
+		     * 
+		     * So now we need to determine the length of
+		     * the encoded word. I'm willing to encode
+		     * either base64 or QP, whichever is shorter.
+		     * (I expect this to correlate strongly with
+		     * human-readability: for a QP string to be
+		     * shorter than the base64 equivalent it must
+		     * contain mostly printable ASCII, which means
+		     * it's better to use QP so that a user of a
+		     * non-RFC2047-aware MUA still gets the gist.)
+		     */
+		    blen = base64_encode_length(rawlen+ret1+ret2, FALSE);
+		    qlen = qp_rfc2047_encode(rawbuf, rawlen+ret1+ret2, NULL);
+		    if (blen <= max_enc_len || qlen <= max_enc_len) {
+			wp = wp2;
+			rawlen += ret1;
+			outstate = outstate2;
+		    } else {
+			break;
+		    }
+		}
+		if (error)
+		    break;
+
+		/*
+		 * We're finished. Clean up.
+		 */
+		rawlen += charset_from_unicode(NULL, 0, rawbuf+rawlen,
+					       sizeof(rawbuf)-rawlen,
+					       output_charset, &outstate,
+					       NULL);
+
+		/*
+		 * Now we have data in rawbuf, length rawlen, which
+		 * needs to be turned into an encoded-word.
+		 */
+		blen = base64_encode_length(rawlen, FALSE);
+		qlen = qp_rfc2047_encode(rawbuf, rawlen, NULL);
+		if (blen < qlen) {
+		    enclen = base64_encode(rawbuf, rawlen, encbuf, FALSE);
+		    enc = 'B';
+		    assert(enclen == blen);
+		} else {
+		    enclen = qp_rfc2047_encode(rawbuf, rawlen, encbuf);
+		    enc = 'Q';
+		    assert(enclen == qlen);
+		}
+		assert(enclen <= max_enc_len);
+		atext = srealloc(atext, alen + 100);
+		alen += sprintf(atext+alen, "%s=?%s?%c?%.*s?=",
+				prefix, csname, enc, enclen, encbuf);
+		prefix = "\n ";
+	    }
+
+	    if (error) {
+		sfree(atext);
+		continue;
+	    }
+
+	    /*
+	     * If we've got here, we have a fully converted string.
+	     */
+	    break;
+	}
+    }
+
+    /*
+     * And that's it! We should now have `atext' containing our
+     * fully encoded string, so we can free wtext and leave.
+     */
+    sfree(wtext);
+    return atext;
 }
 
 #ifdef TESTMODE
@@ -252,8 +553,8 @@ void rfc2047(const char *text, int length, parser_output_fn_t output,
 #include <stdio.h>
 
 /*
-gcc -Wall -g -DTESTMODE -Icharset -o rfc2047{,.c} \
-    build/{base64,qp,cs-mimeenc,malloc}.o
+make && gcc -Wall -g -DTESTMODE -Icharset -o rfc2047{,.c} \
+    build/{base64,qp,cs-*,malloc}.o
  */
 
 void fatal(int code, ...) { abort(); }
@@ -264,28 +565,65 @@ void test_output_fn(void *outctx, const char *text, int len,
     printf("%d (%d) <%.*s>\n", type, charset, len, text);
 }
 
-#define TEST(s) do { \
+#define SL(s) (s) , (sizeof((s))-1)
+
+#define DTEST(s) do { \
     printf("Testing >%s<\n", s); \
-    rfc2047(s, sizeof(s)-1, test_output_fn, NULL, TRUE, CS_ASCII); \
+    rfc2047_decode(SL(s),test_output_fn,NULL,TRUE,FALSE,CS_ASCII); \
+} while (0)
+
+#define ETEST(s,i,o) do { \
+    char *text = rfc2047_encode(SL(s),i,o,lenof(o),TRUE,60); \
+    printf("--------------: %s\n", text); \
+    printf("Decode:\n"); \
+    rfc2047_decode(text,strlen(text),test_output_fn,NULL,TRUE,FALSE,CS_ASCII); \
+    sfree(text); \
 } while (0)
 
 int main(void)
 {
-    TEST("=?ISO-2022-JP?B?QmVzdCBIYXBwaW5lc3M=?=");
-    TEST("=?iso-8859-1?q?J=FCrgen?= Fischer");
-    TEST("=?US-ASCII?Q?Keith_Moore?=");
-    TEST("=?ISO-8859-1?B?SWYgeW91IGNhbiByZWFkIHRoaXMgeW8=?=\n "
+    DTEST("=?ISO-2022-JP?B?QmVzdCBIYXBwaW5lc3M=?=");
+    DTEST("=?iso-8859-1?q?J=FCrgen?= Fischer");
+    DTEST("=?US-ASCII?Q?Keith_Moore?=");
+    DTEST("=?ISO-8859-1?B?SWYgeW91IGNhbiByZWFkIHRoaXMgeW8=?=\n "
 	 "=?ISO-8859-2?B?dSB1bmRlcnN0YW5kIHRoZSBleGFtcGxlLg==?=");
     /* ... but separators other than "\n " are still visible ... */
-    TEST("=?ISO-8859-1?B?SWYgeW91IGNhbiByZWFkIHRoaXMgeW8=?=\n  "
+    DTEST("=?ISO-8859-1?B?SWYgeW91IGNhbiByZWFkIHRoaXMgeW8=?=\n  "
 	 "=?ISO-8859-2?B?dSB1bmRlcnN0YW5kIHRoZSBleGFtcGxlLg==?=");
-    TEST("=?ISO-8859-1?Q?a?=");
-    TEST("=?ISO-8859-1?Q?a?= b");
-    TEST("=?ISO-8859-1?Q?a?= =?ISO-8859-1?Q?b?=");
-    TEST("=?ISO-8859-1?Q?a?=  =?ISO-8859-1?Q?b?=");
-    TEST("=?ISO-8859-1?Q?a?=\n    =?ISO-8859-1?Q?b?=");
-    TEST("=?ISO-8859-1?Q?a_b?=");
-    TEST("=?ISO-8859-1?Q?a?= =?ISO-8859-2?Q?_b?=");
+    DTEST("=?ISO-8859-1?Q?a?=");
+    DTEST("=?ISO-8859-1?Q?a?= b");
+    DTEST("=?ISO-8859-1?Q?a?= =?ISO-8859-1?Q?b?=");
+    DTEST("=?ISO-8859-1?Q?a?=  =?ISO-8859-1?Q?b?=");
+    DTEST("=?ISO-8859-1?Q?a?=\n    =?ISO-8859-1?Q?b?=");
+    DTEST("=?ISO-8859-1?Q?a_b?=");
+    DTEST("=?ISO-8859-1?Q?a?= =?ISO-8859-2?Q?_b?=");
+
+    {
+	static const int charsets[] = { CS_ASCII, CS_ISO8859_1, CS_UTF8 };
+	static const int charsets2[] = { CS_ASCII, CS_ISO8859_1,
+		CS_ISO2022_JP, CS_UTF8 };
+	ETEST("hello world!", CS_ASCII, charsets);
+	ETEST("hello, world", CS_ASCII, charsets);
+	ETEST("J\xc3\xb8rgen Fischer", CS_UTF8, charsets);
+	ETEST("J\xc3\xb8rgen Fischer is the name of somebody who emailed"
+	      " me once. I'm going to go on and on for a bit so that"
+	      " this line goes well over the limit.", CS_UTF8, charsets);
+	ETEST("\xE4\xB8\xBA\xE6\x82\xA8\xE5\xBB\xBA\xEF\xBC\x88\xE4\xB8\xAD"
+	      "\xE8\x8B\xB1\xE6\x96\x87\xEF\xBC\x89\xE4\xBC\x81\xE4\xB8\x9A"
+	      "\xE7\xBD\x91\xE7\xAB\x99", CS_UTF8, charsets);
+	ETEST("\xE3\x80\x90\xE3\x81\x8F\xE3\x81\x98\xE4\xBB\x98\xE3\x80\x91"
+	      "\xE2\x98\x85\xEF\xBC\x94\xE4\xB8\x87\xE9\x83\xA8\xE9\x85\x8D"
+	      "\xE4\xBF\xA1\xE3\x82\xA2\xE3\x82\xAF\xE3\x82\xBB\xE3\x82\xB9"
+	      "\xE3\x82\xA2\xE3\x83\x83\xE3\x83\x97\xEF\xBC\x81\xE6\xA5\xAD"
+	      "\xE7\x95\x8C\xE6\x9C\x80\xE5\xAE\x89\xE5\x80\xA4\xEF\xBC\x81"
+	      "\xEF\xBC\x81", CS_UTF8, charsets);
+	ETEST("\xE3\x80\x90\xE3\x81\x8F\xE3\x81\x98\xE4\xBB\x98\xE3\x80\x91"
+	      "\xE2\x98\x85\xEF\xBC\x94\xE4\xB8\x87\xE9\x83\xA8\xE9\x85\x8D"
+	      "\xE4\xBF\xA1\xE3\x82\xA2\xE3\x82\xAF\xE3\x82\xBB\xE3\x82\xB9"
+	      "\xE3\x82\xA2\xE3\x83\x83\xE3\x83\x97\xEF\xBC\x81\xE6\xA5\xAD"
+	      "\xE7\x95\x8C\xE6\x9C\x80\xE5\xAE\x89\xE5\x80\xA4\xEF\xBC\x81"
+	      "\xEF\xBC\x81", CS_UTF8, charsets2);
+    }
 
     return 0;
 }

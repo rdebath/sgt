@@ -883,8 +883,8 @@ void parse_headers(char const *base, char const *message, int msglen,
 		       default_charset);
 		break;
 	      case ENCODED_ANYWHERE:
-		rfc2047(r, message - r, output, outctx,
-			FALSE, TRUE, default_charset);
+		rfc2047_decode(r, message - r, output, outctx,
+			       FALSE, TRUE, default_charset);
 		break;
 	      case ENCODED_COMMENTS:
 		/*
@@ -897,7 +897,7 @@ void parse_headers(char const *base, char const *message, int msglen,
 		 *    the closing paren (dodging
 		 *    backslash-quoted characters on the
 		 *    way), and feed the inside of the
-		 *    parens to rfc2047().
+		 *    parens to rfc2047_decode().
 		 *
 		 *  - If we see a double quote, we parse a
 		 *    quoted string, which means we scan up
@@ -918,8 +918,8 @@ void parse_headers(char const *base, char const *message, int msglen,
 				r++;
 			    r++;
 			}
-			rfc2047(p, r-p, output, outctx,
-				TRUE, TRUE, default_charset);
+			rfc2047_decode(p, r-p, output, outctx,
+				       TRUE, TRUE, default_charset);
 			p = r;
 		    } else if (*r == '"') {
 			r++;
@@ -1048,8 +1048,8 @@ void parse_headers(char const *base, char const *message, int msglen,
 			} else {
 			    int end;
 			    if (rfc2047able)
-				rfc2047(p, q-p, output, outctx,
-					TRUE, TRUE, default_charset);
+				rfc2047_decode(p, q-p, output, outctx,
+					       TRUE, TRUE, default_charset);
 			    else
 				output(outctx, p, q-p,
 				       TYPE_HEADER_TEXT,
@@ -1065,8 +1065,8 @@ void parse_headers(char const *base, char const *message, int msglen,
 				    q++;
 				q++;
 			    }
-			    rfc2047(p, q-p, output, outctx,
-				    TRUE, TRUE, default_charset);
+			    rfc2047_decode(p, q-p, output, outctx,
+					   TRUE, TRUE, default_charset);
 			    if (q == r)
 				break;
 			    output(outctx, q, 1,
@@ -1458,8 +1458,8 @@ char *rfc2047_to_utf8_string(const char *text, int len,
 
     ctx.text = NULL;
     ctx.textlen = ctx.textsize = 0;
-    rfc2047(text, len, utf8_string_output, &ctx, structured,
-	    FALSE, default_charset);
+    rfc2047_decode(text, len, utf8_string_output, &ctx, structured,
+		   FALSE, default_charset);
     utf8_string_output(&ctx, "\0", 1, TYPE_HEADER_TEXT, CS_UTF8);
     return ctx.text;
 }
@@ -1523,7 +1523,7 @@ void null_info_fn(void *ctx, struct message_parse_info *info)
 #include <fcntl.h>
 
 /*
-gcc -Wall -g -DTESTMODE -Icharset -o rfc822{,.c} \
+make && gcc -Wall -g -DTESTMODE -Icharset -o rfc822{,.c} \
     build/{base64,misc,qp,cs-*,malloc,rfc2047}.o
  */
 
