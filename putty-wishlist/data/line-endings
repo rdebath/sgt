@@ -19,7 +19,13 @@ Heuristics shouldn't now be needed at the protocol end for SFTP, as
 I don't know what implementations exist.
 
 <p>
-Should we require explicit triggering of this mechanism for local
+(However, note that this version of the protocol does not allow the
+server to give hints to the client about whether the file is best
+opened in text or binary mode, so the operation of "get" would have to
+be manually switched by "text" and "binary" commands or similar.)
+
+<p>
+For "put", should we require explicit triggering of this mechanism for local
 files via a command/option, or should we have a "guess" mode? If the
 latter, I think we should be able to spot and cope with Unix-style
 files on a Windows system.
