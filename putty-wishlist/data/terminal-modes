@@ -11,7 +11,7 @@ server-side pseudo-terminals to be opened in.
 <p>
 I've always thought it would be nice to be able to configure this
 sort of thing locally, so that (for example) users connecting to the
-<a href="www.mono.org">mono.org</a>
+<a href="http://www.mono.org">mono.org</a>
 BBS could stop a single press of Ctrl-\ from sending a SIGQUIT and
 unexpectedly terminating their session.
 
