@@ -285,8 +285,8 @@ for i in range(n):
 	    yk1 = matrix[1][0] * xk + matrix[1][1] * yk + matrix[1][2] * zk
 	    #zk1 = matrix[2][0] * xk + matrix[2][1] * yk + matrix[2][2] * zk
 	    angles.append((atan2(xk1, yk1), k))
-	# Sort by angle.
-	angles.sort(lambda a, b: a[0] > b[0] or (a[0] != b[0] and -1))
+	# Sort by angle, in reverse order.
+	angles.sort(lambda a, b: a[0] < b[0] or (a[0] != b[0] and -1))
 	# Search for i and take the next thing below it. Wrap
 	# round, of course: if angles[0] is i then we want
 	# angles[-1]. Conveniently this will be done for us by
@@ -343,9 +343,9 @@ while len(followedges) > 0:
 	xjk = points[k][0] - points[j][0]
 	yjk = points[k][1] - points[j][1]
 	zjk = points[k][2] - points[j][2]
-	xn = xn - yij*zjk + zij*yjk
-	yn = yn - zij*xjk + xij*zjk
-	zn = zn - xij*yjk + yij*xjk
+	xn = xn + yij*zjk - zij*yjk
+	yn = yn + zij*xjk - xij*zjk
+	zn = zn + xij*yjk - yij*xjk
     dn = sqrt(xn**2 + yn**2 + zn**2)
     xn = xn / dn
     yn = yn / dn
