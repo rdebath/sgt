@@ -25,11 +25,35 @@ long long bigclock(void)
 }
 
 /* ----------------------------------------------------------------------
- * PS2 `dx'-setting code.
+ * PS2 `dx'-setting code. This is to fiddle with the screen
+ * alignment if it doesn't quite match up to the positioning of the
+ * physical screen.
  */
 
 static int ps2gs_open(void) {
-    int ps2gs_fd = open("/dev/ps2gs", O_RDWR);
+    int i, ps2gs_fd;
+
+    /*
+     * /dev/ps2gs is a single-access device, so if we want to shift
+     * dx in mid-game then we can't just open(2) it because we will
+     * get EBUSY. So instead, we start by looking in /proc/self/fd
+     * and see if we can find any fd which is already pointing at
+     * that device; if we do, we'll dup it (so our copy can be
+     * closed) and that will do the right thing.
+     */
+    for (i = 0; i < 1024; i++) {
+	char buf[40], outbuf[80];
+	int ret;
+	sprintf(buf, "/proc/self/fd/%d", i);
+	ret = readlink(buf, outbuf, sizeof(outbuf));
+	outbuf[sizeof(outbuf)-1] = 0;
+	if (ret > 0 && ret < sizeof(outbuf)) {
+	    outbuf[ret] = 0;
+	    if (!strcmp(outbuf, "/dev/ps2gs"))
+		return dup(i);
+	}
+    }
+    ps2gs_fd = open("/dev/ps2gs", O_RDWR);
     if (ps2gs_fd < 0) { perror("/dev/ps2gs: open"); exit(1); }
     return ps2gs_fd;
 }
@@ -44,6 +68,18 @@ int get_dx(void)
     if (ret < 0) { perror("/dev/ps2gs: ioctl(PS2IOC_GDISPLAY)"); exit(1); }
     close(ps2gs_fd);
     return disp.dx;
+}
+
+int get_dy(void)
+{
+    struct ps2_display disp;
+    int ret, ps2gs_fd;
+    ps2gs_fd = ps2gs_open();
+    disp.ch = 0;
+    ret = ioctl(ps2gs_fd, PS2IOC_GDISPLAY, &disp);
+    if (ret < 0) { perror("/dev/ps2gs: ioctl(PS2IOC_GDISPLAY)"); exit(1); }
+    close(ps2gs_fd);
+    return disp.dy;
 }
 
 void set_dx(int dx)
@@ -61,11 +97,26 @@ void set_dx(int dx)
     close(ps2gs_fd);
 }
 
+void set_dy(int dy)
+{
+    struct ps2_display disp;
+    int ret, ps2gs_fd;
+    ps2gs_fd = ps2gs_open();
+    disp.ch = 0;
+    ret = ioctl(ps2gs_fd, PS2IOC_GDISPLAY, &disp);
+    if (ret < 0) { perror("/dev/ps2gs: ioctl(PS2IOC_GDISPLAY)"); exit(1); }
+    disp.dy = dy;
+    disp.ch = 0;
+    ret = ioctl(ps2gs_fd, PS2IOC_SDISPLAY, &disp);
+    if (ret < 0) { perror("/dev/ps2gs: ioctl(PS2IOC_SDISPLAY)"); exit(1); }
+    close(ps2gs_fd);
+}
+
 /* ----------------------------------------------------------------------
  * main program.
  */
 
-int dx;
+int dx, dy;
 long long sparetime;
 int evfd = -1;
 SDL_Surface *screen;
@@ -77,6 +128,7 @@ void cleanup(void)
     if (!cleaned_up) {
 	SDL_Quit();
 	set_dx(dx);
+	set_dy(dy);
 	if (evfd >= 0) close(evfd);
     }
     cleaned_up = 1;
@@ -101,6 +153,7 @@ int setup(void)
     ioctl(evfd, PS2IOC_ENABLEEVENT, PS2EV_VSYNC);
 
     dx = get_dx();
+    dy = get_dy();
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK);
     cleaned_up = 0;
     atexit(cleanup);
@@ -148,6 +201,7 @@ int main(int argc, char **argv)
     ioctl(evfd, PS2IOC_ENABLEEVENT, PS2EV_VSYNC);
 
     dx = get_dx();
+    dy = get_dy();
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK);
     atexit(cleanup);
 
