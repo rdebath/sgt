@@ -1,4 +1,4 @@
-Summary: Occasional `Access denied' / `RSA_verify failed'
+Summary: Occasional `Access denied' / `RSA_verify failed' (OpenSSH bug)
 Class: wish
 Difficulty: fun
 Content-type: text/x-html-body
