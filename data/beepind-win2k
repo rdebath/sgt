@@ -1,0 +1,22 @@
+Summary: Clean up taskbar bell indication
+Priority: medium
+Class: semi-bug
+Difficulty: fun
+Content-type: text/x-html-body
+
+<p>
+The taskbar bell indication needs cleaning up. It works nicely on
+Win95/NT4 but is quite ugly on more recent versions of Windows such as
+Win2K.
+
+<p>
+We should use <tt>FlashWindowEx()</tt> if it's available at run-time
+(IIRC this just needs calling once, and will flash the window as
+necessary), and fall back to the current <tt>FlashWindow()</tt> manual
+flashing implementation if not.
+
+<p>
+This requires compiler support that I (JTN) don't have currently.
+
+<p>
+Quite where this leaves the `steady' mode I'm not sure.
