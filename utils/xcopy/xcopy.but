@@ -107,3 +107,5 @@ which they could have converted).
 
 \cw{xcopy} is free software, distributed under the MIT licence. Type
 \cw{xcopy --licence} to see the full licence text.
+
+\versionid $Id$

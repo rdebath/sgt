@@ -1,4 +1,10 @@
+# for `make release' and `make html'
 DESTDIR = .
+
+# for `make install'
+PREFIX = /usr/local
+BINDIR = $(PREFIX)/bin
+MANDIR = $(PREFIX)/man/man1
 
 all: base64.1 base64
 
@@ -22,3 +28,9 @@ release: base64.1
 	ln -s ../../Makefile reltmp/base64
 	tar -C reltmp -chzf $(DESTDIR)/base64.tar.gz base64
 	rm -rf reltmp
+
+install: base64 base64.1
+	mkdir -p $(BINDIR)
+	install base64 $(BINDIR)/base64
+	mkdir -p $(MANDIR)
+	install -m 0644 base64.1 $(MANDIR)/base64.1

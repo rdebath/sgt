@@ -76,3 +76,5 @@ parameter passed to \cw{-c} must be a multiple of 4.
 
 \cw{base64} is free software, distributed under the MIT licence.
 Type \cw{base64 --licence} to see the full licence text.
+
+\versionid $Id$

@@ -1,5 +1,12 @@
 SUBDIRS = base64 cvt-utf8 multi xcopy
+
+# for `make html' and `make release'; should be a relative path
 DESTDIR = .
+
+# for `make install'; should be absolute paths
+PREFIX = /usr/local
+BINDIR = $(PREFIX)/bin
+MANDIR = $(PREFIX)/man/man1
 
 all:
 	for i in $(SUBDIRS); do make -C $$i; done
@@ -13,3 +20,8 @@ html:
 
 release:
 	for i in $(SUBDIRS); do make -C $$i release DESTDIR=../$(DESTDIR); done
+
+install:
+	for i in $(SUBDIRS); do \
+	    make -C $$i install; \
+	done
