@@ -1,0 +1,25 @@
+Summary: Resizing the window does the Wrong Thing to its contents
+Class: semi-bug
+Difficulty: tricky
+Priority: low
+Content-type: text/x-html-body
+
+<p>I (BJH) think that PuTTY's behaviour when the number of lines on the screen
+is changed is currently wrong.  What it currently does is to keep the bottom
+line of the screen in a fixed position relative to the text.  This means that
+if the window is enlarged, lines get pulled out of the scrollback and added
+to the screen, and if the window is shrunk, lines get pushed from the
+screen to the scrollback.  A particularly nasty aspect of this is that if you
+have a large window with a shell prompt at the top and you reduce its size,
+the prompt disappears off the top of the window.  Pulling lines out of the
+scrollback might also get awkward if we start storing the scrollback in a
+compressed format.
+
+<p>So what <em>should</em> we do?  xterm's fix to the disappearing-prompt
+problem seems to be to delete lines from the bottom of the window when it's
+shrunk unless that would delete the line containing the cursor, in which case
+lines are deleted from the top instead.  When enlarging the window, xterm
+pulls lines out of the scrollback just like PuTTY.  I still haven't decided
+whether or not this is evil.  In any case, it should probably be inhibited in
+alternate screen mode, just like copying data into the scrollback is (xterm
+gets this bit wrong).
