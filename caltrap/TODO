@@ -1,0 +1,46 @@
+Caltrap wish list
+-----------------
+
+Immediate things that need doing:
+
+ - Invent a better notation for time intervals (3d4h5m springs to
+   mind) and use it in cron.c.
+
+ - Sort out how timeless all-day events fit into cron. And how they
+   fit into list - I suspect I broke them when I adapted
+   db_list_entries.
+
+Longer-term things I'd like:
+
+ - TODO tracking
+    + TODOs have a start date (they will need doing after that time,
+      but aren't required yet)
+    + And some have an end date (i.e. a deadline)
+       * perhaps listing TODOs in order of _urgency_, i.e. closeness
+	 of deadline, might be an interesting experiment.
+
+ - Multiple-day events such as holidays.
+
+ - Regular events (so that pub, pizza, Calling show up on my leisure
+   calendar).
+    + These need to be easily cancelled, rearranged etc when
+      exceptions are made.
+       * In particular, I wonder what would happen if the Calling
+	 suddenly switched to the _other_ coset of Tuesdays? I think
+	 ideally the past should remain unchanged, and the future
+	 should shift. Which probably means regular events should
+	 have a start and an end date, or some such.
+
+ - Coloured output via terminfo?
+    + background colour highlights weekends?
+    + something to highlight holidays?
+    + simply colouring dates, times and entry text differently would
+      do wonders for immediate legibility.
+
+ - Improve the database schema.
+    + Changes and additional fields will be required to work with
+      some of the above features.
+    + Also some form of ID number per entry would be very useful, so
+      that entries can be conveniently deleted and modified.
+       * this doesn't want to be shown in the usual calendar
+	 displays; probably a `-v' flag makes it appear.
