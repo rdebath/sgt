@@ -2,11 +2,25 @@ Summary: Remove static variables to allow multiple or sequential connections
 Class: wish
 Difficulty: tricky
 Priority: low
-Content-type: text/plain
+Content-type: text/x-html-body
+Fixed-in: 2003-01-15
 
+<p>
 For several reasons it would be handy to be able to run multiple
 connections in a single process. This will require removing most (or
 all) of PuTTY's static and global variables, and replacing them with
 fields in dynamically allocated structures.
 
+<p>
 This is a code cleanup which we should probably do anyway.
+
+<p>
+
+<b>SGT, 2003-01-14</b>: After much pain and upheaval, I think this
+is now as done as it'll ever be. The Unicode module was particularly
+unpleasant (and wants a substantial rewrite really), and there are a
+few remaining globals which are genuinely global (applying to all
+sessions) so I've left them in; but I think everything pertaining to
+a particular session is now non-global, at least in the portable
+parts of the code. (The Windows front end still has many static
+variables, but they will probably never go away.)
