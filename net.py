@@ -8,11 +8,6 @@
 #    the grid. Makes the game easier, of course.
 #  - Alternative forms of control? Left/right clicks are OKish, but
 #    I'm not 100% convinced. Middle click to lock is Just Wrong.
-#  - Some sort of persistent completion indicator, perhaps, in case
-#    you click straight past the finished state and don't realise
-#    you actually finished!
-#     * I quite like the idea of flashing the lock state of all
-#       squares and then leaving everything unlocked. It's pretty.
 
 from gtk import *
 import GDK
@@ -28,10 +23,10 @@ NSQUARES_X = 5
 NSQUARES_Y = 5
 WRAPPING = FALSE
 
-darea = None
+darea = pix = None
 
 def setup_globals():
-    global PWRSIZ, BORDER, ORIGIN, TOTALSIZE_X, TOTALSIZE_Y
+    global PWRSIZ, BORDER, ORIGIN, TOTALSIZE_X, TOTALSIZE_Y, pix
     PWRSIZ = SQUARESIZE / 4
     BORDER = SQUARESIZE / 2
     ORIGIN = BORDER
@@ -39,6 +34,8 @@ def setup_globals():
     TOTALSIZE_Y = 2*BORDER + NSQUARES_Y * SQUARESIZE
     if darea:
         darea.set_usize(TOTALSIZE_X, TOTALSIZE_Y)
+    if pix:
+        pix = create_pixmap(win, TOTALSIZE_X, TOTALSIZE_Y)
 setup_globals()
 
 def rotate(flags, n):
@@ -150,6 +147,8 @@ class NetGame:
         self.moves = []
         self.moveinprogress = FALSE
         self.fullredraw = TRUE
+        self.completed = FALSE
+        self.completion_animation = 0
 
     def compute_active(self):
         list = []
@@ -190,13 +189,16 @@ class NetGame:
             x, y = list.pop()
             visit(x, y)
 
-        self.completed = TRUE
+        completed = TRUE
         self.activesquares = self.totalsquares = NSQUARES_X * NSQUARES_Y
         for x in range(NSQUARES_X):
             for y in range(NSQUARES_Y):
                 if not (self.arena[x][y] & ACTIVE):
-                    self.completed = FALSE
+                    completed = FALSE
                     self.activesquares = self.activesquares - 1
+        if completed:
+            self.completed = TRUE
+            self.completion_point = len(self.moves)
 
     def draw(self, pixmap):
 	class container:
@@ -330,11 +332,12 @@ class NetGame:
 
         self.moveinprogress = TRUE
         self.moveprogress = 0.0
-        if not self.completed and not undo:
+        if not undo:
             # Successive moves involving the same square should be
             # merged, or deleted if they turn out to be the
             # identity move.
-            if len(self.moves) > 0 and self.moves[-1][0] == x and \
+            if (not self.completed or len(self.moves)!=self.completion_point) \
+            and len(self.moves) > 0 and self.moves[-1][0] == x and \
             self.moves[-1][1] == y:
                 combine = self.moves[-1][2] + action
                 combine = (combine + 1) % 4 - 1
@@ -354,14 +357,21 @@ class NetGame:
 
         self.moveinprogress = FALSE
 
+        oldcomplete = self.completed
+
         self.compute_active()
+
+        if self.completed and not oldcomplete:
+            self.completion_animation = 1
+            timer_inst = timeout_add(50, timer, win)
 
     def undo(self):
         if len(self.moves) == 0:
             return # nothing to undo
         dx, dy, action = self.moves.pop()
         self.move(dx, dy, -action, undo=TRUE)
-        self.compute_active()
+        if self.completed and len(self.moves) < self.completion_point:
+            self.completed = FALSE
 
     def status(self, statusbar):
         message = "Active: %d/%d" % (self.activesquares, self.totalsquares)
@@ -461,17 +471,43 @@ def button_event(win, event):
     timer_inst = timeout_add(20, timer, win)
 
 def timer(win):
-    if not game.moveinprogress:
-        # move has been finished for us already
-        game.status(statusbar)
-        return FALSE
-    game.moveprogress = game.moveprogress + 1.0/6
-    if game.moveprogress >= 1.0:
-        game.finish_move()
-        game.status(statusbar)
-        ret = FALSE
+    if game.completion_animation:
+        cx = NSQUARES_X/2
+        cy = NSQUARES_Y/2
+        n = max(NSQUARES_X, NSQUARES_Y)/2+1
+        if game.completion_animation <= n:
+            for x in range(NSQUARES_X):
+                for y in range(NSQUARES_Y):
+                    if abs(x-cx) <= game.completion_animation - 1 and \
+                    abs(y-cy) <= game.completion_animation - 1:
+                        game.arena[x][y] = game.arena[x][y] | LOCK
+            game.fullredraw = TRUE
+            game.completion_animation = game.completion_animation + 1
+            ret = TRUE
+        elif game.completion_animation - n <= n:
+            for x in range(NSQUARES_X):
+                for y in range(NSQUARES_Y):
+                    if abs(x-cx) <= game.completion_animation - n - 1 and \
+                    abs(y-cy) <= game.completion_animation - n - 1:
+                        game.arena[x][y] = game.arena[x][y] & ~LOCK
+            game.fullredraw = TRUE
+            game.completion_animation = game.completion_animation + 1
+            ret = TRUE
+        else:
+            game.completion_animation = 0
+            ret = FALSE
     else:
-        ret = TRUE
+        if not game.moveinprogress:
+            # move has been finished for us already
+            game.status(statusbar)
+            return FALSE
+        game.moveprogress = game.moveprogress + 1.0/6
+        if game.moveprogress >= 1.0:
+            game.finish_move()
+            game.status(statusbar)
+            ret = FALSE
+        else:
+            ret = TRUE
     small_redraw()
     return ret
 
