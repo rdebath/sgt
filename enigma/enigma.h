@@ -1,3 +1,14 @@
+/*
+ * enigma/enigma.h - global prototypes for Enigma.
+ * 
+ * Copyright 2000 Simon Tatham. All rights reserved.
+ * 
+ * Enigma is licensed under the MIT licence. See the file LICENCE for
+ * details.
+ * 
+ * - we are all amf -
+ */
+
 #ifndef ENIGMA_ENIGMA_H
 #define ENIGMA_ENIGMA_H
 

@@ -3,6 +3,13 @@
  * make_move() function, which is given a move and a structure
  * containing a game state, and transforms the game state to
  * reflect the consequences of the move.
+ * 
+ * Copyright 2000 Simon Tatham. All rights reserved.
+ * 
+ * Enigma is licensed under the MIT licence. See the file LICENCE for
+ * details.
+ * 
+ * - we are all amf -
  */
 
 #include <stdio.h>
