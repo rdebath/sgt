@@ -1,5 +1,5 @@
 % -*- mode: slang; mode: fold -*-
-% Simon Tatham: version $Revision: 1.52 $
+% Simon Tatham: version $Revision: 1.53 $
 
 %{{{ load Emacs keybindings to start with
 
@@ -122,6 +122,14 @@ destroy_menubar();
 w32_destroy_menubar();
 #endif
 #endif
+
+% The menu bar is getting more and more persistent: here I define
+% away all the various key commands that activate it.
+unsetkey("^[E"); unsetkey("^[e");
+unsetkey("^[S"); unsetkey("^[s");
+unsetkey("^[I"); unsetkey("^[i");
+unsetkey("^[H"); unsetkey("^[h");
+unsetkey("^[[21~");
 
 %}}}
 %{{{ file functions: ^X^R, M-x cd, M-x revert, M-x insh
