@@ -30,6 +30,14 @@ already stored. You almost certainly <em>don't</em> want to
 permanently associate that host key with the temporary port number
 on your local machine which you've chosen for the forwarding.)
 
+<ul>
+<li>Silly idea: if you select Telnet proxying and a completely empty
+command string, the effect is that PuTTY will connect to the address
+specified in the Proxy panel, but will believe itself to be connecting
+to the address specified in the Session panel. Result: it will cache
+the host key under the latter name.
+</ul>
+
 <p>
 When there's a choice of host keys available for a host, perhaps PuTTY
 should adjust its stated preferences so that the ones it has cached
