@@ -133,7 +133,6 @@ void do_launch_url(void)
     p = s;
     while (p[0] && (isspace((unsigned char)(p[0])) || p[0] == '\xA0'))
 	p++;
-    strcpy(t, "http://");
     q = t + 7;
 
     for (; *p; p++) {
@@ -148,14 +147,31 @@ void do_launch_url(void)
     *q = '\0';
 
     /*
-     * Now we have the URL starting at t+7, with a prefix "http://"
-     * just before it in case it's required. See if it is required.
+     * Now we have the URL starting at t+7, with space to add a
+     * protocol prefix in case it's required. See if it is
+     * required.
      */
     i = strspn(t+7, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
-    if (t[7+i] == ':')
+    if (t[7+i] == ':') {
         p = t+7;                       /* we have our own protocol prefix */
-    else
+    } else if (t[7+i] == '@') {
+	/*
+	 * This URL doesn't contain a protocol, and its first
+	 * punctuation character is an @. That makes it likely to
+	 * be an email address, so we'll prefix `mailto:'.
+	 */
+	strncpy(t, "mailto:", 7);
+	p = t;
+    } else {
+	/*
+	 * This URL doesn't contain a protocol, and doesn't look
+	 * like an email address, so we'll prefix `http://' on the
+	 * assumption that it's a truncated URL of the form
+	 * `www.thingy.com/wossname' or just `www.thingy.com'.
+	 */
+	strncpy(t, "http://", 7);
         p = t;                         /* add the standard one */
+    }
 
     ret = (int)ShellExecute(winurl_hwnd, "open", p, NULL, NULL, SW_SHOWNORMAL);
 
