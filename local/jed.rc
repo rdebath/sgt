@@ -1,5 +1,5 @@
 % -*- mode: slang; mode: fold -*-
-% Simon Tatham: version $Revision: 1.21 $
+% Simon Tatham: version $Revision: 1.22 $
 
 %{{{ load Emacs keybindings to start with
 
@@ -66,11 +66,13 @@ setkey (".\"end_of_buffer\" \"z\" jedrc_ro_internal_alternate", "z");
 setkey (".\"end_of_buffer\" \"Z\" jedrc_ro_internal_alternate", "Z");
 setkey ("jedrc_ro_slang_alternate(&quick_killbuf,\"q\")", "q");
 setkey ("jedrc_ro_slang_alternate(&quick_killbuf,\"Q\")", "Q");
+setkey ("jedrc_ro_slang_alternate(&search_forward,\"/\")", "/");
+setkey ("jedrc_ro_slang_alternate(&search_backward,\"?\")", "?");
 
 % We have to do this to override slang_mode's underhand funtation of
 % the C mode keymap
 define slang_mode_hook() {
-    local_setkey(".\"page_down\" \" \" jedrc_ro_alternate", " ");
+    local_setkey(".\"page_down\" \" \" jedrc_ro_internal_alternate", " ");
 }
 
 %}}}
