@@ -54,16 +54,38 @@ static int is_mbox_message_separator(char *p)
     return TRUE;
 }
 
-int import_message(char *message, int msglen)
+int import_message(char *message, int msglen, char *separator)
 {
     char *location;
     assert(msglen > 0 && message[msglen-1] == '\n');
-    location = store_literal(message, msglen);
+    location = store_literal(message, msglen, separator);
     if (!location)
 	return FALSE;
     parse_for_db(NULL, location, message, msglen);
     sfree(location);
     return TRUE;
+}
+
+int import_mbox_message(char *message, int msglen)
+{
+    char *separator = NULL;
+
+    if (msglen >= 5 && !memcmp(message, "From ", 5)) {
+	/*
+	 * Split off the first line to be used as the separator.
+	 */
+	char *p = message;
+	while (p < message+msglen && *p != '\n')
+	    p++;
+	if (p < message+msglen) {
+	    *p++ = '\0';
+	    separator = message;
+	    msglen -= (p - message);
+	    message = p;
+	}
+    }
+
+    return import_message(message, msglen, separator);
 }
 
 void import_mbox_folder(char *folder)
@@ -104,7 +126,7 @@ void import_mbox_folder(char *folder)
 		/*
 		 * File this message.
 		 */
-		if (!import_message(message, msglen)) {
+		if (!import_mbox_message(message, msglen)) {
 		    fclose(fp);
 		    return;
 		}
@@ -117,7 +139,7 @@ void import_mbox_folder(char *folder)
 	    }
 
 	    /*
-	     * See if this message starts with an escaped `From '.
+	     * See if this line starts with an escaped `From '.
 	     */
 	    if (!strncmp(message + msglen, ">From ", 6)) {
 		/* Unescape it. */
@@ -140,7 +162,7 @@ void import_mbox_folder(char *folder)
     if (msglen > 0) {
 	if (message[msglen-1] == '\n')
 	    msglen--;
-	import_message(message, msglen);
+	import_mbox_message(message, msglen);
     }
 
     fclose(fp);

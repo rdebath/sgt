@@ -9,6 +9,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include "timber.h"
+#include "charset.h"
 
 char *dirpath;
 
@@ -35,6 +36,16 @@ void run_command(int argc, char **argv)
 	int i;
 	for (i = 1; i < argc; i++)
 	    export_message(argv[i]);
+    }
+
+    if (!strcmp(argv[0], "display")) {
+	int i;
+	int charset = CS_ASCII;
+	i = 1;
+	if (i < argc)
+	    charset = charset_from_localenc(argv[i++]);
+	for (; i < argc; i++)
+	    display_message(argv[i], charset, DISPLAY_ANSI);
     }
 }
 
@@ -150,8 +161,7 @@ int main(int argc, char **argv) {
 		    switch (c) {
                       case 'D':
                         sfree(dirpath);
-                        dirpath = smalloc(1+strlen(p));
-                        strcpy(dirpath, p);
+                        dirpath = dupstr(p);
                         break;
 		    }
 		    p = NULL;	       /* prevent continued processing */

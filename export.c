@@ -9,17 +9,19 @@
 
 void export_message(char *ego)
 {
-    char *location, *message;
+    char *location, *message, *separator;
     int msglen;
 
     location = message_location(ego);
     if (!location)
 	error(err_nosuchmsg, ego);
     else {
-	message = store_retrieve(location, &msglen);
+	message = store_retrieve(location, &msglen, &separator);
 	if (!message)
 	    fatal(err_internal, "mail mentioned in db is not in mail store");
 	write_wrapped(1, message, msglen);
 	sfree(location);
+	sfree(message);
+	sfree(separator);
     }
 }

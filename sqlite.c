@@ -215,8 +215,7 @@ static char *cfg_get_internal(char *key)
     if (err) fatal(err_dberror, err);
     if (rows > 0) {
 	assert(cols == 1);
-	ret = smalloc(1+strlen(table[1]));
-	strcpy(ret, table[1]);
+	ret = dupstr(table[1]);
     } else
 	ret = NULL;
     sqlite_free_table(table);
@@ -238,9 +237,7 @@ char *cfg_get_str(char *key)
     char *val = cfg_get_internal(key);
     if (!val) {
 	const char *def = cfg_default_str(key);
-	val = smalloc(1+strlen(def));
-	strcpy(val, def);
-	return val;
+	return dupstr(def);
     } else
 	return val;
 }
@@ -277,11 +274,9 @@ char *invent_ego(double count)
      * hash or cipher might be the answer, although cryptographic
      * security is not required, only mild visual scrambling.
      */
-    char buf[40], *ego;
+    char buf[40];
     sprintf(buf, "E%.0f", count);
-    ego = smalloc(1+strlen(buf));
-    strcpy(ego, buf);
-    return ego;
+    return dupstr(buf);
 }
 
 /* ----------------------------------------------------------------------
@@ -412,6 +407,47 @@ char *message_location(const char *ego)
 	assert(cols == 1);
 	ret = smalloc(1+strlen(table[1]));
 	strcpy(ret, table[1]);
+    } else
+	ret = NULL;
+    sqlite_free_table(table);
+
+    return ret;
+}
+
+struct mime_details *find_mime_parts(const char *ego, int *nparts)
+{
+    char **table;
+    int rows, cols, i;
+    char *err;
+    struct mime_details *ret;
+
+    db_open();
+
+    sqlite_get_table_printf(db, "SELECT major, minor, charset, encoding,"
+			    " disposition, filename, description, offset,"
+			    " length, idx FROM mimeparts WHERE ego='%q'"
+			    " ORDER BY idx",
+			    &table, &rows, &cols, &err, ego);
+    if (err) fatal(err_dberror, err);
+    if (rows > 0) {
+	assert(cols == 10);
+	ret = smalloc((rows) * sizeof(struct mime_details));
+	for (i = 1; i < rows+1; i++) {
+	    ret[i-1].major = dupstr(table[cols*i + 0]);
+	    ret[i-1].minor = dupstr(table[cols*i + 1]);
+	    ret[i-1].charset = charset_from_localenc(table[cols*i + 2]);
+	    ret[i-1].transfer_encoding = encoding_val(table[cols*i + 3]);
+	    ret[i-1].disposition = disposition_val(table[cols*i + 4]);
+	    ret[i-1].filename = (*table[cols*i + 5] ?
+			    dupstr(table[cols*i + 5]) : NULL);
+	    ret[i-1].description = (*table[cols*i + 6] ?
+			       dupstr(table[cols*i + 6]) : NULL);
+	    ret[i-1].offset = atoi(table[cols*i + 7]);
+	    ret[i-1].length = atoi(table[cols*i + 8]);
+	    if (i-1 != atoi(table[cols*i + 9]))
+		error(err_internal, "MIME part indices not contiguous");
+	}
+	*nparts = rows;
     } else
 	ret = NULL;
     sqlite_free_table(table);

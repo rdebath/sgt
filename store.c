@@ -7,14 +7,14 @@
 
 static const struct storage *current_store = &mbox_store;
 
-char *store_literal(char *message, int msglen)
+char *store_literal(char *message, int msglen, char *separator)
 {
-    return current_store->store_literal(message, msglen);
+    return current_store->store_literal(message, msglen, separator);
 }
 
-char *store_retrieve(const char *location, int *msglen)
+char *store_retrieve(const char *location, int *msglen, char **separator)
 {
-    return current_store->store_retrieve(location, msglen);
+    return current_store->store_retrieve(location, msglen, separator);
 }
 
 void store_init(void)

@@ -3,53 +3,100 @@
  */
 
 #include <unistd.h>
+#include <ctype.h>
 
 #include "timber.h"
+#include "charset.h"
 
 /*
  * At some point these functions will require inverses.
  */
+static const struct idname {
+    int id;
+    const char *name;
+} header_names[] = {
+    { H_BCC, "Bcc" },
+    { H_CC, "Cc" },
+    { H_CONTENT_DESCRIPTION, "Content-Description" },
+    { H_CONTENT_DISPOSITION, "Content-Disposition" },
+    { H_CONTENT_TRANSFER_ENCODING, "Content-Transfer-Encoding" },
+    { H_CONTENT_TYPE, "Content-Type" },
+    { H_DATE, "Date" },
+    { H_FROM, "From" },
+    { H_IN_REPLY_TO, "In-Reply-To" },
+    { H_MESSAGE_ID, "Message-ID" },
+    { H_REFERENCES, "References" },
+    { H_REPLY_TO, "Reply-To" },
+    { H_RESENT_BCC, "Resent-Bcc" },
+    { H_RESENT_CC, "Resent-Cc" },
+    { H_RESENT_FROM, "Resent-From" },
+    { H_RESENT_REPLY_TO, "Resent-Reply-To" },
+    { H_RESENT_SENDER, "Resent-Sender" },
+    { H_RESENT_TO, "Resent-To" },
+    { H_RETURN_PATH, "Return-Path" },
+    { H_SENDER, "Sender" },
+    { H_SUBJECT, "Subject" },
+    { H_TO, "To" },
+}, encoding_names[] = {
+    { QP, "qp" },
+    { BASE64, "base64" },
+    { NO_ENCODING, "clear" },
+}, disposition_names[] = {
+    { INLINE, "inline" },
+    { ATTACHMENT, "attachment" },
+    { UNSPECIFIED, "unspecified-disposition" },
+};
+
+static int name_to_id(const struct idname *table, int len, const char *name)
+{
+    int i;
+    for (i = 0; i < len; i++)
+	if (!strcmp(name, table[i].name))
+	    return table[i].id;
+    return -1;
+}
+static const char *id_to_name(const struct idname *table, int len,
+			      int id, const char *def)
+{
+    int i;
+    for (i = 0; i < len; i++)
+	if (id == table[i].id)
+	    return table[i].name;
+    return def;
+}
+
 const char *header_name(int header_id)
 {
-    if (header_id == H_BCC) return "Bcc";
-    if (header_id == H_CC) return "Cc";
-    if (header_id == H_CONTENT_DESCRIPTION) return "Content-Description";
-    if (header_id == H_CONTENT_DISPOSITION) return "Content-Disposition";
-    if (header_id == H_CONTENT_TRANSFER_ENCODING)
-	return "Content-Transfer-Encoding";
-    if (header_id == H_CONTENT_TYPE) return "Content-Type";
-    if (header_id == H_DATE) return "Date";
-    if (header_id == H_FROM) return "From";
-    if (header_id == H_IN_REPLY_TO) return "In-Reply-To";
-    if (header_id == H_MESSAGE_ID) return "Message-ID";
-    if (header_id == H_REFERENCES) return "References";
-    if (header_id == H_REPLY_TO) return "Reply-To";
-    if (header_id == H_RESENT_BCC) return "Resent-Bcc";
-    if (header_id == H_RESENT_CC) return "Resent-Cc";
-    if (header_id == H_RESENT_FROM) return "Resent-From";
-    if (header_id == H_RESENT_REPLY_TO) return "Resent-Reply-To";
-    if (header_id == H_RESENT_SENDER) return "Resent-Sender";
-    if (header_id == H_RESENT_TO) return "Resent-To";
-    if (header_id == H_RETURN_PATH) return "Return-Path";
-    if (header_id == H_SENDER) return "Sender";
-    if (header_id == H_SUBJECT) return "Subject";
-    if (header_id == H_TO) return "To";
-    return "[unknown-header]";
+    return id_to_name(header_names, lenof(header_names),
+		      header_id, "[unknown-header]");
 }
 
 const char *encoding_name(int encoding)
 {
-    if (encoding == QP) return "qp";
-    if (encoding == BASE64) return "base64";
-    if (encoding == UUENCODE) return "uuencode";
-    return "clear";
+    return id_to_name(encoding_names, lenof(encoding_names),
+		      encoding, "clear");
 }
 
 const char *disposition_name(int disposition)
 {
-    if (disposition == INLINE) return "inline";
-    if (disposition == ATTACHMENT) return "attachment";
-    return "unspecified-disposition";
+    return id_to_name(disposition_names, lenof(disposition_names),
+		      disposition, "unspecified-disposition");
+}
+
+int header_val(const char *header_name)
+{
+    return name_to_id(header_names, lenof(header_names), header_name);
+}
+
+int encoding_val(const char *encoding_name)
+{
+    return name_to_id(encoding_names, lenof(encoding_names), encoding_name);
+}
+
+int disposition_val(const char *disposition_name)
+{
+    return name_to_id(disposition_names, lenof(disposition_names),
+		      disposition_name);
 }
 
 /*
@@ -69,4 +116,60 @@ int write_wrapped(int fd, char *data, int length)
     }
 
     return TRUE;
+}
+
+void init_mime_details(struct mime_details *md)
+{
+    md->major = smalloc(5); strcpy(md->major, "text");
+    md->minor = smalloc(6); strcpy(md->minor, "plain");
+    md->transfer_encoding = NO_ENCODING;
+    md->charset = CS_ASCII;
+    md->disposition = UNSPECIFIED;
+    md->filename = NULL;
+    md->description = NULL;
+    md->offset = 0;
+    md->length = 0;
+}
+
+void free_mime_details(struct mime_details *md)
+{
+    sfree(md->major);
+    sfree(md->minor);
+    sfree(md->filename);
+    sfree(md->description);
+}
+
+char *dupstr(const char *s)
+{
+    char *ret = smalloc(1+strlen(s));
+    strcpy(ret, s);
+    return ret;
+}
+
+int istrlencmp(const char *s1, int l1, const char *s2, int l2)
+{
+    int cmp;
+
+    while (l1 > 0 && l2 > 0) {
+	cmp = tolower(*s1) - tolower(*s2);
+	if (cmp)
+	    return cmp;
+	s1++, l1--;
+	s2++, l2--;
+    }
+
+    /*
+     * We've reached the end of one or both strings.
+     */
+    if (l1 > 0)
+	return +1;		       /* s1 is longer, therefore is greater */
+    else if (l2 > 0)
+	return -1;		       /* s2 is longer */
+    else
+	return 0;
+}
+
+int istrcmp(const char *s1, const char *s2)
+{
+    return istrlencmp(s1, strlen(s1), s2, strlen(s2));
 }

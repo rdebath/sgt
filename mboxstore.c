@@ -65,7 +65,7 @@ static void mbox_release_lock(void)
     mbox_lockfd = -1;
 }
 
-static int write_mbox(int fd, char *data, int length, int beginning)
+static int write_mbox(int fd, char *data, int length)
 {
     char *queue;
     int qlen;
@@ -78,41 +78,34 @@ static int write_mbox(int fd, char *data, int length, int beginning)
     queue = data;
     qlen = 0;
     while (length > 0) {
-	char *p;
-
 	/*
-	 * Check for `From ' preceded by zero or more `>' signs,
-	 * unless this is the very start of the message, in which
-	 * case it's OK.
+	 * Check for `From ' preceded by zero or more `>' signs.
 	 */
-	if (!beginning) {
-	    char *p = data;
-	    int l = length;
-	    while (l > 0 && *p == '>')
-		p++, l--;
-	    if (l >= 5 && !memcmp(p, "From ", 5)) {
-		/*
-		 * We have a `From ', which we need to escape.
-		 * Flush the queue...
-		 */
-		if (qlen > 0) {
-		    if (!write_wrapped(fd, queue, qlen) < 0)
-			return FALSE;
-		}
-		/*
-		 * ... write a leading `>' ...
-		 */
-		if (!write_wrapped(fd, ">", 1))
+	char *p = data;
+	int l = length;
+	while (l > 0 && *p == '>')
+	    p++, l--;
+	if (l >= 5 && !memcmp(p, "From ", 5)) {
+	    /*
+	     * We have a `From ', which we need to escape.
+	     * Flush the queue...
+	     */
+	    if (qlen > 0) {
+		if (!write_wrapped(fd, queue, qlen) < 0)
 		    return FALSE;
-		/*
-		 * ... and restart queuing from the beginning of
-		 * this line.
-		 */
-		queue = data;
-		qlen = 0;
 	    }
+	    /*
+	     * ... write a leading `>' ...
+	     */
+	    if (!write_wrapped(fd, ">", 1))
+		return FALSE;
+	    /*
+	     * ... and restart queuing from the beginning of
+	     * this line.
+	     */
+	    queue = data;
+	    qlen = 0;
 	}
-	beginning = FALSE;
 
 	/*
 	 * Now advance to the next newline.
@@ -142,10 +135,12 @@ static int write_mbox(int fd, char *data, int length, int beginning)
     return TRUE;
 }
 
-static char *mbox_store_literal_inner(char *boxname, char *message, int msglen)
+static char *mbox_store_literal_inner(char *boxname,
+				      char *message, int msglen,
+				      char *separator)
 {
     int boxnum, need_set;
-    int ret, fd, beginning;
+    int ret, fd;
     struct stat st;
     int maxsize, size;
     off_t oldlen, newlen;
@@ -199,7 +194,7 @@ static char *mbox_store_literal_inner(char *boxname, char *message, int msglen)
     /*
      * Invent a `From ' line if there isn't one already.
      */
-    if (msglen < 5 || memcmp(message, "From ", 5)) {
+    if (!separator || strncmp(separator, "From ", 5)) {
 	char fromline[80];
 	struct tm tm;
 	time_t t;
@@ -209,19 +204,24 @@ static char *mbox_store_literal_inner(char *boxname, char *message, int msglen)
 	strftime(fromline, 80,
 		 "From timber-mbox-storage %a %b %d %H:%M:%S %Y\n", &tm);
 
-	if (!write_mbox(fd, fromline, strlen(fromline), TRUE)) {
+	if (!write_wrapped(fd, fromline, strlen(fromline))) {
 	    if (ftruncate(fd, oldlen) < 0)
 		error(err_perror, boxname, "ftruncate");
 	    return NULL;
 	}
-	beginning = FALSE;
-    } else
-	beginning = TRUE;
+    } else {
+	if (!write_wrapped(fd, separator, strlen(separator)) ||
+	    !write_wrapped(fd, "\n", 1)) {
+	    if (ftruncate(fd, oldlen) < 0)
+		error(err_perror, boxname, "ftruncate");
+	    return NULL;
+	}
+    }
 
     /*
      * Now write the message.
      */
-    if (!write_mbox(fd, message, msglen, beginning)) {
+    if (!write_mbox(fd, message, msglen)) {
 	if (ftruncate(fd, oldlen) < 0)
 	    error(err_perror, boxname, "ftruncate");
 	return NULL;
@@ -271,7 +271,7 @@ static char *mbox_store_literal_inner(char *boxname, char *message, int msglen)
  * simplest way to ensure our mess is cleared up on every exit
  * path.
  */
-static char *mbox_store_literal(char *message, int msglen)
+static char *mbox_store_literal(char *message, int msglen, char *separator)
 {
     char *ret;
     char *boxname = smalloc(200 + strlen(dirpath));
@@ -279,20 +279,20 @@ static char *mbox_store_literal(char *message, int msglen)
     if (!mbox_write_lock()) {
 	return NULL;
     }
-    ret = mbox_store_literal_inner(boxname, message, msglen);
+    ret = mbox_store_literal_inner(boxname, message, msglen, separator);
     mbox_release_lock();
     sfree(boxname);
 
     return ret;
 }
 
-static char *mbox_store_retrieve(const char *location, int *msglen)
+static char *mbox_store_retrieve(const char *location, int *msglen,
+				 char **separator)
 {
     char *locmod = NULL, *boxname = NULL, *message = NULL, *p, *q;
     int offset, length, msgoff, fd;
 
-    locmod = smalloc(1+strlen(location));
-    strcpy(locmod, location);
+    locmod = dupstr(location);
     q = strrchr(locmod, ':');
     if (!q)
 	return NULL;
@@ -331,10 +331,40 @@ static char *mbox_store_retrieve(const char *location, int *msglen)
     }
 
     /*
-     * FIXME: We must reverse From quoting here. (And also decide
-     * what to do about the mbox separator.)
+     * Here we reverse From quoting, and also remove the message
+     * separator to be returned separately.
      */
-    *msglen = length;
+    *separator = NULL;
+    p = q = message;
+    if (p+5 < message+length && !memcmp(p, "From ", 5)) {
+	/* Find end of separator. */
+	while (p < message+length && *p != '\n')
+	    p++;
+	if (p < message+length) {
+	    *p++ = '\0';
+	    *separator = smalloc(p-message);
+	    strcpy(*separator, message);
+	}
+    }
+    while (p < message+length) {
+	/*
+	 * Reverse From quoting.
+	 */
+	char *r = p;
+	while (r < message+length && *r == '>')
+	    r++;
+	if (r+5 < message+length && !memcmp(r, "From ", 5))
+	    p++;
+
+	/*
+	 * Now just output the line of text.
+	 */
+	while (p < message+length && *p != '\n')
+	    *q++ = *p++;
+	if (p < message+length)
+	    *q++ = *p++;
+    }
+    *msglen = q - message;
     goto cleanexit;
 
     cleanup:
