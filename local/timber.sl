@@ -73,9 +73,9 @@ variable timber_custom_headers = "";
 % Sendmail mail-bounce instead of printing errors.
 % (4) Filter through the Timber attachment processing script
 % before doing anything else. (This converts Attach: headers and
-% Attach-Enclosed: headers into proper MIME encapsulation.)
-variable timber_sendmail = "perl " + dircat(JED_ROOT,"bin/timbera.pl") +
-                          " | /usr/lib/sendmail -oem -t -oi";
+% Attach-Enclosed: headers into proper MIME encapsulation, and
+% deals with Queue: headers.)
+variable timber_sendmail = "perl " + dircat(JED_ROOT,"bin/timbera.pl");
 
 % This variable may be reassigned in `.timberrc'. It gives
 % the full pathname of the program which fetches the user's new mail
