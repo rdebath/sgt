@@ -1,6 +1,7 @@
 Summary: Failed assertion: count234(term->scrollback) <= newsavelines
 Class: bug
 Present-in: 0.55
+Content-type: text/x-html-body
 
 <p>
 We've had occasional reports of the failure of the following assertion:
