@@ -1,0 +1,654 @@
+\cfg{xhtml-leaf-level}{0}
+\cfg{chapter}{Section}
+\cfg{text-title-align}{left}
+\cfg{text-indent}{0}
+\cfg{text-chapter-numeric}{yes}
+\cfg{text-chapter-suffix}{. }
+\cfg{text-chapter-underline}{-}
+\cfg{text-section-numeric}{0}{yes}
+\cfg{text-section-suffix}{0}{. }
+\cfg{text-section-underline}{0}{-}
+\cfg{xhtml-chapter-numeric}{yes}
+\cfg{xhtml-chapter-suffix}{. }
+\cfg{xhtml-section-numeric}{0}{yes}
+\cfg{xhtml-section-suffix}{0}{. }
+\cfg{xhtml-section-numeric}{1}{yes}
+\cfg{xhtml-section-suffix}{1}{. }
+
+\cfg{xhtml-address-start}{Copyright &copy; 2004 Simon Tatham.
+<br>This document is
+<a href="http://www.opencontent.org/">OpenContent</a>.
+<br>You may copy and use the text under the terms of the
+<a href="http://www.opencontent.org/opl.shtml">OpenContent
+Licence</a>.
+<br>Please send comments and criticism on this article to
+<a href="mailto:anakin@pobox.com">anakin@pobox.com</a>.}
+
+\define{dash} \u2013{-}
+
+\title My Experiences With Subversion
+
+by \W{http://pobox.com/~anakin/}{Simon Tatham}
+
+\C{intro} Introduction
+
+When I'm not at work, I'm a free software developer. I maintain a
+variety of published projects, ranging from fairly major things like
+\W{http://www.chiark.greenend.org.uk/~sgtatham/putty/}{PuTTY} to
+tiny little
+\W{http://www.chiark.greenend.org.uk/~sgtatham/utils/}{Unix
+utilities}; and I have almost as wide a variety of unpublished
+projects as well, ranging from half-finished major programs to my
+personal \cw{.bashrc}). Until November 2004, all these projects were
+stored in CVS, along with probably 90% of the other free software in
+the world. 
+
+Then I migrated to Subversion. This took a fair amount of thought
+and effort to do well, and shortly afterwards I was asked by a
+colleague if I could write something about my experiences. He was
+probably expecting something more like a couple of paragraphs, but I
+thought, hey, why not do the job right? :-)
+
+This article is not a rant. In general, I have found Subversion to
+be linearly superior to CVS and I certainly don't regret migrating
+to it. The article is just an attempt to share my experiences:
+things to watch out for, how to get the most out of Subversion, that
+sort of thing.
+
+\C{security} Security
+
+I'm pretty finicky about security, because I maintain a security
+product and can't really afford to cut corners on the repository
+where its code is going to be stored.
+
+CVS's security model is just awful. To allow a user to commit to a
+particular directory, you have to give them write permission on the
+whole directory, so there's nothing to stop them rewriting history:
+deleting or editing old revisions, altering log messages, etc. Now
+just occasionally you do actually \e{want} to do things like that
+(suppose you accidentally checked your password file into a
+repository, for example \dash you really would want to \e{remove} it
+from your CVS history, perhaps with a marker explaining what you'd
+done, rather than just checking in a subsequent change that deleted
+it); but it certainly isn't clear that allowing all users
+unrestricted access to do things like that is what you want to do.
+Added to that, there's the question of scripts in \cw{CVSROOT} (run
+under each client's UID, so that they can't impose dependable
+restrictions because hacked clients can bypass them, and conversely
+if anyone manages to check in a malicious script then all clients
+will start running it under their own UIDs and propagating malware);
+and then there's the issue of needing write permission in a
+directory to \e{read} it (although this can be fixed by correct
+repository administration, i.e. having a separate locks tree).
+
+(To be fair, version control in some sense \e{inherently} requires
+participants to trust one another, since each one checks in code
+which the others usually just compile and run. But at least you
+\e{know} when you're doing that; CVSROOT scripts seem more dangerous
+to me since not every CVS user even needs to know they're there...)
+
+So I was rather hoping Subversion could do better. Initially, it
+didn't look promising. The HTTP-based access methods didn't suit me:
+I'm probably unfairly biased in favour of SSH, but I couldn't find
+any supported authentication mechanisms which were as good as
+\cw{ssh-agent}. Sending passwords over HTTPS isn't \e{too} bad, but
+to obtain one-touch authentication you still need to cache your
+passwords on disk at the client end; \cw{ssh-agent} is superior
+because it never saves \e{all} the required authentication
+information to disk. (Well, unless it gets swapped out; but I
+encrypt my swap partition!)
+
+The alternative was \cw{svnserve}, and tunnelling it over SSH. But
+\cw{svnserve} doesn't support the fine-grained access control that
+the HTTP access method does; you just have users who can commit, and
+users who cannot. This wasn't really sufficient; I have a variety of
+projects which I co-develop with different groups of people, and I
+didn't want to be forced to allow someone commit access to (say)
+PuTTY as a necessary consequence of collaborating with them on (say)
+mail handling software.
+
+I would guess that the reason why \cw{svnserve} doesn't bother to
+provide serious access control is because it doesn't seem
+particularly useful in most cases: if a group of collaborating users
+all tunnel \cw{svnserve} over SSH, then it runs under each user's
+UID, so all users need physical write permission to the repository.
+And once they've all got that, there's simply no point in imposing
+fiddly access control, since it would only be voluntary \dash anyone
+willing to put the effort into modifying an SVN client could just
+bypass it.
+
+So, this wasn't looking particularly wonderful. HTTP provides
+fine-grained access control but poor network security; \cw{svnserve}
+over SSH provides good network security but awful access control. Is
+there a better way?
+
+There is, and it's based on
+\W{http://www.chiark.greenend.org.uk/~ian/userv/}\cw{userv}. For those
+who don't already know about it, \cw{userv} provides a convenient
+and decently secure means for one user on a Unix machine to supply a
+service to other users. For example, one user can set up a
+\cw{userv} configuration which offers to supply a service (say
+\cq{hello-world}) to selected other users; then those other users
+can invoke the service by typing \cq{userv fred hello-world}.
+\cw{userv} tells the service the username of the calling user,
+unforgeably; and the service program is run from a \cw{userv}
+\e{daemon}, so it isn't tainted by environment variables or any
+hidden state passed to it from the (potentially malicious) caller.
+It doesn't do anything which a user couldn't \e{in principle} do by
+writing a setuid program very carefully indeed; but it makes it much
+easier to make such things secure.
+
+So what I did was to ask my sysadmin to create me a second account
+on my server machine. That second account provides a \cw{userv}
+service which invokes \cw{svnserve}. So other users can simply run
+\cq{userv simon-svn svnserve}, and expect it to behave just like
+\cw{svnserve} itself; but the actual \cw{svnserve} process is always
+running under a user ID controlled by me, so it can't be messed
+around with. The user can't run a modified server process, because
+then it would run under their own UID which has no direct access to
+the repository; so this mechanism ensures that the \e{only}
+operations anyone can perform on the repository are those permitted
+by \cw{svnserve}, which means nobody can destroy or change history
+(except me, of course, the repository admin).
+
+Remote access, of course, is still via \cw{ssh}, only instead of
+running \cq{ssh remote-host svnserve}, you now have to run \cq{ssh
+remote-host userv simon-svn svnserve}. But Subversion makes it easy
+to configure strange remote access methods, so that wasn't a
+problem.
+
+Of course, fine-grained access control still isn't supplied by doing
+it like this. But that can be done easily enough using Subversion's
+pre-commit hook. The pre-commit hook can examine a prospective
+commit in detail using \cw{svnlook}; it can see which files are
+modified, note the name of the committer, and even examine the data
+in the altered files if it wants to. So in particular, it can look
+up the changed files and the committing user against an access list;
+and if it returns a failure status, then the commit is aborted. This
+would be a worthless security measure in the normal usage of
+\cw{svnserve} over SSH, but in the \cw{userv} world it's reliable,
+because no user can interfere with the running of the hook script.
+
+Another nice thing is that Subversion's hook scripts aren't
+version-controlled within the repository itself. This removes any
+possible risk that an incautiously written access list might allow a
+user to commit to the hook script and grant themself extra
+permissions!
+
+(Also, the pre-commit hook only allows fine-grained \e{commit}
+control; read access is unlimited no matter what I do. There are one
+or two things for which it would be convenient to be able to change
+this, but they're not vital to me.)
+
+There was one small niggle in the \cw{userv} mechanism: a bug in
+\cw{userv} which meant that if the \cw{userv} client process was
+killed by \cw{SIGKILL}, the server process would not realise it
+needed to terminate, and would hang around for ever. Since
+Subversion's policy is to routinely \cw{SIGKILL} its tunnel process
+whenever it finishes using it (the source comments suggest that some
+badly-behaved tunnel utility failed to respond sensibly to anything
+less!), this was a serious problem. Fortunately, I know the
+\cw{userv} author personally and he sent me a fix promptly; I don't
+know when the fix will make it into a release, or even if it's done
+so already. An alternative workaround might have been to write a
+sort of \q{bodyguard} wrapper which executed \cw{userv} as a
+subprocess with a different process group ID, in the hope of taking
+the \cw{SIGKILL} itself and having it miss \cw{userv}, but I haven't
+actually tried this myself. If you're stuck with a buggy version of
+\cw{userv}, it might be worth a try, though.
+
+\C{storage} Storage
+
+Having sorted out a repository access strategy, the next question
+was repository storage. As of Subversion 1.1, there are now two
+repository data formats: FSFS and BDB. BDB is supported by
+Subversion 1.0 as well, which (at the time of writing) was easy to
+get hold of and had Debian packages etc. FSFS is only supported by
+1.1, which basically had to be downloaded and compiled specially.
+
+FSFS proved to be the correct choice, for one sole and sufficient
+reason: \e{a read-only client of an FSFS repository does not require
+physical write access to the repository files}. Any client of a BDB
+repository, by contrast, requires physical write access.
+
+This is an absolutely killer feature. It means I can be very
+confident in giving out anonymous SVN access to the entire world: I
+simply run a public \cw{svnserve} under a dedicated user ID (not the
+same one as I'm using for the main repository). So even if a
+malicious client manages to find a security hole in \cw{svnserve}
+and compromise the anonymous-access user ID, that \e{still} doesn't
+give them write access to the actual repository. (Unless they find a
+kernel security hole, of course.)
+
+There are other things I like about FSFS:
+
+\b The Subversion book mentions that BDB is capable of getting
+\q{wedged} in such a way that it requires a manual database
+recovery, whereas FSFS is immune from this.
+
+\b FSFS works by adding a new file for every commit, and never
+modifies old files. This makes it much more friendly to incremental
+backups than a monolithic-file approach, which seemed likely to keep
+my sysadmin happy.
+
+\b Laziness benefit: it meant I didn't have to go to the hassle of
+installing the Berkeley DB libraries in order to compile up
+Subversion!
+
+But all of these were added bonuses. The real killer feature of
+FSFS, for me, is the read-only access.
+
+(FSFS is supposedly a bit slower at the common operation of checking
+out the latest version. But at the time of writing, I've got a
+5000-commit FSFS repository and I'm having no speed problems with it
+at all, so it's easily worth it for the benefits.)
+
+\C{anon} Anonymous access
+
+Most of my CVS repositories had been exported via a public-access
+CVS \cw{pserver}, and quite a few users of my projects had found
+this a useful facility. 
+
+For anonymous access using a Subversion client, the two options were
+HTTP and anonymous \cw{svnserve}. The decision was simple: the
+server machine I was doing all this on still runs Apache 1.3, and
+the Subversion HTTP modules require 2.0. \cw{svnserve} it was.
+
+Web-based repository browsing was also a facility provided by my
+previous CVS setup, via
+\W{http://viewcvs.sourceforge.net/}{ViewCVS}. The latest trunk
+ViewCVS also supports Subversion as a back end, so that was easy
+enough to provide as well.
+
+(Since then, someone has made me aware of
+\W{http://websvn.tigris.org/}{WebSVN}. I haven't yet looked closely
+into whether that's superior to ViewCVS or not.)
+
+As mentioned in \k{storage}, both of these anonymous access methods
+are hosted under a separate user ID to the one hosting the main
+repository, ensuring that a compromise of either one is still some
+distance away from acquiring commit access.
+
+\C{migration} The actual migration
+
+Migration from CVS to Subversion can be done reasonably easily using
+\cw{cvs2svn}. However, I wasn't satisfied with the quality of the
+result, so I had to do quite a lot of work to produce a high-quality
+migration.
+
+\H{migration-dirlayout} Inflexible directory layout
+
+\cw{cvs2svn} insists on creating your repository with three
+top-level directories \c{trunk}, \c{branches} and \c{tags}, each of
+which contains subdirectories corresponding to each top-level CVS
+module.
+
+I didn't like this; it might make sense in a repository dedicated to
+a single project with many parts, where a branch typically wants to
+be across the entire project, but it wasn't well suited to my
+repository of many largely unrelated projects each of which branched
+separately.
+
+(Actually, I also didn't like the alternative suggestion in the
+Subversion book, in which you swapped round the top two levels so
+you had the module name at the top level and \e{then} \c{trunk},
+\c{branches} and \c{tags} subdirectories, because in all normal
+situations one is used to thinking of a source pathname as
+\c{putty/ssh.c} and it would have felt very odd to insert an
+administrative layer in the \e{middle} of that to get
+\c{putty/trunk/ssh.c}. Instead, I went for the completely ad-hoc
+approach, in which trunk source directories are direct children of
+the root, and branch and tag directories are alongside them with
+names indicating their status: \c{putty-branch-0.55},
+\c{putty-0.56}. But that's not immediately relevant to the
+difficulty of migration.)
+
+I wasn't able to hack \cw{cvs2svn} to produce the layout I wanted;
+it was all a bit too interlinked to make a change like that easy.
+Instead, I found it was actually easier to write an auxiliary Python
+script which postprocessed the Subversion dump file output from
+\cw{cvs2svn}, and altered the directory names there.
+
+\H{migration-externals} \cw{svn:externals} properties
+
+At one point in the history of my repository, I wanted to make one
+CVS module a common subdirectory in two others (a library shared
+between two applications). You can do this by adding entries to the
+file \c{modules} in \cw{CVSROOT}.
+
+Subversion's analogous mechanism is the \c{svn:externals} property,
+set on the directory in which you want to check out a separate
+subdirectory. So my migration script had to include \cw{CVSROOT} in
+the input to \cw{cvs2svn}; note the relevant checkin to
+\cw{CVSROOT/modules}; and invent some \c{svn:externals} property
+changes on the two affected directories on that revision. Then I had
+to filter out the \e{rest} of \cw{CVSROOT} from the dump file,
+because all the other changes had been made by other people
+maintaining projects alongside mine!
+
+To make matters worse, I couldn't think of any easy way to \e{parse}
+\cw{CVSROOT/modules} and do this job automatically. Instead, I had
+to hack around it manually by recognising the log message on the
+particular commit, which meant my migration script became specific
+to my particular repository so I can't usefully publish it for other
+people to use.
+
+See also \#{\k{FIXME}} for more problems I had with \c{svn:externals}.
+
+\H{migration-renames} Directory and file renaming
+
+A large motivation for me to migrate to Subversion was its sensible
+support for renaming directories and files. In CVS, you have a
+variety of nasty hacky things you can do to represent a file rename:
+
+\b \c{cvs add} the new file and \c{cvs remove} the old one in the
+same commit. This ensures that any date-based checkout accurately
+reflects what the source tree looked like on that date, but means
+it's hard to track history between the two files.
+
+\b Copy the RCS file (the \c{,v} file) into the new location, and
+then \c{cvs remove} the old file. This has the advantage that \c{cvs
+log} on the new file shows its unbroken history, but means any
+historical checkout from before the rename will show two copies of
+the file.
+
+\b For renaming directories, simply renaming a top-level directory
+(perhaps with a symlink so it's still accessible under the old name)
+and trusting users to remember what happened is as good a way as
+any.
+
+Despite holding off a number of major renames for several years
+until I could migrate to Subversion, I still had to do \e{some}
+renames while I was a CVS user, and I did them in all three of the
+above ways in various different places! Another grubby chore for my
+migration script was to note all these renames (again, I had to
+point them out manually) and convert them into proper clean
+Subversion rename representations, so that previously broken halves
+of files' history became rejoined.
+
+\H{migration-cvs-rev} CVS revision numbers
+
+\cw{cvs2svn} offers the option to provide a Subversion property
+called \c{cvs2svn:cvs-rev} on each file it converts, which tracks
+the CVS revision number. This seemed like a useful way to preserve
+information about my original CVS.
+
+The only trouble is, if you do this, you end up with this
+\c{cvs2svn:cvs-rev} property on every file, and it stays there even
+after you start changing the file. That didn't seem like what I
+wanted; I only wanted a file to be tagged with a CVS revision
+property if the data in that file actually \e{matched} what had
+originally been in that CVS revision!
+
+The idea I hit on was to let \cw{cvs2svn} write the CVS revision
+properties, but then \e{after} doing the migration, go through and
+do a mammoth Subversion commit which removed the properties from all
+active branches. This is what I actually did in the end, but that
+had its own downside: if you use ViewCVS to get an overview of any
+particular directory, all files that haven't been changed since
+before the migration now show their last modification as this
+administrative commit, and you don't get to see the last time they
+\e{really} changed. Also, it shows up as an annoyance in \c{svn log
+-v}.
+
+I think if I had this one to do over again, I'd just lose the CVS
+revision properties.
+
+\H{migration-after} After the migration
+
+After the migration there were still some cleanup tasks to do:
+
+\b One of the nice things about Subversion's branching model is that
+you can \e{delete} a branch when you've finished with it. So I did a
+big commit in which I deleted obsolete branches and tags.
+
+\b As I mentioned in \k{migration-cvs-rev}, I did an even bigger
+commit in which I deleted \c{cvs2svn:cvs-rev} properties on all
+active branches and trunks.
+
+\b Another big commit deleting \cw{.cvsignore} files. \cw{cvs2svn}
+had helpfully copied their contents into \c{svn:ignore} properties
+throughout, but I didn't want the files themselves cluttering the
+place up after the migration.
+
+\b Then I went through all the checkins in the repository looking
+for explicit CVS revision numbers in the log comments, and added a
+note to each one giving the corresponding Subversion commit number.
+
+Perhaps you wouldn't care about most of this sort of thing if you
+weren't a perfectionist. I am, and I did :-)
+
+\C{publishing} Publishing version control history
+
+Prior to migration, on the PuTTY web site, I provided a \c{.tar.gz}
+archive of the PuTTY CVS repository, so that anyone who wanted to do
+in-depth research into the history of our development could download
+the whole lot in one go and then do it offline, rather than having
+to refer back to our anonymous \cw{pserver} all the time.
+
+CVS's repository storage format precisely mirroring the actual
+source tree has plenty wrong with it (in particular, it's part of
+what makes renames difficult), but one thing it makes convenient is
+this sort of trick. For Subversion, a different approach was needed.
+
+I could have just \cw{tar}red up the entire Subversion repository in
+FSFS format (among FSFS's many virtues is that its format is
+architecture-independent, unlike BDB), but that didn't seem like a
+good idea since it contained all my other projects as well as PuTTY
+- it seemed unfriendly to foist a load of unwanted data on anyone
+using that download.
+
+The obvious answer is to provide a Subversion dump file. One of the
+Subversion tools is a handy utility called \c{svndumpfilter}, which
+filters a dump file and keeps only a subset of the directories
+involved. I could use this to produce a dump file containing only
+PuTTY, which people could download and import into their own
+repository.
+
+Except that \cw{svndumpfilter} doesn't quite work. It fails in the
+case where you copy a file from one of the areas being filtered out
+into one of the areas being kept; \cw{svndumpfilter} can't
+reconstruct the data that needed to go into that file. This is an
+unfortunate consequence of it being a simple filter tool that
+operates on nothing but a dump file.
+
+In fact I don't currently \e{have} any incidents in my version
+control history when a file from outside PuTTY was copied into it,
+but I certainly didn't want to rule out the possibility that I might
+have such an incident in future. So I wrote a replacement for
+\cw{svndumpfilter} (easy enough when my migration script already
+contained general routines to read and write Subversion dump files)
+which also knew the location of the repository from which the dump
+file came \dash so it could use \c{svnlook cat} to find the data for the
+copied revision of the file, and replace an add-as-copy operation
+with a straight add-as-data.
+
+The other really important thing here was the \c{--deltas} option to
+\c{svnadmin dump}, which reduced a 250Mb dump file to more like
+10Mb! For this sort of purpose it's absolutely invaluable.
+
+\C{using} My experiences of actually using Subversion
+
+Having now done the migration, here are some things I've noticed
+about Subversion once you're actually using it.
+
+(This section might contain a couple of \e{small} complaints, but
+nothing seriously ranty.)
+
+\H{using-ls} \cw{ls -v}!
+
+The Subversion subcommand \c{ls} lets you list a directory in a
+repository without having to check everything out. Very nice.
+
+As befits an \c{ls} command, it displays filenames only unless you
+ask for more information.
+
+You ask for more information using \c{svn ls -v}. Not \c{ls -l}, as
+I'm sure \e{everybody} instinctively typed.
+
+(This one annoyed me enough \dash and is easy enough to fix \dash
+that I may yet submit a patch...)
+
+\H{using-log} \c{svn log} acts on current revision
+
+Unlike CVS, if you sit in a working copy and run \c{svn log}, it
+will display the log for \e{the checked-out revision} of the file or
+directory in question \dash so you don't see log entries for
+checkins that have happened since your last \c{svn update}. (If you
+want it to, you can always use \c{-rHEAD:1}.)
+
+It isn't \e{entirely} clear that this behaviour is actually wrong;
+it has the virtue of making the log output predictable, so that if
+you want to keep piping \c{svn log} into a processing script until
+you get the script right, the output won't unexpectedly change half
+way through because someone else did a commit. However, it's
+confusingly different from CVS and therefore worth watching out for.
+
+(In particular, note that even \c{svn commit} doesn't update the
+revision number in a working copy! You have to do an update
+\e{after} committing, before \c{svn log} will show the commit you
+just made.)
+
+\H{using-branches} Branching model
+
+The question of Subversion's branching model versus CVS's seems to
+be something of a holy war.
+
+(As a very brief summary: CVS branches by creating a fork in the
+time dimension, so that the file always has the same pathname but
+changes to it are tree-structured rather than linear. Subversion has
+a single linear time dimension always, and it \q{branches} simply by
+copying a directory to a different pathname. Hence the practice of
+having \c{trunk} and \c{branches} directories \dash you generate a
+branch by copying \c{trunk/myprogram} to
+\c{branches/mybranch/myprogram}. Since copying is a magic operation
+and history is preserved across it, this means that history commands
+such as \c{svn log} can be applied to both the source and
+destination paths and both will show the pre-branch-point history.)
+
+One unfortunate effect of Subversion's branching model is that it
+partially undoes the benefit of the single revision number. You want
+to be able to quote a single revision number in (say) a nightly
+snapshot build, and when a user quotes that number back to you you
+want it to give you \e{all} the information you need about what
+files went into the build in question. But once you have a branch,
+you suddenly \e{also} need to include the repository path in some
+way, which is less helpful.
+
+On the other hand, things I like a \e{lot} about Subversion's
+branching model are:
+
+\b Branch maintenance operations are versioned. Creating a branch or
+tag, and \q{moving} a tag (the equivalent of which in Subversion, of
+course, is copying a different version of a file into the tag
+directory), are version-controlled operations requiring a checkin,
+which means you get to look back and know who did it, when, and what
+they said about why the branch was needed.
+
+\b You can delete obsolete branches or tags when they're no longer
+needed. If you have the type of development model where you create a
+branch, develop on it for a while, and merge it back into the trunk
+once it's stable, you can delete the branch directory when you
+finish, so that anyone browsing the repository can see at a glance
+which branches are actually still active.
+
+\H{using-cross-dir-commit} Committing across multiple directories
+
+Suppose you check out two source directories alongside one another:
+
+\c hostname:~/src$ svn co svn+ssh+userv://host/repos/foo
+\e                 bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+\c hostname:~/src$ svn co svn+ssh+userv://host/repos/bar
+\e                 bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+
+Then you modify some files in each one, and you want to do a single
+atomic commit including both sets of changes. Since you can
+legitimately run either of \cq{svn commit foo} or \cq{svn commit
+bar}, you would sort of hope to be able to run \cq{svn commit foo
+bar} and have it Just Work.
+
+No such luck; if you try that, it complains.
+
+\c hostname:~/src$ svn commit foo bar
+\e                 bbbbbbbbbbbbbbbbbb
+\c svn: '/home/simon/src' is not a working copy
+\c hostname:~/src$ svn commit foo/foo.txt bar/bar/txt
+\e                 bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+\c svn: '/home/simon/src' is not a working copy
+
+Subversion appears to want the common parent directory of your two
+working copies to itself be a working copy. It seems to be only set
+up to do commits within a single working copy tree.
+
+I have found a way around this, however. It's horrid, but it seems
+to work. Subversion won't complain \e{too} much provided the parent
+directory is a working copy of \e{something} in the same repository.
+So I make sure my repository contains an empty directory (usually
+called \c{emptydir}), and I check that out into the parent
+directory:
+
+\c hostname:~/src$ svn co svn+ssh+userv://host/repos/emptydir .
+\e                 bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+
+Now I still can't commit using the command \cq{svn commit foo bar}.
+However, if I also specify the precise file names of the files I've
+changed (which can admittedly be fiddly if there are lots of them
+\dash in complex cases I've been known to \cw{perl} the output of
+\c{svn status} to work out the file list automatically), it \e{does}
+work:
+
+\c hostname:~/src$ svn commit foo/foo.txt bar/bar/txt
+\e                 bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+\c [commit succeeds]
+\e iiiiiiiiiiiiiiiii
+
+I don't fully understand why this works and none of the other
+options didn't. But it's certainly worth knowing!
+
+\c hostname:~/src$ svn co svn+ssh+userv://host/repos/emptydir .
+
+\H{using-svn-externals} \c{svn:externals} isn't what I wanted
+
+The \c{svn:externals} property looked like just what I wanted in
+order to arrange for one top-level directory in my repository to
+always be checked out as a subdirectory of another.
+
+Unfortunately, it has to specify a \e{fully qualified} Subversion
+repository URL, which cannot be relative. So if I'm using a locally
+configured \c{svn+userv} URL scheme to get commit access to my
+repository, but anonymous users are using the normal \c{svn} scheme,
+then there are two possibilities:
+
+\b I put \c{svn+userv} in the \c{svn:externals} property, and
+anonymous users can't check out at all.
+
+\b I just put \c{svn} in the \c{svn:externals} property, and now
+everyone can check out but I can't helpfully check \e{in}.
+
+Shortly after migration I decided that this was simply too much
+hassle; so I deleted the \c{svn:externals} properties on the two
+affected directories, and modified their \cw{Makefile}s so that they
+can cope with finding their library directory at the same level as
+themselves, instead of in a subdirectory.
+
+\C{summary} Summary
+
+I've described my experiences so far of migrating from CVS to
+Subversion, and using Subversion. In particular:
+
+\b \cw{userv} can be used to give Subversion a security model vastly
+superior to that of CVS.
+
+\b FSFS is king, and permits anonymous access with a high confidence
+of security. This means Subversion 1.1.
+
+\b Migrating to CVS is easy if you don't mind the way \cw{cvs2svn}
+sets things up for you, but gets a lot more difficult the more
+perfectionist you get. However, if you only do it once it's worth
+putting some effort in!
+
+Although I've described some issues above which might or might not
+be considered bugs in Subversion, in general they're easy enough to
+work around, and in most respects I think Subversion amply fulfills
+its promise of being \q{CVS, only done properly}. I like it, and I
+don't regret migrating. I'd do it again.
