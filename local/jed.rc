@@ -1,5 +1,5 @@
 % -*- mode: slang; mode: fold -*-
-% Simon Tatham: version $Revision: 1.9 $
+% Simon Tatham: version $Revision: 1.10 $
 
 %{{{ load Emacs keybindings to start with
 
@@ -623,6 +623,8 @@ if (jedrc_is_in_lib("timber.sl")) { %{{{
     autoload("timber_only", "timber");
     add_completion("timber");
     add_completion("timber_compose");
+    setkey("timber_compose", "^Xm");   % replace standard mail-mode
+    setkey("timber", "^XM");           % invoke Timber proper
 }
 %}}}
 if (jedrc_is_in_lib("bcmode.sl")) { %{{{
@@ -642,7 +644,8 @@ define text_item1st() {
     bol();
     if (looking_at(" ") or looking_at("\t")) {
         skip_white();
-        if (looking_at("-") or looking_at("*") or looking_at("("))
+        if (looking_at("-") or looking_at("*") or
+            looking_at("+") or looking_at("("))
             return 1;
     }
     return 0;
@@ -728,6 +731,38 @@ define text_mode_hook() {
     runhooks("jedrc_text_mode_hook");
 }
 
+%}}}
+%{{{ M-x cvs-*
+define cvs_log() {
+    variable file, dir, name;
+    (file, dir, name, ) = getbuf_info();
+    name = "*cvs-log*:" + name;
+    change_default_dir(dir);
+    sw2buf(name);
+    erase_buffer();
+    text_mode();
+    run_shell_cmd("cvs log " + file);
+    setbuf_info((getbuf_info & ~1) | 8); % clear modified bit, set readonly
+    bob();
+    bol_fsearch("-----");
+    recenter(1);
+}
+define cvs_annotate() {
+    variable file, dir, name, line;
+    (file, dir, name, ) = getbuf_info();
+    line = what_line();
+    name = "*cvs-annotate*:" + name;
+    change_default_dir(dir);
+    sw2buf(name);
+    erase_buffer();
+    text_mode();
+    run_shell_cmd("cvs annotate " + file);
+    setbuf_info((getbuf_info & ~1) | 8); % clear modified bit, set readonly
+    goto_line(line);
+    recenter(0);
+}
+add_completion("cvs_log");
+add_completion("cvs_annotate");
 %}}}
 %{{{ Include local hacks if possible
 $1 = expand_filename("~/.jedrc2");
