@@ -43,9 +43,11 @@ static level *level_load(char *filename) {
 
     while (fgets(buf, sizeof(buf), fp)) {
 	if (buf[strlen(buf)-1] != '\n') {
-	    fatal("Line length overflow in level set file");
+	    fatal("Line length overflow in level file");
 	}
 	buf[strcspn(buf, "\r\n")] = '\0';
+	if (!buf[0])
+	    continue;
 	if (ishdr(buf, "Title: ")) {
 	    if (level->title) {
 		fatal("Multiple titles in level file");
@@ -129,6 +131,8 @@ levelset *levelset_load(char *filename) {
 	    fatal("Line length overflow in level set file");
 	}
 	buf[strcspn(buf, "\r\n")] = '\0';
+	if (!buf[0])
+	    continue;
 	if (ishdr(buf, "Title: ")) {
 	    if (set->title) {
 		fatal("Multiple titles in level set file");
