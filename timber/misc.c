@@ -3,6 +3,7 @@
  */
 
 #include <unistd.h>
+#include <string.h>
 #include <ctype.h>
 
 #include "timber.h"
