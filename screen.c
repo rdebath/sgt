@@ -167,7 +167,7 @@ void screen_level_display(gamestate *s, char *message) {
 	      case '.': case ':':      attr = T_EARTH; break;
 	      case 'o': case '8':      attr = T_SACK; break;
 	      case '@':                attr = T_PLAYER; break;
-	      case '=':                c = ' '; attr = T_SPACE; break;
+	      case '~':                c = ' '; attr = T_SPACE; break;
 	      default:                 attr = T_SPACE; break;
 	    }
 	    screen_printc(i+dx, j+dy, attr, c);
