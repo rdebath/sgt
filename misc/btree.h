@@ -42,6 +42,9 @@ typedef int (*propmakefn_t)(void *state, bt_element_t, nodecomponent *dest);
 /* s1 may be NULL (indicating copy s2 into dest). s2 is never NULL. */
 typedef int (*propmergefn_t)(void *state, nodecomponent *s1, nodecomponent *s2,
 			     nodecomponent *dest);
+typedef int (*searchfn_t)(void *tstate, void *sstate, int ntrees,
+			  nodecomponent **props, int *counts,
+			  bt_element_t *elts, int *is_elt);
 
 enum {
     BT_REL_EQ, BT_REL_LT, BT_REL_LE, BT_REL_GT, BT_REL_GE
@@ -90,6 +93,8 @@ bt_element_t bt_findrel(btree *bt, bt_element_t element, cmpfn_t cmp,
 bt_element_t bt_findpos(btree *bt, bt_element_t element, cmpfn_t cmp,
 			int *index);
 bt_element_t bt_find(btree *bt, bt_element_t element, cmpfn_t cmp);
+bt_element_t bt_propfind(btree *bt, searchfn_t search, void *sstate,
+			 int *index);
 bt_element_t bt_replace(btree *bt, bt_element_t element, int index);
 void bt_addpos(btree *bt, bt_element_t element, int pos);
 bt_element_t bt_add(btree *bt, bt_element_t element);
