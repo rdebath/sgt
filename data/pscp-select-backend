@@ -1,0 +1,16 @@
+Summary: Ability to explicitly select SCP/SFTP backend in PSCP
+Class: wish
+Difficulty: fun
+Priority: medium
+Content-type: text/x-html-body
+
+<p>
+It would sometimes be useful for users to be able to explicitly select
+the backend that PSCP uses, with command-line options <code>-scp</code>
+and <code>-sftp</code>.
+
+<p>
+As a side effect, <code>-sftp</code> could easily make PSCP look
+harder for an SFTP server, in the same way that PSFTP does currently.
+(But the only reason it can't always do this is a grotty
+implementation detail which will be swept away come the revolution.)
