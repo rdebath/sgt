@@ -34,7 +34,7 @@ any nonblocking rekey as a protocol extension (see for instance message
 so we don't now have much excuse for not implementing that;
 but as of version -18 of the transport draft no change has been made 
 to the actual documents. (See 
-<a href="http://www.chiark.greenend.org.uk/ucgi/~jacobn/cvsweb/ssh2-kex-data.d/draft-iet f-secsh-transport-18-plus-kex-data.txt.diff?r1=1.1&r2=1.4&f=H">the current version</a>
+<a href="http://www.chiark.greenend.org.uk/ucgi/~jacobn/cvsweb/ssh2-kex-data.d/draft-ietf-secsh-transport-18-plus-kex-data.txt.diff?r1=1.1&r2=1.4&f=H">the current version</a>
 of a proposed change to the language to make this clearer.)
 
 <p>
