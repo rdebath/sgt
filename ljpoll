@@ -3,6 +3,7 @@
 import ljproto
 import sys
 import string
+import urllib
 import os
 import time
 
@@ -16,14 +17,29 @@ def chomp(s):
     return s
 
 cfg = os.environ["HOME"] + "/.ljscan/ljpoll"
+date_start = date_stop = ""
+lastupdate = ""
+lastrealdate = ""
+then = 0
 try:
     f = open(cfg, "r")
-    s = chomp(f.readline())
-    s2 = chomp(f.readline())
+    while 1:
+	s = chomp(f.readline())
+	if s == "": break
+	space = string.find(s, " ")
+	if space < 0: continue
+	if s[:space] == "date-start":
+	    date_start = s[space+1:]
+	elif s[:space] == "date-stop":
+	    date_stop = s[space+1:]
+	elif s[:space] == "checkfriends-last-return":
+	    lastupdate = s[space+1:]
+	elif s[:space] == "last-real-date":
+	    lastrealdate = s[space+1:]
+	elif s[:space] == "last-call":
+	    then = float(s[space+1:])
     f.close()
-    lastupdate = s
     now = time.time()
-    then = float(s2)
     if now < then:
 	sys.stderr.write("Please do not press this button again for " +
 	"%d seconds.\n" % int(then-now))
@@ -40,11 +56,47 @@ if verbose:
 
 if ljproto.ljok(ret):
     if ret["new"] == "1":
-	print "New entries at www.livejournal.com/users/" + \
-	ljproto.ljusername() + "/friends"
+	# The checkfriends protocol tells us there is something
+	# new. If we have date delimiters, we now check the real
+	# friends page to see if it's actually correct or not.
+	new = 1
+	urlguts = "www.livejournal.com/users/"+ljproto.ljusername()+"/friends"
+	if date_start != "" and date_stop != "":
+	    url = "http://" + urlguts + "/"
+	    session = os.environ["HOME"] + "/.ljscan/ljsession"
+	    sessf = open(session, "r")
+	    cookie = chomp(sessf.readline())
+	    sessf.close()
+	    urllib._urlopener.addheader(cookie)
+	    f = urllib._urlopener.open(url)
+	    date = ""
+	    while 1:
+		s = f.readline()
+		if s == "": break
+		a1 = string.find(s, date_start)
+		if a1 >= 0:
+		    a1 = a1 + len(date_start)
+		    a2 = string.find(s, date_stop, a1)
+		    if a2 > a1:
+			date = s[a1:a2]
+			break
+	    f.close()
+	    if date != "" and date == lastrealdate:
+		print "no visible change, although checkfriends reported one"
+		new = 0
+	    if date != "": lastrealdate = date
+	if new:
+	    print "New entries at www.livejournal.com/users/" + \
+	    ljproto.ljusername() + "/friends"
     f = open(cfg, "w")
-    f.write(ret["lastupdate"] + "\n")
-    f.write(str(time.time() + string.atoi(ret["interval"])) + "\n")
+    if date_start != "\n":
+	f.write("date-start " + date_start + "\n") 
+    if date_stop != "\n":
+	f.write("date-stop " + date_stop + "\n")
+    f.write("checkfriends-last-return " + ret["lastupdate"] + "\n")
+    f.write("last-call " + str(time.time() + string.atoi(ret["interval"])) + "\n")
+    if lastrealdate != "":
+	f.write("last-real-date " + lastrealdate + "\n")
     f.close()
 else:
     sys.stderr.write(ljproto.ljerror(ret) + "\n")
