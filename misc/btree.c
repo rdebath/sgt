@@ -1885,7 +1885,7 @@ void bt_dump_nodes(btree *bt, ...)
 void verifynode(btree *bt, nodeptr n, bt_element_t *array, int *arraypos,
 		int depth)
 {
-    int subtrees, min, max, i;
+    int subtrees, min, max, i, before, after, count;
 
     /* Check the subtree count. The root can have as few as 2 subtrees. */
     subtrees = bt_subtrees(bt, n);
@@ -1912,6 +1912,8 @@ void verifynode(btree *bt, nodeptr n, bt_element_t *array, int *arraypos,
 	    error("node %p element %d is NULL\n", n, i);
     }
 
+    before = *arraypos;
+
     /* Now verify the subtrees, and simultaneously check the ordering. */
     for (i = 0; i < subtrees; i++) {
 	if (depth < bt->depth) {
@@ -1928,6 +1930,13 @@ void verifynode(btree *bt, nodeptr n, bt_element_t *array, int *arraypos,
 	    (*arraypos)++;
 	}
     }
+
+    after = *arraypos;
+
+    /* Check the node count. */
+    count = bt_node_count(bt, n);
+    if (count != after - before)
+	error("node %p count is %d, should be %d", n, count, after - before);
 }
 
 void verifytree(btree *bt, bt_element_t *array, int arraylen)
