@@ -3,6 +3,7 @@ Class: wish
 Difficulty: tricky
 Priority: low
 Depends: compressed-scrollback
+Fixed-in: 2004-10-14
 Content-type: text/x-html-body
 
 <p>
@@ -13,7 +14,6 @@ plane 2 (and it's looking more likely that it the ideographs will
 spill onto yet another plane)".
 
 <p>
-(If we implement
-<a href="unicode-combining.html">Unicode combining characters</a>,
-could we in principle do this with surrogates, effectively using a
-UTF-16 encoding internally?)
+<em>Update:</em> as of the 2004-10-14 snapshot, PuTTY uses 32 bits
+internally to store the code point. Platform support for copy/paste
+and display has some limitations, though.
