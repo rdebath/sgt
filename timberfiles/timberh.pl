@@ -500,18 +500,18 @@ sub html_to_text {
     $addstart = $addend = "";
 
     if ($ef_B > 0) {
-      $addstart .= "\035B";
-      $addend .= "\035b";
+      #$addstart .= "\035B";
+      #$addend .= "\035b";
     }
 
     if (($ef_I > 0) or ($ef_U > 0)) {
-      $addstart .= "\035U";
-      $addend .= "\035u";
+      #$addstart .= "\035U";
+      #$addend .= "\035u";
     }
 
     if ($ef_BLINK > 0) {
-      $addstart .= "\035F";
-      $addend .= "\035f";
+      #$addstart .= "\035F";
+      #$addend .= "\035f";
     }
 
     $text =~ s/([^\s])/${addstart}$1${addend}/g;
