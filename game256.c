@@ -164,6 +164,16 @@ void imagepixel(Image image, int x, int y, int colour)
 	IMGDATA(image)[y*XSIZE(image)+x] = colour;
 }
 
+int getimagepixel(Image image, int x, int y)
+{
+    x += XOFFSET(image);
+    y += YOFFSET(image);
+    if (x >= 0 && x < XSIZE(image) && y >= 0 && y < YSIZE(image))
+	return IMGDATA(image)[y*XSIZE(image)+x];
+    else
+	return -1;		       /* out of bounds */
+}
+
 void imageonimage(Image canvas, Image brush, int x, int y, int mask)
 {
     int ix, iy;

@@ -29,4 +29,5 @@ void endframe(void);
 void pickimage(Image image, int x, int y);
 void drawimage(Image image, int x, int y, int mask);
 void imagepixel(Image image, int x, int y, int colour);
+int getimagepixel(Image image, int x, int y);
 void imageonimage(Image canvas, Image brush, int x, int y, int mask);
