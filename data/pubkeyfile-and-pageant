@@ -17,4 +17,40 @@ a particular forced command). However, I suspect the issues aren't
 limited to this case.
 
 <p>
-<em>FIXME: write up suggested fix for above problem</em>
+Here is my (JTN) suggested algorithm for fixing the immediate problem
+(assuming that all the primitives mentioned are always available):
+
+<p><pre>array_t pageant_ids[];
+
+  if (Pageant is running) {
+    pageant_ids := (Pageant's list of key IDs)
+  } else {
+    pageant_ids := {}
+  }
+
+  if (key k configured in PuTTY exists) {
+    if (server would accept k.id) {
+      bool success
+      if (k.id in pageant_ids[]) {
+        success = do_pageant_auth (k.id)
+      } else {
+        success = do_putty_auth (k)
+      }
+      if (success) goto auth_success
+    }
+  } else {
+    foreach id in pageant_ids[] {
+      if (server would accept id) {
+        goto auth_success if (do_pageant_auth (id))
+      }
+    }
+  }
+  /* give up on public key auth */</pre>
+
+<p>
+An alternative and perhaps cleaner solution is to separate `public key
+auth with specified file' and `public key auth with Pageant' and allow
+them to be individual disabled; this ties nicely into
+<a href="auth-pref.html">auth-pref</a>.
+
+<em>FIXME: characterise any problems other than this one</em>
