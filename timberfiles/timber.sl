@@ -1056,15 +1056,36 @@ define timber_fullmime() {
 %}}}
 %{{{ timber_get_mimepart(): position user marks at each end of MIME part
 
+% Helper routine to determine the nesting level of a ! line.
+define timber_pling_nestlevel() {
+    variable ret;
+    push_spot();
+    EXIT_BLOCK { pop_spot(); }
+    bol();
+    if (eobp() or eolp())
+	return -1;
+    ret = 0;
+    go_right_1();
+    while (what_char() == ' ') {
+	go_right_1();
+	ret = ret + 1;
+    }
+    return ret;
+}
+
 % Place user marks at each end of the current MIME part. Will use a
-% decoded variant if `use_decoded' is TRUE, otherwise will always go
-% for the original transfer encoding.
+% decoded variant if `use_decoded' is TRUE, otherwise will always
+% go for the original transfer encoding. In the latter case, we
+% will also select the whole of an attachment _including_ nested
+% sub-MIME-parts (for example, in saving a message/rfc822
+% attachment to a file we really want to keep any multiparts it may
+% contain).
 %
 % Returns (markattop, markatbottom, type, encoding).
 define timber_get_mimepart(use_decoded) {
     variable encoding = "7BIT";	       % default
     variable type = "text/plain";      % default
-    variable headerchr, leadchr;
+    variable headerchr, leadchr, topchr, nestlevel;
     variable mark, top, bottom;
 
     mark = create_user_mark();
@@ -1076,6 +1097,8 @@ define timber_get_mimepart(use_decoded) {
 	bol();
     }
 
+    topchr = what_char();
+
     if (what_char() == ':' or bobp()) {
 	goto_user_mark(mark);
 	error("Not in a MIME attachment.");
@@ -1085,7 +1108,10 @@ define timber_get_mimepart(use_decoded) {
     if (what_char() == '*')
 	headerchr = '|';
     else
-	headerchr = '+';	
+	headerchr = '+';
+
+    if (what_char() == '!')
+	nestlevel = timber_pling_nestlevel();
 
     eol();
     go_right_1();
@@ -1131,7 +1157,10 @@ define timber_get_mimepart(use_decoded) {
     top = create_user_mark();
 
     % Now move down to the end of the message text.
-    while (what_char == leadchr and not eolp()) {
+    while (((use_decoded and what_char() == leadchr) or
+	    ((not use_decoded) and (what_char() != topchr or
+				    nestlevel != timber_pling_nestlevel())))
+	   and not eolp()) {
 	eol();
 	go_right_1();
     }
