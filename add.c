@@ -8,7 +8,7 @@
 #include <unistd.h>
 #include "caltrap.h"
 
-void caltrap_add(int nargs, char **args, int nphysargs, int type)
+void caltrap_add(int nargs, char **args, int nphysargs, struct entry *e)
 {
     Date sd, ed;
     Time st, et;
@@ -97,11 +97,40 @@ void caltrap_add(int nargs, char **args, int nphysargs, int type)
 	printf("New entry will run from %s %s\n", dfmt, tfmt);
 	sfree(dfmt);
 	sfree(tfmt);
-	dfmt = format_date_full(ed);
-	tfmt = format_time(et);
-	printf("                     to %s %s\n", dfmt, tfmt);
-	sfree(dfmt);
-	sfree(tfmt);
+	if (e->period) {
+	    Date td;
+	    Time tt;
+	    td = sd;
+	    tt = st;
+	    add_to_datetime(&td, &tt, e->length);
+	    dfmt = format_date_full(td);
+	    tfmt = format_time(tt);
+	    printf("                     to %s %s\n", dfmt, tfmt);
+	    sfree(dfmt);
+	    sfree(tfmt);
+	    dfmt = format_duration(e->period);
+	    printf("        repeating every %s\n", dfmt);
+	    sfree(dfmt);
+	    td = sd;
+	    tt = st;
+	    add_to_datetime(&td, &tt, e->period);
+	    dfmt = format_date_full(td);
+	    tfmt = format_time(tt);
+	    printf("so second occurrence is %s %s\n", dfmt, tfmt);
+	    sfree(dfmt);
+	    sfree(tfmt);
+	    dfmt = format_date_full(ed);
+	    tfmt = format_time(et);
+	    printf("  and stop repeating on %s %s\n", dfmt, tfmt);
+	    sfree(dfmt);
+	    sfree(tfmt);
+	} else {
+	    dfmt = format_date_full(ed);
+	    tfmt = format_time(et);
+	    printf("                     to %s %s\n", dfmt, tfmt);
+	    sfree(dfmt);
+	    sfree(tfmt);
+	}
 	printf("Existing entries in the week surrounding the start point:\n");
 	list_entries(sd - 3, 0, sd + 4, 0);
 	printf("Now enter message, on a single line,\n"
@@ -125,8 +154,9 @@ void caltrap_add(int nargs, char **args, int nphysargs, int type)
     ent.st = st;
     ent.ed = ed;
     ent.et = et;
-    ent.length = ent.period = 0;       /* FIXME: implement these */
-    ent.type = type;
+    ent.length = e->length;
+    ent.period = e->period;
+    ent.type = e->type;
     ent.description = msg;
     db_add_entry(&ent);
 }

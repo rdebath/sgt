@@ -43,12 +43,36 @@ enum {
     err_cronpipe,		       /* error opening pipe for -C */
 };
 
-/*
- * datetime.c
- */
 typedef long Date;
 typedef long Time;
 typedef long long Duration;
+
+struct entry {
+    int id;
+    Date sd, ed;
+    Time st, et;
+    Duration length;
+    Duration period;
+    int type;
+    char *description;
+};
+enum {
+    /*
+     * This ordering is purely internal, since the database and the
+     * dump files both store entry types as strings. Hence I choose
+     * the ordering to suit the implementation: the holidays come
+     * before everything else so that when we come to print events
+     * in list mode we already know what colour to paint the day
+     * line.
+     */
+    T_HOL1, T_HOL2, T_HOL3, T_EVENT, T_TODO,
+    INVALID_TYPE = -1
+};
+#define is_hol(type) ( (type) >= T_HOL1 && (type) <= T_HOL3 )
+
+/*
+ * datetime.c
+ */
 #define INVALID_DATE ((Date)-2)
 #define NO_DATE ((Date)-1)
 #define INVALID_TIME ((Time)-2)
@@ -96,7 +120,7 @@ const char *const version;
 /*
  * add.c
  */
-void caltrap_add(int nargs, char **args, int nphysargs, int type);
+void caltrap_add(int nargs, char **args, int nphysargs, struct entry *e);
 
 /*
  * list.c
@@ -132,29 +156,6 @@ int is_ecma_term(void);
  * Interface to database (sqlite.c, but potentially other back ends
  * some day).
  */
-struct entry {
-    int id;
-    Date sd, ed;
-    Time st, et;
-    Duration length;
-    Duration period;
-    int type;
-    char *description;
-};
-enum {
-    /*
-     * This ordering is purely internal, since the database and the
-     * dump files both store entry types as strings. Hence I choose
-     * the ordering to suit the implementation: the holidays come
-     * before everything else so that when we come to print events
-     * in list mode we already know what colour to paint the day
-     * line.
-     */
-    T_HOL1, T_HOL2, T_HOL3, T_EVENT, T_TODO,
-    INVALID_TYPE = -1
-};
-#define is_hol(type) ( (type) >= T_HOL1 && (type) <= T_HOL3 )
-
 void db_init(void);
 void db_add_entry(struct entry *);
 typedef void (*list_callback_fn_t)(void *, struct entry *);

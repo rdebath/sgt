@@ -12,7 +12,7 @@ char *dbpath;
 int main(int argc, char **argv) {
     int nogo;
     int errs;
-    int event_type = T_EVENT;
+    struct entry e;
     enum { NONE, INIT, ADD, LIST, CRON, DUMP, LOAD } command;
     char *args[4];
     int nargs = 0;
@@ -22,6 +22,8 @@ int main(int argc, char **argv) {
      * Set up initial (default) parameters.
      */
     nogo = errs = FALSE;
+    e.type = T_EVENT;
+    e.length = e.period = 0;
 
     homedir = getenv("HOME");
     if (homedir == NULL) homedir = "/";
@@ -128,6 +130,7 @@ int main(int argc, char **argv) {
 		     */
 		  case 'D':
 		  case 't':
+		  case 'R':
 		    p++;
 		    if (!*p && argc > 1)
 			--argc, p = *++argv;
@@ -147,9 +150,27 @@ int main(int argc, char **argv) {
 			strcpy(dbpath, p);
 			break;
 		      case 't':
-			event_type = name_to_type(p);
-			if (event_type == INVALID_TYPE)
+			e.type = name_to_type(p);
+			if (e.type == INVALID_TYPE)
 			    fatal(err_eventtype, p);
+			break;
+		      case 'R':
+			{
+			    char *q = p + strcspn(p, "/");
+			    if (*q)
+				*q++ = '\0';
+			    else
+				q = NULL;
+			    e.period = parse_duration(p);
+			    if (e.period == INVALID_DURATION)
+				fatal(err_duration, p);
+			    if (q) {
+				e.length = parse_duration(q);
+				if (e.length == INVALID_DURATION)
+				    fatal(err_duration, q);
+			    } else
+				e.length = 0;
+			}
 			break;
 		    }
 		    p = NULL;	       /* prevent continued processing */
@@ -192,7 +213,7 @@ int main(int argc, char **argv) {
 	db_init();
 	break;
       case ADD:
-	caltrap_add(nargs, args, lenof(args), event_type);
+	caltrap_add(nargs, args, lenof(args), &e);
 	break;
       case LIST:
 	caltrap_list(nargs, args, lenof(args));
