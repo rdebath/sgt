@@ -4,6 +4,7 @@ Difficulty: fun
 Priority: medium
 Content-type: text/x-html-body
 
+<p>
 Richard Boulton has a
 <a href="http://www.tartarus.org/~richard/putty-patches/#patch_pterm_scrollopt">
 patch</a> to add scroll optimisation to pterm.
