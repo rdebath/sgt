@@ -4,38 +4,38 @@ LINK := gcc
 LFLAGS :=
 LIBS := 
 
-AXE := axe.o axektab.o axeacts.o axesrch.o axerc.o axebuf.o btree.o
+TWEAK := main.o keytab.o actions.o search.o rcfile.o buffer.o btree.o
 
 ifeq ($(SLANG),yes)
 # INCLUDE += -I/path/to/slang/include
 # LIBS += -L/path/to/slang/lib
 LIBS += -lslang
-AXE += axeslang.o
+TWEAK += slang.o
 else
 LIBS += -lncurses
-AXE += axecurs.o
+TWEAK += curses.o
 endif
 
 .c.o:
 	$(CC) $(CFLAGS) $*.c
 
-all: axe axe.1
+all: tweak tweak.1
 
-axe:	$(AXE)
-	$(LINK) -o axe $(AXE) $(LIBS)
+tweak:	$(TWEAK)
+	$(LINK) -o tweak $(TWEAK) $(LIBS)
 
-axe.1:  axe.but
+tweak.1:  manpage.but
 	halibut --man=$@ $<
 
 clean:
-	rm -f *.o axe
+	rm -f *.o tweak
 
-axe.o: axe.c axe.h
-axektab.o: axektab.c axe.h
-axeacts.o: axeacts.c axe.h
-axesrch.o: axesrch.c axe.h
-axerc.o: axerc.c axe.h
-axebuf.o: axebuf.c axe.h btree.h
-axeslang.o: axeslang.c axe.h
-axecurs.o: axecurs.c axe.h
+main.o: main.c tweak.h
+keytab.o: keytab.c tweak.h
+actions.o: actions.c tweak.h
+search.o: search.c tweak.h
+rcfile.o: rcfile.c tweak.h
+buffer.o: buffer.c tweak.h btree.h
+slang.o: slang.c tweak.h
+curses.o: curses.c tweak.h
 btree.o: btree.c btree.h

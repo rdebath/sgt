@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "axe.h"
+#include "tweak.h"
 
 static DFA dfa = NULL;
 static char *tmp = NULL;

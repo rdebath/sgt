@@ -1,5 +1,5 @@
-#ifndef AXE_AXE_H
-#define AXE_AXE_H
+#ifndef TWEAK_TWEAK_H
+#define TWEAK_TWEAK_H
 
 #ifndef FALSE
 #define FALSE 0
@@ -71,7 +71,7 @@ extern int last_len (void);
 
 extern int get_str (char *, char *, int);
 extern int parse_quoted (char *);
-extern void suspend_axe (void);
+extern void suspend (void);
 
 extern void read_rc (void);
 extern void write_default_rc (void);
@@ -105,4 +105,4 @@ extern int display_input_to_flush(void);
 extern void display_post_error(void);
 extern void display_recheck_size(void);
 
-#endif AXE_AXE_H
+#endif TWEAK_TWEAK_H

@@ -3,7 +3,7 @@
 #include <string.h>
 #include <ctype.h>
 
-#include "axe.h"
+#include "tweak.h"
 
 static void act_exit (void);
 static void act_save (void);
@@ -40,11 +40,11 @@ static void act_diagnostics (void);
 
 keyact parse_action (char *name) {
     char *names[] = {
-	"exit-axe", "top-of-file", "page-up", "move-up",
+	"exit", "top-of-file", "page-up", "move-up",
 	"begin-line", "move-left", "move-right", "end-line",
 	"move-down", "page-down", "bottom-of-file", "toggle-insert",
 	"change-mode", "delete-left", "delete-right", "mark-place",
-	"cut", "copy", "paste", "suspend-axe", "goto-position",
+	"cut", "copy", "paste", "suspend", "goto-position",
 	"toggle-status", "search", "save-file", "exit-and-save",
 	"screen-recentre", "new-width", "new-offset"
 #ifdef TEST_BUFFER
@@ -483,7 +483,7 @@ static void act_paste (void) {
 }
 
 static void act_susp (void) {
-    suspend_axe();
+    suspend();
 }
 
 static void act_goto (void) {
