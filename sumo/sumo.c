@@ -1,12 +1,6 @@
 /*
  * sumo - a small game involving powered snooker balls attempting
  * to knock one another off a table.
- * 
- * TODO:
- * 
- *  - Might be nice to have some alternative arena shapes
- *    available, if we aren't going to support the command-line
- *    full configuration.
  */
 
 #include <stdio.h>
@@ -441,11 +435,13 @@ static void clip(int *x, int *y, int *vx, int *vy)
     
 }
 
+/*
+ * Expects scr_prep() to have been called already.
+ */
 static int setup_arena(void)
 {
     int i, j;
 
-    scr_prep();
     switch (arena) {
 
       case LAVA_PLATFORM:
@@ -465,7 +461,6 @@ static int setup_arena(void)
 	break;
 
     }
-    scr_done();
 }
 
 /* ----------------------------------------------------------------------
@@ -478,6 +473,7 @@ static int game_screen(void)
     drawimage(title,240,0,-1);
     drawimage(spr[0][9],270,97,0);
     drawimage(spr[1][9],270,157,0);
+    setup_arena();
     scr_done();
 }
 
@@ -1148,7 +1144,7 @@ static int options_menu(int which)
 	enum { RETURN, RESET, ARENA, QUIT, ADJUST } action;
     } menu[5];
     int nmenu = 0;
-    int h, y, i, mpos, prevval;
+    int h, y, i, mpos, prevval, prepared;
 
     menu[nmenu].text = "RETURN TO GAME"; menu[nmenu++].action = RETURN;
     menu[nmenu].text = "RESET SCORES"; menu[nmenu++].action = RESET;
@@ -1164,25 +1160,26 @@ static int options_menu(int which)
     mpos = 0;
     prevval = 0;
 
+    img = makeimage(120, h, 0, 0);
+    scr_prep();
+
     restart:
 
-    img = makeimage(120, h, 0, 0);
     pickimage(img, 100, y);
 
-    scr_prep();
     bar(100, y, 219, y+h-1, border);
     bar(102, y+2, 217, y+h-3, 0);
     
     swash_centre(100, 219, y+7, "OPTIONS MENU", plotpoint, (void *)26);
 
-    scr_done();
+    prepared = 1;
 
     while (1) {
 	SDL_Event event;
 	int pushed = 0;
 	int redraw = 0;
 
-	scr_prep();
+	if (!prepared) scr_prep();
 	for (i = 0; i < nmenu; i++) {
 	    bar(105, y+34+i*16, 214, y+48+i*16,
 		i==mpos ? highlight : 0);
@@ -1190,6 +1187,7 @@ static int options_menu(int which)
 			 plotpoint, (void *)26);
 	}
 	scr_done();
+	prepared = 0;
 
 	while (SDL_WaitEvent(&event)) {
 	    int action;
@@ -1227,7 +1225,7 @@ static int options_menu(int which)
 	if (pushed && menu[mpos].action == RETURN) break;
 	if (pushed && menu[mpos].action == ARENA) {
 	    if (arena_menu(which)) {
-		free(img);
+		scr_prep();
 		setup_arena();
 		goto restart;
 	    }
@@ -1269,7 +1267,6 @@ setbuf(debugfp, NULL);
     make_text();
     do_palette();
     game_screen();
-    setup_arena();
     sc1 = sc2 = 0;
     show_scores();
 
