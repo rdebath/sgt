@@ -2,6 +2,7 @@ Summary: Beep using the PC speaker
 Class: wish
 Priority: medium
 Difficulty: taxing
+Fixed-in: 2003-05-25
 Content-type: text/plain
 
 Among the many bell options we already support, it would be nice to
@@ -12,3 +13,6 @@ do anything different from MessageBeep(MB_OK).  Meanwhile on NT,
 Beep(Freq, Duration) uses the PC speaker, but that plays the default
 sound on Win95. So we'd need to auto-detect which kind
 of system we were running on.
+
+Implemented in 2003-05-25, using a grotty Windows-version-detection
+hack. Tested on at least Win2K.
