@@ -1267,6 +1267,11 @@ required.
 \#        deciding the question according to whether it needs to change
 \#        when the interchangeable side is switched
 \#    + minimum-data-flow (orange segments) model
+\#      * minimum-detail. If a detail of functionality can be arranged
+\#        to be only important to one side of the interface and not
+\#        mentioned in the interface transactions itself, that's often
+\#        the right way to do it. Is this the same thing as the orange
+\#        segments model?
 \#    + obviously physical separation (into different programs, on
 \#      different computers, etc) is a strong indicator
 \#    + trust in computation
