@@ -445,10 +445,15 @@ class output:
             self.mono_attr = self.mono_attr & ~ATTR_BOLD
 
     def url(self, text, inline):
+	utext = text
+	if string.find(utext, ":") < 0:
+	    if string.find(utext, "/") < 0:
+		utext = utext + "/"
+	    utext = "http://" + utext
 	if self.html_ok:
-	    self.html = self.html + "<a href=\"" + text + "\">" + self.htmlsafe(text) + "</a>"
+	    self.html = self.html + "<a href=\"" + utext + "\">" + self.htmlsafe(text) + "</a>"
 	elif self.html_title:
-	    self.subj = self.subj + "<a href=\"" + text + "\">" + self.htmlsafe(text) + "</a>"
+	    self.subj = self.subj + "<a href=\"" + utext + "\">" + self.htmlsafe(text) + "</a>"
 	if not inline:
 	    self.mono_show_para()
 	    if self.mono_bullet_wid:
