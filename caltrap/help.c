@@ -11,7 +11,11 @@ static char *helptext[] = {
 };
 
 static char *usagetext[] = {
-    "FIXME: usage text goes here",
+    "usage: caltrap -a <date> [<time>]    add entry (enter text on stdin)",
+    "       caltrap -l <date> [<date>]    list entries (for a date or range)",
+    "       caltrap --init                set up an empty database",
+    "options:",
+    "       -D <dbpath>                   use a db other than ~/.caltrapdb",
     NULL
 };
 

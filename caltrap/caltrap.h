@@ -12,6 +12,8 @@
 #define FALSE 0
 #endif
 
+#define lenof(a) ( (sizeof((a))) / (sizeof(*(a))) )
+
 /*
  * error.c
  */
@@ -21,7 +23,29 @@ enum {
     err_nomemory,		       /* no arguments */
     err_optnoarg,		       /* option `-%s' requires an argument */
     err_nosuchopt,		       /* unrecognised option `-%s' */
+    err_addargno,		       /* `add' requires 1 or 2 args */
+    err_date,		               /* unable to parse date `%s' */
+    err_time,		               /* unable to parse time `%s' */
+    err_nodb,		               /* db doesn't exist, try --init */
+    err_dbexists,		       /* db _does_ exist, danger for --init */
+    err_noopendb,		       /* unable to open db */
+    err_dberror,		       /* generic db error */
 };
+
+/*
+ * datetime.c
+ */
+typedef long Date;
+typedef long Time;
+#define INVALID_DATE ((Date)-2)
+#define NO_DATE ((Date)-1)
+#define INVALID_TIME ((Time)-2)
+#define NO_TIME ((Time)-1)
+Date parse_date(char *str);
+Time parse_time(char *str);
+char *format_date(Date d);
+char *format_date_full(Date d);
+char *format_time(Time t);
 
 /*
  * malloc.c
@@ -46,5 +70,29 @@ void licence(void);
  * version.c
  */
 const char *const version;
+
+/*
+ * add.c
+ */
+int caltrap_add(int nargs, char **args, int nphysargs);
+
+/*
+ * list.c
+ */
+int caltrap_list(int nargs, char **args, int nphysargs);
+
+/*
+ * main.c
+ */
+char *dbpath;
+
+/*
+ * Interface to database (sqlite.c, but potentially other back ends
+ * some day).
+ */
+void db_init(void);
+void db_add_entry(Date d, Time t, char *msg);
+typedef void (*list_callback_fn_t)(void *, Date, Time, char *);
+void db_list_entries(Date start, Date end, list_callback_fn_t fn, void *ctx);
 
 #endif

@@ -32,6 +32,43 @@ static void do_error(int code, va_list ap) {
 	sprintf(error, "unrecognised option `-%.200s'", sp);
 	flags = PREFIX;
 	break;
+      case err_addargno:
+	sprintf(error, "`add' command expects one or two arguments");
+	flags = PREFIX;
+	break;
+      case err_date:
+	sp = va_arg(ap, char *);
+	sprintf(error, "unable to parse date `%.200s'", sp);
+	flags = PREFIX;
+	break;
+      case err_time:
+	sp = va_arg(ap, char *);
+	sprintf(error, "unable to parse time `%.200s'", sp);
+	flags = PREFIX;
+	break;
+      case err_nodb:
+	sprintf(error,
+		"database `%.200s' does not exist; try `caltrap --init'",
+		dbpath);
+	flags = PREFIX;
+	break;
+      case err_dbexists:
+	sprintf(error, "database `%.200s' already exists;"
+		" remove it before re-initialising", dbpath);
+	flags = PREFIX;
+	break;
+      case err_noopendb:
+	sp = va_arg(ap, char *);
+	sprintf(error,
+		"unable to open database `%.200s': %.200s",
+		dbpath, sp);
+	flags = PREFIX;
+	break;
+      case err_dberror:
+	sp = va_arg(ap, char *);
+	sprintf(error, "database error: %.200s", sp);
+	flags = PREFIX;
+	break;
     }
 
     if (flags & PREFIX)
