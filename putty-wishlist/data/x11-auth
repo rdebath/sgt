@@ -18,3 +18,15 @@ they aren't expecting, so this shouldn't break anything that currently
 works, and it would allow the user to copy back PuTTY's cookie to their
 real X server.
 <br>Ref: <code>&lt;web-71356@meredevice.com&gt;</code>
+
+<p>
+<b>SGT, 2003-01-14</b>: A couple of days ago I built in the
+infrastructure for this, since X forwarding in the Unix port of
+Plink is virtually useless without it. The platform-independent X
+forwarding code now has the ability to talk either of
+<code>MIT-MAGIC-COOKIE-1</code> or <code>XDM-AUTHORIZATION-1</code>
+to the local X server, provided a platform-specific function tells
+it what authentication cookie to use. So it's still not actually
+supported on Windows (since the Windows version of this function
+does nothing), but the amount of work that would need to be done to
+support it is now minimal.
