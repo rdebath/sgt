@@ -4,8 +4,12 @@
 
 # TODO:
 #
-#  - Game parameters. Wrapping borders, controllable grid size.
-#    Probably also controllable on-screen size while we're at it.
+#  - Investigate the strange behaviour with undo (surely all
+#    squares ought to end up unlocked? Or is it simply that the
+#    squares still locked at the end of a maximal undo run were
+#    those the player locked because they were already correct?)
+#  - `New Game' submenu containing a decent spread of game
+#    definitions, to prevent needless use of the `Specific' box.
 #  - The original occasionally has barriers between squares within
 #    the grid. Makes the game easier, of course.
 #  - Alternative forms of control? Left/right clicks are OKish, but
@@ -13,6 +17,8 @@
 #  - Some sort of persistent completion indicator, perhaps, in case
 #    you click straight past the finished state and don't realise
 #    you actually finished!
+#     * I quite like the idea of flashing the lock state of all
+#       squares and then leaving everything unlocked. It's pretty.
 #  - Indication of how many lights are lit up.
 
 from gtk import *
@@ -22,19 +28,25 @@ import md5
 import math
 import string
 
+U, L, D, R, PWR, ACTIVE, LOCK = 1, 2, 4, 8, 16, 32, 64
+
 SQUARESIZE = 31
 NSQUARES_X = 11
 NSQUARES_Y = 11
+WRAPPING = FALSE
 
-PWRSIZ = SQUARESIZE / 4
+darea = None
 
-BORDER = SQUARESIZE * 3 / 2
-
-ORIGIN = BORDER
-TOTALSIZE_X = 2*BORDER + NSQUARES_X * SQUARESIZE
-TOTALSIZE_Y = 2*BORDER + NSQUARES_Y * SQUARESIZE
-
-U, L, D, R, PWR, ACTIVE, LOCK = 1, 2, 4, 8, 16, 32, 64
+def setup_globals():
+    global PWRSIZ, BORDER, ORIGIN, TOTALSIZE_X, TOTALSIZE_Y
+    PWRSIZ = SQUARESIZE / 4
+    BORDER = SQUARESIZE / 2
+    ORIGIN = BORDER
+    TOTALSIZE_X = 2*BORDER + NSQUARES_X * SQUARESIZE
+    TOTALSIZE_Y = 2*BORDER + NSQUARES_Y * SQUARESIZE
+    if darea:
+        darea.set_usize(TOTALSIZE_X, TOTALSIZE_Y)
+setup_globals()
 
 def rotate(flags, n):
     # Rotate `flags' n places clockwise.
@@ -103,24 +115,30 @@ class NetGame:
         # Repeatedly go through the grid, find all the
         # possibilities for extending into a new empty square, pick
         # one randomly, and do so.
+        if WRAPPING:
+            wrapoffset = 0
+        else:
+            wrapoffset = 1
         while 1:
             possibilities = []
             for x in range(NSQUARES_X):
-                for y in range(NSQUARES_Y-1):
-                    if self.arena[x][y] == 0 and self.arena[x][y+1] != 0 \
-                    and (self.arena[x][y+1] & (L|R|D)) != (L|R|D):
-                        possibilities.append((x, y+1, U, x, y, D))
-                    if self.arena[x][y] != 0 and self.arena[x][y+1] == 0 \
+                for y in range(NSQUARES_Y-wrapoffset):
+                    y1 = (y+1) % NSQUARES_Y
+                    if self.arena[x][y] == 0 and self.arena[x][y1] != 0 \
+                    and (self.arena[x][y1] & (L|R|D)) != (L|R|D):
+                        possibilities.append((x, y1, U, x, y, D))
+                    if self.arena[x][y] != 0 and self.arena[x][y1] == 0 \
                     and (self.arena[x][y] & (L|R|U)) != (L|R|U):
-                        possibilities.append((x, y, D, x, y+1, U))
-            for x in range(NSQUARES_X-1):
+                        possibilities.append((x, y, D, x, y1, U))
+            for x in range(NSQUARES_X-wrapoffset):
                 for y in range(NSQUARES_Y):
-                    if self.arena[x][y] == 0 and self.arena[x+1][y] != 0 \
-                    and (self.arena[x+1][y] & (U|R|D)) != (U|R|D):
-                        possibilities.append((x+1, y, L, x, y, R))
-                    if self.arena[x][y] != 0 and self.arena[x+1][y] == 0 \
+                    x1 = (x+1) % NSQUARES_X
+                    if self.arena[x][y] == 0 and self.arena[x1][y] != 0 \
+                    and (self.arena[x1][y] & (U|R|D)) != (U|R|D):
+                        possibilities.append((x1, y, L, x, y, R))
+                    if self.arena[x][y] != 0 and self.arena[x1][y] == 0 \
                     and (self.arena[x][y] & (U|L|D)) != (U|L|D):
-                        possibilities.append((x, y, R, x+1, y, L))
+                        possibilities.append((x, y, R, x1, y, L))
             if len(possibilities) == 0:
                 break
             choice = rng.getint(len(possibilities))
@@ -144,18 +162,28 @@ class NetGame:
         list = []
         def visit(x, y, self=self, list=list):
             self.arena[x][y] = self.arena[x][y] | ACTIVE
-            if x > 0 and (self.arena[x][y] & L) and \
-            (self.arena[x-1][y] & R) and not (self.arena[x-1][y] & ACTIVE):
-                list.append((x-1, y))
-            if y > 0 and (self.arena[x][y] & U) and \
-            (self.arena[x][y-1] & D) and not (self.arena[x][y-1] & ACTIVE):
-                list.append((x, y-1))
-            if x < NSQUARES_X-1 and (self.arena[x][y] & R) and \
-            (self.arena[x+1][y] & L) and not (self.arena[x+1][y] & ACTIVE):
-                list.append((x+1, y))
-            if y < NSQUARES_Y-1 and (self.arena[x][y] & D) and \
-            (self.arena[x][y+1] & U) and not (self.arena[x][y+1] & ACTIVE):
-                list.append((x, y+1))
+
+            xm1 = (x + NSQUARES_X-1) % NSQUARES_X
+            if x == 0 and not WRAPPING: xm1 = None
+            ym1 = (y + NSQUARES_Y-1) % NSQUARES_Y
+            if y == 0 and not WRAPPING: ym1 = None
+            xp1 = (x + 1) % NSQUARES_X
+            if xp1 == 0 and not WRAPPING: xp1 = None
+            yp1 = (y + 1) % NSQUARES_Y
+            if yp1 == 0 and not WRAPPING: yp1 = None
+
+            if xm1 != None and (self.arena[x][y] & L) and \
+            (self.arena[xm1][y] & R) and not (self.arena[xm1][y] & ACTIVE):
+                list.append((xm1, y))
+            if ym1 != None and (self.arena[x][y] & U) and \
+            (self.arena[x][ym1] & D) and not (self.arena[x][ym1] & ACTIVE):
+                list.append((x, ym1))
+            if xp1 != None and (self.arena[x][y] & R) and \
+            (self.arena[xp1][y] & L) and not (self.arena[xp1][y] & ACTIVE):
+                list.append((xp1, y))
+            if yp1 != None and (self.arena[x][y] & D) and \
+            (self.arena[x][yp1] & U) and not (self.arena[x][yp1] & ACTIVE):
+                list.append((x, yp1))
 
         for x in range(NSQUARES_X):
             for y in range(NSQUARES_Y):
@@ -457,23 +485,38 @@ def new_game(menuitem=None, seed=None):
     game = NetGame(seed)
     game.draw(pix)
     game.status(statusbar)
-    win.set_title("Net (%d)" % game.currgame)
+    if WRAPPING:
+        wrapstr = "wrapping"
+    else:
+        wrapstr = "non-wrapping"
+    win.set_title("Net %dx%d %s (%d)" % \
+    (NSQUARES_X, NSQUARES_Y, wrapstr, game.currgame))
     redraw(darea)
 
 def restart_game(menuitem=None):
     new_game(seed=game.currgame)
 
 def input_game(menuitem=None):
+    global NSQUARES_X, NSQUARES_Y, WRAPPING
     class container:
         pass
     cont = container()
     def enddlg(win, value, cont=cont):
         if value == 1:
             try:
-                cont.game = string.atol(cont.editbox.get_text())
+                cont.nsquares_x = string.atoi(cont.widthbox.get_text())
+                cont.nsquares_y = string.atoi(cont.heightbox.get_text())
+                cont.wrapping = cont.wrapping.get_active()
+                if cont.nsquares_x >= 3 and cont.nsquares_y >= 3:
+                    if cont.editbox.get_text() == "":
+                        cont.game = None
+                    else:
+                        cont.game = string.atol(cont.editbox.get_text())
+                else:
+                    cont.game = 0
             except ValueError:
                 cont.game = 0
-            if not validate(cont.game):
+            if cont.game != None and not validate(cont.game):
                 gdk_beep()
                 return
         cont.value = value
@@ -490,6 +533,30 @@ def input_game(menuitem=None):
     cont.dlg = dlg = GtkDialog()
     cont.value = 0
     dlg.set_title("Net")
+    hbox = GtkHBox()
+    label = GtkLabel("Grid width")
+    hbox.pack_start(label)
+    label.show()
+    cont.widthbox = widthbox = GtkEntry()
+    cont.widthbox.set_text(str(NSQUARES_X))
+    hbox.pack_start(widthbox)
+    widthbox.show()
+    dlg.vbox.pack_start(hbox)
+    hbox.show()
+    hbox = GtkHBox()
+    label = GtkLabel("Grid height")
+    hbox.pack_start(label)
+    label.show()
+    cont.heightbox = heightbox = GtkEntry()
+    cont.heightbox.set_text(str(NSQUARES_Y))
+    hbox.pack_start(heightbox)
+    heightbox.show()
+    dlg.vbox.pack_start(hbox)
+    hbox.show()
+    cont.wrapping = wrapping = GtkCheckButton("Walls wrap")
+    cont.wrapping.set_active(WRAPPING)
+    dlg.vbox.pack_start(wrapping)
+    wrapping.show()
     label = GtkLabel("Enter game seed")
     dlg.vbox.pack_start(label)
     label.show()
@@ -510,6 +577,10 @@ def input_game(menuitem=None):
     editbox.grab_focus()
     mainloop()
     if cont.value:
+        NSQUARES_X = cont.nsquares_x
+        NSQUARES_Y = cont.nsquares_y
+        WRAPPING = cont.wrapping
+        setup_globals()
         new_game(seed=cont.game)
 
 def expose(darea, event):
@@ -517,7 +588,9 @@ def expose(darea, event):
     x, y, w, h = event.area
     darea.draw_pixmap(gc, pix, x, y, x, y, w, h)
 
-def redraw(darea, rect=[0,0,TOTALSIZE_X,TOTALSIZE_Y]):
+def redraw(darea, rect=None):
+    if rect == None:
+        rect = [0,0,TOTALSIZE_X,TOTALSIZE_Y]
     gc = darea.get_style().white_gc
     x, y, x2, y2 = rect
     w, h = x2-x+1, y2-y+1
