@@ -127,7 +127,7 @@ struct process {
     HANDLE hproc;
 };
 
-struct process start_process(char *cmdline, int wait, int output)
+struct process start_process(char *cmdline, int wait, int output, char *dir)
 {
     STARTUPINFO si;
     PROCESS_INFORMATION pi;
@@ -174,7 +174,7 @@ struct process start_process(char *cmdline, int wait, int output)
     }
     if (CreateProcess(NULL, cmdline, NULL, NULL, inherit,
                       CREATE_NEW_CONSOLE | NORMAL_PRIORITY_CLASS,
-                      NULL, NULL, &si, &pi) == 0) {
+                      NULL, dir, &si, &pi) == 0) {
         ret.error = "-CreateProcess failed\n";
     } else {
         ret.hproc = pi.hProcess;
@@ -296,7 +296,7 @@ int listener_newthread(SOCKET sock, int port, SOCKADDR_IN remoteaddr) {
     int len;
     char *nonce = NULL;
     doit_ctx *ctx = NULL;
-    char *cmdline = NULL;
+    char *cmdline = NULL, *currdir = NULL;
     DWORD threadid;
 
     ctx = doit_init_ctx(secret, secretlen);
@@ -313,136 +313,185 @@ int listener_newthread(SOCKET sock, int port, SOCKADDR_IN remoteaddr) {
     free(nonce);
     nonce = NULL;
 
-    cmdline = do_fetch_line(sock, ctx);
-    if (!cmdline)
-        goto done;
+    while (1) {
 
-    if (!strcmp(cmdline, "ShellExecute")) {
-        int ret;
-        /*
-         * Read a second line and feed it to ShellExecute(). Give
-         * back either "+" (meaning OK) or "-" followed by an error
-         * message (meaning not OK).
-         */
-        free(cmdline); cmdline = NULL;
-        cmdline = do_fetch_line(sock, ctx);
-        ret = (int)ShellExecute(listener_hwnd, "open", cmdline, NULL,
-                                NULL, SW_SHOWNORMAL);
-        if (ret <= 32) {
-            char *msg = "-ShellExecute failed: unknown error\n";
-            if (ret == 0) msg = "-ShellExecute failed: Out of memory or resources\n";
-            if (ret == ERROR_FILE_NOT_FOUND) msg = "-ShellExecute failed: File not found\n";
-            if (ret == ERROR_PATH_NOT_FOUND) msg = "-ShellExecute failed: Path not found\n";
-            if (ret == ERROR_BAD_FORMAT) msg = "-ShellExecute failed: Invalid .exe file\n";
-            if (ret == SE_ERR_ACCESSDENIED) msg = "-ShellExecute failed: Access denied\n";
-            if (ret == SE_ERR_ASSOCINCOMPLETE) msg = "-ShellExecute failed: File name association incomplete or invalid\n";
-            if (ret == SE_ERR_DDEBUSY) msg = "-ShellExecute failed: DDE busy\n";
-            if (ret == SE_ERR_DDEFAIL) msg = "-ShellExecute failed: DDE transaction failed\n";
-            if (ret == SE_ERR_DDETIMEOUT) msg = "-ShellExecute failed: DDE transaction timed out\n";
-            if (ret == SE_ERR_DLLNOTFOUND) msg = "-ShellExecute failed: DLL not found\n";
-            if (ret == SE_ERR_FNF) msg = "-ShellExecute failed: File not found\n";
-            if (ret == SE_ERR_NOASSOC) msg = "-ShellExecute failed: No application associated with this file type\n";
-            if (ret == SE_ERR_OOM) msg = "-ShellExecute failed: Out of memory\n";
-            if (ret == SE_ERR_PNF) msg = "-ShellExecute failed: Path not found\n";
-            if (ret == SE_ERR_SHARE) msg = "-ShellExecute failed: Sharing violation\n";
-            do_doit_send_str(sock, ctx, msg);
-        } else {
-            do_doit_send_str(sock, ctx, "+\n");
-        }
-        free(cmdline); cmdline = NULL;
-        goto done;
-    }
+	cmdline = do_fetch_line(sock, ctx);
+	if (!cmdline)
+	    goto done;
 
-    if (!strcmp(cmdline, "WriteClipboard")) {
-        /*
-         * Read data until the connection is closed, and write it
-         * to the Windows clipboard.
-         */
-        int len;
-        char *msg;
-        free(cmdline); cmdline = NULL;
-        cmdline = do_fetch_all(sock, ctx, &len);
-        if (cmdline) {
-            msg = write_clip(cmdline, len);
-            free(cmdline); cmdline = NULL;
-        } else
-            msg = "-error reading input\n";
-        do_doit_send_str(sock, ctx, msg);
-        goto done;
-    }
+	if (!strcmp(cmdline, "SetDirectory")) {
+	    int ret;
+	    /*
+	     * Read a second line and store it for use as the
+	     * default directory of a subsequent CreateProcess or
+	     * ShellExecute.
+	     */
+	    free(cmdline); cmdline = NULL;
+	    cmdline = do_fetch_line(sock, ctx);
+	    if (!cmdline)
+		goto done;
+	    currdir = cmdline;
+	    continue;
+	}
 
-    if (!strcmp(cmdline, "ReadClipboard")) {
-        /*
-         * Read the Windows Clipboard. Give back either "+\n"
-         * followed by the clipboard data, or "-" followed by an
-         * error message and "\n".
-         */
-        int is_err;
-        char *data = read_clip(&is_err);
-        if (is_err) {
-            /* data is an error message */
-            do_doit_send_str(sock, ctx, data);
-        } else {
-            do_doit_send_str(sock, ctx, "+\n");
-            do_doit_send(sock, ctx, data, strlen(data));
-            GlobalUnlock(data);
-        }
-        goto done;
-    }
+	if (!strcmp(cmdline, "ShellExecute") ||
+	    !strcmp(cmdline, "ShellExecuteArgs")) {
+	    int ret;
+	    int with_args;
+	    char *args;
+	    /*
+	     * Read a second line and feed it to ShellExecute(). Give
+	     * back either "+" (meaning OK) or "-" followed by an error
+	     * message (meaning not OK).
+	     * 
+	     * ShellExecuteArgs is an alternative form in which we
+	     * also provide arguments to the process.
+	     */
+	    if (!strcmp(cmdline, "ShellExecuteArgs"))
+		with_args = TRUE;
+	    else
+		with_args = FALSE;
+	    free(cmdline); cmdline = NULL;
+	    cmdline = do_fetch_line(sock, ctx);
+	    if (with_args)
+		args = do_fetch_line(sock, ctx);
+	    else
+		args = NULL;
+	    ret = (int)ShellExecute(listener_hwnd, "open", cmdline, args,
+				    currdir, SW_SHOWNORMAL);
+	    if (args)
+		free(args);
+	    if (ret <= 32) {
+		char *msg = "-ShellExecute failed: unknown error\n";
+		if (ret == 0) msg = "-ShellExecute failed: Out of memory or resources\n";
+		if (ret == ERROR_FILE_NOT_FOUND) msg = "-ShellExecute failed: File not found\n";
+		if (ret == ERROR_PATH_NOT_FOUND) msg = "-ShellExecute failed: Path not found\n";
+		if (ret == ERROR_BAD_FORMAT) msg = "-ShellExecute failed: Invalid .exe file\n";
+		if (ret == SE_ERR_ACCESSDENIED) msg = "-ShellExecute failed: Access denied\n";
+		if (ret == SE_ERR_ASSOCINCOMPLETE) msg = "-ShellExecute failed: File name association incomplete or invalid\n";
+		if (ret == SE_ERR_DDEBUSY) msg = "-ShellExecute failed: DDE busy\n";
+		if (ret == SE_ERR_DDEFAIL) msg = "-ShellExecute failed: DDE transaction failed\n";
+		if (ret == SE_ERR_DDETIMEOUT) msg = "-ShellExecute failed: DDE transaction timed out\n";
+		if (ret == SE_ERR_DLLNOTFOUND) msg = "-ShellExecute failed: DLL not found\n";
+		if (ret == SE_ERR_FNF) msg = "-ShellExecute failed: File not found\n";
+		if (ret == SE_ERR_NOASSOC) msg = "-ShellExecute failed: No application associated with this file type\n";
+		if (ret == SE_ERR_OOM) msg = "-ShellExecute failed: Out of memory\n";
+		if (ret == SE_ERR_PNF) msg = "-ShellExecute failed: Path not found\n";
+		if (ret == SE_ERR_SHARE) msg = "-ShellExecute failed: Sharing violation\n";
+		do_doit_send_str(sock, ctx, msg);
+	    } else {
+		do_doit_send_str(sock, ctx, "+\n");
+	    }
+	    free(cmdline); cmdline = NULL;
+	    goto done;
+	}
 
-    if (!strcmp(cmdline, "CreateProcessNoWait") ||
-        !strcmp(cmdline, "CreateProcessWait") ||
-        !strcmp(cmdline, "CreateProcessWithOutput")) {
-        /*
-         * Read a second line and feed it to CreateProcess.
-         * Optionally, wait for it to finish, or even send output
-         * back.
-         * 
-         * If output is sent back, it is sent as a sequence of
-         * Pascal-style length-prefixed strings (a single byte
-         * followed by that many characters), and finally
-         * terminated by a \0 length byte. After _that_ comes the
-         * error indication, which may be "+number\n" for a
-         * termination with exit code, or "-errmsg\n" if a system
-         * call fails.
-         */
-        int wait, output;
-        struct process proc;
+	if (!strcmp(cmdline, "WriteClipboard")) {
+	    /*
+	     * Read data until the connection is closed, and write it
+	     * to the Windows clipboard.
+	     */
+	    int len;
+	    char *msg;
+	    free(cmdline); cmdline = NULL;
+	    cmdline = do_fetch_all(sock, ctx, &len);
+	    if (cmdline) {
+		msg = write_clip(cmdline, len);
+		free(cmdline); cmdline = NULL;
+	    } else
+		msg = "-error reading input\n";
+	    do_doit_send_str(sock, ctx, msg);
+	    goto done;
+	}
 
-        if (!strcmp(cmdline, "CreateProcessNoWait")) wait = output = 0;
-        if (!strcmp(cmdline, "CreateProcessWait")) wait = 1, output = 0;
-        if (!strcmp(cmdline, "CreateProcessWithOutput")) wait = output = 1;
-        free(cmdline); cmdline = NULL;
-        cmdline = do_fetch_line(sock, ctx);
-        
-        proc = start_process(cmdline, wait, output);
-        if (proc.error) {
-            do_doit_send_str(sock, ctx, proc.error);
-            goto done;
-        }
-        if (wait) {
-            int err;
-            if (output) {
-                char buf[256];
-                int len;
-                while ((len = read_process_output(proc, buf+1,
-                                                  sizeof(buf)-1)) > 0) {
-                    buf[0] = len;
-                    do_doit_send(sock, ctx, buf, len+1);
-                }
-                do_doit_send(sock, ctx, "\0", 1);
-            }
-            err = process_exit_code(proc);
-            if (err < 0) {
-                do_doit_send_str(sock, ctx, "-GetExitCodeProcess failed\n");
-            } else {
-                char buf[32];
-                sprintf(buf, "+%d\n", err);
-                do_doit_send_str(sock, ctx, buf);
-            }
-        } else {
-            do_doit_send_str(sock, ctx, "+\n");
-        }
+	if (!strcmp(cmdline, "ReadClipboard")) {
+	    /*
+	     * Read the Windows Clipboard. Give back a 4-byte
+	     * length followed by the text, and then send either
+	     * "+\n" or "-error message\n".
+	     */
+	    int is_err;
+	    char *data = read_clip(&is_err);
+	    char length[4];
+
+	    if (is_err) {
+		/* data is an error message */
+		PUT_32BIT_MSB_FIRST(length, 0);
+		do_doit_send(sock, ctx, length, 4);
+		do_doit_send_str(sock, ctx, data);
+	    } else {
+		int len = strlen(data);
+		PUT_32BIT_MSB_FIRST(length, len);
+		do_doit_send(sock, ctx, length, 4);
+		do_doit_send(sock, ctx, data, len);
+		do_doit_send_str(sock, ctx, "+\n");
+		GlobalUnlock(data);
+	    }
+	    goto done;
+	}
+
+	if (!strcmp(cmdline, "CreateProcessNoWait") ||
+	    !strcmp(cmdline, "CreateProcessWait") ||
+	    !strcmp(cmdline, "CreateProcessWithOutput")) {
+	    /*
+	     * Read a second line and feed it to CreateProcess.
+	     * Optionally, wait for it to finish, or even send output
+	     * back.
+	     *
+	     * If output is sent back, it is sent as a sequence of
+	     * Pascal-style length-prefixed strings (a single byte
+	     * followed by that many characters), and finally
+	     * terminated by a \0 length byte. After _that_ comes the
+	     * error indication, which may be "+number\n" for a
+	     * termination with exit code, or "-errmsg\n" if a system
+	     * call fails.
+	     */
+	    int wait, output;
+	    struct process proc;
+
+	    if (!strcmp(cmdline, "CreateProcessNoWait")) wait = output = 0;
+	    if (!strcmp(cmdline, "CreateProcessWait")) wait = 1, output = 0;
+	    if (!strcmp(cmdline, "CreateProcessWithOutput")) wait = output = 1;
+	    free(cmdline); cmdline = NULL;
+	    cmdline = do_fetch_line(sock, ctx);
+
+	    proc = start_process(cmdline, wait, output, currdir);
+	    if (proc.error) {
+		do_doit_send_str(sock, ctx, proc.error);
+		goto done;
+	    }
+	    if (wait) {
+		int err;
+		if (output) {
+		    char buf[256];
+		    int len;
+		    while ((len = read_process_output(proc, buf+1,
+						      sizeof(buf)-1)) > 0) {
+			buf[0] = len;
+			do_doit_send(sock, ctx, buf, len+1);
+		    }
+		    do_doit_send(sock, ctx, "\0", 1);
+		}
+		err = process_exit_code(proc);
+		if (err < 0) {
+		    do_doit_send_str(sock, ctx, "-GetExitCodeProcess failed\n");
+		} else {
+		    char buf[32];
+		    sprintf(buf, "+%d\n", err);
+		    do_doit_send_str(sock, ctx, buf);
+		}
+	    } else {
+		do_doit_send_str(sock, ctx, "+\n");
+	    }
+	}
+
+	/*
+	 * If we've reached here without `continue' or leaving the
+	 * loop, we must have an unrecognised command.
+	 */
+	do_doit_send_str(sock, ctx, "-unrecognised command \"");
+	do_doit_send_str(sock, ctx, cmdline);
+	do_doit_send_str(sock, ctx, "\"\n");
     }
 
     done:
@@ -450,6 +499,8 @@ int listener_newthread(SOCKET sock, int port, SOCKADDR_IN remoteaddr) {
         free(nonce);
     if (cmdline)
         free(cmdline);
+    if (currdir)
+        free(currdir);
     if (ctx)
         /* FIXME: free ctx */;
     closesocket(sock);
