@@ -1,5 +1,5 @@
 % -*- mode: slang; mode: fold -*-
-% Simon Tatham: version $Revision: 1.35 $
+% Simon Tatham: version $Revision: 1.36 $
 
 %{{{ load Emacs keybindings to start with
 
@@ -1081,10 +1081,12 @@ $1 = "text";
 !if (keymap_p($1)) make_keymap($1);
 definekey("text_format_paragraph", "\eQ", $1);
 define text_mode_hook() {
+    variable buf;
     use_keymap("text");
+    buf = whatbuf();
     !if (jedrc_have_timberc == 0 or
-         (strcmp(".article", whatbuf()) and
-          strcmp(".letter", whatbuf())))
+         (strcmp(".article", substr(buf, 1, 8)) and
+          strcmp(".letter", substr(buf, 1, 7))))
         use_syntax_table("TimberC");
     set_buffer_hook("par_sep", "text_parsep");
     runhooks("jedrc_text_mode_hook");
