@@ -7,9 +7,17 @@ import urllib
 import os
 import time
 
-verbose = 0
-if sys.argv[1:] == ["-v"]:
-    verbose = 1
+verbose = force = 0
+args = sys.argv[1:]
+while len(args) > 0:
+    arg = args[0]
+    args = args[1:]
+    if arg == "-v":
+	verbose = 1
+    elif arg == "--force":
+	force = 1
+    else:
+	sys.stderr.write("ljpoll: unknown option \"" + arg + "\"\n")
 
 def chomp(s):
     while s[-1:] == "\n" or s[-1:] == "\r":
@@ -40,7 +48,7 @@ try:
 	    then = float(s[space+1:])
     f.close()
     now = time.time()
-    if now < then:
+    if now < then and not force:
 	sys.stderr.write("Please do not press this button again for " +
 	"%d seconds.\n" % int(then-now))
 	sys.exit(0)
