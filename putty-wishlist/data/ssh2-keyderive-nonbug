@@ -1,5 +1,5 @@
 Summary: SSH 2.0.13 apparently doesn't have key-derivation bug
-Status: bug
+Class: bug
 Priority: medium
 Difficulty: fun
 Content-type: text/x-html-body
