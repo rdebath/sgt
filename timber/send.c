@@ -3,6 +3,7 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <assert.h>
 #include <unistd.h>
@@ -241,7 +242,7 @@ static char *get_fqdn(void)
     return dupstr(h->h_name);
 }
 
-void send(int charset, char *message, int msglen)
+void send_message (int charset, char *message, int msglen)
 {
     struct send_output_ctx ctx;
     static const int charset_list[] = {
@@ -384,5 +385,5 @@ void send_from_stdin(int charset)
 	msglen += j;
     }
 
-    send(charset, message, msglen);
+    send_message (charset, message, msglen);
 }
