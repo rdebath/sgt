@@ -1,0 +1,15 @@
+Summary: Setting rows and columns to zero causes crash
+Class: bug
+Priority: medium
+Content-type: text/plain
+
+<4202CF05.2010508@registriesltd.com.au> (Windows XP):
+Secondly I wanted to report a very minor bug in putty. If you have a 
+logged in session (SSH to a Linux box in this case) and you choose 
+"change settings.." from the right click menu on putty and then change 
+the window size to 0 Rows 0 Columns putty will crash. As it crashes it 
+pops up a modal OK error message box with the title 'Putty Fatal Error' 
+and the text 'Out of Memory'. Once you click OK the putty window closes.
+
+BJH: I've tested this with Unix PuTTY, and the problem doesn't arise because
+my window manager limits how small the window can get.
