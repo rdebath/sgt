@@ -46,7 +46,7 @@ require the
 Win2K/XP can use Microsoft SSPI.
 
 <li>
-Another patch (unreviewed): <tt>1067597353.3fa23e29bf70c@webmail.technion.ac.il<tt>
+Another patch (unreviewed): <tt>1067597353.3fa23e29bf70c@webmail.technion.ac.il</tt>
 <br>User authentication; <tt>secur32.lib</tt> (Windows) /
 <tt>krb5-config</tt> (Unix)
 
