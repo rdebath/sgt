@@ -48,3 +48,7 @@ SSH-1 packet log ends:
 
 Event Log: Sent username "xxxxx"
 Incoming packet type 15 / 0x0f (SSH1_SMSG_FAILURE)
+
+
+Of the commits in the relevant time frame, I suspect either the
+filename abstraction, or Ross Younger's uninitialised variable.
