@@ -13,15 +13,17 @@ connecting to one of our correspondents' servers.
 <p>
 If the host key is already in the database, the connection goes
 through fine. The fault doesn't appear to happen with the Windows
-version, nor with Unix plink (so could be a GUI concurrency problem
-due to the blocking caused by the host key verification dialog?).
+version, nor with Unix plink.
 
 <p>
-Workaround: add the host key to the database first. (Apparently
+<em>Workaround:</em> add the host key to the database first. (Apparently
 this can be done by setting "close window on exit" to "never" in
-the first session, or use contrib/kh2reg.py in PuTTY CVS.)
+the first session, or use
+<tt><a href="http://cvs.tartarus.org/putty/contrib/kh2reg.py">contrib/kh2reg.py</a></tt>
+in PuTTY CVS.)
 
 <p>
+<em>More detail:</em>
 In PuTTY's SSH packet log, what appears to distinguish failing from
 successful connections is that in the latter, PuTTY logs sending a
 NEWKEYS before logging receiving one, whereas in the former, it
@@ -46,6 +48,14 @@ Event Log: expected key exchange reply packet from server</pre>
 
 <p>
 while waiting for the user to respond to the prompt.
+
+<p>Tracing the code indicates that the SSH code gets a DH reply
+packet, goes to verify the host key, goes to put up a message box,
+enters <tt>gtk_main()</tt>... and the next thing we know is that
+<tt>ssh_receive()</tt> is prematurely invoked on the next packet
+(NEWKEYS), re-entering <tt>do_ssh2_transport()</tt> and looking for a
+DH reply packet again (and failing). So the messagebox isn't causing
+enough blocking. Probably something about the way we're using Gtk.
 
 <p>
 Reports:
