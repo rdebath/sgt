@@ -539,6 +539,7 @@ static int play_game(void)
     int ba[2][MAX_BULLETS];
     int pfire[2];
     int d1,d2,done,esc,b;
+    int vmax, inc, incs;
 #ifdef TIME_DEBUG
     long long timebefore, timeafter;
     char debugbuf[80];
@@ -590,121 +591,197 @@ static int play_game(void)
 	ERASEALLSPRITES;
 
 	/*
-	 * Animate the bullets.
+	 * Handle once-per-frame things: player controls (steering,
+	 * accel/brake, and firing), and friction.
 	 */
-	for (i = 0; i < 2; i++) for (j = 0; j < MAX_BULLETS; j++)
-	    if (ba[i][j]) {
-		bx[i][j] = bx[i][j]+bvx[i][j];
-		by[i][j] = by[i][j]+bvy[i][j];
-		if (bullet_can_exist(bx[i][j], by[i][j]))
-		    putsprite(bs[i][j],bullets[i],
-			      bx[i][j] >> 16,by[i][j] >> 16);
-		else
-		    ba[i][j] = FALSE;
-	    }
+	for (i = 0; i < 2; i++) if (!dying[i]) {
+	    int axis, accel, brake, fire, friction;
+	    axis = SDL_JoystickGetAxis(joys[i], 0) / JOY_THRESHOLD;
+	    accel = SDL_JoystickGetButton(joys[i], 1);   /* X */
+	    brake = SDL_JoystickGetButton(joys[i], 0);   /* Square */
+	    fire = SDL_JoystickGetButton(joys[i], 3);   /* Triangle */
 
-	for (i = 0; i < 2; i++) {
-	    if (dying[i] > 0 && dying[i] < 28)
-		putsprite(p[i],deaths[i]+deathoffset[(dying[i]-1)/2],
-			  x[i] >> 16,y[i] >> 16);
-	    else if (dying[i]==0)
-		putsprite(p[i],spr[i][angle[i]],x[i] >> 16,y[i] >> 16);
+	    /*
+	     * The player can fire whenever they like, as long as
+	     * they aren't already dying. Even if their centre
+	     * point is off solid ground and they can't do anything
+	     * _else_, they can still fire, in the hope of the
+	     * recoil saving them.
+	     */
+	    if (fire && !pfire[i]) {
+		jj = -1;
+		for (j = 0; j < MAX_BULLETS; j++)
+		    if(!ba[i][j]) {
+			jj = j;
+			break;
+		    }
+		if (jj != -1) {
+		    bx[i][j] = x[i]+622592+sine[angle[i]+9]*165;
+		    by[i][j] = y[i]+622592-sine[angle[i]]*165;
+		    bvx[i][j] = 38*sine[angle[i]+9];
+		    bvy[i][j] = -38*sine[angle[i]];
+		    ba[i][j] = TRUE;
+		    vx[i] = vx[i]-4*sine[angle[i]+9];
+		    vy[i] = vy[i]+4*sine[angle[i]];
+		}
+	    }
+	    pfire[i] = fire;
+
+	    /*
+	     * If the player's centre point is on solid ground,
+	     * they can steer, accelerate and brake.
+	     */
+	    if (player_can_steer(x[i], y[i])) {
+		if (axis < 0) rangle[i] = (rangle[i]+1) % 72;
+		if (axis > 0) rangle[i] = (rangle[i]+71) % 72;
+		angle[i] = rangle[i] >> 1;
+		friction = arena_friction(x[i], y[i]);
+		if (brake)
+		    friction += 256;
+		vx[i] -= (sign(vx[i])*(abs(vx[i]) >> 5)*friction) >> 8;
+		vy[i] -= (sign(vy[i])*(abs(vy[i]) >> 5)*friction) >> 8;
+		if (accel) {
+		    vx[i] = vx[i]+sine[angle[i]+9];
+		    vy[i] = vy[i]-sine[angle[i]];
+		}
+	    }
 	}
 
+	/*
+	 * To prevent excessive speeds from breaking our simplistic
+	 * collision detection, we break the frame down into
+	 * increments in which no moving object travels more than
+	 * two pixels on either axis. Collision detection is
+	 * processed that many times.
+	 * 
+	 * _Really_ we should fix this by proactive prediction:
+	 * extrapolate the paths of all moving objects, determine
+	 * when the next intersection will take place, advance time
+	 * to that point and enact the effects of the collision,
+	 * then repeat the whole process until the next event to
+	 * take place is the end of the frame. However, this simple
+	 * method is perfectly adequate for a game like this; great
+	 * accuracy is not really required.
+	 */
+	
+	/*
+	 * Compute the maximum velocity of any moving object, and
+	 * hence determine the number of increments in the frame.
+	 */
+	vmax = 0;
 	for (i = 0; i < 2; i++) {
-	    if (dying[i]>0) {
-		if (dying[i]<dead) dying[i]++;
-	    } else {
-		int axis, accel, brake, fire, friction;
-		axis = SDL_JoystickGetAxis(joys[i], 0) / JOY_THRESHOLD;
-		accel = SDL_JoystickGetButton(joys[i], 1);   /* X */
-		brake = SDL_JoystickGetButton(joys[i], 0);   /* Square */
-		fire = SDL_JoystickGetButton(joys[i], 3);   /* Triangle */
+	    if (vmax < abs(vx[i])) vmax = abs(vx[i]);
+	    if (vmax < abs(vy[i])) vmax = abs(vy[i]);
+	    for (j = 0; j < MAX_BULLETS; j++) if (ba[i][j]) {
+		if (vmax < abs(bvx[i][j])) vmax = abs(bvx[i][j]);
+		if (vmax < abs(bvy[i][j])) vmax = abs(bvy[i][j]);
+	    }
+	}
+	/*
+	 * vmax / incs must be at most 2<<16; hence incs must be at
+	 * least vmax / (2<<16). So we divide by 2<<16 rounding up.
+	 */
+	incs = (vmax + (2<<16) - 1) / (2<<16);
 
-		/*
-		 * The player can fire whenever they like, as long
-		 * as they aren't already dying. Even if their
-		 * centre point is off solid ground and they can't
-		 * do anything _else_, they can still fire, in the
-		 * hope of the recoil saving them.
-		 */
-		if (fire && !pfire[i]) {
-		    jj = -1;
-		    for (j = 0; j < MAX_BULLETS; j++)
-			if(!ba[i][j]) {
-			    jj = j;
-			    break;
-			}
-		    if (jj != -1) {
-			bx[i][j] = x[i]+622592+sine[angle[i]+9]*165;
-			by[i][j] = y[i]+622592-sine[angle[i]]*165;
-			bvx[i][j] = 38*sine[angle[i]+9];
-			bvy[i][j] = -38*sine[angle[i]];
-			ba[i][j] = TRUE;
-			vx[i] = vx[i]-4*sine[angle[i]+9];
-			vy[i] = vy[i]+4*sine[angle[i]];
-		    }
-		}
-		pfire[i] = fire;
+	/*
+	 * Now perform each increment in turn. To prevent rounding
+	 * errors from effectively computing incs*(v/incs), we will
+	 * add ((inc+1)*v/incs - inc*v/incs) to each object's
+	 * position in each increment, so that in the absence of
+	 * collisions the overall sum is the same.
+	 * 
+	 * This computation is performed by the macro INC.
+	 */
+#define INC(v) (((inc+1)*(v)/incs - inc*(v)/incs))
+	for (inc = 0; inc < incs; inc++) {
 
-		/*
-		 * If the player's centre point is on solid ground,
-		 * they can steer, accelerate and brake.
-		 */
-		if (player_can_steer(x[i], y[i])) {
-		    if (axis < 0) rangle[i] = (rangle[i]+1) % 72;
-		    if (axis > 0) rangle[i] = (rangle[i]+71) % 72;
-		    angle[i] = rangle[i] >> 1;
-		    friction = arena_friction(x[i], y[i]);
-		    if (brake)
-			friction += 256;
-		    vx[i] -= (sign(vx[i])*(abs(vx[i]) >> 5)*friction) >> 8;
-		    vy[i] -= (sign(vy[i])*(abs(vy[i]) >> 5)*friction) >> 8;
-		    if (accel) {
-			vx[i] = vx[i]+sine[angle[i]+9];
-			vy[i] = vy[i]-sine[angle[i]];
-		    }
+	    /*
+	     * Move the bullets.
+	     */
+	    for (i = 0; i < 2; i++) for (j = 0; j < MAX_BULLETS; j++)
+		if (ba[i][j]) {
+		    bx[i][j] += INC(bvx[i][j]);
+		    by[i][j] += INC(bvy[i][j]);
+		    if (!bullet_can_exist(bx[i][j], by[i][j]))
+			ba[i][j] = FALSE;
 		}
 
-		if (player_is_alive(x[i], y[i])) {
-		    check_mirrors(x[i], y[i], &vx[i], &vy[i]);
-		    x[i] = x[i]+vx[i];
-		    y[i] = y[i]+vy[i];
-		} else {
+	    /*
+	     * Move the players.
+	     */
+	    for (i = 0; i < 2; i++) {
+		if (!dying[i] && player_is_alive(x[i], y[i])) {
+		    x[i] = x[i]+INC(vx[i]);
+		    y[i] = y[i]+INC(vy[i]);
+		} else if (!dying[i]) {
 		    makedeath(i,angle[i]);
 		    dying[i] = 1;
 		    gameover = 1;
 		}
 		clip(&x[i], &y[i], &vx[i], &vy[i]);
 	    }
-	}
 
-	dx = x[1]-x[0]; dx = sign(dx)*(abs(dx) >> 16);
-	dy = y[1]-y[0]; dy = sign(dy)*(abs(dy) >> 16);
-	/* The first two terms of this `if' statement are a
-	 * theoretically redundant optimisation.  */
-	if (dx<20 && dy<20 && dx*dx+dy*dy<400) {
-	    dvx = vx[0]-vx[1];
-	    dvy = vy[0]-vy[1];
-	    sp = dx*dvx+dy*dvy;
-	    if (sp>0) collide(dx,dy,&vx[0],&vy[0],&vx[1],&vy[1]);
-	}
+	    /*
+	     * Check for collisions between a player and a mirror.
+	     */
+	    for (i = 0; i < 2; i++)
+		if (!dying[i])
+		    check_mirrors(x[i], y[i], &vx[i], &vy[i]);
 
-	for (i = 0; i < 2; i++)
-	    for (j = 0; j < MAX_BULLETS; j++)
-		if (ba[1-i][j]) {
-		    dx = x[i]+622592-bx[1-i][j]; dx = sign(dx)*(abs(dx) >> 16);
-		    dy = y[i]+622592-by[1-i][j]; dy = sign(dy)*(abs(dy) >> 16);
-		    if (dx<10 && dy<10) {
-			dvx = dx*dx+dy*dy;
-			if (dvx<100) {
-			    dvx = squarert(dvx);
-			    vx[i] = vx[i]+(dx << 14) / dvx;
-			    vy[i] = vy[i]+(dy << 14) / dvx;
-			    ba[1-i][j] = FALSE;
+	    /*
+	     * Check for a collision between the two players.
+	     */
+	    dx = x[1]-x[0]; dx = sign(dx)*(abs(dx) >> 16);
+	    dy = y[1]-y[0]; dy = sign(dy)*(abs(dy) >> 16);
+	    if (dx<20 && dy<20 && dx*dx+dy*dy<400) {
+		dvx = vx[0]-vx[1];
+		dvy = vy[0]-vy[1];
+		sp = dx*dvx+dy*dvy;
+		if (sp>0) collide(dx,dy,&vx[0],&vy[0],&vx[1],&vy[1]);
+	    }
+
+	    /*
+	     * Check for collisions between a player and a bullet.
+	     */
+	    for (i = 0; i < 2; i++)
+		for (j = 0; j < MAX_BULLETS; j++)
+		    if (ba[1-i][j]) {
+			dx = x[i]+622592-bx[1-i][j]; dx=sign(dx)*(abs(dx)>>16);
+			dy = y[i]+622592-by[1-i][j]; dy=sign(dy)*(abs(dy)>>16);
+			if (dx<10 && dy<10) {
+			    dvx = dx*dx+dy*dy;
+			    if (dvx<100) {
+				dvx = squarert(dvx);
+				vx[i] = vx[i]+(dx << 14) / dvx;
+				vy[i] = vy[i]+(dy << 14) / dvx;
+				ba[1-i][j] = FALSE;
+			    }
 			}
 		    }
-		}
+
+	}
+
+	/*
+	 * Draw the bullets.
+	 */
+	for (i = 0; i < 2; i++) for (j = 0; j < MAX_BULLETS; j++)
+	    if (ba[i][j])
+		putsprite(bs[i][j],bullets[i],
+			  bx[i][j] >> 16,by[i][j] >> 16);
+
+	/*
+	 * Draw the players.
+	 */
+	for (i = 0; i < 2; i++) {
+	    if (dying[i] > 0) {
+		if (dying[i] < 28)
+		    putsprite(p[i],deaths[i]+deathoffset[(dying[i]-1)/2],
+			      x[i] >> 16,y[i] >> 16);
+		if (dying[i]<dead)
+		    dying[i]++;
+	    } else if (dying[i]==0)
+		putsprite(p[i],spr[i][angle[i]],x[i] >> 16,y[i] >> 16);
+	}
 
 	if (gameover > 0) gameover++;
 
