@@ -1,0 +1,21 @@
+Summary: Resize after Alt-Space, N minimise doesn't work
+Class: bug
+Priority: medium
+Present-in: 0.52 2002-05-20
+Content-type: text/x-html-body
+
+<p>Another bit of resize flakiness that's been reported :
+<ul>
+<li>Open a connection somewhere.
+<li>Resize the window (to verify that it can be resized).
+<li>Type alt-space, then 'n' to minimize the window.
+<li>Alt-tab (or click it on the taskbar) to bring it back up.
+<li>Attempt to resize the window. There'll be a lot of flickering, and
+if you chose a left/top handle the window will move around, but it
+won't resize.
+<li>Type something into the window.
+<li>Resizing now works.
+</ul>
+
+<p>(This may be something to look at when fixing the other
+<a href="resize.html">resize flakiness</a>.)
