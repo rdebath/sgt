@@ -839,8 +839,18 @@ exact meaning of; but it should at least be able to know how to pass
 them through unchanged without losing track of the rest of the
 session.
 
-\# FIXME: perhaps mention PNG as a shining example here? Would need
-\# to excuse it not being a protocol or interface as such :-)
+A particularly good example of this principle is the graphics file
+format PNG \#{FIXME: reference}. It's not exactly an interface in
+the sense that I've been mostly talking about them, but a file
+format is designed to be written by one program and read by another,
+and in that sense some of the same design principles apply. In
+particular, a PNG file is divided into chunks, and since the format
+is designed to be extensible, new chunk types might appear in future
+editions. Therefore, the PNG designers have gone to great lengths to
+ensure that chunk names contain enough information that any program
+which needs to edit a PNG file can know how to handle chunk types it
+doesn't understand. In a network protocol, this would be
+proxy-friendliness.
 
 \C{threading} Multithreading and thread-safety
 
