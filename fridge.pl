@@ -1,20 +1,39 @@
 #!/usr/bin/perl
-$p="";
-while (<>) { &t; &h($p,$_); print $_,"\n"; $p=$_; }
-&h($p,"");
+$prev="";
+while (<>) { &t; &h($prev,$end); print $line,"\n"; $prev=$end; }
+&h($prev,"");
 
 sub t {
   chomp;
-  s/ / | /g;
-  $_ = "| $_ |";
+  @a = unpack "C*", $_;
+  $line = $end = "";
+  $state = 0;
+  foreach $i (@a) {
+    $c = pack "C", $i;
+    if ($i == 32) {
+      # A space.
+      if    ($state == 0) { $line .= "  ";   $end .= "  ";              }
+      elsif ($state == 1) { $line .= " ";    $end .= " ";   $state = 0; }
+      elsif ($state == 2) { $line .= " |";   $end .= "-+";  $state = 1; }
+    } else {
+      # A non-space.
+      if    ($state == 0) { $line .= "| $c"; $end .= "+--"; $state = 2; }
+      elsif ($state == 1) { $line .= " $c";  $end .= "--";  $state = 2; }
+      elsif ($state == 2) { $line .= "$c";   $end .= "-";               }
+    }
+  }
+  if ($state == 2) { $line .= " |"; $end .= "-+"; }
 }
 
 sub h {
   my ($x,$y) = @_;
-  $h = "-" x length $x;
-  $h = "-" x length $y if length $y > length $x;
-  for ($i=0; $i<length $h; $i++) {
-    substr($h,$i,1) = "+" if substr($x,$i,1) eq "|" or substr($y,$i,1) eq "|";
+  $prev = "";
+  for ($i=0; $i<length $x or $i<length $y; $i++) {
+    $c1 = substr($x,$i,1);
+    $c2 = substr($y,$i,1);
+    if    ($c1 eq "+" or $c2 eq "+") { $prev .= "+"; }
+    elsif ($c1 eq "-" or $c2 eq "-") { $prev .= "-"; }
+    else                             { $prev .= " "; }
   }
-  print $h,"\n";
+  print $prev,"\n";
 }
