@@ -1,0 +1,18 @@
+Summary: pscp -load and psftp -load ignore proxy configuration
+Class: bug
+Difficulty: tricky
+Priority: medium
+Present-in: 2003-10-13 0.53b
+Content-type: text/plain
+
+When a saved session is used with pscp or psftp with:
+
+pscp -load sessionname user@host:path localpath
+psftp -load sessionname user@host
+
+...any proxy settings from the saved session are ignored.  However, if
+a saved session is used as the host (documented in the pscp manual
+section), pscp and psftp use the proxy correctly:
+
+pscp sessionname:path localpath
+psftp sessionname
