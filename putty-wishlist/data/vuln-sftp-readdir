@@ -2,8 +2,8 @@ Summary: Vulnerability: crafted SFTP FXP_READDIR reply may allow remote code exe
 Class: vulnerability
 Difficulty: fun
 Priority: high
-Present-in: 0.56
-Fixed-in: 0.57
+Present-in: 0.56 2005-02-20
+Fixed-in: 0.57 2005-02-21
 Content-type: text/x-html-body
 
 <p>
