@@ -773,18 +773,14 @@ for v1, v2 in tabpos.values():
 	dx34 = x4 - x3
 	dy34 = y4 - y3
 	# Only bother with this if both lines face one another.
-	worthwhile = 1
+	problempoints = 0
 	for xa, ya in (x1,y1),(x2,y2):
-	    for xb, yb in (x3,y3),(x4,y4):
-		xm = (xa+xb)/2
-		ym = (ya+yb)/2
-		if (xm-xa)*dy - (ym-ya)*dx < 0 or \
-		(xm-xb)*dy34 - (ym-yb)*dx34 < 0:
-		    worthwhile = 0
-		    break
-	    if not worthwhile:
-		break
-	if not worthwhile:
+	    if (xa-x3)*dy34 - (ya-y3)*dx34 > 0:
+		problempoints = problempoints + 1
+	for xb, yb in (x3,y3),(x4,y4):
+	    if (xb-x1)*dy - (yb-y1)*dx > 0:
+		problempoints = problempoints + 1
+	if problempoints < 3:
 	    continue
 	# Figure out which way round to compute the bisecting line.
 	dp3 = (x3-x1) * (y2-y1) - (y3-y1) * (x2-x1)
