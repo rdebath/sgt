@@ -1,6 +1,13 @@
 /*
  * enigma/savefile.c - provide routines that load and save a user's
  * progress details and saved positions.
+ * 
+ * Copyright 2000 Simon Tatham. All rights reserved.
+ * 
+ * Enigma is licensed under the MIT licence. See the file LICENCE for
+ * details.
+ * 
+ * - we are all amf -
  */
 
 #include <stdio.h>

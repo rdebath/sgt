@@ -3,6 +3,13 @@
  * interaction with Curses is contained in this module, so an X
  * front end (for example) could be implemented just by replacing
  * this one file.
+ * 
+ * Copyright 2000 Simon Tatham. All rights reserved.
+ * 
+ * Enigma is licensed under the MIT licence. See the file LICENCE for
+ * details.
+ * 
+ * - we are all amf -
  */
 
 #include <stdio.h>

@@ -2,6 +2,13 @@
  * enigma/levelfile.c - provide routines that load a level
  * configuration file (which points to a set of levels) and a level
  * file itself.
+ * 
+ * Copyright 2000 Simon Tatham. All rights reserved.
+ * 
+ * Enigma is licensed under the MIT licence. See the file LICENCE for
+ * details.
+ * 
+ * - we are all amf -
  */
 
 #include <stdio.h>
