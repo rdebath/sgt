@@ -20,6 +20,8 @@ int qp_decode(const char *input, int length, char *output, int rfc2047)
 	    ishex(input[1]) && ishex(input[2])) {
 	    *output++ = 16 * hexval(input[1]) + hexval(input[2]);
 	    input += 3, length -= 3;
+	} else if (length >= 2 && input[0] == '=' && input[1] == '\n') {
+	    input += 2, length -= 2;
 	} else if (rfc2047 && *input == '_') {
 	    /*
 	     * RFC2047's slightly different `Q' encoding is
@@ -46,13 +48,14 @@ int main(void)
     char *teststrings[][2] = {
 	{ "this=20is=20a=20test", "this is a test" },
 	{ "=A32.78 is twice =A31.39", "\xA3""2.78 is twice \xA3""1.39" },
+	{ "This breaks over =\ntwo lines", "This breaks over two lines" },
     };
     int i, dlen;
     char buf[512];
 
     for (i = 0; i < lenof(teststrings); i++) {
 
-	dlen = qp_decode(teststrings[i][0], strlen(teststrings[i][0]), buf);
+	dlen = qp_decode(teststrings[i][0], strlen(teststrings[i][0]), buf, 0);
 	assert(dlen <= sizeof(buf));
 	assert(dlen == strlen(teststrings[i][1]));
 	assert(memcmp(teststrings[i][1], buf, dlen) == 0);
