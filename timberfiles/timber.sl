@@ -705,6 +705,7 @@ define timber_getheader(processed) {
 	result += " " + bufsubstr();
 	go_right_1();
     }
+    bol();
     return result;
 }
 
@@ -1203,7 +1204,6 @@ define timber_get_mimepart(use_decoded) {
     go_right_1();
     name = filename = NULL;
     while (not eolp()) {
-        bol();
         c = what_char();
         if (c == '<' or c == '>') {
 	    eol();
