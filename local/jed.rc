@@ -1,5 +1,5 @@
 % -*- mode: slang; mode: fold -*-
-% Simon Tatham: version $Revision: 1.33 $
+% Simon Tatham: version $Revision: 1.34 $
 
 %{{{ load Emacs keybindings to start with
 
@@ -476,6 +476,16 @@ define gnu() { %{{{
     (, mode) = what_mode();
     if (mode & 2) {
         C_INDENT = 2;
+        C_BRACE = 2;
+        C_CONTINUED_OFFSET = 2;
+    }
+} %}}}
+define davis() { %{{{
+    variable mode;
+
+    (, mode) = what_mode();
+    if (mode & 2) {
+        C_INDENT = 3;
         C_BRACE = 2;
         C_CONTINUED_OFFSET = 2;
     }
