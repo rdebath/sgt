@@ -29,11 +29,17 @@ can exploit this in all invocations of PSFTP and PSCP, unless the
 <code>-scp</code> option is supplied to PSCP.
 
 <p>
-This bug was discovered by an anonymous contributor to
+This bug was discovered by a contributor to
 <a href="http://www.idefense.com/">iDEFENSE</a>'s
 <a href="http://www.idefense.com/poi/teams/vcp.jsp">Vulnerability
-Contributor Program</a>. It will be documented in a forthcoming
-iDEFENSE advisory.
+Contributor Program</a>. It is documented in iDEFENSE's advisory
+<a href="http://www.idefense.com/application/poi/display?id=201&type=vulnerabilities&flashstatus=false">02.21.05</a>.
+It is also mentioned in an advisory by Secunia, numbered
+<a href="http://secunia.com/advisories/14333/">SA14333</a>,
+and has been assigned <!-- CVE ID
+<a href="http://cve.mitre.org/cgi-bin/cvename.cgi?name=CAN-2005-0467">CAN-2005-0467</a>
+and -->
+<a href="http://www.osvdb.org/14003">OSVDB ID 14003</a>.
 
 <p>
 <em>Vulnerability details:</em>
