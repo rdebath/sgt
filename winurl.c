@@ -92,7 +92,7 @@ void do_launch_url(void)
 {
     HGLOBAL clipdata;
     char *s = NULL, *t = NULL, *p, *q;
-    int len, ret;
+    int len, ret, i;
 
     if (!OpenClipboard(NULL)) {
 	goto error; /* unable to read clipboard */
@@ -112,7 +112,7 @@ void do_launch_url(void)
      * text. In a future version this might be made configurable.
      */
     len = strlen(s);
-    t = malloc(len+1);
+    t = malloc(len+8);                 /* leading "http://" plus trailing \0 */
     if (!t) {
 	GlobalUnlock(s);
 	goto error;		       /* out of memory */
@@ -121,7 +121,8 @@ void do_launch_url(void)
     p = s;
     while (p[0] && (isspace((unsigned char)(p[0])) || p[0] == '\xA0'))
 	p++;
-    q = t;
+    strcpy(t, "http://");
+    q = t + 7;
 
     for (; *p; p++) {
 	if (*p != '\n')
@@ -133,7 +134,18 @@ void do_launch_url(void)
     }
 
     *q = '\0';
-    ret = (int)ShellExecute(winurl_hwnd, "open", t, NULL, NULL, SW_SHOWNORMAL);
+
+    /*
+     * Now we have the URL starting at t+7, with a prefix "http://"
+     * just before it in case it's required. See if it is required.
+     */
+    i = strspn(t+7, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
+    if (t[7+i] == ':')
+        p = t+7;                       /* we have our own protocol prefix */
+    else
+        p = t;                         /* add the standard one */
+
+    ret = (int)ShellExecute(winurl_hwnd, "open", p, NULL, NULL, SW_SHOWNORMAL);
 
     free(t);
 
