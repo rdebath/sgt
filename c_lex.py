@@ -14,7 +14,7 @@ def _enum(init=-1):
     return _enumval
 
 # Enumeration of lexeme types
-lt_UNUSED = _enum(0)
+lt_BEGIN = _enum(0)
 lt_comment = _enum()
 lt_white = _enum()
 lt_ident = _enum()
@@ -109,6 +109,7 @@ lt_while = _enum()
 lt__Bool = _enum()
 lt__Complex = _enum()
 lt__Imaginary = _enum()
+lt_END = _enum()
 
 # Keywords
 c_keywords = {}
@@ -196,10 +197,22 @@ class lexer:
         self.text = ""
         self.wantcomments = 0
         self.wantwhite = 0
-        self.typedefs = {}
+        self.typedefs = [{}]
         self.line = 1
         self.col = 1
         self.pushback = []
+
+    def pushtypedef(self):
+        "Push the list of typedef identifiers on a stack."
+        self.typedefs[:0] = self.typedefs[0].copy()
+
+    def poptypedef(self):
+        "Pop the list of typedef identifiers from the stack."
+        self.typedefs[:1] = []
+
+    def addtypedef(self, word):
+        "Add a typedef name to the list."
+        self.typedefs[0][word] = 1
 
     def feed(self, text):
         "Feed the lexer some text."
@@ -292,7 +305,7 @@ class lexer:
             if i == 0:
                 if c_keywords.has_key(matchtext):
                     type = c_keywords[matchtext]
-                elif self.typedefs.has_key(matchtext):
+                elif self.typedefs[0].has_key(matchtext):
                     type = lt_typedefname
                 else:
                     type = lt_ident
