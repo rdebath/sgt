@@ -628,7 +628,6 @@ int swash_text(int x, int y, char *text,
 		    while (sx < opt->chr->width+2 &&
 			   ((opt->chr->bitpattern[j] >> sx) & 3) != 3)
 			sx++;
-printf("found stem at %d\n", sx);
 		    sx = x + opt->chr->width-2-sx;
 		}
 
@@ -708,7 +707,7 @@ int main(int argc, char **argv)
 {
     int i;
 
-    memset(buffer, '.', sizeof(buffer));
+    memset(buffer, ' ', sizeof(buffer));
     minx = MAXWIDTH+1;
     maxx = -1;
 
