@@ -1,5 +1,5 @@
 % -*- mode: slang; mode: fold -*-
-% Simon Tatham: version $Revision: 1.13 $
+% Simon Tatham: version $Revision: 1.14 $
 
 %{{{ load Emacs keybindings to start with
 
@@ -500,6 +500,27 @@ define showcolm() {
     message(Sprintf("Cursor is at column %d", what_column(), 1));
 }
 setkey("showcolm", "^X^]");
+
+%}}}
+%{{{ makefile_mode, or hacks thereabout
+
+define makefile_mode() {
+    sh_mode();
+}
+
+variable jedrc_old_defmode = Default_Mode;
+
+define jedrc_default_mode() {
+    variable name;
+    (name,,,) = getbuf_info();
+    name = extract_filename(name);
+    if (name == "Makefile" or name == "makefile")
+        makefile_mode();
+    else
+        @jedrc_old_defmode();
+}
+
+Default_Mode = &jedrc_default_mode;
 
 %}}}
 %{{{ M-x q, Q, rq and sig
