@@ -1,6 +1,6 @@
 # -*- mode: sh; mode: fold -*-
 # Simon Tatham's standardised chunk of .bashrc
-# $Revision: 1.8 $
+# $Revision: 1.9 $
 
 #{{{ I don't like .bash_history files. They wet their nests.
 unset HISTFILE
@@ -81,11 +81,50 @@ ls -d --color=auto . >&/dev/null && alias ls='ls --color=auto'
 #}}}
 #{{{ keybindings to run Timber
 
-# bash-1.14.5 doesn't like escape sequences, so we have to be icky:
-# bind '"\C-xM": "\001\013timber\n"'
-# bind '"\C-xm": "\001\013timber '\'\''\n"'
-bind "`printf '"\\C-xM": "\001\013timber\n"'`"
-bind "`printf '"\\C-xm": "\001\013timber '\'\''\n"'`"
+# This is hideous. We wish to bind ^XM to ^A^Ktimber^J.
+#
+# On sensible (bash2) systems we can do
+#   bind '"\C-xM": "\001\013timber\n"'
+# because `bind' itself is competent to read the backslash escapes in the
+# key sequence specification.
+#
+# On bash1 systems we can't do this, and we're forced to convert the
+# escapes by some other means, like having them parsed by echo -e. So I'd
+# expect to be able to do
+#   bind "`echo -e '"\\C-xM": "\001\013timber\n"'`"
+# But this doesn't work, because there's a problem with backslash processing
+# inside backquotes in bash1. Consider
+#   echo `echo '\\'`
+# This ought to give you two backslashes, right? Because backslashes inside
+# single quotes are unaffected, right? Wrong, because the backquotes kill
+# one of 'em off for no reason. Now as it happens, the echo -e thing works
+# OK in this case, but it's not what I'd call _reliable_, because it depends
+# on echo -e translating `\C' to `\C'. In other words, it relies on there
+# having been no new escape sequence called \C introduced into the set of
+# things understood by echo -e.
+#
+# We can circumvent the problem if we set the echo -e string in a separate
+# shell variable and let all the complicated quoting happen in a sane
+# environment:
+#
+#   we want to echo      "\C-xM": "^A^Ktimber^J"  [where '^A' etc are special]
+#   in `echo -e' that's  "\\C-xM": "\001\013timber\n"    [doubled first \]
+#   single-quote it      '"\\C-xM": "\001\013timber\n"'
+#   and assign into a shell variable or parameter.
+#
+# So we can do
+#
+#   set -- '"\\C-xM": "\001\013timber\n"'
+#   bind "`echo -e "$1"`"
+#
+# and get away with it.
+
+bashrc_do_bindings() {
+  set -- '"\\C-xM": "\001\013timber\n"'
+  bind "`echo -e "$1"`"
+  set -- '"\\C-xm": "\001\013timber '\'\''\n"'
+  bind "`echo -e "$1"`"
+}
 
 #}}}
 #{{{ prompt configuration
