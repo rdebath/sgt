@@ -206,7 +206,7 @@ variable timber_boringhdrs =
 ":X-VM-Summary-Format:X-Lotus-FromDomain:Content-Disposition:" +
 ":X-MIMETrack:Content-Class:Thread-Topic:Thread-Index:List-Id:" +
 ":Content-Transfer-Encoding:X-MS-Has-Attach:X-MS-TNEF-Correlator" +
-":X-Mailman-Version:X-BeenThere:";
+":X-Mailman-Version:X-BeenThere:User-Agent:Delivered-To:";
 
 %}}}
 %{{{ Non-user-configurable variables
