@@ -93,7 +93,7 @@ void usage(void) {
 }
 
 void version(void) {
-#define CVS_REV "$Revision: 1.2 $"
+#define CVS_REV "$Revision: 1.3 $"
     char rev[sizeof(CVS_REV)];
     char *p, *q;
 
@@ -153,7 +153,7 @@ int main(int ac, char **av) {
                     encoding = 1;
                     break;
                   case 'c':
-                    cpl = strtol(p, &eptr, 10);
+                    cpl = strtol(p+1, &eptr, 10);
                     if (eptr && *eptr) {
                         fprintf(stderr, "base64: option -c expects"
                                 " a numeric argument\n");
