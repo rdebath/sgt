@@ -128,12 +128,31 @@ class Lump:
     def __init__(self):
 	self.hdrlist = []
 	self.hdrdict = {}
-	self.data = ""
+	self.props = ""
+	self.text = ""
 	self.extant = 1
+	self.propdict = {}
     def sethdr(self, key, val):
 	if not self.hdrdict.has_key(key):
 	    self.hdrlist.append(key)
 	self.hdrdict[key] = val
+    def propparse(self):
+	index = 0
+	while self.props[index:index+2] == "K ":
+	    nlpos = string.find(self.props, "\n", index)
+	    assert nlpos > 0
+	    namelen = string.atoi(self.props[index+2:nlpos])
+	    assert self.props[nlpos+1+namelen] == "\n"
+	    name = self.props[nlpos+1:nlpos+1+namelen]
+	    index = nlpos+2+namelen
+	    assert self.props[index:index+2] == "V "
+	    nlpos = string.find(self.props, "\n", index)
+	    assert nlpos > 0
+	    proplen = string.atoi(self.props[index+2:nlpos])
+	    assert self.props[nlpos+1+proplen] == "\n"
+	    prop = self.props[nlpos+1:nlpos+1+proplen]
+	    index = nlpos+2+proplen
+	    self.propdict[name] = prop
 
 def read_rfc822_headers(f):
     ret = Lump()
@@ -161,8 +180,11 @@ def read_lump(f):
 	return None
     pcl = string.atoi(lump.hdrdict.get("Prop-content-length", "0"))
     tcl = string.atoi(lump.hdrdict.get("Text-content-length", "0"))
-    if pcl + tcl > 0:
-	lump.data = f.read(pcl + tcl)
+    if pcl > 0:
+	lump.props = f.read(pcl)
+	lump.propparse()
+    if tcl > 0:
+	lump.text = f.read(tcl)
     return lump
 
 def write_lump(f, lump):
@@ -172,7 +194,8 @@ def write_lump(f, lump):
 	val = lump.hdrdict[key]
 	f.write(key + ": " + val + "\n")
     f.write("\n")
-    f.write(lump.data)
+    f.write(lump.props)
+    f.write(lump.text)
     if lump.hdrdict.has_key("Prop-content-length") or \
     lump.hdrdict.has_key("Text-content-length") or \
     lump.hdrdict.has_key("Content-length"):
@@ -239,7 +262,7 @@ class RevTweaker:
 	# mkdir plus a set of subcopies.
 	contents2 = []
 	if buttress and len(contents) > 0 and \
-	string.find(revhdr.data, "Rename Buttress") >= 0:
+	string.find(revhdr.props, "Rename Buttress") >= 0:
 	    # Recognise the commit in which Buttress became Halibut,
 	    # and take special action.
 	    newlump = Lump()
@@ -280,7 +303,7 @@ class RevTweaker:
 	    # And start calling things `halibut' from then on.
 	    buttress = 0
 	if timber0 and len(contents) > 0 and \
-	string.find(revhdr.data, "Moved Timber into") >= 0:
+	string.find(revhdr.props, "Moved Timber into") >= 0:
 	    newlump = Lump()
 	    newlump.sethdr("Node-path", "local/timberfiles")
 	    newlump.sethdr("Node-kind", "dir")
@@ -390,8 +413,30 @@ class RevTweaker:
 	# Record previous revision number.
 	self.prevrev = revhdr.hdrdict["Revision-number"]
 
+    def log(self, revhdr, contents, f):
+	# Write out SVN log message.
+	rev = revhdr.hdrdict["Revision-number"]
+	log = revhdr.propdict.get("svn:log", "")
+	while len(log) > 0:
+	    nlpos = string.find(log, "\n")
+	    if nlpos >= 0:
+		line = log[:nlpos+1]
+		log = log[nlpos+1:]
+	    else:
+		line = log + "\n"
+		log = ""
+	    f.write("log r" + rev + ": " + line)
+
+	# Now write out CVS revision numbers.
+	for lump in contents:
+	    if lump.propdict.has_key("cvs2svn:cvs-rev"):
+		path = lump.hdrdict["Node-path"]
+		cvsrev = lump.propdict["cvs2svn:cvs-rev"]
+		f.write("rev r" + rev + " " + path + " " + cvsrev + "\n")
+
 fr = open("svn.dump", "r")
 fw = open("svn-tweaked.dump", "w")
+fl = open("svntweak.log", "w")
 
 # Dump file header.
 lump = read_lump(fr)
@@ -417,6 +462,8 @@ while revhdr != None:
     tweaker.tweak(revhdr, contents)
     # Now double-check.
     checker.tweak(revhdr, contents)
+    # Log the CVS revision numbers and revision log message.
+    checker.log(revhdr, contents, fl)
     # Write out revision.
     write_lump(fw, revhdr)
     for lump in contents:
@@ -426,3 +473,4 @@ while revhdr != None:
 
 fr.close()
 fw.close()
+fl.close()
