@@ -311,6 +311,11 @@ release. If you do not use Apache, you will have to reproduce this
 behaviour in some other way suitable for your own web server.
 
 <p>
+(We prefer that the "<code>latest</code>" redirect be handled as an
+HTTP-visible redirect, rather than a server-side filesystem tweak such
+as a symlink, for better behaviour in the face of web caches.)
+
+<p>
 Alternatively, you can mirror our web site using
 <a href="http://www.gnu.org/software/wget/wget.html">GNU wget</a>.
 This is less bandwidth-efficient, as unlike <code>rsync</code>
