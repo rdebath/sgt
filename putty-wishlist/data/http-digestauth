@@ -1,0 +1,10 @@
+Summary: PuTTY should support HTTP Digest authentication
+Class: wish
+Priority: medium
+Difficulty: tricky
+Content-type: text/plain
+
+Currently, PuTTY only support HTTP Basic authentication, which involves
+sending the user's password over the network in cleartext, which is Bad.
+HTTP Digest authentication is marginally more secure, and not ludicrously
+complex, so PuTTY should probably support it.
