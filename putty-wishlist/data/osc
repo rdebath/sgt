@@ -11,7 +11,7 @@ command).
 
 <p>
 This feature is horrendously insecure, and PuTTY will not be
-implementing unless someone comes up with some plausible way of
+implementing it unless someone comes up with some plausible way of
 dealing with the security issues outlined below.
 
 <p>
