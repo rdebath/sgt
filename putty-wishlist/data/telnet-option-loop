@@ -3,6 +3,7 @@ Class: bug
 Priority: medium
 Difficulty: fun
 Present-in: 0.57
+Fixed-in: 2005-03-17
 Content-type: text/plain
 
 RFC 854 includes the following rule to prevent option-negotiation loops:
