@@ -26,6 +26,33 @@ def charname(x):
     else:
 	return ""
 
+def output(char, bytes, errors):
+    if output_analysis:
+	if char == -1:
+	    s = "           "
+	else:
+	    s = "U-%08X " % char
+	for i in bytes:
+	    s = s + " %02X" % i
+	for i in range(6-len(bytes)):
+	    s = s + "   "
+
+	if char == -1:
+	    name = ""
+	else:
+	    name = charname(char)
+	if name != "":
+	    s = s + " " + name
+	s = s + errors
+	print s
+    else:
+	if char == -1 or errors != "":
+	    # problem chars become U+FFFD REPLACEMENT CHARACTER
+	    sys.stdout.write("\xEF\xBF\xBD")
+	else:
+	    for i in bytes:
+		sys.stdout.write(chr(i))
+
 def process_ucs(x, bytes=[], errors=""):
     if x < 0x80:
 	utf8 = [x]
@@ -58,30 +85,22 @@ def process_ucs(x, bytes=[], errors=""):
     if x >= 0xFFFE and x <= 0xFFFF:
 	errors = errors + " (invalid char)"
 
-    s = "U-%08X " % x
-    for i in utf8:
-	s = s + " %02X" % i
-    for i in range(6-len(utf8)):
-	s = s + "   "
-    
-    name = charname(x)
-    if name != "":
-	s = s + " " + name
-    s = s + errors
-    print s
+    output(x, utf8, errors)
 
-def process_utf8(list):
-    j = 0
-    while j < len(list):
-	jpos = j
-	i = list[j]
-	j = j + 1
+def process_utf8(next):
+    c = next()
+    while c != None:
+	char = [c]
+	i = c
 	if i < 0x80:
 	    process_ucs(i) # single-byte char
+	    c = next()
 	elif i == 0xfe or i == 0xff:
-	    print "            %02X                (invalid UTF-8 byte)" % i
+	    output(-1, char, " (invalid UTF-8 byte)")
+	    c = next()
 	elif i >= 0x80 and i <= 0xbf:
-	    print "            %02X                (unexpected continuation byte)" % i
+	    output(-1, char, " (unexpected continuation byte)")
+	    c = next()
 	else:
 	    if i >= 0xC0 and i <= 0xDF:
 		acc = i &~ 0xC0
@@ -98,27 +117,41 @@ def process_utf8(list):
 	    elif i >= 0xFC and i <= 0xFD:
 		acc = i &~ 0xFC
 		cbytes = 5
-	    while cbytes > 0 and j < len(list) and list[j] >= 0x80 and list[j] <= 0xBF:
-		acc = (acc << 6) + (list[j] & 0x3F)
+	    gotone = 0
+	    while cbytes > 0:
+		c = next()
+		if c == None or c < 0x80 or c > 0xBF:
+		    gotone = 1
+		    break
+		char.append(c)
+		acc = (acc << 6) + (c & 0x3F)
 		cbytes = cbytes - 1
-		j = j + 1
+	    if not gotone:
+		c = next()
 	    if cbytes > 0:
-		s = "           "
-		for i in list[jpos:j]:
-		    s = s + " %02X" % i
-		for i in range(6-(j-jpos)):
-		    s = s + "   "
-		s = s + " (incomplete sequence)"
-		print s
+		output(-1, char, " (incomplete sequence)")
 	    else:
-		process_ucs(acc, list[jpos:j])
+		process_ucs(acc, char)
 
 def do(args):
+    # Class to turn a list into a callable object that returns one
+    # element at a time.
+    class liststepper:
+	def __init__(self, list):
+	    self.list = list
+	    self.index = 0
+	def __call__(self):
+	    if self.index >= len(self.list):
+		return None
+	    ret = self.list[self.index]
+	    self.index = self.index + 1
+	    return ret
+
     list = []
     for arg in args:
 	if string.upper(arg[0]) == "U":
 	    if len(list) > 0:
-		process_utf8(list)
+		process_utf8(liststepper(list))
 		list = []
 	    assert arg[1] == "+" or arg[1] == "-"
 	    process_ucs(string.atoi(arg[2:], 16))
@@ -126,15 +159,23 @@ def do(args):
 	    list.append(string.atoi(arg, 16))
 
     if len(list) > 0:
-	process_utf8(list)
+	process_utf8(liststepper(list))
 
-if sys.argv[1:] == []:
-    print "usage: cvt-utf8 <hex UTF-8 bytes or U+codepoints>"
+args = sys.argv[1:]
+output_analysis = 1
+
+if args == []:
+    print "Usage: cvt-utf8 [-o] <hex UTF-8 bytes or U+codepoints>"
     print "  e.g. cvt-utf8 e2 82 ac"
     print "    or cvt-utf8 U+20ac"
     print "    or cvt-utf8 U-10ffff"
     print ""
+    print "Flag:  -o or --output     just output well-formed UTF-8 instead of"
+    print "                          an analysis of the input data"
+    print ""
     print "Also:  cvt-utf8 --test    run Markus Kuhn's decoder stress tests"
+    print "       cvt-utf8 --input (or -i)"
+    print "                          read, analyse and decode UTF-8 from stdin"
     print "       cvt-utf8 --build <infile> <outfile>"
     print "                          convert UnicodeData.txt to unicode db"
     print "       cvt-utf8 --fetch-build <outfile>"
@@ -142,20 +183,24 @@ if sys.argv[1:] == []:
     "build unicode db by download from unicode.org"
     sys.exit(0)
 
-if sys.argv[1] == "--build" or sys.argv[1] == "--fetch-build":
-    if sys.argv[1] == "--build":
-	if len(sys.argv) != 4:
+if args[0] == "-o" or args[0] == "--output":
+    output_analysis = 0
+    args = args[1:]
+
+if args[0] == "--build" or args[0] == "--fetch-build":
+    if args[0] == "--build":
+	if len(args) != 3:
 	    print "cvt-utf8: --build expects two filename arguments"
 	    sys.exit(1)
-	infile = open(sys.argv[2], "r")
-	outfile = sys.argv[3]
+	infile = open(args[1], "r")
+	outfile = args[2]
     else:
-	if len(sys.argv) != 3:
+	if len(args) != 2:
 	    print "cvt-utf8: --fetch-build expects one filename argument"
 	    sys.exit(1)
 	import urllib
 	infile = urllib.urlopen("http://www.unicode.org/Public/UNIDATA/UnicodeData.txt")
-	outfile = sys.argv[2]
+	outfile = args[1]
     # Now build the database.
     if outfile[-3:] == ".db":
 	print "cvt-utf8: warning: you should not append .db to db name"
@@ -187,7 +232,7 @@ for loc in locations:
     if db != None:
 	break
 
-if sys.argv[1] == "--test":
+if args[0] == "--test":
     do(["CE","BA","E1","BD","B9","CF","83","CE","BC","CE","B5"])
     do(["00"])
     do(["C2","80"])
@@ -287,5 +332,12 @@ if sys.argv[1] == "--test":
     do(["ED","AF","BF","ED","BF","8F"])
     do(["EF","BF","BE"])
     do(["EF","BF","BF"])
+elif args[0] == "--input" or args[0] == "-i":
+    def getchar():
+	s = sys.stdin.read(1)
+	if s == "":
+	    return None
+	return ord(s) & 0xFF   # ensure it isn't negative
+    process_utf8(getchar)
 else:
-    do(sys.argv[1:])
+    do(args)
