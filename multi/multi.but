@@ -209,3 +209,5 @@ this basic idea, supplying more options and configurability.
 
 \cw{multi} is free software, distributed under the MIT licence. Type
 \cw{multi --licence} to see the full licence text.
+
+\versionid $Id$

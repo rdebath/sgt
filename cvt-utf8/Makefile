@@ -1,4 +1,10 @@
+# for `make release' and `make html'
 DESTDIR = .
+
+# for `make install'
+PREFIX = /usr/local
+BINDIR = $(PREFIX)/bin
+MANDIR = $(PREFIX)/man/man1
 
 all: cvt-utf8.1
 
@@ -19,3 +25,9 @@ release: cvt-utf8.1
 	ln -s ../../Makefile reltmp/cvt-utf8
 	tar -C reltmp -chzf $(DESTDIR)/cvt-utf8.tar.gz cvt-utf8
 	rm -rf reltmp
+
+install: cvt-utf8.1
+	mkdir -p $(BINDIR)
+	install cvt-utf8 $(BINDIR)/cvt-utf8
+	mkdir -p $(MANDIR)
+	install -m 0644 cvt-utf8.1 $(MANDIR)/cvt-utf8.1

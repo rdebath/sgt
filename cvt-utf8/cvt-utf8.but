@@ -189,3 +189,5 @@ perform the rest of its functions.
 
 \cw{cvt-utf8} is free software, distributed under the MIT licence.
 Type \cw{cvt-utf8 --licence} to see the full licence text.
+
+\versionid $Id$

@@ -1,4 +1,10 @@
+# for `make release' and `make html'
 DESTDIR = .
+
+# for `make install'
+PREFIX = /usr/local
+BINDIR = $(PREFIX)/bin
+MANDIR = $(PREFIX)/man/man1
 
 all: multi.1
 
@@ -19,3 +25,9 @@ release: multi.1
 	ln -s ../../Makefile reltmp/multi
 	tar -C reltmp -chzf $(DESTDIR)/multi.tar.gz multi
 	rm -rf reltmp
+
+install: multi.1
+	mkdir -p $(BINDIR)
+	install multi $(BINDIR)/multi
+	mkdir -p $(MANDIR)
+	install -m 0644 multi.1 $(MANDIR)/multi.1

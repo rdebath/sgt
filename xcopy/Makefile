@@ -1,4 +1,10 @@
+# for `make release' and `make html'
 DESTDIR = .
+
+# for `make install'
+PREFIX = /usr/local
+BINDIR = $(PREFIX)/bin
+MANDIR = $(PREFIX)/man/man1
 
 X11LIB=-L/usr/X11R6/lib -lX11
 
@@ -25,4 +31,8 @@ release: xcopy.1
 	tar -C reltmp -chzf $(DESTDIR)/xcopy.tar.gz xcopy
 	rm -rf reltmp
 
-
+install: xcopy xcopy.1
+	mkdir -p $(BINDIR)
+	install xcopy $(BINDIR)/xcopy
+	mkdir -p $(MANDIR)
+	install -m 0644 xcopy.1 $(MANDIR)/xcopy.1
