@@ -27,6 +27,7 @@ gamestate *savepos_load(levelset *set, char *user, int savenum) {
     gamestate *state;
     int nlines, levnum;
     int i, j;
+    int seqpos = 0;
 
     fname[sizeof(fname)-1] = '\0';
     strncpy(fname, SAVEDIR, sizeof(fname));
@@ -68,6 +69,20 @@ gamestate *savepos_load(levelset *set, char *user, int savenum) {
 	    state->status = PLAYING;
 	} else if (ishdr(buf, "Moves: ")) {
 	    state->movenum = atoi(buf + 7);
+	    state->sequence_size = state->movenum;
+	    state->sequence = smalloc(state->sequence_size);
+	    seqpos = 0;
+	    memset(state->sequence, '?', state->sequence_size);
+	} else if (ishdr(buf, "MoveData: ")) {
+	    char *p = buf + 10;
+	    int len;
+	    len = strlen(p);
+	    if (len > state->sequence_size - seqpos)
+		len = state->sequence_size - seqpos;
+	    if (len != 0) {
+		memcpy(state->sequence + seqpos, p, len);
+		seqpos += len;
+	    }
 	} else if (ishdr(buf, "Gold: ")) {
 	    state->gold_got = atoi(buf + 6);
 	} else if (ishdr(buf, "TotalGold: ")) {
@@ -167,6 +182,12 @@ void savepos_save(levelset *set, char *user, int savenum, gamestate *state) {
     for (i = 0; i < state->height; i++) {
 	fprintf(fp, "Map: %.*s\n", state->width,
 		state->leveldata + i * state->width);
+    }
+    for (i = 0; i < state->movenum; i += 50) {
+	int len = 50;
+	if (len > state->movenum - i)
+	    len = state->movenum - i;
+	fprintf(fp, "MoveData: %.*s\n", len, state->sequence+i);
     }
 
     fclose(fp);
@@ -290,4 +311,14 @@ char *sequence_load(char *fname) {
     p[len] = '\0';
     fclose(fp);
     return p;
+}
+
+void sequence_save(char *fname, gamestate *state) {
+    FILE *fp;
+    fp = fopen(fname, "w");
+    if (fp) {
+	fwrite(state->sequence, 1, state->movenum, fp);
+	fputc('\n', fp);
+	fclose(fp);
+    }
 }

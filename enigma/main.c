@@ -77,6 +77,11 @@ int main(int argc, char **argv) {
 			newgs = make_move(gs, k);
 			gamestate_free(gs);
 			gs = newgs;
+		    } else if (k == 'w') {
+			char *fname = screen_ask_movefile(1);
+			if (!fname)
+			    continue;
+			sequence_save(fname, gs);
 		    } else if (k == 's') {
 			n = screen_saveslot_ask('s', saves, saveslot);
 			if (n >= 0) {
@@ -101,7 +106,7 @@ int main(int argc, char **argv) {
 			char msg[80];
 			int km;
 
-			fname = screen_ask_movefile();
+			fname = screen_ask_movefile(0);
 			if (!fname)
 			    continue;
 			sequence = sequence_load(fname);
@@ -164,6 +169,8 @@ int main(int argc, char **argv) {
 		if (gs->status != PLAYING) {
 		    int increased_level = FALSE;
 		    char *msg;
+		    int k;
+
 		    if (gs->status == DIED) {
 			msg = "GAME OVER";
 		    } else if (gs->status == COMPLETED) {
@@ -178,6 +185,13 @@ int main(int argc, char **argv) {
 			msg = "!INTERNAL ERROR!";
 		    }
 		    screen_level_display(gs, msg);
+		    k = screen_finish_getmove();
+		    if (k == 'w') {
+			char *fname = screen_ask_movefile(1);
+			if (!fname)
+			    continue;
+			sequence_save(fname, gs);
+		    }
 		    screen_level_finish();
 		    if (increased_level && p.levnum == set->nlevels) {
 			screen_completed_game();

@@ -183,13 +183,19 @@ gamestate *make_move (gamestate *state, char key) {
 
     /*
      * Move the player and expose the square it has left. Increment
-     * the move count here as well.
+     * the move count here as well, and add the move to the stored
+     * sequence.
      */
     ret->leveldata[pfrom] = ' ';
     ret->leveldata[pto] = '@';
     ret->player_x = xto;
     ret->player_y = yto;
     ret->movenum++;
+    if (ret->movenum > ret->sequence_size) {
+	ret->sequence_size = ret->movenum + 128;
+	ret->sequence = srealloc(ret->sequence, ret->sequence_size);
+    }
+    ret->sequence[ret->movenum-1] = key;
     addlist(pos, exps);
     pos->x = xfrom;
     pos->y = yfrom;
