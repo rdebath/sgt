@@ -35,6 +35,8 @@ typedef struct tree234_Tag tree234;
 
 typedef int (*cmpfn234)(void *, void *);
 
+typedef void *(*copyfn234)(void *state, void *element);
+
 /*
  * Create a 2-3-4 tree. If `cmp' is NULL, the tree is unsorted, and
  * lookups by key will fail: you can only look things up by numeric
@@ -156,5 +158,45 @@ void *delpos234(tree234 *t, int index);
  * Return the total element count of a tree234.
  */
 int count234(tree234 *t);
+
+/*
+ * Split a tree234 into two valid tree234s.
+ * 
+ * splitpos234 splits at a given index. If `before' is TRUE, the
+ * items at and after that index are left in t and the ones before
+ * are returned; if `before' is FALSE, the items before that index
+ * are left in t and the rest are returned.
+ * 
+ * split234 splits at a given key. You can pass any of the
+ * relations used with findrel234, except for REL234_EQ. The items
+ * in the tree that satisfy the relation are returned; the
+ * remainder are left.
+ */
+tree234 *splitpos234(tree234 *t, int index, int before);
+tree234 *split234(tree234 *t, void *e, cmpfn234 cmp, int rel);
+
+/*
+ * Join two tree234s together into a single one.
+ * 
+ * All the elements in t1 are placed to the left of all the
+ * elements in t2. If the trees are sorted, there will be a test to
+ * ensure that this satisfies the ordering criterion, and NULL will
+ * be returned otherwise. If the trees are unsorted, there is no
+ * restriction on the use of join234.
+ * 
+ * The tree returned is t1 (join234) or t2 (join234r), if the
+ * operation is successful.
+ */
+tree234 *join234(tree234 *t1, tree234 *t2);
+tree234 *join234r(tree234 *t1, tree234 *t2);
+
+/*
+ * Make a complete copy of a tree234. Element pointers will be
+ * reused unless copyfn is non-NULL, in which case it will be used
+ * to copy each element. (copyfn takes two `void *' parameters; the
+ * first is private state and the second is the element. A simple
+ * copy routine probably won't need private state.)
+ */
+tree234 *copytree234(tree234 *t, copyfn234 copyfn, void *copyfnstate);
 
 #endif /* TREE234_H */
