@@ -1,0 +1,133 @@
+\cfg{man-identity}{cvt-utf8}{1}{2004-03-24}{Simon Tatham}{Simon Tatham}
+\cfg{man-mindepth}{1}
+
+\C{cvt-utf8-manpage} Man page for \cw{cvt-utf8}
+
+\H{cvt-utf8-manpage-name} NAME
+
+\cw{cvt-utf8} - convert between UTF-8 and Unicode, and analyse Unicode
+
+\H{cvt-utf8-manpage-synopsis} SYNOPSIS
+
+\c cvt-utf8 [flags] [hex UTF-8 bytes and/or U+codepoints]
+\e bbbbbbbb  iiiii   iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+
+\H{cvt-utf8-manpage-description} DESCRIPTION
+
+\cw{cvt-utf8} is a tool for manipulating and analysing UTF-8 and
+Unicode data. Its functions include:
+
+\b Given a sequence of Unicode code points, convert them to the
+corresponding sequence of bytes in the UTF-8 encoding.
+
+\b Given a sequence of UTF-8 bytes, convert them back into Unicode
+code points.
+
+\b Given any combination of the above inputs, look up each Unicode
+code point in the Unicode character database and identify it.
+
+\b Look up Unified Han characters in the \q{Unihan} database and
+provide their translation text.
+
+By default, \cw{cvt-utf8} expects to receive hex numbers (either
+UTF-8 bytes or Unicode code points) on the command line, and it will
+print out a verbose analysis of the input data. If you need it to
+read UTF-8 from standard input or to write pure UTF-8 to standard
+output, you can do so using command-line options.
+
+\H{cvt-utf8-manpage-options} OPTIONS
+
+\dt \cw{-i}
+
+\dd Read UTF-8 data from standard input and analyse that, instead of
+expecting hex numbers on the command line.
+
+\dt \cw{-o}
+
+\dd Write well-formed UTF-8 to standard output, instead of writing a
+long analysis of the input data.
+
+\dt \cw{-h}
+
+\dd Look up each code point in the Unihan database as well as the
+main Unicode character database.
+
+\H{cvt-utf8-manpage-examples} EXAMPLES
+
+In \cw{cvt-utf8}'s native mode, it simply analyses input Unicode or
+UTF-8 data. For example, you can give a list of Unicode code
+points...
+
+\c $ cvt-utf8 U+20ac U+31 U+30
+\e   bbbbbbbbbbbbbbbbbbbbbbbbb
+\c U-000020AC  E2 82 AC          EURO SIGN
+\c U-00000031  31                DIGIT ONE
+\c U-00000030  30                DIGIT ZERO
+
+... and \cw{cvt-utf8} gives you the UTF-8 encodings plus the
+character definitions.
+
+Alternatively, you can supply a list of UTF-8 bytes...
+
+\c $ cvt-utf8 D0 A0 D1 83 D1 81 D1 81 D0 BA D0 B8 D0 B9
+\e   bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+\c U-00000420  D0 A0             CYRILLIC CAPITAL LETTER ER
+\c U-00000443  D1 83             CYRILLIC SMALL LETTER U
+\c U-00000441  D1 81             CYRILLIC SMALL LETTER ES
+\c U-00000441  D1 81             CYRILLIC SMALL LETTER ES
+\c U-0000043A  D0 BA             CYRILLIC SMALL LETTER KA
+\c U-00000438  D0 B8             CYRILLIC SMALL LETTER I
+\c U-00000439  D0 B9             CYRILLIC SMALL LETTER SHORT I
+
+... and you get back the same output format, including the UTF-8
+code points.
+
+If you supply malformed data, \cw{cvt-utf8} will break it down for
+you and identify the malformed pieces and any correctly formed
+characters:
+
+\c $ cvt-utf8 A9 FE 45 C2 80 90 0A
+\e   bbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+\c             A9                (unexpected continuation byte)
+\c             FE                (invalid UTF-8 byte)
+\c U-00000045  45                LATIN CAPITAL LETTER E
+\c U-00000080  C2 80             <control>
+\c             90                (unexpected continuation byte)
+\c U-0000000A  0A                <control>
+
+If you need the UTF-8 encoding of a particular character, you can
+use the \cw{-o} option to cause the UTF-8 to be written to standard
+output:
+
+\c $ cvt-utf8 -o U+20AC >> my-utf8-file.txt
+\e   bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+
+If you have UTF-8 data in a file or output from another program, you
+can use the \cw{-i} option to have \cw{cvt-utf8} analyse it. This
+works particularly well if you also have my \cw{xcopy} program,
+which can be told to extract UTF-8 data from the X selection and
+write it to its standard output. With these two programs working
+together, if you ever have trouble identifying some text in a
+UTF-8-supporting web browser such as Mozilla, you can simply select
+the text in question, switch to a terminal window, and type
+
+\c $ xcopy -u -r | cvt-utf8 -i
+\e   bbbbbbbbbbbbbbbbbbbbbbbbb
+
+If the text is in Chinese, you can get at least a general idea of
+its meaning by using the \cw{-h} option to print the meaning of each
+ideograph from the Unihan database. For example, if you pass in the
+Chinese text meaning \q{Traditional Chinese}:
+
+\c $ cvt-utf8 -h U+7E41 U+9AD4 U+4E2D U+6587
+\e   bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+\c U-00007E41  E7 B9 81          <han> complicated, complex, difficult
+\c U-00009AD4  E9 AB 94          <han> body; group, class, body, unit
+\c U-00004E2D  E4 B8 AD          <han> central; center, middle; in the
+\c                               midst of; hit (target); attain
+\c U-00006587  E6 96 87          <han> literature, culture, writing
+
+\H{cvt-utf8-manpage-bugs} BUGS
+
+Command-line option processing is very basic. In particular, \cw{-h}
+must come before \cw{-i} or it will not be recognised.
