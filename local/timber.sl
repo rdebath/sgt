@@ -368,6 +368,15 @@ define timber_getheader(processed) {
     return result;
 }
 
+% Detect a message separator line. Theoretically we need only require that
+% the line begins "From ", but in practice some mail systems aren't strict
+% about quoting other such lines, so we'll hack a bit.
+define timber_issep() {
+    variable s;
+    push_spot(); eol(); go_left(4); s = timber_la("19"); pop_spot();
+    return s and timber_la("From ");
+}
+
 % Convert a buffer containing a raw mail folder into a buffer containing
 % a Timber-style mail folder.
 %
@@ -400,7 +409,7 @@ define timber_enbuf() {
     % Loop over each message, inserting message summary lines and header
     % characters.
     while (1) {
-	!if (timber_la("From ")) {
+	!if (timber_issep()) {
 	    insert("* [end]\n");
 	    !if (eobp()) {
 		while (not eobp()) {
@@ -447,7 +456,7 @@ define timber_enbuf() {
 	% Loop over each message header line, accumulating information
 	% for the message summary line. Terminate if we see a blank line
 	% (start of message body) or a `From ' message separator line.
-	while (not timber_la("From ") and not eolp()) {
+	while (not timber_issep() and not eolp()) {
 	    insert("|");
 	    if (timber_ila("From:")) {
 		go_right(5);
@@ -558,7 +567,7 @@ define timber_enbuf() {
 		amark = create_user_mark();
 		insert("\n");
 		% Do the headers.
-		while (not eobp() and not timber_la("From ")
+		while (not eobp() and not timber_issep()
 		       and not eolp()) {
 		    insert("+");
 		    eol();
@@ -569,7 +578,7 @@ define timber_enbuf() {
 			break;
 		}
 		% Do the body.
-		while (not eobp() and not timber_la("From ")
+		while (not eobp() and not timber_issep()
 		       and not timber_la(mimesep)
 		       and not timber_la(mimeend)) {
 		    insert(" ");
@@ -597,7 +606,7 @@ define timber_enbuf() {
 	    % Loop over message body lines, inserting a leading space as
 	    % a header character. Terminate on `From ' separator line or
 	    % end of file.
-	    while (not eobp() and not timber_la("From ")) {
+	    while (not eobp() and not timber_issep()) {
 		insert(" ");
 		eol();
 		sizec += what_column() - 1;
