@@ -19,6 +19,8 @@ use IO::File;
 
 # Input file formats are:
 # email format
+# mono format
+# golem output format (ansi attributes)
 
 # NOTE: it doesn't actually try to work out what format the input is in - it
 # just looks for special cases (such as a line beginning Message:) and
@@ -166,19 +168,18 @@ sub readfile($$) {
       $line = "Message: 00000000\n";
     } elsif($line =~ /^Message:(. *)([0-9A-Fa-f]{0,8})/)
     { # Mono style message line (either a directly copied file, or a
-      # converted file.
+      # converted file).
 
       # Add previous edit
       addedit($editshashref, \$edit, $timestamp) if($edit ne "");
   
       $edit = "";
-      if(hex($1)) {
+      if(hex($2)) {
         $timestamp = hex($2);
-        $line = sprintf("Message:$1%-8lX",$timestamp) . $';
       } else {
-        # If hex($1) == 0 we keep the timestamp of the previous edit.
-	# $line is already correct
+        # If hex($2) == 0 we keep the timestamp of the previous edit.
       }
+      # $line is already correct
     } elsif($line =~ /^-{51}\[(.{24})\]--$/)
     { # Email style message line
 

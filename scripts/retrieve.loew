@@ -94,11 +94,11 @@ function readmessages {
 }
 
 # Get the file from the keypath specified in the variable monopath,
-# And put it into the file <dataroot>files/<filepath>.new.cm
+# And put it into the file <dataroot>files/<filepath>.new.ansi
 function getfile {
   monopath "#" cmp if
     'Read monopath
-    'Keypath dataroot "files/" . filepath . ".new.cm" .
+    'Keypath dataroot "files/" . filepath . ".new.ansi" .
     'Filename addtask
   endif
 }
