@@ -4,6 +4,7 @@ Priority: medium
 Difficulty: fun
 Depends: remove-statics
 Content-Type: text/x-html-body
+Fixed-in: 2004-08-15
 
 <p>
 Perhaps an inactive window should have a menu option to reactivate
@@ -17,3 +18,10 @@ invoked on a live session. (With suitable prompting, of course.)
 <p>
 (Some people would like this to happen
 <a href="reconnect-auto.html">automatically</a>.)
+
+<p>
+<b>SGT, 2004-08-14</b>: Just implemented a "Restart Session" menu
+option, on both Unix and Windows PuTTY. Mostly because Owen
+questioned whether this feature was really easy enough to label as
+"fun". It hadn't occurred to me before that challenging my
+competence was a way to motivate me to do stuff :-)
