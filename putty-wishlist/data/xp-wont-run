@@ -1,0 +1,30 @@
+Summary: Fails to run on some versions of Windows XP
+Class: bug
+Difficulty: fun
+Priority: high
+Absent-in: 0.57
+Present-in: 0.58
+Fixed-in: 2005-04-07 r5604
+Content-type: text/x-html-body
+
+<p>
+We've had some reports that PuTTY utterly fails to run on at least
+some versions of Windows XP, with the following error message:
+
+<p>
+<blockquote>
+The application has failed to start because the
+application configuration is incorrect. Reinstalling the
+application may fix this problem.
+</blockquote>
+
+<p>
+I believe this is likely due to a trim I (JTN) made to the
+<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/sbscs/setup/application_manifests.asp">application manifests</a>;
+we tested it on one XP install but it seems not all XP installs are
+born equal, although we're not sure what the discriminating factor is
+yet.
+
+<p>
+If so, it will affect the graphical utilities only (PuTTY, PuTTYtel,
+PuTTYgen, and Pageant).
