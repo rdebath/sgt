@@ -33,3 +33,7 @@ incorrectly.
 passphrase (includes offending key and crash dump).
 <br><tt>uit4ooqxe.fsf@MtDiablo.com</tt>
 </ul>
+
+<p>
+SGT, 2002-06-15: both those problems believed identified and fixed.
+Fixes not yet confirmed by original bug reporters.
