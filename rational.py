@@ -152,6 +152,15 @@ def sqrt(r, maxerr=2L**128, maxsteps=None):
     elif r == 0:
         return r
 
+    # Euclid's algorithm expects the first number to be larger than
+    # the second. Hence, we take square roots of things less than 1
+    # by turning them upside down.
+    if r < 1:
+        r = 1/r
+        invert = 1
+    else:
+        invert = 0
+
     # We obtain continued fraction coefficients by running Euclid's
     # algorithm on the square root of r, and 1. This is a fiddly
     # process; we have to maintain the numbers involved in the
@@ -249,12 +258,15 @@ def sqrt(r, maxerr=2L**128, maxsteps=None):
         if maxsteps != None and steps >= maxsteps:
             break
 
-        # Given A ~ sqrt(B), (A - sqrt(B))(A + sqrt(B)) = A^2 - B.
-        # We want A-sqrt(B), which equals (A^2-B)/(A+sqrt(B)). But
-        # sqrt(B) ~ A, so we'll compute (A^2-B) / 2A and call that
-        # good enough.
+        # Error estimation. Difference of two squares tells us that
+        # (A - sqrt(B))(A + sqrt(B)) = A^2 - B. We want A-sqrt(B),
+        # which equals (A^2-B)/(A+sqrt(B)). But sqrt(B) ~ A, so
+        # we'll compute (A^2-B) / 2A and call that good enough.
         error = (result * result - r) / (2*result)
         if maxerr != None and abs(error) < Rational(1,maxerr):
             break
 
-    return result
+    if invert:
+        return 1/result
+    else:
+        return result
