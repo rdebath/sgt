@@ -1,11 +1,16 @@
 % -*- mode: slang; mode: fold -*-
-% Simon Tatham: version $Revision: 1.15 $
+% Simon Tatham: version $Revision: 1.16 $
 
 %{{{ load Emacs keybindings to start with
 
 if (BATCH == 0) {
     () = evalfile("emacs");            % Emacs-like bindings
 }
+
+%}}}
+%{{{ Real Systems(tm) use ^? as delete, so ^H is help
+
+setkey("help_prefix", "^H");
 
 %}}}
 %{{{ force instant syntax-highlighting update
@@ -881,6 +886,26 @@ define cvs_annotate() {
 }
 add_completion("cvs_log");
 add_completion("cvs_annotate");
+%}}}
+%{{{ M-x rot13
+
+variable jedrc_rot13_string = char(255);
+for ($1 = 1; $1 < 65; $1++) jedrc_rot13_string += char($1);
+for ($1 = 0; $1 < 26; $1++) jedrc_rot13_string += char(65+((13+$1) mod 26));
+for ($1 = 91; $1 < 97; $1++) jedrc_rot13_string += char($1);
+for ($1 = 0; $1 < 26; $1++) jedrc_rot13_string += char(97+((13+$1) mod 26));
+for ($1 = 123; $1 < 255; $1++) jedrc_rot13_string += char($1);
+
+define rot13() {
+    variable i;
+    % Apparently we can only initialise a char array from a string, and
+    % S-Lang strings can't contain NULs; so we are unable to construct
+    % TRANSLATE_ARRAY in such a way that it is happy with NULs. :-((
+    init_char_array(TRANSLATE_ARRAY, jedrc_rot13_string);
+    translate_region ();
+}
+add_completion("rot13");
+
 %}}}
 %{{{ the pathologically clean-minded M-x polish, which clears *scratch*
 define polish() {
