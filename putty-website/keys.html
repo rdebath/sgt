@@ -80,16 +80,11 @@ necessary, because the snapshots are generated every night without
 human intervention, so nobody would be able to type a passphrase.
 
 <p>
-The actual snapshots are built on systems running on a company
-network (because that company happens to have a trusted member of
-the PuTTY core team working for it, and also has both Intel and
-Alpha NT machines capable of running scheduled batch builds).
-
-<p>
-To avoid having to trust that company with passphraseless keys, the
-keys themselves are stored on an independently run Unix box outside
-that company. After being built, the binaries are uploaded to this
-Unix box and then signed automatically.
+The actual snapshots are built on a team member's home Windows box.
+The keys themselves are stored on an independently run Unix box outside
+that company (the same one that hosts our CVS repository). After
+being built, the binaries are uploaded to this Unix box and then
+signed automatically.
 
 <p>
 Therefore, a signature from one of the Development Snapshots keys
@@ -103,8 +98,7 @@ and you.
 But it <em>DOES NOT</em> protect you against:
 <ul>
 <li>
-People within the company tampering with the build process, or
-tampering with the binaries before they are uploaded to the
+People tampering with the binaries before they are uploaded to the
 independent Unix box.
 <li>
 The sysadmin of the independent Unix box using his root privilege to
@@ -116,9 +110,8 @@ Somebody getting root on the Unix box.
 <p>
 Of course, we don't believe any of those things is very likely. We
 know our sysadmin personally and trust him (both to be competent and
-to be non-malicious), and we are reasonably confident that anybody
-inside the company wanting to cause damage would be far more likely
-to choose other targets. But when you see a signature, you should
+to be non-malicious), and we take all reasonable precautions to
+guard the build machine. But when you see a signature, you should
 always be certain of precisely what it guarantees and precisely what
 it does not.
 
@@ -139,15 +132,6 @@ plausible attack.
 might in theory be crackable, but of course the private keys are
 still encrypted, so the crack would have to go unnoticed for long
 enough to steal a passphrase.)
-
-<p>
-Note that none of the PuTTY developers has an Alpha NT machine
-locally - the only one we have access to is the company-owned one
-used to build the nightly snapshots. Therefore, we <em>cannot</em>
-build Alpha releases with the same level of confidence we build
-Intel releases with. So the Alpha releases will be signed using the
-Development Snapshots keys. Only the Intel releases will be signed
-using the Releases keys.
 
 <h3>The Master Keys</h3>
 
