@@ -1,4 +1,4 @@
-Summary: ssh.com SecurID authentication
+Summary: ssh.com SecurID authentication (`securid-1@ssh.com')
 Priority: low
 Class: wish
 Difficulty: taxing
@@ -10,8 +10,10 @@ Several people have asked for support for the implementation of
 in ssh.com's server.
 
 <p>
-Unfortunately, for reasons best known to themselves, ssh.com have
-chosen to define this as a private authentication method
-`securid-1@ssh.com' (rather than using for instance
-keyboard-interactive authentication). We haven't seen a spec for this
-method, so can't implement it in PuTTY.
+While older versions of ssh.com's server used a private authentication
+method `securid-1@ssh.com', it appears that more recent versions use
+`keyboard-interactive', for which PuTTY <em>does</em> have support.
+
+<p>
+We haven't seen a spec for the private method, so can't implement it
+in PuTTY.
