@@ -11,3 +11,16 @@ Socket_Addr should be able to contain multiple addresses, and sk_new should
 handle the retries, but I haven't thought out how proxying would work.
 
 <p>Ref: &lt;3E1AE612.6060308@magdalen.oxford.ac.uk&gt;
+
+<p><a href="ftp://ftp.rfc-editor.org/in-notes/rfc1123.txt">RFC 1123</a>
+has this to say on the subject:
+
+<blockquote>
+<p>   When the remote host is multihomed, the name-to-address
+      translation will return a list of alternative IP addresses.  As
+      specified in Section 6.1.3.4, this list should be in order of
+      decreasing preference.  Application protocol implementations
+      SHOULD be prepared to try multiple addresses from the list until
+      success is obtained.  More specific requirements for SMTP are
+      given in Section 5.3.4.
+</blockquote>
