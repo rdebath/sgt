@@ -17,6 +17,12 @@ All these instances are in <tt>terminal.c:lineptr()</tt> (the line
 number has changed a lot due to the extensive terminal re-engineering
 since 0.56).
 
+<p>
+We've had one report since we added diagnostics which indicates that
+<tt>screen</tt> doesn't contain enough entries. However, we haven't
+thought of a plausible mechanism for <tt>screen</tt> or
+<tt>alt_screen</tt> to end up undersized.
+
 <ul>
 <li><tt>Pine.0410290832480.79579@mozart.musicbox.net</tt>
   <br>0.56 on WinME and 2K; terminal.c:159
@@ -25,6 +31,8 @@ since 0.56).
 <li><tt>BB8EDCA75DA7624F9A8B446F68A56C70438A89@PKDWB06C.ad.sprint.com</tt>
   <br>0.56 on Win2K; terminal.c:159
   <br>"disable switching to alternate screen" enabled
+<li><tt>f37cdb910503291851a052bd9@mail.gmail.com</tt>
+  <br>with diagnostic info
 </ul>
 
 <p>
