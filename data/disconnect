@@ -11,3 +11,8 @@ exit when a closure or disconnect arrives that we were expecting. If
 one arrives unexpectedly it should count as an ungraceful closure,
 display a dialog box containing the text out of MSG_DISCONNECT, and
 not close the window unless the user selected "Always".
+
+<p><b>SGT, 2005-01-11</b>: In fact, SSH is really simple in this
+respect: as far as I can tell it's <em>always</em> the client's job
+to close the connection, so any closure on the part of the server
+counts as unexpected. Unless, that is, it comes after a DISCONNECT.
