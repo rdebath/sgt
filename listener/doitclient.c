@@ -381,7 +381,7 @@ void select_hostcfg(char *name)
 
 char *path_translate(char *path)
 {
-    int i;
+    int i, pathlen;
 
     if (!cfg)
         return path;
@@ -406,8 +406,9 @@ char *path_translate(char *path)
         }
     }
 
-    if (strlen(path) > 1 && path[strlen(path)-1] == '\\')
-	path[strlen(path)-1] = '\0';
+    pathlen = strlen(path);
+    if (pathlen > 1 && path[pathlen-1] == '\\' && path[pathlen-2] != ':')
+	path[pathlen-1] = '\0';
 
     return path;
 }
@@ -459,7 +460,7 @@ void showversion(void)
     char *v;
     extern char doitlib_revision[];
 
-    v = makeversion(versionbuf, "$Revision: 1.13 $");
+    v = makeversion(versionbuf, "$Revision: 1.14 $");
     if (v)
 	printf("doitclient revision %s", v);
     else
