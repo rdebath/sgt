@@ -1,0 +1,9 @@
+Summary: Log proxy connection setup etc
+Class: wish
+Priority: medium
+Difficulty: tricky
+Content-type: text/x-html-body
+
+<p>There doesn't currently seem to be any logging of the discussions between
+PuTTY and a proxy server to set up a connection.  This would be useful for
+diagnosing proxy configuration problems.
