@@ -1,4 +1,5 @@
 Summary: Problems with host name resolution on Win95; WinSock 2 implicated?
+Class: bug
 Absent-in: 0.52 0.53b
 Present-in: 0.54 0.56
 Content-type: text/x-html-body
