@@ -7,5 +7,8 @@ People occasionally send us patches to make the Unix port more portable.
    * FreeBSD 4.7-STABLE
      wwvn0lvct6s.fsf@rjk.greenend.org.uk
 
+   * FreeBSD 5.1
+     20031029224803.GK30375@earth.li
+
    * NetBSD with gcc-3.x
      20031126022610.GA13294@babymeat.com
