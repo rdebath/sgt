@@ -1,5 +1,5 @@
 Summary: Plink (etc) run under Cygwin cannot talk to Pageant
-Class: bug
+Class: semi-bug
 Content-type: text/x-html-body
 Present-in: 0.52
 Absent-in: 0.51
