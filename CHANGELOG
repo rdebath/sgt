@@ -1,5 +1,5 @@
-Release FIXME
--------------
+Release 1.04
+------------
 
  - Makefile adjustments: ensure bogus stuff left in `levels'
    directory doesn't get hit by `make install', and ensure it
