@@ -63,3 +63,8 @@ Less urgent:
       into the calendar, it can remind you of how old the person is
       when their birthday rolls round. (Though of course not all
       birthdays would be suitable for this! :-)
+    + Arrgh! And owing to leap years, a birthday isn't a
+      conventional repeating event at all, since it occurs on the
+      same day every year irrespective of whether there were 365 or
+      366 days in between. OK, I think we do need a special event
+      type for this sort of thing.
