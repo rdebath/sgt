@@ -18,9 +18,11 @@ while 1:
     line = rc.readline()
     if line == "":
 	break
-    words = string.split(line)
-    if len(words) == 2:
-	rcfile[words[0]] = words[1]
+    if line[-1:] == "\n":
+	line = line[:-1]
+    space = string.find(line, " ")
+    if space != -1:
+	rcfile[line[:space]] = line[space+1:]
 rc.close()
 
 def centre(texts, width=79):
@@ -96,7 +98,33 @@ def formatitem(item, width=79):
 
     return list
 
-def pageitem(indexentry, item):
+def getinput(prompt, inittext, width, height):
+    "Get bottom-line input"
+    sys.stdout.write("\015\033[K" + prompt)
+    sys.stdout.flush()
+    maxlen = width - len(prompt)
+    ret = ""
+    while 1:
+	c = sys.stdin.read(1)
+	if c == "\n" or c == "\r":
+	    return ret
+	elif c == "\010" or c == "\177":
+	    if len(ret) > 0:
+		ret = ret[:-1]
+		sys.stdout.write("\010 \010")
+		sys.stdout.flush()
+	elif c == "\025":
+	    while len(ret) > 0:
+		ret = ret[:-1]
+		sys.stdout.write("\010 \010")
+	    sys.stdout.flush()
+	elif ord(c) >= 32 and ord(c) <= 126:
+	    if len(ret) < maxlen:
+		ret = ret + c
+		sys.stdout.write(c)
+		sys.stdout.flush()
+
+def pageitem(indexentry, item, override):
     "Page through an item. Might return an itemid to go to instead."
     class holder:
 	"Holding class"
@@ -136,36 +164,18 @@ def pageitem(indexentry, item):
     def erasebl():
 	sys.stdout.write("\015\033[K")
 	sys.stdout.flush()
-    def getinput(prompt, h=h):
-	sys.stdout.write("\015\033[K" + prompt)
-	sys.stdout.flush()
-	maxlen = h.width - len(prompt)
-	ret = ""
-	while 1:
-	    c = sys.stdin.read(1)
-	    if c == "\n" or c == "\r":
-		return ret
-	    elif c == "\010" or c == "\177":
-		if len(ret) > 0:
-		    ret = ret[:-1]
-		    sys.stdout.write("\010 \010")
-		    sys.stdout.flush()
-	    elif c == "\025":
-		while len(ret) > 0:
-		    ret = ret[:-1]
-		    sys.stdout.write("\010 \010")
-		sys.stdout.flush()
-	    elif ord(c) >= 32 and ord(c) <= 126:
-		if len(ret) < maxlen:
-		    ret = ret + c
-		    sys.stdout.write(c)
-		    sys.stdout.flush()
     try:
 	term.charmodeon()
 	h.width, h.height = term.getsize()
 	data = formatitem(item, h.width-1) # mind last column
-	h.y = indexentry.fileptr - (h.height-1)
 	h.ymax = len(data) - h.height + 1
+	if h.ymax < 0: h.ymax = 0
+	if override == 1:
+	    h.y = 0
+	elif override == 2 or indexentry.uptodate:
+	    h.y = h.ymax
+	else:
+	    h.y = indexentry.fileptr - (h.height-1)
 	if h.y < 0: h.y = 0
 	if h.y > h.ymax: h.y = h.ymax
 	# FIXME: check write access on whole session
@@ -234,12 +244,12 @@ def pageitem(indexentry, item):
 		printbl()
 	    elif c == "<":
 		if item.contfrom != "":
-		    return item.contfrom
+		    return item.contfrom, 2
 	    elif c == ">":
 		if item.contin != "":
-		    return item.contin
+		    return item.contin, 1
 	    elif c == "/":
-		text = getinput("Search (blank=last): ")
+		text = getinput("Search (blank=last): ", "", h.width, h.height)
 		if text != "": searchtext = text
 		ysrch = h.y + h.height - 1
 		while ysrch < len(data):
@@ -255,7 +265,7 @@ def pageitem(indexentry, item):
 		redraw = 1
 	    elif c == "g":
 		text = getinput("Goto line (now " + "%d"%h.y + "), or end" +\
-		" with % for percent: ")
+		" with % for percent: ", "", h.width, h.height)
 		try:
 		    if text[-1:] == "%":
 			ygoto = h.ymax * string.atoi(text[:-1]) / 100
@@ -283,11 +293,13 @@ def pageitem(indexentry, item):
 		redraw = 1
 	    elif c == "q":
 		break
-	    # a to add
+	    elif c == "a":
+		if h.addable:
+		    return "a", 0
     finally:
 	term.cls()
 	term.charmodeoff()
-    return ""
+    return "", 0
 
 class item:
     "holding class"
@@ -437,6 +449,8 @@ class menu:
 	    if len(subj) > remainingwidth:
 		subj = subj[:remainingwidth-3] + "..."
 	    s = s + subj
+	    if aux.contin: # this is a continued item
+		s = s + "\033[m" # indent and yellow the subject line
 	    return s
 	elif type == "m" or type == "s":
 	    if type == "m" and aux.hasitems:
@@ -479,7 +493,7 @@ class menu:
     def addblank(self):
 	self.lines.append(("", "t", "", ""))
     def show(self, ytop, height=24):
-	def printbl(self, height=height, width=79):
+	def printbl(up, down, self=self, height=height, width=79):
 	    bl = ""
 	    bll = 0
 	    sep = ""
@@ -494,6 +508,14 @@ class menu:
 	    if self.itemcount > 0:
 		bl = bl + sep + "[\033[1m=\033[m]:Subscribe"
 		bll = bll + len(sep) + 3+1+9
+		sep = "  "
+	    if up:
+		bl = bl + sep + "[\033[1m-\033[m]"
+		bll = bll + len(sep) + 2+1
+		sep = "  "
+	    if down:
+		bl = bl + sep + "[\033[1m+\033[m]"
+		bll = bll + len(sep) + 2+1
 		sep = "  "
 	    if sep == "":
 		bl = bl + "Select key"
@@ -522,7 +544,7 @@ class menu:
 	    print self._fmtline(self.lines[y])
 	    y = y + 1
 	    sy = sy + 1
-	printbl(self)
+	printbl(ytop > 0, y < len(self.lines))
 	return y
     def ok(self, y):
 	if y < 0: return 0
@@ -569,6 +591,7 @@ def mkmenus(items):
     Msixmonths = menu(3,["Six Months <", "\033[1m", "6", "\033[;36m", ">"])
     Moneyear = menu(3,["One Year <", "\033[1m", "Y", "\033[;36m", ">"])
     Mallitems = menu(3,["All Items <", "\033[1m", "A", "\033[;36m", ">"])
+    Mitemid = menu(3,["Sorted by Itemid <", "\033[1m", "I", "\033[;36m", ">"])
     Mescape = menu(0,["Utilities [", "\033[1m", "ESC", "\033[;36m", "]"])
     Mlogs = menu(0,["Logs and MOTD [", "\033[1m", "ESC", "\033[;36m", "][",\
     "\033[1m", "L", "\033[;36m", "]"])
@@ -588,6 +611,8 @@ def mkmenus(items):
     Mmain.addchild(Mboth, "b", "Items subscribed on &both scans")
     Mmain.addblank()
     Mmain.addchild(Mallitems, "a", "&All items")
+    Mmain.addblank()
+    Mmain.addchild(Mitemid, "i", "All items, sorted by &itemid")
 
     Mescape.addchild(Mmain, "g", "&Go to Main Menu", )
     Mescape.addblank()
@@ -638,6 +663,14 @@ def mkmenus(items):
 	if item.subscription != 0: Msub.additem(item)
 	if item.subscription == 3: Mboth.additem(item)
 	Mallitems.additem(item)
+    def itemidcompare(a,b):
+	if a[0] < b[0]: return -1
+	if a[0] > b[0]: return +1
+	# Itemids identical? Give up.
+	return 0
+    itemlist.sort(itemidcompare)
+    for id, item in itemlist:
+	Mitemid.additem(item)
 
     Mmain.parent = None # special case
     Mlogs.parent = Mmain # special case
@@ -737,7 +770,7 @@ def showmenus(mainmenu, escmenu, startmenu, height=24, width=79):
 	term.charmodeoff()
 	term.cls()
 
-def editor(title, width=79, height=24):
+def editor(title, inittext, width=79, height=24):
     def redraw(content, initoutput, newcontent, yoff):
 	sys.stdout.write(initoutput)
 	for i in range(len(content)):
@@ -745,8 +778,7 @@ def editor(title, width=79, height=24):
 	    if content[i] != newcontent[i]:
 		term.goto(0, yoff + i)
 		sys.stdout.write(newcontent[i])
-    ret = []
-    lwidth = 79
+    lwidth = 75
     insert = 1 # FIXME: permament insert-mode setting
     try:
 	term.charmodeon()
@@ -766,10 +798,12 @@ def editor(title, width=79, height=24):
 	initoutput = ""
 	content = [" " * lwidth] * ynum
 	newcontent = [" " * lwidth] * ynum
-	x = 0
-	y = 0
+	ret = inittext
+	if len(ret) == 0:
+	    ret = [""]
+	y = len(ret)-1
+	x = len(ret[y])
 	ytop = 0
-	ret = [""]
 	while 1:
 	    redraw(content, initoutput, newcontent, yoff)
 	    term.goto(x, y-ytop+yoff)
@@ -900,6 +934,79 @@ def editor(title, width=79, height=24):
 	ret = ret[:-1]
     return ret
 
+def addpage(pagetype, grogname, itemid):
+    "Display the `add edit?' pages. pagetype=0 is normal; pagetype=1 means\n"\
+    "the item is full and needs continuing; pagetype=2 means the item has\n"\
+    "already been continued; pagetype=3 means the item has been modified\n"\
+    "but not continued.\n"\
+    "Returns an action, the maybe-modified grogname, and the subject for\n"\
+    "a new continuation."
+    term.cls()
+    if pagetype == 0:
+	title = ["Add contribution to item " + itemid]
+    elif pagetype == 1:
+	title = ["Item " + itemid + " is full"]
+    elif pagetype == 2:
+ 	title = ["Item has already been continued in " + itemid]
+    elif pagetype == 3:
+ 	title = ["Item " + itemid + " has already been replied to"]
+    hdr = formatheader(title)
+    for i in hdr:
+	sys.stdout.write(i+"\n")
+    print
+    y=3
+    if pagetype == 1:
+	print "    Your contribution is big enough to push item "+itemid+\
+	" beyond the size"
+	print "    limit. You can add it as a continuation item."
+	print
+	y=y+3
+    elif pagetype == 2:
+	print "    The item you tried to contribute to has already"+\
+	" been continued. You"
+	print "    can add your contribution to the continuation item, "+\
+	itemid+"."
+	print
+	y=y+3
+    elif pagetype == 3:
+	print "    The item you tried to contribute to has already"+\
+	" been modified. You"
+	print "    can add your contribution anyway."
+	print
+	y=y+3
+    if pagetype == 2:
+	print "    [\033[1mSPACE\033[m] - Add your comment as a continuation."
+	spaceaction = "cont"
+    else:
+	print "    [\033[1mSPACE\033[m] - Save your comment to item "+\
+	itemid+"."
+	spaceaction = "reply"
+    print
+    print "        [\033[1mQ\033[m] - Quit. (leave item unaltered)"
+    print "        [\033[1mA\033[m] - Re-edit comment."
+    y=y+4 # now y marks location of Grogname line
+    subj = ""
+    try:
+	term.charmodeon()
+	while 1:
+	    term.goto(0, y)
+	    print "        [\033[1mN\033[m] - Grogname \""+grogname+"\""
+	    term.goto(0, 23)
+	    print centre(["======== Please select an option ========"], 79),
+	    c = string.lower(sys.stdin.read(1))
+	    if c == " ":
+		if spaceaction == "cont":
+		    subj = getinput("Enter subject line:", "", 24, 80)
+		return spaceaction, grogname, subj
+	    elif c == "a":
+		return "edit", grogname, subj
+	    elif c == "q":
+		return "quit", grogname, subj
+	    elif c == "n":
+		grogname = getinput("Enter name: ", grogname, 24, 80)
+    finally:
+	term.charmodeoff()
+
 args = sys.argv[1:]
 logfile = None
 dump = 0
@@ -924,17 +1031,31 @@ while len(args) > 0 and args[0][:1] == "-":
 	sys.exit(0)
     args[:1] = []
 
+def indexupdate(c, items, lastseq):
+    index = c.index(sequence=lastseq+1)
+    if len(index) > 0:
+	lastseq = index[-1].sequence
+    items = parseindex(index, items)
+    return items, lastseq
+
 # Todo list:
 #
-# Move the editor from -e to the [a] option when viewing, so we
-# can add stuff.
+# Fix up [a] so it actually adds.
+#
+# Introduce ESC N (or at least ESC Something) for start-brand-new-item.
 #
 # Line editing and recall in bottom-line input.
+#
+# Support the REGU procedure, using --register and also offer to do it
+# if no .grungerc is found. (It's easy! Send REGU, wait for non-100,
+# if it's 250 then display resulting message, prompt for userid, send USER,
+# and display resulting response, if it wasn't 250 then just display it.
+# Finally, send QUIT and leave peacefully.)
 #
 # Accumulated FIXMEs from elsewhere in the code:
 # - Check session has write access when deciding whether to print [A]:Add
 # - "Menu  [ESC]= Utilities and Exit"
-# - Many editor fixen and upgrades.
+# - Implement missing features in editor.
 # - Set Your Options (grogname and maybe others)
 # - View MOTD.
 # - View Edit Log.
@@ -944,10 +1065,7 @@ c.setsecret(secretpath)
 c.login(rcfile["userid"])
 
 items, lastseq = loadindex(indexpath)
-index = c.index(sequence=lastseq+1)
-if len(index) > 0:
-    lastseq = index[-1].sequence
-items = parseindex(index, items)
+items, lastseq = indexupdate(c, items, lastseq)
 saveindex(indexpath, items, lastseq)
 mainmenu, escmenu = mkmenus(items)
 menu = mainmenu
@@ -956,9 +1074,47 @@ while 1:
     if t == "s" and aux == "exit":
 	break
     elif t == "i":
-	while aux != "":
+	override = 0
+	while len(aux) > 1:
+	    itemid = aux
 	    item = c.item(aux)
-	    aux = pageitem(items[aux], item)
+	    aux, override = pageitem(items[aux], item, override)
+	if aux == "a":
+	    text = []
+	    grogname = rcfile["grogname"]
+	    action = "edit"
+	    pagetype = 0
+	    while 1:
+		if action == "quit":
+		    break
+		elif action == "edit":
+		    text = editor(["Add to item " + itemid], text)
+		    if text == None:
+			break
+		    status = "new"
+		elif action == "reply":
+		    err = c.senddata([grogname] + text)
+		    if err != "":
+			FIXME() # let's have an error page
+		    status = c.reply(itemid)
+		elif action[4] == "cont":
+		    err = c.senddata([grogname] + text)
+		    if err != "":
+			FIXME() # let's have an error page
+		    status = c.cont(itemid, subj)
+
+		if status == "ok":
+		    # Re-update index.
+		    items, lastseq = indexupdate(c, items, lastseq)
+		    break
+		elif status == "error":
+		    FIXME() # let's have an error page
+		else:
+		    if status[:4] == "cont":
+			itemid = status[4:]
+			status = "cont"
+		    pagetype = {"new":0, "full":1, "cont":2, "mod":3}[status]
+		    action, grogname, subj = addpage(pagetype, grogname, itemid)
     else:
 	term.beep() # NYI specials
     # FIXME: youropts, motd and editlog
