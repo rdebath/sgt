@@ -33,7 +33,7 @@ static struct {
 #define T_WALL_CORNER 1		       /* corner walls: + */
     { COLOR_WHITE, COLOR_BLUE, 0 },
 #define T_WALL_AMORPH 2		       /* amorphous walls: % */
-    { COLOR_BLUE, COLOR_BLACK, 0 },
+    { COLOR_CYAN, COLOR_BLUE, 0 },
 #define T_WALL_KILLER 3		       /* killer walls: & */
     { COLOR_GREEN, COLOR_BLACK, 0 },
 #define T_BOMB 4		       /* bombs: W X Y Z */
