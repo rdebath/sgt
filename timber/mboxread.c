@@ -83,7 +83,21 @@ void import_mbox_folder(char *folder)
     message = smalloc(msgsize);
 
     while (fgets(message + msglen, msgsize - msglen, fp)) {
+	/*
+	 * Strip out CRs.
+	 */
+	{
+	    int i, j;
+	    for (i = j = 0; message[msglen + i]; i++) {
+		if (message[msglen + i] == '\r' &&
+		    message[msglen + i + 1] == '\n')
+		    i++;
+		message[msglen + j++] = message[msglen + i];
+	    }
+	    message[msglen + j] = '\0';
+	}
 	if (msglen == 0 || message[msglen-1] == '\n') {
+
 	    /*
 	     * We're at the start of a line, so check for message
 	     * separators and suchlike.
