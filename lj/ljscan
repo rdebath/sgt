@@ -124,6 +124,18 @@ reportlist = []
 translator = \
 string.maketrans(string.join(map(chr, range(128,256)), ""), 128 * ".")
 
+# Fetch LJ login details, if available.
+session = os.environ["HOME"] + "/.ljscan/ljsession"
+try:
+    sessf = open(session, "r")
+    cookie = chomp(sessf.readline())
+    sessf.close()
+    index = string.find(cookie, ": ")
+    if index >= 0:
+	urllib._urlopener.addheader(cookie[:index], cookie[index+2:])
+except IOError, e:
+    pass # if we couldn't find it, then fair enough
+
 for t in ljusers:
     username, description = t
     if scan:
@@ -131,7 +143,7 @@ for t in ljusers:
 	if verbose > 1:
 	    print "Fetching", url
 	try:
-	    f = urllib.urlopen(url)
+	    f = urllib._urlopener.open(url)
 	    data = f.read()
 	    f.close()
 	except IOError, e:

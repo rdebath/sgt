@@ -93,10 +93,15 @@ if ljproto.ljok(ret):
 	if date_start != "" and date_stop != "":
 	    url = "http://" + urlguts + "/"
 	    session = os.environ["HOME"] + "/.ljscan/ljsession"
-	    sessf = open(session, "r")
-	    cookie = chomp(sessf.readline())
-	    sessf.close()
-	    urllib._urlopener.addheader(cookie)
+	    try:
+		sessf = open(session, "r")
+		cookie = chomp(sessf.readline())
+		sessf.close()
+		index = string.find(cookie, ": ")
+		if index >= 0:
+		    urllib._urlopener.addheader(cookie[:index], cookie[index+2:])
+	    except IOError, e:
+		pass # if we couldn't find it, then fair enough
 	    f = urllib._urlopener.open(url)
 	    date = ""
 	    while 1:
