@@ -1,16 +1,17 @@
-Summary: MUD-client-like features
+Summary: MUD-client-like features (separate input window, etc)
 Class: wish
 Difficulty: tricky
 Priority: never
 Content-type: text/x-html-body
 
 <p>
-We occasionally get asked for clients useful for accessing MUDs - most
+We occasionally get asked for features useful for accessing MUDs - most
 frequently, a separate text box for input below the main output
 window, but also things like command history, triggers and so on.
 
 <p>
-We've no plans to turn PuTTY into a MUD client. You'd be better off
+We already provide some local editing features. Beyond that, we've no
+plans to turn PuTTY into a fully-fledged MUD client. You'd be better off
 with specialist MUD client software (perhaps something like
 <a href="http://www.muq.org/~hawkeye/tf/">TinyFugue</a> on a server
 which you then use PuTTY to access).
