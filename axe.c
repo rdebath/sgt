@@ -1,11 +1,12 @@
 /*
- * TODO:
+ * TODO before `release' quality:
  * 
- *  - Rather than having bufblks point directly to FILE *, have
- *    them point to a file _structure_, containing a FILE * (and
- *    possibly also a filename, in case we need to close and
- *    reopen?). Then we can ref-count the file structure, and close
- *    the underlying FILE * if all links to it vanish.
+ *  - Thorough testing.
+ * 
+ *  - _Option_ to load a file longhand rather than do the reference
+ *    trick. (Current code is a regression from 2.1 in some ways.)
+ * 
+ * TODO possibly after that:
  * 
  *  - Need to handle >2Gb files! A major limiting factor here is
  *    the B-tree property size limit :-( Either malloc a long long
@@ -24,11 +25,6 @@
  * 	 property data then they won't need it initialised in any
  * 	 case so it doesn't matter.
  *
- *  - Thorough testing.
- * 
- *  - _Option_ to load a file longhand rather than do the reference
- *    trick. (Current code is a regression from 2.1 in some ways.)
- * 
  *  - Multiple buffers, multiple on-screen windows.
  *     + ^X^F to open new file
  *     + ^X^R to open new file RO
