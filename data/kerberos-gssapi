@@ -15,3 +15,9 @@ GSSAPI is the same thing as Kerberos, or a similar thing, or if one
 is an implementation of the other, or what; but it sounds as if it
 covers roughly the same ground, and we probably ought to support it
 at some point.
+
+<P><a href="http://www.certifiedsecuritysolutions.com/">Certified Security
+Solutions</a> have a
+<a href="http://www.certifiedsecuritysolutions.com/downloads.html">patched
+version of PuTTY 0.52</a> which supports Kerberos and GSSAPI, but its
+licence makes it unsuitable for use in PuTTY itself.
