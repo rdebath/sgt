@@ -33,10 +33,15 @@ void run_command(int argc, char **argv)
 	    import_mbox_folder(argv[i]);
     }
 
-    if (!strcmp(argv[0], "export")) {
+    if (!strcmp(argv[0], "export") ||
+	!strcmp(argv[0], "export-mbox")) {
 	int i;
-	for (i = 1; i < argc; i++)
-	    export_message(argv[i]);
+	for (i = 1; i < argc; i++) {
+	    if (!strcmp(argv[0], "export"))
+		export_message(argv[i]);
+	    else
+		export_as_mbox(argv[i]);
+	}
     }
 
     if (!strcmp(argv[0], "display") ||
