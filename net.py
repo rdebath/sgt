@@ -4,8 +4,6 @@
 
 # TODO:
 #
-#  - Fix the unpleasant black spots at junctions between power
-#    lines.
 #  - Game parameters. Wrapping borders, controllable grid size.
 #    Probably also controllable on-screen size while we're at it.
 #  - The original occasionally has barriers between squares within
@@ -179,16 +177,21 @@ class NetGame:
                     self.completed = FALSE
 
     def draw(self, pixmap):
-        def draw_thick_line(pix, gc, x1, y1, x2, y2, active):
-            draw_line(pix, gc, x1-1, y1, x2-1, y2)
-            draw_line(pix, gc, x1+1, y1, x2+1, y2)
-            draw_line(pix, gc, x1, y1-1, x2, y2-1)
-            draw_line(pix, gc, x1, y1+1, x2, y2+1)
-            tmp = gc.foreground
-            if active:
-                gc.foreground = powered
-            draw_line(pix, gc, x1, y1, x2, y2)
-            gc.foreground = tmp
+	class container:
+	    pass
+	cont = container()
+        def draw_thick_line(pix, gc, x1, y1, x2, y2, active, cont=cont):
+	    if cont.phase == 0:
+		draw_line(pix, gc, x1-1, y1, x2-1, y2)
+		draw_line(pix, gc, x1+1, y1, x2+1, y2)
+		draw_line(pix, gc, x1, y1-1, x2, y2-1)
+		draw_line(pix, gc, x1, y1+1, x2, y2+1)
+	    elif cont.phase == 1:
+		tmp = gc.foreground
+		if active:
+		    gc.foreground = powered
+		draw_line(pix, gc, x1, y1, x2, y2)
+		gc.foreground = tmp
 
         self.bbox = [None, None, None, None]
 
@@ -205,61 +208,62 @@ class NetGame:
             draw_line(pix, gc, ORIGIN, ORIGIN + SQUARESIZE * y, \
             ORIGIN + SQUARESIZE * NSQUARES_X, ORIGIN + SQUARESIZE * y)
 
-        for x in range(NSQUARES_X):
-            for y in range(NSQUARES_Y):
-                gc.foreground = lines # FIXME: depends on power status
-                k = self.arena[x][y]
-                act = k & ACTIVE
-                k = k & ~ACTIVE
+	for cont.phase in range(3):
+	    for x in range(NSQUARES_X):
+		for y in range(NSQUARES_Y):
+		    gc.foreground = lines
+		    k = self.arena[x][y]
+		    act = k & ACTIVE
+		    k = k & ~ACTIVE
 
-                r = (SQUARESIZE-1) / 2
-                xmid = ORIGIN + SQUARESIZE * x + r
-                ymid = ORIGIN + SQUARESIZE * y + r
+		    r = (SQUARESIZE-1) / 2
+		    xmid = ORIGIN + SQUARESIZE * x + r
+		    ymid = ORIGIN + SQUARESIZE * y + r
 
-                matrix = [[1,0],[0,1]]
-                if self.moveinprogress:
-                    if self.movex == x and self.movey == y:
-                        angle = self.moveprogress * self.moveact * math.pi/2
-                        matrix = [[math.cos(angle),-math.sin(angle)], \
-                        [math.sin(angle),math.cos(angle)]]
-                        self.bbox = [xmid-r-1, ymid-r-1, xmid+r+1, ymid+r+1]
+		    matrix = [[1,0],[0,1]]
+		    if self.moveinprogress:
+			if self.movex == x and self.movey == y:
+			    angle = self.moveprogress*self.moveact*math.pi/2
+			    matrix = [[math.cos(angle),-math.sin(angle)], \
+			    [math.sin(angle),math.cos(angle)]]
+			    self.bbox = [xmid-r-1,ymid-r-1,xmid+r+1,ymid+r+1]
 
-                if k & U:
-                    ex, ey = 0, -r
-                    ex, ey = int(matrix[0][0] * ex + matrix[0][1] * ey), \
-                    int(matrix[1][0] * ex + matrix[1][1] * ey)
-                    draw_thick_line(pix, gc, xmid, ymid, xmid+ex, ymid+ey, act)
-                if k & D:
-                    ex, ey = 0, +r
-                    ex, ey = int(matrix[0][0] * ex + matrix[0][1] * ey), \
-                    int(matrix[1][0] * ex + matrix[1][1] * ey)
-                    draw_thick_line(pix, gc, xmid, ymid, xmid+ex, ymid+ey, act)
-                if k & L:
-                    ex, ey = -r, 0
-                    ex, ey = int(matrix[0][0] * ex + matrix[0][1] * ey), \
-                    int(matrix[1][0] * ex + matrix[1][1] * ey)
-                    draw_thick_line(pix, gc, xmid, ymid, xmid+ex, ymid+ey, act)
-                if k & R:
-                    ex, ey = +r, 0
-                    ex, ey = int(matrix[0][0] * ex + matrix[0][1] * ey), \
-                    int(matrix[1][0] * ex + matrix[1][1] * ey)
-                    draw_thick_line(pix, gc, xmid, ymid, xmid+ex, ymid+ey, act)
-                if k == U or k == D or k == L or k == R:
-                    if act:
-                        gc.foreground = powered
-                    else:
-                        gc.foreground = blue
-                    draw_rectangle(pix, gc, TRUE, \
-                    xmid-PWRSIZ, ymid-PWRSIZ, PWRSIZ*2, PWRSIZ*2)
-                    gc.foreground = lines
-                    draw_rectangle(pix, gc, FALSE, \
-                    xmid-PWRSIZ, ymid-PWRSIZ, PWRSIZ*2, PWRSIZ*2)
-                if k & PWR:
-                    gc.foreground = lines # the power source is black
-                    draw_rectangle(pix, gc, TRUE, \
-                    xmid-PWRSIZ, ymid-PWRSIZ, PWRSIZ*2, PWRSIZ*2)
-                    draw_rectangle(pix, gc, FALSE, \
-                    xmid-PWRSIZ, ymid-PWRSIZ, PWRSIZ*2, PWRSIZ*2)
+		    if k & U:
+			ex, ey = 0, -r
+			ex, ey = int(matrix[0][0] * ex + matrix[0][1] * ey), \
+			int(matrix[1][0] * ex + matrix[1][1] * ey)
+			draw_thick_line(pix, gc, xmid, ymid, xmid+ex, ymid+ey, act)
+		    if k & D:
+			ex, ey = 0, +r
+			ex, ey = int(matrix[0][0] * ex + matrix[0][1] * ey), \
+			int(matrix[1][0] * ex + matrix[1][1] * ey)
+			draw_thick_line(pix, gc, xmid, ymid, xmid+ex, ymid+ey, act)
+		    if k & L:
+			ex, ey = -r, 0
+			ex, ey = int(matrix[0][0] * ex + matrix[0][1] * ey), \
+			int(matrix[1][0] * ex + matrix[1][1] * ey)
+			draw_thick_line(pix, gc, xmid, ymid, xmid+ex, ymid+ey, act)
+		    if k & R:
+			ex, ey = +r, 0
+			ex, ey = int(matrix[0][0] * ex + matrix[0][1] * ey), \
+			int(matrix[1][0] * ex + matrix[1][1] * ey)
+			draw_thick_line(pix, gc, xmid, ymid, xmid+ex, ymid+ey, act)
+		    if cont.phase == 2 and (k == U or k == D or k == L or k == R):
+			if act:
+			    gc.foreground = powered
+			else:
+			    gc.foreground = blue
+			draw_rectangle(pix, gc, TRUE, \
+			xmid-PWRSIZ, ymid-PWRSIZ, PWRSIZ*2, PWRSIZ*2)
+			gc.foreground = lines
+			draw_rectangle(pix, gc, FALSE, \
+			xmid-PWRSIZ, ymid-PWRSIZ, PWRSIZ*2, PWRSIZ*2)
+		    if cont.phase == 2 and (k & PWR):
+			gc.foreground = lines # the power source is black
+			draw_rectangle(pix, gc, TRUE, \
+			xmid-PWRSIZ, ymid-PWRSIZ, PWRSIZ*2, PWRSIZ*2)
+			draw_rectangle(pix, gc, FALSE, \
+			xmid-PWRSIZ, ymid-PWRSIZ, PWRSIZ*2, PWRSIZ*2)
 
     def move(self, x, y, action, undo=FALSE):
         assert(not self.moveinprogress)
