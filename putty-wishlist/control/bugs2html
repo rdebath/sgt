@@ -1,5 +1,5 @@
 #! /usr/bin/perl
-# $Id: bugs2html,v 1.29 2004/02/12 19:27:05 simon Exp $
+# $Id: bugs2html,v 1.30 2004/05/12 10:25:52 jacob Exp $
 
 use FileHandle;
 use POSIX;
@@ -71,6 +71,9 @@ foreach $bugfile (glob("$bugdir/*")) {
 
 my @fullbuglist = keys %bugs;
 
+my $site = $baseurl;
+($site =~ s#^http://([^/]*).*$#$1#) or ($site = "www.chiark.greenend.org.uk");
+
 open(INDEX, "> $htmldir/index.html") or die "$htmldir/index.html: $!";
 
 nest(<<EOF);
@@ -114,6 +117,21 @@ The Debian bug-tracking system also accrues bug reports and feature
 requests relating to the
 <a href="http://packages.qa.debian.org/p/putty.html">Debian package</a>
 of the Unix port.
+
+<p>
+Search the wishlist:
+<form method="get" action="http://www.google.com/search">
+<table><tr><td>
+<a href="http://www.google.com/"><img src="http://www.google.com/logos/Logo_40wht.gif" border="0" alt="Google"></a>
+</td>
+<td>
+<input type="text" name="q" size="50" maxlength="255" value="&#043;&#034;last revision of this bug record&#034;&#032;">
+<input type="submit" name="btnG" value="Google Search">
+<input type="hidden" name="domains" value="$site"><br>
+<input type="radio" name="sitesearch" value="">WWW
+<input type="radio" name="sitesearch" value="$site" checked>$site<br>
+</td></tr></table>
+</form>
 
 EOF
 
