@@ -1,5 +1,6 @@
 Summary: Pageant keeps open handles on removeable media
 Class: semi-bug
+Fixed-in: 2005-03-01
 Content-type: text/x-html-body
 
 <p>
@@ -29,5 +30,12 @@ keeping a handle behind our backs. The workarounds above bear out this
 hypothesis.
 
 <p>
-Suggestions for ways in which we could stop this being a problem
-welcome.
+<em>Update, 2005-02-28 (JTN):</em> I've implemented a wrapper to
+<code>GetOpenFileName()</code> which maintains a separate CWD for
+the file requester and for the process as a whole (which should appear
+in snapshots &gt;=r5413), so this <em>should</em> be fixed now. I
+haven't tested it with anything that objects to having a process in a
+particular directory, nor with anything potentially awkward like UNCs,
+but the docs suggest it should work. (A simpler solution would have
+been to use <code>OFN_NOCHANGEDIR</code>, but that would have changed
+the UI behaviour.)
