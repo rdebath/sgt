@@ -81,4 +81,6 @@ This bug was discovered by
 and documented in their advisory
 <a href="http://www.coresecurity.com/common/showdoc.php?idx=417&idxseccion=10">CORE-2004-0705</a>.
 It is also mentioned in an advisory by Secunia, numbered
-<a href="http://secunia.com/advisories/12212/">SA12212</a>.
+<a href="http://secunia.com/advisories/12212/">SA12212</a>,
+and has been assigned
+<a href="http://www.osvdb.org/8299">OSVDB ID 8299</a>.
