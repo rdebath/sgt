@@ -15,18 +15,26 @@ Here are some of the patches we've received:
 
 <ul>
 
+<li>FreeBSD:
+
+<ul>
+
 <li>FreeBSD 4.7-STABLE
 <br><tt>wwvn0lvct6s.fsf@rjk.greenend.org.uk</tt>
 
 <li>FreeBSD 5.1
 <br><tt>20031029224803.GK30375@earth.li</tt>
 
-<li>NetBSD with gcc-3.x
-<br><tt>20031126022610.GA13294@babymeat.com</tt>
-
 <li>FreeBSD-5.2-RELEASE
 <br><tt>1075418510.724.16.camel@localhost</tt>
 <br><tt>20040213160319.GA565@scimitar.noc.nl.demon.net</tt> (with commentary)
+
+<li>Apparently PuTTY is now in the FreeBSD ports tree.
+
+</ul>
+
+<li>NetBSD with gcc-3.x
+<br><tt>20031126022610.GA13294@babymeat.com</tt>
 
 <li>Solaris
 <br><tt>20040217181156.GM17353@granzeau.com</tt> -
@@ -34,8 +42,6 @@ see <a href="#solaris">below</a>
 
 <li>Mac OS X
 <br><tt>dhbecker-0uHkTAZ3waS4IzZ253W5cgjfAlrQMYu@mailblocks.com</tt>
-
-<li>Apparently PuTTY is now in the FreeBSD ports tree.
 
 </ul>
 
