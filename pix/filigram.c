@@ -28,6 +28,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define VERSION "$Revision: 1.2 $"
+
+#define TRUE 1
+#define FALSE 0
+#define lenof(x) (sizeof ((x)) / sizeof ( *(x) ))
+
 /* ----------------------------------------------------------------------
  * Function prototypes and structure type predeclarations.
  */
@@ -35,7 +41,7 @@
 struct Bitmap;
 static void fput32(unsigned long val, FILE *fp);
 static void fput16(unsigned val, FILE *fp);
-static void bmpinit(struct Bitmap *bm, char *filename,
+static void bmpinit(struct Bitmap *bm, char const *filename,
                     int width, int height);
 static void bmppixel(struct Bitmap *bm,
                      unsigned char r, unsigned char g, unsigned char b);
@@ -76,7 +82,7 @@ static void fput16(unsigned val, FILE *fp) {
     fputc((val >>  8) & 0xFF, fp);
 }
 
-static void bmpinit(struct Bitmap *bm, char *filename,
+static void bmpinit(struct Bitmap *bm, char const *filename,
                     int width, int height) {
     /*
      * File format is:
@@ -105,7 +111,7 @@ static void bmpinit(struct Bitmap *bm, char *filename,
     unsigned long scanlen = 3 * width;
     unsigned long padding = ((scanlen+3)&~3) - scanlen;
     unsigned long bitsize = (scanlen + padding) * height;
-    FILE *fp = fopen("output.bmp", "wb");
+    FILE *fp = fopen(filename, "wb");
     fputs("BM", fp);
     fput32(0x36 + bitsize, fp); fput16(0, fp); fput16(0, fp);
     fput32(0x36, fp); fput32(0x28, fp); fput32(width, fp); fput32(height, fp);
@@ -407,9 +413,11 @@ static struct RGB colfind(struct Colours *cols, int xg, int yg) {
 struct Params {
     int width, height;
     double x0, x1, y0, y1;
-    double iscale, oscale;
+    double xscale, yscale, oscale;
     int fading;
-    char const *poly, *colours;
+    char const *filename;
+    struct Poly *poly;
+    struct Colours *colours;
 };
 
 static int toint(double d) {
@@ -421,51 +429,39 @@ static int toint(double d) {
 }
 
 static int plot(struct Params params) {
-    struct Poly *f, *dfdx, *dfdy;
-    struct Colours *colours;
+    struct Poly *dfdx, *dfdy;
     struct Bitmap bm;
 
     double xstep, ystep;
     double x, xfrac, y, yfrac;
-    double dzdx, dzdy, dscale;
+    double dzdx, dzdy, dxscale, dyscale;
     double z, xfade, yfade, fade;
     struct RGB c;
     int i, j, xg, yg;
 
-    f = polyread(params.poly);
-    if (!f) {
-        fprintf(stderr, "unable to parse polynomial `%s'\n", params.poly);
-        return 0;
-    }
-    dfdx = polypdiff(f, 1);
-    dfdy = polypdiff(f, 0);
+    dfdx = polypdiff(params.poly, 1);
+    dfdy = polypdiff(params.poly, 0);
 
-    colours = colread(params.colours);
-    if (!colours) {
-        fprintf(stderr, "unable to parse colour specification `%s'\n",
-                params.colours);
-        return 0;
-    }
-
-    bmpinit(&bm, "output.bmp", params.width, params.height);
+    bmpinit(&bm, params.filename, params.width, params.height);
 
     xstep = (params.x1 - params.x0) / params.width;
     ystep = (params.y1 - params.y0) / params.height;
-    dscale = params.iscale * params.oscale;
+    dxscale = params.xscale * params.oscale;
+    dyscale = params.yscale * params.oscale;
     for (i = 0; i < params.height; i++) {
         y = params.y0 + ystep * i;
-        yfrac = y / params.iscale; yfrac -= toint(yfrac);
+        yfrac = y / params.yscale; yfrac -= toint(yfrac);
 
         for (j = 0; j < params.width; j++) {
             x = params.x0 + xstep * j;
-            xfrac = x / params.iscale; xfrac -= toint(xfrac);
+            xfrac = x / params.xscale; xfrac -= toint(xfrac);
 
-            dzdx = polyeval(dfdx, x, y) * dscale;
-            dzdy = polyeval(dfdy, x, y) * dscale;
+            dzdx = polyeval(dfdx, x, y) * dxscale;
+            dzdy = polyeval(dfdy, x, y) * dyscale;
             xg = toint(dzdx + 0.5); dzdx -= xg;
             yg = toint(dzdy + 0.5); dzdy -= yg;
 
-            z = polyeval(f, x, y) * params.oscale;
+            z = polyeval(params.poly, x, y) * params.oscale;
             z -= xg * xfrac;
             z -= yg * yfrac;
             z -= toint(z);
@@ -474,7 +470,7 @@ static int plot(struct Params params) {
             yfade = dzdy; if (yfade < 0) yfade = -yfade;
             fade = 1.0 - (xfade < yfade ? yfade : xfade) * 2;
 
-	    c = colfind(colours, xg, yg);
+	    c = colfind(params.colours, xg, yg);
 
 	    if (params.fading) z *= fade;
 	    z *= 256.0;
@@ -485,83 +481,375 @@ static int plot(struct Params params) {
     }
 
     bmpclose(&bm);
-    colfree(colours);
     polyfree(dfdy);
     polyfree(dfdx);
-    polyfree(f);
     return 1;
 }
 
-#define PURPLEGREEN
+/* ----------------------------------------------------------------------
+ * Main program: parse the command line and call plot() when satisfied.
+ */
 
-static const double colours[][3] = {
-#ifdef PURPLEGREEN
-    {0.7, 0.0, 1.0},
-    {0.0, 0.63, 0.0},
-    {0.0, 0.63, 0.0},
-    {0.7, 0.0, 1.0},
-#endif
-#ifdef JEWELS
-    {157.0/256.0,  4.0/256.0,  4.0/256.0},
-    {122.0/256.0,  7.0/256.0,143.0/256.0},
-    {210.0/256.0,165.0/256.0,  7.0/256.0},
-    {  7.0/256.0,174.0/256.0, 11.0/256.0},
-#endif
-};
+int parsesize(char const *string, int *x, int *y, char const *name) {
+    int i;
+    i = strspn(string, "0123456789");
+    if (i > 0) {
+	*x = atoi(string);
+	string += i;
+    } else
+	goto parsefail;
+    if (*string++ != 'x')
+	goto parsefail;
+    i = strspn(string, "0123456789");
+    if (i > 0) {
+	*y = atoi(string);
+	string += i;
+    } else
+	goto parsefail;
+    if (*string)
+	goto parsefail;
+    return 1;
+    parsefail:
+    fprintf(stderr, "filigram: unable to parse %s `%s'\n", name, string);
+    return 0;
+}
 
-int main(void) {
-    struct Params p = {
-	640, 512,
-	    -10.0, +10.0, -8.0, +8.0,
-	    1/32.0, 1/64.0,
-	    1,
-	    "4x4-17x2y2+4y4",
-	    /* "0.7,0,1:0,0.63,0" */
-            /* "2!0.61,0.0,0.0:0.48,0.0,0.56:0.82,0.64,0.0:0.0,0.7,0.0" */
-            "1,0,0:1,1,0:0,1,0:0,1,1:0,0,1:1,0,1"
+int parseflt(char const *string, double *d, char const *name) {
+    char *endp;
+    *d = strtod(string, &endp);
+    if (endp && *endp) {
+	fprintf(stderr, "filigram: unable to parse %s `%s'\n", name, string);
+	return 0;
+    } else
+	return 1;
+}
+
+int main(int ac, char **av) {
+    char const *usagemsg[] = {
+	"usage: filigram [options]",
+	"       -o, --output file.bmp   output bitmap name",
+	"       -s, --size NNNxNNN      output bitmap size",
+	"       -x, --xrange NNN        mathematical x range",
+	"       -y, --yrange NNN        mathematical y range",
+	"       -X, --xcentre NNN       mathematical x centre point",
+	"       -Y, --ycentre NNN       mathematical y centre point",
+	"       -b, --basesize NNNxNNN  base image size",
+	"       -B, --base              this *is* the base image (default)",
+	"       -I, --iscale NNN        input scale (ie base pixel spacing)",
+	"       -O, --oscale NNN        output scale (ie modulus)",
+	"       -f, --fade              turn on fading at edges of patches",
+	"       -p, --poly x2+2xy+y2    polynomial to plot",
+	"       -c, --colours 1,0,0:0,1,0  colours for patches",
+	"       -v, --verbose           report details of what is done",
+	" - at most one of -b, -B and -I should be used",
+	" - can give 0 as one dimension in -s or -b and that dimension will",
+	"   be computed so as to preserve the aspect ratio",
+	" - if only one of -x and -y specified, will compute the other so",
+	"   as to preserve the aspect ratio",
+	" - colours can be prefixed with N! to get two-dimensional colour",
+	"   selection (this needs to be better explained :-)"
     };
-#ifdef CIRCLES
-    struct Params p = {
-        640, 512,
-            -10.0, +10.0, -8.0, +8.0,
-            1/32.0, 4.0,
-            0,
-            "x2+y2"
-            "1,0,0:1,1,0:0,1,0:0,1,1:0,0,1:1,0,1"
-    };
-#endif
-#ifndef ORIGINAL
-    struct Params p = {
-        640, 512,
-            -10.0, +10.0, -8.0, +8.0,
-            1/32.0, 1/4.0,
-            0,
-            "x2y2"
-            "1,0,0:1,1,0:0,1,0:0,1,1:0,0,1:1,0,1"
-    };
-#endif
-    /*
-     * FIXME: process command line options to set up parameters.
-     *
-     *  - output file name
-     *
-     *  - output image size
-     *
-     *  - mathematical-coordinate image bounds
-     *
-     *  - EITHER input scale OR base-image size
-     *    (special case: `--base', default, means this _is_ the base image)
-     *
-     *  - preserving of aspect ratio on any of the size
-     *    specifications once an aspect has been set by another
-     *
-     *  - output scale
-     *
-     *  - whether to fade
-     *
-     *  - some means of specifying colours
-     *
-     *  - polynomial
-     */
-    return plot(p) ? EXIT_SUCCESS : EXIT_FAILURE;
+
+    int usage = FALSE;
+    int fade = FALSE;
+    int isbase = FALSE;
+    int verbose = FALSE;
+    char *outfile = NULL;
+    int imagex = 0, imagey = 0, basex = 0, basey = 0;
+    double xcentre, ycentre, xrange, yrange, iscale, oscale;
+    int gotxcentre, gotycentre, gotxrange, gotyrange, gotiscale, gotoscale;
+    struct Poly *poly = NULL;
+    struct Colours *colours = NULL;
+
+    gotxcentre = gotycentre = gotxrange =
+	gotyrange = gotiscale = gotoscale = FALSE;
+
+    if (ac < 2) {
+	usage = TRUE;
+    } else while (--ac) {
+	char *arg = *++av;
+
+	if (arg[0] != '-') {
+	    usage = TRUE;
+	    break;
+	} else {
+	    char c = arg[1];
+	    char *val = arg+2;
+	    if (c == '-') {
+		static const struct {
+		    char const *name;
+		    int letter;
+		} longopts[] = {
+		    {"--output", 'o'},
+		    {"--size", 's'},
+		    {"--xrange", 'x'},
+		    {"--yrange", 'y'},
+		    {"--xcentre", 'X'},
+		    {"--xcenter", 'X'},
+		    {"--ycentre", 'Y'},
+		    {"--ycenter", 'Y'},
+		    {"--basesize", 'b'},
+		    {"--base", 'B'},
+		    {"--iscale", 'I'},
+		    {"--oscale", 'O'},
+		    {"--fade", 'f'},
+		    {"--poly", 'p'},
+		    {"--colours", 'c'},
+		    {"--verbose", 'v'},
+		    {"--help", 'h'},
+		    {"--version", 'V'},
+		};
+		int i, j;
+		for (i = 0; i < lenof(longopts); i++) {
+		    j = strlen(longopts[i].name);
+		    if (!strncmp(arg, longopts[i].name, j) &&
+			j == strcspn(arg, "=")) {
+			c = longopts[i].letter;
+			val = arg + j;
+			if (*val) val++;
+			break;
+		    }
+		}
+		if (c == '-') {
+		    fprintf(stderr, "filigram: unknown long option `%.*s'\n",
+			    strcspn(arg, "="), arg);
+		    return EXIT_FAILURE;
+		}
+	    }
+	    switch (c) {
+	      case 'B':
+		isbase = TRUE;
+		break;
+	      case 'f':
+		fade = TRUE;
+		break;
+	      case 'v':
+		verbose = TRUE;
+		break;
+	      case 'h':
+		usage = TRUE;
+		break;
+	      case 'V':
+		{
+		    char *p = VERSION;
+		    int i;
+		    p += strcspn(p, " ");
+		    if (*p) p++;
+		    i = strcspn(p, " $");
+		    printf("filigram version %.*s\n", i, p);
+		}
+		return EXIT_SUCCESS;
+	      default:		       /* other options require an arg */
+		if (!*val) {
+		    if (!--ac) {
+			fprintf(stderr,
+				"filigram: option `%s' requires an argument\n",
+				arg);
+			return EXIT_FAILURE;
+		    }
+		    val = *++av;
+		}
+		switch (c) {
+		  case 'o':	       /* --output */
+		    outfile = val;
+		    break;
+		  case 's':	       /* --size */
+		    if (!parsesize(val, &imagex, &imagey, "output image size"))
+			return EXIT_FAILURE;
+		    break;
+		  case 'x':	       /* --xrange */
+		    if (!parseflt(val, &xrange, "x range"))
+			return EXIT_FAILURE;
+		    gotxrange = TRUE;
+		    break;
+		  case 'y':	       /* --yrange */
+		    if (!parseflt(val, &yrange, "y range"))
+			return EXIT_FAILURE;
+		    gotyrange = TRUE;
+		    break;
+		  case 'X':	       /* --xcentre */
+		    if (!parseflt(val, &xcentre, "x centre"))
+			return EXIT_FAILURE;
+		    gotxcentre = TRUE;
+		    break;
+		  case 'Y':	       /* --ycentre */
+		    if (!parseflt(val, &ycentre, "y centre"))
+			return EXIT_FAILURE;
+		    gotycentre = TRUE;
+		    break;
+		  case 'b':	       /* --basesize */
+		    if (!parsesize(val, &basex, &basey, "base image size"))
+			return EXIT_FAILURE;
+		    break;
+		  case 'I':	       /* --iscale */
+		    if (!parseflt(val, &iscale, "input scale"))
+			return EXIT_FAILURE;
+		    gotiscale = TRUE;
+		    break;
+		  case 'O':	       /* --oscale */
+		    if (!parseflt(val, &oscale, "output scale"))
+			return EXIT_FAILURE;
+		    gotoscale = TRUE;
+		    break;
+		  case 'p':	       /* --poly */
+		    poly = polyread(val);
+		    if (!poly) {
+			fprintf(stderr, "filigram: "
+				"unable to parse polynomial `%s'\n", val);
+			return EXIT_FAILURE;
+		    }
+		    break;
+		  case 'c':	       /* --colours */
+		    colours = colread(val);
+		    if (!colours) {
+			fprintf(stderr, "filigram: "
+				"unable to parse colour specification `%s'\n",
+				val);
+			return EXIT_FAILURE;
+		    }
+		    break;
+		}
+		break;
+	    }
+	}
+    }
+
+    if (usage) {
+	int i;
+	for (i = 0; i < lenof(usagemsg); i++)
+	    puts(usagemsg[i]);
+	return ac == 1 ? EXIT_SUCCESS : EXIT_FAILURE;
+    } else {
+	/*
+	 * Having read the arguments, now process them.
+	 */
+	struct Params par;
+	int i;
+	double aspect;
+
+	/* If no output scale, default to 1. */
+	if (!gotoscale)
+	    par.oscale = 1.0;
+	else
+	    par.oscale = oscale;
+
+	/* If no output file, complain. */
+	if (!outfile) {
+	    fprintf(stderr, "filigram: no output file specified: "
+		    "use something like `-o file.bmp'\n");
+	    return EXIT_FAILURE;
+	} else
+	    par.filename = outfile;
+
+	/* If no polynomial, complain. */
+	if (!poly) {
+	    fprintf(stderr, "filigram: no polynomial specified: "
+		    "use something like `-p x2+2xy+y2'\n");
+	    return EXIT_FAILURE;
+	} else
+	    par.poly = poly;
+
+	/* If no colours, default to 1,1,1. */
+	if (!colours)
+	    par.colours = colread("1,1,1");   /* assume this will succeed */
+	else
+	    par.colours = colours;
+
+	par.fading = fade;
+
+	/*
+	 * If precisely one aspect-ratio-providing size specified,
+	 * save the aspect ratio from it, and use it to fill in
+	 * blanks in other sizes.
+	 */
+	if ((imagex&&imagey) + (basex&&basey) + (gotxrange&&gotyrange) == 1) {
+	    if (imagex && imagey) aspect = (double)imagex / imagey;
+	    if (basex && basey) aspect = (double)basex / basey;
+	    if (gotxrange && gotyrange) aspect = gotxrange / gotyrange;
+
+	    if (imagex && !imagey) imagey = imagex / aspect;
+	    if (!imagex && imagey) imagex = imagey * aspect;
+	    if (basex && !basey) basey = basex / aspect;
+	    if (!basex && basey) basex = basey * aspect;
+	    if (gotxrange && !gotyrange)
+		yrange = xrange / aspect, gotyrange = TRUE;
+	    if (!gotxrange && gotyrange)
+		xrange = yrange * aspect, gotxrange = TRUE;
+	}
+
+	/*
+	 * Now complain if no output image size was specified.
+	 */
+	if (!imagex || !imagey) {
+	    fprintf(stderr, "filigram: no output size specified: "
+		    "use something like `-s 640x480'\n");
+	    return EXIT_FAILURE;
+	} else {
+	    par.width = imagex;
+	    par.height = imagey;
+	}
+
+	/*
+	 * Also complain if no input mathematical extent specified.
+	 */
+	if (!gotxrange || !gotyrange) {
+	    fprintf(stderr, "filigram: no image extent specified: "
+		    "use something like `-x 20 -y 15'\n");
+	    return EXIT_FAILURE;
+	} else {
+	    if (!gotxcentre) xcentre = 0.0;
+	    if (!gotycentre) ycentre = 0.0;
+	    par.x0 = xcentre - xrange;
+	    par.x1 = xcentre + xrange;
+	    par.y0 = ycentre - yrange;
+	    par.y1 = ycentre + yrange;
+	}
+
+	/*
+	 * All that's left to set up is xscale and yscale. At this
+	 * stage we expect to see at most one of
+	 *   `isbase' true
+	 *   `basex' and `basey' both nonzero
+	 *   `gotiscale' true
+	 */
+	i = (!!isbase) + (basex && basey) + (!!gotiscale);
+	if (i > 1) {
+	    fprintf(stderr, "filigram: "
+		    "expected at most one of `-b', `-B', `-i'\n");
+	    return EXIT_FAILURE;
+	} else if (i == 0) {
+	    /* Default: isbase is true. */
+	    isbase = TRUE;
+	}
+	if (isbase) {
+	    basex = imagex, basey = imagey;
+	}
+	if (gotiscale)
+	    par.xscale = par.yscale = iscale;
+	else {
+	    par.xscale = (par.x1 - par.x0) / basex;
+	    par.yscale = (par.y1 - par.y0) / basey;
+	}
+
+	/*
+	 * If we're in verbose mode, regurgitate the final
+	 * parameters.
+	 */
+	if (verbose) {
+            printf("Output file `%s', %d x %d\n",
+                   par.filename, par.width, par.height);
+            printf("Mathematical extent [%g,%g] x [%g,%g]\n",
+                   par.x0, par.x1, par.y0, par.y1);
+            printf("Base pixel spacing %g (horiz), %g (vert)\n",
+                   par.xscale, par.yscale);
+            printf("Output modulus %g\n",
+                   par.oscale);
+	}
+
+	i = plot(par) ? EXIT_SUCCESS : EXIT_FAILURE;
+
+        colfree(par.colours);
+        polyfree(par.poly);
+        return i;
+    }
 }
