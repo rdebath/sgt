@@ -57,11 +57,11 @@ class target:
     lt_comma: lambda x, y: y}
     def binop(self, op, rettype, type1, val1, type2, val2):
         if type1 != type2:
-            # FIXME: convert float to float complex
-            pass
+            raise "FIXME: need to convert real floating type to complex"
         if self.intminvals.has_key(type1[1]): # is it an integer op?
             retval = self.iops[op](val1, val2)
             retval = self.intconst(rettype, retval)
             return retval
         else:
-            pass # FIXME: float ops
+            raise "FIXME: target can't yet cope with float operations"
+

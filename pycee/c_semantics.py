@@ -176,7 +176,7 @@ class typesystem:
         "Perform the usual arithmetic conversions on two types to return\n"\
         "a third type."
         if self.isfloat(type1) or self.isfloat(type2):
-            pass # FIXME
+            raise "FIXME: can't yet do usual-arithmetic-conversions on floats"
         else:
             type1 = self.intpromote(type1)
             type2 = self.intpromote(type2)
@@ -384,17 +384,17 @@ class semantics:
 		val = self.target.intconst(type, val)
 		return type, val, 0, optree(type, val)
 	    elif exp.list[0].type == lt_ident:
-		pass # FIXME
+                raise "FIXME: can't parse identifier in expression yet"
 	    elif exp.list[0].type == pt_charconst:
-		pass # FIXME
+                raise "FIXME: can't parse char constants yet"
 	    elif exp.list[0].type == pt_stringconst:
-		pass # FIXME
+                raise "FIXME: can't parse string constants yet"
 	    elif exp.list[0].type == pt_floatconst:
-		pass # FIXME
+                raise "FIXME: can't parse float constants yet"
 	    else:
-		FIXME()
+                assert 0, "unexpected node in primary_expression"
 	elif exp.type == pt_postfix_expression:
-            FIXME()
+            raise "FIXME: can't handle postfix expressions yet"
 	elif exp.type == pt_unary_expression:
             if exp.list[0].type == lt_times:
                 operand = self.expr(exp.list[1])
@@ -407,18 +407,17 @@ class semantics:
                 #  sizeof
                 #  bitand
                 #  plus minus bitnot lognot
-                FIXME()
-	elif exp.type == pt_cast_expression:
+                raise "FIXME: can't handle most unary operators yet"
+        elif exp.type == pt_cast_expression:
             src = self.expr(exp.list[1])
             desttype = self.typename(exp.list[0])
-            # FIXME: verify explicit castability
             return self.typecvt(src, desttype, 1)
 	elif exp.type == pt_binary_expression:
             lhs = self.expr(exp.list[0])
             rhs = self.expr(exp.list[2])
             return self.binop(exp.list[1].type, lhs, rhs)
 	elif exp.type == pt_conditional_expression:
-            FIXME()
+            raise "FIXME: can't handle conditional operator yet"
 	elif exp.type == pt_assignment_expression:
             exp.display(0)
             lhs = self.expr(exp.list[0])
@@ -561,7 +560,7 @@ class semantics:
                 if i == None:
                     t = self.types.array(t, array_unspecified)
                 elif i.type == pt_identifier_list or i.type == pt_parameter_type_list:
-                    pass # FIXME: function type
+                    raise "FIXME: can't yet handle declarations of functions"
                 else:
                     # Attempt to parse i as a constant expression with
                     # integer type.
@@ -604,7 +603,7 @@ class semantics:
     def do_statement(self, stmt):
         ret = []
 	while stmt.type == pt_labeled_statement:
-	    # FIXME: deal with label
+            raise "FIXME: can't yet handle labels"
 	    stmt = stmt.list[1]
 	if self.exprnodes.has_key(stmt.type):
 	    type, value, lvalue, tree = self.expr(stmt)
@@ -622,5 +621,5 @@ class semantics:
                 stmt = optree(op_while, condition, consequence)
         else:
             stmt.display(0)
-	    FIXME()
+	    raise "FIXME: can't handle this statement type yet"
         return ret
