@@ -24,13 +24,36 @@ access to it, IIRC) were:
    crash and leave a putty.TMP file lying around.
 <li>However, invoking the Help file without context by pressing
    (say) the Help button on PuTTY's configuration dialog, or invoking it
-   from a session's system menu, works fine, and subsequently to that,
-   context help works too.
-<li>Deleting the hidden putty.GID file that appears alongside the PuTTY
-   help files the first time they're used doesn't appear to help.
+   from a session's system menu, or from Explorer, works fine (and
+   generates a hidden putty.GID file), and subsequently to that, context
+   help works too.
+<li>If all the files (including .GID) are moved to a different path,
+   things break again.
+<li>Deleting the hidden putty.GID file doesn't appear to cause other
+   instances not to break, but it can break a previously-working
+   installation if other help files are accessed in the meantime.
+<li>The two installations can be copies of each other and still cause
+   trouble.
 </ul>
 
+<p>
 The precise crash (on Win98SE at least) is: "WINHLP32 caused an
 invalid page fault in module WINHLP32.EXE at 0167:004099ba." (A
 <a href="http://groups.google.com/groups?q=%220167%3A004099ba%22">Google Groups search</a>
 finds an apparently unrelated reference, so it's not just us.)
+
+<p>
+Things I've tried, in desperation:
+<ul>
+<li>Fiddling with the precise macro we pass to <code>HELP_COMMAND</code>.
+Changing from <code>JI</code> to <code>JumpId</code>, or filling in the
+first argument (<code>JI(`putty.hlp',`foo.bar')</code>) makes no
+difference.
+<li><a href="http://www.helpfulsolutions.com/undoc_3and4.html">This page</a>
+claims there is an undocumented <code>uCommand<code> value to give to
+<code>WinHelp()</code> - <code>HELP_TOPIC_ID</code> = 259 - which would
+avoid the need to use the <code>JI</code> macro at all. However, I've had
+no luck with it ("The topic does not exist. Contact your application vendor
+for an updated Help file. (129)")
+<a href="http://groups.google.com/groups?as_umsgid=VA.0000000d.03c8734a%40birdofprey">A newsgroup post</a> reports it as broken on Win98.
+</ul>
