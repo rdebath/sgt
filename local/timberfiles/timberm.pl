@@ -69,6 +69,9 @@ if ($type eq "quoted-printable") {
 } elsif ($type eq "base64") {
   $chars = '';
   while (<F>) {
+    # Deal with strange footers on the base64 data, for example added by
+    # Mailman in the case when a message body is a single base64 part.
+    last if /[^A-Za-z0-9+\/= \r\n\t]/;
     y/A-Za-z0-9+\/=//cd;
     y/A-Za-z0-9+\/=/\000-\100/;
     $chars .= $_;
