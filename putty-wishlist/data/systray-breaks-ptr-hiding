@@ -12,3 +12,12 @@ mouse pointer when typing in a window' is checked.
 We've had one report of this on Win2K (5.00.2195). I (JTN) can
 reliably reproduce it at work with Win2K by sending myself mail
 (Outlook adds an icon to the system tray when this happens).
+
+<p>
+<em>Update, 2004-Jul-25:</em> I was unable to reproduce the system
+tray behaviour on a Win98SE system, but activity in other windows
+would cause <code>WM_MOUSEMOVE</code> and <code>WM_NCMOUSEMOVE</code>
+messages to be sent when nothing had actually changed. As of tomorrow's
+snapshot, PuTTY will ignore such messages. Hopefully this will solve
+the original problem; if it works for you it'd be nice if you could
+tell us.
