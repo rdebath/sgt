@@ -90,6 +90,51 @@ void sql_exec_printf (struct database *db,
 }
 
 
+void sql_get_table_printf (struct database *db,
+			   const char *sql_fmt,
+			   char ***table,
+			   int *row_count,
+			   int *column_count,
+			   ...)
+{
+    va_list args;
+    char *err;
+
+    va_start (args, column_count);
+    sqlite_get_table_vprintf (db->handle, sql_fmt, table,
+			      row_count, column_count, &err, args);
+    if (err) fatal(err_dberror, err);
+    va_end (args);
+}
+
+
+enum transaction_action {
+    begin_transaction,
+    rollback_transaction,
+    commit_transaction
+};
+
+void sql_transact (struct database *db,
+		   enum transaction_action act)
+{
+    if (!nosync) {
+	static const char *sql[] = {
+	    "BEGIN;",
+	    "ROLLBACK;",
+	    "COMMIT;"
+	};
+	const int opening = begin_transaction == act;
+
+	assert (NULL != db->handle);
+	assert (0 <= act && act < lenof(sql));
+	assert (opening == !db->transaction_open);
+
+	sql_exec (db, sql[act]);
+	db->transaction_open = opening;
+    }
+}
+
+
 void sql_init (struct database *db)
 {
     int i;
@@ -164,7 +209,7 @@ static const char *db_schema[] = {
     "  PRIMARY KEY (ego));",
 };
 
-struct database db[1] = { DATABASE ("db", db_schema) };
+static struct database db[1] = { DATABASE ("db", db_schema) };
 
 
 void db_init(void)
@@ -174,32 +219,17 @@ void db_init(void)
 
 void db_begin(void)
 {
-    if (!nosync) {
-	assert(db->handle != NULL);
-	assert(!db->transaction_open);
-	sql_exec(db, "BEGIN;");
-	db->transaction_open = TRUE;
-    }
+    sql_transact (db, begin_transaction);
 }
 
 void db_rollback(void)
 {
-    if (!nosync) {
-	assert(db->handle != NULL);
-	assert(db->transaction_open);
-	sql_exec(db, "ROLLBACK;");
-	db->transaction_open = FALSE;
-    }
+    sql_transact (db, rollback_transaction);
 }
 
 void db_commit(void)
 {
-    if (!nosync) {
-	assert(db->handle != NULL);
-	assert(db->transaction_open);
-	sql_exec(db, "COMMIT;");
-	db->transaction_open = FALSE;
-    }
+    sql_transact (db, commit_transaction);
 }
 
 void db_close(void)
@@ -231,15 +261,12 @@ static char *cfg_get_internal(char *key)
 {
     char **table;
     int rows, cols;
-    char *err;
     char *ret;
 
     db_open();
 
-    sqlite_get_table_printf(db->handle,
-			    "SELECT value FROM config WHERE key = '%q'",
-			    &table, &rows, &cols, &err, key);
-    if (err) fatal(err_dberror, err);
+    sql_get_table_printf(db, "SELECT value FROM config WHERE key = '%q'",
+			 &table, &rows, &cols, key);
     if (rows > 0) {
 	assert(cols == 1);
 	ret = dupstr(table[1]);
@@ -406,15 +433,12 @@ char *message_location(const char *ego)
 {
     char **table;
     int rows, cols;
-    char *err;
     char *ret;
 
     db_open();
 
-    sqlite_get_table_printf(db->handle,
-			    "SELECT location FROM messages WHERE ego='%q'",
-			    &table, &rows, &cols, &err, ego);
-    if (err) fatal(err_dberror, err);
+    sql_get_table_printf(db, "SELECT location FROM messages WHERE ego='%q'",
+			 &table, &rows, &cols, ego);
     if (rows > 0) {
 	assert(cols == 1);
 	ret = dupstr(table[1]);
@@ -429,18 +453,16 @@ struct mime_details *find_mime_parts(const char *ego, int *nparts)
 {
     char **table;
     int rows, cols, i;
-    char *err;
     struct mime_details *ret;
 
     db_open();
 
-    sqlite_get_table_printf(db->handle,
-			    "SELECT major, minor, charset, encoding,"
-			    " disposition, filename, description, offset,"
-			    " length, idx FROM mimeparts WHERE ego='%q'"
-			    " ORDER BY idx",
-			    &table, &rows, &cols, &err, ego);
-    if (err) fatal(err_dberror, err);
+    sql_get_table_printf(db,
+			 "SELECT major, minor, charset, encoding,"
+			 " disposition, filename, description, offset,"
+			 " length, idx FROM mimeparts WHERE ego='%q'"
+			 " ORDER BY idx",
+			 &table, &rows, &cols, ego);
     if (rows > 0) {
 	assert(cols == 10);
 	ret = snewn(rows, struct mime_details);
