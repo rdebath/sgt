@@ -1,6 +1,6 @@
 Summary: Port to Unix
 Class: wish
-Priority: medium
+Priority: high
 Difficulty: tricky
 Content-type: text/x-html-body
 
@@ -22,7 +22,8 @@ Ports of <code>psftp</code>, <code>pscp</code>, and <code>puttygen</code>
 are also now available.
 
 <p>
-We do not yet have Unix ports of Puttygen and Pageant.
+We do not yet have a Unix port of Pageant (although another agent can be
+used).
 
 <p>
 See also the
