@@ -374,6 +374,62 @@ class RGTPConnection:
 	    throwerror() # oddities
 	return item
 
+    def senddata(self, data):
+	"Send data. Returns \"\" on success, or an error string."
+	self._putline("DATA")
+	s = self._getline()
+	if s[0:3] != "150":
+	    return s
+	for i in data:
+	    if i[:1] == ".": i = "." + i
+	    self._putline(i)
+	self._putline(".")
+	s = self._getline()
+	if s[0:3] != "350":
+	    return s
+	return ""
+
+    def reply(self, itemid):
+	"Reply to an item. Uses previously sent data."
+	self._putline("REPL "+itemid)
+	s = self._getline()
+	# FIXME: would be nice to try STAT first and return `mod'
+	if s[0:3] == "220":
+	    return "ok"
+	elif s[0:3] == "421":
+	    return "full"
+	elif s[0:3] == "122":
+	    s2 = self._getline()
+	    if s2[0:3] != "422":
+		FIXME() # protocol error
+	    return "cont" + s[4:12]
+	else:
+	    return "error"
+
+    def cont(self, itemid, subj):
+	"Continue an item. Uses previously sent data."
+	self._putline("CONT "+subj)
+	s = self._getline()
+	if s[0:3] == "520":
+	    self._putline("REPL "+itemid)
+	    s = self._getline()
+	    if s[0:3] != "421":
+		FIXME()
+	    self._putline("CONT "+subj)
+	    s = self._getline()
+	if s[0:3] == "120":
+	    s2 = self._getline()
+	    if s2[0:3] != "220":
+		FIXME()
+	    return "ok"
+	elif s[0:3] == "122":
+	    s2 = self._getline()
+	    if s2[0:3] != "422":
+		FIXME() # protocol error
+	    return "cont" + s[4:12]
+	else:
+	    return "error"
+
     def close(self):
 	self._putline("QUIT")
 	s = self._getline()
