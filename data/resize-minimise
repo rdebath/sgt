@@ -1,7 +1,9 @@
 Summary: Resize after Alt-Space, N minimise doesn't work
 Class: bug
 Priority: medium
-Present-in: 0.52 2002-05-20
+Present-in: 0.52 2002-05-20 2002-10-24
+Absent-in: 2002-10-29 2003-01-23
+Fixed-in: 2002-10-29
 Content-type: text/x-html-body
 
 <p>Another bit of resize flakiness that's been reported :
@@ -19,3 +21,8 @@ won't resize.
 
 <p>(This may be something to look at when fixing the other
 <a href="resize.html">resize flakiness</a>.)
+
+<p><em>Update:</em> This bug appears to have mysteriously fixed itself
+sometime between 2002-10-24 and 2002-10-29. During this period there
+was a lot of global-removal and Unix-porting upheaval, including some
+bug fixes, so I'm going to claim this is fixed.
