@@ -121,6 +121,19 @@ int vsync(void)
     ioctl(evfd, PS2IOC_WAITEVENT, PS2EV_VSYNC);
 }
 
+int scr_prep(void)
+{
+    if (SDL_MUSTLOCK(screen))
+	SDL_LockSurface(screen);
+}
+
+int scr_done(void)
+{
+    if (SDL_MUSTLOCK(screen))
+	SDL_UnlockSurface(screen);
+    SDL_Flip(screen);
+}
+
 #if 0
 int main(int argc, char **argv)
 {
