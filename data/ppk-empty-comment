@@ -4,6 +4,7 @@ Difficulty: fun
 Priority: high
 Absent-in: 0.52
 Present-in: 0.53b 2002-10-07 2003-01-04 2003-06-29
+Fixed-in: 2003-10-13
 Content-type: text/x-html-body
 
 <p>
@@ -11,17 +12,6 @@ Certain forms of empty key comment in PPK files can cause PuTTY to
 throw an assertion failure (terminal.c, line 3769, len &gt; 0 for
 0.53b) (and possibly crash?). Apparently such files can be generated
 by PuTTYgen.
-
-<p>
-For more details:
-<ul>
-<li><code>20021007152204.98637.qmail@web40403.mail.yahoo.com</code>
-<li><code>1701439409.20021127203822@lut.fi</code>
-<li><code>000801c2a3bf$a6b5ab80$5f00a8c0@gabba.world</code>
-<li><code>20030105014246.6485.2902@hm-web2.solinus.com</code>
-<li><code>7A4B87D07376A54897E467B6ACD98B569F0C23@MBSP04.services.sp.trw.com</code>
-<li><code>001501c34423$ca8984a0$c600a8c0@Anya</code> (with attached PPK)
-</ul>
 
 <p>
 <em>Update (JTN):</em> I've reproduced this with PuTTY and PuTTYgen
@@ -33,12 +23,6 @@ server. No crash. The comment part of the PPK file looks like:
 0040 20 0d 0a                                           ..             </pre>
 
 <p>
-The obvious workaround is to return from <code>ssh.c:c_write()</code>
-if called with <code>len==0</code>, but why do
-<code>from_backend()</code> and friends complain about zero-length
-writes in the first place?
-
-<p>
-JTN: After discussion, we can't remember why that assertion is there.
-My vote's on removing it and making from_backend() cope with zero-length
-writes.
+<em>Update:</em> I've added robustness improvements to everything
+lurking behind <code>from_backend()</code>, and removed the assertions,
+so this should be fixed now.
