@@ -30,6 +30,12 @@
 /*
  * TODO:
  * 
+ *  - add to the test suite:
+ *     * test read/write unlocking, by maintaining lists of
+ *       currently locked nodes and requiring that all locked nodes
+ *       are correctly unlocked. Perhaps also verify that when any
+ *       node is write-locked or write-unlocked, its parent is
+ *       write-locked at the time. (If that's feasible. Hmm.)
  *  - user read properties.
  *     * need to supply a user-defined equivalent to
  *       bt_lookup_find, which is allowed to look at everything in
@@ -42,6 +48,15 @@
  *       (rot13 will certainly require this, and reverse will
  *       require it if the elements themselves are in some way
  *       reversible).
+ * 
+ * Still untested:
+ *  - user-supplied copy function.
+ *  - bt_add when element already exists.
+ *  - bt_del when element doesn't.
+ *  - splitpos with before==TRUE.
+ *  - split() on sorted elements (but it should be fine).
+ *  - bt_replace, at all (it won't be useful until we get user read
+ *    properties).
  */
 
 /* ---- btree.h --------------------------------------------------------- */
@@ -303,13 +318,18 @@ static INLINE node_addr bt_ref_node(btree *bt, node_addr n)
 
 /*
  * Drop a node's reference count, for purposes of freeing. Returns
- * the new reference count.
+ * the new reference count. Typically this will be tested against
+ * zero to see if the node needs to be physically freed; hence a
+ * NULL node_addr causes a return of 1 (because this isn't
+ * necessary).
  */
-static INLINE int bt_unref_node(btree *bt, nodeptr n)
+static INLINE int bt_unref_node(btree *bt, node_addr n)
 {
-    assert(n != NULL);
-    n[bt->maxdegree*2+1].i--;
-    return n[bt->maxdegree*2+1].i;
+    if (n.p) {
+	n.p[bt->maxdegree*2+1].i--;
+	return n.p[bt->maxdegree*2+1].i;
+    } else
+	return 1;		       /* a NULL node is considered OK */
 }
 
 /*
@@ -752,14 +772,15 @@ static void bt_free_node(btree *bt, nodeptr n)
 {
     int i;
 
-    /* If we can just drop the node's ref count, we don't need to recurse. */
-    if (bt_unref_node(bt, n))
-	return;
-
     for (i = 0; i < bt_subtrees(bt, n); i++) {
-	nodeptr n2 = bt_write_lock_child(bt, n, i);
-	if (n2)
+	node_addr na;
+	nodeptr n2;
+
+	na = bt_child(bt, n, i);
+	if (!bt_unref_node(bt, na)) {
+	    n2 = bt_write_lock_child(bt, n, i);
 	    bt_free_node(bt, n2);
+	}
     }
 
     bt_destroy_node(bt, n);
@@ -769,9 +790,10 @@ void bt_free(btree *bt)
 {
     nodeptr n;
 
-    n = bt_write_lock_root(bt);
-    if (n)
+    if (!bt_unref_node(bt, bt->root)) {
+	n = bt_write_lock_root(bt);
 	bt_free_node(bt, n);
+    }
 
     sfree(bt);
 }
@@ -929,6 +951,49 @@ bt_element_t bt_findpos(btree *bt, bt_element_t element, cmpfn_t cmp,
 bt_element_t bt_find(btree *bt, bt_element_t element, cmpfn_t cmp)
 {
     return bt_findrelpos(bt, element, cmp, BT_REL_EQ, NULL);
+}
+
+/*
+ * Replace the element at a numeric index by a new element. Returns
+ * the old element.
+ * 
+ * Can also be used when the new element is the _same_ as the old
+ * element, but has changed in some way that will affect user
+ * properties.
+ */
+bt_element_t bt_replace(btree *bt, bt_element_t element, int index)
+{
+    nodeptr n;
+    nodeptr *nodes;
+    bt_element_t ret;
+    int nnodes, child, ends;
+
+    nodes = inewn(nodeptr, bt->depth+1);
+    nnodes = 0;
+
+    n = bt_write_lock_root(bt);
+
+    if (index < 0 || index >= bt_node_count(bt, n)) {
+	bt_write_unlock(bt, n);
+	return NULL;
+    }
+
+    while (1) {
+	nodes[nnodes++] = n;
+	child = bt_lookup_pos(bt, n, &index, &ends);
+	if (ends & ENDS_RIGHT) {
+	    ret = bt_element(bt, n, child);
+	    bt_set_element(bt, n, child, element);
+	    break;
+	}
+	n = bt_write_lock_child(bt, n, child);
+	assert(n != NULL);
+    }
+    
+    while (nnodes-- > 0)
+	bt_write_unlock(bt, nodes[nnodes]);
+
+    return ret;
 }
 
 /*
@@ -1420,6 +1485,7 @@ btree *bt_join(btree *bt1, btree *bt2)
 	root2 = bt_write_lock_root(bt2);
 	bt_join_internal(bt1, root1, root2, sep, bt1->depth, bt2->depth);
 	bt2->root = NODE_ADDR_NULL;
+	bt2->depth = 0;
     }
     return bt1;
 }
@@ -1450,6 +1516,7 @@ btree *bt_joinr(btree *bt1, btree *bt2)
 	root2 = bt_write_lock_root(bt2);
 	bt_join_internal(bt2, root1, root2, sep, bt1->depth, bt2->depth);
 	bt1->root = NODE_ADDR_NULL;
+	bt1->depth = 0;
     }
     return bt2;
 }
@@ -1771,7 +1838,7 @@ void bt_dump_nodes(btree *bt, ...)
 	n = va_arg(ap, nodeptr);
 	if (!n)
 	    break;
-	printf("%p:", n);
+	printf("%p [%d]:", n, n[bt->maxdegree*2+1].i);
 	children = bt_subtrees(bt, n);
 	for (i = 0; i < children; i++) {
 	    printf(" %p", bt_child(bt, n, i).p);
@@ -1849,8 +1916,13 @@ void verifytree(btree *bt, bt_element_t *array, int arraylen)
     nodeptr n;
     int i = 0;
     n = bt_read_lock_root(bt);
-    if (n)
+    if (n) {
 	verifynode(bt, n, array, &i, 1);
+    } else {
+	if (bt->depth != 0) {
+	    error("tree has null root but depth is %d not zero", bt->depth);
+	}
+    }
     bt_read_unlock(bt, n);
     if (i != arraylen)
 	error("tree contains %d elements, array contains %d",
@@ -2043,6 +2115,7 @@ void splittest(btree *tree, bt_element_t *array, int arraylen)
 	verifytree(tree3, array, i);
 	verifytree(tree4, array+i, arraylen-i);
 	bt_join(tree3, tree4);
+	verifytree(tree4, NULL, 0);
 	bt_free(tree4);	       /* left empty by join */
 	verifytree(tree3, array, arraylen);
 	bt_free(tree3);
@@ -2232,6 +2305,13 @@ int main(void) {
     assert(tree3 == bt_join(tree3, tree));
     verifytree(tree3, array, 2);
     verifytree(tree, array, 0);
+
+    bt_free(tree);
+    bt_free(tree2);
+    bt_free(tree3);
+    bt_free(tree4);
+
+    sfree(array);
 
     if (errors)
 	fprintf(stderr, "%d errors!\n", errors);
