@@ -28,5 +28,10 @@ be no reason to prevent them. For this to be really useful I suppose
 PuTTY would have to remember the size of its config box...
 
 <p>
-It's not impossible that we might want to do both of these things,
+Another possibility would be to sort the sessions based on most
+recent access time.  I'm not sure how users would cope with their
+sessions' being shuffled all the time, though.
+
+<p>
+It's not impossible that we might want to do all of these things,
 or something else entirely. Some design is required.
