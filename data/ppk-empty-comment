@@ -31,3 +31,9 @@ server. No crash. The comment part of the PPK file looks like:
 
 <p><pre>0030                         43 6f 6d 6d 65 6e 74 3a           Comment:
 0040 20 0d 0a                                           ..             </pre>
+
+<p>
+The obvious workaround is to return from <code>ssh.c:c_write()</code>
+if called with <code>len==0</code>, but why do
+<code>from_backend()</code> and friends complain about zero-length
+writes in the first place?
