@@ -31,6 +31,8 @@ getwidth   # it's a function so as not to trash $*
          -e '  s/<\/FONT>/\035CA/g;' \
          -e '  s/<STRONG>/\035B/g;' \
          -e '  s/<\/STRONG>/\035b/g;' \
+         -e '  s/<BLINK>/\035F/g;' \
+         -e '  s/<\/BLINK>/\035f/g;' \
          -e '  s/<EM>/\035S/g;' \
          -e '  s/<\/EM>/\035s/g;' \
          -e '  s/<U>/\035U/g;' \
