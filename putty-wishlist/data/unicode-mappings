@@ -1,0 +1,57 @@
+Summary: Compatibility mappings for Unicode characters unsupported by a font
+Class: wish
+Priority: medium
+Difficulty: tricky
+Content-type: text/x-html-body
+
+<p>
+It's well known that Red Hat 8 boxes start up in UTF-8 by default,
+and hence that PuTTY must be set into UTF-8 mode or else commands
+such as man(1) will Do The Wrong Thing.
+
+<p>
+I (SGT) have just had a chance to actually play with PuTTY
+connecting to a RH8 box, and discovered that even with UTF-8
+enabled, you don't always get the right results. man(1) handles
+hyphen/minus characters inconsistently: in some situations it
+produces U+2212 MINUS SIGN, but in others it produces U+2010 HYPHEN.
+("man rm" is a good way to show up both types.) Many Windows fonts
+(Lucida Console, Courier New) support the former but not the latter,
+so that even in UTF-8 mode there are nasty "unknown character"
+rectangles appearing in the man page.
+
+<p>
+I think a neat solution to this would be to have a list of
+compatibility character translations, mapping a single Unicode code
+point to a different single Unicode code point, so that U+2010 could
+be displayed as U+2212 (or even U+002D!). This feature would also be
+useful for displaying U+0060 and U+0027 as U+2018 and U+2019, to
+ease the conflict between TeX-era Unix users who quote `like this'
+and pedantic fonts in which those quotes utterly fail to match).
+
+<p>
+Points to consider:
+<ul>
+<li>
+In its raw form this feature could be more pain than it was worth:
+anyone switching between fonts would have to add or remove
+compatibility mappings to reflect the available characters in the
+new font. I believe it should be possible (Character Map can
+certainly do it) for PuTTY to query the font at run time and
+determine which characters are unsupported, and to enable only those
+mappings necessary. That way, we can ship with a large number of
+default mappings which should Just Work for almost all fonts.
+<li>
+Of course, this will stop the feature being useful for the TeX
+quotes problem! To preserve this aspect, we would have to be able to
+configure each individual mapping to be unconditional (applied no
+matter what), or conditional (applied only if the current font does
+not contain the source character).
+<li>
+It seems clear to me that these mappings should be applied at the
+display level, not the terminal input level: the terminal data
+structures should store the original untransformed characters, so
+that cut and paste doesn't depend on the selected font. (But, aargh,
+what about RTF pasting which <em>specifies</em> the font?! Perhaps
+I'll choose to ignore that for the moment...)
+</ul>
