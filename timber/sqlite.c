@@ -12,6 +12,7 @@
 #include <assert.h>
 #include "sqlite.h"
 #include <stdarg.h>
+#include <time.h>
 
 #include "timber.h"
 #include "charset.h"
@@ -90,6 +91,21 @@ void sql_exec_printf (struct database *db,
 }
 
 
+void sql_get_table_vprintf (struct database *db,
+			   const char *sql_fmt,
+			   char ***table,
+			   int *row_count,
+			   int *column_count,
+			   va_list args)
+{
+    char *err;
+
+    sqlite_get_table_vprintf (db->handle, sql_fmt, table,
+			      row_count, column_count, &err, args);
+    if (err) fatal(err_dberror, err);
+}
+
+
 void sql_get_table_printf (struct database *db,
 			   const char *sql_fmt,
 			   char ***table,
@@ -98,13 +114,33 @@ void sql_get_table_printf (struct database *db,
 			   ...)
 {
     va_list args;
-    char *err;
 
     va_start (args, column_count);
-    sqlite_get_table_vprintf (db->handle, sql_fmt, table,
-			      row_count, column_count, &err, args);
-    if (err) fatal(err_dberror, err);
+    sql_get_table_vprintf (db, sql_fmt, table, row_count, column_count, args);
     va_end (args);
+}
+
+
+char *sql_get_value_printf (struct database *b,
+			    const char *sql_fmt,
+			    ...)
+{
+    char **table;
+    int rows, cols;
+    va_list args;
+    char *ans = NULL;
+
+    va_start (args, sql_fmt);
+    sql_get_table_vprintf (b, sql_fmt, &table, &rows, &cols, args);
+    va_end (args);
+
+    if (0 < rows) {
+	assert (1 == cols);
+	assert (1 == rows);
+	if (table[1]) ans = dupstr(table[1]);
+    }
+    sqlite_free_table(table);
+    return ans;
 }
 
 
@@ -252,6 +288,7 @@ static const char *const ab_schema[] = {
 
     "CREATE TABLE attr_values ("
     "  attribute_id INTEGER,"
+    "  until DATETIME,"  /* exclusive */
     "  value VARCHAR NOT NULL"
     ");"
 };
@@ -535,57 +572,60 @@ struct mime_details *find_mime_parts(const char *ego, int *nparts)
 static char *ab_get_attr (int contact_id,
 			  const char *attr_type)
 {
-    char **table;
-    int rows, cols;
-    char *ans = NULL;
-
     assert (attr_type);
 
     sql_open(ab);
-    sql_get_table_printf (ab,
+    return sql_get_value_printf (ab,
 			  "SELECT value FROM attributes, attr_values "
 			  "WHERE contact_id = %d AND type = '%q' AND "
-			  "attributes.attribute_id = attr_values.attribute_id",
-			  &table, &rows, &cols, contact_id, attr_type);
-    if (0 < rows) {
-	assert (1 == cols);
-	assert (1 == rows);
-	if (table[1]) ans = dupstr(table[1]);
-    }
-    sqlite_free_table(table);
-    return ans;
+			  "attributes.attribute_id = attr_values.attribute_id "
+			  "AND attr_values.until IS NULL",
+			  contact_id, attr_type);
 }
+
 
 static void ab_set_attr (int contact_id,
 			 const char *attr_type,
 			 const char *new_value)
 {
-    assert (attr_type);
+    char *attribute_id;
+    char now[DATEBUF_MAX];
 
+    assert (attr_type);
     sql_open(ab);
     sql_transact (ab, begin_transaction);
-    sql_exec_printf (ab,
-		     "DELETE FROM attr_values "
-		     "WHERE attribute_id = "
-		     "(SELECT attribute_id FROM attributes "
-		     "WHERE contact_id = %i AND type = '%q')",
-		     contact_id, attr_type);
-    sql_exec_printf (ab,
-		     "DELETE FROM attributes "
-		     "WHERE contact_id = %i AND type = '%q'",
-		     contact_id, attr_type);
-    if (new_value) {
+
+    fmt_date (time(NULL), now);
+    attribute_id =
+	sql_get_value_printf (ab,
+			      "SELECT attribute_id FROM attributes "
+			      "WHERE contact_id = %i AND type = '%q'",
+			      contact_id, attr_type);
+
+    if (attribute_id) {
 	sql_exec_printf (ab,
-			 "INSERT INTO attributes (contact_id, type) "
-			 "VALUES (%i, '%q')",
-			 contact_id, attr_type);
+			 "UPDATE attr_values SET until = '%q'"
+			 "WHERE attribute_id = '%q' AND until IS NULL",
+			 now, attribute_id);
+    }
+    if (new_value) {
+	if (!attribute_id) {
+	    sql_exec_printf (ab,
+			     "INSERT INTO attributes (contact_id, type) "
+			     "VALUES (%i, '%q')",
+			     contact_id, attr_type);
+	    attribute_id = snewn (20, char);
+	    sprintf (attribute_id, "%d", sqlite_last_insert_rowid(ab->handle));
+	}
 	sql_exec_printf (ab,
 			 "INSERT INTO attr_values (attribute_id, value) "
-			 "VALUES (%i, '%q')",
-			 sqlite_last_insert_rowid(ab->handle), new_value);
+			 "VALUES ('%q', '%q')",
+			 attribute_id, new_value);
     }
     sql_transact (ab, commit_transaction);
+    sfree(attribute_id);
 }
+
 
 void ab_display_attr (const char *contact_id,
 		      const char *attr_type)
