@@ -1,6 +1,6 @@
 # -*- mode: sh; mode: fold -*-
 # Simon Tatham's standardised chunk of .bashrc
-# $Revision: 1.39 $
+# $Revision: 1.40 $
 
 #{{{ I don't like .bash_history files. They wet their nests.
 unset HISTFILE
@@ -276,6 +276,8 @@ _prompt_cmd() {
   for i in $bashrc_prompt_fns; do $i; done
 }
 
+PROMPT_COMMAND=_prompt_cmd
+
 #}}}
 #{{{ registering checks on the current directory
 
@@ -404,13 +406,12 @@ x() {
 # command prefix prevents any command being expanded as an alias.
 real() { "$@"; }
 
-# When I run `find' and `findgrep', I often use wildcards and
-# rarely want them quoted, so it seems sensible to disable globbing
-# for these commands only. I always have `real' if I need to do
-# things the usual way.
+# When I run `find', `findgrep' and `xlsfonts', I often use
+# wildcards and rarely want them quoted, so it seems sensible to
+# disable globbing for these commands only. I always have `real' if
+# I need to do things the usual way.
 
-bashrc_a_noglob() {
-  "$@"
+bashrc_restore_glob_settings() {
   case "$bashrc_a_shopts" in
     *noglob*) ;;
     *) set +f ;;
@@ -418,8 +419,11 @@ bashrc_a_noglob() {
   unset bashrc_a_shopts
 }
 
-alias find='bashrc_a_shopts="$SHELLOPTS"; set -f; bashrc_a_noglob find'
-alias findgrep='bashrc_a_shopts="$SHELLOPTS"; set -f; bashrc_a_noglob findgrep'
+bashrc_add_prompt_fn bashrc_restore_glob_settings
+
+alias find='bashrc_a_shopts="$SHELLOPTS"; set -f; find'
+alias findgrep='bashrc_a_shopts="$SHELLOPTS"; set -f; findgrep'
+alias xlsfonts='bashrc_a_shopts="$SHELLOPTS"; set -f; xlsfonts'
 
 #}}}
 #{{{ `rfc' as a quick shortcut to find RFCs
