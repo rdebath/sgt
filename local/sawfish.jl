@@ -5,13 +5,20 @@
 ;;
 ;;   (load (concat (getenv "HOME") "/src/local/sawfish.jl") nil t t)
 
+;; In _general_, I approve of programs stating their own window
+;; position. I'll override that for specific window types that
+;; misbehave.
 (setq ignore-program-positions nil)
+
+;; Some versions of Sawfish ship with this set to 0 by default,
+;; which looks ugly.
 (setq sp-padding 6)
 
 ;; On creation of new windows, fiddle with their properties.
 (define (sgt-add-window w)
   ;; Mozilla 1.6 has a nasty habit of trying to place all its
-  ;; windows at (0,0).
+  ;; windows at (0,0). Ignore its specified position and let Sawfish
+  ;; DTRT.
   (when (equal (caddr (get-x-property w 'WM_CLASS)) "Gecko\0Mozilla-bin\0")
    (window-put w 'ignore-program-position t)
   )
