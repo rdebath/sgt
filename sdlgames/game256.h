@@ -31,3 +31,7 @@ void drawimage(Image image, int x, int y, int mask);
 void imagepixel(Image image, int x, int y, int colour);
 int getimagepixel(Image image, int x, int y);
 void imageonimage(Image canvas, Image brush, int x, int y, int mask);
+
+Image makeimage(int x, int y, int xoff, int yoff);
+
+void bar(int x1, int y1, int x2, int y2, int c);
