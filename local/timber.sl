@@ -860,7 +860,7 @@ define timber_updatemail() {
 }
 
 %}}}
-%{{{ timber_header_key(): FIXME
+%{{{ timber_header_key(): return the name of the header under the cursor
 
 % Return the header field present on the line.
 define timber_header_key() {
@@ -877,7 +877,7 @@ define timber_header_key() {
 }
 
 %}}}
-%{{{ timber_unfold(): FIXME
+%{{{ timber_unfold(): unfold either a message or a MIME part
 
 % Unfold the message or attachment under the cursor. If it's a message,
 % we must ensure the Status line says RO.
@@ -975,7 +975,7 @@ define timber_unfold() {
 }
 
 %}}}
-%{{{ timber_press_ret(): FIXME
+%{{{ timber_press_ret(): RET was pressed. Unfold or read-first-unread
 
 % RETURN was pressed. If at top, move to the first unread message; then
 % call timber_unfold.
@@ -1006,7 +1006,7 @@ define timber_press_ret() {
 }
 
 %}}}
-%{{{ timber_bom(): FIXME
+%{{{ timber_bom(): go to beginning of current message
 
 % Move to the top of the current message.
 define timber_bom() {
@@ -1018,7 +1018,7 @@ define timber_bom() {
 }
 
 %}}}
-%{{{ timber_fullhdr(): FIXME
+%{{{ timber_fullhdr(): display full headers in current message
 
 % Unhide _all_ headers in the current message.
 define timber_fullhdr() {
@@ -1036,7 +1036,7 @@ define timber_fullhdr() {
 }
 
 %}}}
-%{{{ timber_fullmime(): FIXME
+%{{{ timber_fullmime(): display full headers for current MIME part
 
 % Unhide _all_ of the current MIME part.
 define timber_fullmime() {
@@ -1068,7 +1068,7 @@ define timber_fullmime() {
 }
 
 %}}}
-%{{{ timber_get_mimepart(): FIXME
+%{{{ timber_get_mimepart(): position user marks at each end of MIME part
 
 % Place user marks at each end of the current MIME part. Will use a
 % decoded variant if `use_decoded' is TRUE, otherwise will always go
@@ -1166,7 +1166,7 @@ define timber_get_mimepart(use_decoded) {
 }
 
 %}}}
-%{{{ timber_saveattach(): FIXME
+%{{{ timber_saveattach(): save a MIME attachment to a file
 
 % Save the current MIME part (or whole message, if non-multipart) to a file.
 define timber_saveattach() {
@@ -1188,7 +1188,7 @@ define timber_saveattach() {
 }
 
 %}}}
-%{{{ timber_selattach(): FIXME
+%{{{ timber_selattach(): select the current MIME part (eg for replying)
 
 % Select the current MIME part.
 define timber_selattach() {
@@ -1206,7 +1206,7 @@ define timber_selattach() {
 }
 
 %}}}
-%{{{ timber_fold(): FIXME
+%{{{ timber_fold(): fold up the current MIME part or message
 
 % Fold up the message or attachment under the cursor.
 define timber_fold() {
@@ -1371,7 +1371,7 @@ define timber_mimerev() {
 }
 
 %}}}
-%{{{ timber_open_folder(): FIXME
+%{{{ timber_open_folder(): load a message folder into a Timber buffer
 
 % Create a new buffer, in Timber mode, and open a mail folder therein.
 define timber_open_folder(name) {
@@ -1416,7 +1416,7 @@ define timber_open_folder(name) {
 }
 
 %}}}
-%{{{ timber_nextmsg(): FIXME
+%{{{ timber_nextmsg(): go to next message
 
 % Move to the next message, by folding whatever we're currently on and
 % unfolding the next.
@@ -1432,7 +1432,7 @@ define timber_nextmsg() {
 }
 
 %}}}
-%{{{ timber_prevmsg(): FIXME
+%{{{ timber_prevmsg(): go to previous message
 
 % Move to the previous message, by folding whatever we're currently on
 % and unfolding the one before.
@@ -1449,7 +1449,7 @@ define timber_prevmsg() {
 }
 
 %}}}
-%{{{ timber_delete(): FIXME
+%{{{ timber_delete(): mark message as deleted
 
 % Mark the current message as deleted. Fold it as well (deleted messages
 % are unlikely to be ones people are interested in).
@@ -1466,7 +1466,7 @@ define timber_delete() {
 }
 
 %}}}
-%{{{ timber_undelete(): FIXME
+%{{{ timber_undelete(): mark message as not deleted after all
 
 % Mark the current message as not deleted.
 define timber_undelete() {
@@ -1483,7 +1483,7 @@ define timber_undelete() {
 }
 
 %}}}
-%{{{ timber_expunge(): FIXME
+%{{{ timber_expunge(): checkpoint Timber buffer to disk and remove deletia
 
 % Expunge all deleted messages and checkpoint a buffer to disk.
 define timber_expunge() {
@@ -1562,7 +1562,7 @@ define timber_expunge() {
 }
 
 %}}}
-%{{{ timber_qlose(): FIXME
+%{{{ timber_qlose(): close Timber buffer (daft name 'cos it's bound to `q')
 
 % Quit a Timber buffer, expunging and closing the associated folder.
 define timber_qlose() {
@@ -1574,7 +1574,7 @@ define timber_qlose() {
 }
 
 %}}}
-%{{{ timber_readfolder(): FIXME
+%{{{ timber_readfolder(): get a folder name from the minibuffer
 
 % Read a folder name.
 define timber_readfolder(prompt) {
@@ -1589,7 +1589,7 @@ define timber_readfolder(prompt) {
 }
 
 %}}}
-%{{{ timber_goto(): FIXME
+%{{{ timber_goto(): prompt for a folder name then open that folder
 
 % Open a new Timber folder-buffer.
 define timber_goto() {
@@ -1605,7 +1605,7 @@ define timber_goto() {
 }
 
 %}}}
-%{{{ timber_moveto(): FIXME
+%{{{ timber_moveto(): prompt for a folder name then move to that folder
 
 % Move to another folder.
 define timber_moveto() {
@@ -1626,7 +1626,7 @@ define timber_moveto() {
 }
 
 %}}}
-%{{{ timber_savetobuf(): FIXME
+%{{{ timber_savetobuf(): save the message under the cursor to another buffer
 
 % Save a message to another Timber buffer.
 define timber_savetobuf(buffer) {
@@ -1664,7 +1664,7 @@ define timber_savetobuf(buffer) {
 }
 
 %}}}
-%{{{ timber_appendmsg(): FIXME
+%{{{ timber_appendmsg(): append the message under the cursor to a file
 
 % Write a message, in non-Timber-buffer form, to the end of a file.
 define timber_appendmsg(file) {
@@ -1707,7 +1707,7 @@ define timber_appendmsg(file) {
 }
 
 %}}}
-%{{{ timber_save(): FIXME
+%{{{ timber_save(): save a message to another folder
 
 % Save a message to another Timber folder. Will check whether the folder
 % is already open in another buffer.
@@ -1738,7 +1738,7 @@ define timber_save() {
 }
 
 %}}}
-%{{{ timber_export(): FIXME
+%{{{ timber_export(): export a message to a file
 
 % Export a message to a file.
 define timber_export() {
@@ -1756,7 +1756,7 @@ define timber_export() {
 }
 
 %}}}
-%{{{ timber_yesno (): FIXME
+%{{{ timber_yesno (): standardised yes-or-no minibuffer input
 
 % Get a yes/no response from the user. The one in site.sl is ugly.
 define timber_yesno (prompt)
@@ -1776,7 +1776,7 @@ define timber_yesno (prompt)
 }
 
 %}}}
-%{{{ timber_sendmsg(): FIXME
+%{{{ timber_sendmsg(): send the message in a composer buffer (prompts first)
 
 % Send a message.
 define timber_sendmsg() {
@@ -1803,7 +1803,7 @@ define timber_sendmsg() {
 }
 
 %}}}
-%{{{ timber_killmsg(): FIXME
+%{{{ timber_killmsg(): destroy a composer buffer (prompts first)
 
 % Kill (cancel) a composer buffer.
 define timber_killmsg() {
@@ -1816,7 +1816,7 @@ define timber_killmsg() {
 }
 
 %}}}
-%{{{ timber_open_composer(): FIXME
+%{{{ timber_open_composer(): create a composer buffer
 
 % Open a composer buffer.
 define timber_open_composer() {
@@ -1843,7 +1843,7 @@ define timber_open_composer() {
 }
 
 %}}}
-%{{{ timber_real_addr(): FIXME
+%{{{ timber_real_addr(): parse From: lines etc to get actual address part
 
 % Get the actual address part out of a freeform address segment. Ie
 % return only what's in angle brackets if anything is, and otherwise
@@ -1865,7 +1865,7 @@ define timber_real_addr(addr) {
 }
 
 %}}}
-%{{{ timber_contains_addr(): FIXME
+%{{{ timber_contains_addr(): search for an address in a comma-sep list
 
 % Return nonzero if the address in `addr' is somewhere in the comma-
 % separated list `list'.
@@ -1889,7 +1889,7 @@ define timber_contains_addr(list, addr) {
 }
 
 %}}}
-%{{{ timber_insert_hdr(): FIXME
+%{{{ timber_insert_hdr(): insert header into composer buffer, with wrapping
 
 % Insert a header line into a buffer. Wrap at commas if possible and
 % desirable.
@@ -1919,7 +1919,7 @@ define timber_insert_hdr(header) {
 }
 
 %}}}
-%{{{ timber_bcc_self(): FIXME
+%{{{ timber_bcc_self(): insert `Bcc: self' header in a composer buffer
 
 % Add a Bcc-to-self line in a composition.
 define timber_bcc_self() {
@@ -1934,7 +1934,7 @@ define timber_bcc_self() {
 }
 
 %}}}
-%{{{ timber_attach(): FIXME
+%{{{ timber_attach(): add an Attach: header in a composer buffer
 
 % Add an Attach: header line in a composition.
 define timber_attach() {
@@ -1963,7 +1963,7 @@ define timber_attach() {
 }
 
 %}}}
-%{{{ timber_reply_common(): FIXME
+%{{{ timber_reply*(): generate composer buffer with reply template
 
 % Begin composition of a reply message. `all' is 1 if reply-to-all
 % is enabled.
@@ -2155,7 +2155,7 @@ define timber_reply() { timber_reply_common(0); }
 define timber_reply_all() { timber_reply_common(1); }
 
 %}}}
-%{{{ timber_forward(): FIXME
+%{{{ timber_forward(): generate composer buffer with MIME-forwarding template
 
 % Begin composition of a forward message.
 define timber_forward() {
@@ -2261,7 +2261,7 @@ define timber_forward() {
 }
 
 %}}}
-%{{{ timber_compose(): FIXME
+%{{{ timber_compose(): open a fresh composer buffer to write a new message
 
 % Begin composition of a brand new message.
 define timber_compose_given(to_list) {
@@ -2292,7 +2292,7 @@ define timber_compose() {
 }
 
 %}}}
-%{{{ timber_open_mbox(): FIXME
+%{{{ timber_open_mbox(): fetch mail and open `mbox' as a Timber buffer
 
 % Create the first Timber buffer, pointing at `mbox'.
 define timber_open_mbox() {
@@ -2306,7 +2306,7 @@ define timber_open_mbox() {
 }
 
 %}}}
-%{{{ timber(): FIXME
+%{{{ timber(): either start Timber or check for new mail
 
 % The starting command: `M-x timber' either calls timber_open_mbox, if
 % mbox is not already open in a buffer, or moves to the mbox folder and
