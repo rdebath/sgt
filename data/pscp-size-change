@@ -1,0 +1,14 @@
+Summary: PSCP assertion failure if remote source file changes size
+Class: semi-bug
+Priority: medium
+Content-type: text/x-html-body
+
+<p>
+If PSCP is used to copy a remote file to the local machine, and the
+remote file changes in size during the transfer (e.g., an active log
+file), PSCP can give an error message like "Assertion failed:
+actuallen &lt;= len, file scp.c, line 1435".
+
+<p>
+(Note that the same error used to occur for static but
+<a href="large-files.html">particularly large files</a>.)
