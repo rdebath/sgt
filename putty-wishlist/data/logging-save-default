@@ -1,5 +1,6 @@
 Summary: Logging settings are not saved with Default Settings
 Present-in: 0.52 0.53 0.53b
+Fixed-in: 2003-12-04
 Class: semi-bug
 Difficulty: fun
 Priority: medium
