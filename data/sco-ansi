@@ -39,7 +39,7 @@ also lists some sequences.
 manual page
 <a href="http://osr5doc.ca.caldera.com:457/cgi-bin/man/man?screen+HW">
 screen(HW)</a>.
-<p>Patch: <code>342AD8A1750B844BA61AF9DFC417CCF5154D29@eciexchange.ecinet.com</code></dd>
+</dd>
 
 <dt>Line drawing</dt>
 <dd>(`SCO ACS'?) Setting line character set to `CP437' on the
