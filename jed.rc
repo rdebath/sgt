@@ -1,5 +1,5 @@
 % -*- mode: slang; mode: fold -*-
-% Simon Tatham: version $Revision: 1.25 $
+% Simon Tatham: version $Revision: 1.26 $
 
 %{{{ load Emacs keybindings to start with
 
@@ -560,7 +560,13 @@ define jedrc_default_mode() {
     variable name;
     (name,,,) = getbuf_info();
     name = extract_filename(name);
-    if (name == "Makefile" or name == "makefile")
+    if (
+#ifdef MSDOS MSWINDOWS
+	strup(name) == "MAKEFILE"
+#else
+	name == "Makefile" or name == "makefile"
+#endif
+	)
         makefile_mode();
     else
         @jedrc_old_defmode();
