@@ -6,6 +6,7 @@ if test ! -n "$i"; then
   case "$s" in
     *.sh) i=sh;;
     *.pl) i=perl;;
+    *.py) i=env; set python "$@";;
     *) echo >&2 "usage: $name <scriptname> <interpreter>"; exit 1;;
   esac
 fi
