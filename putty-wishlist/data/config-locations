@@ -44,6 +44,11 @@ specifies another disk file? Should that be allowed?), or in one
 single place?
 
 <p>
+Should PuTTY look for a disk file in the directory it was run from,
+and if found, use that in the first instance? (Supports convenient
+`run from a floppy' operation.)
+
+<p>
 Finally, although the above design makes it obvious how PuTTY should
 <em>read</em> its configuration, how should it write it? When the
 user wants to save a config change, where should it be saved to?
