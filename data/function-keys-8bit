@@ -1,0 +1,18 @@
+Summary: Option to start key sequences with 0x9B instead of 0x1B
+Class: wish
+Difficulty: fun
+Priority: low
+Content-type: text/x-html-body
+
+<p>
+Debian apparently has a terminal type <code>xterm-8bit</code> where
+all occurrences of 0x1B in key sequences (such as function keys) are
+replaced by 0x9B.
+
+<p>
+This gets rid of the irritating delay on pressing Esc while the server
+works out of it's part of a multi-byte sequence or not.
+
+<p>
+It's been suggested that PuTTY should have an option to work like
+this.
