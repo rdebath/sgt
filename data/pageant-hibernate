@@ -1,4 +1,5 @@
 Summary: Discard sensitive material in Pageant on hibernation
+Difficulty: fun
 Class: wish
 Priority: low
 Content-type: text/x-html-body
@@ -24,6 +25,6 @@ of a number of other attacks.
 <li>
 Pageant doesn't currently attempt to prevent key material being
 written to disk. (We don't for instance use VirtualLock(); see the
-<a href="http://www.chiark.greenend.org.uk/~sgtatham/putty/faq.html#A.7.4">FAQ</a>.
+<a href="http://www.chiark.greenend.org.uk/~sgtatham/putty/faq.html#A.7.4">FAQ</a>.)
 </li>
 </ul>
