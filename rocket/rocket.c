@@ -37,7 +37,7 @@ FILE *debugfp;
 struct player {
     int x,y,dx,dy;
     int a, aa;
-    int score;
+    int score, lastscorewidth;
     int death, firedelay;
     int after, agrow;
     int invuln;
@@ -82,48 +82,30 @@ int firstfreepixel;
 Image bk_after;
 int space, planet, balls;
 
+static void score_text_plot(void *ctx, int x, int y, int on)
+{
+    if (on)
+	plot(x, y, 1);
+    else
+	plot(x, y, getimagepixel(rocket_bkgnd_image, x, y));
+}
+
 static void show_scores(void)
 {
-    const int digits[56] = {
-      0xFE,0x101,0x101,0x101,0x1F1,0xFE,0x1F,0x1FF,0x8E,0x11F,0x111,0x111,0x111,0xE1,
-      0x82,0x111,0x111,0x111,0x11F,0xFE,0x1F8,0x4,0x4,0x7,0x1F,0x4,
-      0xE2,0x111,0x111,0x111,0x11F,0x10E,0xFE,0x111,0x111,0x111,0x11F,0x8E,
-      0x100,0x100,0x100,0x100,0x11F,0xFF,0xFE,0x1F1,0x111,0x111,0x111,0xFE,
-      0xE0,0x110,0x110,0x110,0x11F,0xFF
-    };
-    const int start[11] = {0,6,8,14,20,26,32,38,44,50,56};
-
-    int w[70];
     char s[20];
-    int p, q, r, i, wp;
+    int p, x, y, wid;
 
     for (p = 0; p < 2; p++) {
-	struct player *pl = &players[p];
-
-	for (q = 0; q < 70; q++)
-	    w[q] = 0;
-	wp = 34;
-	sprintf(s, "%d", pl->score);
-	for (q = 0; s[q]; q++) {
-	    r = s[q] - '0';
-	    for (i = start[r]; i < start[r+1]; i++) {
-		wp++;
-		w[wp] = digits[i];
-	    }
-	    wp++;
-	    w[wp] = 0;
+	sprintf(s, "%d", players[p].score);
+	wid = data_width(s);
+	data_text(s, (p == 0 ? 1 : SCR_WIDTH - 1 - wid), SCR_HEIGHT-10,
+		  score_text_plot, NULL);
+	for (x = wid; x < players[p].lastscorewidth; x++) {
+	    for (y = 0; y <= 8; y++)
+		score_text_plot(NULL, (p == 0 ? 2 + x : SCR_WIDTH-2-x),
+				SCR_HEIGHT-10+y, 0);
 	}
-	q = (p == 0 ? 0 : SCR_WIDTH - 36);
-	wp = (p == 0 ? 34 : wp-35);
-	for (r = 0; r <= 35; r++)
-	    for (i = 0; i < 9; i++) {
-		if (w[r+wp] & (256 >> i))
-		    plot(r+q, SCR_HEIGHT - 10 + i, 1);
-		else
-		    plot(r+q, SCR_HEIGHT - 10 + i,
-			 getimagepixel(rocket_bkgnd_image,
-				       r+q, SCR_HEIGHT - 10 + i));
-	    }
+	players[p].lastscorewidth = wid;
     }
 }
 
@@ -147,6 +129,7 @@ static void init_game(void)
 
 	players[p].spr = makesprite(17, 17, 255);
 	players[p].score = 0;
+	players[p].lastscorewidth = 0;
     }
 
     scr_prep();
@@ -544,9 +527,9 @@ static void play_game(void)
 		    pl->dy = 0;
 		}
 		while (pl->x < -(9 << 16))
-		    pl->x += (SCR_HEIGHT+18) << 16;
-		while (pl->x > ((SCR_HEIGHT+9) << 16))
-		    pl->x -= (SCR_HEIGHT+18) << 16;
+		    pl->x += (SCR_WIDTH+18) << 16;
+		while (pl->x > ((SCR_WIDTH+9) << 16))
+		    pl->x -= (SCR_WIDTH+18) << 16;
 		pl->dx -= sign(pl->dx) * (abs(pl->dx) >> 6);
 		pl->dy -= sign(pl->dy) * (abs(pl->dy) >> 6);
 	    }
