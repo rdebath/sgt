@@ -1,34 +1,65 @@
-Summary: Support for Kerberos and GSSAPI
+Summary: Support for GSSAPI (for Kerberos, GSI, etc)
 Class: wish
 Priority: low
 Difficulty: taxing
 Content-type: text/x-html-body
 
 <p>
-Somebody requested "Kerberos 5 credential forwarding". I don't know
-anything about Kerberos, so if this gets done it will have to be
-done by somebody who does.
+We occasionally get requests for Kerberos and/or GSSAPI support.
+
+<p>
+This looks complicated and messy, and isn't that important to us,
+so we're rather unlikely to add it ourselves.
+
+<p>
+Any proposed solution should take into account our
+<a href="http://www.tartarus.org/~simon/puttydoc/AppendixD.html">design guidelines</a>
+to be even considered for inclusion. In particular, some submissions
+have not taken into account PuTTY's cross-platform nature.
 
 <p>
 In SSH2, Kerberos is supported through
 <a href="http://www.faqs.org/faqs/kerberos-faq/general/section-84.html">
-GSSAPI</a>.  It appears that Globus <a href="http://www.globus.org/security/">
+GSSAPI</a>; there is an expired Internet-Draft
+(<tt>draft-ietf-secsh-gsskeyex-08</tt>) describing GSSAPI key exchange
+and user authentication. (Some of the patches here appear to be based
+on earlier versions of this specification, for instance the userauth
+method "gssapi".)
+
+<p>
+It appears that Globus <a href="http://www.globus.org/security/">
 GSI</a> authentication also uses GSSAPI, though for some reason needs
 a different client implementation (and yet a third if you want to support
 both).
 
-<P><a href="http://www.certifiedsecuritysolutions.com/">Certified Security
+<p>Patches we've seen:
+
+<ul>
+
+<li><a href="http://www.certifiedsecuritysolutions.com/">Certified Security
 Solutions</a> have a
 <a href="http://www.certifiedsecuritysolutions.com/downloads.html">patched
-version of PuTTY</a> which supports Kerberos and GSSAPI.
+version of PuTTY</a> which supports Kerberos 5 in SSH-1 and GSSAPI key
+exchange and user authentication in SSH-2. For GSSAPI, Win9x/NT
+require the 
+<a href="http://web.mit.edu/kerberos/www/dist/index.html">MIT Kerberos library</a>;
+Win2K/XP can use Microsoft SSPI.
 
-<p>
-Patch (unreviewed): 1067597353.3fa23e29bf70c@webmail.technion.ac.il
+<li>
+Another patch (unreviewed): <tt>1067597353.3fa23e29bf70c@webmail.technion.ac.il<tt>
+<br>User authentication; <tt>secur32.lib</tt> (Windows) /
+<tt>krb5-config</tt> (Unix)
 
-<p>
-Another patch <a href="http://sweb.cz/v_t_m/">here</a> (reviewed and found
-wanting).
+<li>
+Another patch <a href="http://sweb.cz/v_t_m/">here</a> adds support
+for GSSAPI user authentication using the MIT Kerberos library. (A
+previous version of this patch has been reviewed and found wanting.)
 
-<p>
-Yet another patch, for "SSPI / GSS-API"
-<a href="http://rc.vintela.com/topics/putty/downloads/putty-0.56vrc0.1-2.patch">here</a> (new-BSD licence; unreviewed as yet).
+<li>
+Yet another patch, at
+<a href="http://rc.vintela.com/topics/putty/downloads/putty-0.56vrc0.1-2.patch">vintela.com</a>
+<br>3-term BSD licence; GSSAPI (Kerberos-specific?) user
+authentication using MS SSPI; not thoroughly reviewed but doesn't look
+hopeful
+
+</ul>
