@@ -144,19 +144,19 @@ static int bufblksearch(void *tstate, void *sstate, int ntrees,
 
     for (i = 0; i < ntrees; i++) {
 	struct bufblk *blk;
+	int sublen = props[i] ? props[i][0].i : 0;
 
-	if (props[i]) {
-	    if (*disttogo < distsofar + props[i][0].i) {
-		*disttogo -= distsofar;
-		/*
-		 * Descend into this subtree.
-		 */
-		*is_elt = FALSE;
-		return i;
-	    }
-
-	    distsofar += props[i][0].i;
+	if ((props[i] && *disttogo < distsofar + sublen) ||
+	    (*disttogo == distsofar + sublen && i == ntrees-1)) {
+	    *disttogo -= distsofar;
+	    /*
+	     * Descend into this subtree.
+	     */
+	    *is_elt = FALSE;
+	    return i;
 	}
+
+	distsofar += sublen;
 
 	if (i < ntrees-1) {
 	    blk = (struct bufblk *)elts[i];
