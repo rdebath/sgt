@@ -1,0 +1,32 @@
+#!/usr/bin/perl 
+
+# Script to prepare a CVS repository to have a `cvs diff' patch
+# applied. Checks the revision numbers on all `---' lines and issues
+# explicit `cvs up -r1.2.3.4 <filename>' commands.
+
+$verbose = 1;
+$active = 1;
+
+while ($ARGV[0] =~ /^-/) {
+  $_ = shift @ARGV;
+  /^-n$/ and $active = 0;
+  /^-q$/ and $verbose = 0;
+}
+
+while (<>) {
+  /^Index: (.*)$/ and $file = $1;
+  /^---\s(.*)\s([\d.]+)$/ and do {
+    $stuff = $1;
+    if (substr($stuff, 0, length $file) ne $file) {
+      warn "erk, Index line says $file, --- line says $stuff\n";
+    } else {
+      $rev = $2;
+      &issue("cvs", "update", "-r$rev", "$file");
+    }
+  }
+}
+
+sub issue {
+  printf "%s\n", join(' ',@_)      if $verbose;
+  system @_                        if $active;
+}
