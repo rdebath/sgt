@@ -7,6 +7,31 @@ import types
 
 buttress = 1 # HACK: track the rename of `buttress' to `halibut'
 
+# Other file movements I might want to deal with...
+#
+#  - I apparently moved local/timber* into local/timberfiles by
+#    means of the time-honoured CVS hack of copying the RCS file to
+#    the new location. Thus, the current SVN dump shows the two
+#    versions being maintained in parallel until r416, at which
+#    point local/timber* are deleted. To translate this into proper
+#    SVN I must delete all prior references to local/timberfiles,
+#    and create them at the point of deletion of the old ones.
+
+def copiedfrom(path):
+    pairs = {
+    'trunk/putty/nosshres.rc': 'trunk/putty/nossh_res.rc', # r533
+    'trunk/enigma/settings.h': 'trunk/enigma/config.h', # r578
+    'trunk/local/signature/oldsigs/women': 'trunk/local/signature/women', # r802
+    'trunk/fonts/tektite/tektite.bdf': 'trunk/fonts/tektite/thefont.bdf', # r894
+    'trunk/fonts/tektite/tektite.vga': 'trunk/fonts/tektite/thefont.vga', # r894
+    'trunk/fonts/tektite/tektite.fd': 'trunk/fonts/tektite/thefont.fd', # r894
+    'trunk/putty-wishlist/data/x11-proxy-crash': 'trunk/putty-wishlist/data/x11-socks-crash', # r2059
+    'trunk/timber/tests/date-tests.c': 'trunk/timber/tests/date.c', # r3827
+    'trunk/timber/tests/main-tests.c': 'trunk/timber/tests/main.c', # r3827
+    'trunk/putty-wishlist/data/ssh-remote-tunnel-crash': 'trunk/putty-wishlist/data/ssh2-remote-tunnel-crash', # r4782
+    }
+    return pairs.get(path, None)
+
 # Transform pathnames to be the way I like them. Returns `None' if
 # the pathname is an unnecessary parent and should be removed.
 def trans(path):
@@ -267,6 +292,16 @@ class RevTweaker:
 	    if action == "add":
 		if path in magicchangelist:
 		    lump.hdrdict["Node-action"] = "change"
+		else:
+		    cf = copiedfrom(path)
+		    if cf != None:
+			newlump = Lump()
+			newlump.sethdr("Node-path", path)
+			newlump.sethdr("Node-action", "add")
+			newlump.sethdr("Node-copyfrom-rev", self.prevrev)
+			newlump.sethdr("Node-copyfrom-path", cf)
+			contents2.append(newlump)
+			lump.hdrdict["Node-action"] = "change"
 		if lump.hdrdict.has_key("Node-copyfrom-path"):
 		    srcpath = lump.hdrdict["Node-copyfrom-path"]
 		    srcnode = self.pathfind(srcpath, "find", tree=self.prevrev_tree)
