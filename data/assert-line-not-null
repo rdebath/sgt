@@ -4,6 +4,11 @@ Present-in: 0.56
 Content-type: text/x-html-body
 
 <p>
+(<em>Update:</em> if you're seeing this consistently, please try a
+development snapshot 2005-03-07 or later, which has some extra 
+diagnostics to help us track this down. Ta.)
+
+<p>
 No-one has reproduced this with a current snapshot, and we haven't yet
 been able to reproduce it with 0.56 either.
 
