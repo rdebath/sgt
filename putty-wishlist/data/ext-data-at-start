@@ -1,0 +1,22 @@
+Summary: "unexpected packet type 95" with VShell 2.1.5
+Class: bug
+Content-type: text/x-html-body
+Present-in: 0.53b
+
+<p>
+We've had one report of the error <code>Unexpected response to
+shell/command request: packet type 95</code> when connecting to VShell
+2.1.5 with PSCP.
+
+<p>
+Packet type 95 is <code>SSH2_MSG_CHANNEL_EXTENDED_DATA</code>. Perhaps
+this is VShell complaining on stderr about a nonexistent SFTP server
+subsystem, or similar?
+
+<p>
+This seems likely to have the same root cause as
+<a href="portfwd-at-start.html">`portfwd-at-start'</a>: brittle code
+at connection startup.
+
+<p>
+Ref. <code>&lt;5.2.1.1.2.20030706150354.00b4e718@localhost&gt;</code>

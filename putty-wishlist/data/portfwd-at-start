@@ -1,15 +1,20 @@
 Summary: "unexpected packet type 91" with tunnel open during connection setup
 Class: bug
-Present-in: 0.53b 2003-06-04
+Present-in: 0.53b 2003-06-04 0.54
+Content-type: text/x-html-body
 
-Report of message "Unexpected response to shell/command request:
+<p>
+(See also <a href="ext-data-at-start.html">`ext-data-at-start'</a>.)
+
+<pre>Report of message "Unexpected response to shell/command request:
 packet type 91" - seems to be correlated with seeing "Opening
 forwarded connection" before "Allocated pty" in Event log.
 
 Sounds to me like the connection setup code is insufficiently able to
-cope with asynchrony.
+cope with asynchrony. PuTTY certainly shouldn't be sending CHANNEL_OPEN
+then being offended by the resulting CHANNEL_OPEN_CONFIRMATION.
 
-ref <28ssdvsa2meifm4mnriadpcffs2ahuul73@smtp.image.dk> and prior in
+ref &lt;28ssdvsa2meifm4mnriadpcffs2ahuul73@smtp.image.dk&gt; and prior in
 thread.
 
 Excerpts from bug reports:
@@ -24,8 +29,8 @@ Excerpts from bug reports:
 2003-06-05 00:21:21     Doing Diffie-Hellman key exchange
 2003-06-05 00:21:30     Host key fingerprint is:
 2003-06-05 00:21:30     ssh-dss 1024 XX:XX:XX:XX:XX:XX:XX:XX:XX:XX:XX:XX:XX:XX:XX:XX
-2003-06-05 00:21:30     Initialised AES-256 client->server encryption
-2003-06-05 00:21:30     Initialised AES-256 server->client encryption
+2003-06-05 00:21:30     Initialised AES-256 client-&gt;server encryption
+2003-06-05 00:21:30     Initialised AES-256 server-&gt;client encryption
 2003-06-05 00:21:30     Initialised zlib (RFC1950) compression
 2003-06-05 00:21:30     Initialised zlib (RFC1950) decompression
 2003-06-05 00:21:31     Reading private key file "C:\some\path\to\key.PPK"
@@ -103,4 +108,4 @@ forwarded connection to news.example.com:119" just before "Allocated pty".
 Also I have found netcat better to provoke the error by trying "nc -vvv
 localhost 10119" just before running "C:\Programmer\putty\putty.exe -load
 ask" in another prompt.
-----------
+----------</pre>
