@@ -43,3 +43,8 @@ These would <em>certainly</em> be configurable options if we do them
 at all - enough people, including the developers, like the copy and
 paste the way it is that we would never consider removing the
 current behaviour.
+
+<p>
+<em>Update:</em> as of 2003-11-21, there is a new mouse-handling
+option whereby the right button brings up a context menu containing
+a Paste option, rather than pasting directly.
