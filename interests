@@ -1,0 +1,89 @@
+while (<>) { push @ints, $1 if /^\s+\+\s+(\S(.*\S)?)\s*$/; }
+print join ", ", grep { $p = $_ ne $z; $z = $_; $p }
+  sort { $a cmp $b } map { lc $_ } @ints;
+__END__
+
+LJ interests list, categorised for easy thinking
+------------------------------------------------
+
+In this multi-level bulletted outline I'm going to adopt the
+convention that any line bulletted with a + sign is an actual
+interest, and - and * are used for comments. So it should be easy
+enough to convert this file into the real interests text, by running
+it through Perl on itself (`perl interests interests').
+
+ - Programming
+    + computers
+    * Languages
+       + C
+       + Perl
+       + Python
+    * Subfields
+       + cryptography
+       + security
+       + algorithms
+       + portability
+       + protocol design
+       + modularity
+       + interfaces
+       + Unicode
+       + networking
+       + terminal emulation
+    * Style
+       + grotty hacks
+       + preprocessor abuse
+    * Protocols
+       + SSH
+    * Existing software
+       + Debian
+       + Linux
+       + Unix
+    * Politics
+       + free software
+ - Games
+    + NetHack
+    + puzzles
+    + recreational maths
+       + infinity
+    + strategy
+    + tactics
+    + Go
+ - Entertainment
+    + Babylon 5
+    + Yes Minister
+    + mindless big-budget films
+    + books
+       + science fiction
+       + fantasy
+       + Greg Egan
+       + Iain M Banks
+          + post-scarcity
+       + Douglas Adams
+       + Neil Gaiman
+       + humour
+    + music
+       + Dead Can Dance
+       + New Model Army
+       + goth music
+ - Food
+    + cheese
+ - Social
+    + The Calling
+    + pizza
+    + The Carlton Arms
+    + b33r
+    + one-to-one conversations
+    + friends
+    + chiark
+    + Monochrome
+    + women
+ - Other
+    + self-awareness
+    + self-control
+    + Cambridge
+    + atheism
+    + civil liberties
+ - Cross-category
+    + lateral thinking
+    + elegance
+    + unexpected emergent behaviour
