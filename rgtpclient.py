@@ -253,9 +253,11 @@ class RGTPConnection:
 	    motd.sequence = string.atol(words[1], 16)
 	    motd.grogname = ""
 	    motd.userid = ""
+	    motd.skip = 0
+	    motd.end = len(motd.data)
 	    # Rest of MOTD is ^-doubled
 	    for i in range(len(motd.data)):
-		if motd.data[i][0] == "^":
+		if motd.data[i][:1] == "^":
 		    motd.data[i] = motd.data[i][1:]
 	else:
 	    throwerror() # oddities
