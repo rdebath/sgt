@@ -1,5 +1,5 @@
 Summary: Window redraw problems on Windows
-Class: bug
+Class: semi-bug
 Difficulty: taxing
 Priority: medium
 Present-in: 0.56 2005-01-13
@@ -13,12 +13,13 @@ again. Two of us have managed to reproduce this ourselves with
 vigorous window-waving.
 
 <p>
-This could be a PuTTY bug or a Windows bug. We're assured that this
-probably isn't a function of the video card driver (which isn't
-responsible for calculating what to redraw, just for doing what it's
-told), but it may be a function of the Windows version (all reports so
-far are on NT-series OSs, and my (JTN) attempts to reproduce on 98SE
-didn't show anything).
+Currently this looks like a Windows bug. I (JTN) can reproduce it with
+apps other than PuTTY (for instance, in WordPad's menu bar). We're
+assured that this probably isn't a function of the video card driver
+(which isn't responsible for calculating what to redraw, just for
+doing what it's told), but it may be a function of the Windows version
+(all reports so far are on NT-series OSs, and my (JTN) attempts to
+reproduce on 98SE didn't show anything).
 
 <p>
 (I (JTN) have a vague recollection about some misgivings and our
@@ -44,6 +45,8 @@ behaviour on similar timescales, so it seems PuTTY-specific.
 dialog by the same method! -- the background
 <a href="http://www.tartarus.org/~jacob/junk/20050118/putty-2005-01-13-noredraw-config.png">becomes green</a>,
 bizarrely. Also 0.56.)
+<br>Can also reproduce with WordPad menu bar, so probably not our
+problem.
 <br><tt>20050117101008.GI7859@chiark.greenend.org.uk</tt>
 
 </ul>
