@@ -1,6 +1,6 @@
 diff -ur bash-2.05a.original/builtins/set.def bash-2.05a/builtins/set.def
---- bash-2.05a.original/builtins/set.def	Tue Jul  1 10:25:50 2003
-+++ bash-2.05a/builtins/set.def	Tue Jul  1 10:26:18 2003
+--- bash-2.05a.original/builtins/set.def	Mon Oct 29 18:33:31 2001
++++ bash-2.05a/builtins/set.def	Fri Dec 17 09:55:08 2004
 @@ -96,6 +96,8 @@
              noglob       same as -f
              nolog        currently accepted but ignored
@@ -19,8 +19,8 @@ diff -ur bash-2.05a.original/builtins/set.def bash-2.05a/builtins/set.def
    { "nolog", &dont_save_function_defs, (setopt_set_func_t *)NULL, (setopt_get_func_t *)NULL },
  #endif
 diff -ur bash-2.05a.original/flags.c bash-2.05a/flags.c
---- bash-2.05a.original/flags.c	Tue Jul  1 10:25:50 2003
-+++ bash-2.05a/flags.c	Tue Jul  1 10:26:00 2003
+--- bash-2.05a.original/flags.c	Mon Sep 24 13:16:35 2001
++++ bash-2.05a/flags.c	Fri Dec 17 09:55:08 2004
 @@ -131,6 +131,9 @@
  /* Non-zero means that we allow comments to appear in interactive commands. */
  int interactive_comments = 1;
@@ -32,8 +32,8 @@ diff -ur bash-2.05a.original/flags.c bash-2.05a/flags.c
  /* Non-zero means that this shell is `restricted'.  A restricted shell
     disallows: changing directories, command or path names containing `/',
 diff -ur bash-2.05a.original/flags.h bash-2.05a/flags.h
---- bash-2.05a.original/flags.h	Tue Jul  1 10:25:50 2003
-+++ bash-2.05a/flags.h	Tue Jul  1 10:26:00 2003
+--- bash-2.05a.original/flags.h	Thu Aug  5 12:06:26 1999
++++ bash-2.05a/flags.h	Fri Dec 17 09:55:08 2004
 @@ -45,7 +45,8 @@
    just_one_command, unbound_vars_is_error, echo_input_at_read,
    echo_command_at_execute, no_invisible_vars, noclobber,
@@ -45,8 +45,8 @@ diff -ur bash-2.05a.original/flags.h bash-2.05a/flags.h
  #if 0
  extern int lexical_scoping;
 diff -ur bash-2.05a.original/jobs.c bash-2.05a/jobs.c
---- bash-2.05a.original/jobs.c	Tue Jul  1 10:25:50 2003
-+++ bash-2.05a/jobs.c	Tue Jul  1 10:26:00 2003
+--- bash-2.05a.original/jobs.c	Mon Nov  5 14:56:17 2001
++++ bash-2.05a/jobs.c	Fri Dec 17 09:55:36 2004
 @@ -2295,6 +2295,8 @@
    return (result);
  }
@@ -72,19 +72,28 @@ diff -ur bash-2.05a.original/jobs.c bash-2.05a/jobs.c
  
    return (children_exited);
  }
-@@ -2874,6 +2883,9 @@
+@@ -2874,6 +2883,18 @@
    if (shell_tty != fileno (stderr))
      SET_CLOSE_ON_EXEC (shell_tty);
  
 +  if (pipe(sigchld_pipe) < 0) {
 +      sigchld_pipe[0] = sigchld_pipe[1] = -1;
++  } else {
++      dup2(sigchld_pipe[0], 254);
++      close(sigchld_pipe[0]);
++      sigchld_pipe[0] = 254;
++      dup2(sigchld_pipe[1], 253);
++      close(sigchld_pipe[1]);
++      sigchld_pipe[1] = 253;
++      fcntl(sigchld_pipe[0], F_SETFD, FD_CLOEXEC);
++      fcntl(sigchld_pipe[1], F_SETFD, FD_CLOEXEC);
 +  }
    set_signal_handler (SIGCHLD, sigchld_handler);
  
    change_flag ('m', job_control ? '-' : '+');
 diff -ur bash-2.05a.original/parse.y bash-2.05a/parse.y
---- bash-2.05a.original/parse.y	Tue Jul  1 10:25:50 2003
-+++ bash-2.05a/parse.y	Tue Jul  1 10:26:25 2003
+--- bash-2.05a.original/parse.y	Tue Oct 30 16:23:35 2001
++++ bash-2.05a/parse.y	Fri Dec 17 09:55:08 2004
 @@ -35,6 +35,7 @@
  #endif
  

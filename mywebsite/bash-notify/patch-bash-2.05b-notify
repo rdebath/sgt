@@ -1,6 +1,6 @@
-diff -ur --exclude='y.tab.*' bash-2.05b.orig/builtins/set.def bash-2.05b/builtins/set.def
---- bash-2.05b.orig/builtins/set.def	2003-06-30 10:27:52.000000000 +0100
-+++ bash-2.05b/builtins/set.def	2003-06-30 17:21:57.000000000 +0100
+diff -ur bash-2.05b.original/builtins/set.def bash-2.05b/builtins/set.def
+--- bash-2.05b.original/builtins/set.def	Fri Dec 17 09:57:32 2004
++++ bash-2.05b/builtins/set.def	Fri Dec 17 09:57:38 2004
 @@ -94,6 +94,8 @@
              noglob       same as -f
              nolog        currently accepted but ignored
@@ -18,9 +18,9 @@ diff -ur --exclude='y.tab.*' bash-2.05b.orig/builtins/set.def bash-2.05b/builtin
  #endif /* JOB_CONTROL */
    { "nounset",	  'u', (int *)NULL, (setopt_set_func_t *)NULL, (setopt_get_func_t *)NULL  },
    { "onecmd",	  't', (int *)NULL, (setopt_set_func_t *)NULL, (setopt_get_func_t *)NULL },
-diff -ur --exclude='y.tab.*' bash-2.05b.orig/flags.c bash-2.05b/flags.c
---- bash-2.05b.orig/flags.c	2003-06-30 10:27:52.000000000 +0100
-+++ bash-2.05b/flags.c	2003-06-30 17:22:39.000000000 +0100
+diff -ur bash-2.05b.original/flags.c bash-2.05b/flags.c
+--- bash-2.05b.original/flags.c	Fri Dec 17 09:57:32 2004
++++ bash-2.05b/flags.c	Fri Dec 17 09:57:38 2004
 @@ -131,6 +131,9 @@
  /* Non-zero means that we allow comments to appear in interactive commands. */
  int interactive_comments = 1;
@@ -31,9 +31,9 @@ diff -ur --exclude='y.tab.*' bash-2.05b.orig/flags.c bash-2.05b/flags.c
  #if defined (RESTRICTED_SHELL)
  /* Non-zero means that this shell is `restricted'.  A restricted shell
     disallows: changing directories, command or path names containing `/',
-diff -ur --exclude='y.tab.*' bash-2.05b.orig/flags.h bash-2.05b/flags.h
---- bash-2.05b.orig/flags.h	2003-06-30 10:27:52.000000000 +0100
-+++ bash-2.05b/flags.h	2003-06-30 17:29:00.000000000 +0100
+diff -ur bash-2.05b.original/flags.h bash-2.05b/flags.h
+--- bash-2.05b.original/flags.h	Fri Dec 17 09:57:32 2004
++++ bash-2.05b/flags.h	Fri Dec 17 09:57:38 2004
 @@ -46,7 +46,8 @@
    just_one_command, unbound_vars_is_error, echo_input_at_read,
    echo_command_at_execute, no_invisible_vars, noclobber,
@@ -44,9 +44,9 @@ diff -ur --exclude='y.tab.*' bash-2.05b.orig/flags.h bash-2.05b/flags.h
  
  #if 0
  extern int lexical_scoping;
-diff -ur --exclude='y.tab.*' bash-2.05b.orig/jobs.c bash-2.05b/jobs.c
---- bash-2.05b.orig/jobs.c	2003-06-30 10:27:52.000000000 +0100
-+++ bash-2.05b/jobs.c	2003-06-30 17:29:09.000000000 +0100
+diff -ur bash-2.05b.original/jobs.c bash-2.05b/jobs.c
+--- bash-2.05b.original/jobs.c	Fri Dec 17 09:57:32 2004
++++ bash-2.05b/jobs.c	Fri Dec 17 09:57:48 2004
 @@ -2389,6 +2389,8 @@
    return (result);
  }
@@ -72,19 +72,28 @@ diff -ur --exclude='y.tab.*' bash-2.05b.orig/jobs.c bash-2.05b/jobs.c
  
    return (children_exited);
  }
-@@ -2981,6 +2990,9 @@
+@@ -2981,6 +2990,18 @@
    if (shell_tty != fileno (stderr))
      SET_CLOSE_ON_EXEC (shell_tty);
  
 +  if (pipe(sigchld_pipe) < 0) {
 +      sigchld_pipe[0] = sigchld_pipe[1] = -1;
++  } else {
++      dup2(sigchld_pipe[0], 254);
++      close(sigchld_pipe[0]);
++      sigchld_pipe[0] = 254;
++      dup2(sigchld_pipe[1], 253);
++      close(sigchld_pipe[1]);
++      sigchld_pipe[1] = 253;
++      fcntl(sigchld_pipe[0], F_SETFD, FD_CLOEXEC);
++      fcntl(sigchld_pipe[1], F_SETFD, FD_CLOEXEC);
 +  }
    set_signal_handler (SIGCHLD, sigchld_handler);
  
    change_flag ('m', job_control ? '-' : '+');
-diff -ur --exclude='y.tab.*' bash-2.05b.orig/parse.y bash-2.05b/parse.y
---- bash-2.05b.orig/parse.y	2003-06-30 10:27:52.000000000 +0100
-+++ bash-2.05b/parse.y	2003-06-30 17:25:09.000000000 +0100
+diff -ur bash-2.05b.original/parse.y bash-2.05b/parse.y
+--- bash-2.05b.original/parse.y	Fri Dec 17 09:57:32 2004
++++ bash-2.05b/parse.y	Fri Dec 17 09:57:38 2004
 @@ -35,6 +35,7 @@
  #endif
  
