@@ -1,6 +1,7 @@
 import c_lex
 import c_parse
 import c_semantics
+import tgt_sample
 import sys
 
 action = "sem"
@@ -39,5 +40,5 @@ else:
 if action == "parse":
     tree.display(0)
 else:
-    sem = c_semantics.semantics(tree)
+    sem = c_semantics.semantics(tree, tgt_sample.target())
     sem.display()
