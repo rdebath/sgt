@@ -63,10 +63,10 @@ gamestate *init_game (level *lev) {
 
 #define destroyable(x,y) \
     ((x) > 0 && (x) < w-1 && (y) > 0 && (y) < h-1 && \
-     ret->leveldata[w*((y)-1)+(x)] != '=' && \
-     ret->leveldata[w*((y)+1)+(x)] != '=' && \
-     ret->leveldata[w*(y)+(x)-1] != '=' && \
-     ret->leveldata[w*(y)+(x)+1] != '=')
+     ret->leveldata[w*((y)-1)+(x)] != '~' && \
+     ret->leveldata[w*((y)+1)+(x)] != '~' && \
+     ret->leveldata[w*(y)+(x)-1] != '~' && \
+     ret->leveldata[w*(y)+(x)+1] != '~')
 
 /*
  * 'key' is h, j, k or l
@@ -413,7 +413,7 @@ gamestate *make_move (gamestate *state, char key) {
  */
 #define iswalloroutdoors(c) \
     ((c) == '+' || (c) == '-' || (c) == '|' || \
-	 (c) == '%' || (c) == '&' || (c) == '=')
+	 (c) == '%' || (c) == '&' || (c) == '~')
 
 char *validate(level *level, char *buffer, int buflen)
 {
@@ -429,11 +429,11 @@ char *validate(level *level, char *buffer, int buflen)
 
 	    /*
 	     * Check that the boundary of the level is either solid
-	     * wall or the `=' outdoors character.
+	     * wall or the `~' outdoors character.
 	     */
 	    if ((x == 0 || y == 0 || x == w-1 || y == h-1) &&
 		!iswalloroutdoors(c)) {
-		sprintf(internalbuf, "level boundary is not wall or `=' at"
+		sprintf(internalbuf, "level boundary is not wall or `~' at"
 			" line %d column %d", y, x);
 		strncpy(buffer, internalbuf, buflen);
 		buffer[buflen-1] = '\0';
@@ -441,17 +441,17 @@ char *validate(level *level, char *buffer, int buflen)
 	    }
 
 	    /*
-	     * Check that any `=' outdoors character is adjacent
-	     * only to walls and other `='.
+	     * Check that any `~' outdoors character is adjacent
+	     * only to walls and other `~'.
 	     */
-	    if (c == '=' &&
+	    if (c == '~' &&
 		((x > 0 && !iswalloroutdoors(level->leveldata[w*y+(x-1)])) ||
 		 (x < w-1 && !iswalloroutdoors(level->leveldata[w*y+(x+1)])) ||
 		 (y > 0 && !iswalloroutdoors(level->leveldata[w*(y-1)+x])) ||
 		 (y < h-1 && !iswalloroutdoors(level->leveldata[w*(y+1)+x]))))
 	    {
-		sprintf(internalbuf, "`=' is adjacent to something other than"
-			" wall or `=' at line %d column %d", y, x);
+		sprintf(internalbuf, "`~' is adjacent to something other than"
+			" wall or `~' at line %d column %d", y, x);
 		strncpy(buffer, internalbuf, buflen);
 		buffer[buflen-1] = '\0';
 		return buffer;		
@@ -472,7 +472,7 @@ char *validate(level *level, char *buffer, int buflen)
 		x1 = x - 1; y1 = y; break;
 	      case '@': case '$': case '%': case '-': case '+': case '|':
 	      case '&': case 'E': case 'o': case '8': case '.': case ':':
-	      case ' ': case '=':
+	      case ' ': case '~':
 		/* Non-falling piece; carry on. */
 		continue;
 	      default:
