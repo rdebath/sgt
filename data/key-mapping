@@ -3,6 +3,7 @@ Class: wish
 Priority: medium
 Difficulty: tricky
 Content-type: text/x-html-body
+Depends: portable-keyboard
 
 <p>
 We've resisted introducing generalised key remapping for some time,
@@ -26,3 +27,5 @@ platform-dependent half which converts Windows keyboard messages
 into a set of PuTTY standard key and modifier names, and then a
 platform-generic half which maps our standard key names into actual
 character sequences to be sent to the host.
+(See <a href="portable-keyboard.html">portable-keyboard</a> for
+further discussion of this problem.)
