@@ -126,7 +126,7 @@ class RGTPConnection:
 	self.plogfile = plogfile
 
 	self.skt = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-	self.skt.connect(host, port)
+	self.skt.connect((host, port))
 	self.sfr = self.skt.makefile("r")
 
 	greet = self._getline()
