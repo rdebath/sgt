@@ -231,6 +231,9 @@ folded = []
 # connected to only one other face by a folded edge). We start this
 # off as the complete set of faces, and knock a face off it every
 # time we use it as the starting point for placing another face.
+#
+# Special case: the _first_ time we place a face next to the
+# starting face, we don't tag it as non-leaf!
 leaffaces = {}
 for ff in faces.keys(): leaffaces[ff] = 1
 
@@ -416,8 +419,11 @@ while 1:
     facepos[n] = facepos[p].adjacent[n]
     f = n
     folded.append((n,p))
-    if leaffaces.has_key(p): del leaffaces[p]
-    #break
+    if leaffaces.has_key(p):
+	if p == firstface:
+	    firstface = None
+	else:
+	    del leaffaces[p]
 
 if len(unplaced) > 0:
     debug("!!!", len(unplaced), "faces still unplaced!")
@@ -530,9 +536,31 @@ for f1, f2 in folded:
 # instances of a cut edge has the tab on it.
 tabpos = {}
 for e in cutedges.keys(): tabpos[e] = None
-# To decide where to place tabs: first loop over each leaf face and
-# try to arrange for it to be tab-free.
-for f in leaffaces.keys():
+# To decide where to place tabs: first loop over each leaf face, in
+# decreasing order of distance from the centre of the net's
+# approximate bounding box, and try to arrange for it to be tab-free.
+xmin = ymin = xmax = ymax = None
+for face, placement in facepos.items():
+    if xmin == None or xmin > placement.bbox[0]: xmin = placement.bbox[0]
+    if xmax == None or xmax < placement.bbox[2]: xmax = placement.bbox[2]
+    if ymin == None or ymin > placement.bbox[1]: ymin = placement.bbox[1]
+    if ymax == None or ymax < placement.bbox[3]: ymax = placement.bbox[3]
+xcentre = (xmax + xmin) / 2
+ycentre = (ymax + ymin) / 2
+leaflist = leaffaces.keys()[:]
+def cmpfn(f1, f2):
+    d1 = sqrt((facepos[f1].pos[0]-xcentre)**2+(facepos[f1].pos[1]-ycentre)**2)
+    d2 = sqrt((facepos[f2].pos[0]-xcentre)**2+(facepos[f2].pos[1]-ycentre)**2)
+    if d1 < d2:
+	return +1
+    elif d1 > d2:
+	return -1
+    else:
+	return 0
+leaflist.sort(cmpfn)
+del cmpfn
+
+for f in leaflist:
     cuts = []
     canbetabfree = 1
     for v1, v2 in faceedges[f]:
