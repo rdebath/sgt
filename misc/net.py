@@ -4,10 +4,6 @@
 
 # TODO:
 #
-#  - Investigate the strange behaviour with undo (surely all
-#    squares ought to end up unlocked? Or is it simply that the
-#    squares still locked at the end of a maximal undo run were
-#    those the player locked because they were already correct?)
 #  - The original occasionally has barriers between squares within
 #    the grid. Makes the game easier, of course.
 #  - Alternative forms of control? Left/right clicks are OKish, but
@@ -17,7 +13,6 @@
 #    you actually finished!
 #     * I quite like the idea of flashing the lock state of all
 #       squares and then leaving everything unlocked. It's pretty.
-#  - Indication of how many lights are lit up.
 
 from gtk import *
 import GDK
@@ -29,8 +24,8 @@ import string
 U, L, D, R, PWR, ACTIVE, LOCK = 1, 2, 4, 8, 16, 32, 64
 
 SQUARESIZE = 31
-NSQUARES_X = 11
-NSQUARES_Y = 11
+NSQUARES_X = 5
+NSQUARES_Y = 5
 WRAPPING = FALSE
 
 darea = None
@@ -196,10 +191,12 @@ class NetGame:
             visit(x, y)
 
         self.completed = TRUE
+        self.activesquares = self.totalsquares = NSQUARES_X * NSQUARES_Y
         for x in range(NSQUARES_X):
             for y in range(NSQUARES_Y):
                 if not (self.arena[x][y] & ACTIVE):
                     self.completed = FALSE
+                    self.activesquares = self.activesquares - 1
 
     def draw(self, pixmap):
 	class container:
@@ -335,16 +332,16 @@ class NetGame:
         self.moveprogress = 0.0
         if not self.completed and not undo:
             # Successive moves involving the same square should be
-            # merged. This occasionally causes us to end up with an
-            # identity move on the list, which is actually what we
-            # want because it's precisely those wasted moves which
-            # prevent us having exactly the same move count for any
-            # completion of a given game!
+            # merged, or deleted if they turn out to be the
+            # identity move.
             if len(self.moves) > 0 and self.moves[-1][0] == x and \
             self.moves[-1][1] == y:
                 combine = self.moves[-1][2] + action
                 combine = (combine + 1) % 4 - 1
-                self.moves[-1] = (x, y, combine)
+                if combine == 0:
+                    self.moves = self.moves[:-1]
+                else:
+                    self.moves[-1] = (x, y, combine)
             else:
                 self.moves.append((x, y, action))
 
@@ -367,7 +364,7 @@ class NetGame:
         self.compute_active()
 
     def status(self, statusbar):
-        message = "Moves: %d" % len(self.moves)
+        message = "Active: %d/%d" % (self.activesquares, self.totalsquares)
         if self.completed:
             message = "COMPLETED! " + message
         statusbar.pop(statusctx)
