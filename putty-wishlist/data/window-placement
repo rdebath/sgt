@@ -16,3 +16,7 @@ window and opening a new one. Then again, perhaps that would cause
 its own problems. I'm not entirely sure what a Windows app should do
 if it wants to open a window in one go with a client area of a
 specific size.
+
+Update: it's been suggested that AdjustWindowRect(Ex) is useful. We
+still need a device context for font metrics; we could get one from
+the desktop but that might break in the presence of multiple monitors.
