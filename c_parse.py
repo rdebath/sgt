@@ -1,3 +1,4 @@
+import sys
 from c_lex import *
 
 # Base code so I can declare a bunch of enumerations
@@ -79,7 +80,41 @@ class node:
             else:
                 print "  " * (level+1) + "%d" % i.type + " `" + i.text + "'"
 
-def parse(lex):
+class err_generic_parse_error:
+    def __init__(self):
+        self.message = "parse error"
+class err_expected_token(err_generic_parse_error):
+    def __init__(self, token):
+        self.message = "expected " + lex_names[token]
+class err_no_spec_qual(err_generic_parse_error):
+    def __init__(self):
+        self.message = "expected at least one type specifier or qualifier"
+class err_no_decl_specs(err_generic_parse_error):
+    def __init__(self):
+        self.message = "expected at least one declaration specifier"
+class err_no_structunion(err_generic_parse_error):
+    def __init__(self):
+        self.message = "expected `struct' or `union'"
+class err_no_struct_decl(err_generic_parse_error):
+    def __init__(self):
+        self.message = "expected at least one structure declaration"
+class err_bad_designator(err_generic_parse_error):
+    def __init__(self):
+        self.message = "expected `[' or `.' to begin designator"
+class err_ident_in_abstract(err_generic_parse_error):
+    def __init__(self):
+        self.message = "identifier appears in abstract declarator"
+class err_empty_absdecl(err_generic_parse_error):
+    def __init__(self):
+        self.message = "empty parentheses `()' in abstract declarator"
+class err_missing_expr(err_generic_parse_error):
+    def __init__(self):
+        self.message = "expected expression"
+
+def defaulterrfunc(err):
+    sys.stderr.write("<input>:" + "%d:%d: " % (err.line, err.col) + err.message + "\n")
+
+def parse(lex, errfunc=defaulterrfunc):
     "C parser. You feed it a lexer and it returns you a parse tree."
     
     class parserclass:
@@ -105,10 +140,23 @@ def parse(lex):
             if self.peektype() == type:
                 return self.lex.get()
             else:
-                ERROR()
+                self.error(err_expected_token(type))
+
+        def node(self, type):
+            n = node(type)
+            lexeme = self.peek()
+            n.line = lexeme.line
+            n.col = lexeme.col
+            return n
+
+        def error(self, errobj):
+            lexeme = self.peek()
+            errobj.line = lexeme.line
+            errobj.col = lexeme.col
+            raise errobj
 
         def translation_unit(self):
-            n = node(pt_translation_unit)
+            n = self.node(pt_translation_unit)
             while self.peek() != None:
                 n.append(self.external_declaration())
             return n
@@ -133,7 +181,7 @@ def parse(lex):
             return n
 
         def function_definition(self, ds=None, dcl=None):
-            n = node(pt_function_definition)
+            n = self.node(pt_function_definition)
             if ds == None: ds = self.declaration_specifiers()
             n.append(ds)
             if dcl == None: dcl = self.declarator(1) # non-abstract only
@@ -150,13 +198,13 @@ def parse(lex):
             # because it only occurs just before the compound_statement
             # in an old style function_definition. This saves us a lot
             # of parser-theoretic hassle :-)
-            n = node(pt_declaration_list)
+            n = self.node(pt_declaration_list)
             while self.peektype() != lt_lbrace:
                 n.append(self.declaration())
             return n
 
         def declaration(self, ds=None, dcl=None):
-            n = node(pt_declaration)
+            n = self.node(pt_declaration)
             if ds == None: ds = self.declaration_specifiers()
             n.append(ds)
             if dcl != None or self.peektype() != lt_semi:
@@ -183,7 +231,7 @@ def parse(lex):
             return n
 
         def init_declarator_list(self, dcl=None):
-            n = node(pt_init_declarator_list)
+            n = self.node(pt_init_declarator_list)
             n.append(self.init_declarator(dcl))
             while self.peektype() == lt_comma:
                 self.eat(lt_comma)
@@ -191,7 +239,7 @@ def parse(lex):
             return n
         
         def init_declarator(self, dcl=None):
-            n = node(pt_init_declarator)
+            n = self.node(pt_init_declarator)
             if dcl == None: dcl = self.declarator(1) # non-abstract only
             n.append(dcl)
             if self.peektype() == lt_assign:
@@ -200,7 +248,7 @@ def parse(lex):
             return n
 
         def declaration_specifiers(self):
-            n = node(pt_declaration_specifiers)
+            n = self.node(pt_declaration_specifiers)
             while 1:
                 if self.storage_class_qualifier_peek():
                     n.append(self.storage_class_qualifier())
@@ -213,7 +261,7 @@ def parse(lex):
                 else:
                     break
             if n.list == []:
-                ERROR()
+                self.error(err_no_decl_specs())
             return n
 
         def declaration_specifiers_peek(self):
@@ -233,7 +281,7 @@ def parse(lex):
         def storage_class_qualifier_peek(self):
             return self._storage_class_qualifiers.has_key(self.peektype())
         def storage_class_qualifier(self):
-            n = node(pt_storage_class_qualifier)
+            n = self.node(pt_storage_class_qualifier)
             n.append(self.get())
             return n
 
@@ -241,11 +289,11 @@ def parse(lex):
         def type_qualifier_peek(self):
             return self._type_qualifiers.has_key(self.peektype())
         def type_qualifier(self):
-            n = node(pt_type_qualifier)
+            n = self.node(pt_type_qualifier)
             n.append(self.get())
             return n
         def type_qualifier_list(self):
-            n = node(pt_type_qualifier_list)
+            n = self.node(pt_type_qualifier_list)
             while self.type_qualifier_peek():
                 n.append(self.type_qualifier())
             return n
@@ -254,7 +302,7 @@ def parse(lex):
         def function_specifier_peek(self):
             return self._function_specifiers.has_key(self.peektype())
         def function_specifier(self):
-            n = node(pt_function_specifier)
+            n = self.node(pt_function_specifier)
             n.append(self.get())
             return n
 
@@ -269,7 +317,7 @@ def parse(lex):
             if self._other_type_specifiers.has_key(self.peektype()):
                 return 1
         def type_specifier(self):
-            n = node(pt_type_specifier)
+            n = self.node(pt_type_specifier)
             t = self.peektype()
             if self._simple_type_specifiers.has_key(t):
                 n.append(self.get())
@@ -280,7 +328,7 @@ def parse(lex):
             return n
 
         def specifier_qualifier_list(self):
-            n = node(pt_specifier_qualifier_list)
+            n = self.node(pt_specifier_qualifier_list)
             while 1:
                 if self.type_qualifier_peek():
                     n.append(self.type_qualifier())
@@ -289,14 +337,14 @@ def parse(lex):
                 else:
                     break
             if n.list == []:
-                ERROR()
+                self.error(err_no_spec_qual())
             return n
 
         def struct_or_union_specifier(self):
-            n = node(pt_struct_or_union_specifier)
+            n = self.node(pt_struct_or_union_specifier)
             t = self.peektype()
             if t != lt_struct and t != lt_union:
-                ERROR()
+                self.error(err_no_structunion())
             n.append(self.get())
             if self.peektype() == lt_ident:
                 n.append(self.get())
@@ -309,26 +357,26 @@ def parse(lex):
                 n.append(self.struct_declaration_list())
                 self.eat(lt_rbrace)
             elif bracemandatory:
-                ERROR()
+                self.error(err_expected_token(lt_lbrace))
             return n
 
         def struct_declaration_list(self):
-            n = node(pt_struct_declaration_list)
+            n = self.node(pt_struct_declaration_list)
             while self.peektype() != lt_rbrace:
                 n.append(self.struct_declaration())
             if n.list == []:
-                ERROR()
+                self.error(err_no_struct_decl())
             return n
 
         def struct_declaration(self):
-            n = node(pt_struct_declaration)
+            n = self.node(pt_struct_declaration)
             n.append(self.specifier_qualifier_list())
             n.append(self.struct_declarator_list())
             self.eat(lt_semi)
             return n
         
         def struct_declarator_list(self):
-            n = node(pt_struct_declarator_list)
+            n = self.node(pt_struct_declarator_list)
             n.append(self.struct_declarator())
             while self.peektype() == lt_comma:
                 self.eat(lt_comma)
@@ -336,7 +384,7 @@ def parse(lex):
             return n
 
         def struct_declarator(self):
-            n = node(pt_struct_declarator)
+            n = self.node(pt_struct_declarator)
             if self.peektype() != lt_colon:
                 n.append(self.declarator(1)) # non-abstract only
             else:
@@ -347,14 +395,14 @@ def parse(lex):
             return n
 
         def enum_specifier(self):
-            n = node(pt_enum_specifier)
+            n = self.node(pt_enum_specifier)
             self.eat(lt_enum)
             if self.peektype() == lt_ident:
                 n.append(self.get())
             else:
                 n.append(None)
                 if self.peektype() != lt_lbrace:
-                    ERROR()
+                    self.error(err_expected_token(lt_lbrace))
             if self.peektype() == lt_lbrace:
                 self.eat(lt_lbrace)
                 n.append(self.enumerator_list())
@@ -364,7 +412,7 @@ def parse(lex):
             return n
         
         def enumerator_list(self):
-            n = node(pt_enumerator_list)
+            n = self.node(pt_enumerator_list)
             n.append(self.enumerator())
             while self.peektype() == lt_comma:
                 self.eat(lt_comma)
@@ -372,7 +420,7 @@ def parse(lex):
             return n
 
         def enumerator(self):
-            n = node(pt_enumerator)
+            n = self.node(pt_enumerator)
             n.append(self.eat(lt_ident))
             if self.peektype() == lt_assign:
                 self.eat(lt_assign)
@@ -380,7 +428,7 @@ def parse(lex):
             return n
 
         def parameter_type_list(self):
-            n = node(pt_parameter_type_list)
+            n = self.node(pt_parameter_type_list)
             n.append(self.parameter_declaration())
             while self.peektype() == lt_comma:
                 self.eat(lt_comma)
@@ -391,7 +439,7 @@ def parse(lex):
             return n
 
         def parameter_declaration(self):
-            n = node(pt_parameter_declaration)
+            n = self.node(pt_parameter_declaration)
             n.append(self.declaration_specifiers())#
             t = self.peektype()
             if t == lt_comma or t == lt_rparen:
@@ -400,7 +448,7 @@ def parse(lex):
             return n
 
         def identifier_list(self):
-            n = node(pt_identifier_list)
+            n = self.node(pt_identifier_list)
             n.append(self.eat(lt_ident))
             while self.peektype() == lt_comma:
                 self.eat(lt_comma)
@@ -408,7 +456,7 @@ def parse(lex):
             return n
 
         def initializer(self):
-            n = node(pt_initializer)
+            n = self.node(pt_initializer)
             if self.peektype() == lt_lbrace:
                 self.eat(lt_lbrace)
                 n.append(self.initializer_list())
@@ -420,7 +468,7 @@ def parse(lex):
             return n
 
         def initializer_list(self):
-            n = node(pt_initializer_list)
+            n = self.node(pt_initializer_list)
             while 1:
                 t = self.peektype()
                 if t == lt_lbracket or t == lt_dot:
@@ -434,7 +482,7 @@ def parse(lex):
             return n
 
         def designation(self):
-            n = node(pt_designation)
+            n = self.node(pt_designation)
             n.append(self.designator())
             while self.peektype() != lt_assign:
                 n.append(self.designator())
@@ -442,17 +490,17 @@ def parse(lex):
             return n
 
         def designator(self):
-            n = node(pt_designator)
+            n = self.node(pt_designator)
             token = self.get()
             n.append(token)
-            if token.type == lt_rbracket:
+            if token.type == lt_lbracket:
                 n.append(self.constant_expression())
                 self.eat(lt_rbracket)
             elif token.type == lt_dot:
                 n.append(self.eat(lt_ident))
             else:
-                self.unget(n)
-                ERROR()
+                self.unget(token)
+                self.error(err_bad_designator())
             return n
 
         def type_name_peek(self):
@@ -464,7 +512,7 @@ def parse(lex):
                 return 0
 
         def type_name(self):
-            n = node(pt_type_name)
+            n = self.node(pt_type_name)
             n.append(self.specifier_qualifier_list())
             n.append(self.declarator(2))
             return n
@@ -472,14 +520,14 @@ def parse(lex):
         def declarator(self, abstract):
             "`abstract' should have bit 1 set if a non-abstract declarator\n"\
             "is acceptable, and bit 2 set if an abstract one is acceptable"
-            n = node(pt_declarator)
+            n = self.node(pt_declarator)
             if self.peektype() == lt_times:
                 n.append(self.pointer())
             n.append(self.direct_declarator(abstract))
             return n
 
         def pointer(self):
-            n = node(pt_pointer)
+            n = self.node(pt_pointer)
             while self.peektype() == lt_times:
                 self.get()
                 if self.type_qualifier_peek():
@@ -491,23 +539,23 @@ def parse(lex):
         def direct_declarator(self, abstract):
             "`abstract' should have bit 1 set if a non-abstract direct-dcl\n"\
             "is acceptable, and bit 2 set if an abstract one is acceptable"
-            n = node(pt_direct_declarator)
+            n = self.node(pt_direct_declarator)
             t = self.peektype()
             if t == lt_ident:
                 if not (abstract & 1):
-                    ERROR() # identifier in abstract declarator
+                    self.error(err_ident_in_abstract())
                 n.append(self.get())
             elif t == lt_lparen:
                 self.eat(lt_lparen)
                 # Even if we accept an abstract-declarator in here we don't
                 # accept a blank one.
                 if self.peektype() == lt_rparen:
-                    ERROR()
+                    self.error(err_empty_absdecl())
                 n.append(self.declarator(abstract))
                 self.eat(lt_rparen)
             else:
                 if not (abstract & 2):
-                    ERROR() # no identifier in non-abstract declarator
+                    self.error(err_expected_token(lt_ident))
                 n.append(None)
             while 1:
                 t = self.peektype()
@@ -532,7 +580,7 @@ def parse(lex):
         def compound_statement(self):
             # Parse tree compression: we don't have an explicit subnode
             # for a block-item-list or for block-items.
-            n = node(pt_compound_statement)
+            n = self.node(pt_compound_statement)
             self.eat(lt_lbrace)
             self.lex.pushtypedef()
             while self.peektype() != lt_rbrace:
@@ -571,14 +619,14 @@ def parse(lex):
 
         def expression_statement(self):
             if self.peektype() == lt_semi:
-                ret = node(pt_null_statement)
+                ret = self.node(pt_null_statement)
             else:
                 ret = self.expression()
             self.eat(lt_semi)
             return ret
 
         def labeled_statement(self):
-            n = node(pt_labeled_statement)
+            n = self.node(pt_labeled_statement)
             t = self.peektype()
             if ident == None and t == lt_ident:
                 ident = self.get()
@@ -591,19 +639,17 @@ def parse(lex):
                 self.get()
                 n.append(self.constant_expression())
             else:
-                ERROR()
-            if self.peektype() != lt_colon:
-                ERROR()
-                self.get()
+                assert 0, "parser internal chaos"
+            self.eat(lt_colon)
             n.append(self.statement())
             return n
 
         def selection_statement(self):
-            n = node(pt_selection_statement)
+            n = self.node(pt_selection_statement)
             token = self.get()
             n.append(token)
             if token.type != lt_if and token.type != lt_switch:
-                ERROR()
+                assert 0, "parser internal chaos"
             self.eat(lt_lparen)
             n.append(self.expression())
             self.eat(lt_rparen)
@@ -616,7 +662,7 @@ def parse(lex):
             return n
 
         def iteration_statement(self):
-            n = node(pt_iteration_statement)
+            n = self.node(pt_iteration_statement)
             token = self.get()
             n.append(token)
             if token.type == lt_while:
@@ -652,24 +698,22 @@ def parse(lex):
                 self.eat(lt_rparen)
                 n.append(self.statement())
             else:
-                ERROR()
+                assert 0, "parser internal chaos"
             return n
         
         def jump_statement(self):
-            n = node(pt_jump_statement)
+            n = self.node(pt_jump_statement)
             token = self.get()
             n.append(token)
             if token.type == lt_goto:
-                if self.peektype() != lt_ident:
-                    ERROR()
-                n.append(self.get())
+                n.append(self.eat(lt_ident))
             elif token.type == lt_break or token.type == lt_continue:
                 pass # these are OK
             elif token.type == lt_return:
                 if self.peektype() != lt_semi:
                     n.append(self.expression())
             else:
-                ERROR()
+                assert 0, "parser internal chaos"
             self.eat(lt_semi)
             return n
 
@@ -680,14 +724,14 @@ def parse(lex):
                 ret = self.expression()
                 self.eat(lt_rparen)
                 return ret
-            n = node(pt_primary_expression)
+            n = self.node(pt_primary_expression)
             if t == lt_ident or t == lt_charconst or t == lt_intconst or t == lt_floatconst:
                 n.append(self.get())
             elif t == lt_stringconst:
                 while self.peektype() == lt_stringconst:
                     n.append(self.get())
             else:
-                ERROR()
+                self.error(err_missing_expr())
             return n
         
         def postfix_expression(self):
@@ -697,7 +741,7 @@ def parse(lex):
                     self.unget(lpar)
                     n = self.primary_expression()
                 else:
-                    n = node(pt_postfix_expression)
+                    n = self.node(pt_postfix_expression)
                     n.append(self.type_name())
                     self.eat(lt_rparen)
                     self.eat(lt_lbrace)
@@ -711,27 +755,27 @@ def parse(lex):
                 t = self.peektype()
                 if t == lt_lbracket:
                     self.eat(lt_lbracket)
-                    m = node(pt_postfix_expression)
+                    m = self.node(pt_postfix_expression)
                     m.append(n)
                     m.append(self.expression())
                     self.eat(lt_rbracket)
                     n = m
                 elif t == lt_lparen:
                     self.eat(lt_lparen)
-                    m = node(pt_postfix_expression)
+                    m = self.node(pt_postfix_expression)
                     m.append(n)
                     if self.peektype() != lt_rparen:
                         m.append(self.argument_expression_list())
                     self.eat(lt_rparen)
                     n = m
                 elif t == lt_dot or t == lt_arrow:
-                    m = node(pt_postfix_expression)
+                    m = self.node(pt_postfix_expression)
                     m.append(n)
                     m.append(self.get())
                     m.append(self.eat(lt_ident))
                     n = m
                 elif t == lt_increment or t == lt_decrement:
-                    m = node(pt_postfix_expression)
+                    m = self.node(pt_postfix_expression)
                     m.append(n)
                     m.append(self.get())
                     n = m
@@ -740,7 +784,7 @@ def parse(lex):
             return n
         
         def argument_expression_list(self):
-            n = node(pt_argument_expression_list)
+            n = self.node(pt_argument_expression_list)
             n.append(self.assignment_expression())
             while self.peektype() == lt_comma:
                 self.eat(lt_comma)
@@ -750,12 +794,12 @@ def parse(lex):
         def unary_expression(self):
             t = self.peektype()
             if t == lt_increment or t == lt_decrement:
-                n = node(pt_unary_expression)
+                n = self.node(pt_unary_expression)
                 n.append(t)
                 n.append(self.unary_expression())
                 return n
             elif t == lt_sizeof:
-                n = node(pt_unary_expression)
+                n = self.node(pt_unary_expression)
                 n.append(t)
                 if self.peektype() == lt_lparen:
                     # Either a unary-expression or ( type-name ).
@@ -770,7 +814,7 @@ def parse(lex):
                     n.append(self.unary_expression())
                 return n
             elif t == lt_bitand or t == lt_times or t == lt_plus or t == lt_minus or t == lt_bitnot or t == lt_lognot:
-                n = node(pt_unary_expression)
+                n = self.node(pt_unary_expression)
                 n.append(self.get())
                 n.append(self.cast_expression())
                 return n
@@ -782,7 +826,7 @@ def parse(lex):
                 return uexp
             t = self.get()
             if t.type == lt_lparen and self.type_name_peek():
-                n = node(pt_cast_expression)
+                n = self.node(pt_cast_expression)
                 n.append(self.type_name())
                 self.eat(lt_rparen)
                 n.append(self.cast_expression())
@@ -796,7 +840,7 @@ def parse(lex):
             while 1:
                 t = self.peektype()
                 if t in operators:
-                    n = node(pt_binary_expression)
+                    n = self.node(pt_binary_expression)
                     n.append(expr)
                     n.append(self.get())
                     n.append(nextfunc())
@@ -830,7 +874,7 @@ def parse(lex):
             expr = self.logical_OR_expression(uexp)
             if self.peektype() == lt_query:
                 self.eat(lt_query)
-                n = node(pt_conditional_expression)
+                n = self.node(pt_conditional_expression)
                 n.append(expr)
                 n.append(self.expression())
                 self.eat(lt_colon)
@@ -840,8 +884,10 @@ def parse(lex):
                 return expr
 
         def assignment_expression(self, uexp=None):
-            if uexp != None:
-                ERROR() # shouldn't ever happen
+            # uexp is only here for calling-standard compliance since
+            # this is called from the generic routine binary_expr. In
+            # this particular routine it should never be set.
+            assert uexp == None
             # Generally, we expect to see a unary-expression here. The
             # only way we might not is if we see an lparen followed by a
             # type-name.
@@ -855,7 +901,7 @@ def parse(lex):
             if self.peektype() in [lt_assign, lt_timeseq, lt_slasheq,
             lt_moduloeq, lt_pluseq, lt_minuseq, lt_lshifteq, lt_rshifteq,
             lt_bitandeq, lt_bitxoreq, lt_bitoreq]:
-                n = node(pt_assignment_expression)
+                n = self.node(pt_assignment_expression)
                 n.append(uexp)
                 n.append(self.get())
                 n.append(self.assignment_expression())
@@ -869,9 +915,13 @@ def parse(lex):
             return self.binary_expr([lt_comma], self.assignment_expression, None)
 
         def constant_expression(self):
-            n = node(pt_constant_expression)
+            n = self.node(pt_constant_expression)
             n.append(self.conditional_expression())
             return n
 
     p = parserclass(lex)
-    return p.translation_unit()
+    try:
+        return p.translation_unit()
+    except err_generic_parse_error, err:
+        errfunc(err)
+        return None

@@ -36,6 +36,8 @@ if action == "lex":
     sys.exit(0)
 else:
     tree = c_parse.parse(l)
+    if tree == None:
+        sys.exit(1)
 
 if action == "parse":
     tree.display(0)
