@@ -13,8 +13,6 @@
 #include "sdlstuff.h"
 #include "game256.h"
 
-#define JOY_THRESHOLD 4096
-
 static char const *modules[] = {
     "ps2rtc",
     "ps2debuglog",
@@ -27,8 +25,6 @@ static char const *modules[] = {
     "joystick",
     "ps2pad",
 };
-
-#define lenof(x) (sizeof((x))/sizeof(*(x)))
 
 /* This bit uses a gcc preprocessor extension. */
 #define simplesystem(cmd...) do { \

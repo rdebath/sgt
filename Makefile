@@ -1,4 +1,4 @@
-COMPILE = $(CC) $(CFLAGS) -I. -MD -c -o $@ $<
+COMPILE = $(CC) $(PS2) $(CFLAGS) -I. -MD -c -o $@ $<
 
 sdlgames: selector.o linuxrc.o nort.o sumo.o \
           sdlstuff.o game256.o swash.o beebfont.o utils.o
