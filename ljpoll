@@ -7,7 +7,7 @@ import urllib
 import os
 import time
 
-verbose = force = 0
+verbose = force = last = 0
 args = sys.argv[1:]
 while len(args) > 0:
     arg = args[0]
@@ -16,6 +16,8 @@ while len(args) > 0:
 	verbose = 1
     elif arg == "--force":
 	force = 1
+    elif arg == "--last":
+	last = 1
     else:
 	sys.stderr.write("ljpoll: unknown option \"" + arg + "\"\n")
 
@@ -47,6 +49,11 @@ try:
 	elif s[:space] == "last-call":
 	    then = float(s[space+1:])
     f.close()
+
+    if last:
+	sys.stdout.write("Last date seen was " + lastrealdate + "\n")
+	sys.exit(0)
+
     now = time.time()
     if now < then and not force:
 	sys.stderr.write("LJ polling discouraged for " +
