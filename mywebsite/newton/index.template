@@ -282,7 +282,7 @@ switchback into a more gentle curve.
 Moreover, it's trivially easy to do in the Newton-Raphson iteration.
 Suppose we have a function <code>f</code>, and we define a function
 <code>g</code> to be <code>f^k</code> for some power <code>k</code>.
-Then <code>g' = k f^(k-1)</code>; and when we compute
+Then <code>g' = k f^(k-1) f'</code>; so when we compute
 <code>g/g'</code>, the <code>f^(k-1)</code> term cancels out, and we
 are left with simply <code>(1/k) . (f/f')</code>. In other words,
 the sole effect of raising the entire function to the power
