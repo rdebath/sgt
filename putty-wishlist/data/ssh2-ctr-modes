@@ -105,7 +105,7 @@ Index: sshaes.c
  };
 Index: sshblowf.c
 ===================================================================
---- sshblowf.c	(revision 5502)
+--- sshblowf.c	(revision 5527)
 +++ sshblowf.c	(working copy)
 @@ -413,6 +413,32 @@
      ctx->iv1 = iv1;
@@ -140,7 +140,20 @@ Index: sshblowf.c
  static void blowfish_setkey(BlowfishContext * ctx,
  			    const unsigned char *key, short keybytes)
  {
-@@ -542,6 +568,13 @@
+@@ -498,6 +524,12 @@
+     blowfish_setkey(ctx, key, 16);
+ }
+ 
++static void blowfish256_key(void *handle, unsigned char *key)
++{
++    BlowfishContext *ctx = (BlowfishContext *)handle;
++    blowfish_setkey(ctx, key, 32);
++}
++
+ static void blowfish_iv(void *handle, unsigned char *key)
+ {
+     BlowfishContext *ctx = (BlowfishContext *)handle;
+@@ -542,6 +574,13 @@
      blowfish_msb_decrypt_cbc(blk, len, ctx);
  }
  
@@ -154,12 +167,12 @@ Index: sshblowf.c
  const struct ssh_cipher ssh_blowfish_ssh1 = {
      blowfish_ssh1_make_context, blowfish_free_context, blowfish_sesskey,
      blowfish_ssh1_encrypt_blk, blowfish_ssh1_decrypt_blk,
-@@ -555,7 +588,15 @@
+@@ -555,7 +594,15 @@
      8, 128, "Blowfish"
  };
  
 +static const struct ssh2_cipher ssh_blowfish_ssh2_ctr = {
-+    blowfish_make_context, blowfish_free_context, blowfish_iv, blowfish_key,
++    blowfish_make_context, blowfish_free_context, blowfish_iv, blowfish256_key,
 +    blowfish_ssh2_sdctr, blowfish_ssh2_sdctr,
 +    "blowfish-ctr",
 +    8, 256, "Blowfish SDCTR"
