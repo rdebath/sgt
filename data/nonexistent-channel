@@ -1,7 +1,8 @@
 Summary: `nonexistent channel -1' crashes
 Class: bug
+Priority: high
 Content-type: text/x-html-body
-Present-in: 0.52 2002-03-14 2002-07-04
+Present-in: 0.52 2002-03-14 2002-07-04 2002-09-07
 
 <p>
 We're getting occasional reports of PuTTY sessions dying with
@@ -24,6 +25,9 @@ channel -1"
 <b>Update:</b>
 We believed this fixed as of 2002 May 18 (and have had one person
 report that our fix made their problem go away), but we've received
-one report that the `ieof' variant at least is still out there (in
-2002-07-04).
-<br><tt>OAEBLEDJOCNMIAODAMHBOEHIFDAA.ewang@collectivebid.com</tt>
+reports that the `ieof' variant at least is still out there (in
+2002-07-04 and 2002-09-07).
+<ul>
+<li><tt>OAEBLEDJOCNMIAODAMHBOEHIFDAA.ewang@collectivebid.com</tt>
+<li><tt>015601c2567e$edff1320$ef00000a@rop</tt> (with SSH packet dump)
+</ul>
