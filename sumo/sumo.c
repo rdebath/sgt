@@ -49,7 +49,7 @@ static int sine[45] = {
     0,695,1368,2000,2571,3064,3464,3759,3939
 };
 
-static int sx1 = 40, sy1 = 80, sx2 = 140, sy2 = 100;
+static int sx1 = 50, sy1 = 100, sx2 = 170, sy2 = 120;
 
 #define MAX_BULLETS 3
 
@@ -57,7 +57,7 @@ static int no_quit_option = 0;
 
 static int sc1, sc2;
 
-static unsigned char fire[40008];
+static Image fire;
 static int make_fire(void);
 static unsigned char tile[8+10*10];
 static unsigned char bullets[2][8+3*3];
@@ -86,12 +86,14 @@ FILE *debugfp;
  * routines.)
  */
 
-static int lava_platform_shape[16] = {
-    0x0FF0,0x3FFC,0x7FFE,0x7FFE,0xFFFF,0xFFFF,0xFFFF,0xFFFF,
-    0xFFFF,0xFFFF,0xFFFF,0xFFFF,0x7FFE,0x7FFE,0x3FFC,0x0FF0
+static int lava_platform_shape[20] = {
+    0x01F80, 0x07FE0, 0x1FFF8, 0x3FFFC, 0x3FFFC,
+    0x7FFFE, 0x7FFFE, 0xFFFFF, 0xFFFFF, 0xFFFFF,
+    0xFFFFF, 0xFFFFF, 0xFFFFF, 0x7FFFE, 0x7FFFE,
+    0x3FFFC, 0x3FFFC, 0x1FFF8, 0x07FE0, 0x01F80,
 };
-#define LP_SAFE(x,y) ((x) >= 2 && (x) <= 17 && (y) >= 2 && (y) <= 17 && \
-			  lava_platform_shape[(y)-2] & (1 << (17-(x))))
+#define LP_SAFE(x,y) ((x) >= 2 && (x) < 22 && (y) >= 2 && (y) < 22 && \
+			  lava_platform_shape[(y)-2] & (1 << (21-(x))))
 
 /*
  * Test whether a circle overlaps any of the tiles on the lava
@@ -185,9 +187,9 @@ static int setup_arena(void)
 
     scr_prep();
     drawimage(fire,0,0,-1);
-    for (i = 2; i <= 17; i++)
-	for (j = 2; j <= 17; j++)
-	    if (lava_platform_shape[j-2] & (1 << (17-i)))
+    for (i = 2; i < 22; i++)
+	for (j = 2; j < 22; j++)
+	    if (lava_platform_shape[j-2] & (1 << (21-i)))
 		drawimage(tile,10*i,10*j,-1);
     scr_done();
 }
@@ -199,9 +201,9 @@ static int setup_arena(void)
 static int game_screen(void)
 {
     scr_prep();
-    drawimage(title,200,0,-1);
-    drawimage(spr[0][9],224,113,0);
-    drawimage(spr[1][9],277,113,0);
+    drawimage(title,240,0,-1);
+    drawimage(spr[0][9],270,97,0);
+    drawimage(spr[1][9],270,157,0);
     scr_done();
 }
 
@@ -229,8 +231,8 @@ static int show_scores(void)
     if (sc1 == 1000) sc1 = 0;
     if (sc2 == 1000) sc2 = 0;
     scr_prep();
-    score(sc1,224,135);
-    score(sc2,277,135);
+    score(sc1,270,119);
+    score(sc2,270,179);
     scr_done();
 }
 
@@ -402,8 +404,8 @@ static int play_game(void)
 		}
 		if (x[i]<0) x[i] = 0;
 		if (y[i]<0) y[i] = 0;
-		if (x[i]>(180 << 16)) x[i] = 180 << 16;
-		if (y[i]>(180 << 16)) y[i] = 180 << 16;
+		if (x[i]>(220 << 16)) x[i] = 220 << 16;
+		if (y[i]>(220 << 16)) y[i] = 220 << 16;
 	    }
 	}
 
@@ -485,9 +487,9 @@ static int play_game(void)
     } while (!done);
 
     scr_prep();
-    if (d1 && d2) putsprite(q,draw,(200-XSIZE(draw))/2,82);
-    else if (d2) putsprite(q,win1,(200-XSIZE(win1))/2,82);
-    else putsprite(q,win2,(200-XSIZE(win2))/2,82);
+    if (d1 && d2) putsprite(q,draw,(240-XSIZE(draw))/2,92);
+    else if (d2) putsprite(q,win1,(240-XSIZE(win1))/2,92);
+    else putsprite(q,win2,(240-XSIZE(win2))/2,92);
 
     if (d2 && !d1) sc1++;
     else if (d1 && !d2) sc2++;
@@ -823,22 +825,19 @@ setbuf(debugfp, NULL);
  */
 
 /*
- * Make the fiery backdrop underneath the arena.
+ * Make the fiery backdrop underneath the lava-platform arena.
  */
-static unsigned char fire[40008];
-
 static int make_fire(void)
 {
-    int a[204][204];
-    const unsigned char header[8] = {0,0,0,0,200,0,200,0};
+    int a[244][244];
     int random,x,y,xx,yy,minx,miny,maxx,maxy,min,max;
 
-    for (y = 0; y < 204; y++)
-	for (x = 0; x < 204; x++)
+    for (y = 0; y < 244; y++)
+	for (x = 0; x < 244; x++)
 	    a[y][x] = 0;
 
-    for (y = 1; y < 203; y++)
-	for (x = 1; x < 203; x++) {
+    for (y = 1; y < 243; y++)
+	for (x = 1; x < 243; x++) {
 	    do {
 		random = rand() / (RAND_MAX/64);
 	    } while (random >= 64);
@@ -853,8 +852,8 @@ static int make_fire(void)
 	    a[y][x] += random*3;
 	}
     min = max = a[2][2];
-    for (y = 2; y < 202; y++)
-	for (x = 2; x < 202; x++) {
+    for (y = 2; y < 242; y++)
+	for (x = 2; x < 242; x++) {
 	    xx = a[y][x];
 	    if (min > xx) min = xx;
 	    if (max < xx) max = xx;
@@ -862,11 +861,11 @@ static int make_fire(void)
 
     max -= min;
 
-    memcpy(fire, header, 8);
+    fire = makeimage(240, 240, 0, 0);
     xx = 8;
 
-    for (y = 2; y < 202; y++)
-	for (x = 2; x < 202; x++)
+    for (y = 2; y < 242; y++)
+	for (x = 2; x < 242; x++)
 	    fire[xx++] = 208 + 47*(a[y][x]-min)/max;
 }
 
@@ -1248,7 +1247,7 @@ static void expand_title(void)
 {
     struct imageplot p;
 
-    title = makeimage(120, 200, 0, 0);
+    title = makeimage(80, 240, 0, 0);
 
     /*
      * Now we want to draw a set of glowing blue lines inside which
@@ -1257,25 +1256,24 @@ static void expand_title(void)
      */
     {
 	struct { int x1, y1, x2, y2; } rects[] = {
-	    {6, 75, 6, 150},
-	    {60, 75, 60, 150},
-	    {114, 75, 114, 150},
-	    {6, 75, 114, 75},
-	    {6, 150, 114, 150},
+	    {6, 75, 6, 195},
+	    {74, 75, 74, 195},
+	    {6, 75, 74, 75},
+	    {6, 135, 74, 135},
+	    {6, 195, 74, 195},
 	};
 	int i;
 
 	for (i = 0; i < lenof(rects); i++) {
 	    int c, x, y;
 
-	    for (c = 6; c-- ;) {
+	    for (c = 6; c-- ;)
 		for (x = rects[i].x1-c; x <= rects[i].x2+c; x++)
 		    for (y = rects[i].y1-c; y <= rects[i].y2+c; y++) {
 			int cc = getimagepixel(title,x,y);
 			if (cc == 0 || (cc > 138+c && cc < 138+6))
 			    imagepixel(title,x,y,138+c);
 		    }
-	    }
 	}
     }
 
@@ -1283,22 +1281,22 @@ static void expand_title(void)
     p.fg = 137;
     p.bg = 138;
     p.mask = 0;
-    swash_centre(0, 120, 5, "SUMO", plot_on_image, &p);
+    swash_centre(0, 80, 5, "SUMO", plot_on_image, &p);
 
     p.bg = p.mask = -1;
 
-    swash_centre(0, 120, 30, "(C) 1994, 2002", plot_on_image, &p);
-    swash_centre(0, 120, 46, "BY SIMON TATHAM", plot_on_image, &p);
+    swash_centre(1, 80, 25, "(C) 1994,2002", plot_on_image, &p);
+    /* \x7F inhibits sideways extensions from the Swash font */
+    swash_centre(0, 80, 41, "BY SIMON", plot_on_image, &p);
+    swash_centre(0, 80, 57, "TATHAM", plot_on_image, &p);
 
-    swash_centre(0, 120, 168, "PRESS SELECT", plot_on_image, &p);
-    swash_centre(0, 120, 184, "FOR OPTIONS MENU", plot_on_image, &p);
+    swash_centre(0, 80, 208, "`SELECT' KEY", plot_on_image, &p);
+    swash_centre(0, 80, 224, "FOR OPTIONS", plot_on_image, &p);
 
     p.fg = 130;
-    swash_centre(12, 60, 81, "PLAYER", plot_on_image, &p);
-    swash_centre(6, 60, 97, "ONE", plot_on_image, &p);
+    swash_centre(0, 80, 81, "PLAYER 1", plot_on_image, &p);
 
     p.fg = 134;
-    swash_centre(66, 114, 81, "PLAYER", plot_on_image, &p);
-    swash_centre(66, 114, 97, "TWO", plot_on_image, &p);
+    swash_centre(0, 80, 141, "PLAYER 2", plot_on_image, &p);
 
 }
