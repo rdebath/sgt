@@ -10,10 +10,6 @@ import ljproto
 
 # Here's the TODO list for potential future enhancements.
 #
-#  - Ability to post to only one medium (posting to LJ only is
-#    easily done by not bothering to paste into Mono; really all I
-#    need is the ability to paste to Mono only).
-#
 #  - Better {mbreak} handling.
 #     * For a start I want a simple {mbreak} to produce a plausible
 #       title: `(continued)' is fine in an untitled entry, and in a
@@ -714,7 +710,7 @@ while 1:
 	print i
     print
 
-    sys.stdout.write("Edit again, preview Mono, preview Html, Post, Abort? [EMHPA] ")
+    sys.stdout.write("Edit again, preview Mono, preview Html, Post (to Mono), Abort? [EMHPA] ")
     try:
 	s = sys.stdin.readline()
     except KeyboardInterrupt:
@@ -728,7 +724,7 @@ while 1:
 	os.system(os.environ["VISUAL"] + " " + fname)
 	continue
 
-    if not (s in ["m\n", "h\n", "p\n"]):
+    if not (s in ["m\n", "h\n", "p\n", "pm\n"]):
 	print "Unknown command."
 	print
 	continue
@@ -751,7 +747,7 @@ while 1:
 	f.write("Subject: " + out.subj + "\n\n")
 	f.write(out.html)
 	f.close()
-    elif s == "p\n":
+    elif s == "p\n" or s == "pm\n":
 	f = open(os.environ["HOME"] + "/src/lj/diary.data", "w")
 	g = os.popen("xcopy 2>/dev/null", "w")
 	data = out.mono + [\
@@ -763,21 +759,24 @@ while 1:
 	g.close()
 	print "Mono text written to diary.data file and piped through xcopy."
 	print "Don't forget to have your nameline in the ^Y paste buffer!"
-	dict = {"mode":"postevent", "lineendings":"unix"}
-	dict["event"] = out.html
-	if out.subj != "":
-	    dict["subject"] = out.subj
-	dict["year"] = time.strftime("%Y", nowlocal)
-	dict["mon"] = time.strftime("%m", nowlocal)
-	dict["day"] = time.strftime("%d", nowlocal)
-	dict["hour"] = time.strftime("%H", nowlocal)
-	dict["min"] = time.strftime("%M", nowlocal)
-	#dict["security"] = "private"
-	ret = ljproto.ljcall(dict)
-	if not ljproto.ljok(ret):
-	    print "Unable to post to LJ: " + ljproto.ljerror(ret)
+	if s == "p\n":
+	    dict = {"mode":"postevent", "lineendings":"unix"}
+	    dict["event"] = out.html
+	    if out.subj != "":
+		dict["subject"] = out.subj
+	    dict["year"] = time.strftime("%Y", nowlocal)
+	    dict["mon"] = time.strftime("%m", nowlocal)
+	    dict["day"] = time.strftime("%d", nowlocal)
+	    dict["hour"] = time.strftime("%H", nowlocal)
+	    dict["min"] = time.strftime("%M", nowlocal)
+	    #dict["security"] = "private"
+	    ret = ljproto.ljcall(dict)
+	    if not ljproto.ljok(ret):
+		print "Unable to post to LJ: " + ljproto.ljerror(ret)
+	    else:
+		print "Posted to LJ; itemid =", ret["itemid"]
 	else:
-	    print "Posted to LJ; itemid =", ret["itemid"]
+	    print "Not posted to LJ (`pm' command given)"
 	break
 
 if need_unlink:
