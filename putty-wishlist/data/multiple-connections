@@ -26,3 +26,6 @@ code size increase wouldn't be excessive. This is close to having
 priority "never", in fact, unless someone can convince me it's
 really worth its while.
 
+<p>
+People who want this capability may find the third-party utility
+<a href="http://spoox.org/projects/twsc/">TWSC</a> useful.
