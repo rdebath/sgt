@@ -7,3 +7,7 @@ Content-type: text/x-html-body
 <p>
 Ability to select a preference order of authentications, like we can
 already do for ciphers.
+
+<p>
+It would be nice to have some way for the user to say "skip to next
+authentication method" at run-time. (Control-C? Control-D?)
