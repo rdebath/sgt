@@ -1,0 +1,407 @@
+SVN-fs-dump-format-version: 2
+
+UUID: 37ad0132-ece8-0310-9730-d1d6a67b9e3d
+
+Revision-number: 0
+Prop-content-length: 56
+Content-length: 56
+
+K 8
+svn:date
+V 27
+2004-11-15T13:41:19.028719Z
+PROPS-END
+
+Revision-number: 1
+Prop-content-length: 139
+Content-length: 139
+
+K 7
+svn:log
+V 39
+Set up an initial directory structure.
+
+K 10
+svn:author
+V 5
+simon
+K 8
+svn:date
+V 27
+2004-11-15T13:42:50.550797Z
+PROPS-END
+
+Node-path: boring
+Node-kind: dir
+Node-action: add
+Prop-content-length: 10
+Content-length: 10
+
+PROPS-END
+
+
+Node-path: boring/boring1
+Node-kind: file
+Node-action: add
+Prop-content-length: 10
+Text-content-length: 21
+Text-content-md5: 1ff9c82f792605c9f3fcd6066127be1b
+Content-length: 31
+
+PROPS-END
+Boring file number 1
+
+
+Node-path: boring/boringsubdir
+Node-kind: dir
+Node-action: add
+Prop-content-length: 10
+Content-length: 10
+
+PROPS-END
+
+
+Node-path: boring/boringsubdir/boringsub1
+Node-kind: file
+Node-action: add
+Prop-content-length: 10
+Text-content-length: 38
+Text-content-md5: 55a63191db5355a8bea0a5c3517ae55d
+Content-length: 48
+
+PROPS-END
+Boring file in subdirectory, number 1
+
+
+Node-path: boring/boringsubdir/boringsub2
+Node-kind: file
+Node-action: add
+Prop-content-length: 10
+Text-content-length: 38
+Text-content-md5: 12880de0b1e91211757ffc39f57395e4
+Content-length: 48
+
+PROPS-END
+Boring file in subdirectory, number 2
+
+
+Node-path: fun
+Node-kind: dir
+Node-action: add
+Prop-content-length: 10
+Content-length: 10
+
+PROPS-END
+
+
+Node-path: fun/funfile1
+Node-kind: file
+Node-action: add
+Prop-content-length: 10
+Text-content-length: 26
+Text-content-md5: 730ab9a6e7917dcf561c78fd6f3f0849
+Content-length: 36
+
+PROPS-END
+This is fun file number 1
+
+
+Node-path: fun/funfile2
+Node-kind: file
+Node-action: add
+Prop-content-length: 10
+Text-content-length: 26
+Text-content-md5: d4b42cefd9a1fea321fce549defc6e4c
+Content-length: 36
+
+PROPS-END
+This is fun file number 2
+
+
+Revision-number: 2
+Prop-content-length: 130
+Content-length: 130
+
+K 7
+svn:log
+V 30
+Commit entirely within `fun'.
+
+K 10
+svn:author
+V 5
+simon
+K 8
+svn:date
+V 27
+2004-11-15T13:43:14.188847Z
+PROPS-END
+
+Node-path: fun/funfile1
+Node-kind: file
+Node-action: change
+Text-content-length: 116
+Text-content-md5: d4230d82f40e84e7fa1421add5937d62
+Content-length: 116
+
+This is fun file number 1
+
+I'm going to put a bit of text in here.
+It will have multiple lines
+and some stuff.
+Ooh.
+
+
+Revision-number: 3
+Prop-content-length: 124
+Content-length: 124
+
+K 7
+svn:log
+V 24
+Entirely boring commit.
+
+K 10
+svn:author
+V 5
+simon
+K 8
+svn:date
+V 27
+2004-11-15T13:43:48.373981Z
+PROPS-END
+
+Node-path: boring/boring1
+Node-kind: file
+Node-action: change
+Text-content-length: 104
+Text-content-md5: f8e59c1e7ce3c48a0ed83e91d9ea0af2
+Content-length: 104
+
+Boring file number 1
+
+drone drone drone drone blah blah blah
+waffle waffle waffle bang on and on and on
+
+
+Revision-number: 4
+Prop-content-length: 143
+Content-length: 143
+
+K 7
+svn:log
+V 43
+Copy a boring file into the fun directory.
+
+K 10
+svn:author
+V 5
+simon
+K 8
+svn:date
+V 27
+2004-11-15T13:44:12.715769Z
+PROPS-END
+
+Node-path: fun/boring1
+Node-kind: file
+Node-action: add
+Node-copyfrom-rev: 3
+Node-copyfrom-path: boring/boring1
+
+
+Revision-number: 5
+Prop-content-length: 126
+Content-length: 126
+
+K 7
+svn:log
+V 26
+Make the boring file fun!
+
+K 10
+svn:author
+V 5
+simon
+K 8
+svn:date
+V 27
+2004-11-15T13:44:51.306733Z
+PROPS-END
+
+Node-path: fun/boring1
+Node-kind: file
+Node-action: change
+Text-content-length: 147
+Text-content-md5: b75cd4c60b486f9fb35e4f099435e048
+Content-length: 147
+
+Boring file number 1
+
+drone drone drone drone! blah blah blah!
+waffle waffle waffle! bang on and on and on!
+
+Now put fun stuff at the end of this!
+
+
+Revision-number: 6
+Prop-content-length: 142
+Content-length: 142
+
+K 7
+svn:log
+V 42
+Bring in the boring subdirectory as well.
+
+K 10
+svn:author
+V 5
+simon
+K 8
+svn:date
+V 27
+2004-11-15T13:45:22.336449Z
+PROPS-END
+
+Node-path: fun/boringsubdir
+Node-kind: dir
+Node-action: add
+Node-copyfrom-rev: 1
+Node-copyfrom-path: boring/boringsubdir
+
+
+Revision-number: 7
+Prop-content-length: 134
+Content-length: 134
+
+K 7
+svn:log
+V 34
+Spice up the boring subdirectory.
+
+K 10
+svn:author
+V 5
+simon
+K 8
+svn:date
+V 27
+2004-11-15T13:45:53.738069Z
+PROPS-END
+
+Node-path: fun/boringsubdir/boringsub1
+Node-kind: file
+Node-action: change
+Text-content-length: 61
+Text-content-md5: 86e4e06a76d5f9d98a6bee0b676032ba
+Content-length: 61
+
+Boring file in subdirectory, number 1
+
+(but it's fun really)
+
+
+Node-path: fun/boringsubdir/boringsub2
+Node-kind: file
+Node-action: change
+Text-content-length: 99
+Text-content-md5: a5c1a4f2ebf7de71df7780172a80ed85
+Content-length: 99
+
+Boring file in subdirectory, number 2
+
+(well, only if you don't happen to like that sort of thing)
+
+
+Revision-number: 8
+Prop-content-length: 152
+Content-length: 152
+
+K 7
+svn:log
+V 52
+Now move a file back out into the boring directory.
+
+K 10
+svn:author
+V 5
+simon
+K 8
+svn:date
+V 27
+2004-11-15T13:46:21.090854Z
+PROPS-END
+
+Node-path: boring/boring1-from-fun
+Node-kind: file
+Node-action: add
+Node-copyfrom-rev: 5
+Node-copyfrom-path: fun/boring1
+
+
+Node-path: fun/boring1
+Node-action: delete
+
+
+Revision-number: 9
+Prop-content-length: 154
+Content-length: 154
+
+K 7
+svn:log
+V 54
+This file is back in boringland. Make it more boring.
+
+K 10
+svn:author
+V 5
+simon
+K 8
+svn:date
+V 27
+2004-11-15T13:46:49.439297Z
+PROPS-END
+
+Node-path: boring/boring1-from-fun
+Node-kind: file
+Node-action: change
+Text-content-length: 209
+Text-content-md5: 832d96e823d7a127f6e2bc8792035fd5
+Content-length: 209
+
+Boring file number 1
+
+drone drone drone drone! blah blah blah!
+waffle waffle waffle! bang on and on and on!
+
+Now put fun stuff at the end of this!
+
+Goodness, what irresponsibility. This should be more boring.
+
+
+Revision-number: 10
+Prop-content-length: 162
+Content-length: 162
+
+K 7
+svn:log
+V 62
+Aaand ... it's back! The boring file has returned to funland.
+
+K 10
+svn:author
+V 5
+simon
+K 8
+svn:date
+V 27
+2004-11-15T13:47:18.469914Z
+PROPS-END
+
+Node-path: fun/boring1
+Node-kind: file
+Node-action: add
+Node-copyfrom-rev: 9
+Node-copyfrom-path: boring/boring1-from-fun
+
+

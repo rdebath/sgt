@@ -1,0 +1,39 @@
+#!/bin/sh 
+
+infile="$1"
+subdir="$2"
+
+rm -rf test.full
+svnadmin create test.full && svnadmin load test.full < "$infile"
+if test "$?" -gt 0; then echo "*** test failed\n" >&2; exit 1; fi
+
+./svndumpfilter2 test.full "$subdir" < "$infile" > test.outdump
+if test "$?" -gt 0; then echo "*** test failed\n" >&2; exit 1; fi
+
+rm -rf test.filtered
+svnadmin create test.filtered && svnadmin load test.filtered < "$infile"
+if test "$?" -gt 0; then echo "*** test failed\n" >&2; exit 1; fi
+
+dumptree() {
+  prev=""
+  echo "revision $rev"
+  svnlook tree -r"$rev" "$1" "$2" | \
+    perl -ne 'BEGIN {$repos=shift @ARGV;}' \
+          -e 'chomp; $depth=0; $depth++ while s/^ //;' \
+          -e '$dir = s:/$::; $path[$depth] = $_;' \
+	  -e '$path = join("/", @path[0..$depth]);' \
+	  -e 'if ($dir) { print "$path: dir\n" }' \
+	  -e 'else { chomp($md5 = `svnlook cat $repos $path | md5sum`);' \
+	  -e '       print "$path: file $md5\n" }' "$1"
+}
+
+youngest=`svnlook youngest test.full`
+
+rev=1
+while test "$rev" -le "$youngest"; do
+  dumptree test.full "$subdir" > test.dump1
+  dumptree test.filtered "$subdir" > test.dump2
+  diff test.dump1 test.dump2
+  if test "$?" -gt 0; then echo "*** test failed\n" >&2; exit 1; fi
+  rev=$[1+$rev]
+done
