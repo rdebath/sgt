@@ -256,11 +256,69 @@ sub mail {
   my ($msg) = @_;
   $msg .= "\n" unless substr($msg, -1) eq "\n";
   if ($queue) {
-    $sep = 'AAAAAAAAA';
-    while (&present($sep, ["", $msg])) { $sep++; }
-    open OUTPUT, "|at $qtime";
-    print OUTPUT "/usr/lib/sendmail -oem -t -oi << --$sep\n";
-    print OUTPUT "${msg}--$sep\n";
+    # Here we feed the message to an `at' job which invokes `sendmail'.
+    #
+    # There are a couple of gotchas to be observed here, to deal with
+    # Solaris `at' being broken and to deal with uncertain shells.
+    #
+    # Firstly, we can't guarantee whether our at job will be invoked using
+    # a csh-type shell or an sh-type shell, so we have to craft something
+    # which works in both. Both csh and sh understand the quoting of an EOF
+    # string in a here-document to imply that no substitution is performed
+    # on the text of the document, but they disagree on what they then
+    # expect the EOF string to look like: sh will search for the contents
+    # of the quotes while csh searches for the whole string _including_ its
+    # quotes.
+    #
+    # Secondly, Solaris `at' uses a here-document internally whose terminator
+    # is the string "...the rest of this file is shell input", so we will
+    # prefix every line of the message with a non-period and remove it again
+    # with `cut' to avoid this biting us.
+    #
+    # So the resulting job looks something like this:
+    #
+    #   /bin/sh << ':'
+    #   cut -c2- << '=sendmail-end-input' | /usr/lib/sendmail -oem -t -oi
+    #   -contents of message
+    #   -with a dash prefixed on each line
+    #   =sendmail-end-input
+    #   :
+    #   ':'
+    #
+    # If this is read by a csh, then the line containing just a colon will
+    # be seen by the inner /bin/sh invocation, which will ignore it. If it
+    # is read by an sh, then the line containing a single-quoted colon will
+    # be seen by the outer sh, which will also ignore it. (We only just
+    # get away with this: csh won't ignore a single-quoted colon!)
+    #
+    # Regardless, the bit in the middle, from `cut' to `=sendmail-end-input',
+    # is going to be run by a genuine Bourne shell. So it's all nice simple
+    # sh work and is predictable and sane - the use of a quoted EOF string
+    # guarantees that the here-document won't have variable and backtick
+    # substitutions made.
+    #
+    # Finally, the whole script is constructed so that no line begins with
+    # a period, which guarantees that the Solaris `at' death string -
+    # "...the rest of this file is shell input" - will never appear by itself
+    # on a line. (As an aside, no line begins with an apostrophe either,
+    # which prevents the line "':'" from appearing and screwing up csh-using
+    # systems.)
+    #
+    # It's complex. It's icky. But it should, AFAIK, be robust against almost
+    # any atrocity that an `at' implementation can reasonably perform.
+    open OUTPUT, "|at $qtime >/dev/null 2>/dev/null";
+    print OUTPUT "/bin/sh << ':'\n";
+    print OUTPUT "cut -c2- << '=sendmail-end-input'" .
+                 " | /usr/lib/sendmail -oem -t -oi\n";
+    while ($msg ne "") {
+      $nlpos = index($msg, "\n");
+      $nlpos = ($nlpos == -1 ? length $msg : $nlpos+1);
+      $line = substr($msg, 0, $nlpos);
+      $msg = substr($msg, $nlpos);
+      print OUTPUT "-$line";
+    }
+    print OUTPUT "=sendmail-end-input\n";
+    print OUTPUT ":\n':'\n";
     close OUTPUT;
   } else {
     open OUTPUT, "|/usr/lib/sendmail -oem -t -oi";
