@@ -57,13 +57,16 @@ static int no_quit_option = 0;
 
 static int sc1, sc2;
 
-static Image fire;
-static int make_fire(void);
+static Image fire, crucible;
+static void make_fire(void);
+static void make_crucible(void);
 static unsigned char tile[8+10*10];
 static unsigned char bullets[2][8+3*3];
 
 static unsigned char spr[2][36][8+20*20];
-static unsigned char deliv[2][26][1608];
+static Image (*deliv)[2][26];
+static Image lava_deliv[2][26];
+static Image generic_deliv[2][26];
 static unsigned char deaths[2][1327];
 static int deathoffset[14];
 static int makedeath(int player, int angle);
@@ -74,6 +77,10 @@ static Image title, gameon, draw, win1, win2;
 static void expand_title(void);
 static void make_text(void);
 
+static enum {
+    LAVA_PLATFORM, THE_CRUCIBLE
+} arena;
+
 #ifdef DEBUG
 FILE *debugfp;
 #endif
@@ -81,12 +88,12 @@ FILE *debugfp;
 /*
  * Square root of an integer, rounded to the _nearest_ integer.
  */
-static unsigned long squarert(unsigned long n) {
-    unsigned long d, a, b, di;
+static unsigned long squarert(unsigned long long n) {
+    unsigned long long d, a, b, di;
 
     d = n;
     a = 0;
-    b = 1 << 30;		       /* largest available power of 4 */
+    b = 1LL << 62;		       /* largest available power of 4 */
     do {
         a >>= 1;
         di = 2*a + b;
@@ -101,13 +108,21 @@ static unsigned long squarert(unsigned long n) {
      * a is now the greatest number whose square is <= n. Because
      * we are rounding to nearest, we may need to return a+1
      * instead of a. This will happen iff n exceeds (a+0.5)^2 =
-     * a^2+a+0.25, i.e. iff n is strictly greater than a*(a+1).
+     * a^2+a+0.25, i.e. iff n is strictly greater than a*a + a.
      */
-    if (n > a*(a+1))
+    if (n - a*a > a)
 	a++;
 
-    return a;
+    return (unsigned long) a;
 }
+
+/*
+ * Macros for handling 16-bit fixed point without integer overflow
+ * (by cheating and going through long longs :-)
+ */
+#define FPMUL(x,y) ( (int) ( ((long long)(x) * ((long long)(y))) >> 16 ) )
+#define FPDIV(x,y) ( (int) ( (((long long)(x)) << 16) / (long long)(y) ))
+#define FPSQRT(x) ( (int) squarert(((long long)(x)) << 16 ) )
 
 /* ----------------------------------------------------------------------
  * Arena handling code. To add a new arena, we need to add a new
@@ -186,6 +201,29 @@ static int lava_platform_check(int x, int y, int radius)
     return 0;
 }
 
+static int crucible_pocket_check(int x, int y, int r)
+{
+    struct { int x, y, r; } pockets[] = {
+	{0 << 16, 20 << 16, 40 << 16},
+	{0 << 16, 220 << 16, 40 << 16},
+	{240 << 16, 20 << 16, 40 << 16},
+	{240 << 16, 220 << 16, 40 << 16},
+	{120 << 16, 20 << 16, 30 << 16},
+	{120 << 16, 220 << 16, 30 << 16},
+    };
+    int i;
+
+    for (i = 0; i < lenof(pockets); i++) {
+	int dx = abs(x - pockets[i].x), dy = abs(y - pockets[i].y);
+	if (dx > pockets[i].r - r || dy > pockets[i].r-r)
+	    continue;
+	if (FPMUL(dx,dx) + FPMUL(dy,dy) < FPMUL(pockets[i].r-r,pockets[i].r-r))
+	    return 0;
+    }
+
+    return 1;
+}
+
 static int player_can_steer(int x, int y)
 {
     /*
@@ -195,7 +233,12 @@ static int player_can_steer(int x, int y)
      * because the player sprite size is even so the centre point
      * is half way between pixels.
      */
-    return lava_platform_check(x+(19<<15), y+(19<<15), 1<<16);
+    switch (arena) {
+      case LAVA_PLATFORM:
+	return lava_platform_check(x+(19<<15), y+(19<<15), 1<<16);
+      case THE_CRUCIBLE:
+	return crucible_pocket_check(x+(19<<15), y+(19<<15), 1<<16);
+    }
 }
 
 static int player_is_alive(int x, int y)
@@ -204,12 +247,176 @@ static int player_is_alive(int x, int y)
      * Check that at least one part of the player is on the arena
      * floor.
      */
-    return lava_platform_check(x+(10<<16), y+(10<<16), (10<<16));
+    switch (arena) {
+      case LAVA_PLATFORM:
+	return lava_platform_check(x+(19<<15), y+(19<<15), 10<<16);
+      case THE_CRUCIBLE:
+	return crucible_pocket_check(x+(19<<15), y+(19<<15), 10<<16);
+    }
+}
+
+static int arena_friction(int x, int y)
+{
+    switch (arena) {
+      case LAVA_PLATFORM:
+	return 0;		       /* smooth metal */
+      case THE_CRUCIBLE:
+	return 10;		       /* green baize */
+    }    
 }
 
 static int bullet_can_exist(int x, int y)
 {
-    return lava_platform_check(x+(19<<15), y+(19<<15), 0);
+    int c;
+
+    switch (arena) {
+      case LAVA_PLATFORM:
+	return lava_platform_check(x, y, 0);
+      case THE_CRUCIBLE:
+	/*
+	 * This is quite complex - we have pockets, cushions and
+	 * the screen border to sort out. Simplest thing is just to
+	 * check the arena image rather than faffing with a precise
+	 * mathematical model of the scene.
+	 */
+	x >>= 16;
+	y >>= 16;
+	if (x < 0 || x >= 240 || y < 20 || y >= 220)
+	    return 0;
+	c = getimagepixel(crucible, x, y);
+	if (c == 160 || c == 162)
+	    return 1;
+	return 0;
+    }
+}
+
+/*
+ * Check to see if the player has run into any reflecting surfaces,
+ * and modify their dx and dy to bounce them off if so.
+ */
+static void check_mirrors(int x, int y, int *dx, int *dy)
+{
+    struct mirror {
+	/*
+	 * Mirror is assumed to prohibit entry from the right, seen
+	 * as you walk along it from x1,y1 to x2,y2. These
+	 * coordinates are in 16-bit fixed point.
+	 */
+	int x1, y1;
+	int x2, y2;
+    };
+
+    const struct mirror crucible_mirrors[] = {
+	/* Left-side cushions */
+	{0 << 16, 190 << 16, 20 << 16, 170 << 16},
+	{20 << 16, 170 << 16, 20 << 16, 70 << 16},
+	{20 << 16, 70 << 16, 0 << 16, 50 << 16},
+	/* Right-side cushions */
+	{220 << 16, 170 << 16, 240 << 16, 190 << 16},
+	{220 << 16, 70 << 16, 220 << 16, 170 << 16},
+	{240 << 16, 50 << 16, 220 << 16, 70 << 16},
+	/* Top cushions */
+	{30 << 16, 20 << 16, 50 << 16, 40 << 16},
+	{50 << 16, 40 << 16, 80 << 16, 40 << 16},
+	{80 << 16, 40 << 16, 100 << 16, 20 << 16},
+	{140 << 16, 20 << 16, 160 << 16, 40 << 16},
+	{160 << 16, 40 << 16, 190 << 16, 40 << 16},
+	{190 << 16, 40 << 16, 210 << 16, 20 << 16},
+	/* Bottom cushions */
+	{50 << 16, 200 << 16, 30 << 16, 220 << 16},
+	{80 << 16, 200 << 16, 50 << 16, 200 << 16},
+	{100 << 16, 220 << 16, 80 << 16, 200 << 16},
+	{160 << 16, 200 << 16, 140 << 16, 220 << 16},
+	{190 << 16, 200 << 16, 160 << 16, 200 << 16},
+	{210 << 16, 220 << 16, 190 << 16, 200 << 16},
+    };
+    const struct mirror *mirrors;
+    int nmirrors;
+
+    int i;
+    int vx = *dx, vy = *dy;
+
+    switch (arena) {
+      case LAVA_PLATFORM:
+	return;			       /* no mirrors here */
+      case THE_CRUCIBLE:
+	mirrors = crucible_mirrors;
+	nmirrors = lenof(crucible_mirrors);
+    }
+
+    /* Correct coordinates for player radius. */
+    x += 10<<16;
+    y += 10<<16;
+
+    for (i = 0; i < nmirrors; i++) {
+	int x1, y1, x2, y2, xc, yc, len, n, dist, dotprod;
+
+	x1 = mirrors[i].x1; y1 = mirrors[i].y1;
+	x2 = mirrors[i].x2; y2 = mirrors[i].y2;
+	len = FPSQRT(FPMUL(x2-x1, x2-x1) + FPMUL(y2-y1, y2-y1));
+
+	/*
+	 * First, check if the player's velocity component
+	 * perpendicular to the mirror is such that the mirror
+	 * might need to reflect them.
+	 */
+	if (FPMUL(vx, y2-y1) + FPMUL(vy, x1-x2) <= 0)
+	    continue;		       /* no need to do anything */
+
+	/*
+	 * Now see if the player is overlapping the mirror - if not
+	 * then obviously we do nothing. To do this we'll find the
+	 * closest point on the mirror line to the player's centre,
+	 * because that will be a useful thing to have computed
+	 * when we do the reflection itself.
+	 */
+	n = FPMUL(x-x1, x2-x1) + FPMUL(y-y1, y2-y1);
+	n = FPDIV(n, len);
+	if (n < 0) n = 0;
+	if (n > len) n = len;
+	xc = x1 + FPDIV(FPMUL(n, x2-x1), len);
+	yc = y1 + FPDIV(FPMUL(n, y2-y1), len);
+	/* Having got that point, see if it's within the player radius. */
+	if (abs(xc-x) > (10<<16) || abs(yc-y) > (10<<16))
+	    continue;
+	dist = FPMUL(xc-x,xc-x) + FPMUL(yc-y,yc-y);
+	if (dist > (100<<16))
+	    continue;
+
+	/*
+	 * So the player needs to be reflected, and we know exactly
+	 * what _point_ on the mirror they are being reflected
+	 * from. All that remains is to invert the component of
+	 * their velocity vector parallel to the line between that
+	 * point and their centre.
+	 */
+	dist = FPSQRT(dist);
+	dotprod = FPDIV(FPMUL(vx, xc-x) + FPMUL(vy, yc-y), dist);
+	vx -= 2*FPDIV(FPMUL(xc-x, dotprod), dist);
+	vy -= 2*FPDIV(FPMUL(yc-y, dotprod), dist);
+    }
+
+    *dx = vx;
+    *dy = vy;
+}
+
+static void clip(int *x, int *y)
+{
+    switch (arena) {
+      case LAVA_PLATFORM:
+	if (*x<0) *x = 0;
+	if (*y<0) *y = 0;
+	if (*x>(221 << 16)-1) *x = (221 << 16)-1;
+	if (*y>(221 << 16)-1) *y = (221 << 16)-1;
+	break;
+      case THE_CRUCIBLE:
+	if (*x < (5 << 16)) *x = 5 << 16;
+	if (*y < (25 << 16)) *y = 25 << 16;
+	if (*x > (216 << 16)-1) *x = (216 << 16)-1;
+	if (*y > (196 << 16)-1) *y = (196 << 16)-1;
+	break;
+    }
+    
 }
 
 static int setup_arena(void)
@@ -217,11 +424,25 @@ static int setup_arena(void)
     int i, j;
 
     scr_prep();
-    drawimage(fire,0,0,-1);
-    for (i = 2; i < 22; i++)
-	for (j = 2; j < 22; j++)
-	    if (lava_platform_shape[j-2] & (1 << (21-i)))
-		drawimage(tile,10*i,10*j,-1);
+    switch (arena) {
+
+      case LAVA_PLATFORM:
+	drawimage(fire,0,0,-1);
+	for (i = 2; i < 22; i++)
+	    for (j = 2; j < 22; j++)
+		if (lava_platform_shape[j-2] & (1 << (21-i)))
+		    drawimage(tile,10*i,10*j,-1);
+	deliv = &lava_deliv;
+	sx1 = 50; sy1 = 100; sx2 = 170; sy2 = 120;
+	break;
+
+      case THE_CRUCIBLE:
+	drawimage(crucible, 0, 0, -1);
+	deliv = &generic_deliv;
+	sx1 = 60-14; sy1 = 110-14; sx2 = 160+14; sy2 = 110+14;
+	break;
+
+    }
     scr_done();
 }
 
@@ -337,8 +558,8 @@ static int play_game(void)
     for (i = 0; i < 26; i++) {
 	initframe(65000);
 	scr_prep();
-	putsprite(p[0],deliv[0][i],sx1,sy1);
-	putsprite(p[1],deliv[1][i],sx2,sy2);
+	putsprite(p[0],(*deliv)[0][i],sx1,sy1);
+	putsprite(p[1],(*deliv)[1][i],sx2,sy2);
 	scr_done();
 	endframe();
 	vsync();
@@ -392,7 +613,7 @@ static int play_game(void)
 		 */
 
 		if (player_can_steer(x[i], y[i])) {
-		    int axis, accel, brake, fire;
+		    int axis, accel, brake, fire, friction;
 		    axis = SDL_JoystickGetAxis(joys[i], 0) / JOY_THRESHOLD;
 		    accel = SDL_JoystickGetButton(joys[i], 1);   /* X */
 		    brake = SDL_JoystickGetButton(joys[i], 0);   /* Square */
@@ -400,10 +621,11 @@ static int play_game(void)
 		    if (axis < 0) rangle[i] = (rangle[i]+1) % 72;
 		    if (axis > 0) rangle[i] = (rangle[i]+71) % 72;
 		    angle[i] = rangle[i] >> 1;
-		    if (brake) {
-			vx[i] = vx[i]-sign(vx[i])*(abs(vx[i]) >> 5);
-			vy[i] = vy[i]-sign(vy[i])*(abs(vy[i]) >> 5);
-		    }
+		    friction = arena_friction(x[i], y[i]);
+		    if (brake)
+			friction += 256;
+		    vx[i] -= (sign(vx[i])*(abs(vx[i]) >> 5)*friction) >> 8;
+		    vy[i] -= (sign(vy[i])*(abs(vy[i]) >> 5)*friction) >> 8;
 		    if (accel) {
 			vx[i] = vx[i]+sine[angle[i]+9];
 			vy[i] = vy[i]-sine[angle[i]];
@@ -426,10 +648,12 @@ static int play_game(void)
 			}
 		    }
 		    pfire[i] = fire;
+		    check_mirrors(x[i], y[i], &vx[i], &vy[i]);
 		    x[i] = x[i]+vx[i];
 		    y[i] = y[i]+vy[i];
 		} else {
 		    if (player_is_alive(x[i], y[i])) {
+			check_mirrors(x[i], y[i], &vx[i], &vy[i]);
 			x[i] = x[i]+vx[i];
 			y[i] = y[i]+vy[i];
 		    } else {
@@ -438,10 +662,7 @@ static int play_game(void)
 			gameover = 1;
 		    }
 		}
-		if (x[i]<0) x[i] = 0;
-		if (y[i]<0) y[i] = 0;
-		if (x[i]>(220 << 16)) x[i] = 220 << 16;
-		if (y[i]>(220 << 16)) y[i] = 220 << 16;
+		clip(&x[i], &y[i]);
 	    }
 	}
 
@@ -681,6 +902,101 @@ static int adjust_screen(int which)
     free(img);
 }
 
+static int arena_menu(int which)
+{
+    int border = (which == 0 ? 130 : 134);
+    int highlight = (which == 0 ? 27 : 28);
+    Image img;
+
+    struct {
+	char *text;
+	int arena;
+    } menu[3];
+    int nmenu = 0;
+    int h, y, i, mpos, prevval;
+
+    menu[nmenu].text = "LAVA PLATFORM"; menu[nmenu++].arena = LAVA_PLATFORM;
+    menu[nmenu].text = "THE CRUCIBLE"; menu[nmenu++].arena = THE_CRUCIBLE;
+
+    h = 39 + 16*nmenu;
+    y = (200 - h) / 2;
+
+    img = makeimage(120, h, 0, 0);
+    pickimage(img, 100, y);
+
+    scr_prep();
+    bar(100, y, 219, y+h-1, border);
+    bar(102, y+2, 217, y+h-3, 0);
+    
+    swash_centre(100, 219, y+7, "SELECT ARENA", plotpoint, (void *)26);
+
+    mpos = 0;
+    for (i = 0; i < nmenu; i++)
+	if (arena == menu[i].arena)
+	    mpos = i;
+    prevval = 0;
+
+    scr_done();
+
+    while (1) {
+	SDL_Event event;
+	int pushed = 0;
+	int redraw = 0;
+
+	scr_prep();
+	for (i = 0; i < nmenu; i++) {
+	    bar(105, y+34+i*16, 214, y+48+i*16,
+		i==mpos ? highlight : 0);
+	    swash_centre(100, 219, y+37+i*16, menu[i].text,
+			 plotpoint, (void *)26);
+	}
+	scr_done();
+
+	while (SDL_WaitEvent(&event)) {
+	    int action;
+
+	    switch(event.type) {
+	      case SDL_KEYDOWN:
+		/* Standard catch-all quit-on-escape clause. */
+		if (event.key.keysym.sym == SDLK_ESCAPE)
+		    exit(1);
+		break;
+	      case SDL_JOYAXISMOTION:
+		if (event.jaxis.which == which && event.jaxis.axis == 1) {
+		    int val = event.jaxis.value / JOY_THRESHOLD;
+
+		    if (val < 0 && prevval >= 0) {
+			mpos = (mpos+nmenu-1) % nmenu;
+			redraw = 1;
+		    } else if (val > 0 && prevval <= 0) {
+			mpos = (mpos+1) % nmenu;
+			redraw = 1;
+		    }
+		    prevval = val;
+		}
+		break;
+	      case SDL_JOYBUTTONDOWN:
+		if (event.jbutton.which == which) {
+		    pushed = 1;
+		}
+		break;
+	    }
+	    if (pushed || redraw) break;
+	}
+
+	if (pushed) {
+	    arena = menu[mpos].arena;
+	    break;
+	}
+    }
+
+    scr_prep();
+    drawimage(img, 100, y, -1);
+    scr_done();
+
+    free(img);
+}
+
 static int options_menu(int which)
 {
     int border = (which == 0 ? 130 : 134);
@@ -689,13 +1005,14 @@ static int options_menu(int which)
 
     struct {
 	char *text;
-	enum { RETURN, RESET, QUIT, ADJUST } action;
-    } menu[3];
+	enum { RETURN, RESET, ARENA, QUIT, ADJUST } action;
+    } menu[5];
     int nmenu = 0;
     int h, y, i, mpos, prevval;
 
     menu[nmenu].text = "RETURN TO GAME"; menu[nmenu++].action = RETURN;
     menu[nmenu].text = "RESET SCORES"; menu[nmenu++].action = RESET;
+    menu[nmenu].text = "SELECT ARENA"; menu[nmenu++].action = ARENA;
     menu[nmenu].text = "ADJUST SCREEN"; menu[nmenu++].action = ADJUST;
     if (!no_quit_option) {
 	menu[nmenu].text = "EXIT SUMO"; menu[nmenu++].action = QUIT;
@@ -766,6 +1083,7 @@ static int options_menu(int which)
 
 	if (pushed && menu[mpos].action == QUIT) exit(1);
 	if (pushed && menu[mpos].action == RETURN) break;
+	if (pushed && menu[mpos].action == ARENA) arena_menu(which);
 	if (pushed && menu[mpos].action == ADJUST) adjust_screen(which);
 	if (pushed && menu[mpos].action == RESET) { sc1=sc2=0; show_scores();}
     }
@@ -797,6 +1115,8 @@ setbuf(debugfp, NULL);
 
     make_deliveries();
     make_fire(); 
+    make_crucible();
+    arena = LAVA_PLATFORM;
     expand_title();
     make_text();
     do_palette();
@@ -845,6 +1165,7 @@ setbuf(debugfp, NULL);
 			     * pressed it.
 			     */
 			    options_menu(event.jbutton.which);
+			    setup_arena();
 			} else {
 			    pushed = 1;
 			}
@@ -866,7 +1187,7 @@ setbuf(debugfp, NULL);
 /*
  * Make the fiery backdrop underneath the lava-platform arena.
  */
-static int make_fire(void)
+static void make_fire(void)
 {
     int a[244][244];
     int random,x,y,xx,yy,minx,miny,maxx,maxy,min,max;
@@ -906,6 +1227,132 @@ static int make_fire(void)
     for (y = 2; y < 242; y++)
 	for (x = 2; x < 242; x++)
 	    fire[xx++] = 208 + 47*(a[y][x]-min)/max;
+}
+
+struct crucible_plot_ctx {
+    int x, y;
+    int c;
+    Image img;
+};
+
+static void crucible_plot_pocket(void *ctx, int x, int y)
+{
+    struct crucible_plot_ctx *cc = (struct crucible_plot_ctx *)ctx;
+    int i;
+
+#define doplot(Dy,Dx) do { \
+    if ((cc->y+(Dy)) >= 20 && (cc->y+(Dy)) < 220) \
+	imagepixel(cc->img, cc->x+(Dx), cc->y+(Dy), cc->c); \
+} while (0)
+    for (i = 0; i < y; i++) {
+	doplot(+i,+x); doplot(+i,-x);
+	doplot(-i,+x); doplot(-i,-x);
+	doplot(+x,+i); doplot(-x,+i);
+	doplot(+x,-i); doplot(-x,-i);
+    }
+#undef doplot
+}
+
+static void crucible_plot_cushion(void *ctx, int x, int y)
+{
+    struct crucible_plot_ctx *cc = (struct crucible_plot_ctx *)ctx;
+
+    while (x >= 5 && x <= 235 && y >= 25 && y <= 215) {
+	imagepixel(cc->img, x, y, cc->c);
+	x += cc->x;
+	y += cc->y;
+    }
+}
+
+static void crucible_plot_D(void *ctx, int x, int y)
+{
+    struct crucible_plot_ctx *cc = (struct crucible_plot_ctx *)ctx;
+
+    if (cc->x == 0)
+	imagepixel(cc->img, x, y, cc->c);
+    else {
+	imagepixel(cc->img, 120-(50+y)*cc->x, 120 + x, cc->c);
+	imagepixel(cc->img, 120-(50+y)*cc->x, 120 - x, cc->c);
+	imagepixel(cc->img, 120-(50+x)*cc->x, 120 + y, cc->c);
+	imagepixel(cc->img, 120-(50+x)*cc->x, 120 - y, cc->c);
+    }
+}
+
+/*
+ * Make the backdrop for The Crucible.
+ */
+static void make_crucible(void)
+{
+    int i, j;
+    const wood = 163, table = 160, cushion = 161, D = 162, pocket = 0;
+    struct crucible_plot_ctx cctx;
+
+    crucible = makeimage(240, 240, 0, 0);
+
+    /* Table surface */
+    for (i = 5; i <= 235; i++)
+	for (j = 25; j <= 215; j++)
+	    imagepixel(crucible, i, j, table);
+
+    /* Ds */
+    cctx.c = D;
+    cctx.img = crucible;
+    cctx.x = 0;
+    line(70, 25, 70, 215, crucible_plot_D, &cctx);
+    line(170, 25, 170, 215, crucible_plot_D, &cctx);
+    cctx.x = -1;
+    circle(40, crucible_plot_D, &cctx);
+    cctx.x = +1;
+    circle(40, crucible_plot_D, &cctx);
+
+    /* Pockets */
+    cctx.c = pocket; cctx.img = crucible;
+    cctx.x = 0; cctx.y = 20;
+    circle(40, crucible_plot_pocket, &cctx);
+    cctx.x = 0; cctx.y = 220;
+    circle(40, crucible_plot_pocket, &cctx);
+    cctx.x = 240; cctx.y = 20;
+    circle(40, crucible_plot_pocket, &cctx);
+    cctx.x = 240; cctx.y = 220;
+    circle(40, crucible_plot_pocket, &cctx);
+    cctx.x = 120; cctx.y = 20;
+    circle(30, crucible_plot_pocket, &cctx);
+    cctx.x = 120; cctx.y = 220;
+    circle(30, crucible_plot_pocket, &cctx);
+
+    cctx.c = cushion; cctx.img = crucible;
+    /* Left-side cushions */
+    cctx.x = -1; cctx.y = 0;
+    line(0, 190, 20, 170, crucible_plot_cushion, &cctx);
+    line(20, 170, 20, 70, crucible_plot_cushion, &cctx);
+    line(20, 70, 0, 50, crucible_plot_cushion, &cctx);
+    /* Right-side cushions */
+    cctx.x = +1; cctx.y = 0;
+    line(240, 190, 220, 170, crucible_plot_cushion, &cctx);
+    line(220, 170, 220, 70, crucible_plot_cushion, &cctx);
+    line(220, 70, 240, 50, crucible_plot_cushion, &cctx);
+    /* Top cushions */
+    cctx.x = 0; cctx.y = -1;
+    line(30, 20, 50, 40, crucible_plot_cushion, &cctx);
+    line(50, 40, 80, 40, crucible_plot_cushion, &cctx);
+    line(80, 40, 100, 20, crucible_plot_cushion, &cctx);
+    line(140, 20, 160, 40, crucible_plot_cushion, &cctx);
+    line(160, 40, 190, 40, crucible_plot_cushion, &cctx);
+    line(190, 40, 210, 20, crucible_plot_cushion, &cctx);
+    /* Bottom cushions */
+    cctx.x = 0; cctx.y = +1;
+    line(30, 220, 50, 200, crucible_plot_cushion, &cctx);
+    line(50, 200, 80, 200, crucible_plot_cushion, &cctx);
+    line(80, 200, 100, 220, crucible_plot_cushion, &cctx);
+    line(140, 220, 160, 200, crucible_plot_cushion, &cctx);
+    line(160, 200, 190, 200, crucible_plot_cushion, &cctx);
+    line(190, 200, 210, 220, crucible_plot_cushion, &cctx);
+
+    /* Table border */
+    for (i = 1; i < 240; i++)
+	for (j = 21; j < 220; j++)
+	    if (i < 5 || i > 235 || j < 25 || j > 215)
+	    imagepixel(crucible, i, j, wood);
 }
 
 /*
@@ -1084,6 +1531,10 @@ static int do_palette(void)
     setcolour(157,0,55,55);
     setcolour(158,0,59,59);
     setcolour(159,63,63,63);
+    setcolour(160, 0, 32, 0);	       /* Crucible table */
+    setcolour(161, 0, 54, 0);	       /* Crucible cushions */
+    setcolour(162, 31, 63, 31);	       /* Crucible Ds */
+    setcolour(163, 42, 21, 0);	       /* Crucible table border */
     for (i = 0; i < 63; i++)
 	setcolour(192+i,63,i,0);
 }
@@ -1136,7 +1587,6 @@ static int makedeath(int player, int angle)
 
 static int make_deliveries(void)
 {
-    static const unsigned char delhdr[8] = { 10,0,10,0,40,0,40,0 };
     static const int iris[26] = {
 	0,1,2,3,4,5,6,7,8,9,10,10,10,10,10,10,9,8,7,6,5,4,3,2,1,0
     };
@@ -1169,8 +1619,7 @@ static int make_deliveries(void)
 
     for (i = 0; i < 2; i++)
 	for (j = 0; j < 26; j++) {
-	    memset(deliv[i][j], 0, 1608);
-	    memcpy(deliv[i][j], delhdr, 8);
+	    lava_deliv[i][j] = makeimage(40, 40, 10, 10);
 
 	    k = j-6; if (k<5) k = 5; if (k>10) k = 10;
 	    x = 10-k; y = 9+k-x;
@@ -1190,14 +1639,27 @@ static int make_deliveries(void)
 			else
 			    l = 31;
 		    }
-		    imagepixel(deliv[i][j],x,y,l);
+		    imagepixel(lava_deliv[i][j],x,y,l);
 		}
-	    imageonimage(deliv[i][j],tile,0,-iris[j],0);
-	    imageonimage(deliv[i][j],tile,-iris[j],10,0);
-	    imageonimage(deliv[i][j],tile,10+iris[j],0,0);
-	    imageonimage(deliv[i][j],tile,10,10+iris[j],0);
+	    imageonimage(lava_deliv[i][j],tile,0,-iris[j],0);
+	    imageonimage(lava_deliv[i][j],tile,-iris[j],10,0);
+	    imageonimage(lava_deliv[i][j],tile,10+iris[j],0,0);
+	    imageonimage(lava_deliv[i][j],tile,10,10+iris[j],0);
 	    if (j>=16)
-		imageonimage(deliv[i][j],spr[i][18*i],0,0,0);
+		imageonimage(lava_deliv[i][j],spr[i][18*i],0,0,0);
+	}
+
+    for (i = 0; i < 2; i++)
+	for (j = 0; j < 26; j++) {
+	    generic_deliv[i][j] = makeimage(20, 20, 0, 0);
+
+	    imageonimage(generic_deliv[i][j],spr[i][18*i],0,0,0);
+	    srand(0L);
+	    for (x = 0; x < 20; x++)
+		for (y = 0; y < 20; y++) {
+		    if (rand() / (RAND_MAX/26) > j)
+			imagepixel(generic_deliv[i][j], x, y, 0);
+		}
 	}
 }
 
