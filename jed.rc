@@ -1,5 +1,5 @@
 % -*- mode: slang; mode: fold -*-
-% Simon Tatham: version $Revision: 1.16 $
+% Simon Tatham: version $Revision: 1.17 $
 
 %{{{ load Emacs keybindings to start with
 
@@ -627,9 +627,9 @@ define rq() {
 
 % the core routine to actually insert the sig text
 define jedrc_insert_sigtext() {
-    variable f = expand_filename("~/.sig.sh");
+    variable f = expand_filename("~/.sigs/Makesig");
     if (1 == file_status(f))
-        run_shell_cmd(f);
+        run_shell_cmd("perl " + f);
     else
         () = insert_file(expand_filename("~/.signature"));
 }
