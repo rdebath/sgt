@@ -25,3 +25,9 @@ requiring user-level configuration).
 This is certainly going to be a large piece of code, so if it
 happens at all it will want to be a plugin DLL using the plugin
 interface.
+
+<p>
+In the meantime, if you have something which will emulate your
+favourite printer language (e.g. Ghostscript for Postscript), you can
+try bolting it on to PuTTY with something like
+<a href="http://www.cs.wisc.edu/~ghost/redmon/">RedMon</a>.
