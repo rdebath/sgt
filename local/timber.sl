@@ -12,8 +12,9 @@
 % fix: hitting backspace on last (blank) line of mime message will never
 %   fold message however often you do it
 % some form of address book
-% MIME todos: decoding, nested multiparts, better summaries, attaching
-% A forwarding command (do this _after_ MIME and get the MIME handling right)
+% MIME todo: nested multiparts (_hard_)
+% Give forwarding some serious testing, interoperating it with all
+%   mailers I can find (mutt; pine; vm; Eudora; netscrapemail; others?)
 % get the message size counting right (exclude From line? CRLF?)
 % ESC-UP and ESC-DOWN should move a message around within the folder
 % maybe postpone a composed message
