@@ -406,6 +406,23 @@ $1 = "Timber";
 create_syntax_table ($1);
 set_syntax_flags ($1, 0);
 #ifdef HAS_DFA_SYNTAX
+#ifexists dfa_define_highlight_rule
+dfa_enable_highlight_cache("timber.dfa", $1);
+dfa_define_highlight_rule("^[F:].*$", "comment", $1);
+dfa_define_highlight_rule("^\\|[^: \t]*[: ]", "Qkeyword", $1);
+dfa_define_highlight_rule("^\\+.*$", "preprocess", $1);
+dfa_define_highlight_rule("^[ \240]-- $", "keyword", $1);
+dfa_define_highlight_rule("^[ \240]> *> *>.*$", "preprocess", $1);
+dfa_define_highlight_rule("^[ \240]> *>.*$", "comment", $1);
+dfa_define_highlight_rule("^[ \240]>.*$", "string", $1);
+dfa_define_highlight_rule("^[ \240].*$", "normal", $1);
+dfa_define_highlight_rule("^\\* ..D.*$", "dollar", $1);
+dfa_define_highlight_rule("^\\! +[^\\[ ].*$", "delimiter", $1);
+dfa_define_highlight_rule("^\\* [^\\[].*$", "string", $1);
+dfa_define_highlight_rule("^[\\*\\!] +\\[end\\]$", "comment", $1);
+dfa_define_highlight_rule(".*$", "normal", $1);
+dfa_build_highlight_table($1);
+#else
 enable_highlight_cache("timber.dfa", $1);
 define_highlight_rule("^[F:].*$", "comment", $1);
 define_highlight_rule("^\\|[^: \t]*[: ]", "Qkeyword", $1);
@@ -421,6 +438,7 @@ define_highlight_rule("^\\* [^\\[].*$", "string", $1);
 define_highlight_rule("^[\\*\\!] +\\[end\\]$", "comment", $1);
 define_highlight_rule(".*$", "normal", $1);
 build_highlight_table($1);
+#endif
 #endif
 %}}}
 %{{{ The keymap for a Timber composer buffer
@@ -1424,6 +1442,9 @@ define timber_open_folder(name) {
     set_mode(modename, 0);
     use_keymap(modename);
     use_syntax_table(modename);
+#ifexists use_dfa_syntax
+    use_dfa_syntax(1);
+#endif
 
     set_status_line("(Jed %v) Timber: %b   (%p%n)   Press `?' for help", 0);
 
@@ -1996,6 +2017,9 @@ define timber_open_composer() {
     text_mode();
     use_keymap("TimberC");
     use_syntax_table("TimberC");
+#ifexists use_dfa_syntax
+    use_dfa_syntax(1);
+#endif
 
     timber_create_blocal_var("is_reply", 'i');
 
