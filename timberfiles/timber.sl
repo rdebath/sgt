@@ -1010,8 +1010,11 @@ define timber_press_ret() {
         while (what_char() == '*') {
             go_right(2);
             c = what_char();
-            if (c == 'N' or c == 'U')
-                break;
+            if (c == 'N' or c == 'U') {
+		go_right(2);
+		if (what_char() != 'D')
+		    break;
+	    }
             do {
                 go_down_1();
             } while (is_line_hidden() and not eobp());
