@@ -2,7 +2,8 @@ Summary: Trouble with empty PPK key comments
 Class: bug
 Difficulty: fun
 Priority: medium
-Present-in: 0.53b
+Absent-in: 0.52
+Present-in: 0.53b 2002-10-07 2003-01-04
 Content-type: text/x-html-body
 
 <p>
@@ -14,6 +15,8 @@ by PuTTYgen.
 <p>
 For more details:
 <ul>
+<li><code>20021007152204.98637.qmail@web40403.mail.yahoo.com</code>
+<li><code>1701439409.20021127203822@lut.fi</code>
 <li><code>000801c2a3bf$a6b5ab80$5f00a8c0@gabba.world</code>
 <li><code>20030105014246.6485.2902@hm-web2.solinus.com</code>
 </ul>
