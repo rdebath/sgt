@@ -1,0 +1,390 @@
+\C{containers} Container Structures
+
+This chapter gives data structures which store collections of
+\e{elements}, and provide ways to retrieve elements from the
+collection.
+
+Some of these structures allow you to retrieve elements by a numeric
+index; some allow you to retrieve them by looking up a key. Some
+store them in sorted order, so you can retrieve them in that order
+very easily. Some allow easy insertion and deletion; some don't. All
+of them have different advantages and disadvantages.
+
+\H{btree} B-Trees
+
+A B-tree is a balanced tree structure. It stores elements in sorted
+order (usually; see \k{countedbtree}). It provides the following
+efficient operations:
+
+\b Insert a new element in the tree, in \cw{O(log N)} time.
+
+\b Delete an element from the tree, in \cw{O(log N)} time.
+
+\b Look up an element given its key, in \cw{O(log N)} time.
+
+The nodes in a B-tree are not binary nodes; they can vary in size.
+In general, the number of children linked from a given node can be
+anything from \cw{t} to \cw{2t}, for some value of \cw{t}. Each pair
+of children is separated by an element.
+
+(There is one exception: the root node in the tree is allowed to be
+smaller than \cw{t}. \K{btree-add} explains why.)
+
+In the example diagrams given in this description, we will use
+\cw{t=2}, so that each node can have two children separated by an
+element, three children separated by two elements, or four children
+separated by three elements. These are also known as \e{2-3-4
+trees}, and they are the simplest form of B-tree.
+
+Here is a sample B-tree containing the letters of the alphabet:
+
+\c                                       +-----------+
+\c                                       | . J . V . |
+\c                                       +-|---|---|-+
+\c                                         |   |   |
+\c             +---------------------------+   |   +-----------+
+\c             |                               |               |
+\c             v                               v               v
+\c       +-----------+                 +---------------+   +-------+
+\c       | . C . F . |                 | . N . R . T . |   | . X . |
+\c       +-|---|---|-+                 +-|---|---|---|-+   +-|---|-+
+\c         |   |   |                     |   |   |   |       |   |
+\c    +----+  ++   +---+         +-------+ +-+   +-+ +---+   +-+ +----+
+\c    |       |        |         |         |       |     |     |      |
+\c    v       v        v         v         v       v     v     v      v
+\c +-----+ +-----+ +-------+ +-------+ +-------+ +---+ +---+ +---+ +-----+
+\c | A B | | D E | | G H I | | K L M | | O P Q | | S | | U | | W | | Y Z |
+\c +-----+ +-----+ +-------+ +-------+ +-------+ +---+ +---+ +---+ +-----+
+
+In this tree you can see all the possible sizes of node. The X node
+has two children separated by one element; the CF and JV nodes have
+three children and two elements; the NRT node has four children and
+three elements. The leaf nodes, on the bottom level, come in the
+same sizes (one, two or three elements) but have no children.
+
+A B-tree always has the same height everywhere. That is, every path
+from the root to a leaf contains the same number of nodes. Nodes are
+never added \e{below} other nodes, like in a binary tree (see
+\k{binarytree}); instead, new nodes are created by splitting big
+nodes in half, or by adding a new level to the tree at the \e{root}.
+
+\S{btree-add} Adding an element to a B-tree
+
+To add an element to a B-tree, you first need to search down the
+tree to find where to put the element. This always means you will
+end up looking at one of the null element pointers in a leaf node.
+For example, if you wanted to add \cw{"Mc"} to the tree above, you
+would follow the middle link from the root node (\cw{J < Mc < R}),
+follow the left link from the next node (\cw{Mc < N}), try to follow
+the rightmost link from the KLM mode (\cw{M < Mc}), discover it was
+null, and stop.
+
+So you know you want to add the new element either on one end of a
+leaf node, or between two elements in a leaf node. Either way, this
+involves making the leaf node bigger by one element.
+
+If the leaf node is smaller than maximum size, you can just make it
+bigger by one, and that's all that needs doing. So terminate.
+
+If the leaf node is already as big as it can be, you need to split
+it into two. You do this by taking one of the elements out of the
+middle of the node, and splitting the node in two at that element.
+So instead of having a single large node, you have two smaller nodes
+with one element between them. For example:
+
+\c +----------+        +---+       +------+
+\c | K L M Mc |   ->   | K | + L + | M Mc |
+\c +----------+        +---+       +------+
+
+(If the node doesn't split exactly in half, as in this case, it
+doesn't matter which of the two middle elements you choose.)
+
+Next you need to look at the \e{parent} node of the one you have
+just split. There will be a single pointer leading to the old node.
+You need to replace this with two pointers to your new half-nodes.
+Any two pointers must have an element between them; this is why we
+have taken one element out when splitting the large node.
+
+For example, when inserting \cw{"Mc"}, the effect on the N node
+would look like this:
+
+\c   +---------------+        +-------------------+
+\c   | . N . R . T . |        | . L . N . R . T . |
+\c   +-|---|---|---|-+        +-|---|---|---|---|-+
+\c     |   |   |   |            |   |   |   |   |
+\c     |  etc etc etc   ->    +-+   ++ etc etc etc
+\c     |                      |      |
+\c     v                      v      v
+\c +----------+             +---+ +------+
+\c | K L M Mc |             | K | | M Mc |
+\c +----------+             +---+ +------+
+
+So the original over-full node has been split and the node above it
+has grown by one.
+
+If the next node up has not become over-full, the algorithm can now
+terminate. Otherwise, that node must be split in the same way again:
+
+\c +-------------------+      +-------+       +-----------+
+\c | . L . N . R . T . |      | . L . | + N + | . R . T . |
+\c +-|---|---|---|---|-+  ->  +-|---|-+       +-|---|---|-+
+\c   |   |   |   |   |          |   |           |   |   |
+\c  etc etc etc etc etc        etc etc         etc etc etc
+
+Then you look at the parent node of \e{that} node and insert the new
+pointers there, and so on.
+
+Eventually you will either find a node that is not full, so you can
+easily make it bigger by one and terminate the algorithm, or you
+will find you have split the root of the tree into two. If that
+happens, you create a new root node with pointers to the two halves
+of the previous root, like this:
+
+\c                                          +-------+
+\c                                          | . H . |
+\c                                          +-|---|-+
+\c                                            |   |
+\c +-------+       +-----------+          +---+   +---+
+\c | . F . | + H + | . Q . S . |  ->      |           |
+\c +-|---|-+       +-|---|---|-+          v           v
+\c   |   |           |   |   |        +-------+ +-----------+
+\c  etc etc         etc etc etc       | . F . | | . Q . S . |
+\c                                    +-|---|-+ +-|---|---|-+
+\c                                      |   |     |   |   |
+\c                                     etc etc   etc etc etc
+
+(Note that this new node will have only two children. This is
+allowed in a 2-3-4 tree, but in B-trees with larger nodes, it's
+below the minimum size. This is why the root is allowed to be
+smaller than any other node.)
+
+\S{btree-del} Deleting an element from a B-tree
+
+Deleting an element is slightly more fiddly than adding one. When
+adding an element, you can always start at a leaf node, but if
+you're deleting an element, the element you want could be anywhere
+in the tree, even in the root.
+
+The two basic cases are deleting an element from a leaf, and
+deleting an element from an internal node. Assuming the node is
+greater than minimum size, deleting from a leaf is very easy.
+
+If the node containing the element is as small as it can get, you
+have a problem. The solution is to avoid being in that situation: as
+you search down the tree to find the element to delete, you
+\e{avoid} going through any minimum-size node, by making the node
+bigger as you go past.
+
+You can do this by moving one child over from a neighbouring node:
+
+\c   +-----------+                  +-----------+
+\c   | . A . E . |                  | . A . D . |
+\c   +-|---|---|-+                  +-|---|---|-+
+\c     |   |   |                      |   |   |
+\c    etc  |   +---------+           etc  |   +---------+
+\c         |             |      ->        |             |
+\c         v             v                v             v
+\c +---------------+ +-------+      +-----------+ +-----------+
+\c | . B . C . D . | | . F . |      | . B . C . | | . E . F . |
+\c +-|---|---|---|-+ +-|---|-+      +-|---|---|-+ +-|---|---|-+
+\c   |   |   |   |     |   |          |   |   |     |   |   |
+\c  etc etc etc etc   etc etc        etc etc etc   etc etc etc
+
+Here, the rightmost child of the BCD node has been moved over to the
+F node. There needs to be an element to separate it from the
+leftmost child of the F node, and the only element which can go
+there is the E from the AE node. The D from the BCD node is then
+left without a home, so we move that up to take the place of the E.
+Hence, if our search through the tree took us down into the F node,
+we could do this adjustment to ensure the node was more than minimum
+size before descending into it.
+
+You can only move a child over from a neighbour node if you \e{have}
+a neighbour node of more than minimum size. If neither of the node's
+neighbours is suitable, what you do instead is to \e{merge} the node
+with one of its neighbours:
+
+\c         +-----------+                       +-------+
+\c         | . B . D . |                       | . D . |
+\c         +-|---|---|-+                       +-|---|-+
+\c           |   |   |                           |   |
+\c     +-----+   |   +-----+                +----+   +----+
+\c     |         |         |      ->        |             |
+\c     v         v         v                v             v
+\c +-------+ +-------+ +-------+      +---------------+ +-------+
+\c | . A . | | . C . | | . E . |      | . A . B . C . | | . E . |
+\c +-|---|-+ +-|---|-+ +-|---|-+      +-|---|---|---|-+ +-|---|-+
+\c   |   |     |   |     |   |          |   |   |   |     |   |
+\c  etc etc   etc etc   etc etc        etc etc etc etc   etc etc
+
+Here, the A node and the C node have been merged into one big node.
+The rightmost child of the A node and the leftmost child of the C
+node need an element to separate them, and fortunately when the
+pointers in the BD node are merged, the B is left without a home, so
+we move the B down to go between the two small nodes.
+
+This node-merging operation can also destroy the root of the tree.
+This happens if the root has only two children, and both of those
+are of minimum size. In this case, the above merging operation would
+reduce the root to only one child and no elements - so it might as
+well not be there. Like this:
+
+\c      +-------+
+\c      | . B . |
+\c      +-|---|-+
+\c        |   |
+\c     +--+   +--+          +---------------+
+\c     |         |      ->  | . A . B . C . |
+\c     v         v          +-|---|---|---|-+
+\c +-------+ +-------+        |   |   |   |  
+\c | . A . | | . C . |       etc etc etc etc 
+\c +-|---|-+ +-|---|-+
+\c   |   |     |   |
+\c  etc etc   etc etc
+
+So you can start at the root of the tree and search downwards, using
+these operations to ensure you never descend to a node of minimum
+size, until you find your element. When you find it, it might be in
+a leaf, in which case you can just delete it (because you've already
+arranged that the leaf is not of minimum size) and terminate.
+
+In the case where the element is \e{not} in a leaf node, there is
+still work to be done. What we do is similar to the method of
+deleting from a binary tree (see \k{binarytree}): we find the
+successor or the predecessor of the element to be deleted, put it in
+place of the element itself, and then delete the replacement element
+from its original position.
+
+To avoid needless tree restructuring, it is easiest if we choose
+which tree to descend into based on which child node is of more than
+minimum size. So, if the child on the left of the element is greater
+than minimum size, we search down that subtree to find our element's
+predecessor. Alternatively, if the child on the right is greater
+than minimum size, we can search down \e{that} subtree to find the
+element's successor instead. If neither child is of minimum size,
+then no matter which subtree we go down, we will need to do a node
+merge operation (as above), so we do that first and then think about
+it again.
+
+(Note that we will only ever have to change elements once, because
+the successor and predecessor of any element in a B-tree internal
+node are \e{always} elements in leaf nodes.)
+
+In summary, then, the complete B-tree deletion algorithm is
+presented here.
+
+\n{btree-del-searchstep} Search down the tree until we find the
+element to delete. During this search, we avoid ever descending into
+a minimum-size node. If we need to, we must either move a child over
+from a neighbouring node, or if both neighbour nodes are of minimum
+size themselves, merge our node with one of its neighbours. (Note
+that merging might destroy the root of the tree.)
+
+\n Once we find our element, if it's in a leaf node, we can just
+delete it and we're finished.
+
+\n If our element is in an internal node, look at the node's
+children on either side of the element. If both of them are of
+minimum size, we merge them and move down into the combined node.
+(Again, merging might destroy the root of the tree.) Repeat this
+until one of the children next to our element is \e{not} of minimum
+size.
+
+\n Choose a child next to our element which is not of minimum size.
+(If neither is minimum size, it doesn't matter which.) Find the
+predecessor or the successor of our element, depending on whether
+we've chosen the child to the left or the right.
+
+\n When we find the new element, copy it over the top of the old
+one. Now descend to the child we chose, and return to step
+\k{btree-del-searchstep}, searching down towards the original copy
+of the new element and making sure the nodes we pass through are
+bigger than minimum size. Once we reach it, delete it. (It will be
+in a leaf node, so this will be easy.)
+
+\S{countedbtree} Counted B-trees
+
+One useful enhancement you can make to a B-tree is to store element
+counts in it. The idea is that you should always be able to tell how
+many elements are in a subtree, by looking at the counter stored
+next to the subtree pointer.
+
+For example, storing counts in the example tree from \k{btree} would
+make it look like this:
+
+\c                                      +------------+
+\c                                      | 9 J 11 V 4 |
+\c                                      +-|----|---|-+
+\c                                        |    |   |
+\c             +--------------------------+    |   +-----------+
+\c             |                               |               |
+\c             v                               v               v
+\c       +-----------+                 +---------------+   +-------+
+\c       | 2 C 2 F 3 |                 | 3 N 3 R 1 T 1 |   | 1 X 2 |
+\c       +-|---|---|-+                 +-|---|---|---|-+   +-|---|-+
+\c         |   |   |                     |   |   |   |       |   |
+\c    +----+  ++   +---+         +-------+ +-+   +-+ +---+   +-+ +----+
+\c    |       |        |         |         |       |     |     |      |
+\c    v       v        v         v         v       v     v     v      v
+\c +-----+ +-----+ +-------+ +-------+ +-------+ +---+ +---+ +---+ +-----+
+\c | A B | | D E | | G H I | | K L M | | O P Q | | S | | U | | W | | Y Z |
+\c +-----+ +-----+ +-------+ +-------+ +-------+ +---+ +---+ +---+ +-----+
+
+You have to maintain the correctness of those counts whenever you
+modify the tree. This isn't difficult. For example, when you split a
+node, you need to work out counts for the new smaller nodes, and
+when you move a child over from one node to another you have to
+adjust the counts for the source and target nodes.
+
+Instead of storing the count for a subtree next to the pointer to
+the subtree's root, you can store the count \e{in} the subtree's
+root. This makes the nodes smaller (one count per node, instead of
+up to \cw{2t}) but it means you have to access more nodes in order
+to find things.
+
+The purpose of this is to enable you to look up an element by its
+numeric index. If you want the fifth smallest element in the tree,
+or the 18th largest, or the median, all of these are easy to find
+just by checking the numbers as you search down. For example,
+suppose we want the twelfth element.
+
+\b Looking at the JV node: elements 1-9 are on the left of J. J
+itself is number 10. Elements 11-21 are between J and V. So we
+descend between J and V to the NRT node, and remember that it covers
+elements 11-21.
+
+\b Looking at the NRT node: elements 11-13 are on the left of N, N
+is number 14, and so on. So we descend to the left of N.
+
+\b Looking at the KLM node: we know it covers elements 11-13, and so
+K must be 11, L must be 12, and M must be 13. Return L.
+
+The ability to quickly retrieve medians and percentiles (\e{order
+statistics}; see [FIXME]) from a constantly changing data set is one
+thing a counted B-tree lets you do.
+
+A much more useful thing, though, is that if your B-tree is counted,
+it doesn't have to be sorted. It's reasonably easy to alter the
+addition and deletion algorithms so that instead of searching the
+tree by comparing keys, they search the tree by checking element
+counts. Then you end up with a structure in which:
+
+\b You can retrieve the element at position \cw{i} in \cw{O(log N)}
+time.
+
+\b You can insert a new element at position \cw{i} in \cw{O(log N)}
+time.
+
+\b You can delete the element at position \cw{i} in \cw{O(log N)}
+time.
+
+This structure is almost like an unsorted array, but with efficient
+insertion and deletion as well. It's ideal for editors, which need
+to index the lines of the file being edited in a way that lets them
+jump quickly to a numbered line, and also insert and delete lines
+easily.
+
+For specialist purposes, you might want to store a different type of
+count in the nodes: if the elements themselves have sizes of some
+sort, you might want to store the \e{total size} of everything below
+a child.

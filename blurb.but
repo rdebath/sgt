@@ -1,0 +1,17 @@
+\title Data Structures and Algorithms: A Free Reference
+
+\cfg{xhtml-leaf-smallest-contents}{2}
+
+\cfg{xhtml-leaf-contains-contents}{true}
+
+\cfg{xhtml-head-end}{<link rel='stylesheet' href='http://www.chiark.greenend.org.uk/~sgtatham/sitestyle.css' type='text/css' />}
+
+\cfg{xhtml-body-end}{Comments to <a href='mailto:putty@projects.tartarus.org'>anakin@pobox.com</a>}
+
+\preamble This document is a freely redistributable reference for
+common data structures and algorithms.
+
+\copyright Copyright 2001 Simon Tatham. All rights reserved. You may
+distribute this documentation under the
+\W{http://www.opencontent.org/opl.shtml}{OpenContent}
+licence.
