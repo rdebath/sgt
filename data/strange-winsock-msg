@@ -2,6 +2,7 @@ Summary: Strange WinSock messages cause failed assertion in tree234.c
 Class: semi-bug
 Priority: medium
 Present-in: 0.53 0.53b 2002-12-09 2003-01-07
+Fixed-in: 2003-01-10
 Content-type: text/x-html-body
 
 <p>
@@ -42,3 +43,14 @@ help us to debug the problem. Further info from an original reporter
 I have noticed that the lp=1 correlates to the rule
 for port 3000 and lp=2 correlates to the rule for port 110.
 </blockquote>
+
+<p>
+<b>SGT</b>: Reported as fixed in 2003-01-10. (The diagnostics
+confirmed that WinSock was occasionally sending netevent messages
+with wParam==0, hence relevant to no socket. If the lParam had
+contained an error notification for an error which wasn't
+socket-specific, I might have believed they were meaningful and paid
+them some attention; but the lParam was actually an ordinary
+FD_READ/FD_WRITE sort of thing which makes no sense on a non-socket.
+So I've just put in code to ignore such messages, and that seems to
+have worked.)
