@@ -571,17 +571,19 @@ static void ab_set_attr (int contact_id,
     sql_transact (ab, commit_transaction);
 }
 
-void ab_display_name (/*const*/ char *contact_id)
+void ab_display_attr (const char *contact_id,
+		      const char *attr_type)
 {
     const int cid = atoi(contact_id);
-    char *name = ab_get_attr (cid, "name");
-    printf (name ? "%d:%s\n" : "%d\n", cid, name);
-    sfree(name);
+    char *value = ab_get_attr (cid, attr_type);
+    printf (value ? "%d:%s\n" : "%d\n", cid, value);
+    sfree(value);
 }
 
-void ab_change_name (const char *contact_id,
-		     const char *new_name)
+void ab_change_attr (const char *contact_id,
+		     const char *attr_type,
+		     const char *new_value)
 {
-    ab_set_attr (atoi(contact_id), "name", new_name);
+    ab_set_attr (atoi(contact_id), attr_type, new_value);
 }
 

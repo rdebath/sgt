@@ -24,8 +24,7 @@ void run_command(int argc, char **argv)
     } simple[] = {
 	{ "import-mbox", import_mbox_folder },
 	{ "export", export_message },
-	{ "export-mbox", export_as_mbox },
-	{ "contact-names", ab_display_name }
+	{ "export-mbox", export_as_mbox }
     };
 
     for (j = 0; j < lenof(simple); ++j) {
@@ -67,9 +66,14 @@ void run_command(int argc, char **argv)
 	send_from_stdin(charset);
     }
 
-    if (!strcmp (argv[0], "set-contact-name")) {
-	if (1 < argc) {
-	    ab_change_name (argv[1], (2 < argc) ? argv[2] : NULL);
+    if (!strcmp (argv[0], "contact")) {
+	int i;
+	for (i = 2; i < argc; ++i) ab_display_attr (argv[i], argv[1]);
+    }
+
+    if (!strcmp (argv[0], "set-contact")) {
+	if (2 < argc) {
+	    ab_change_attr (argv[2], argv[1], (3 < argc) ? argv[3] : NULL);
 	}
     }
 }
