@@ -1,0 +1,410 @@
+#!/usr/bin/env python
+
+import socket
+import signal
+import select
+import string
+import popen2
+import sys
+import os
+
+# Trivial routines to ensure sensible line endings.
+def chomp(line):
+    while line[-1:] == "\n" or line[-1:] == "\r":
+	line = line[:-1]
+    return line
+
+def crlf(line):
+    return chomp(line) + "\r\n"
+
+def lf(line):
+    return chomp(line) + "\n"
+
+# Dot-stuffing as used when posting or receiving an article.
+def dotstuff(line):
+    if line[:1] == ".":
+	return "." + line
+    else:
+	return line
+
+def undotstuff(line):
+    if line[:1] == ".":
+	return line[1:]
+    else:
+	return line
+
+# Reap child threads.
+def reaper():
+    pid, exitstatus = wait()
+
+# Debugging.
+def debug(s):
+    if debugfile:
+	debugfile.write("%5d " % os.getpid() + lf(s))
+
+def server():
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP)
+    s.bind(("", port)) # bind to NNTP port.
+    s.listen(5)
+    while 1:
+	try:
+	    s2, peer = s.accept()
+	except TypeError, e:
+	    continue
+	pid = os.fork()
+	if pid < 0:
+	    s2.send("!!! unable to fork\n")
+	    s2.close() # unable to fork
+	elif pid > 0:
+	    # we are the parent. Close s2 and go round again
+	    s2.close()
+	else:
+	    # we are the child. Close s, handle the connection, and exit.
+	    s.close()
+	    connection(s2)
+	    sys.exit(0)
+
+def daemon():
+    # go into daemon mode. FIXME.
+    pass
+
+class ConnectionProxy:
+    def __init__(self, server, client):
+	self.server = server
+	self.client = client
+	self.authdata = [] # we have no auth data yet
+	self.lastdir = 1 # client->server
+	self.last_cmd = "QUIT\r\n" # can't imagine why we'd need this!
+	self.posting = 0 # client is sending real commands
+	self.dbgcache = []
+	self.seen480 = 0
+	self.own_post = 0
+
+    def dbg_cache_clear(self):
+	if len(self.dbgcache) > 0:
+	    debug(self.dbgcache[0] + " " + self.dbgcache[1])
+	self.dbgcache = []
+    def dbg_from_server(self, line):
+	self.dbg_cache_clear()
+	self.dbgcache = ["--<", line]
+    def dbg_from_client(self, line):
+	self.dbg_cache_clear()
+	self.dbgcache = [">--", line]
+    def dbg_to_server(self, line):
+	if self.dbgcache == [">--", line]:
+	    debug(">>> " + line)
+	    self.dbgcache = []
+	else:
+	    self.dbg_cache_clear()
+	    debug("--> " + line)
+    def dbg_to_client(self, line):
+	if self.dbgcache == ["--<", line]:
+	    debug("<<< " + line)
+	    self.dbgcache = []
+	else:
+	    self.dbg_cache_clear()
+	    debug("<-- " + line)
+
+    def to_server(self, line):
+	self.dbg_to_server(line)
+	self.server.send(line)
+    def to_client(self, line):
+	self.dbg_to_client(line)
+	self.client.send(line)
+
+    def authenticate(self):
+	# We have a username and a password. Validate them.
+	service = "userv " + self.authdata[0] + " newspasswd-validate"
+	(f, t) = popen2.popen2(service)
+	t.write(self.authdata[1] + "\n")
+	t.flush()
+	lastmsg = "482 rejected: userv could not execute service"
+	gotline = 0
+	while not gotline:
+	    try:
+		err = f.readline()
+		gotline = 1
+	    except TypeError, e:
+		continue
+	err = crlf(err)
+	if err[:1] == "-":
+	    return "482 rejected: " + err[1:]
+	else:
+	    # Now copy auth lines between the two until done.
+	    while 1:
+		try:
+		    line = f.readline()
+		except TypeError, e:
+		    continue
+		if line == "": break
+		line = crlf(line)
+		self.to_server(line)
+		line = ""
+		while string.find(line, "\n") < 0:
+		    line = line + self.server.recv(1024)
+		self.dbg_from_server(line)
+		t.write(line)
+		t.flush()
+		lastmsg = line
+	    return lastmsg
+
+    def rewrite(self, artin):
+	service = "userv " + self.authdata[0] + " newspasswd-rewrite"
+	(f, t) = popen2.popen2(service)
+	pid = os.fork()
+	if pid < 0:
+	    return artin
+	elif pid == 0:
+	    # we are child. Close f and throw artin out of t.
+	    f.close()
+	    for line in artin:
+		t.write(lf(undotstuff(line)))
+	    t.close() # will also flush
+	    sys.exit(0)
+	else:
+	    # we are parent. Close t and expect to read transformed
+	    # article out of f.
+	    while 1:
+		try:
+		    t.close()
+		    break
+		except TypeError, e:
+		    continue
+	    artout = []
+	    while 1:
+		try:
+		    line = f.readline()
+		except TypeError, e:
+		    continue
+		if line == "": break
+		artout.append(crlf(dotstuff(line)))
+	    f.close()
+	    return artout
+
+    def validatepw(self):
+	# We have a username and a password. Validate them.
+	service = "userv " + self.authdata[0] + " newspasswd-validate 2>/dev/null"
+	(f, t) = popen2.popen2(service)
+	t.write(self.authdata[1] + "\n")
+	t.flush()
+	lastmsg = "482 rejected: userv could not execute service"
+	gotline = 0
+	while not gotline:
+	    try:
+		err = f.readline()
+		gotline = 1
+	    except TypeError, e:
+		continue
+	err = crlf(err)
+	if err[:1] == "-":
+	    return "482 rejected: " + err[1:]
+	else:
+	    # Rudely close the connection, which might be painful
+	    # but shouldn't be too bad.
+	    t.close()
+	    f.close()
+	    return "281 looks OK for now, thanks\r\n"
+
+    def serverline(self, line):
+	# Received a line from the server; send to the client.
+	self.dbg_from_server(line)
+	forward = 1
+	if self.lastdir == 1:
+	    # The line is a response (it's the first server->client
+	    # communication after a client->server communication).
+	    # Process various known responses.
+	    if line[0:3] == "335" or line[0:3] == "340":
+		# A 335 or 340 response means the client is
+		# expected to send an article terminated with a "."
+		# line. If we have just sent a manufactured POST
+		# command, we should now send our own article;
+		# otherwise we must pass the response through and
+		# prepare to receive an article from the client.
+		if self.own_post:
+		    for line in self.article:
+			self.to_server(line)
+		    self.to_server(".\r\n")
+		    self.lastdir = 1
+		    forward = 0
+		else:
+		    self.posting = 1
+		    self.article = []
+	    if line[0:3] == "480":
+		# A 480 response means the client is expected to
+		# provide authentication. If we already have our
+		# authentication data available, we must now
+		# transmit it and then replay the previous command.
+		# Otherwise, we just pass the 480 through, to prod
+		# the client into providing us some authinfo we can
+		# use.
+		debug("ooh\n")
+		if len(self.authdata) == 2:
+		    authret = self.authenticate()
+		    self.to_server(self.last_cmd)
+		    if string.lower(self.last_cmd[0:4]) == "post":
+			self.own_post = 1
+		    self.lastdir = 1
+		    forward = 0
+		else:
+		    self.seen480 = 1
+	if forward:
+	    self.to_client(line)
+	    self.lastdir = 2 # server->client
+
+    def clientline(self, line):
+	# Received a line from the client.
+	self.dbg_from_client(line)
+	forward = 1 # send unless told otherwise
+
+	# Check for special commands.
+	if self.posting == 0:
+	    words = string.split(line)
+	    cmdwords = string.split(string.lower(line))
+	    self.last_cmd = line
+
+	    # AUTHINFO: we swallow it.
+	    if cmdwords[0] == "authinfo":
+		if cmdwords[1] == "user":
+		    # AUTHINFO USER: keep the username.
+		    self.authdata = [words[2]]
+		    forward = 0
+		    self.to_client("381 thanks, now the password please\r\n")
+
+		elif cmdwords[1] == "pass":
+		    # AUTHINFO PASS: keep the password and maybe
+		    # authenticate.
+		    forward = 0
+		    if len(self.authdata) < 1:
+			self.to_client("502 please send USER before PASS\r\n")
+		    else:
+			self.authdata = self.authdata[:1] + [words[2]]
+			if self.seen480:
+			    # It's possible that the server has sent us
+			    # a 480 already, in which case we must go
+			    # straight ahead and do the authentication.
+			    authret = self.authenticate()
+			else:
+			    # Otherwise, we might have asked for
+			    # authentication ourselves, in which case
+			    # we merely validate the password.
+			    authret = self.validatepw()
+			self.to_client(authret)
+			self.lastdir = 2 # server->client
+			# Either way, if there was an authentication
+			# problem, we clear the auth data so the user
+			# can have another try.
+			if authret[:1] != "2":
+			    self.authdata = []
+
+		else:
+		    # AUTHINFO anythingelse: complain.
+		    self.to_client("501 proxy only supports USER/PASS\r\n")
+
+	    # POST: we require authentication before accepting the
+	    # article.
+	    if cmdwords[0] == "post" and len(self.authdata) < 2:
+		self.to_client("480 proxy needs authentication to post\r\n")
+		self.lastdir = 2
+		forward = 0
+
+	# If we're in article context, continue swallowing article.
+	if self.posting:
+	    forward = 0
+	    if chomp(line) == ".":
+		# If the client has sent a "." line, return to command
+		# context, rewrite the article, and send it on.
+		self.posting = 0
+		self.article = self.rewrite(self.article)
+		for line in self.article:
+		    self.to_server(crlf(line))
+		self.to_server(".\r\n")
+		self.lastdir = 1
+	    else:
+		# Otherwise, just add the line to the article we're
+		# building up.
+		self.article.append(chomp(line))
+
+	# If no special cases have happened, we can forward the
+	# client's line on to the server.
+	if forward:
+	    self.to_server(line)
+	    self.lastdir = 1 # client->server
+
+def connection(client):
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP)
+    server.connect(("chiark-tunnel.greenend.org.uk", 119))
+    state = ConnectionProxy(server, client)
+    # Now we have two connections, client and server. Wait until
+    # one becomes readable, then read a line from it and send to
+    # the other side.
+    list = [client,server]
+    sbuffer = cbuffer = ""
+    sclosed = cclosed = 0
+    while len(list) > 0:
+	try:
+	    (r, w, e) = select.select(list, [], [])
+	except TypeError, e:
+	    continue
+	if client in r:
+	    buf = client.recv(1024)
+	    if buf == "":
+		# Client has closed; remove it from the select list
+		# and close the sending end of the server
+		# connection in turn.
+		list.remove(client)
+		if not sclosed:
+		    server.shutdown(1) # disallow further sends
+		cclosed = 1
+	    cbuffer = cbuffer + buf
+	if server in r:
+	    buf = server.recv(1024)
+	    if buf == "":
+		# Server has closed; remove it from the select list
+		# and close the sending end of the client
+		# connection in turn.
+		list.remove(server)
+		if not cclosed:
+		    client.shutdown(1) # disallow further sends
+		sclosed = 1
+	    sbuffer = sbuffer + buf
+	# Now look for whole lines in the buffers we've read, and
+	# send them when we see them.
+	while 1:
+	    index = string.find(cbuffer, "\n") + 1
+	    if index == 0 and cclosed: index = len(cbuffer)
+	    if index == 0: break
+	    state.clientline(cbuffer[:index])
+	    cbuffer = cbuffer[index:]
+	while 1:
+	    index = string.find(sbuffer, "\n") + 1
+	    if index == 0 and sclosed: index = len(sbuffer)
+	    if index == 0: break
+	    state.serverline(sbuffer[:index])
+	    sbuffer = sbuffer[index:]
+    server.close()
+    client.close()
+
+debugfile = None
+inetd = 1
+port = 119
+for arg in sys.argv[1:]:
+    if arg == "-d":
+	debugfile = sys.stdout
+    elif arg[:2] == "-p":
+	port = string.atoi(arg[2:])
+    elif arg == "-daemon":
+	inetd = 0
+    else:
+	sys.stderr.write("unrecognised option " + arg)
+
+# Main program. Set up the SIGCHLD handler.
+signal.signal(signal.SIGCHLD, reaper)
+# Detach like a daemon unless in inetd or debugging mode.
+if not (inetd or debugging):
+    daemon()
+# If in inetd mode, run a single connection on fd zero; otherwise
+# run a server.
+if inetd:
+    connection(socket.fromfd(0, socket.AF_INET, socket.SOCK_STREAM))
+else:
+    server()

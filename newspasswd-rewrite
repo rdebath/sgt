@@ -1,0 +1,15 @@
+# Put this in /etc/userv/services.d to give all users the default
+# (null) news article rewriting unless they override it.
+
+if glob calling-group news
+        reset
+        suppress-args
+
+        if ! grep service-user-shell /etc/shells
+                message newspasswd-rewrite called for unreal user
+                execute /bin/true
+                quit
+        fi
+
+        execute /bin/cat
+fi

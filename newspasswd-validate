@@ -1,0 +1,15 @@
+# Put this in /etc/userv/services.d to give all users the default
+# .newspasswd behaviour unless they override it.
+
+if glob calling-group news
+        reset
+        suppress-args
+
+        if ! grep service-user-shell /etc/shells
+                message newspasswd-validate called for unreal user
+                execute /bin/true
+                quit
+        fi
+
+        execute /usr/local/lib/news/newspasswd-validator
+fi
