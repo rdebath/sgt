@@ -14,14 +14,32 @@ through fine. The fault doesn't appear to happen with the Windows
 version, nor with Unix plink (so could be a GUI concurrency problem
 due to the blocking caused by the host key verification dialog?).
 
-What might be special about these connections is that the server
-sends NEWKEYS immediately after sending KEXDH_REPLY, whereas (say)
-OpenSSH appears to wait for the client to send NEWKEYS before sending
-its NEWKEYS. (Based on PuTTY's packet logs.)
-
 Workaround: add the host key to the database first. (Apparently
 this can be done by setting "close window on exit" to "never" in
 the first session, or use contrib/kh2reg.py in PuTTY CVS.)
+
+In PuTTY's SSH packet log, what appears to distinguish failing from
+successful connections is that in the latter, PuTTY logs sending a
+NEWKEYS before logging receiving one, whereas in the former, it
+doesn't log sending one at all. So in Windows and Unix-plink
+connections with and without the host key prompt, and Unix PuTTY
+without the prompt, we get something like
+
+  Incoming packet type 31 / 0x1f (SSH2_MSG_KEXDH_REPLY)
+  [...]
+  Event Log: Host key fingerprint is:
+  Event Log: ssh-dss 1024 xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx
+  Outgoing packet type 21 / 0x15 (SSH2_MSG_NEWKEYS)
+  Incoming packet type 21 / 0x15 (SSH2_MSG_NEWKEYS)
+
+whereas in Unix PuTTY with the prompt, we have
+
+  Incoming packet type 31 / 0x1f (SSH2_MSG_KEXDH_REPLY)
+  [...]
+  Incoming packet type 21 / 0x15 (SSH2_MSG_NEWKEYS)
+  Event Log: expected key exchange reply packet from server
+
+while waiting for the user to respond to the prompt.
 
 Reports:
   000701c3fd23$4a4626e0$0400a8c0@capricho
