@@ -1,6 +1,6 @@
 # -*- mode: sh; mode: fold -*-
 # Simon Tatham's standardised chunk of .bashrc
-# $Revision: 1.24 $
+# $Revision: 1.25 $
 
 #{{{ I don't like .bash_history files. They wet their nests.
 unset HISTFILE
@@ -76,7 +76,8 @@ bashrc_dovars() {
   # LS_COLORS: archive extensions
   LS_COLORS=$LS_COLORS':*.tar=01;31'
   LS_COLORS=$LS_COLORS':*.tgz=01;31:*.arj=01;31:*.taz=01;31:*.lzh=01;31'
-  LS_COLORS=$LS_COLORS':*.zip=01;31:*.z=01;31:*.Z=01;31:*.gz=01;31:*.deb=01;31'
+  LS_COLORS=$LS_COLORS':*.zip=01;31:*.z=01;31:*.Z=01;31:*.gz=01;31'
+  LS_COLORS=$LS_COLORS':*.deb=01;31:*.bz2=01;31'
   # LS_COLORS: image files
   LS_COLORS=$LS_COLORS':*.jpg=01;35:*.gif=01;35:*.bmp=01;35:*.ppm=01;35'
   LS_COLORS=$LS_COLORS':*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35'
