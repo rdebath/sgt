@@ -5,6 +5,7 @@ terminfo linux 'AF=\E[3%p1%dm:AB=\E[4%p1%dm'
 termcap  xterm 'AF=\E[3%dm:AB=\E[4%dm'
 terminfo xterm 'AF=\E[3%p1%dm:AB=\E[4%p1%dm'
 escape ^\^\
+defescape ^\^\
 startup_message off
 shell -/bin/bash
 vbell off
