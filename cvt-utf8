@@ -40,7 +40,6 @@ def process_ucs(x, bytes=[], errors=""):
 	elif x < 0x4000000:
 	    tmp = (0xF8, 4)
 	else:
-	    print x
 	    assert x < 0x80000000L
 	    tmp = (0xFC, 5)
 	realbytes = tmp[1] + 1
