@@ -2,6 +2,7 @@ Summary: PuTTY doesn't correctly encode 255x255 NAWS messages
 Class: bug
 Difficulty: fun
 Present-in: 0.53
+Fixed-in: 2003-01-03
 
 From Thomas Thurman:
 
@@ -13,3 +14,7 @@ From Thomas Thurman:
 
 | Linux telnet servers don't seem to be fazed by this, but it crashed a
 | Python telnet server I was testing it on.
+
+SGT, 2003-01-02: Should now be fixed. And I disagree that Linux
+telnet servers aren't fazed by it - the Debian 3.0 machine on my
+desk certainly doesn't like it much!
