@@ -1,16 +1,19 @@
+/*
+ * DoIt: a remote-execution thingy for Windows.
+ */
+
 #include <windows.h>
 #include <winsock.h>
 
 #include <stdio.h>
 #include <string.h>
 
+#include "doit.h"
+
 typedef unsigned int uint32;
 
 extern HWND listener_hwnd;
 extern HINSTANCE listener_instance;
-
-char *auth_make_nonce(SOCKADDR_IN);
-int auth_check_line(char *line, char *nonce, SOCKET);
 
 typedef struct {
     uint32 h[5];
@@ -29,7 +32,8 @@ void SHA_Init(SHA_State *s);
 void SHA_Bytes(SHA_State *s, void *p, int len);
 void SHA_Final(SHA_State *s, unsigned char *output);
 
-static char *secretfile = "";
+static char *secret;
+static int secretlen;
 
 /*
  * Export the application name.
@@ -39,143 +43,393 @@ char const *listener_appname = "DoIt";
 /*
  * Export the list of ports to listen on.
  */
-static int const port_array[] = { 17481 };
+static int const port_array[] = { DOIT_PORT };
 int listener_nports = sizeof(port_array) / sizeof(*port_array);
 int const *listener_ports = port_array;
+
+/*
+ * Helper function to deal with send() partially completing.
+ */
+static int do_send(SOCKET sock, void *buffer, int len)
+{
+    char *buf = (char *)buffer;
+    int ret, sent;
+
+    sent = 0;
+    while (len > 0 && (ret = send(sock, buf, len, 0)) > 0) {
+        buf += ret;
+        len -= ret;
+        sent += ret;
+    }
+    if (ret <= 0)
+        return ret;
+    else
+        return sent;
+}
+
+char *write_clip(char *data, int len)
+{
+    HGLOBAL clipdata;
+    char *lock;
+
+    clipdata = GlobalAlloc(GMEM_DDESHARE | GMEM_MOVEABLE, len+1);
+
+    if (!clipdata) {
+        return "-GlobalAlloc failed\n";
+    }
+    if (!(lock = GlobalLock(clipdata))) {
+        GlobalFree(clipdata);
+        return "-GlobalLock failed\n";
+    }
+
+    memcpy(lock, data, len);
+    lock[len] = '\0';                  /* trailing null */
+
+    GlobalUnlock(clipdata);
+    if (OpenClipboard(listener_hwnd)) {
+        EmptyClipboard();
+        SetClipboardData(CF_TEXT, clipdata);
+        CloseClipboard();
+        return "+\n";
+    } else {
+        GlobalFree(clipdata);
+        return "-OpenClipboard failed\r\n";
+    }
+}
+
+char *read_clip(int *is_err)
+{
+    HGLOBAL clipdata;
+    char *s;
+
+    if (!OpenClipboard(NULL)) {
+        *is_err = 1;
+        return "-OpenClipboard failed\r\n";
+    }
+    clipdata = GetClipboardData(CF_TEXT);
+    CloseClipboard();
+    if (!clipdata) {
+        *is_err = 1;
+        return "-GetClipboardData failed\r\n";
+    }
+    s = GlobalLock(clipdata);
+    if (!s) {
+        *is_err = 1;
+        return "-GlobalLock failed\r\n";
+    }
+    *is_err = 0;
+    return s;
+}
+
+struct process {
+    char *error;
+    HANDLE fromchild;
+    HANDLE hproc;
+};
+
+struct process start_process(char *cmdline, int wait, int output)
+{
+    STARTUPINFO si;
+    PROCESS_INFORMATION pi;
+    HANDLE fromchild, tochild;
+    HANDLE childout, parentout, childin, parentin;
+    int inherit = FALSE;
+    struct process ret;
+
+    ret.error = NULL;
+    memset(&si, 0, sizeof(si));
+    si.cb = sizeof(si);
+    si.wShowWindow = SW_SHOWNORMAL;
+    si.dwFlags = STARTF_USESHOWWINDOW;
+    if (output) {
+        SECURITY_ATTRIBUTES sa;
+        sa.nLength = sizeof(sa);
+        sa.bInheritHandle = TRUE;
+        sa.lpSecurityDescriptor = NULL;
+        if (!CreatePipe(&parentout, &childout, &sa, 0) ||
+            !CreatePipe(&childin, &parentin, &sa, 0)) {
+            ret.error = "-CreatePipe failed\n";
+            return ret;
+        }
+        if (!DuplicateHandle(GetCurrentProcess(), parentin,
+                             GetCurrentProcess(), &tochild,
+                             0, FALSE, DUPLICATE_SAME_ACCESS)) {
+            ret.error = "-DuplicateHandle failed\n";
+            return ret;
+        }
+        CloseHandle(parentin);
+        if (!DuplicateHandle(GetCurrentProcess(), parentout,
+                             GetCurrentProcess(), &fromchild,
+                             0, FALSE, DUPLICATE_SAME_ACCESS)) {
+            ret.error = "-DuplicateHandle failed\n";
+            return ret;
+        }
+        CloseHandle(parentout);
+        si.hStdInput = childin;
+        si.hStdOutput = si.hStdError = childout;
+        si.dwFlags |= STARTF_USESTDHANDLES;
+        si.wShowWindow = SW_HIDE;
+        inherit = TRUE;
+        ret.fromchild = fromchild;
+    }
+    if (CreateProcess(NULL, cmdline, NULL, NULL, inherit,
+                      CREATE_NEW_CONSOLE | NORMAL_PRIORITY_CLASS,
+                      NULL, NULL, &si, &pi) == 0) {
+        ret.error = "-CreateProcess failed\n";
+    } else {
+        ret.hproc = pi.hProcess;
+    }
+    if (output) {
+        CloseHandle(childin);
+        CloseHandle(childout);
+        CloseHandle(tochild);
+        if (ret.error)
+            CloseHandle(fromchild);
+    }
+    return ret;
+}
+
+int read_process_output(struct process proc, char *buf, int len)
+{
+    DWORD got;
+    if (ReadFile(proc.fromchild, buf, len, &got, NULL) && got > 0) {
+        return got;
+    } else
+        return 0;
+}
+
+int process_exit_code(struct process proc)
+{
+    DWORD exitcode;
+
+    WaitForSingleObject(proc.hproc, INFINITE);
+    if (!GetExitCodeProcess(proc.hproc, &exitcode))
+        return -1;
+    else
+        return exitcode;
+}
+
+/*
+ * Helper function to fetch a whole line from the socket.
+ */
+char *do_fetch(SOCKET sock, doit_ctx *ctx, int line_terminate, int *length)
+{
+    char *cmdline = NULL;
+    int cmdlen = 0, cmdsize = 0;
+    char buf[1024];
+    int len;
+
+    /*
+     * Start with any existing buffered data.
+     */
+    len = doit_incoming_data(ctx, NULL, 0);
+    cmdline = malloc(256);
+    cmdlen = 0;
+    cmdsize = 256;
+    while (1) {
+        if (len > 0) {
+            if (cmdsize < cmdlen + len + 1) {
+                cmdsize = cmdlen + len + 1 + 256;
+                cmdline = realloc(cmdline, cmdsize);
+                if (!cmdline)
+                    return NULL;
+            }
+            while (len > 0) {
+                doit_read(ctx, cmdline+cmdlen, 1);
+                if (line_terminate &&
+                    cmdlen > 0 && cmdline[cmdlen] == '\n') {
+                    cmdline[cmdlen] = '\0';
+                    *length = cmdlen;
+                    return cmdline;
+                }
+                cmdlen++;
+                len--;
+            }
+        }
+        len = recv(sock, buf, sizeof(buf), 0);
+        if (len <= 0) {
+            *length = cmdlen;
+            return line_terminate ? NULL : cmdline;
+        }
+        len = doit_incoming_data(ctx, buf, len);
+    }
+}
+char *do_fetch_line(SOCKET sock, doit_ctx *ctx)
+{
+    int len;
+    return do_fetch(sock, ctx, 1, &len);
+}
+char *do_fetch_all(SOCKET sock, doit_ctx *ctx, int *len)
+{
+    return do_fetch(sock, ctx, 0, len);
+}
+
+/*
+ * Helper functions to encrypt and send data.
+ */
+int do_doit_send(SOCKET sock, doit_ctx *ctx, void *data, int len)
+{
+    void *odata;
+    int olen;
+    odata = doit_send(ctx, data, len, &olen);
+    if (odata) {
+        int ret = do_send(sock, odata, olen);
+        free(odata);
+        return ret;
+    } else {
+        return -1;
+    }
+}
+int do_doit_send_str(SOCKET sock, doit_ctx *ctx, char *str)
+{
+    return do_doit_send(sock, ctx, str, strlen(str));
+}
 
 /*
  * Export the function that handles a connection.
  */
 int listener_newthread(SOCKET sock, int port, SOCKADDR_IN remoteaddr) {
+    int len;
+    char *nonce = NULL;
+    doit_ctx *ctx = NULL;
     char *cmdline = NULL;
-    int cmdlen = 0, cmdsize = 0;
-    char buf[64];
-    int len, newlen, ret;
-    char *nonce;
+    DWORD threadid;
 
-    nonce = auth_make_nonce(remoteaddr);
-    send(sock, "+", 1, 0);
-    send(sock, nonce, strlen(nonce), 0);
-    send(sock, "\r\n", 2, 0);
-    
-    while (1) {
-        len = recv(sock, buf, sizeof(buf), 0);
-        if (len <= 0)
-            goto done;
-        if (cmdsize < cmdlen + len + 1) {
-            cmdsize = cmdlen + len + 1 + 256;
-            cmdline = realloc(cmdline, cmdsize);
-            if (!cmdline)
-                goto done;
-        }
-        memcpy(cmdline+cmdlen, buf, len);
-        cmdline[cmdlen+len] = '\0';
-        cmdlen += len;
-        newlen = strcspn(cmdline, "\r\n");
-        if (newlen == cmdlen-2 &&
-            cmdline[newlen] == '\r' && cmdline[newlen+1] == '\n') {
-            cmdline[newlen] = '\0';
-            break;
-        }
-    }
-    ret = auth_check_line(cmdline, nonce, sock);
-    if (ret > 0) {
-        int success = 0;
+    ctx = doit_init_ctx(secret, secretlen);
+    if (!ctx)
+        goto done;
+
+    doit_perturb_nonce(ctx, "server", 6);
+    doit_perturb_nonce(ctx, &remoteaddr, sizeof(remoteaddr));
+    threadid = GetCurrentThreadId();
+    doit_perturb_nonce(ctx, &threadid, sizeof(threadid));
+    nonce = doit_make_nonce(ctx, &len);
+    if (do_send(sock, nonce, len) != len)
+        goto done;
+    free(nonce);
+    nonce = NULL;
+
+    cmdline = do_fetch_line(sock, ctx);
+    if (!cmdline)
+        goto done;
+
+    if (!strcmp(cmdline, "ShellExecute")) {
         /*
-         * Things beginning 's' get passed to ShellExecute; things
-         * beginning with 'p' go to CreateProcess; things beginning
-         * with 'w' go to CreateProcess and wait; things beginning
-         * with 'r' go to CreateProcess with redirected output, and
-         * wait, and have the output sent back to the client.
-         * (Input is null.)
+         * Read a second line and feed it to ShellExecute(). Give
+         * back either "+" (meaning OK) or "-" followed by an error
+         * message (meaning not OK).
          */
-        char *p = cmdline + ret;
-        char *msg = "+ok\r\n";
-        char buf[40];
-        if (*p == 'p' || *p == 'w' || *p == 'r') {
-            STARTUPINFO si;
-            PROCESS_INFORMATION pi;
-            DWORD exitcode;
-            HANDLE fromchild, tochild;
-            HANDLE childout, parentout, childin, parentin;
-            int inherit = FALSE;
-            memset(&si, 0, sizeof(si));
-            si.cb = sizeof(si);
-            si.wShowWindow = SW_SHOWNORMAL;
-            si.dwFlags = STARTF_USESHOWWINDOW;
-            if (*p == 'r') {
-                SECURITY_ATTRIBUTES sa;
-                sa.nLength = sizeof(sa);
-                sa.bInheritHandle = TRUE;
-                sa.lpSecurityDescriptor = NULL;
-                if (!CreatePipe(&parentout, &childout, &sa, 0) ||
-                    !CreatePipe(&childin, &parentin, &sa, 0)) {
-                    msg = "-CreatePipe failed"; goto doneexec;
-                }
-                if (!DuplicateHandle(GetCurrentProcess(), parentin,
-                                     GetCurrentProcess(), &tochild,
-                                     0, FALSE, DUPLICATE_SAME_ACCESS)) {
-                    msg = "-DuplicateHandle failed"; goto doneexec;
-                }
-                CloseHandle(parentin);
-                if (!DuplicateHandle(GetCurrentProcess(), parentout,
-                                     GetCurrentProcess(), &fromchild,
-                                     0, FALSE, DUPLICATE_SAME_ACCESS)) {
-                    msg = "-DuplicateHandle failed"; goto doneexec;
-                }
-                CloseHandle(parentout);
-                si.hStdInput = childin;
-                si.hStdOutput = si.hStdError = childout;
-                si.dwFlags |= STARTF_USESTDHANDLES;
-                si.wShowWindow = SW_HIDE;
-                inherit = TRUE;
-            }
-            if (CreateProcess(NULL, p+1, NULL, NULL, inherit,
-                              CREATE_NEW_CONSOLE | NORMAL_PRIORITY_CLASS,
-                              NULL, NULL, &si, &pi) == 0) {
-                msg = "-CreateProcess failed\r\n"; goto doneexec;
-            }
-            if (*p == 'r') {
-                CloseHandle(childin);
-                CloseHandle(childout);
-            }
-            if (*p == 'w' || *p == 'r') {
-                if (*p == 'r') {
-                    unsigned char rdbuf[32];
-                    DWORD got;
-                    CloseHandle(tochild);
-                    while (ReadFile(fromchild, rdbuf, sizeof(rdbuf),
-                                    &got, NULL) && got > 0) {
-                        DWORD i;
-                        char anotherbuf[80];
-                        anotherbuf[0] = '=';
-                        for (i = 0; i < got; i++)
-                            sprintf(anotherbuf+i*2+1, "%02X", rdbuf[i]);
-                        strcat(anotherbuf, "\r\n");
-                        send(sock, anotherbuf, strlen(anotherbuf), 0);
-                    }
-                }
-                WaitForSingleObject(pi.hProcess, INFINITE);
-                if (!GetExitCodeProcess(pi.hProcess, &exitcode))
-                    msg = "-GetExitCodeProcess failed\r\n";
-                else if (exitcode != 0) {
-                    msg = buf;
-                    sprintf(buf, "-exit code %d\r\n", exitcode);
-                }
-            }
-        } else if (*p == 's') {
-            if (32 >= (int)ShellExecute(listener_hwnd, NULL, p+1, NULL,
-                                        NULL, SW_SHOWNORMAL))
-                msg = "-ShellExecute failed\r\n";
+        free(cmdline); cmdline = NULL;
+        cmdline = do_fetch_line(sock, ctx);
+        if (32 >= (int)ShellExecute(listener_hwnd, NULL, cmdline, NULL,
+                                    NULL, SW_SHOWNORMAL)) {
+            do_doit_send_str(sock, ctx, "-ShellExecute failed\n");
+        } else {
+            do_doit_send_str(sock, ctx, "+\n");
         }
-        doneexec:
-        send(sock, msg, strlen(msg), 0);
-    } else {
-        send(sock, "-auth failed\r\n", 14, 0);
+        free(cmdline); cmdline = NULL;
+        goto done;
+    }
+
+    if (!strcmp(cmdline, "WriteClipboard")) {
+        /*
+         * Read data until the connection is closed, and write it
+         * to the Windows clipboard.
+         */
+        int len;
+        char *msg;
+        free(cmdline); cmdline = NULL;
+        cmdline = do_fetch_all(sock, ctx, &len);
+        if (cmdline) {
+            msg = write_clip(cmdline, len);
+            free(cmdline); cmdline = NULL;
+        } else
+            msg = "-error reading input\n";
+        do_doit_send_str(sock, ctx, msg);
+        goto done;
+    }
+
+    if (!strcmp(cmdline, "ReadClipboard")) {
+        /*
+         * Read the Windows Clipboard. Give back either "+\n"
+         * followed by the clipboard data, or "-" followed by an
+         * error message and "\n".
+         */
+        int is_err;
+        char *data = read_clip(&is_err);
+        if (is_err) {
+            /* data is an error message */
+            do_doit_send_str(sock, ctx, data);
+        } else {
+            do_doit_send_str(sock, ctx, "+\n");
+            do_doit_send(sock, ctx, data, strlen(data));
+            GlobalUnlock(data);
+        }
+        goto done;
+    }
+
+    if (!strcmp(cmdline, "CreateProcessNoWait") ||
+        !strcmp(cmdline, "CreateProcessWait") ||
+        !strcmp(cmdline, "CreateProcessWithOutput")) {
+        /*
+         * Read a second line and feed it to CreateProcess.
+         * Optionally, wait for it to finish, or even send output
+         * back.
+         * 
+         * If output is sent back, it is sent as a sequence of
+         * Pascal-style length-prefixed strings (a single byte
+         * followed by that many characters), and finally
+         * terminated by a \0 length byte. After _that_ comes the
+         * error indication, which may be "+number\n" for a
+         * termination with exit code, or "-errmsg\n" if a system
+         * call fails.
+         */
+        int wait, output;
+        struct process proc;
+
+        if (!strcmp(cmdline, "CreateProcessNoWait")) wait = output = 0;
+        if (!strcmp(cmdline, "CreateProcessWait")) wait = 1, output = 0;
+        if (!strcmp(cmdline, "CreateProcessWithOutput")) wait = output = 1;
+        free(cmdline); cmdline = NULL;
+        cmdline = do_fetch_line(sock, ctx);
+        
+        proc = start_process(cmdline, wait, output);
+        if (proc.error) {
+            do_doit_send_str(sock, ctx, proc.error);
+            goto done;
+        }
+        if (wait) {
+            int err;
+            if (output) {
+                char buf[256];
+                int len;
+                while ((len = read_process_output(proc, buf+1,
+                                                  sizeof(buf)-1)) > 0) {
+                    buf[0] = len;
+                    do_doit_send(sock, ctx, buf, len+1);
+                }
+                do_doit_send(sock, ctx, "\0", 1);
+            }
+            err = process_exit_code(proc);
+            if (err < 0) {
+                do_doit_send_str(sock, ctx, "-GetExitCodeProcess failed\n");
+            } else {
+                char buf[32];
+                sprintf(buf, "+%d\n", err);
+                do_doit_send_str(sock, ctx, buf);
+            }
+        } else {
+            do_doit_send_str(sock, ctx, "+\n");
+        }
     }
 
     done:
-    free(nonce);
+    if (nonce)
+        free(nonce);
+    if (cmdline)
+        free(cmdline);
+    if (ctx)
+        /* FIXME: free ctx */;
     closesocket(sock);
     return 0;
 }
@@ -184,10 +438,24 @@ int listener_newthread(SOCKET sock, int port, SOCKADDR_IN remoteaddr) {
  * Export the function that gets the command line.
  */
 void listener_cmdline(char *cmdline) {
-    secretfile = malloc(1+strlen(cmdline));
-    if (!secretfile)
-        secretfile = "";
-    strcpy(secretfile, cmdline);
+    FILE *fp;
+
+    fp = fopen(cmdline, "rb");
+    if (!fp) {
+        secretlen = 0;
+        secret = "";
+        return;
+    }
+    fseek(fp, 0, SEEK_END);
+    secretlen = ftell(fp);
+    secret = malloc(secretlen);
+    if (!secret) {
+        secretlen = 0;
+        secret = "";
+    }
+    fseek(fp, 0, SEEK_SET);
+    fread(secret, 1, secretlen, fp);
+    fclose(fp);
 }
 
 /* ======================================================================
@@ -270,207 +538,4 @@ extern int listener_wndproc(HWND hwnd, UINT message,
         SendMessage(hwnd, WM_CLOSE, 0, 0);
     }
     return 1;                          /* not handled */
-}
-
-/* ======================================================================
- * Authentication functions.
- */
-
-char *auth_make_nonce(SOCKADDR_IN addr) {
-    SYSTEMTIME systime;
-    static long unique = 1;
-    SHA_State s;
-    char *ret;
-    unsigned char blk[20];
-    int i;
-
-    GetSystemTime(&systime);
-    unique++;
-
-    ret = malloc(41);
-    if (!ret)
-        return "argh";
-
-    SHA_Init(&s);
-    SHA_Bytes(&s, &addr, sizeof(addr));
-    SHA_Bytes(&s, &systime, sizeof(systime));
-    SHA_Bytes(&s, &unique, sizeof(unique));
-    SHA_Final(&s, blk);
-
-    for (i = 0; i < 20; i++)
-        sprintf(ret + 2*i, "%02x", blk[i]);
-
-    return ret;
-}
-
-int auth_check_line(char *line, char *nonce, SOCKET sk) {
-    char hex[41];
-    unsigned char blk[20];
-    int i;
-    FILE *fp;
-    char buf[256];
-
-    SHA_State s;
-    SHA_Init(&s);
-    SHA_Bytes(&s, nonce, strlen(nonce));
-    fp = fopen(secretfile, "rb");
-    while ((i = fread(buf, 1, sizeof(buf), fp)) > 0)
-        SHA_Bytes(&s, buf, i);
-    fclose(fp);
-    if (strlen(line) >= 40)
-        SHA_Bytes(&s, line+40, strlen(line)-40);
-    SHA_Final(&s, blk);
-
-    for (i = 0; i < 20; i++)
-        sprintf(hex + 2*i, "%02x", blk[i]);
-
-    if (!strncmp(hex, line, 40))
-        return 40;                     /* offset to command */
-    else
-        return 0;                      /* authentication failed */
-}
-
-/* 
- * ======================================================================
- * SHA implementation, for authentication.
- */
-
-/* ----------------------------------------------------------------------
- * Core SHA algorithm: processes 16-word blocks into a message digest.
- */
-
-#define rol(x,y) ( ((x) << (y)) | (((uint32)x) >> (32-y)) )
-
-void SHA_Core_Init(SHA_Core_State *s) {
-    s->h[0] = 0x67452301;
-    s->h[1] = 0xefcdab89;
-    s->h[2] = 0x98badcfe;
-    s->h[3] = 0x10325476;
-    s->h[4] = 0xc3d2e1f0;
-}
-
-void SHA_Block(SHA_Core_State *s, uint32 *block) {
-    uint32 w[80];
-    uint32 a,b,c,d,e;
-    int t;
-
-    for (t = 0; t < 16; t++)
-        w[t] = block[t];
-
-    for (t = 16; t < 80; t++) {
-        uint32 tmp = w[t-3] ^ w[t-8] ^ w[t-14] ^ w[t-16];
-        w[t] = rol(tmp, 1);
-    }
-
-    a = s->h[0]; b = s->h[1]; c = s->h[2]; d = s->h[3]; e = s->h[4];
-
-    for (t = 0; t < 20; t++) {
-        uint32 tmp = rol(a, 5) + ( (b&c) | (d&~b) ) + e + w[t] + 0x5a827999;
-        e = d; d = c; c = rol(b, 30); b = a; a = tmp;
-    }
-    for (t = 20; t < 40; t++) {
-        uint32 tmp = rol(a, 5) + (b^c^d) + e + w[t] + 0x6ed9eba1;
-        e = d; d = c; c = rol(b, 30); b = a; a = tmp;
-    }
-    for (t = 40; t < 60; t++) {
-        uint32 tmp = rol(a, 5) + ( (b&c) | (b&d) | (c&d) ) + e + w[t] + 0x8f1bbcdc;
-        e = d; d = c; c = rol(b, 30); b = a; a = tmp;
-    }
-    for (t = 60; t < 80; t++) {
-        uint32 tmp = rol(a, 5) + (b^c^d) + e + w[t] + 0xca62c1d6;
-        e = d; d = c; c = rol(b, 30); b = a; a = tmp;
-    }
-
-    s->h[0] += a; s->h[1] += b; s->h[2] += c; s->h[3] += d; s->h[4] += e;
-}
-
-/* ----------------------------------------------------------------------
- * Outer SHA algorithm: take an arbitrary length byte string,
- * convert it into 16-word blocks with the prescribed padding at
- * the end, and pass those blocks to the core SHA algorithm.
- */
-
-void SHA_Init(SHA_State *s) {
-    SHA_Core_Init(&s->core);
-    s->blkused = 0;
-    s->lenhi = s->lenlo = 0;
-}
-
-void SHA_Bytes(SHA_State *s, void *p, int len) {
-    unsigned char *q = (unsigned char *)p;
-    uint32 wordblock[16];
-    uint32 lenw = len;
-    int i;
-
-    /*
-     * Update the length field.
-     */
-    s->lenlo += lenw;
-    s->lenhi += (s->lenlo < lenw);
-
-    if (s->blkused && s->blkused+len < SHA_BLKSIZE) {
-        /*
-         * Trivial case: just add to the block.
-         */
-        memcpy(s->block + s->blkused, q, len);
-        s->blkused += len;
-    } else {
-        /*
-         * We must complete and process at least one block.
-         */
-        while (s->blkused + len >= SHA_BLKSIZE) {
-            memcpy(s->block + s->blkused, q, SHA_BLKSIZE - s->blkused);
-            q += SHA_BLKSIZE - s->blkused;
-            len -= SHA_BLKSIZE - s->blkused;
-            /* Now process the block. Gather bytes big-endian into words */
-            for (i = 0; i < 16; i++) {
-                wordblock[i] =
-                    ( ((uint32)s->block[i*4+0]) << 24 ) |
-                    ( ((uint32)s->block[i*4+1]) << 16 ) |
-                    ( ((uint32)s->block[i*4+2]) <<  8 ) |
-                    ( ((uint32)s->block[i*4+3]) <<  0 );
-            }
-            SHA_Block(&s->core, wordblock);
-            s->blkused = 0;
-        }
-        memcpy(s->block, q, len);
-        s->blkused = len;
-    }
-}
-
-void SHA_Final(SHA_State *s, unsigned char *output) {
-    int i;
-    int pad;
-    unsigned char c[64];
-    uint32 lenhi, lenlo;
-
-    if (s->blkused >= 56)
-        pad = 56 + 64 - s->blkused;
-    else
-        pad = 56 - s->blkused;
-
-    lenhi = (s->lenhi << 3) | (s->lenlo >> (32-3));
-    lenlo = (s->lenlo << 3);
-
-    memset(c, 0, pad);
-    c[0] = 0x80;
-    SHA_Bytes(s, &c, pad);
-
-    c[0] = (lenhi >> 24) & 0xFF;
-    c[1] = (lenhi >> 16) & 0xFF;
-    c[2] = (lenhi >>  8) & 0xFF;
-    c[3] = (lenhi >>  0) & 0xFF;
-    c[4] = (lenlo >> 24) & 0xFF;
-    c[5] = (lenlo >> 16) & 0xFF;
-    c[6] = (lenlo >>  8) & 0xFF;
-    c[7] = (lenlo >>  0) & 0xFF;
-
-    SHA_Bytes(s, &c, 8);
-
-    for (i = 0; i < 5; i++) {
-        output[4*i+0] = (unsigned char) ((s->core.h[i] >> 24) & 0xFF);
-        output[4*i+1] = (unsigned char) ((s->core.h[i] >> 16) & 0xFF);
-        output[4*i+2] = (unsigned char) ((s->core.h[i] >>  8) & 0xFF);
-        output[4*i+3] = (unsigned char) ((s->core.h[i] >>  0) & 0xFF);
-    }
 }
