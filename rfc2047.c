@@ -2,6 +2,7 @@
  * RFC2047 encoded header parser for Timber.
  */
 
+#include <string.h>
 #include <assert.h>
 
 #include "timber.h"
