@@ -5,6 +5,7 @@
 sub base64_decode($);
 
 $stripspace = 0;
+$remcr = 0;
 
 open F,$ARGV[0] or die "Unable to open $ARGV[0]\n";
 
@@ -17,17 +18,22 @@ if ($type =~ /[A-Z]/) {
   $type =~ y/A-Z/a-z/;
 }
 
+if ($type =~ /\+$/) {
+  $remcr = 1;
+  $type =~ s/\+$//;
+}
+
 if ($type eq "quoted-printable") {
   while (<F>) {
     s/^ // if $stripspace;
     s/=\n//;
     $newl = chomp;
     while (/^([^=]*)=(..)(.*)$/) {
-      print $1;
+      print &remcr($1);
       $x = $2;
       $_ = $3;
       print "?" unless $x =~ /[0-9A-Fa-f][0-9A-Fa-f]/;
-      print chr(hex($x));
+      print &remcr(chr(hex($x)));
     }
     print $_;
     print "\n" if $newl;
@@ -39,7 +45,7 @@ if ($type eq "quoted-printable") {
     y/A-Za-z0-9+\/=/\000-\100/;
     $chars .= $_;
     while (length($chars) >= 4) {
-      print base64_decode $chars;
+      print &remcr(base64_decode $chars);
       $chars = unpack("x4 a*",$chars);
     }
   }
@@ -56,7 +62,7 @@ if ($type eq "quoted-printable") {
         $out .= chr(($octets[2] << 6) | ($octets[3])) if $len-- > 0;
         splice @octets,0,4;
       }
-      print $out;
+      print &remcr($out);
     }
   }
 } else {
@@ -78,4 +84,10 @@ sub base64_decode($) {
                   $stuff & 255);
   }
   $stuff;
+}
+
+sub remcr {
+  my ($data) = @_;
+  $data =~ y/\r//d if $remcr;
+  $data;
 }
