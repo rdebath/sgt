@@ -1,0 +1,32 @@
+Summary: Port to Win32s
+Class: wish
+Difficulty: taxing
+Priority: medium
+Content-type: text/x-html-body
+
+<p>
+It shouldn't in principle be too difficult to arrange that PuTTY can
+be built for Win32s (an extension to Windows 3.1 to let you run 32-bit
+programs).
+
+<p>
+The last vaguely useful Win32s build I know of is from 1999 Nov 4, and
+even then the configuration dialog didn't work. The most recent
+attempt (2001 May 17) had a working config dialog, but crashed on
+starting a session, and as such doesn't really represent progress.
+
+<p>
+Compiler/linker support is required for a Win32s build. At the least,
+the binary must have a <code>.reloc</code> section (symptom of its not
+doing so is "Invalid format"). MSVC 4 (4.1 or earlier, not 4.2 or
+later) can build for Win32s with <code>/fixed:no</code>, and
+<a href="http://www.mingw.org/">mingw32</a> appears to be able to
+build with vile dlltool hacks, although I don't think there's suitable
+startup code.
+
+<p>
+Increasing use of Windows' Unicode functions may spell doom for a
+Win32s port. Not sure.
+
+<p>
+Help here would be most welcome.
