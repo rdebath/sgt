@@ -1,0 +1,52 @@
+Summary: Ability to run Pageant as a Windows Service in NT/2000/etc
+Class: wish
+Difficulty: tricky
+Priority: never
+Content-type: text/x-html-body
+
+<p>
+People occasionally ask if it's possible to enable running Pageant as
+a Windows Service.
+
+<p>
+It's not. This is for two reasons:
+
+<ul>
+ <li>Pageant's IPC is pretty ad-hoc, and is done partly through
+     window messages. Hence Pageant needs to have a window open at
+     all times, so it can't run as a persistent service through
+     multiple people's sessions.
+
+ <li>Pageant is designed to be used by a single user of a machine
+     (and it contains security code to enforce this). If it ran as a
+     service, it would have to somehow segregate requests from
+     multiple users, maintain lots of separate key databases, do its
+     own internal access control to work out which requests were
+     allowed to access what, and generally things would get a lot
+     more complicated. It's never seemed worth going to this effort.
+</ul>
+
+<p>
+In any case, I've never been sure of the usefulness of running a
+long-term SSH agent to supply keys to automated scripts. That
+doesn't seem much more secure than just leaving the unencrypted key
+on disk - it might protect you against physical-access attacks in
+which the attacker shuts the machine down, steals the hard disk, and
+then can't recover the unencrypted key, but against the much more
+likely network attack in which the attacker gains access to the
+still-running machine it's no help because it's almost as easy to
+read keys out of the agent's memory as it is to read them off disk.
+
+<p>
+A better solution for automated scripts is to create a dedicated SSH key
+for each automated task, and <em>restrict</em> the capabilities of that key
+on the server side. Then just store the private key unencrypted
+(readable by you only, of course) on the client. That way, if an
+attacker manages to gain access to the key file, then they don't
+gain unrestricted access to the account on the server; instead they
+only gain the specific ability to tamper with the progress of that
+particular automated script. Also I think it makes the scripts more
+reliable, because they only depend on disk files, and they're not
+dependent on the presence of a persistent process that might have
+(for example) unexpectedly segfaulted or been accidentally killed a
+day ago.
