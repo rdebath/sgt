@@ -3,10 +3,6 @@
 # Todo:
 #
 #  - Line editing and recall in bottom-line input.
-#  - Scanning subtlety: when a continued item and its continuation
-#    are both new, then although the newer item is listed first,
-#    the older one should be scanned into first so you get the text
-#    of the combined item-pair in chronological order!
 #  - Sessions without write access: be able to start them, and know
 #    what your session is when deciding whether to allow adding.
 #  - "Menu  [ESC]= Utilities and Exit"
@@ -785,10 +781,24 @@ class menu:
 	    line = self.lines[i]
 	    if line[1] == "i" and not line[2].uptodate and \
 	    (line[2].subscription & self.scan_pass):
-		# We've found an item. Return a menu and
-		# y-coordinate, and also an itemid unless we've
-		# had to move to get to it and we're not
-		# configured to dive straight in.
+		# We've found an item. First order of business is
+		# to check just below it to see if it's a
+		# continuation of an _also_-modified item.
+		j = i + 1
+		while j < len(self.lines):
+		    line2 = self.lines[j]
+		    if line2[1] != "i" or line2[2].contin != line[2].itemid:
+			break # we've done our best
+		    if not line2[2].uptodate and \
+		    (line2[2].subscription & self.scan_pass):
+			i = j
+			line = line2
+		    j = j + 1
+
+		# Now we know which item we're going to go for.
+		# Return a menu and y-coordinate, and also an
+		# itemid unless we've had to move to get to it and
+		# we're not configured to dive straight in.
 		if (rcfile.get("scan-straight-in", "yes") == "yes") or \
 		(first_attempt and i >= my and i < myb):
 		    self.scan_pos = i+1  # resume scan after this item
