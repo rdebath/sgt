@@ -332,6 +332,35 @@ $1 = "TimberC";
 () = evalfile("timberc.sl");
 #endif
 %}}}
+%{{{ timber_create_blocal_var: hack to support change to create_blocal_var
+
+% In a staggeringly irritating manoeuvre, Mr Davis in his infinite wisdom
+% decided to make an incompatible change to create_blocal_var() in 0.99.
+% We correct for it here.
+define timber_create_blocal_var(name, type) {
+    if (_jed_version < 9900)
+        create_blocal_var(name, type);
+    else
+        create_blocal_var(name);
+}
+
+%}}}
+%{{{ timber_strchopr: hack to support change to strchopr
+
+define timber_strchopr(s, delim, quote) {
+    variable a, alen, i;
+
+    if (_jed_version >= 9900) {
+        a = strchopr (s, delim, quote);
+        (alen,,) = array_info(a); alen = alen[0];
+        for (i = 0; i < alen; i++)
+            a[i];
+        alen;
+    } else
+        strchopr (s, delim, quote);
+}
+
+%}}}
 %{{{ timber_dontexit(): for accidental ^X^C
 
 % Used when the user mistakenly tries to exit Jed without shutting down
@@ -396,8 +425,11 @@ define timber_acquire_lock(fname) {
     fname = fname + ".LCK";
     if (file_status(fname) != 1)
 	fname = dircat(timber_folders, fname);
-    fs = mkdir(fname);
-    if (fs <= 0)
+    if (_jed_version >= 9900)
+        fs = mkdir(fname, 0700);
+    else
+        fs = mkdir(fname);
+    if (fs < 0)
         return 0;
     else
         return 1;
@@ -1406,7 +1438,7 @@ define timber_open_folder(name) {
 	message(Sprintf("Inventing empty folder `%s'.", name, 1));
     }
 
-    create_blocal_var("foldername", 's');
+    timber_create_blocal_var("foldername", 's');
     set_blocal_var(fname, "foldername");
 
     timber_foldall(); % fold up everything
@@ -1836,7 +1868,7 @@ define timber_open_composer() {
     use_keymap("TimberC");
     use_syntax_table("TimberC");
 
-    create_blocal_var("is_reply", 'i');
+    timber_create_blocal_var("is_reply", 'i');
 
     insert("X-Mailer: Jed/Timber " + timber_version + "\n");
     insert(timber_custom_headers);
@@ -1873,7 +1905,7 @@ define timber_contains_addr(list, addr) {
     variable i, a1, a2;
     
     a2 = timber_real_addr(addr);
-    i = strchopr (list, ',', '\\');
+    i = timber_strchopr (list, ',', '\\');
     while (i) {
 	i--;
 	a1 = timber_real_addr(());
@@ -2070,7 +2102,7 @@ define timber_reply_common(all) {
 	outto = from;
 	outcc = "";
 	if (all) {
-	    i = strchopr (to + "," + cc, ',', '\\');
+	    i = timber_strchopr (to + "," + cc, ',', '\\');
 	    while (i) {
 		i--;
 		addr = ();
@@ -2103,13 +2135,13 @@ define timber_reply_common(all) {
     % So now open a composer window.
     timber_open_composer();
 
-    create_blocal_var("orig_to", 's');
+    timber_create_blocal_var("orig_to", 's');
     set_blocal_var(orig_to, "orig_to");
-    create_blocal_var("orig_replyto", 's');
+    timber_create_blocal_var("orig_replyto", 's');
     set_blocal_var(orig_replyto, "orig_replyto");
-    create_blocal_var("orig_from", 's');
+    timber_create_blocal_var("orig_from", 's');
     set_blocal_var(orig_from, "orig_from");
-    create_blocal_var("orig_subj", 's');
+    timber_create_blocal_var("orig_subj", 's');
     set_blocal_var(orig_subj, "orig_subj");
     set_blocal_var(1, "is_reply");
 
