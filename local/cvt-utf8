@@ -1,0 +1,290 @@
+#!/usr/bin/python 
+
+import sys
+import string
+import os
+import dbm
+
+def hexstr(x):
+    s = hex(x)
+    if s[-1:] == "L" or s[-1:] == "l":
+	s = s[:-1]
+    if s[:2] == "0x" or s[:2] == "0X":
+	s = s[2:]
+    return s
+
+def charname(x):
+    if db:
+	key = hexstr(x)
+	while len(key) < 4: key = "0" + key
+	key = string.upper(key)
+	value = db.get(key, "<no name available>")
+	return string.split(value, ";")[1]
+    else:
+	return ""
+
+def process_ucs(x, bytes=[], errors=""):
+    if x < 0x80:
+	utf8 = [x]
+	realbytes = 1
+    else:
+	if x < 0x800:
+	    tmp = (0xC0, 1)
+	elif x < 0x10000:
+	    tmp = (0xE0, 2)
+	elif x < 0x200000:
+	    tmp = (0xF0, 3)
+	elif x < 0x4000000:
+	    tmp = (0xF8, 4)
+	else:
+	    print x
+	    assert x < 0x80000000L
+	    tmp = (0xFC, 5)
+	realbytes = tmp[1] + 1
+	utf8 = [tmp[0] + (x >> (6*tmp[1]))]
+	for i in range(tmp[1]-1, -1, -1):
+	    utf8.append(0x80 + (0x3F & (x >> (i*6))))
+
+    if bytes != [] and len(bytes) > realbytes:
+	errors = errors + " (overlong form of"
+	for i in utf8:
+	    errors = errors + " %02X" % i
+	errors = errors + ")"
+	utf8 = bytes
+    if x >= 0xD800 and x <= 0xDFFF:
+	errors = errors + " (surrogate)"
+    if x >= 0xFFFE and x <= 0xFFFF:
+	errors = errors + " (invalid char)"
+
+    s = "U-%08X " % x
+    for i in utf8:
+	s = s + " %02X" % i
+    for i in range(6-len(utf8)):
+	s = s + "   "
+    
+    name = charname(x)
+    if name != "":
+	s = s + " " + name
+    s = s + errors
+    print s
+
+def process_utf8(list):
+    j = 0
+    while j < len(list):
+	jpos = j
+	i = list[j]
+	j = j + 1
+	if i < 0x80:
+	    process_ucs(i) # single-byte char
+	elif i == 0xfe or i == 0xff:
+	    print "            %02X                (invalid UTF-8 byte)" % i
+	elif i >= 0x80 and i <= 0xbf:
+	    print "            %02X                (unexpected continuation byte)" % i
+	else:
+	    if i >= 0xC0 and i <= 0xDF:
+		acc = i &~ 0xC0
+		cbytes = 1
+	    elif i >= 0xE0 and i <= 0xEF:
+		acc = i &~ 0xE0
+		cbytes = 2
+	    elif i >= 0xF0 and i <= 0xF7:
+		acc = i &~ 0xF0
+		cbytes = 3
+	    elif i >= 0xF8 and i <= 0xFB:
+		acc = i &~ 0xF8
+		cbytes = 4
+	    elif i >= 0xFC and i <= 0xFD:
+		acc = i &~ 0xFC
+		cbytes = 5
+	    while cbytes > 0 and j < len(list) and list[j] >= 0x80 and list[j] <= 0xBF:
+		acc = (acc << 6) + (list[j] & 0x3F)
+		cbytes = cbytes - 1
+		j = j + 1
+	    if cbytes > 0:
+		s = "           "
+		for i in list[jpos:j]:
+		    s = s + " %02X" % i
+		for i in range(6-(j-jpos)):
+		    s = s + "   "
+		s = s + " (incomplete sequence)"
+		print s
+	    else:
+		process_ucs(acc, list[jpos:j])
+
+def do(args):
+    list = []
+    for arg in args:
+	if arg[0] == "U":
+	    if len(list) > 0:
+		process_utf8(list)
+		list = []
+	    assert arg[1] == "+" or arg[1] == "-"
+	    process_ucs(string.atoi(arg[2:], 16))
+	else:
+	    list.append(string.atoi(arg, 16))
+
+    if len(list) > 0:
+	process_utf8(list)
+
+if sys.argv[1:] == []:
+    print "usage: cvt-utf8 <hex UTF-8 bytes or U+codepoints>"
+    print "  e.g. cvt-utf8 e2 82 ac"
+    print "    or cvt-utf8 U+20ac"
+    print "    or cvt-utf8 U-10ffff"
+    print ""
+    print "Also:  cvt-utf8 --test    run Markus Kuhn's decoder stress tests"
+    print "       cvt-utf8 --build <infile> <outfile>"
+    print "                          convert UnicodeData.txt to unicode.db"
+    print "       cvt-utf8 --fetch-build <outfile>"
+    print "                          "+\
+    "build unicode.db by download from unicode.org"
+    sys.exit(0)
+
+if sys.argv[1] == "--build" or sys.argv[1] == "--fetch-build":
+    if sys.argv[1] == "--build":
+	if len(sys.argv) != 4:
+	    print "cvt-utf8: --build expects two filename arguments"
+	    sys.exit(1)
+	infile = open(sys.argv[2], "r")
+	outfile = sys.argv[3]
+    else:
+	if len(sys.argv) != 3:
+	    print "cvt-utf8: --fetch-build expects one filename argument"
+	    sys.exit(1)
+	import urllib
+	infile = urllib.urlopen("http://www.unicode.org/Public/UNIDATA/UnicodeData.txt")
+	outfile = sys.argv[2]
+    # Now build the database.
+    if outfile[-3:] == ".db":
+	outfile = outfile[:-3]
+    else:
+	print "cvt-utf8: db name does not end in .db: dbm will append .db"
+    db = dbm.open(outfile, "n")
+    while 1:
+	s = infile.readline()
+	if s == "": break
+	ss = string.split(s, ";")[0]
+	db[ss] = s
+    db.close()
+    sys.exit(0)
+
+locations = []
+locations.append("/usr/share/unicode/unicode")
+locations.append("/usr/lib/unicode/unicode")
+locations.append("/usr/local/share/unicode/unicode")
+locations.append("/usr/local/lib/unicode/unicode")
+locations.append(os.environ["HOME"] + "/share/unicode/unicode")
+locations.append(os.environ["HOME"] + "/lib/unicode/unicode")
+
+for loc in locations:
+    try:
+	db = dbm.open(loc, "r")
+    except IOError:
+	db = None
+    except dbm.error:
+	db = None
+    if db != None:
+	break
+
+if sys.argv[1] == "--test":
+    do(["CE","BA","E1","BD","B9","CF","83","CE","BC","CE","B5"])
+    do(["00"])
+    do(["C2","80"])
+    do(["E0","A0","80"])
+    do(["F0","90","80","80"])
+    do(["F8","88","80","80","80"])
+    do(["FC","84","80","80","80","80"])
+    do(["7F"])
+    do(["DF","BF"])
+    do(["EF","BF","BF"])
+    do(["F7","BF","BF","BF"])
+    do(["FB","BF","BF","BF","BF"])
+    do(["FD","BF","BF","BF","BF","BF"])
+    do(["ED","9F","BF"])
+    do(["EE","80","80"])
+    do(["EF","BF","BD"])
+    do(["F4","8F","BF","BF"])
+    do(["F4","90","80","80"])
+    do(["80"])
+    do(["BF"])
+    do(["80","BF"])
+    do(["80","BF","80"])
+    do(["80","BF","80","BF"])
+    do(["80","BF","80","BF","80"])
+    do(["80","BF","80","BF","80","BF"])
+    do(["80","BF","80","BF","80","BF","80"])
+    do(["80","81","82","83","84","85","86","87",
+    "88","89","8A","8B","8C","8D","8E","8F",
+    "90","91","92","93","94","95","96","97",
+    "98","99","9A","9B","9C","9D","9E","9F",
+    "A0","A1","A2","A3","A4","A5","A6","A7",
+    "A8","A9","AA","AB","AC","AD","AE","AF",
+    "B0","B1","B2","B3","B4","B5","B6","B7",
+    "B8","B9","BA","BB","BC","BD","BE","BF"])
+    do(["C0","20","C1","20","C2","20","C3","20",
+    "C4","20","C5","20","C6","20","C7","20",
+    "C8","20","C9","20","CA","20","CB","20",
+    "CC","20","CD","20","CE","20","CF","20",
+    "D0","20","D1","20","D2","20","D3","20",
+    "D4","20","D5","20","D6","20","D7","20",
+    "D8","20","D9","20","DA","20","DB","20",
+    "DC","20","DD","20","DE","20","DF","20"])
+    do(["E0","20","E1","20","E2","20","E3","20",
+    "E4","20","E5","20","E6","20","E7","20",
+    "E8","20","E9","20","EA","20","EB","20",
+    "EC","20","ED","20","EE","20","EF","20"])
+    do(["F0","20","F1","20","F2","20","F3","20",
+    "F4","20","F5","20","F6","20","F7","20"])
+    do(["F8","20","F9","20","FA","20","FB","20"])
+    do(["FC","20","FD","20"])
+    do(["C0"])
+    do(["E0","80"])
+    do(["F0","80","80"])
+    do(["F8","80","80","80"])
+    do(["FC","80","80","80","80"])
+    do(["DF"])
+    do(["EF","BF"])
+    do(["F7","BF","BF"])
+    do(["FB","BF","BF","BF"])
+    do(["FD","BF","BF","BF","BF"])
+    do(["C0","E0","80","F0","80","80","F8","80",
+    "80","80","FC","80","80","80","80",
+    "DF","EF","BF","F7","BF","BF","FB",
+    "BF","BF","BF","FD","BF","BF","BF","BF"])
+    do(["FE"])
+    do(["FF"])
+    do(["FE","FE","FF","FF"])
+    do(["C0","AF"])
+    do(["E0","80","AF"])
+    do(["F0","80","80","AF"])
+    do(["F8","80","80","80","AF"])
+    do(["FC","80","80","80","80","AF"])
+    do(["C1","BF"])
+    do(["E0","9F","BF"])
+    do(["F0","8F","BF","BF"])
+    do(["F8","87","BF","BF","BF"])
+    do(["FC","83","BF","BF","BF","BF"])
+    do(["C0","80"])
+    do(["E0","80","80"])
+    do(["F0","80","80","80"])
+    do(["F8","80","80","80","80"])
+    do(["FC","80","80","80","80","80"])
+    do(["ED","A0","80"])
+    do(["ED","AD","BF"])
+    do(["ED","AE","80"])
+    do(["ED","AF","BF"])
+    do(["ED","B0","80"])
+    do(["ED","BE","80"])
+    do(["ED","BF","BF"])
+    do(["ED","A0","80","ED","B0","80"])
+    do(["ED","A0","80","ED","BF","BF"])
+    do(["ED","AD","BF","ED","B0","80"])
+    do(["ED","AD","BF","ED","BF","BF"])
+    do(["ED","AE","80","ED","B0","80"])
+    do(["ED","AE","80","ED","BF","BF"])
+    do(["ED","AF","BF","ED","B0","80"])
+    do(["ED","AF","BF","ED","BF","8F"])
+    do(["EF","BF","BE"])
+    do(["EF","BF","BF"])
+else:
+    do(sys.argv[1:])
