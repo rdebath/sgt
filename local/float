@@ -67,6 +67,17 @@ foreach $arg (@ARGV) {
       $number = pack "C*", @data;
       &display($pack, $n, $number, $order);
     } else {
+      if ($arg =~ /0x/) {
+          # Hex floats might tickle Debian bug #172562 (in glibc).
+          # To work around this, I append a large number of zeroes
+          # and a one to the mantissa. Horrid, and in particular
+          # this relies on round-to-nearest, but it works for now.
+          if ($arg =~ /\./) {
+              $arg =~ s/p/000000000000000000001p/;
+          } else {
+              $arg =~ s/p/.000000000000000000001p/;
+          }
+      }
       $number = pack $pack, $arg;
       &display($pack, $n, $number, $order);
     }
