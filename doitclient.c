@@ -14,12 +14,13 @@
 
 #include <sys/time.h>
 #include <sys/types.h>
+#include <sys/socket.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
 #include <termios.h>
 #include <sys/socket.h>
-#include <arpa/inet.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 #include <netdb.h>
 
 #include "doit.h"
@@ -460,7 +461,7 @@ void showversion(void)
     char *v;
     extern char doitlib_revision[];
 
-    v = makeversion(versionbuf, "$Revision: 1.15 $");
+    v = makeversion(versionbuf, "$Revision: 1.16 $");
     if (v)
 	printf("doitclient revision %s", v);
     else
