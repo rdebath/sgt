@@ -1,0 +1,14 @@
+Summary: PuTTY misinterprets SCI as DECID
+Class: bug
+Priority: medium
+Difficulty: fun
+Content-type: text/plain
+Present-in: 2005-01-12
+
+When using an ISO 8-bit character set (like ISO 8859-1), character code 0x9a
+is the C1 control SCI, Single Character Introducer, whose use is "reserved
+for future standardization" by ECMA-48.  PuTTY, though, internally translates
+it into ESC Z, which it then interprets as DECID for VT52 compatibility.
+This is particularly unfortunate since it means that there's a single byte
+that causes PuTTY to send data back to the server, which tends to cause
+problems for people foolish enough as to "cat" binary files.
