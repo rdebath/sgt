@@ -1,6 +1,11 @@
 Release FIXME
 -------------
 
+ - Disallow periods and slashes in level set names, to confine
+   Enigma to reading and writing files _only_ in its designated
+   level and save directories. Might just have been a security hole,
+   although I can't immediately see a way.
+
 Release 1.02
 ------------
 
