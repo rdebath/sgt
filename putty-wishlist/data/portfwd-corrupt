@@ -1,0 +1,56 @@
+Summary: Reports of port forwarding corruption
+Class: bug
+Present-in: 0.53b 2003-06-29 0.54
+Content-type: text/x-html-body
+
+<p>
+We've had several reports of data corruption in port-forwarded connections.
+Some (possibly all) of these are due to data loss. The PuTTY client (as
+opposed to others) appears to be correlated with the data loss, although
+it's unclear whether the data is actually being lost before or after PuTTY
+is dealing with it.
+
+<p>
+Problems have been reported with both directions of tunneling, both directions
+of data transfer, and both SSH protocols (SSH-1 and SSH-2).
+
+<p>
+The reports below may correspond to several different bugs, as a range of
+symptoms are reported.
+
+<ul>
+<li><code><a href="http://groups.google.com/groups?selm=2821c598.0306222343.8ea8a79%40posting.google.com">2821c598.0306222343.8ea8a79@posting.google.com</a></code>
+<br>(also <code>3F031766.BC09B85A@uni-mb.si</code>)
+<br>Server: <code>SSH-1.5-OSU_1.4alpha3</code> on OpenVMS V7.3-1
+<br>Protocol: SSH-1
+<br>local-to-remote tunnel of POP3/SMTP
+<br>Problems with sending messages (dialogue or attachments corrupted)
+<br>Apparently the first port-forwarded connection in a session will lose
+some quantity of the data sent from PuTTY to the server from the start
+of the connection.
+<br>SSH packet log makes it look like data is being lost by the server (or
+possibly after PuTTY does the logging), but other clients (e.g., OpenSSH,
+recent F-Secure) don't show this behaviour.
+
+<li><code>20040209143157.89534.qmail@web14102.mail.yahoo.com</code>
+<br>0.53b + (2004-02-02?) + (2004-02-09?)
+<br>Various Red Hat 7.x servers. One is SSH-1.99-OpenSSH_3.1p1.
+<br>Protocol: SSH-1 and SSH-2
+<br>HTTP tunnel (local-to-remote?)
+<br>Result of GET truncated (incomplete)?
+<br>Looks to be correlated with slow consumer (web browser)
+<br>Same person has same problem with TeraTerm SSH ("Error 10058: Cannot
+send after socket shutdown.").
+<br>PuTTY sometimes hangs?
+<br>Includes SSH packet log; this shows SSH-2 local-to-remote forwarding, with PuTTY apparently receiving all the data. Maybe it fails to pass it on to the HTTP client?
+
+<li><code>002101c45ee8$ff761990$6801a8c0@carmani600m</code>
+<br>"SMTP tunneling corrupts attachments" -- no other info
+
+<li><code>1090249727.4682.55.camel@oberon.tremagi.org.uk</code>
+<br>Win2KSP3 + PuTTY 0.54 (and 0.53b)
+<br>Fedora Core 2 (unpatched) + OpenSSH (openssh-server-3.6.1p2-34)
+<br>Remote tunnel for "yum" over HTTP: "yum" pulling data
+(i.e. outbound from PuTTY)
+
+</ul>
