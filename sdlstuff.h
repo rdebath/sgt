@@ -11,6 +11,7 @@ extern SDL_Surface *screen;
 
 #define scrdata ((Uint8 *)screen->pixels)
 
+long long bigclock(void);
 void cleanup(void);
 int setup(void);
 int vsync(void);
