@@ -1,0 +1,25 @@
+Summary: Perhaps PSCP should permit multiple remote sources
+Class: wish
+Difficulty: tricky
+Priority: low
+Content-type: text/x-html-body
+
+<p>
+PSCP currently has no local way of specifying multiple remote files
+explicitly (rather than with wildcards). (If it's using the SCP
+backend, you may be able to use remote,
+<a href="http://www.tartarus.org/~simon/puttydoc/Chapter5.html#5.2.1">unsafe</a>,
+wildcards or shell constructs.)
+
+<p>
+i.e. you can't do
+<br><pre>pscp server:file1 server:file2 server:another_file localdir</pre>
+
+<p>
+In order for this syntax to be more useful than multiple separate
+invocations of PSCP, we'd have to be slightly clever to group requests
+to the same server and avoid multiple sessions/re-authentications.
+
+<p>
+(Or perhaps we could add brace expansion to the set of local
+"wildcards" we support, for the SFTP backend at least.)
