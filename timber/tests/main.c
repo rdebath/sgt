@@ -10,10 +10,13 @@ Suite *main_suite (void)
 }
 
 
+extern Suite *date_suite(void);
+
 int main (void)
 {
     int nf;
     SRunner *sr = srunner_create (main_suite());
+    srunner_add_suite (sr, date_suite());
     srunner_run_all (sr, CK_NORMAL);
     nf = srunner_ntests_failed (sr);
     srunner_free (sr);
