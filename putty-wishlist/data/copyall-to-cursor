@@ -1,0 +1,18 @@
+Summary: "Copy All to Clipboard" misses out screen contents after cursor
+Class: bug
+Difficulty: fun
+Priority: medium
+Present-in: 0.51 0.52 0.53 0.53b 2003-10-29
+Content-type: text/x-html-body
+
+<p>
+The documentation of the menu option "Copy All to Clipboard" claims
+that it copies "the whole contents of the terminal screen and
+scrollback to the clipboard in one go."
+
+<p>
+However, it does not copy any text from locations on or after the
+current cursor position.
+
+<p>
+The first release this feature was present in is 0.51.
