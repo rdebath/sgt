@@ -1,5 +1,5 @@
 % -*- mode: slang; mode: fold -*-
-% Simon Tatham: version $Revision: 1.2 $
+% Simon Tatham: version $Revision: 1.3 $
 
 %{{{ load Emacs keybindings to start with
 
@@ -506,6 +506,14 @@ define Q() {
     }
 }
 
+% the core routine to actually insert the sig text
+define jedrc_insert_sigtext() {
+    if (1 == file_status(expand_filename("~/.sig.sh")))
+        run_shell_cmd("~/.sig.sh");
+    else
+        () = insert_file(expand_filename("~/.signature"));
+}
+
 % insert a sig
 define sig() {
     push_spot();
@@ -521,7 +529,7 @@ define sig() {
             insert_char('\n');
     }
     insert("-- \n");
-    () = insert_file(expand_filename("~/.signature"));
+    jedrc_insert_sigtext();
 }
 
 %}}}
