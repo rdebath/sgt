@@ -1,0 +1,23 @@
+Summary: Failed assertion in sshcrcda.c
+Present-in: 0.52 0.53 0.53b
+Content-type: text/x-html-body
+
+<p>
+From <a href="http://groups.google.com/groups?q=msgid%3Apkni1vgj9b2tn56e18s6jc6f2is2qp26ik%404ax.com">comp.security.ssh</a>:
+
+<p><pre>I was running putty.exe version 52 and then I tried version 53 using a
+local L119 to news.host.com:119 tunnel to pull news across with Forte
+Agent.  I ended up getting this assert from putty.exe (this is version
+53):
+
+Microsoft Visual C++ Runtime Library
+========================================
+Assertion failed!
+
+Program: ...Users\Documents\Downloads\SSH\Putty\putty.exe
+File: sshcrcda.c
+Line: 98
+
+Expression: !(len &gt; (SSH_MAXBLOCKS * SSH_BLOCKSIZE) || len % SSH_BLOCKSIZE != 0)
+
+Just thought I'd let you know.</pre>
