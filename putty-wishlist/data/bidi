@@ -2,6 +2,7 @@ Summary: Bidirectional text support
 Class: semi-bug
 Priority: medium
 Difficulty: taxing
+Fixed-in: 2004-12-28
 Content-type: text/x-html-body
 
 <p>
@@ -55,3 +56,8 @@ Arabeyes have <a href="http://lists.arabeyes.org/archives/developer/2004/March/m
 for further changes to improve Arabic support. One thing they're
 blocking on is <a href="unicode-combining.html">combining character</a>
 support.
+
+<p>
+<b>SGT, 2004-12-28</b>: There's been a lot of work on this recently,
+including some serious stability changes, and I think I'm now
+willing to declare this fixed enough to go into a release.
