@@ -6,11 +6,6 @@
 #include "caltrap.h"
 
 static char *helptext[] = {
-    "FIXME: help text goes here",
-    NULL
-};
-
-static char *usagetext[] = {
     "usage: caltrap -a [<options>] <date> [<time>]",
     "                 [<date> [<time>]]   add entry (enter text on stdin)",
     "       caltrap -l <date> [<date>]    list entries (for a date or range)",
@@ -24,6 +19,13 @@ static char *usagetext[] = {
     "Options to -a:",
     "       -t (HOL1|HOL2|HOL3|EVENT)     set type of calendar entry",
     "       -R <period>[/<length>]        make this a repeating entry",
+    "Options to -l:",
+    "       -v                            show hidden entries and entry IDs",
+    NULL
+};
+
+static char *usagetext[] = {
+    "type `caltrap --help' for help",
     NULL
 };
 
