@@ -29,6 +29,10 @@ static bt_element_t bufblkcopy(void *state, void *av)
     if (a->fp) {
 	ret = (struct bufblk *)malloc(sizeof(struct bufblk));
 	ret->data = NULL;
+	/*
+	 * If I start reference-counting links to file structures,
+	 * this is a place where I have to add a ref.
+	 */
     } else {
 	ret = (struct bufblk *)malloc(sizeof(struct bufblk) + BLKMAX);
 	ret->data = (unsigned char *)(ret+1);
@@ -40,6 +44,19 @@ static bt_element_t bufblkcopy(void *state, void *av)
     ret->len = a->len;
 
     return ret;
+}
+
+static void bufblkfree(void *state, void *av)
+{
+    struct bufblk *a = (struct bufblk *)av;
+
+    /*
+     * If I start reference-counting links to file structures, this
+     * is where I drop a ref count and potentially free a file
+     * structure.
+     */
+
+    free(a);
 }
 
 void bufblkpropmake(void *state, bt_element_t av, nodecomponent *dest)
@@ -67,12 +84,18 @@ static buffer *buf_new_from_bt(btree *bt)
     return buf;
 }
 
+static btree *buf_bt_new(void)
+{
+    return bt_new(NULL, bufblkcopy, bufblkfree,
+		  1, bufblkpropmake, bufblkpropmerge,
+		  NULL, 2);
+}
+
 extern buffer *buf_new_empty(void)
 {
     buffer *buf = (buffer *)malloc(sizeof(buffer));
 
-    buf->bt = bt_new(NULL, bufblkcopy, 1, bufblkpropmake, bufblkpropmerge,
-		     NULL, 2);
+    buf->bt = buf_bt_new();
 
     return buf;
 }
@@ -85,6 +108,10 @@ extern buffer *buf_new_from_file(FILE *fp)
     blk = (struct bufblk *)malloc(sizeof(struct bufblk));
     blk->data = NULL;
     blk->fp = fp;
+    /*
+     * If I start reference-counting links to file structures, this
+     * is a place where I have to add a ref.
+     */
     blk->filepos = 0;
 
     fseek(fp, 0, SEEK_END);
@@ -95,19 +122,9 @@ extern buffer *buf_new_from_file(FILE *fp)
     return buf;
 }
 
-static void buf_bt_free(btree *bt)
-{
-    struct bufblk *blk;
-
-    while ( (blk = bt_delpos(bt, 0)) != NULL )
-	free(blk);
-
-    bt_free(bt);
-}
-
 extern void buf_free(buffer *buf)
 {
-    buf_bt_free(buf->bt);
+    bt_free(buf->bt);
     free(buf);
 }
 
@@ -272,6 +289,10 @@ static int buf_bt_splitpoint(btree *bt, int pos)
 	memcpy(newblk->data, blk->data + poswithin, blk->len - poswithin);
     } else {
 	newblk->filepos += poswithin;
+	/*
+	 * If I start reference-counting links to file structures,
+	 * this is a place where I have to add a ref.
+	 */
     }
     blk->len = poswithin;
     newblk->len -= poswithin;
@@ -310,8 +331,7 @@ static void buf_insert_bt(buffer *buf, btree *bt, int pos)
 
 extern void buf_insert_data(buffer *buf, void *vdata, int len, int pos)
 {
-    btree *bt = bt_new(NULL, bufblkcopy, 1, bufblkpropmake, bufblkpropmerge,
-		       NULL, 2);
+    btree *bt = buf_bt_new();
     int nblocks, blklen1, extra;
     int i;
     unsigned char *data = (unsigned char *)vdata;
@@ -351,7 +371,7 @@ extern void buf_delete(buffer *buf, int len, int pos)
     btree *left = buf_bt_split(buf->bt, pos, TRUE);
     btree *right = buf_bt_split(buf->bt, len, FALSE);
 
-    buf_bt_free(buf->bt);
+    bt_free(buf->bt);
 
     buf->bt = buf_bt_join(left, right);
 }
