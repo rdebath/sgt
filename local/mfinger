@@ -1,19 +1,37 @@
 #!/bin/sh
+
+# cmdline arguments
+finger=no
+while test $# -gt 0; do
+  case $1 in
+    -f) finger=yes;;
+  esac
+  shift
+done
+
+# output width
 set -- `stty 2>/dev/null | tr -s ';\n' '\n\n' | grep columns`
 cols=${3-80}
-location=http://mono.org/newweb/utils/users_on.shtml
-perl -e "use LWP::Simple; print get('$location')" |
-  perl -n -e '%cmap=("black"=>"K","blue"=>"B","green"=>"G","red"=>"R",' \
-       -e '"cyan"=>"C","magenta"=>"M","yellow"=>"Y","white"=>"W",""=>"A");' \
-       -e 'if (/^<PRE>/) { $p=1 } elsif (/^<\/PRE/) { $p=0 } elsif ($p) {' \
-       -e '  s/<A ("[^"]*"|[^">])*>//g; s/<\/A>//g;' \
-       -e '  s/<FONT COLOR="([^"]*)">/"\035C".$cmap{$1}/eg;' \
-       -e '  s/<\/FONT>/\035CA/g;' \
-       -e '  s/<STRONG>/\035B/g;' \
-       -e '  s/<\/STRONG>/\035b/g;' \
-       -e '  s/<EM>/\035S/g;' \
-       -e '  s/<\/EM>/\035s/g;' \
-       -e '  s/<U>/\035U/g;' \
-       -e '  s/<\/U>/\035u/g;' \
-       -e '  print }' |
-  mtribs -b49 -s`expr $cols - 1`
+
+# do the job
+(if test $finger = no; then
+  location=http://mono.org/newweb/utils/users_on.shtml
+  perl -e "use LWP::Simple; print get('$location')" |
+    perl -n -e '%cmap=("black"=>"K","blue"=>"B","green"=>"G","red"=>"R",' \
+         -e '"cyan"=>"C","magenta"=>"M","yellow"=>"Y","white"=>"W",""=>"A");' \
+         -e 'if (/^<PRE>/) { $p=1 } elsif (/^<\/PRE/) { $p=0 } elsif ($p) {' \
+         -e '  s/<A ("[^"]*"|[^">])*>//g; s/<\/A>//g;' \
+         -e '  s/<FONT COLOR="([^"]*)">/"\035C".$cmap{$1}/eg;' \
+         -e '  s/<\/FONT>/\035CA/g;' \
+         -e '  s/<STRONG>/\035B/g;' \
+         -e '  s/<\/STRONG>/\035b/g;' \
+         -e '  s/<EM>/\035S/g;' \
+         -e '  s/<\/EM>/\035s/g;' \
+         -e '  s/<U>/\035U/g;' \
+         -e '  s/<\/U>/\035u/g;' \
+         -e '  print }'
+ else
+   finger userson@mono.org |
+     perl -ne 's/\^\[/\033/g, s/\^\]/\035/g, print if $ok; $ok=1 if /^Plan:/'
+ fi
+) | mtribs -b49 -s`expr $cols - 1`
