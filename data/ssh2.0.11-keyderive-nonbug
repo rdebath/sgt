@@ -4,6 +4,7 @@ Priority: medium
 Difficulty: fun
 Content-type: text/x-html-body
 Present-in: 0.53 2002-10-07 0.53b 2003-02-14
+Fixed-in: 2003-02-19
 
 <p>Apparently, while PuTTY believes that SSH 2.0.1[01]* have the SSH2
 key-derivation bug, 2.0.11 on Solaris/SPARC 2.5.1 doesn't, and this causes
