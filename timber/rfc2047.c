@@ -113,7 +113,7 @@ void rfc2047(const char *text, int length, parser_output_fn_t output,
 	    dlen = elen - (p - wbuf1) - 2;   /* avoid trailing `?=' */
 	    assert(dlen > 0);
 
-	    charset = charset_from_mimeenc(cset);
+	    charset = charset_upgrade(charset_from_mimeenc(cset));
 
 	    if (!strcmp(enc, "B") || !strcmp(enc, "b")) {
 		wbuf2 = smalloc(base64_decode_length(dlen));
