@@ -1,0 +1,14 @@
+Summary: System tray activity breaks pointer hiding
+Class: bug
+Priority: medium
+Content-type: text/x-html-body
+
+<p>
+Activity in the Windows system tray (new icons, possibly changed
+icons) can cause the pointer to become spuriously unhidden when `Hide
+mouse pointer when typing in a window' is checked.
+
+<p>
+We've had one report of this on Win2K (5.00.2195). I (JTN) can
+reliably reproduce it at work with Win2K by sending myself mail
+(Outlook adds an icon to the system tray when this happens).
