@@ -1,6 +1,6 @@
 # -*- mode: sh; mode: fold -*-
 # Simon Tatham's standardised chunk of .bashrc
-# $Revision: 1.29 $
+# $Revision: 1.30 $
 
 #{{{ I don't like .bash_history files. They wet their nests.
 unset HISTFILE
@@ -182,13 +182,20 @@ bashrc_do_bindings
 unset bashrc_do_bindings
 
 #}}}
+#{{{ local analogue for tput
+
+_bashrc_tput() {
+  test -n "$TERM" && tput "$@"
+}
+
+#}}}
 #{{{ prompt configuration
 
 doPSn() {
   local hostname=`hostname | tr A-Z a-z`
   local spaces=`echo -n $hostname | sed 's/./ /g'`
-  local bold=`tput bold | sed 's/\[1m/\[0;3${promptcolour}m/'`
-  local sgr0=`tput sgr0`
+  local bold=`_bashrc_tput bold | sed 's/\[1m/\[0;3${promptcolour}m/'`
+  local sgr0=`_bashrc_tput sgr0`
   PS1='\['$bold'\]:$prompttext '$hostname';\['$sgr0'\] '
   PS2='$promptspaces    '"$spaces"
   promptcolour=2 # green prompt by default
@@ -308,16 +315,16 @@ bashrc_securedir_change() {
     # On entering a secure area, save the previous umask, set
     # the new umask to 077, and print a banner.
     bashrc_go_secure
-    banner=`tput bold | sed 's/\[1m/\[1;36;44m/'`
-    unbanner=`tput sgr0`
+    banner=`_bashrc_tput bold | sed 's/\[1m/\[1;36;44m/'`
+    unbanner=`_bashrc_tput sgr0`
     echo "$banner  You are now entering a secure area.  $unbanner"
     echo "$banner  Changed your umask: $bashrc_insecure_umask -> 077.      $unbanner"
   fi
   
   if [ "$bashrc_securedir $newsecure" = "yes no" ]; then
     # On leaving a secure area, restore the umask.
-    banner=`tput bold | sed 's/\[1m/\[1;36;44m/'`
-    unbanner=`tput sgr0`
+    banner=`_bashrc_tput bold | sed 's/\[1m/\[1;36;44m/'`
+    unbanner=`_bashrc_tput sgr0`
     echo "$banner  You are now leaving a secure area.  $unbanner"
     echo "$banner  Restored your umask to $bashrc_insecure_umask.         $unbanner"
     bashrc_go_insecure
