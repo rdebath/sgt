@@ -7,6 +7,7 @@
 typedef unsigned int uint32;
 
 extern HWND listener_hwnd;
+extern HINSTANCE listener_instance;
 
 char *auth_make_nonce(SOCKADDR_IN);
 int auth_check_line(char *line, char *nonce, SOCKET);
@@ -107,6 +108,88 @@ void listener_cmdline(char *cmdline) {
     if (!secretfile)
         secretfile = "";
     strcpy(secretfile, cmdline);
+}
+
+/* ======================================================================
+ * System tray functions.
+ */
+
+#define WM_XUSER     (WM_USER + 0x2000)
+#define WM_SYSTRAY   (WM_XUSER + 6)
+#define WM_SYSTRAY2  (WM_XUSER + 7)
+#define IDM_CLOSE    0x0010
+
+static HMENU systray_menu;
+
+extern int listener_init(void) {
+    BOOL res;
+    NOTIFYICONDATA tnid;
+    HICON hicon;
+
+#ifdef NIM_SETVERSION
+    tnid.uVersion = 0;
+    res = Shell_NotifyIcon(NIM_SETVERSION, &tnid);
+#endif
+
+    tnid.cbSize = sizeof(NOTIFYICONDATA); 
+    tnid.hWnd = listener_hwnd; 
+    tnid.uID = 1;                      /* unique within this systray use */
+    tnid.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP; 
+    tnid.uCallbackMessage = WM_SYSTRAY;
+    tnid.hIcon = hicon = LoadIcon (listener_instance, MAKEINTRESOURCE(201));
+    strcpy(tnid.szTip, "DoIt (remote-execution daemon)");
+
+    res = Shell_NotifyIcon(NIM_ADD, &tnid); 
+
+    if (hicon) 
+        DestroyIcon(hicon); 
+
+    systray_menu = CreatePopupMenu();
+    AppendMenu (systray_menu, MF_ENABLED, IDM_CLOSE, "Close DoIt");
+
+    return res; 
+}
+
+extern void listener_shutdown(void) {
+    BOOL res; 
+    NOTIFYICONDATA tnid; 
+ 
+    tnid.cbSize = sizeof(NOTIFYICONDATA); 
+    tnid.hWnd = listener_hwnd; 
+    tnid.uID = 1;
+
+    res = Shell_NotifyIcon(NIM_DELETE, &tnid); 
+
+    DestroyMenu(systray_menu);
+}
+
+extern int listener_wndproc(HWND hwnd, UINT message,
+                            WPARAM wParam, LPARAM lParam) {
+    int ret;
+    POINT cursorpos;                   /* cursor position */
+    static int menuinprogress;
+
+    if (message == WM_SYSTRAY && lParam == WM_RBUTTONUP) {
+        GetCursorPos(&cursorpos);
+        PostMessage(hwnd, WM_SYSTRAY2, cursorpos.x, cursorpos.y);
+    }
+
+    if (message == WM_SYSTRAY2) {
+        if (!menuinprogress) {
+            menuinprogress = 1;
+            SetForegroundWindow(hwnd);
+            ret = TrackPopupMenu(systray_menu,
+                                 TPM_RIGHTALIGN | TPM_BOTTOMALIGN |
+                                 TPM_RIGHTBUTTON,
+                                 wParam, lParam, 0, listener_hwnd, NULL);
+            menuinprogress = 0;
+        }
+    }
+
+    if (message == WM_COMMAND && (wParam & ~0xF) == IDM_CLOSE) {
+        SendMessage(hwnd, WM_CLOSE, 0, 0);
+    }
+    return 1;                          /* not handled */
 }
 
 /* ======================================================================
