@@ -33,6 +33,7 @@ Present-in:
   list of entries like:
     0.52	Indicates a release that contained the bug
     2002-04-30	Indicates a snapshot that contained the bug
+    r1234	Indicates a Subversion revision that contained the bug
 
 Absent-in:
   Versions of PuTTY that don't exhibit this bug, (e.g. because they predate
