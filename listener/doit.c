@@ -1,5 +1,16 @@
 /*
- * DoIt: a remote-execution thingy for Windows.
+ * DoIt: a remote-execution daemon for Windows.
+ * 
+ * Copyright 2000-2001 Simon Tatham. All rights reserved.
+ * 
+ * You may copy and use this file under the terms of the MIT
+ * Licence. For details, see the file LICENCE provided in the DoIt
+ * distribution archive. At the time of writing, a copy of the
+ * licence is also available at
+ * 
+ *   http://www.opensource.org/licenses/mit-license.html
+ * 
+ * but this cannot be guaranteed not to have changed in the future.
  */
 
 #include <windows.h>
