@@ -1,33 +1,65 @@
 Summary: Trouble with dead keys on Windows
-Class: bug
-Difficulty: tricky
+Class: semi-bug
+Difficulty: taxing
 Priority: medium
 Fixed-in: 2004-03-25
 Content-type: text/x-html-body
 
 <p>
 When using a keyboard layout that uses dead keys (such as German, or
-US International), entering a non-composing sequence (such as a pair
-of circumflexes), such that the second keypress resulted in two
-characters, gave the wrong result (the second character was wrong).
+US International) on Win2K or XP, entering a non-composing sequence
+(such as a pair of circumflexes), such that the second keypress
+resulted in two characters, gave the wrong result (the second
+character was wrong).
 
 <p>
-Changing the <code>lpChar</code> argument of 
+Changing the storage behind the <code>lpChar</code> argument of 
 <a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/winui/WinUI/WindowsUserInterface/UserInput/KeyboardInput/KeyboardInputReference/KeyboardInputFunctions/ToAsciiEx.asp"><code>ToAsciiEx</code></a>
 from <code>WORD[]</code> to <code>BYTE[]</code>, and using a pointer
-cast, makes it work properly. The documentation isn't clear what type
-the storage behind the pointer should be, but Googling indicates that
-this usage is not uncommon.
+cast, makes it work properly on 2K/XP. (Done as of 2004-03-25.) The
+documentation isn't clear what type the storage behind the pointer
+should be, but Googling indicates that this usage is not uncommon.
 
 <p>
-Fixed as of 2003-03-25 tested on Win2K (and by a third party on WinXP).
+<em>However,</em> this breaks the same situation in (French) Win98SE,
+which was working OK before with the <code>WORD[]</code> array. (But
+fixes it for French Win2K.)
+
+<p>
+This area is rich in history. For example:
 <ul>
-<li>Aaargh, but apparently it breaks dead keys on Win98SE, which were
-working perfectly well before. *sigh*
+<li>We originally switched from <code>ToAscii</code> to
+<code>ToAsciiEx</code> to fix a problem a Lithuanian user was having
+with top bits being stripped.
+<br>ref: 20001222172132.A17154@kibiras.kaunas.alna.lt
+<li>We then had a <a href="mapvirtualkeyex.html">complaint</a> from a
+Korean user that <code>ToAsciiEx</code> didn't work on Korean Win98
+(but was OK on WinMe and 2000), whereas <code>ToAscii</code> was fine.
+We didn't do anything about this because it seemed just too horrible.
+<br>ref: 3B67475D.64790726@kias.re.kr
+<li>We've also had a <a href="keyboard-problems.html">complaint</a>
+from a Danish user that they get the first key in a dead key sequence
+<em>and</em> the composed character.
+<br>ref: 000701c09c57$a2ce70e0$0e00a8c0@neland.dk
+<li>We've had a report that fiddling with the <code>keys</code> array
+<em>before</em> passing it to <code>ToAsciiEx</code> makes a
+difference, which could be consistent with a confusion like that
+described above.
+<br>ref: E14wR3x-0000t8-00@ixion.tartarus.org
 </ul>
 
 <p>
-This may sort out some other keyboard problems people have been
-having, too, if we're lucky. If it fixes a problem for you, we'd
-appreciate you letting us know. (Alternatively, if it makes things
-<em>worse</em>, then we <em>definitely</em> want to know!)
+I've got a horrible suspicion that it's not as simple as a Win9x/NT
+split; this function appears to be an interface to the keyboard
+driver, and MS's specification of that interface on their website looks
+unclear to me, so I suspect that whether it's an array of bytes or
+words is dependent on the keyboard driver in question.
+
+<p>
+We could in principle try to detect it by initialising the array with
+unlikely values and seeing what changes. Bleurgh.
+
+<p>
+This may be the root of some other keyboard problems people have been
+having, too, if we're lucky. If our hacking in this area makes a
+difference to you (positive <em>or</em> negative), please let us know.
