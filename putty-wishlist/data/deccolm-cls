@@ -3,9 +3,9 @@ Class: bug
 Priority: medium
 Difficulty: fun
 Present-in: 0.53b
+Fixed-in: 2003-03-28
 Content-type: text/plain
 
-DECCOLM sequences (CSI ? 3 h and CSI ? 3 l) should also clear the screen
-and home the cursor.  In PuTTY they don't.  It also appears that they should
-reset the scrolling region established by DECSTBM.  I wonder whether there's
-anything else they affect.
+DECCOLM sequences (CSI ? 3 h and CSI ? 3 l) should also clear the screen,
+home the cursor and reset the scroll margins.  In PuTTY they didn't before
+snapshot 2003-03-28.
