@@ -1,0 +1,9 @@
+Summary: Perhaps the default for BCE should change
+Priority: low
+Class: wish
+Content-type: text/x-html-body
+
+<p>
+Perhaps the default for the `Use background colour to erase screen'
+setting should change. Applications that rely on the current default
+seem a lot rarer than the alternative.
