@@ -1,0 +1,24 @@
+Summary: Arbitrary restriction on number of forwarded ports
+Class: semi-bug
+Difficulty: tricky
+Priority: medium
+Content-type: text/x-html-body
+
+<p>
+Pinched from the `Common error messages' section of the docs:
+
+<blockquote>
+<p>
+10.3 "Out of space for port forwardings"
+
+<p>
+PuTTY has a fixed-size buffer which it uses to store the details of all port
+forwardings you have set up in an SSH session. If you specify too many port
+forwardings on the PuTTY or Plink command line and this buffer becomes full,
+you will see this error message.
+
+<p>
+We need to fix this (fixed-size buffers are almost always a mistake) but we
+haven't got round to it. If you actually have trouble with this, let us know
+and we'll move it up our priority list.
+</blockquote>
