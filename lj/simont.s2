@@ -622,6 +622,8 @@ function MonthPage::print_body () {
 }
 
 function EntryPage::print_body () {
+    var Link next;
+    var Link prev;
 
     print_entry($this, $.entry, null Color, null Color, $.viewing_thread);
 
@@ -631,6 +633,48 @@ function EntryPage::print_body () {
             $.comment_pages->print();
             $this->print_comments($.comments);
         }
+    }
+
+    $prev = $.entry->get_link("nav_prev");
+    $next = $.entry->get_link("nav_next");
+    if ($prev.url != "" or $next.url != "") {
+"""
+<tr><td></td><td><table width="$*box_width" align="left" cellpadding="0" cellspacing="0">
+<tr><td>
+<table align="center" cellpadding="2" cellspacing="0"
+border="0"
+summary="">
+<tr><td bgcolor="$*outline">
+<table cellpadding="3" cellspacing="0"
+border="0"
+summary="">
+<tr bgcolor="$*stronger_back">
+<td align="center" class="index">navigation</td>
+</tr>
+<tr>
+<td bgcolor="$*entry_back" align="center">
+<table cellspacing="0" cellpadding="0" border="0" summary="">
+<tr>
+<td class="meta">[</td>
+<td class="meta" align="right"><b>go</b></td>
+<td class="meta" align="center">|</td>
+<td class="meta">""";
+    if ($prev.url != "") {
+        """<a href="$prev.url">Previous Entry</a>""";
+    }
+    if ($prev.url != "" and $next.url != "") {
+        """ | """;
+    }
+    if ($next.url != "") {
+        """<a href="$next.url">Next Entry</a>""";
+    }
+"""</td>
+<td class="meta">]</td>
+</tr>
+</table>
+</td>
+</tr>
+</table></td></tr></table></td></tr></table></td></tr>""";
     }
 }
 
