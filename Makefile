@@ -46,7 +46,7 @@ autoconf:
 	cp /usr/share/automake/install-sh .
 	sed 's/@OBJECTS@/$(OBJECTS)/' Makefile.in.in > Makefile.in
 	for i in $(MODULES); do \
-		gcc -MM $$i.c >> Makefile.in; \
+		gcc -MM -DCURSES_HDR="<ncurses.h>" $$i.c >> Makefile.in; \
 	done
 else
 
