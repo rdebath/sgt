@@ -1,4 +1,4 @@
-# Python module to lex C. A bit ambitious, but sounds like fun :-)
+# Python module to lex C.
 
 import re
 import sys
@@ -245,6 +245,7 @@ class lexer:
             else:
                 self.col = self.col + i
                 self.col = ((self.col - 1) &~ 7) + 8
+                text = text[i+1:]
 
     def unget(self, lexeme):
         "Return a lexeme to the input."
