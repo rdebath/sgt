@@ -15,3 +15,7 @@ from scp.c into something more common.
 
 <p>
 Need to think about reget-type operation with mget?
+
+<p>
+<b>SGT, 2004-12-16</b>: Recursion is now implemented (<code>get
+-r</code> and <code>put -r</code>). Wildcards are next on the list.
