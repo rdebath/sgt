@@ -2,6 +2,7 @@ Summary: PuTTY mishandles machines with multiple addresses
 Class: bug
 Priority: medium
 Difficulty: tricky
+Fixed-in: 2005-01-17
 Content-type: text/x-html-body
 
 <p>At present, if a host has multiple addresses, PuTTY merely connects to the
@@ -24,3 +25,10 @@ has this to say on the subject:
       success is obtained.  More specific requirements for SMTP are
       given in Section 5.3.4.
 </blockquote>
+
+<b>SGT, 2005-01-16</b>: This is much more important in an
+IPv6-supporting world, since there's the possibility that your DNS
+lookup will return you an IPv6 and an IPv4 address in that order,
+and if you can't route to the former then you <em>must</em> fall
+back to the latter or else the introduction of IPv6 support has made
+matters worse for you. Hence, done.
