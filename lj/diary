@@ -1032,7 +1032,7 @@ while 1:
 	f.close()
     elif s == "p\n" or s == "pm\n":
 	f = open(os.environ["HOME"] + "/src/lj/diary.data", "w")
-	g = os.popen("xcopy 2>/dev/null", "w")
+	g = os.popen("xcopy -C 2>/dev/null", "w")
 	h = os.popen("wclip 2>/dev/null", "w")
 	data = out.mono + [\
 	"Message: 7fffffff","From: (dummy edit)", "Please ignore this."]
