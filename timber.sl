@@ -426,10 +426,10 @@ define timber_acquire_lock(fname) {
     if (file_status(fname) != 1)
 	fname = dircat(timber_folders, fname);
     if (_jed_version >= 9900)
-        fs = mkdir(fname, 0700);
+        fs = (mkdir(fname, 0700) < 0);
     else
-        fs = mkdir(fname);
-    if (fs < 0)
+        fs = (mkdir(fname) == 0);
+    if (fs)
         return 0;
     else
         return 1;
