@@ -30,9 +30,6 @@
 /*
  * TODO:
  * 
- *  - user read properties.
- *     * need a generalised search function.
- * 
  * Possibly TODO in future, but may not be sensible in this code
  * architecture:
  * 
@@ -46,6 +43,7 @@
  *       reversible).
  * 
  * Still untested:
+ *  - searching on user read properties.
  *  - user-supplied copy function.
  *  - bt_add when element already exists.
  *  - bt_del when element doesn't.
@@ -228,7 +226,7 @@ static INLINE nodecomponent *bt_child_prop(btree *bt, nodeptr n, int index)
     if (n[index].na.p)
 	return n[index].na.p + bt->maxdegree*2 + 2;
     else
-	return 0;
+	return NULL;
 }
 
 /*
@@ -1021,6 +1019,83 @@ bt_element_t bt_findpos(btree *bt, bt_element_t element, cmpfn_t cmp,
 bt_element_t bt_find(btree *bt, bt_element_t element, cmpfn_t cmp)
 {
     return bt_findrelpos(bt, element, cmp, BT_REL_EQ, NULL);
+}
+
+/*
+ * Find an element by property-based search. Returns the element
+ * (if one is selected - the search can also terminate by
+ * descending to a nonexistent subtree of a leaf node, equivalent
+ * to selecting the _gap_ between two elements); also returns the
+ * index of either the element or the gap in `*index' if `index' is
+ * non-NULL.
+ */
+bt_element_t bt_propfind(btree *bt, searchfn_t search, void *sstate,
+			 int *index)
+{
+    nodeptr n, n2;
+    int i, j, count, is_elt;
+    nodecomponent **props;
+    int *counts;
+    bt_element_t *elts;
+    bt_element_t *e = NULL;
+
+    props = inewn(nodecomponent *, bt->maxdegree);
+    counts = inewn(int, bt->maxdegree);
+    elts = inewn(bt_element_t, bt->maxdegree);
+
+    n = bt_read_lock_root(bt);
+
+    while (n) {
+	int ntrees = bt_subtrees(bt, n);
+
+	/*
+	 * Prepare the arguments to the search function.
+	 */
+	for (i = 0; i < ntrees; i++) {
+	    props[i] = bt_child_prop(bt, n, i);
+	    counts[i] = bt_child_count(bt, n, i);
+	    if (i < ntrees-1)
+		elts[i] = bt_element(bt, n, i);
+	}
+
+	/*
+	 * Call the search function.
+	 */
+	i = search(bt->userstate, sstate, ntrees,
+		   props, counts, elts, &is_elt);
+
+	if (!is_elt) {
+	    /*
+	     * Descend to subtree i. Update `count' to consider
+	     * everything (both subtrees and elements) before that
+	     * subtree.
+	     */
+	    for (j = 0; j < i; j++)
+		count += 1 + bt_child_count(bt, n, j);
+	    n2 = bt_read_lock_child(bt, n, i);
+	    bt_read_unlock(bt, n);
+	    n = n2;
+	} else {
+	    /*
+	     * Return element i. Update `count' to consider
+	     * everything (both subtrees and elements) before that
+	     * element.
+	     */
+	    for (j = 0; j <= i; j++)
+		count += 1 + bt_child_count(bt, n, j);
+	    count--;		       /* don't count element i itself */
+	    e = bt_element(bt, n, i);
+	    bt_read_unlock(bt, n);
+	    break;
+	}
+    }
+
+    ifree(props);
+    ifree(counts);
+    ifree(elts);
+
+    if (index) *index = count;
+    return e;
 }
 
 /*
