@@ -1,52 +1,186 @@
-#!/bin/sh
+#!/usr/bin/env python
 
-# cmdline arguments
-finger=no
-done=no
-while test $# -gt 0 -a "$done" != "yes"; do
-  case $1 in
-    -f) finger=yes; shift;;
-    -*) echo "Unknown option $1" >&2; shift;;
-    *) done=yes
-  esac
-done
+import sys
+import os
+import urllib
+import string
+import htmllib
+import formatter
 
-# output width
-getwidth() {
-  set -- `stty 2>/dev/null | tr -s ';\n' '\n\n' | grep columns`
-  cols=${3-80}
+def makedict(attrs):
+    attrdict = {}
+    for attr in attrs:
+	attrdict[string.lower(attr[0])] = attr[1]
+    return attrdict				    
+
+colourdict = {
+"black":"K", "blue":"B", "green":"G", "red":"R",
+"cyan":"C", "magenta":"M", "yellow":"Y", "white":"W"
 }
-getwidth   # it's a function so as not to trash $*
 
-# do the job
-{
- if test $finger = no; then
-  location=http://mono.org/newweb/utils/users_on.shtml
-  perl -e "use LWP::Simple; print get('$location')" |
-    perl -n -e '%cmap=("black"=>"K","blue"=>"B","green"=>"G","red"=>"R",' \
-         -e '"cyan"=>"C","magenta"=>"M","yellow"=>"Y","white"=>"W",""=>"A");' \
-         -e 'if (/^<PRE>/) { $p=1 } elsif (/^<\/PRE/) { $p=0 } elsif ($p) {' \
-         -e '  s/<A ("[^"]*"|[^">])*>//g; s/<\/A>//g;' \
-         -e '  s/<FONT COLOR="([^"]*)">/"\035C".$cmap{$1}/eg;' \
-         -e '  s/<\/FONT>/\035CA/g;' \
-         -e '  s/<STRONG>/\035B/g;' \
-         -e '  s/<\/STRONG>/\035b/g;' \
-         -e '  s/<BLINK>/\035F/g;' \
-         -e '  s/<\/BLINK>/\035f/g;' \
-         -e '  s/<EM>/\035S/g;' \
-         -e '  s/<\/EM>/\035s/g;' \
-         -e '  s/<U>/\035U/g;' \
-         -e '  s/<\/U>/\035u/g;' \
-         -e '  print }'
- else
-   finger userson@mono.org |
-     perl -ne 's/\^\[/\033/g, s/\^\]/\035/g, print if $ok; $ok=1 if /^Plan:/'
- fi
-} | mtribs -b49 -s`expr $cols - 1` | {
-  if test $# -gt 0; then
-    perl -e 'foreach $i (@ARGV) {$q{$i}=1;} while (<STDIN>) {' \
-         -e 'print if (/^.([a-z0-9_\-]+)/ and $q{$1}) or /^\d+ users/ }' "$@"
-  else
-    cat
-  fi
-}
+trans = string.maketrans("\240", " ")
+
+class myfmt(formatter.NullFormatter):
+    def __init__(self):
+	formatter.NullFormatter.__init__(self)
+	self.zerostr()
+
+    def zerostr(self):
+	self.string = ""
+	self.simple = ""
+
+    def getstr(self):
+	return self.string
+
+    def getsimple(self):
+	return self.simple
+
+    def addstr(self, text):
+	self.addtrib(text)
+	self.simple = self.simple + string.translate(text, trans)
+
+    def addtrib(self, text):
+	self.string = self.string + string.translate(text, trans)
+
+    def add_flowing_data(self, data):
+	self.addstr(data)
+
+    def add_literal_data(self, data):
+	self.addstr(data)
+
+class myparser(htmllib.HTMLParser):
+    def __init__(self):
+	htmllib.HTMLParser.__init__(self, myfmt())
+	self.moving = 0
+	self.moved = 0
+	self.list = []
+	self.footer = None
+
+    def start_table(self, attrs):
+	a = makedict(attrs)
+	if not self.moved and a.get("width", None) == "95%":
+	    self.moving = 1
+
+    def end_table(self):
+	if self.moving:
+	    self.moving = 0
+	    self.moved = 1
+
+    def start_tr(self, attrs):
+	self.array = []
+
+    def start_td(self, attrs):
+	self.formatter.zerostr()
+
+    def end_td(self):
+	if self.moving:
+	    self.array.append(self.formatter.getsimple())
+	    self.array.append(self.formatter.getstr())
+	elif self.moved:
+	    s = self.formatter.getstr()
+	    if self.footer == None and string.find(s, "users on"):
+		self.footer = s
+
+    def end_tr(self):
+	if self.moving and len(self.array) == 10:
+	    self.list.append(self.array)
+
+    def start_strong(self, attrs):
+	self.formatter.addtrib("\035B");
+    def end_strong(self):
+	self.formatter.addtrib("\035b");
+
+    def start_blink(self, attrs):
+	self.formatter.addtrib("\035F");
+    def end_blink(self):
+	self.formatter.addtrib("\035f");
+
+    def start_em(self, attrs):
+	self.formatter.addtrib("\035S");
+    def end_em(self):
+	self.formatter.addtrib("\035s");
+
+    def start_u(self, attrs):
+	self.formatter.addtrib("\035U");
+    def end_u(self):
+	self.formatter.addtrib("\035u");
+
+    def start_font(self, attrs):
+	a = makedict(attrs)
+	c = a.get("color", "")
+	cc = colourdict.get(string.lower(c), "A")
+	self.formatter.addtrib("\035C" + cc);
+    def end_font(self):
+	self.formatter.addtrib("\035CA");
+
+    def begin_a(self, attrs):
+	pass
+    def end_a(self):
+	pass
+
+def fmt(string, length, fieldlen, right):
+    spacing = " " * (fieldlen-length)
+    if right:
+	return spacing + string
+    else:
+	return string + spacing
+
+def format(list, lengths, tribname):
+    if tribname:
+	i = 3
+    else:
+	i = 2
+    out = ""
+    out = out + fmt(list[1], len(list[0]), lengths[0], 0) + " "
+    out = out + fmt(list[i], len(list[2]), lengths[2], 0) + " "
+    out = out + fmt(list[7], len(list[6]), lengths[6], 1) + " "
+    out = out + fmt(list[5], len(list[4]), lengths[4], 1) + " "
+    out = out + list[9]
+    return out
+
+baseurl = "http://mono.org/newweb/utils/users_on.shtml"
+userdoc = urllib.urlopen(baseurl).read()
+
+parser = myparser()
+parser.feed(userdoc)
+parser.close()
+
+interest = {}
+nusers = 0
+for i in sys.argv[1:]:
+    interest[i] = 1
+    nusers = nusers + 1
+
+lengths = [1,0,8,0,8,0,8]
+for i in parser.list:
+    for j in [0,2,4,6]:
+	if lengths[j] < len(i[j]):
+	    lengths[j] = len(i[j])
+
+f = os.popen("stty size 2>/dev/null", "r")
+size = f.read()
+f.close()
+size = string.split(size)
+if len(size) >= 2:
+    cols = string.atoi(size[1])
+else:
+    cols = 80
+
+output = os.popen("mtribs -s" + str(cols-1), "w")
+
+heading = [
+"T", "\035UT\035u",
+"Name", "\035UName\035u",
+"Connect", "\035UConnect\035u",
+"Idle", "\035UIdle\035u",
+"Action", "\035UAction\035u" ]
+output.write(format(heading, lengths, 1) + "\n")
+
+for i in parser.list:
+    if not (nusers and interest.get(i[2],0) == 0):
+	output.write(format(i, lengths, 0) + "\n")
+
+if parser.footer != None:
+    output.write(parser.footer + "\n")
+
+output.close()
