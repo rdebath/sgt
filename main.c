@@ -251,7 +251,7 @@ static void init(void) {
 
     display_setup();
 
-    display_define_colour(COL_BUFFER, 7, 0);
+    display_define_colour(COL_BUFFER, -1, -1);
     display_define_colour(COL_SELECT, 0, 7);
     display_define_colour(COL_STATUS, 11, 4);
     display_define_colour(COL_ESCAPE, 9, 0);
@@ -499,9 +499,11 @@ void draw_scr (void) {
 		    display_write_chars(linebuf+10+3*localstop,
 				       2+3*width-3*localstop);
 		}
-	    } else
+	    } else {
+                display_set_colour(COL_BUFFER);
 		display_write_chars(linebuf,
 				   ascii_enabled ? 13+4*width : 10+3*width);
+            }
 	}
 	currpos += (currpos ? width : offset);
 	display_clear_to_eol();
