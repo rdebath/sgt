@@ -1,0 +1,38 @@
+#!/usr/bin/env python
+
+import ljproto
+import sys
+import string
+import os
+import time
+
+verbose = 0
+dict = {"mode":"postevent", "lineendings":"unix"}
+
+for arg in sys.argv[1:]:
+    if arg == "--private":
+	dict["security"] = "private"
+    if arg == "-v":
+	verbose = 1
+
+dict["event"] = sys.stdin.read()
+
+now = time.localtime(time.time())
+dict["year"] = time.strftime("%Y", now)
+dict["mon"] = time.strftime("%m", now)
+dict["day"] = time.strftime("%d", now)
+dict["hour"] = time.strftime("%H", now)
+dict["min"] = time.strftime("%M", now)
+
+if verbose:
+    print "Input:", dict
+ret = ljproto.ljcall(dict)
+if verbose:
+    print "Output:", ret
+
+if not ljproto.ljok(ret):
+    sys.stderr.write(ljproto.ljerror(ret) + "\n")
+    sys.exit(1)
+else:
+    print "itemid =", ret["itemid"]
+    sys.exit(0)
