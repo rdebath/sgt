@@ -1,6 +1,7 @@
 #include <windows.h>
 #include <winsock.h>
 
+#include <stdio.h>
 #include <string.h>
 
 /*
@@ -19,12 +20,37 @@ int const *listener_ports = port_array;
  * Export the function that handles a connection.
  */
 int listener_newthread(SOCKET sock, int port, SOCKADDR_IN remoteaddr) {
-    char msg[160];
-    char c;
-    sprintf(msg, "hello, %s:%d on my port %d\n",
-            inet_ntoa(remoteaddr.sin_addr), ntohs(remoteaddr.sin_port), port);
-    send(sock, msg, strlen(msg), 0);
-    recv(sock, &c, 1, 0);
+    char *cmdline = NULL;
+    int cmdlen = 0, cmdsize = 0;
+    char buf[64];
+    int len, newlen;
+
+    while (1) {
+        len = recv(sock, buf, sizeof(buf), 0);
+        if (cmdsize < cmdlen + len + 1) {
+            cmdsize = cmdlen + len + 1 + 256;
+            cmdline = realloc(cmdline, cmdsize);
+            if (!cmdline) {
+                closesocket(sock);
+                return 0;
+            }
+        }
+        memcpy(cmdline+cmdlen, buf, len);
+        cmdline[cmdlen+len] = '\0';
+        newlen = strcspn(buf, "\r\n");
+        if (newlen < len) {
+            buf[newlen] = '\0';
+            break;
+        }
+    }
+    MessageBox(NULL, buf, "Message!", MB_OK);
+    send(sock, "+ok\r\n", 5, 0);
     closesocket(sock);
     return 0;
+}
+
+/*
+ * Export the function that gets the command line.
+ */
+void listener_cmdline(char *cmdline) {
 }
