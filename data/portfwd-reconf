@@ -1,0 +1,11 @@
+Summary: Reconfigurable port forwarding
+Class: semi-bug
+Priority: medium
+Difficulty: tricky
+Content-type: text/plain
+
+It would be nice to be able to reconfigure the port forwarding setup
+using the Change Settings box, and have PuTTY at least attempt to
+shift to the new configuration. This would involve cancelling remote
+forwardings and starting new ones, closing local listening sockets
+and starting new ones, so it isn't a trivial piece of work.

@@ -1,0 +1,28 @@
+Summary: Bidirectional text support
+Class: semi-bug
+Priority: medium
+Difficulty: taxing
+Content-type: text/plain
+
+If you use Unicode mode and attempt to display text in a
+right-to-left script such as Hebrew or Arabic, PuTTY gets somewhat
+confused. It has no internal awareness of which text should be
+displayed right-to-left, so it will feed an Arabic string straight
+to the Windows text display function and assume that the characters
+go left to right. Apparently this will in fact not happen - TextOut
+will reverse the string and show it right-to-left. On the surface
+this will look like a plausible result, except that if you then move
+the cursor across the text it will change, revealing that PuTTY's
+beliefs about what characters Windows displayed where don't match
+reality.
+
+Proper support for this will need to involve a properly thought out
+design for how a VT-series terminal should support bidirectional
+text. For a start this will require research into how existing
+Unicode-enabled VT-series terminal emulators do it, and how big the
+software support base for those is.
+
+(Also we'll need to find out exactly what algorithm the Windows text
+display functions use to lay out their output, so that once we know
+exactly what we want the window to look like we can be sure it
+really does look like that. This won't be easy either.)

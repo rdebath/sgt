@@ -1,0 +1,18 @@
+Summary: Window placement circumvents Windows default rules
+Class: semi-bug
+Priority: low
+Difficulty: tricky
+Content-type: text/plain
+
+When creating its window, PuTTY first creates a `guess' window of
+arbitrary size, and then measures the difference between its full
+area and client area. This allows it to know how much space the
+window borders take up, so it can calculate what size the window
+should really be and resize the guess window to that size.
+Unfortunately this breaks the Windows default window placement.
+
+It's possible that fixing this would be as easy as closing the guess
+window and opening a new one. Then again, perhaps that would cause
+its own problems. I'm not entirely sure what a Windows app should do
+if it wants to open a window in one go with a client area of a
+specific size.
