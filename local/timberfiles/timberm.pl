@@ -32,7 +32,7 @@ if ($type eq "text/html") {
   }
   close PIPE;
   exit 0;
-} elsif ($type eq "text/plain") {
+} elsif ($type eq "text/plain" or $type eq "text") {
   # A sensible `decoding' step for plain text is to wrap its lines to about
   # 75 columns, since some people will persist in sending mail with each
   # paragraph on a single line. We'll also detab, while we're here.
