@@ -3,6 +3,7 @@ Class: semi-bug
 Priority: medium
 Difficulty: fun
 Content-type: text/x-html-body
+fixed-in: 2003-06-26
 
 <p>
 The host key prompt doesn't state the type of the host key (SSH-1 RSA,
