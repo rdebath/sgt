@@ -1,5 +1,5 @@
 % -*- mode: slang; mode: fold -*-
-% Simon Tatham: version $Revision: 1.12 $
+% Simon Tatham: version $Revision: 1.13 $
 
 %{{{ load Emacs keybindings to start with
 
@@ -17,6 +17,10 @@ define dummy() {
     insert(".");
     deln(left(1));
 }
+define jedrc_self_insert() {
+    dummy();
+    call("self_insert_cmd");
+}
 for ($1 = 33; $1 < 127; $1++) {
     setkey(".dummy \"self_insert_cmd\" call", char($1));
 }
@@ -31,7 +35,7 @@ define jedrc_ro_alternate(command, char) {
     if (flags & 8)
         call(command);
     else
-        insert(char);
+        jedrc_self_insert();
 }
 setkey (".\"page_down\" \" \" jedrc_ro_alternate", " ");
 setkey (".\"page_up\" \"b\" jedrc_ro_alternate", "b");
@@ -470,11 +474,9 @@ define t10() { t(10); }
 
 define jedrc_underline(s) {
     variable i, len;
-    bol();
     push_spot();
-    left(1);
-    bol();
     i = what_column();
+    go_up_1();
     eol();
     i = what_column() - i;
     pop_spot();
@@ -483,7 +485,6 @@ define jedrc_underline(s) {
         insert(s);
         i = i - len;
     }
-    !if (eolp()) insert("\n");
 }
 
 define underline() { jedrc_underline("-"); }
@@ -501,7 +502,7 @@ define showcolm() {
 setkey("showcolm", "^X^]");
 
 %}}}
-%{{{ M-x q, Q and sig
+%{{{ M-x q, Q, rq and sig
 
 % for e-mail and news: quote a paragraph
 define q() {
@@ -552,6 +553,46 @@ define Q() {
             call("delete_char_cmd");
         if (what_char() == ' ')
             call("delete_char_cmd");
+        !if (down(1))
+            break;
+        bol();
+    }
+}
+
+% Re-cast a (multi-)quoted paragraph in Richard K's quoting style
+define rq() {
+    push_spot();
+    EXIT_BLOCK {
+        pop_spot();
+    }
+
+    bol();
+    if (eolp())
+        break;
+
+    while ((what_char() != '\n') and (bobp() == 0)) {
+        go_up(1);
+        bol();
+    }
+    if (what_char() == '\n')
+        go_down(1);
+    bol();
+    while ((what_char() != '\n') and (eobp() == 0)) {
+        if (what_char() == '>') {
+            while (what_char() == '>') {
+                go_right_1();
+                push_mark();
+                skip_white();
+                if (eolp() or what_char() != '>') {
+                    pop_mark(1);
+                    break;
+                }
+                del_region();
+            }
+            if (what_char() != ' ' and what_char() != '\t')
+               insert_char(' ');
+            bol();
+        }
         !if (down(1))
             break;
         bol();
@@ -645,15 +686,34 @@ setkey(". 48 insert_char", "^[0");
 %}}}
 %{{{ Somewhat different text-mode format-paragraph function
 
+define jedrc_on_white() {
+    variable i = what_char();
+    if (i == ' ' or i == '\t')
+        return 1;
+    else
+        return 0;
+}
+
 define text_item1st() {
     push_spot();
     EXIT_BLOCK { pop_spot(); }
     bol();
-    if (looking_at(" ") or looking_at("\t")) {
+    if (jedrc_on_white()) {
         skip_white();
         if (looking_at("-") or looking_at("*") or
-            looking_at("+") or looking_at("("))
-            return 1;
+            looking_at("+")) {
+            go_right_1();
+            if (jedrc_on_white())
+                return 1;
+        }
+        if (looking_at("(")) {
+            skip_chars("^ \t)");
+            if (looking_at(")")) {
+                go_right_1();
+                if (jedrc_on_white())
+                    return 1;
+            }
+        }
     }
     return 0;
 }
@@ -747,6 +807,17 @@ define text_mode_hook() {
 define cvs_log() {
     variable file, dir, name;
     (file, dir, name, ) = getbuf_info();
+    if (strcmp(substr(name, 1, 10), "*cvs-log*:") == 0) {
+        message("This is already a CVS log buffer\n");
+        return;
+    }
+    if (strcmp(substr(name, 1, 15), "*cvs-annotate*:") == 0) {
+        name = substr(name, 16, -1);
+    }
+    if (strcmp(file, "") == 0) {
+        ERROR_BLOCK { error("Unable to determine base file name"); }
+        file = get_blocal_var("cvs-file");
+    }
     name = "*cvs-log*:" + name;
     change_default_dir(dir);
     sw2buf(name);
@@ -757,11 +828,24 @@ define cvs_log() {
     bob();
     bol_fsearch("-----");
     recenter(1);
+    create_blocal_var("cvs-file", 's');
+    set_blocal_var(file, "cvs-file");
 }
 define cvs_annotate() {
     variable file, dir, name, line;
     (file, dir, name, ) = getbuf_info();
     line = what_line();
+    if (strcmp(substr(name, 1, 15), "*cvs-annotate*:") == 0) {
+        message("This is already a CVS annotation buffer\n");
+        return;
+    }
+    if (strcmp(substr(name, 1, 10), "*cvs-log*:") == 0) {
+        name = substr(name, 11, -1);
+    }
+    if (strcmp(file, "") == 0) {
+        ERROR_BLOCK { error("Unable to determine base file name"); }
+        file = get_blocal_var("cvs-file");
+    }
     name = "*cvs-annotate*:" + name;
     change_default_dir(dir);
     sw2buf(name);
@@ -771,6 +855,8 @@ define cvs_annotate() {
     setbuf_info((getbuf_info & ~1) | 8); % clear modified bit, set readonly
     goto_line(line);
     recenter(0);
+    create_blocal_var("cvs-file", 's');
+    set_blocal_var(file, "cvs-file");
 }
 add_completion("cvs_log");
 add_completion("cvs_annotate");
