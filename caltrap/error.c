@@ -45,6 +45,18 @@ static void do_error(int code, va_list ap) {
 	sprintf(error, "`cron' command expects exactly two arguments");
 	flags = PREFIX;
 	break;
+      case err_dumpargno:
+	sprintf(error, "`dump' command expects no arguments");
+	flags = PREFIX;
+	break;
+      case err_loadargno:
+	sprintf(error, "`load' command expects at most one argument");
+	flags = PREFIX;
+	break;
+      case err_loadfmt:
+	sprintf(error, "unable to parse dump file when reloading");
+	flags = PREFIX;
+	break;
       case err_date:
 	sp = va_arg(ap, char *);
 	sprintf(error, "unable to parse date `%.200s'", sp);
@@ -63,7 +75,7 @@ static void do_error(int code, va_list ap) {
 	break;
       case err_dbexists:
 	sprintf(error, "database `%.200s' already exists;"
-		" remove it before re-initialising", dbpath);
+		" remove it before trying again", dbpath);
 	flags = PREFIX;
 	break;
       case err_noopendb:

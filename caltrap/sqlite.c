@@ -121,3 +121,28 @@ void db_list_entries(Date start, Time starttime,
 
     sqlite_close(db);
 }
+
+void db_dump_entries(list_callback_fn_t fn, void *ctx)
+{
+    sqlite *db;
+    struct stat sb;
+    char *err;
+    struct sqlite_list_callback_struct str;
+
+    if (stat(dbpath, &sb) < 0 && errno == ENOENT)
+	fatal(err_nodb);
+
+    db = sqlite_open(dbpath, 0666, &err);
+    if (!db)
+	fatal(err_noopendb, err);
+
+    str.fn = fn;
+    str.ctx = ctx;
+
+    sqlite_exec(db, "SELECT date, time, description FROM entries;",
+		sqlite_list_callback, &str, &err);
+    if (err)
+	fatal(err_dberror, err);
+
+    sqlite_close(db);
+}
