@@ -1,0 +1,45 @@
+Summary: PuTTY drops USERAUTH_BANNER when awaiting username input
+Class: bug
+Difficulty: tricky
+Content-type: text/x-html-body
+
+<p>
+Someone on comp.security.ssh said their login banner did not appear
+when PuTTY prompted for a username, but did appear when they
+specified the username ahead of time in the configuration.
+
+<p>
+This looks worryingly plausible, in fact: the loop on
+<code>process_userpass_input()</code> appears to be throwing away
+all incoming SSH messages, presumably because I didn't expect to be
+receiving any; and that includes USERAUTH_BANNER. I didn't notice
+this before because I tested against OpenSSH, which appears to delay
+sending the banner until after the first (usually null)
+USERAUTH_REQUEST. However, the poster was using WinSSHD, which sends
+the banner as soon as the userauth protocol commences (which seems a
+lot more sensible in retrospect!).
+
+<p>
+So in order to fix this in PuTTY I would have to spot
+USERAUTH_BANNER during username input, and respond to it by doing
+something thoroughly unpleasant, such as erasing the username input
+line from the terminal, printing the banner, and redisplaying the
+username input line after that. This is nasty, but it would have the
+nice feature that if the banner was sent immediately, it would be
+displayed <em>before</em> the user finished entering their username.
+
+<p>
+I've labelled this bug "tricky" because I'm not sure what to do
+about Plink. Plink will call ssh_get_line and ignore ssh.c's own
+username/password input function, which means that on the one hand
+the banner won't be dropped on the floor in the current version, but
+on the other hand it would be hard to display it ahead of the
+username prompt in the fixed version.
+
+<p>
+If only the working group had listened to my suggestion of having a
+ping message I could send during userauth and expect a reply. Then I
+could send the ping, get a reply back, and if the banner had been
+sent immediately on commencement of userauth then it would appear
+before the ping response, and so I'd know whether there was a banner
+to be displayed <em>before</em> beginning username input. Bah.
