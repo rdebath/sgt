@@ -8,6 +8,7 @@ Summary:
 
 Class:
   One of:
+    vulnerability  This is a security vulnerability.
     bug		This is clearly an actual problem we want fixed.
     semi-bug	This might or might not be a bug, depending on your precise
 		definition of what a bug is.
