@@ -79,17 +79,34 @@ int listener_newthread(SOCKET sock, int port, SOCKADDR_IN remoteaddr) {
     }
     ret = auth_check_line(cmdline, nonce, sock);
     if (ret > 0) {
+        int success = 0;
         /*
          * Things beginning 's' get passed to ShellExecute; things
-         * beginning with 'w' go to WinExec.
+         * beginning with 'p' go to CreateProcess; things beginning
+         * with 'w' go to CreateProcess and wait.
          */
         char *p = cmdline + ret;
-        if (*p == 'w') {
-            WinExec(p+1, SW_SHOWNORMAL);
+        if (*p == 'p' || *p == 'w') {
+            STARTUPINFO si;
+            PROCESS_INFORMATION pi;
+            memset(&si, 0, sizeof(si));
+            si.cb = sizeof(si);
+            si.wShowWindow = SW_SHOWNORMAL;
+            si.dwFlags = STARTF_USESHOWWINDOW;
+            success = CreateProcess(NULL, p+1, NULL, NULL, FALSE,
+                                    CREATE_NEW_CONSOLE | NORMAL_PRIORITY_CLASS,
+                                    NULL, NULL, &si, &pi) != 0;
+            if (success && *p == 'w')
+                WaitForSingleObject(pi.hProcess, INFINITE);
         } else if (*p == 's') {
-            ShellExecute(listener_hwnd, NULL, p+1, NULL, NULL, SW_SHOWNORMAL);
+            success = 32 <
+                (int)ShellExecute(listener_hwnd, NULL, p+1, NULL,
+                                  NULL, SW_SHOWNORMAL);
         }
-        send(sock, "+ok\r\n", 5, 0);
+        if (success)
+            send(sock, "+ok\r\n", 5, 0);
+        else
+            send(sock, "-execute failed\r\n", 17, 0);
     } else {
         send(sock, "-auth failed\r\n", 14, 0);
     }
