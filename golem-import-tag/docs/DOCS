@@ -1,0 +1,19 @@
+Q: What exactly does "suspend" do in an edithook function?
+
+A:
+  It suspends the thread that's running the edithook. This has the effect of
+  terminating the function call, so that the top N items on the stack are then
+  used as the return values from the function. But the next time the function is
+  called, instead of starting from the top of the function, execution will resume
+  just after the suspend call (with the top N items having been removed).
+  
+  The idea is that many editing procedures are best done in this way - if you
+  want to specify a sequence of actions which the interface requires you to
+  return one by one, you suspend with each one, and thus successive calls to the
+  edit hook return the sequence.
+  
+  It's a property of the fact that the edithook runs in its own thread -
+  `suspend' affects the Loew thread rather than the function itself - so don't
+  expect to be able to use it in user functions and get coroutine mechanics.
+
+
