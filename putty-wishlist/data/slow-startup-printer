@@ -1,0 +1,40 @@
+Summary: Printer enumeration may cause slow startup
+Class: semi-bug
+Difficulty: tricky
+Priority: low
+Content-type: text/x-html-body
+Present-in: 0.53
+Absent-in: 0.52
+
+<p>
+There's been a suggestion (ref:
+<tt>000c01c282b0$c6ae6c90$6e01a8c0@int.psross.net</tt>) that the ANSI
+printer support added in 0.53 can cause PuTTY to take a long time to
+start (~30 seconds) if a printer is configured in Windows that is not
+reachable (e.g. shared from a machine that is currently switched off).
+This may be intermittent rather than reliable. (Win2K Pro SP3)
+
+<p>
+PuTTY calls Windows functions to enumerate all suitable printers
+(regardless of whether any attempt is made to <em>use</em> the ANSI
+printing functionality):
+<ul>
+<li>when a saved session is loaded into the configuration dialog;
+<li>when a new panel is selected via the treeview control;
+<li>when the config dialog is initially drawn (side effect of above).
+</ul>
+This means that this is <em>not</em> done if the configuration dialog
+is bypassed (e.g., by loading a saved session directly).
+
+<p>
+PuTTY is a bit unusual in doing this; we use EnumPrinters (etc)
+directly in order to avoid UI issues associated with the concept of
+`raw' printing.
+
+<p>
+I've not been able to reproduce this on Win2K Pro.
+
+<p>
+This is to some extent not our problem, but perhaps we could do
+something to mitigate the problem (e.g. enumerate printers less often
+/ only if the user requests the ANSI printing functionality).
