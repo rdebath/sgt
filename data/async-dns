@@ -1,5 +1,5 @@
 Summary: DNS lookups are synchronous.
-Class: bug
+Class: semi-bug
 Priority: medium
 Difficulty: fun
 Content-type: text/x-html-body
