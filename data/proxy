@@ -2,7 +2,7 @@ Summary: Support for proxying of connections
 Class: wish
 Difficulty: tricky
 Present-in: 0.52
-Fixed-in: 2002-04-28
+Fixed-in: 0.53
 Content-type: text/x-html-body
 
 <p>
@@ -23,6 +23,4 @@ We would also want the ability to define non-proxy zones (probably
 give the user the choice of DNS or IP address space).
 
 <p>
-This has all been implemented as of 2002-04-28. The only things left
-that might be nice to implement are username/password authentication
-for SOCKS 5 and for HTTP CONNECT proxying.
+This has all been implemented in 0.53.
