@@ -244,7 +244,8 @@ void null_output_fn(void *ctx, const char *text, int len,
 void null_info_fn(void *ctx, struct message_parse_info *info);
 void parse_message(const char *message, int msglen,
 		   parser_output_fn_t output, void *outctx,
-		   parser_info_fn_t info, void *infoctx);
+		   parser_info_fn_t info, void *infoctx,
+		   int default_charset);
 
 /*
  * rfc2047.c
@@ -296,5 +297,10 @@ void display_message(char *ego, int charset, int type, int full);
  * boringhdr.c
  */
 int is_boring_hdr(const char *hdr, int len);
+
+/*
+ * send.c
+ */
+void send_from_stdin(int charset);
 
 #endif

@@ -41,11 +41,11 @@ SRC := ../
 CHARSET := big5enc big5set cp949 euc fromucs gb2312 hz iso2022s
 CHARSET += jisx0208 jisx0212 ksx1001 localenc macenc mimeenc sbcs
 CHARSET += sbcsdat shiftjis slookup toucs utf16 utf7 utf8 xenc
-CHARSET += superset
+CHARSET += superset istate
 
 MODULES := main malloc error help licence version sqlite mboxstore store
 MODULES += config mboxread rfc822 rfc2047 base64 qp date misc export
-MODULES += display boringhdr
+MODULES += display boringhdr send
 
 CSMODULES := $(addprefix cs-,$(CHARSET))
 OBJECTS := $(addsuffix .o,$(MODULES) $(CSMODULES))

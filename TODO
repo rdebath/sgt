@@ -1,121 +1,59 @@
-Plan of action
---------------
+Mail sending plan of action
+---------------------------
 
-If I'm going to do mail sending next, I suspect it needs libcharset
-work first. So I'm going to draw up a plan of action.
+So. I now have code which parses the input message and RFC2047s the
+headers. Things left to do:
 
-When I construct a composer buffer, it will contain addresses and
-subject lines from the db, which start off in UTF-8. I will be told
-what charset the composer buffer itself wants to be in. So I must
-convert each of those things from UTF-8 to that charset.
- + If they don't _fit_ in the charset, I must do something clever,
-   and I think what it will be is to RFC2047 them (=?UTF-8?...?=).
+ - 76-character-per-line limit on any header involving at least one
+   encoded-word.
+    + This is trivial for Subject, but a pest for address headers:
+      it means we have to wrap the _rest_ of the header, and not
+      only at FWS either in case a single _email address_ goes over
+      that limit.
 
-When I actually send mail, I will retrieve the composer buffer and
-feed it through my existing RFC822 parser.
- + This means the RFC2047 strings I might have inserted in the
-   buffer in the previous step will be reconstituted as UTF-8, and
-   then I'm going to have to RFC2047 them _again_ before
-   transmission. So be it.
- + Also I must figure out what charset to send the main text part
-   in. I start with ASCII, and work upwards through a few others
-   (perhaps a user-specified list?) before finally resorting to
-   UTF-8 itself.
- + Come to think of it, I should probably do the same when
-   RFC2047ing the mail display names and subject lines etc.
-    - And in fact it would be pretty easy just to make sure to try
-      whatever charset the original display name / subject line had
-      been in. That still breaks on Big5 since it doesn't support
-      round-trip conversion to Unicode, although the offending
-      characters are unlikely to be problematic.
-    - Or is it? That's all very well if my composer charset is
-      8859-1 and my correspondent's display name is in EUC-KR; it
-      means that the display name will get 2047ed on composer buffer
-      construction, and hence when the message undergoes final
-      pre-send encoding the name of the original charset will be
-      available to the encoder to use as an option. But once I move
-      to a UTF-8 composer buffer, this actually becomes _harder_ -
-      it seems obviously right that display names should be legible
-      in the compose buffer, and therefore finding their original
-      charsets would require a db lookup on the email address - if
-      even _that_ was a plausible option.
-    - So perhaps I'm going to decide after all that preserving the
-      sender's charset is not sensible. They didn't deliberately
-      send in a charset _I_ was happy with, after all, and in any
-      case I can't (or won't) do that for the main message text.
-      They can be UTF-8ed, and like it.
+ - Correct handling of structured headers.
+    + rfc2047_encode() wants to know more than just `is it
+      structured' - it wants to distinguish phrases from comments.
+    + We need to know which headers are structured before calling
+      rfc2047_encode().
 
-So. Actual plan of action:
+ - Invent Date and Message-ID headers if not already present.
+    + easiest way to tell if they're already present is to hook into
+      the info output from parse_message()!
 
- - Need some sort of routine which will analyse a piece of text
-   (charset specified on input) and escalate through a supplied
-   sequence of charsets to find the first one it fits sensibly into.
+ - Figure out how to extract and parse pseudo-headers.
+    + One option is to have rfc822.c pass a set of lexed_header
+      structures out to yet another hook.
+    + Another option is simply to lex then ourself when the text
+      comes back into the display hook.
+       * I'm leaning towards this one at the moment, if only because
+	 lexing them inside rfc822.c requires it to need to know
+	 their interesting-punctuation set.
 
- - I think I'd prefer to start with the tricky bit, which is the
-   sending (well, RFC822 encoding to begin with) of the message.
-   Trivial noodlings such as constructing the composer buffer can
-   come later. So:
-    + parse_message() is going to do the hard work here.
-       * This means that parse_message() needs to be _told_ its
-	 initial default charset, since for sending it will be
-	 whatever charset the compose buffer was edited in.
-    + The RFC822 headers will be constructed using the output parse
-      from parse_message(). This means I'm going to have to arrange
-      for the right stuff to be RFC2047-encoded.
-       * I could do this by splitting TYPE_HEADER_TEXT into
-	 TYPE_RAW_HEADER_TEXT and TYPE_DECODED_HEADER_TEXT, so that
-	 the display function receiving the output from
-	 parse_message() could collect a UTF-8 buffer
-       * Or alternatively I could do it by having rfc2047() know
-	 whether it's supposed to be encoding or decoding, and do it
-	 before the output function gets it.
-       * I don't think there's any particular reason to prefer
-	 either approach right now, so I'll decide on whim when I
-	 get that far.
-       * On the contrary! When _constructing_ the composer buffer, I
-	 will need a simple function which RFC2047s a UTF-8 string,
-	 so clearly it would make sense to write such a function and
-	 then use it everywhere. I think this dictates the first
-	 solution (TYPE_DECODED_HEADER_TEXT).
-    + The send buffer will contain some special headers which need
-      to be extracted and handled cunningly by the send code.
-       * I _could_ parse these simply by having my output function
-	 catch TYPE_HEADER_NAME with particular header names,
-	 inhibit header output on those ones, and pass the header
-	 text to another routine for handling.
-       * But that seems slightly silly. Better, surely, to lex the
-	 headers in rfc822.c in the usual way, and pass the lexed
-	 headers out to a third utility function?
-	  + aack, no, it isn't quite that simple - the set of
-	    punctuation used in header lexing depends on the header
-	    name, so something horrid would have to happen such as
-	    the utility function having a second call mode in which
-	    it returns the punctuation set. Gaa!
-       * Again, either way would work with sufficient contortions. I
-	 wonder whether there's any nicer way.
-    + So. Step 1 is to splurge through parse_message() to produce a
-      set of fully RFC822-encoded output headers. In so doing, we
-      _also_ remove and parse Attach, Queue and Categories headers.
-    + Queue we can ignore for the moment; we're currently RFC822-
-      encoding the message, and Queue only affects what we do with
-      it after that. Ditto Categories.
-    + Attach, however, is relevant to Step 2, which is to sort out
-      the MIME structure of the message.
-       * First we have to analyse the body text to determine what
-	 charset it should go in. My guess is that the correct
-	 escalation here is ASCII, <editing-charset>, UTF-8.
-       * We also check for Attach headers (and possibly
-	 Attach-Enclosed as well, though I'm less convinced about
-	 those in the new world since we won't need them for
-	 forwarding). I suppose this is the point where we load in
-	 our attachment files (checking they exist in the process)
-	 and scan them to determine an appropriate separator line.
-       * Then we output some MIME headers (conveniently, we have
-	 output all the provided headers already and are in
-	 precisely the right place to output fresh ones). These are
-	 either the body-text headers or a multipart/mixed; then we
-	 either output the body text or multipart each other bit in
-	 turn.
+ - Set up MIME structure of message.
+    + I think a neat approach here, simply against the offchance
+      that the user might have already inserted their own MIME
+      headers, would be to have our info hook store the MIME details
+      itself. Then go through and discard subparts (loop over
+      all-parts list, keep a pointer to the last top-level part
+      seen, every time we see a part which isn't a subpart of that
+      we mark it as a fresh top-level part). Finally, discard the
+      supplied MIME headers and build our own set, using all the
+      MIME parts provided, but also processing Attach headers to add
+      more.
+
+ - Do the subsequent actual sending.
+    + process Queue.
+       * still need a design for that bit. In particular, to allow
+	 re-editing of a queued message, we need to be able to
+	 reverse all the above transformations in some fashion.
+	 Hmmm.
+    + process Categories, and fcc the message.
+    + pass to /usr/lib/sendmail.
+
+ - Construct composer buffers.
+    + this involves RFC2047ing any display names or subject lines
+      which don't fit in the composer charset.
 
 Work still to do
 ----------------
@@ -133,16 +71,6 @@ Big things:
     + automatic category assignment will involve user
       configurability in some fashion; I'm still thinking embedding
       Python might be the Way To Go.
-
- - Mail sending: construction of starting composer buffers,
-   interpreting of pseudo-headers (Queue, Attach*, Fcc/Categories),
-   encoding of the message (RFC2047, and supplying a Content-Type as
-   appropriate), invention of Message-IDs, dealing with queued
-   messages.
-    + interesting charset issue: suppose the charset in which the
-      user _composes_ the message can't handle the input data
-      (display name in a To address, subject with Re: in front of
-      it). Then what?
 
 Smaller things:
 

@@ -50,6 +50,13 @@ void run_command(int argc, char **argv)
 	    display_message(argv[i], charset, DISPLAY_ANSI,
 			    !strcmp(argv[0], "display-full"));
     }
+
+    if (!strcmp(argv[0], "send")) {
+	int charset = CS_ASCII;
+	if (argc > 1)
+	    charset = charset_from_localenc(argv[1]);
+	send_from_stdin(charset);
+    }
 }
 
 int main(int argc, char **argv) {
