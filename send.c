@@ -6,6 +6,7 @@
 #include <string.h>
 #include <assert.h>
 #include <unistd.h>
+#include <netdb.h>
 
 #include "timber.h"
 #include "charset.h"
@@ -223,6 +224,23 @@ static void send_output_fn(void *vctx, const char *text, int len,
     }
 }
 
+static char *get_fqdn(void)
+{
+    char hostname[512];
+    struct hostent *h;
+
+    if (gethostname(hostname, lenof(hostname))) {
+	perror("gethostname");
+	exit(1);
+    }
+    h = gethostbyname(hostname);
+    if (!h) {
+	herror("gethostbyname");
+	exit(1);
+    }
+    return dupstr(h->h_name);
+}
+
 void send(int charset, char *message, int msglen)
 {
     struct send_output_ctx ctx;
@@ -295,6 +313,46 @@ void send(int charset, char *message, int msglen)
 	       1900+tm.tm_year, tm.tm_hour, tm.tm_min, tm.tm_sec,
 	       (totaldiff > 0 ? '-' : '+'),
 	       abs(totaldiff)/3600, abs(totaldiff)/60%60);
+    }
+
+    /*
+     * Invent a Message-ID as well.
+     */
+    if (!ctx.gotmid) {
+	/*
+	 * Our Message-IDs begin with `Timber.' to distinguish them
+	 * from anyone else's; after that I'm just going to display
+	 * the current time, the pid, and a disambiguator.
+	 */
+	struct tm tm, tm2;
+	char idbuf[128];
+	char *fqdn;
+	time_t t1, t2, now;
+	static int disambiguator = 0;
+
+	tm.tm_year = 70;
+	tm.tm_mon = 0;
+	tm.tm_mday = 1;
+	tm.tm_hour = tm.tm_min = tm.tm_sec = 0;
+	tm.tm_isdst = 0;
+
+	t1 = mktime(&tm);
+	tm2 = *gmtime(&t1);
+	tm2.tm_isdst = 0;	       /* can't be too careful */
+	t2 = mktime(&tm2);
+
+	now = time(NULL);
+
+	sprintf(idbuf, "Timber-%.0f-%d", difftime(now, t1) + difftime(t2, t1),
+		getpid());
+
+	if (disambiguator)
+	    sprintf(idbuf + strlen(idbuf), "-%d", disambiguator);
+	disambiguator++;
+
+	fqdn = get_fqdn();
+	printf("Message-ID: <%s@%s>\n", idbuf, fqdn);
+	sfree(fqdn);
     }
 }
 
