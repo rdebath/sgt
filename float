@@ -39,7 +39,7 @@ if (scalar @ARGV == 0) {
 $size = $mode = "x";
 
 foreach $arg (@ARGV) {
-  if ($arg =~ /^-(.)(.*)/) {
+  if ($arg =~ /^-([^0-9])(.*)/) {
     while ($arg =~ /^-(.)(.*)/) {
       $arg = "-$2";
       if ($1 eq "h") { $mode = "h"; next; }
@@ -58,6 +58,7 @@ foreach $arg (@ARGV) {
       $n = 8; $order = \@dblorder; $pack = "d";
     }
     if ($mode eq "h") {
+      $arg =~ y/0-9a-zA-Z//cd;
       @array = (unpack "C*", pack "H*", $arg), 0,0,0,0,0,0,0,0;
       @data = ();
       for ($i = 0; $i < $n; $i++) {
