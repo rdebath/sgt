@@ -1,0 +1,28 @@
+Summary: Vulnerabilities discovered by SSHredder test suite (CERT CA-2002-36)
+Class: bug
+Difficulty: fun
+Priority: high
+Present-in: 0.53
+Fixed-in: 0.53b
+Content-type: text/x-html-body
+
+<p>
+PuTTY 0.53 and earlier are vulnerable to the attack described in
+CERT advisory
+<a href="http://www.cert.org/advisories/CA-2002-36.html">CA-2002-36</a>
+"Multiple Vulnerabilities in SSH Implementations" (also
+<a href="http://www.kb.cert.org/vuls/id/389665">VU#389665</a>). This
+vulnerability is believed to be fixed in 0.53b (released Nov 12, 2002).
+
+<p>
+Certain well-chosen malformed or unusual packets can lead to
+remote code execution attacks. See the 
+<a href="http://www.rapid7.com/advisories/R7-0009.txt">Rapid7 advisorory</a>
+and their 
+<a href="http://www.rapid7.com/perl/DownloadRequest.pl?PackageChoice=666">SSHredder</a>
+test suite for details.
+
+<p>
+I-Proyectos has released a proof-of-concept
+<a href="http://online.securityfocus.com/archive/1/304609">exploit</a>
+to BugTraq.
