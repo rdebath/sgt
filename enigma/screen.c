@@ -304,7 +304,9 @@ int screen_main_menu(levelset *set, gamestate **saves,
 		sprintf(buf, "(more)");
 		attr = T_LIST_ADMIN;
 	    } else if (i+levtop-1 == maxlev && maxlev < set->nlevels) {
-		sprintf(buf, "(%d remain unseen)", set->nlevels - maxlev);
+		sprintf(buf, "(%d remain%s unseen)",
+			set->nlevels - maxlev,
+			set->nlevels - maxlev == 1 ? "s" : "");
 		unseen = TRUE;
 		attr = T_LIST_ADMIN;
 	    } else if (i == height-6 && i+levtop-1 < maxlev && !unseen) {
