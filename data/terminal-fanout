@@ -1,0 +1,66 @@
+Summary: Send keyboard input to multiple active sessions
+Class: wish
+Difficulty: tricky
+Priority: never
+Content-type: text/x-html-body
+
+<p>
+A few people have asked us to implement a feature where multiple
+sessions simultaneously take input from the keyboard. (Perhaps with a
+separate window for input to all sessions, allowing input to
+individual sessions too.) The usual reason cited is the need to
+administer multiple similar systems (e.g., clusters).
+
+<p>
+(Apparently `Sun Cluster' implements something like this in
+`ctelnet/estelnet').
+
+<p>
+We think that this is (a) a niche feature not worth taking up space in
+everyone's PuTTY binaries for, and (b) better done by a separate
+application. Outlined below is a design for a Windows application
+which would do the job:
+
+<blockquote><p>
+If I'm the sort of user who wants to type the same text into multiple
+windows, there's no real reason I might not want to type the same text
+into a collection of windows that I <em>already</em> had on the
+screen, or had not happened to start up from the same PuTTY command
+line. Ideally I'd like to select any set of my existing windows and
+type the same text into all of those. In fact, they probably wouldn't
+all want to be PuTTYs - I can see clear uses for being able to select
+a bunch of PuTTYs and a Notepad, so I can keep a log of what I typed
+in a text file.
+
+<p>
+What I'm driving at is that I think this could be a useful piece of
+functionality, but really it belongs in a separate input-duplicating
+application which is independent of PuTTY. The way I see this
+working is:
+
+<ul>
+<li>you'd start up this application, and it would contain (say) a
+   list box which listed the windows it was currently targetting.
+
+<li>there would also be an `Add Window' button; you'd press this,
+   then select another top-level window (a PuTTY, or something
+   else), and the title of that window would appear in the list.
+
+<li>there'd be an actual input box, which you could select and then
+   type text. Any text you typed into the input box would be sent to
+   all the windows shown in the list.
+
+<li>when a targetted application closed, the duplicator would notice
+   and its title bar would vanish from the list.
+</ul>
+
+<p>
+I think this application, as I've outlined it, would be far more
+flexible and useful than putting the functionality directly into
+PuTTY. Unfortunately, I don't think I've got the time to write it.
+</blockquote>
+
+<p>
+There are apparently Unix utilities called
+<a href="http://www.stearns.org/fanout/README.html">fanout and fanterm</a>
+which implement this style of thing.
