@@ -1,7 +1,11 @@
 #!/bin/sh 
+# $Id$
 
 # When run, this script will generate a mirror of the PuTTY website
-# in a subdirectory called `putty'.
+# in a subdirectory called `putty'. It does not attempt to work
+# incrementally (only fetching things that have changed) but should
+# work tolerably well when run in the presence of an existing mirror
+# directory.
 
 # Fetch the main web site.
 wget --no-parent -l0 -r --cut-dirs=1 -nH \
@@ -10,6 +14,7 @@ wget --no-parent -l0 -r --cut-dirs=1 -nH \
 # Fetch the .htaccess file from the download site, in order to find the
 # version number of the latest release.
 cd putty
+rm -f htaccess
 wget http://the.earth.li/~sgtatham/putty/htaccess
 version=`sed -n 's!.*http://the.earth.li/~sgtatham/putty/\(.*\)/!\1!p' htaccess`
 echo Latest version is $version
