@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include <linux/ps2/dev.h>
+#include <sys/mount.h>
 
 #include "beebfont.h"
 #include "swash.h"
@@ -92,15 +93,55 @@ int main(void)
     int flags, redraw, mpos, val, prevval;
 
     /* Set up kernel modules. */
-    for (i = 0; i < lenof(modules); i++)
+    for (i = 0; i < lenof(modules); i++) {
+	printf("inserting module %s\n", modules[i]);
 	simplesystem("/bin/insmod.static", "insmod", modules[i], 0);
+	printf("done\n");
+    }
 
     /*
-     * Now start up a small SDL menu system which lets the user
-     * choose a game. When they do so, we shut down SDL and use
-     * simplesystem() to run the game, then start the menu back up
-     * when control returns to us.
+     * Mount /proc, which we'll need for finding /dev/ps2gs once
+     * the games are running.
      */
+    mount("none", "/proc", "proc", MS_MGC_VAL, NULL);
+
+    /*
+     * Now we will start up a small SDL menu system which lets the
+     * user choose a game. When they do so, we shut down SDL and
+     * use simplesystem() to run the game, then start the menu back
+     * up when control returns to us.
+     */
+
+    /*
+     * The first few times I tried to run this menu system
+     * standalone, it exited with some sort of error, and I didn't
+     * see what the error was because all sorts of weird kernel
+     * messages scrolled it off the screen extremely fast. So I
+     * inserted the following fork code, so that the actual menu
+     * would run in a child process while the original process just
+     * sat in wait(), and then if the menu exited the parent would
+     * see it and could report something about what happened.
+     * 
+     * Somewhat annoyingly, when I put the fork code in it suddenly
+     * started working. I don't know if some magic happens at
+     * kernel level if you're pid 1 which was confusing SDL, or
+     * what; but I'm just going to leave the fork code here on the
+     * grounds that (a) if it carries on working that's fine, and
+     * (b) if it stops working then the fork code can serve its
+     * original debugging purpose.
+     */
+    {
+	int pid = fork();
+	int stat;
+
+	if (pid != 0) {
+	    if (pid < 0) perror("unable to fork");
+	    wait(&stat);
+	    printf("child returned error code %d\n", stat);
+	    printf("now entering tight loop\n");
+	    while (1);
+	}
+    }
 
     while (1) {
 	/* Set up the SDL game environment */
