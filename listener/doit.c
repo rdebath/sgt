@@ -44,6 +44,12 @@ void SHA_Init(SHA_State *s);
 void SHA_Bytes(SHA_State *s, void *p, int len);
 void SHA_Final(SHA_State *s, unsigned char *output);
 
+static int CALLBACK AboutProc(HWND hwnd, UINT msg,
+			      WPARAM wParam, LPARAM lParam);
+static int CALLBACK LicenceProc(HWND hwnd, UINT msg,
+				WPARAM wParam, LPARAM lParam);
+HWND aboutbox = NULL;
+
 static char *secret;
 static int secretlen;
 
@@ -550,6 +556,7 @@ void listener_cmdline(char *cmdline) {
 #define WM_SYSTRAY   (WM_XUSER + 6)
 #define WM_SYSTRAY2  (WM_XUSER + 7)
 #define IDM_CLOSE    0x0010
+#define IDM_ABOUT    0x0020
 
 static HMENU systray_menu;
 
@@ -577,6 +584,8 @@ extern int listener_init(void) {
         DestroyIcon(hicon); 
 
     systray_menu = CreatePopupMenu();
+    AppendMenu (systray_menu, MF_ENABLED, IDM_ABOUT, "About");
+    AppendMenu(systray_menu, MF_SEPARATOR, 0, 0);
     AppendMenu (systray_menu, MF_ENABLED, IDM_CLOSE, "Close DoIt");
 
     return res; 
@@ -621,5 +630,117 @@ extern int listener_wndproc(HWND hwnd, UINT message,
     if (message == WM_COMMAND && (wParam & ~0xF) == IDM_CLOSE) {
         SendMessage(hwnd, WM_CLOSE, 0, 0);
     }
+    if (message == WM_COMMAND && (wParam & ~0xF) == IDM_ABOUT) {
+	if (!aboutbox) {
+	    aboutbox = CreateDialog(listener_instance,
+				    MAKEINTRESOURCE(300),
+				    NULL, AboutProc);
+	    ShowWindow(aboutbox, SW_SHOWNORMAL);
+	    /*
+	     * Sometimes the window comes up minimised / hidden
+	     * for no obvious reason. Prevent this.
+	     */
+	    SetForegroundWindow(aboutbox);
+	    SetWindowPos(aboutbox, HWND_TOP, 0, 0, 0, 0,
+			 SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+	}
+    }
     return 1;                          /* not handled */
+}
+
+/* ======================================================================
+ * The About box: show CVS revisions of doit.c, listener.c and
+ * doitlib.c.
+ */
+
+char *makeversion(char *buffer, char *revision)
+{
+    char *p = buffer;
+    strcpy(buffer, revision);
+    p += strcspn(p, "0123456789");
+    if (*p) {
+	p[strcspn(p, " $")] = '\0';
+    }
+    if (!*p)
+	return NULL;
+    return p;
+}
+
+void showversion(int line, char *buffer)
+{
+    char versionbuf[80];
+    char *v, *f;
+    extern char doitlib_revision[], listener_revision[];
+
+    if (line == 0)
+	v = "$Revision: 1.18 $", f = "doit.c";
+    else if (line == 1)
+	v = doitlib_revision, f = "doitlib.c";
+    else if (line == 2)
+	v = listener_revision, f = "listener.c";
+
+    v = makeversion(versionbuf, v);
+    if (v)
+	sprintf(buffer, "%s revision %s", f, v);
+    else
+	sprintf(buffer, "%s unknown version", f);
+}
+
+static int CALLBACK AboutProc(HWND hwnd, UINT msg,
+			      WPARAM wParam, LPARAM lParam)
+{
+    char vbuf[160];
+    switch (msg) {
+      case WM_INITDIALOG:
+	showversion(0, vbuf);
+	SetDlgItemText(hwnd, 100, vbuf);
+	showversion(1, vbuf);
+	SetDlgItemText(hwnd, 101, vbuf);
+	showversion(2, vbuf);
+	SetDlgItemText(hwnd, 102, vbuf);
+	return 1;
+      case WM_COMMAND:
+	switch (LOWORD(wParam)) {
+	  case IDOK:
+	    aboutbox = NULL;
+	    DestroyWindow(hwnd);
+	    return 0;
+	  case 112:
+	    EnableWindow(hwnd, 0);
+	    DialogBox(listener_instance, MAKEINTRESOURCE(301),
+		      NULL, LicenceProc);
+	    EnableWindow(hwnd, 1);
+	    SetActiveWindow(hwnd);
+	    return 0;
+	}
+	return 0;
+      case WM_CLOSE:
+	aboutbox = NULL;
+	DestroyWindow(hwnd);
+	return 0;
+    }
+    return 0;
+}
+
+/*
+ * Dialog-box function for the Licence box.
+ */
+static int CALLBACK LicenceProc(HWND hwnd, UINT msg,
+				WPARAM wParam, LPARAM lParam)
+{
+    switch (msg) {
+      case WM_INITDIALOG:
+	return 1;
+      case WM_COMMAND:
+	switch (LOWORD(wParam)) {
+	  case IDOK:
+	    EndDialog(hwnd, 1);
+	    return 0;
+	}
+	return 0;
+      case WM_CLOSE:
+	EndDialog(hwnd, 1);
+	return 0;
+    }
+    return 0;
 }
