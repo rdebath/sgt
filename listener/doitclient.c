@@ -386,7 +386,11 @@ char *path_translate(char *path)
     if (!cfg)
         return path;
 
-    path = dupstr(path);
+    if (*path && path[strlen(path)-1] == '/')
+        path = dupstr(path);
+    else
+        path = dupcat(path, "/", NULL);
+
     slashmap(path);
     for (i = 0; i < cfg->nmappings; i++) {
         char *from = cfg->mappings[i].from;
@@ -401,6 +405,9 @@ char *path_translate(char *path)
             path = newpath;
         }
     }
+
+    if (strlen(path) > 1 && path[strlen(path)-1] == '\\')
+	path[strlen(path)-1] = '\0';
 
     return path;
 }
@@ -452,7 +459,7 @@ void showversion(void)
     char *v;
     extern char doitlib_revision[];
 
-    v = makeversion(versionbuf, "$Revision: 1.11 $");
+    v = makeversion(versionbuf, "$Revision: 1.12 $");
     if (v)
 	printf("doitclient revision %s", v);
     else
@@ -513,18 +520,21 @@ void set_dir(int sock, doit_ctx *ctx, int verbose)
     char *dir, *path;
 
     dir = get_pwd();
-    path = malloc(strlen(dir)+2);
-    sprintf(path, "%s/", dir);
-    dir = path_translate(path);
-    if (strlen(dir) > 1 && dir[strlen(dir)-1] == '\\')
-	dir[strlen(dir)-1] = '\0';
+    if (verbose) {
+        fprintf(stderr, "doit: path translation on cwd: \"%s\"", dir);
+    }
+    path = path_translate(dir);
+    free(dir);
+    if (verbose) {
+        fprintf(stderr, " to \"%s\"\n", path);
+    }
     do_doit_send_str(sock, ctx, "SetDirectory\n");
-    do_doit_send_str(sock, ctx, dir);
+    do_doit_send_str(sock, ctx, path);
     do_doit_send_str(sock, ctx, "\n");
     if (verbose) {
-	fprintf(stderr, "doit: >>> SetDirectory\ndoit: >>> %s\n", dir);
+	fprintf(stderr, "doit: >>> SetDirectory\ndoit: >>> %s\n", path);
     }
-    free(dir);
+    free(path);
 }
 
 int main(int argc, char **argv)
