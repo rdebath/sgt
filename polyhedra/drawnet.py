@@ -12,6 +12,7 @@ args = sys.argv[1:]
 
 firstface = None
 facelabels = 0
+cmpsign = +1
 while len(args) > 0 and args[0][:1] == "-":
     a = args[0]
     args = args[1:]
@@ -20,6 +21,8 @@ while len(args) > 0 and args[0][:1] == "-":
 	break
     elif a[:2] == "-s":
 	firstface = a[2:]
+    elif a[:2] == "-R":
+	cmpsign = -1
     elif a == "-f":
 	facelabels = 1
     else:
@@ -403,7 +406,7 @@ while 1:
     for n, p in nextface:
 	placement = facepos[p].adjacent[n]
 	dist2 = placement.pos[0] ** 2 + placement.pos[1] ** 2
-	if mindist2 == None or dist2 < mindist2:
+	if mindist2 == None or dist2 * cmpsign < mindist2 * cmpsign:
 	    mindist2 = dist2
 	    best = n, p
     if best == None:
@@ -739,23 +742,22 @@ for v1, v2 in tabpos.values():
 	    continue
 	x1, y1, x2, y2 = vids[pvid1] + vids[pvid2]
 	x3, y3, x4, y4 = vids[pvid3] + vids[pvid4]
-	# Only bother with this if both lines face the other's
-	# centreline.
 	dx34 = x4 - x3
 	dy34 = y4 - y3
-	d34 = sqrt(dx34**2 + dy34**2)
-	dx34 = dx34 / d
-	dy34 = dy34 / d
-	a12 = (x1+x2)/2, (y1+y2)/2
-	a34 = (x3+x4)/2, (y3+y4)/2
-	ret = crosspoint(a12[0],a12[1], a12[0]+dy,a12[1]-dx, \
-	a34[0],a34[1], a34[0]+dy34,a34[1]-dx34)
-	if ret != None:
-	    cx, cy = ret
-	    if (cx-a12[0])*dy - (cy-a12[1])*dx < 0: continue
-	    if (cx-a34[0])*dy34 - (cy-a34[1])*dx34 < 0: continue
-	else:
-	    continue		
+	# Only bother with this if both lines face one another.
+	worthwhile = 1
+	for xa, ya in (x1,y1),(x2,y2):
+	    for xb, yb in (x3,y3),(x4,y4):
+		xm = (xa+xb)/2
+		ym = (ya+yb)/2
+		if (xm-xa)*dy - (ym-ya)*dx < 0 or \
+		(xm-xb)*dy34 - (ym-yb)*dx34 < 0:
+		    worthwhile = 0
+		    break
+	    if not worthwhile:
+		break
+	if not worthwhile:
+	    continue
 	# Figure out which way round to compute the bisecting line.
 	dp3 = (x3-x1) * (y2-y1) - (y3-y1) * (x2-x1)
 	dp4 = (x4-x1) * (y2-y1) - (y4-y1) * (x2-x1)
@@ -831,14 +833,6 @@ for v1, v2 in tabpos.values():
     tabpoints[(vid2, vid1)] = tuple(tabvertices)
     tabaxes[(vid1, vid2)] = ((dx,dy), (dy,-dx))
     tabaxes[(vid2, vid1)] = ((-dx,-dy), (dy,-dx))
-
-# One final thing: although we have arranged for the tabs not to
-# overlap any of the actual faces in the net, we have not yet
-# arranged for them to avoid overlapping one another.
-#
-# In this pass we may safely ignore all of the main net lines,
-# since we have already taken all necessary action to avoid them.
-# Our only concern is with tab lines crossing other tab lines.
 
 # Actually output the net.
 psprint("%!PS-Adobe-1.0")
