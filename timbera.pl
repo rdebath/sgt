@@ -203,16 +203,17 @@ sub b64 {
   my $col = 0;
   my $out = "";
   while (length $data > 0) {
-    $dashes = (length $data < 3 ? 3 - length $data : 0);
+    $dlast = $data;
     ($a, $b, $c, $data) = unpack "C3 a*", $data;
     $i = ($a << 16) | ($b << 8) | ($c);
     $frag = pack "C*", (($i >> 18) & 0x3F, ($i >> 12) & 0x3F,
                         ($i >> 6) & 0x3F, ($i) & 0x3F);
     $frag =~ y/\0-\77/A-Za-z0-9+\//;
-    substr($frag, -$dashes) = "=" x $dashes if $dashes;
     if ($col >= 60) { $out .= "\n"; $col = 0; }
     $out .= $frag; $col += 4;
   }
+  $dashes = (length $dlast < 3 ? 3 - length $dlast : 0);
+  substr($out, -$dashes) = "=" x $dashes if $dashes;
   return $out . "\n";
 }
 
