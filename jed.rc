@@ -1,5 +1,5 @@
 % -*- mode: slang; mode: fold -*-
-% Simon Tatham: version $Revision: 1.48 $
+% Simon Tatham: version $Revision: 1.49 $
 
 %{{{ load Emacs keybindings to start with
 
@@ -420,6 +420,25 @@ define sh_mode_hook() {
 %{{{ ^X F is death; disable it
 unsetkey("^Xf");
 unsetkey("^XF");
+%}}}
+%{{{ ^X T to open a new temp buffer with no attached file
+define make_temp_buffer() {
+    variable bufname, number;
+
+    bufname = "*temp*";
+    number = 0;
+    while (bufferp(bufname)) {
+	number++;
+	bufname = Sprintf("*temp%d*", number, 1);
+    }
+    sw2buf(bufname);
+    setbuf_info(getbuf_info() | 0x20); % enable undo
+    erase_buffer();
+    text_mode();
+}
+
+setkey("make_temp_buffer", "^Xt");
+setkey("make_temp_buffer", "^XT");
 %}}}
 %{{{ global variables
 
