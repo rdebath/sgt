@@ -12,8 +12,9 @@ transfer ("reget" / "reput" in PSFTP).
 <p>
 It's relatively obvious how this should work for single-file
 transfer (it would have to be explicitly enabled using a
-command-line option), but the design will need some thought for
-multi-file and recursive transfers. Also the whole thing will have
+command-line option), and restarting recursive transfers (<tt>reget -r</tt>)
+is already supported by PSFTP.
+The whole thing will have
 to fail, or degrade gracefully, if PSCP ends up using the original
 SCP1 protocol instead of SFTP.
 
