@@ -5,6 +5,18 @@ Release FIXME
    directory doesn't get hit by `make install', and ensure it
    doesn't get hit by tarball generator either. The `CVS' directory,
    for example.
+ - Introduced loading and saving of move sequences. You can press
+   `w' during the game to save the sequence of moves that have got
+   you to that point; pressing `m' during the game lets you load a
+   sequence of moves, and then goes into `movie mode' in which you
+   can step back and forth through the process of playing those
+   moves, and finally hit `q' to enact the whole lot and return to
+   normal playing mode. Hence players can swap their best or
+   weirdest solutions to a particular level.
+ - Everyone's favourite interface change: you can now hit `r' to
+   restore a saved position on the `you have died' screen just as
+   you can within the game, so you don't have to go back round via
+   the main menu.
 
 Release 1.03
 ------------
