@@ -14,8 +14,8 @@ better or whether there are better still?)
 
 <p>
 Heuristics shouldn't now be needed at the protocol end for SFTP, as
-<code>SSH_FXF_TEXT</code> has now been proposed in SFTP v4 (see
-<a href="http://www.ietf.org/internet-drafts/draft-ietf-secsh-filexfer-04.txt">draft-ietf-secsh-filexfer-04</a>).
+<code>SSH_FXF_TEXT</code> has now been proposed as of SFTP v4 (see
+<a href="http://www.ietf.org/internet-drafts/draft-ietf-secsh-filexfer-05.txt">draft-ietf-secsh-filexfer-05</a>).
 I don't know what implementations exist.
 
 <p>
