@@ -125,10 +125,7 @@ def pageitem(indexentry, item):
 	if h.addable:
 	    bl = bl + "[\033[1mA\033[m]:Add  "
 	    bll = bll + 5+1+3
-	if h.ymax == 0:
-	    percent = 100
-	else:
-	    percent = h.y * 100 / h.ymax
+	percent = (h.y + h.height-1) * 100 / (h.ymax + h.height-1)
 	blp = "(" + "%d" % percent + "%)"
 	bl = bl + blp
 	bll = bll + len(blp)
@@ -167,8 +164,10 @@ def pageitem(indexentry, item):
 	term.charmodeon()
 	h.width, h.height = term.getsize()
 	data = formatitem(item, h.width-1) # mind last column
-	h.y = 0
+	h.y = indexentry.fileptr - (h.height-1)
 	h.ymax = len(data) - h.height + 1
+	if h.y < 0: h.y = 0
+	if h.y > h.ymax: h.y = h.ymax
 	# FIXME: check write access on whole session
 	h.addable = (item.contin == "")
 	h.contfrom = (item.contfrom != "")
@@ -188,11 +187,12 @@ def pageitem(indexentry, item):
 		printbl()
 		redraw = 0
 	    # Update file pointer
-	    if indexentry.fileptr < h.y+h.height-1:
-		indexentry.fileptr = h.y+h.height-1
-		if indexentry.fileptr >= h.ymax:
-		    indexentry.fileptr = h.ymax
-		    indexentry.uptodate = 1
+	    indexentry.fileptr = h.y+h.height-1
+	    if indexentry.fileptr >= len(data):
+		indexentry.fileptr = len(data)
+		indexentry.uptodate = 1
+	    else:
+		indexentry.uptodate = 0
 	    # Get a character
 	    c = string.lower(sys.stdin.read(1))
 	    # Multichars.
@@ -410,7 +410,7 @@ class menu:
 	    s = "\033[34m" + aux.itemid + "\033[m  ("
 	    lt = time.localtime(aux.timestamp)
 	    ltnow = time.localtime(time.time())
-	    if lt[0] < ltnow[0]-1 or (lt[0] == ltnow[0]-1 and lt[1] >= ltnow[1]):
+	    if lt[0] < ltnow[0]-1 or (lt[0] == ltnow[0]-1 and lt[1] <= ltnow[1]):
 		s = s + time.strftime("%b %d  %Y", lt)
 	    else:
 		s = s + time.strftime("%b %d %H:%M", lt)
@@ -439,7 +439,10 @@ class menu:
 	    s = s + subj
 	    return s
 	elif type == "m" or type == "s":
-	    s = "                 "
+	    if type == "m" and aux.hasitems:
+		s = "\033[36m%8d" % aux.itemcount + " items\033[m   "
+	    else:
+		s = "                 "
 	    if type == "m":
 		s = s + "  Menu"
 	    else:
@@ -454,11 +457,14 @@ class menu:
 	    return s
 	# FIXME: need  "Menu  [ESC]= Utilities & EXIT"
 	return centre(["(nyi menu entry)"])
-    def __init__(self, title):
+    def __init__(self, flags, title):
 	self.lines = []
 	self.title = title
 	self.parent = None
 	self.chars = "abcdefghijklmnoprstuvwxyz1234567890"
+	self.scannable = (flags & 1) != 0
+	self.hasitems = (flags & 2) != 0
+	self.itemcount = 0
     def addchild(self, childmenu, key, text):
 	self.lines.append((key, "m", childmenu, text))
 	childmenu.parent = self
@@ -469,9 +475,37 @@ class menu:
 	    key = self.chars[0]
 	    self.chars = self.chars[1:] + key
 	self.lines.append((key, "i", itemid, ""))
+	self.itemcount = self.itemcount + 1
     def addblank(self):
 	self.lines.append(("", "t", "", ""))
     def show(self, ytop, height=24):
+	def printbl(self, height=height, width=79):
+	    bl = ""
+	    bll = 0
+	    sep = ""
+	    if self.parent != None:
+		bl = bl + sep + "[\033[1mRET\033[m]:Back"
+		bll = bll + len(sep) + 3+3+4
+		sep = "  "
+	    if self.scannable:
+		bl = bl + sep + "[\033[1mSPACE\033[m]:Scan"
+		bll = bll + len(sep) + 3+5+4
+		sep = "  "
+	    if self.itemcount > 0:
+		bl = bl + sep + "[\033[1m=\033[m]:Subscribe"
+		bll = bll + len(sep) + 3+1+9
+		sep = "  "
+	    if sep == "":
+		bl = bl + "Select key"
+		bll = bll + 10
+	    bl = bl + "."
+	    bll = bll + 1
+	    left = (width-bll)/2
+	    if left < 0: left = 0
+	    term.goto(0, height-1)
+	    sys.stdout.write(" "*left + bl)
+	    sys.stdout.flush()
+
 	hdr = formatheader(self.title)
 	term.cls()
 	sy = 0
@@ -488,7 +522,7 @@ class menu:
 	    print self._fmtline(self.lines[y])
 	    y = y + 1
 	    sy = sy + 1
-	sys.stdout.flush()
+	printbl(self)
 	return y
     def ok(self, y):
 	if y < 0: return 0
@@ -499,6 +533,25 @@ class menu:
 	    if self.lines[i][0] == key:
 		return self.lines[i]
 	return None
+    def suball(self, sub):
+	for i in self.lines:
+	    if i[1] == "i":
+		i[2].subscription = sub
+    def setallread(self):
+	for i in self.lines:
+	    if i[1] == "i":
+		i[2].uptodate = 1
+    def scan(self):
+	for scan in [1,2]:
+	    for i in self.lines:
+		if i[1] == "i" and not i[2].uptodate and (i[2].subscription & scan):
+		    return self, i[2].itemid
+	    for i in self.lines:
+		if i[1] == "m":
+		    m, itemid = i[2].scan()
+		    if itemid != "":
+			return m, itemid
+	return self, ""
 
 def mkmenus(items):
     now = time.time()
@@ -507,20 +560,21 @@ def mkmenus(items):
     sixmonths = now - 182*24*60*60
     oneyear = now - 365*24*60*60
 
-    Mmain = menu(["Grunge Main Menu"])
-    Mnew = menu(["Newly Updated Items <", "\033[1m", "N", "\033[;36m", ">"])
-    Msub = menu(["Subscribed Items <", "\033[1m", "S", "\033[;36m", ">"])
-    Moneweek = menu(["One Week <", "\033[1m", "W", "\033[;36m", ">"])
-    Monemonth = menu(["One Month <", "\033[1m", "M", "\033[;36m", ">"])
-    Msixmonths = menu(["Six Months <", "\033[1m", "6", "\033[;36m", ">"])
-    Moneyear = menu(["One Year <", "\033[1m", "Y", "\033[;36m", ">"])
-    Mallitems = menu(["All Items <", "\033[1m", "A", "\033[;36m", ">"])
-    Mescape = menu(["Utilities [", "\033[1m", "ESC", "\033[;36m", "]"])
-    Mlogs = menu(["Logs and MOTD [", "\033[1m", "ESC", "\033[;36m", "][",\
+    Mmain = menu(1,["Grunge Main Menu"])
+    Mnew = menu(3,["Newly Updated Items <", "\033[1m", "N", "\033[;36m", ">"])
+    Msub = menu(3,["Subscribed Items <", "\033[1m", "S", "\033[;36m", ">"])
+    Mboth = menu(3,["Both Scans <", "\033[1m", "B", "\033[;36m", ">"])
+    Moneweek = menu(3,["One Week <", "\033[1m", "W", "\033[;36m", ">"])
+    Monemonth = menu(3,["One Month <", "\033[1m", "M", "\033[;36m", ">"])
+    Msixmonths = menu(3,["Six Months <", "\033[1m", "6", "\033[;36m", ">"])
+    Moneyear = menu(3,["One Year <", "\033[1m", "Y", "\033[;36m", ">"])
+    Mallitems = menu(3,["All Items <", "\033[1m", "A", "\033[;36m", ">"])
+    Mescape = menu(0,["Utilities [", "\033[1m", "ESC", "\033[;36m", "]"])
+    Mlogs = menu(0,["Logs and MOTD [", "\033[1m", "ESC", "\033[;36m", "][",\
     "\033[1m", "L", "\033[;36m", "]"])
-    Mlogslogs = menu(["Logs Menu [", "\033[1m", "ESC", "\033[;36m", "][",\
+    Mlogslogs = menu(0,["Logs Menu [", "\033[1m", "ESC", "\033[;36m", "][",\
     "\033[1m", "L", "\033[;36m", "][", "\033[1m", "L", "\033[;36m", "]"])
-    Mexit = menu(["Exit Grunge? [", "\033[1m", "ESC", "\033[;36m", "][",\
+    Mexit = menu(0,["Exit Grunge? [", "\033[1m", "ESC", "\033[;36m", "][",\
     "\033[1m", "X", "\033[;36m", "]"])
 
     Mmain.addchild(Mnew, "n", "Items with &new text this session")
@@ -531,6 +585,7 @@ def mkmenus(items):
     Mmain.addchild(Moneyear, "y", "Items modified up to a &year ago")
     Mmain.addblank()
     Mmain.addchild(Msub, "s", "&Subscribed items")
+    Mmain.addchild(Mboth, "b", "Items subscribed on &both scans")
     Mmain.addblank()
     Mmain.addchild(Mallitems, "a", "&All items")
 
@@ -581,6 +636,7 @@ def mkmenus(items):
 	if item.timestamp > sixmonths: Msixmonths.additem(item)
 	if item.timestamp > oneyear: Moneyear.additem(item)
 	if item.subscription != 0: Msub.additem(item)
+	if item.subscription == 3: Mboth.additem(item)
 	Mallitems.additem(item)
 
     Mmain.parent = None # special case
@@ -588,13 +644,17 @@ def mkmenus(items):
 
     return (Mmain, Mescape)
 
-def showmenus(mainmenu, escmenu, height=24):
+def showmenus(mainmenu, escmenu, startmenu, height=24, width=79):
     try:
 	term.charmodeon()
-	m = mainmenu
+	m = startmenu
 	my = 0
 	while 1:
 	    myb = m.show(my, height=height)
+	    if m.scannable:
+		mret = m
+	    else:
+		mret = mainmenu
 	    # FIXME: pretty prompt at bottom of screen
 	    c = string.lower(sys.stdin.read(1))
 	    # FIXME: add scan, sub and unsub
@@ -615,6 +675,56 @@ def showmenus(mainmenu, escmenu, height=24):
 		if m.parent != None:
 		    m = m.parent
 		    my = 0
+	    elif c == "\010" or c == "\177":
+		m.setallread()
+	    elif c == " ":
+		if m.scannable:
+		    m, itemid = m.scan()
+		    if itemid != "":
+			return ("i", itemid, m)
+	    elif c == "=":
+		if m.itemcount > 0:
+		    prompt = ["Select key from list, [",
+		    "\033[1m", "=", "\033[m", "]:All, [",
+		    "\033[1m", "Q", "\033[m", "]:Quit"]		
+		    term.goto(0, height-1)
+		    sys.stdout.write("\015\033[K")
+		    sys.stdout.write(centre(prompt, width))
+		    sys.stdout.flush()
+		    k = string.lower(sys.stdin.read(1))
+		    klookup = m.lookup(k, my, myb)
+		    if k == '=' or klookup != None:
+			b = []
+			foo = 7
+			if klookup:
+			    if klookup[2].subscription == 0:
+				b = b + ["Currently skipped on both scans.  ", ""]
+				foo = foo & ~4
+			    elif klookup[2].subscription == 2:
+				b = b + ["Currently skipped on first scan.  ", ""]
+				foo = foo & ~2
+			    elif klookup[2].subscription == 3:
+				b = b + ["Currently checked on both scans.  ", ""]
+				foo = foo & ~1
+			    else:
+				b = b + ["Scan status corrupt.  ", ""]
+			for i in range(3):
+			    if foo & (1<<i):
+				b = b + ["[", "\033[1m", chr(48+i), "\033[m",
+				"]:" + ("Don't skip", "Skip scan 1",
+				"Skip both scans")[i] + "  ", ""]
+			b = b + ["[", "\033[1m", "Q", "\033[m", "]"]
+			term.goto(0, height-1)
+			sys.stdout.write("\015\033[K")
+			sys.stdout.write(centre(b, width))
+			sys.stdout.flush()
+			s = string.lower(sys.stdin.read(1))
+			if s == "0" or s == "1" or s == "2":
+			    sub = { "0":3, "1":2, "2":0 }[s]
+			    if klookup != None:
+				klookup[2].subscription = sub
+			    else:
+				m.suball(sub)
 	    else:
 		result = m.lookup(c, my, myb)
 		if result != None:
@@ -622,9 +732,9 @@ def showmenus(mainmenu, escmenu, height=24):
 			m = result[2]
 			my = 0
 		    elif result[1] == "i":
-			return ("i", result[2].itemid)
+			return ("i", result[2].itemid, mret)
 		    elif result[1] == "s":
-			return ("s", result[2])
+			return ("s", result[2], mret)
     finally:
 	term.charmodeoff()
 	term.cls()
@@ -809,12 +919,12 @@ while len(args) > 0 and args[0][:1] == "-":
 # Line editing and recall in bottom-line input.
 #
 # Accumulated FIXMEs from elsewhere in the code:
-# - Pretty prompt at bottom of screen for menus
-# - In menu loop, = to (un)sub and SPACE to scan
 # - Check session has write access when deciding whether to print [A]:Add
 # - "Menu  [ESC]= Utilities and Exit"
 # - Many editor fixen and upgrades.
-# - Would be nice to have a count of items in item-containing menus.
+# - Set Your Options (grogname and maybe others)
+# - View MOTD.
+# - View Edit Log.
 
 c = rgtpclient.RGTPConnection(plogfile=logfile)
 c.setsecret(secretpath)
@@ -827,9 +937,9 @@ if len(index) > 0:
 items = parseindex(index, items)
 saveindex(indexpath, items, lastseq)
 mainmenu, escmenu = mkmenus(items)
+menu = mainmenu
 while 1:
-    # FIXME: don't start again at main menu if we've just come from a menu.
-    t, aux = showmenus(mainmenu, escmenu)
+    t, aux, menu = showmenus(mainmenu, escmenu, menu)
     if t == "s" and aux == "exit":
 	break
     elif t == "i":
