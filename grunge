@@ -276,9 +276,9 @@ def formatitem(item):
 	    for c in line:
 		outline = outline + transtable.get(c,c)
 	    list.append(outline)
-	    # Remove trailing blank lines.
-	    while len(list) > 0 and list[-1] == "":
-		list = list[:-1]
+	# Remove trailing blank lines.
+	while len(list) > 0 and list[-1] == "":
+	    list = list[:-1]
 	list = list + [""]
     if item.contin:
 	list = list + ["\aR\aB\aCb" + "-" * width + "\aa\aCA", ""]
