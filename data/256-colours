@@ -1,0 +1,15 @@
+Summary: Support for more colours
+Class: wish
+Priority: low
+Difficulty: tricky
+Content-type: text/x-html-body
+
+<p>It's been suggested that PuTTY could usefully support xterm's 256-colour
+mode.  This would involve having rather more storage for character attributes
+than at present, which in the present (0.53) design of PuTTY would mean using
+64 bits to store each character of scrollback, which is slightly ludicrous.
+When we get around to redesigning the scrollback format so as not to use
+so much memory, adding more attribute bits might become feasible.
+
+<p>&lt;1042233614.1153.15.camel@evilmagic.org&gt; contains a patch to implement
+this.
