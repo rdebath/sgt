@@ -541,17 +541,26 @@ static char *ab_get_name (int contact_id)
     return ans;
 }
 
-void ab_set_name (int contact_id,
-		  const char *new_name)
+static void ab_set_name (int contact_id,
+			 const char *new_name)
 {
     sql_open(ab);
-    sql_exec_printf (ab, "UPDATE contacts SET name = '%q' WHERE contact_id = %i",
+    sql_exec_printf (ab,
+		     "UPDATE contacts SET name = '%q' WHERE contact_id = %i",
 		     new_name, contact_id);
 }
 
-void ab_display_name (int contact_id)
+void ab_display_name (/*const*/ char *contact_id)
 {
-    char *name = ab_get_name (contact_id);
-    printf (name ? "%d:%s\n" : "%d\n", contact_id, name);
+    const int cid = atoi(contact_id);
+    char *name = ab_get_name (cid);
+    printf (name ? "%d:%s\n" : "%d\n", cid, name);
     sfree(name);
 }
+
+void ab_change_name (const char *contact_id,
+		     const char *new_name)
+{
+    ab_set_name (atoi(contact_id), new_name);
+}
+
