@@ -19,5 +19,5 @@ at some point.
 <P><a href="http://www.certifiedsecuritysolutions.com/">Certified Security
 Solutions</a> have a
 <a href="http://www.certifiedsecuritysolutions.com/downloads.html">patched
-version of PuTTY 0.52</a> which supports Kerberos and GSSAPI, but its
+version of PuTTY 0.53b</a> which supports Kerberos and GSSAPI, but its
 licence makes it unsuitable for use in PuTTY itself.
