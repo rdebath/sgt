@@ -1,0 +1,24 @@
+Summary: Server-controlled clearing of the scrollback
+Class: wish
+Difficulty: taxing
+Priority: low
+Content-type: text/x-html-body
+
+<p>
+It would sometimes be nice to be able to clear PuTTY's scrollback from
+the server (via an escape sequence). Example applications:
+<ul>
+<li>Terminal locking software (e.g. <tt>screen</tt>'s C-a C-x) could
+issue this escape sequence.</li>
+<li>If a lot of output is generated it makes use of the scrollback as
+a poor man's <tt>less</tt> easier.</li>
+</ul>
+
+<p>
+However, I've not yet found a suitable existing escape sequence, and a
+certain amount of soul-searching is required before we go inventing
+our own.
+
+<p>
+It's been suggested that screen clears could do this. If so, it would
+have to be configurable, and disabled by default.
