@@ -1,0 +1,21 @@
+Summary: Unix: "expected key exchange reply packet from server" and crash
+Present-in: 0.54
+Content-type: text/plain
+
+We've had a couple of reports of the Unix version putting up the
+"new host key" dialog, but then immediately putting up a
+"PuTTY Fatal Error: expected key exchange reply packet from server"
+error box over it and then crashing. I've reproduced this by
+connecting to one of our correspondents' servers.
+
+If the host key is already in the database, the connection goes
+through fine. The fault doesn't appear to happen with the Windows
+version, nor with Unix plink.
+
+Reports:
+  000701c3fd23$4a4626e0$0400a8c0@capricho
+    followup: 000b01c3fd2a$4822cd80$0400a8c0@capricho
+    putty-0.54-0.20040216.3mdk.i586.rpm
+  40379F51.3030603@glendown.de
+    server appears to be SSH-2.0-3.1.0 SSH Secure Shell (non-commercial)
+    associated with diffie-hellman-group1-sha1 (as opposed to gex)?
