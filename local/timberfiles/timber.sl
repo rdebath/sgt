@@ -899,10 +899,11 @@ define timber_unfold() {
 		} else if (timber_la("! [end]")) {
 		    showing = 1;
                     leadchr = '\0';
+		} else if (c == ':') {
+                    firstpart = showing;
+		    showing = 0;
 		} else
 		    showing = 0;
-                if (c == ':')
-                    firstpart = 1;
 		set_line_hidden(0);
 	    } else if (c != '+' and showing) {
                 if (leadchr == '\0' and (c == '\240' or c == ' ')) {
