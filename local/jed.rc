@@ -1,5 +1,5 @@
 % -*- mode: slang; mode: fold -*-
-% Simon Tatham: version $Revision: 1.43 $
+% Simon Tatham: version $Revision: 1.44 $
 
 %{{{ load Emacs keybindings to start with
 
@@ -308,7 +308,9 @@ define c_mode_hook() %{{{
     definekey("c_multiline_comment", "^XC", keymap);
     definekey("jedrc_c_format_paragraph", "^[Q", keymap);
     definekey("jedrc_c_format_paragraph", "^[q", keymap);
+#ifexists unset_buffer_hook
     unset_buffer_hook("par_sep");
+#endif
 }
 %}}}
 
@@ -328,7 +330,9 @@ define perl_mode_hook()
     }
     definekey("jedrc_perl_format_paragraph", "^[Q", keymap);
     definekey("jedrc_perl_format_paragraph", "^[q", keymap);
+#ifexists unset_buffer_hook
     unset_buffer_hook("par_sep");
+#endif
 }
 
 %}}}
@@ -342,7 +346,9 @@ define python_mode_hook()
     % perl_format_para for both.
     definekey("jedrc_perl_format_paragraph", "^[Q", keymap);
     definekey("jedrc_perl_format_paragraph", "^[q", keymap);
+#ifexists unset_buffer_hook
     unset_buffer_hook("par_sep");
+#endif
 }
 
 %}}}
@@ -354,7 +360,9 @@ define armasm_mode_hook() %{{{
     keymap = what_keymap();
     definekey("jedrc_armasm_format_paragraph", "^[Q", keymap);
     definekey("jedrc_armasm_format_paragraph", "^[q", keymap);
+#ifexists unset_buffer_hook
     unset_buffer_hook("par_sep");
+#endif
 }
 
 %}}}
