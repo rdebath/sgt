@@ -1,0 +1,33 @@
+Summary: SSH-2 keyboard-interactive crashes with FreeBSD 4.6-STABLE
+Class: bug
+Content-type: text/x-html-body
+Present-in: 0.52 2002-07-31 2002-08-01
+Absent-in: 0.51
+
+<p>
+Various people have reported PuTTY crashing when connecting to recent
+FreeBSD OpenSSH servers. Most commonly after upgrading to FreeBSD
+4.6-STABLE (server version "OpenSSH_3.4p1 FreeBSD-20020702"), although
+there are minor variations. Use of keyboard-interactive authentication
+(e.g., PAM, OPIE) with SSH-2 appears to be a common factor.
+
+<p>
+A workaround is to disable use of keyboard-interactive auth (either in
+PuTTY, or on the server with "ChallengeResponseAuthentication no").
+
+<p>
+Reports:
+<ul>
+
+<li><tt>CGEKLJJONFGKJGAKLKPFMEHDCEAA.wak@xtweb.de</tt>
+<br>Includes SSH packet log.
+
+<li><tt>5.1.1.6.2.20020731075139.022604e8@194.184.65.7</tt> et seq
+
+<li><tt>3D489E95.4090506@alaska.net</tt>
+
+<li><tt>3D497FA8.7010802@cerint.pl</tt>
+<br>Crash on connecting and entering <em>valid</em> OPIE one-time password.
+<br>Includes Dr Watson log, server debug log, registry
+
+</ul>
