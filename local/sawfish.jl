@@ -1,3 +1,5 @@
+;; -*- lisp-mode -*-
+;;
 ;; Simon Tatham's standardised Sawfish setup file.
 ;;
 ;; This file is best included in your Sawfish configuration by means
