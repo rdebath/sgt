@@ -22,6 +22,14 @@ Release FIXME
    run-time validation of level files for errors such as this, and
    fixed the problems (in levels 2 and 8). This should also make
    designing new levels a more precise science...
+ - Added the new `=' character. This shows up as a space during
+   gameplay, but it's an `outdoor' space which you're never supposed
+   to be able to get to. This means that walls next to an `=' sign
+   act like boundary walls and are indestructible even to bombs. The
+   idea is that you can design levels with non-rectangular outlines
+   by filling in the space between the exterior walls and the level
+   boundary with solid blocks of `='. It also means you can put
+   unreachable courtyards inside a level as well.
 
 Release 1.03
 ------------
