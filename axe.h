@@ -89,4 +89,20 @@ extern buffer *buf_copy(buffer *buf, int len, int pos);
 extern void buf_paste(buffer *buf, buffer *cutbuffer, int pos);
 extern int buf_length(buffer *buf);
 
+extern void display_setup(void);
+extern void display_cleanup(void);
+extern void display_beep(void);
+extern int display_rows, display_cols;
+extern void display_moveto(int y, int x);
+extern void display_refresh(void);
+extern void display_write_str(char *str);
+extern void display_write_chars(char *str, int len);
+extern void display_define_colour(int colour, int fg, int bg);
+extern void display_set_colour(int colour);
+extern void display_clear_to_eol(void);
+extern int display_getkey(void);
+extern int display_input_to_flush(void);
+extern void display_post_error(void);
+extern void display_recheck_size(void);
+
 #endif AXE_AXE_H

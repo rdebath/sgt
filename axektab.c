@@ -2,8 +2,6 @@
 #include <stdlib.h>
 #include <ctype.h>
 
-#include <slang.h>
-
 #include "axe.h"
 
 typedef union keytab keytab;
@@ -85,7 +83,7 @@ void proc_key (void) {
 	update();
     safe_update = TRUE;
 #endif
-    last_char = SLang_getkey();
+    last_char = display_getkey();
 #if defined(unix) && !defined(GO32)
     safe_update = FALSE;
 #endif
@@ -93,9 +91,9 @@ void proc_key (void) {
     strkey(message+strlen(message), last_char);
     kt = base[(unsigned char) last_char];
     if (!kt) {
-	SLtt_beep();
-	while (SLang_input_pending (0))
-	    strkey(message+strlen(message), SLang_getkey());
+	display_beep();
+	while (display_input_to_flush())
+	    strkey(message+strlen(message), display_getkey());
 	return;
     }
 
@@ -105,16 +103,16 @@ void proc_key (void) {
 	    update();
 	safe_update = TRUE;
 #endif
-	last_char = SLang_getkey();
+	last_char = display_getkey();
 #if defined(unix) && !defined(GO32)
 	safe_update = FALSE;
 #endif
 	strkey(message+strlen(message), last_char);
 	kt = kt->e.extended[(unsigned char) last_char];
 	if (!kt) {
-	    SLtt_beep();
-	    while (SLang_input_pending (0))
-		strkey(message+strlen(message), SLang_getkey());
+	    display_beep();
+	    while (display_input_to_flush())
+		strkey(message+strlen(message), display_getkey());
 	    return;
 	}
     }

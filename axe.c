@@ -3,6 +3,15 @@
  * 
  *  - Thorough testing.
  * 
+ * TODO before proper release quality:
+ * 
+ *  - Half decent build system.
+ * 
+ *  - For goodness' sake, arrange that the arguments to -w and -o
+ *    can accept hex numbers in 0xXX syntax! _Default_ number base
+ *    can be argued about, but there's no excuse for a _hex_ editor
+ *    not at least _accepting_ hex in practically all contexts.
+ * 
  * TODO possibly after that:
  * 
  *  - Need to handle >2Gb files! A major limiting factor here is
@@ -27,8 +36,9 @@
  *     + er, how exactly do we deal with the problem of saving over
  * 	 a file which we're maintaining references to?
  * 
- *  - Retire S-Lang in favour of curses, or at the very least
- *    introduce a switchable abstraction layer.
+ *  - Other possibilities:
+ *     + undo (!!!)
+ *     + reverse search
  */
 
 #include <stdio.h>
@@ -46,17 +56,11 @@
 #include <process.h>
 #endif
 
-#include <slang.h>
-
 #include "axe.h"
 
 static void init(void);
 static void done(void);
 static void load_file (char *);
-static void get_screen_size (void);
-#if defined(unix) && !defined(GO32)
-static int sigwinch (int);
-#endif
 
 char toprint[256];		       /* LUT: printable versions of chars */
 char hex[256][3];		       /* LUT: binary to hex, 1 byte */
@@ -130,10 +134,10 @@ int main(int argc, char **argv) {
 		}
 		switch (c) {
 		  case 'o': case 'O':
-		    newoffset = atoi(value);
+		    newoffset = strtol(value, NULL, 0);   /* allow `0xXX' */
 		    break;
 		  case 'w': case 'W':
-		    newwidth = atoi(value);
+		    newwidth = strtol(value, NULL, 0);
 		    break;
 		}
 		break;
@@ -187,11 +191,11 @@ int main(int argc, char **argv) {
  * enable or disable ASCII mode and sanity-check the width.
  */
 void fix_offset(void) {
-    if (3*width+11 > SLtt_Screen_Cols) {
-	width = (SLtt_Screen_Cols-11) / 3;
+    if (3*width+11 > display_cols) {
+	width = (display_cols-11) / 3;
 	sprintf (message, "Width reduced to %d to fit on the screen", width);
     }
-    if (4*width+14 > SLtt_Screen_Cols) {
+    if (4*width+14 > display_cols) {
 	ascii_enabled = FALSE;
 	if (edit_type == 0)
 	    edit_type = 1;	       /* force to hex mode */
@@ -204,36 +208,18 @@ void fix_offset(void) {
 
 /*
  * Initialise stuff at the beginning of the program: mostly the
- * SLang terminal and screen management library.
+ * display.
  */
 static void init(void) {
     int i;
 
-    SLtt_get_terminfo();
+    display_setup();
 
-    if (SLang_init_tty (ABORT, 1, 0) == -1) {
-	fprintf(stderr, "axe: SLang_init_tty: returned error code\n");
-	exit (1);
-    }
-    SLang_set_abort_signal (NULL);
-
-    get_screen_size ();
-    SLtt_Use_Ansi_Colors = TRUE;
-#if defined(unix) && !defined(GO32)
-    signal (SIGWINCH, (void *) sigwinch);
-#endif
-
-    if (SLsmg_init_smg () < 0) {
-	fprintf(stderr, "axe: SLsmg_init_smg: returned error code\n");
-	SLang_reset_tty ();
-	exit (1);
-    }
-
-    SLtt_set_color (COL_BUFFER, "buffer", "lightgray", "black");
-    SLtt_set_color (COL_SELECT, "select", "black", "lightgray");
-    SLtt_set_color (COL_STATUS, "status", "yellow", "blue");
-    SLtt_set_color (COL_ESCAPE, "escape", "brightred", "black");
-    SLtt_set_color (COL_INVALID, "invalid", "yellow", "black");
+    display_define_colour(COL_BUFFER, 7, 0);
+    display_define_colour(COL_SELECT, 0, 7);
+    display_define_colour(COL_STATUS, 11, 4);
+    display_define_colour(COL_ESCAPE, 9, 0);
+    display_define_colour(COL_INVALID, 11, 0);
 
     for (i=0; i<256; i++) {
 	sprintf(hex[i], "%02X", i);
@@ -245,8 +231,7 @@ static void init(void) {
  * Clean up all the stuff that init() did.
  */
 static void done(void) {
-    SLsmg_reset_smg ();
-    SLang_reset_tty ();
+    display_cleanup();
 }
 
 /*
@@ -372,7 +357,7 @@ void draw_scr (void) {
     unsigned char c, *q;
     char *linebuf;
 
-    scrlines = SLtt_Screen_Rows - 2;
+    scrlines = display_rows - 2;
     if (scrlines > scrbuflines) {
 	scrbuf = (scrbuf ?
 		  realloc(scrbuf, scrlines*width) :
@@ -419,7 +404,7 @@ void draw_scr (void) {
     q = scrbuf;
 
     for (i=0; i<scrlines; i++) {
-	SLsmg_gotorc (i, 0);
+	display_moveto (i, 0);
 	if (currpos<=cur_pos || currpos<file_size) {
 	    p = hex[(currpos >> 24) & 0xFF];
 	    linebuf[0]=p[0];
@@ -460,36 +445,37 @@ void draw_scr (void) {
 				 currpos+llen) - currpos;
 		localstart += width-llen;
 		localstop += width-llen;
-		SLsmg_write_nchars(linebuf, 11+3*localstart);
-		SLsmg_set_color(1);
-		SLsmg_write_nchars(linebuf+11+3*localstart,
+		display_write_chars(linebuf, 11+3*localstart);
+		display_set_colour(COL_SELECT);
+		display_write_chars(linebuf+11+3*localstart,
 				   3*(localstop-localstart)-1);
-		SLsmg_set_color(0);
+		display_set_colour(COL_BUFFER);
 		if (ascii_enabled) {
-		    SLsmg_write_nchars(linebuf+10+3*localstop,
+		    display_write_chars(linebuf+10+3*localstop,
 				       3+3*width+localstart-3*localstop);
-		    SLsmg_set_color(1);
-		    SLsmg_write_nchars(linebuf+13+3*width+localstart,
+		    display_set_colour(COL_SELECT);
+		    display_write_chars(linebuf+13+3*width+localstart,
 				       localstop-localstart);
-		    SLsmg_set_color(0);
-		    SLsmg_write_nchars(linebuf+13+3*width+localstop,
+		    display_set_colour(COL_BUFFER);
+		    display_write_chars(linebuf+13+3*width+localstop,
 				       width-localstop);
 		} else {
-		    SLsmg_write_nchars(linebuf+10+3*localstop,
+		    display_write_chars(linebuf+10+3*localstop,
 				       2+3*width-3*localstop);
 		}
 	    } else
-		SLsmg_write_nchars(linebuf,
+		display_write_chars(linebuf,
 				   ascii_enabled ? 13+4*width : 10+3*width);
 	}
 	currpos += (currpos ? width : offset);
-	SLsmg_erase_eol();
+	display_clear_to_eol();
     }
 
     {
 	char status[80];
-	SLsmg_gotorc (SLtt_Screen_Rows-2, 0);
-	SLsmg_set_color(2);
+	int slen;
+	display_moveto (display_rows-2, 0);
+	display_set_colour(COL_STATUS);
 	sprintf(status, statfmt,
 		(modified ? "**" : "  "),
 		filename,
@@ -497,57 +483,29 @@ void draw_scr (void) {
 		 look_mode ? "(LOOK)  " :
 		 fix_mode ? "(FIX)   " : "(Ovrwrt)"),
 		cur_pos, file_size);
-	SLsmg_write_nstring (status, SLtt_Screen_Cols);
-	SLsmg_set_color(0);
+	slen = strlen(status);
+	if (slen > display_cols)
+	    slen = display_cols;
+	display_write_chars(status, slen);
+	while (slen++ < display_cols)
+	    display_write_str(" ");
+	display_set_colour(COL_BUFFER);
     }
 
-    SLsmg_gotorc (SLtt_Screen_Rows-1, 0);
-    SLsmg_write_string (message);
-    SLsmg_erase_eol();
+    display_moveto (display_rows-1, 0);
+    display_write_str (message);
+    display_clear_to_eol();
     message[0] = '\0';
 
     i = cur_pos - top_pos;
     if (top_pos == 0)
 	i += width - offset;
     j = (edit_type ? (i%width)*3+10+edit_type : (i%width)+13+3*width);
-    if (j >= SLtt_Screen_Cols)
-	j = SLtt_Screen_Cols-1;
+    if (j >= display_cols)
+	j = display_cols-1;
     free (linebuf);
-    SLsmg_gotorc (i/width, j);
-    SLsmg_refresh ();
-}
-
-/*
- * Get the screen size.
- */
-static void get_screen_size (void) {
-    int r = 0, c = 0;
-
-#ifdef TIOCGWINSZ
-    struct winsize wind_struct;
-
-    if ((ioctl(1,TIOCGWINSZ,&wind_struct) == 0)
-	|| (ioctl(0, TIOCGWINSZ, &wind_struct) == 0)
-	|| (ioctl(2, TIOCGWINSZ, &wind_struct) == 0)) {
-        c = (int) wind_struct.ws_col;
-        r = (int) wind_struct.ws_row;
-    }
-#elif defined(MSDOS)
-    union REGS regs;
-
-    regs.h.ah = 0x0F;
-    int86 (0x10, &regs, &regs);
-    c = regs.h.ah;
-
-    regs.x.ax = 0x1130, regs.h.bh = 0;
-    int86 (0x10, &regs, &regs);
-    r = regs.h.dl + 1;
-#endif
-
-    if ((r <= 0) || (r > 200)) r = 24;
-    if ((c <= 0) || (c > 250)) c = 80;
-    SLtt_Screen_Rows = r;
-    SLtt_Screen_Cols = c;
+    display_moveto (i/width, j);
+    display_refresh ();
 }
 
 /*
@@ -561,9 +519,9 @@ int get_str (char *prompt, char *buf, int highlight) {
     int c;
 
     for (EVER) {
-	SLsmg_gotorc (SLtt_Screen_Rows-1, 0);
-	SLsmg_set_color (COL_MINIBUF);
-	SLsmg_write_string (prompt);
+	display_moveto (display_rows-1, 0);
+	display_set_colour (COL_MINIBUF);
+	display_write_str (prompt);
 	if (highlight) {
 	    char *q, *p = buf, *r = buf+len;
 	    while (p<r) {
@@ -571,41 +529,36 @@ int get_str (char *prompt, char *buf, int highlight) {
 		if (*p == '\\') {
 		    p++;
 		    if (p<r && *p == '\\')
-			p++, SLsmg_set_color(COL_ESCAPE);
+			p++, display_set_colour(COL_ESCAPE);
 		    else if (p>=r || !isxdigit (*p))
-			SLsmg_set_color(COL_INVALID);
+			display_set_colour(COL_INVALID);
 		    else if (p+1>=r || !isxdigit (p[1]))
-			p++, SLsmg_set_color(COL_INVALID);
+			p++, display_set_colour(COL_INVALID);
 		    else
-			p+=2, SLsmg_set_color(COL_ESCAPE);
+			p+=2, display_set_colour(COL_ESCAPE);
 		} else {
 		    while (p<r && *p != '\\')
 			p++;
-		    SLsmg_set_color (COL_MINIBUF);
+		    display_set_colour (COL_MINIBUF);
 		}
-		SLsmg_write_nchars (q, p-q);
+		display_write_chars (q, p-q);
 	    }
 	} else
-	    SLsmg_write_nchars (buf, len);
-	SLsmg_set_color (COL_MINIBUF);
-	SLsmg_erase_eol();
-	SLsmg_refresh();
-#if defined(unix) && !defined(GO32)
+	    display_write_chars (buf, len);
+	display_set_colour (COL_MINIBUF);
+	display_clear_to_eol();
+	display_refresh();
 	if (update_required)
 	    update();
 	safe_update = TRUE;
-#endif
-	c = SLang_getkey();
-#if defined(unix) && !defined(GO32)
+	c = display_getkey();
 	safe_update = FALSE;
-#endif
-	if (c == 13) {
+	if (c == 13 || c == 10) {
 	    buf[len] = '\0';
 	    return TRUE;
 	} else if (c == 27 || c == 7) {
-	    SLtt_beep();
-	    SLKeyBoard_Quit = 0;
-	    SLang_Error = 0;
+	    display_beep();
+	    display_post_error();
 	    strcpy (message, "User Break!");
 	    return FALSE;
 	}
@@ -614,7 +567,7 @@ int get_str (char *prompt, char *buf, int highlight) {
 	    if (len < maxlen)
 		buf[len++] = c;
 	    else
-		SLtt_beep();
+		display_beep();
 	}
 
 	if ((c == 127 || c == 8) && len > 0)
@@ -673,31 +626,25 @@ void suspend_axe(void) {
     spawnl (P_WAIT, getenv("COMSPEC"), "", NULL);
     init();
 #else
-    SLtt_beep();
+    display_beep();
     strcpy(message, "Suspend function not yet implemented.");
 #endif
 }
 
-#if defined(unix) && !defined(GO32)
 volatile int safe_update, update_required;
 
 void update (void) {
-    SLsmg_reset_smg ();
-    get_screen_size ();
+    display_recheck_size();
     fix_offset ();
-    SLsmg_init_smg ();
     draw_scr ();
 }
 
-static int sigwinch (int sigtype) {
+void schedule_update(void) {
     if (safe_update)
 	update();
     else
 	update_required = TRUE;
-    signal (SIGWINCH, (void *) sigwinch);
-    return 0;
 }
-#endif
 
 long parse_num (char *buffer, int *error) {
     if (error)
