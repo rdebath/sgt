@@ -16,6 +16,11 @@ a poor man's <tt>less</tt> easier.</li>
 
 <p><code>xterm</code> uses an extension to ED to do this, in the form of
 CSI <code>3</code> <code>J</code>.  We could do the same.
+<ul>
+<li>For avoidance of doubt, this sequence <em>only</em> clears the
+scrollback in xterm - it doesn't have any other effect. (xterm "XFree86
+4.1.0(165)" in Debian xterm_4.1.0-16woody1)
+</ul>
 
 <p>
 It's been suggested that screen clears could do this. If so, it would
