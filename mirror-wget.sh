@@ -32,7 +32,7 @@ perl -i~ -pe 's!http://the.earth.li/~sgtatham/putty/!!' download.html docs.html
 
 # Create a .htaccess file that supplies the redirection from
 # "latest" to a numbered version directory. This RedirectMatch
-# command ought to do that job independently of the 
+# command ought to do that job independently of the hostname and path.
 echo "RedirectMatch temp ^(.*)/latest(/[^/]*/?[^/]*)?$ \$1/$version\$2" > .htaccess
 
 # The .htaccess file should also ensure the Windows Help files are
