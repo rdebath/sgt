@@ -1,3 +1,5 @@
+#include <stdlib.h>
+
 #include "utils.h"
 
 #define sign(x) ( (x) < 0 ? -1 : (x) > 0 ? +1 : 0 )
@@ -76,4 +78,14 @@ void circle(int r, void (*plot)(void *, int, int), void *ctx)
 	}
 	dx++;
     }
+}
+
+int randupto(int limit)
+{
+    unsigned divisor = RAND_MAX / limit;
+    unsigned biglimit = divisor * limit;
+    unsigned x;
+
+    while ( (x = rand()) >= biglimit);
+    return x / divisor;
 }
