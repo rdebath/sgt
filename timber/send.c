@@ -176,7 +176,7 @@ static void send_output_fn(void *vctx, const char *text, int len,
 	    char *post2047 =
 		rfc2047_encode(ctx->pre2047.text, ctx->pre2047.length,
 			       CS_UTF8, ctx->charset_list, ctx->ncharsets,
-			       TRUE /* FIXME */,
+			       ctx->pre2047type,
 			       /* Reduce first RFC2047 word to fit on line
 				* with a shortish header. */
 			       ctx->wrap.linelen <= 17 ?

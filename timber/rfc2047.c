@@ -261,7 +261,7 @@ void rfc2047_decode(const char *text, int length, parser_output_fn_t output,
  */
 char *rfc2047_encode(const char *text, int length, int input_charset,
 		     const int *output_charsets, int ncharsets,
-		     int structured, int firstlen)
+		     int type, int firstlen)
 {
     wchar_t *wtext;
     int wlen;
@@ -307,12 +307,12 @@ char *rfc2047_encode(const char *text, int length, int input_charset,
      * the whole Unicode string to one long ASCII string, and
      * provided there are no conversion errors we simply return the
      * result (after first quoting any difficult punctuation if
-     * `structured' is set). But if not, we must separate it into
-     * _multiple_ strings in the output charset, each one
-     * self-contained (started from an initial conversion state and
-     * cleaned up at the end), each one encoding to an RFC2047 word
-     * at most 74 characters long. Or even shorter, if `firstlen'
-     * is set and it's the first word.
+     * `type' indicates a structured field). But if not, we must
+     * separate it into _multiple_ strings in the output charset,
+     * each one self-contained (started from an initial conversion
+     * state and cleaned up at the end), each one encoding to an
+     * RFC2047 word at most 74 characters long. Or even shorter, if
+     * `firstlen' is set and it's the first word.
      */
 
     for (i = 0; i < ncharsets; i++) {
@@ -386,8 +386,17 @@ char *rfc2047_encode(const char *text, int length, int input_charset,
 	     * quotes; and if any double quotes or backslashes show
 	     * up within the quoted string then we must
 	     * backslash-escape them.
+	     * 
+	     * In principle, we should also check here for
+	     * TYPE_HEADER_DECODED_COMMENT and backslash-escape
+	     * parentheses and backslashes. However, in practice
+	     * any data we receive here from a comment will have
+	     * been output straight from rfc822.c in the display
+	     * parsing mode, and in that situation it doesn't
+	     * _strip_ those backslashes so we don't need to put
+	     * them back on.
 	     */
-	    if (structured &&
+	    if (type == TYPE_HEADER_DECODED_PHRASE &&
 		atext[strspn(atext,
 			     "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 			     "abcdefghijklmnopqrstuvwxyz"

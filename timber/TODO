@@ -4,12 +4,6 @@ Mail sending plan of action
 So. I now have code which parses the input message and RFC2047s the
 headers. Things left to do:
 
- - Correct handling of structured headers.
-    + rfc2047_encode() wants to know more than just `is it
-      structured' - it wants to distinguish phrases from comments.
-    + We need to know which headers are structured before calling
-      rfc2047_encode().
-
  - Invent Date and Message-ID headers if not already present.
     + easiest way to tell if they're already present is to hook into
       the info output from parse_message()!
