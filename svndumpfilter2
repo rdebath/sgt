@@ -47,6 +47,17 @@ class InterestingPaths:
 # user-friendly error reporting. Assertion failures or Python
 # exceptions are perfectly adequate, since errors should only show
 # up during development of this script.
+def copy(tree):
+    if type(tree) != types.DictType:
+	return tree
+    ret = {}
+    for key, val in tree.items():
+	if len(val) == 2:
+	    ret[key] = (val[0], copy(val[1]))
+	else:
+	    ret[key] = val
+    return ret
+
 class DirTree:
     # Each directory within the tree is represented by a
     # dictionary, with filenames as keys. Entries representing
@@ -55,17 +66,6 @@ class DirTree:
     # just have a 1-tuple containing (userdata,).
     def __init__(self, clone=None):
 	"Initialise an empty dir tree, or clone from `clone' if present."
-	def copy(tree):
-	    if type(tree) != types.DictType:
-		return tree
-	    ret = {}
-	    for key, val in tree.items():
-		if len(val) == 2:
-		    ret[key] = (val[0], copy(val[1]))
-		else:
-		    ret[key] = val
-	    return ret
-
 	if clone == None:
 	    self.topdir = {}
 	else:
