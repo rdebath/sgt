@@ -4,6 +4,7 @@ DESTDIR = .
 # for `make install'
 PREFIX = /usr/local
 BINDIR = $(PREFIX)/bin
+SCRIPTDIR = $(PREFIX)/bin
 MANDIR = $(PREFIX)/man/man1
 INSTALL = install
 IPROG =#   flags for installing programs (default none)
@@ -30,7 +31,7 @@ release: nntpid.1
 	rm -rf reltmp
 
 install: nntpid.1
-	mkdir -p $(BINDIR)
-	$(INSTALL) $(IPROG) nntpid $(BINDIR)/nntpid
+	mkdir -p $(SCRIPTDIR)
+	$(INSTALL) $(IPROG) nntpid $(SCRIPTDIR)/nntpid
 	mkdir -p $(MANDIR)
 	$(INSTALL) $(IDATA) nntpid.1 $(MANDIR)/nntpid.1

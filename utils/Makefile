@@ -6,6 +6,7 @@ DESTDIR = .
 # for `make install'; should be absolute paths
 PREFIX = /usr/local
 BINDIR = $(PREFIX)/bin
+SCRIPTDIR = $(PREFIX)/bin
 MANDIR = $(PREFIX)/man/man1
 INSTALL = install
 IPROG =#   flags for installing programs (default none)
