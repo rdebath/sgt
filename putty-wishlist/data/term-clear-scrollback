@@ -1,6 +1,6 @@
 Summary: Server-controlled clearing of the scrollback
 Class: wish
-Difficulty: taxing
+Difficulty: fun
 Priority: low
 Content-type: text/x-html-body
 
@@ -14,10 +14,8 @@ issue this escape sequence.</li>
 a poor man's <tt>less</tt> easier.</li>
 </ul>
 
-<p>
-However, I've not yet found a suitable existing escape sequence, and a
-certain amount of soul-searching is required before we go inventing
-our own.
+<p><code>xterm</code> uses an extension to ED to do this, in the form of
+CSI <code>3</code> <code>J</code>.  We could do the same.
 
 <p>
 It's been suggested that screen clears could do this. If so, it would
