@@ -559,178 +559,282 @@ void *findpos234(tree234 *t, void *e, cmpfn234 cmp, int *index) {
 }
 
 /*
- * Internal function used in delete and split: ensure a particular
- * child of a node has more than one element, either by moving one
- * over from a neighbouring child or by merging the child with one
- * of its siblings.
+ * Tree transformation used in delete and split: move a subtree
+ * right, from child ki of a node to the next child. Update k and
+ * index so that they still point to the same place in the
+ * transformed tree. Assumes the destination child _does_ have a
+ * right neighbour which is not full, and that the source child
+ * _does_ have a subtree to spare.
+ * 
+ *                . C .                     . B .
+ *               /     \     ->            /     \
+ * [more] a A b B c   d D e      [more] a A b   c C d D e
  */
-static node234 *ensure234(tree234 *t, node234 *n, int ki, int *index) {
-    node234 *sub = n->kids[ki];
+static void trans234_subtree_right(node234 *n, int ki, int *k, int *index) {
+    node234 *src, *dest;
+    int i, srclen, adjust;
 
-    if (ki > 0 && n->kids[ki-1]->elems[1]) {
-	/*
-	 * Case 3a, left-handed variant. Child ki has only one
-	 * element, but child ki-1 has two or more. So we need to
-	 * move a subtree from ki-1 to ki.
-	 * 
-	 *                . C .                     . B .
-	 *               /     \     ->            /     \
-	 * [more] a A b B c   d D e      [more] a A b   c C d D e
-	 */
-	node234 *sib = n->kids[ki-1];
-	int lastelem = (sib->elems[2] ? 2 :
-			sib->elems[1] ? 1 : 0);
-	LOG(("    case 3a left\n"));
-	LOG(("    left sibling %p: %p/%d [%p] %p/%d [%p] %p/%d [%p] %p/%d\n",
-	     sib,
-	     sib->kids[0], sib->counts[0], sib->elems[0],
-	     sib->kids[1], sib->counts[1], sib->elems[1],
-	     sib->kids[2], sib->counts[2], sib->elems[2],
-	     sib->kids[3], sib->counts[3]));
-	LOG(("    small node is %p: %p/%d [%p] %p/%d [%p] %p/%d [%p] %p/%d\n",
-	     sub,
-	     sub->kids[0], sub->counts[0], sub->elems[0],
-	     sub->kids[1], sub->counts[1], sub->elems[1],
-	     sub->kids[2], sub->counts[2], sub->elems[2],
-	     sub->kids[3], sub->counts[3]));
-	sub->kids[2] = sub->kids[1];
-	sub->counts[2] = sub->counts[1];
-	sub->elems[1] = sub->elems[0];
-	sub->kids[1] = sub->kids[0];
-	sub->counts[1] = sub->counts[0];
-	sub->elems[0] = n->elems[ki-1];
-	sub->kids[0] = sib->kids[lastelem+1];
-	sub->counts[0] = sib->counts[lastelem+1];
-	if (sub->kids[0]) sub->kids[0]->parent = sub;
-	n->elems[ki-1] = sib->elems[lastelem];
-	sib->kids[lastelem+1] = NULL;
-	sib->counts[lastelem+1] = 0;
-	sib->elems[lastelem] = NULL;
-	n->counts[ki] = countnode234(sub);
-	LOG(("    index and left subtree count before adjustment: %d, %d\n",
-	     (*index), n->counts[ki-1]));
-	(*index) += n->counts[ki-1];
-	n->counts[ki-1] = countnode234(sib);
-	(*index) -= n->counts[ki-1];
-	LOG(("    index and left subtree count after adjustment: %d, %d\n",
-	     (*index), n->counts[ki-1]));
-	LOG(("    now sibling is %p: %p/%d [%p] %p/%d [%p] %p/%d [%p] %p/%d\n",
-	     sib,
-	     sib->kids[0], sib->counts[0], sib->elems[0],
-	     sib->kids[1], sib->counts[1], sib->elems[1],
-	     sib->kids[2], sib->counts[2], sib->elems[2],
-	     sib->kids[3], sib->counts[3]));
-	LOG(("    and target is %p: %p/%d [%p] %p/%d [%p] %p/%d [%p] %p/%d\n",
-	     sub,
-	     sub->kids[0], sub->counts[0], sub->elems[0],
-	     sub->kids[1], sub->counts[1], sub->elems[1],
-	     sub->kids[2], sub->counts[2], sub->elems[2],
-	     sub->kids[3], sub->counts[3]));
-    } else if (ki < 3 && n->kids[ki+1] &&
-	       n->kids[ki+1]->elems[1]) {
-	/*
-	 * Case 3a, right-handed variant. ki has only one element
-	 * but ki+1 has two or more. Move a subtree from ki+1 to
-	 * ki.
-	 * 
-	 *      . B .                             . C .
-	 *     /     \                ->         /     \
-	 *  a A b   c C d D e [more]      a A b B c   d D e [more]
-	 */
-	node234 *sib = n->kids[ki+1];
-	int j;
-	sub->elems[1] = n->elems[ki];
-	sub->kids[2] = sib->kids[0];
-	sub->counts[2] = sib->counts[0];
-	if (sub->kids[2]) sub->kids[2]->parent = sub;
-	n->elems[ki] = sib->elems[0];
-	sib->kids[0] = sib->kids[1];
-	sib->counts[0] = sib->counts[1];
-	for (j = 0; j < 2 && sib->elems[j+1]; j++) {
-	    sib->kids[j+1] = sib->kids[j+2];
-	    sib->counts[j+1] = sib->counts[j+2];
-	    sib->elems[j] = sib->elems[j+1];
-	}
-	sib->kids[j+1] = NULL;
-	sib->counts[j+1] = 0;
-	sib->elems[j] = NULL;
-	n->counts[ki] = countnode234(sub);
-	n->counts[ki+1] = countnode234(sib);
-	LOG(("  case 3a right\n"));
-    } else {
-	/*
-	 * Case 3b. ki has only one element, and has no neighbour
-	 * with more than one. So pick a neighbour and merge it
-	 * with ki, taking an element down from n to go in the
-	 * middle.
-	 * 
-	 *      . B .                .
-	 *     /     \     ->        |
-	 *  a A b   c C d      a A b B c C d
-	 * 
-	 * (Since at all points we have avoided descending to a
-	 * node with only one element, we can be sure that n is not
-	 * reduced to nothingness by this move, _unless_ it was the
-	 * very first node, ie the root of the tree. In that case
-	 * we remove the now-empty root and replace it with its
-	 * single large child as shown.)
-	 */
-	node234 *sib;
-	int j;
+    src = n->kids[ki];
+    dest = n->kids[ki+1];
 
-	if (ki > 0) {
-	    ki--;
-	    (*index) += n->counts[ki] + 1;
-	}
-	sib = n->kids[ki];
-	sub = n->kids[ki+1];
+    LOG(("  trans234_subtree_right(%p, %d):\n", n, ki));
+    LOG(("    parent %p: %p/%d [%p] %p/%d [%p] %p/%d [%p] %p/%d\n",
+	 n,
+	 n->kids[0], n->counts[0], n->elems[0],
+	 n->kids[1], n->counts[1], n->elems[1],
+	 n->kids[2], n->counts[2], n->elems[2],
+	 n->kids[3], n->counts[3]));
+    LOG(("    src %p: %p/%d [%p] %p/%d [%p] %p/%d [%p] %p/%d\n",
+	 src,
+	 src->kids[0], src->counts[0], src->elems[0],
+	 src->kids[1], src->counts[1], src->elems[1],
+	 src->kids[2], src->counts[2], src->elems[2],
+	 src->kids[3], src->counts[3]));
+    LOG(("    dest %p: %p/%d [%p] %p/%d [%p] %p/%d [%p] %p/%d\n",
+	 dest,
+	 dest->kids[0], dest->counts[0], dest->elems[0],
+	 dest->kids[1], dest->counts[1], dest->elems[1],
+	 dest->kids[2], dest->counts[2], dest->elems[2],
+	 dest->kids[3], dest->counts[3]));
+    /*
+     * Move over the rest of the destination node to make space.
+     */
+    dest->kids[3] = dest->kids[2];    dest->counts[3] = dest->counts[2];
+    dest->elems[2] = dest->elems[1];
+    dest->kids[2] = dest->kids[1];    dest->counts[2] = dest->counts[1];
+    dest->elems[1] = dest->elems[0];
+    dest->kids[1] = dest->kids[0];    dest->counts[1] = dest->counts[0];
 
-	sub->kids[3] = sub->kids[1];
-	sub->counts[3] = sub->counts[1];
-	sub->elems[2] = sub->elems[0];
-	sub->kids[2] = sub->kids[0];
-	sub->counts[2] = sub->counts[0];
-	sub->elems[1] = n->elems[ki];
-	sub->kids[1] = sib->kids[1];
-	sub->counts[1] = sib->counts[1];
-	if (sub->kids[1]) sub->kids[1]->parent = sub;
-	sub->elems[0] = sib->elems[0];
-	sub->kids[0] = sib->kids[0];
-	sub->counts[0] = sib->counts[0];
-	if (sub->kids[0]) sub->kids[0]->parent = sub;
+    i = (src->elems[2] ? 2 : 1);       /* which element to move over */
 
-	n->counts[ki+1] = countnode234(sub);
+    dest->elems[0] = n->elems[ki];
+    n->elems[ki] = src->elems[i];
+    src->elems[i] = NULL;
 
-	sfree(sib);
+    dest->kids[0] = src->kids[i+1];   dest->counts[0] = src->counts[i+1];
+    src->kids[i+1] = NULL;            src->counts[i+1] = 0;
 
-	/*
-	 * That's built the big node in sub. Now we need to remove
-	 * the reference to sib in n.
-	 */
-	for (j = ki; j < 3 && n->kids[j+1]; j++) {
-	    n->kids[j] = n->kids[j+1];
-	    n->counts[j] = n->counts[j+1];
-	    n->elems[j] = j<2 ? n->elems[j+1] : NULL;
-	}
-	n->kids[j] = NULL;
-	n->counts[j] = 0;
-	if (j < 3) n->elems[j] = NULL;
-	LOG(("  case 3b ki=%d\n", ki));
+    if (dest->kids[0]) dest->kids[0]->parent = dest;
 
-	if (!n->elems[0]) {
-	    /*
-	     * The root is empty and needs to be removed.
-	     */
-	    LOG(("  shifting root!\n"));
-	    t->root = sub;
-	    sub->parent = NULL;
-	    sfree(n);
-	}
+    adjust = dest->counts[0] + 1;
+
+    n->counts[ki] -= adjust;
+    n->counts[ki+1] += adjust;
+
+    srclen = n->counts[ki];
+
+    LOG(("    before: k,index = %d,%d\n", (*k), (*index)));
+    if ((*k) == ki && (*index) > srclen) {
+	(*index) -= srclen + 1;
+	(*k)++;
+    } else if ((*k) == ki+1) {
+	(*index) += adjust;
     }
+    LOG(("    after: k,index = %d,%d\n", (*k), (*index)));
 
-    return sub;
+    LOG(("    parent %p: %p/%d [%p] %p/%d [%p] %p/%d [%p] %p/%d\n",
+	 n,
+	 n->kids[0], n->counts[0], n->elems[0],
+	 n->kids[1], n->counts[1], n->elems[1],
+	 n->kids[2], n->counts[2], n->elems[2],
+	 n->kids[3], n->counts[3]));
+    LOG(("    src %p: %p/%d [%p] %p/%d [%p] %p/%d [%p] %p/%d\n",
+	 src,
+	 src->kids[0], src->counts[0], src->elems[0],
+	 src->kids[1], src->counts[1], src->elems[1],
+	 src->kids[2], src->counts[2], src->elems[2],
+	 src->kids[3], src->counts[3]));
+    LOG(("    dest %p: %p/%d [%p] %p/%d [%p] %p/%d [%p] %p/%d\n",
+	 dest,
+	 dest->kids[0], dest->counts[0], dest->elems[0],
+	 dest->kids[1], dest->counts[1], dest->elems[1],
+	 dest->kids[2], dest->counts[2], dest->elems[2],
+	 dest->kids[3], dest->counts[3]));
 }
 
+/*
+ * Tree transformation used in delete and split: move a subtree
+ * left, from child ki of a node to the previous child. Update k
+ * and index so that they still point to the same place in the
+ * transformed tree. Assumes the destination child _does_ have a
+ * right neighbour which is not full, and that the source child
+ * _does_ have a subtree to spare.
+ *
+ *      . B .                             . C .
+ *     /     \                ->         /     \
+ *  a A b   c C d D e [more]      a A b B c   d D e [more]
+ */
+static void trans234_subtree_left(node234 *n, int ki, int *k, int *index) {
+    node234 *src, *dest;
+    int i, srclen, adjust;
+
+    src = n->kids[ki];
+    dest = n->kids[ki-1];
+
+    LOG(("  trans234_subtree_left(%p, %d):\n", n, ki));
+    LOG(("    parent %p: %p/%d [%p] %p/%d [%p] %p/%d [%p] %p/%d\n",
+	 n,
+	 n->kids[0], n->counts[0], n->elems[0],
+	 n->kids[1], n->counts[1], n->elems[1],
+	 n->kids[2], n->counts[2], n->elems[2],
+	 n->kids[3], n->counts[3]));
+    LOG(("    dest %p: %p/%d [%p] %p/%d [%p] %p/%d [%p] %p/%d\n",
+	 dest,
+	 dest->kids[0], dest->counts[0], dest->elems[0],
+	 dest->kids[1], dest->counts[1], dest->elems[1],
+	 dest->kids[2], dest->counts[2], dest->elems[2],
+	 dest->kids[3], dest->counts[3]));
+    LOG(("    src %p: %p/%d [%p] %p/%d [%p] %p/%d [%p] %p/%d\n",
+	 src,
+	 src->kids[0], src->counts[0], src->elems[0],
+	 src->kids[1], src->counts[1], src->elems[1],
+	 src->kids[2], src->counts[2], src->elems[2],
+	 src->kids[3], src->counts[3]));
+
+    i = (dest->elems[1] ? 2 : 1);      /* where in dest to put it */
+    dest->elems[i] = n->elems[ki-1];
+    n->elems[ki-1] = src->elems[0];
+
+    dest->kids[i+1] = src->kids[0];   dest->counts[i+1] = src->counts[0];
+
+    if (dest->kids[i+1]) dest->kids[i+1]->parent = dest;
+
+    /*
+     * Move over the rest of the source node.
+     */
+    src->kids[0] = src->kids[1];      src->counts[0] = src->counts[1];
+    src->elems[0] = src->elems[1];
+    src->kids[1] = src->kids[2];      src->counts[1] = src->counts[2];
+    src->elems[1] = src->elems[2];
+    src->kids[2] = src->kids[3];      src->counts[2] = src->counts[3];
+    src->elems[2] = NULL;
+    src->kids[3] = NULL;              src->counts[3] = 0;
+
+    adjust = dest->counts[i+1] + 1;
+
+    n->counts[ki] -= adjust;
+    n->counts[ki-1] += adjust;
+
+    LOG(("    before: k,index = %d,%d\n", (*k), (*index)));
+    if ((*k) == ki) {
+	(*index) -= adjust;
+	if ((*index) < 0) {
+	    (*index) += n->counts[ki-1] + 1;
+	    (*k)--;
+	}
+    }
+    LOG(("    after: k,index = %d,%d\n", (*k), (*index)));
+
+    LOG(("    parent %p: %p/%d [%p] %p/%d [%p] %p/%d [%p] %p/%d\n",
+	 n,
+	 n->kids[0], n->counts[0], n->elems[0],
+	 n->kids[1], n->counts[1], n->elems[1],
+	 n->kids[2], n->counts[2], n->elems[2],
+	 n->kids[3], n->counts[3]));
+    LOG(("    dest %p: %p/%d [%p] %p/%d [%p] %p/%d [%p] %p/%d\n",
+	 dest,
+	 dest->kids[0], dest->counts[0], dest->elems[0],
+	 dest->kids[1], dest->counts[1], dest->elems[1],
+	 dest->kids[2], dest->counts[2], dest->elems[2],
+	 dest->kids[3], dest->counts[3]));
+    LOG(("    src %p: %p/%d [%p] %p/%d [%p] %p/%d [%p] %p/%d\n",
+	 src,
+	 src->kids[0], src->counts[0], src->elems[0],
+	 src->kids[1], src->counts[1], src->elems[1],
+	 src->kids[2], src->counts[2], src->elems[2],
+	 src->kids[3], src->counts[3]));
+}
+
+/*
+ * Tree transformation used in delete and split: merge child nodes
+ * ki and ki+1 of a node. Update k and index so that they still
+ * point to the same place in the transformed tree. Assumes both
+ * children _are_ sufficiently small.
+ *
+ *      . B .                .
+ *     /     \     ->        |
+ *  a A b   c C d      a A b B c C d
+ */
+static void trans234_subtree_merge(node234 *n, int ki, int *k, int *index) {
+    node234 *left, *right;
+    int i, leftlen, rightlen;
+
+    left = n->kids[ki];               leftlen = n->counts[ki];
+    right = n->kids[ki+1];            rightlen = n->counts[ki+1];
+
+    LOG(("  trans234_subtree_merge(%p, %d):\n", n, ki));
+    LOG(("    parent %p: %p/%d [%p] %p/%d [%p] %p/%d [%p] %p/%d\n",
+	 n,
+	 n->kids[0], n->counts[0], n->elems[0],
+	 n->kids[1], n->counts[1], n->elems[1],
+	 n->kids[2], n->counts[2], n->elems[2],
+	 n->kids[3], n->counts[3]));
+    LOG(("    left %p: %p/%d [%p] %p/%d [%p] %p/%d [%p] %p/%d\n",
+	 left,
+	 left->kids[0], left->counts[0], left->elems[0],
+	 left->kids[1], left->counts[1], left->elems[1],
+	 left->kids[2], left->counts[2], left->elems[2],
+	 left->kids[3], left->counts[3]));
+    LOG(("    right %p: %p/%d [%p] %p/%d [%p] %p/%d [%p] %p/%d\n",
+	 right,
+	 right->kids[0], right->counts[0], right->elems[0],
+	 right->kids[1], right->counts[1], right->elems[1],
+	 right->kids[2], right->counts[2], right->elems[2],
+	 right->kids[3], right->counts[3]));
+
+    left->elems[1] = n->elems[ki];
+
+    left->kids[2] = right->kids[0];   left->counts[2] = right->counts[0];
+    left->elems[2] = right->elems[0];
+    left->kids[3] = right->kids[1];   left->counts[3] = right->counts[1];
+
+    if (left->kids[2]) left->kids[2]->parent = left;
+    if (left->kids[3]) left->kids[3]->parent = left;
+
+    n->counts[ki] += rightlen + 1;
+
+    sfree(right);
+
+    /*
+     * Move the rest of n up by one.
+     */
+    for (i = ki+1; i < 3; i++) {
+	n->kids[i] = n->kids[i+1];
+	n->counts[i] = n->counts[i+1];
+    }
+    for (i = ki; i < 2; i++) {
+	n->elems[i] = n->elems[i+1];
+    }
+    n->kids[3] = NULL;
+    n->counts[3] = 0;
+    n->elems[2] = NULL;
+
+    if (k) {
+	LOG(("    before: k,index = %d,%d\n", (*k), (*index)));
+	if ((*k) == ki+1) {
+	    (*k)--;
+	    (*index) += leftlen + 1;
+	} else if ((*k) > ki+1) {
+	    (*k)--;
+	}
+	LOG(("    after: k,index = %d,%d\n", (*k), (*index)));
+    }
+
+    LOG(("    parent %p: %p/%d [%p] %p/%d [%p] %p/%d [%p] %p/%d\n",
+	 n,
+	 n->kids[0], n->counts[0], n->elems[0],
+	 n->kids[1], n->counts[1], n->elems[1],
+	 n->kids[2], n->counts[2], n->elems[2],
+	 n->kids[3], n->counts[3]));
+    LOG(("    merged %p: %p/%d [%p] %p/%d [%p] %p/%d [%p] %p/%d\n",
+	 left,
+	 left->kids[0], left->counts[0], left->elems[0],
+	 left->kids[1], left->counts[1], left->elems[1],
+	 left->kids[2], left->counts[2], left->elems[2],
+	 left->kids[3], left->counts[3]));
+
+}
+    
 /*
  * Delete an element e in a 2-3-4 tree. Does not free the element,
  * merely removes all links to it from the tree nodes.
@@ -747,6 +851,7 @@ static void *delpos234_internal(tree234 *t, int index) {
     while (1) {
 	while (n) {
 	    int ki;
+	    node234 *sub;
 
 	    LOG(("  node %p: %p/%d [%p] %p/%d [%p] %p/%d [%p] %p/%d index=%d\n",
 		 n,
@@ -775,11 +880,55 @@ static void *delpos234_internal(tree234 *t, int index) {
 	     * we have to do some transformation to start with.
 	     */
 	    LOG(("  moving to subtree %d\n", ki));
-	    if (!n->kids[ki]->elems[1]) {
+	    sub = n->kids[ki];
+	    if (!sub->elems[1]) {
 		LOG(("  subtree has only one element!\n"));
-		n = ensure234(t, n, ki, &index);
-	    } else
-		n = n->kids[ki];
+		if (ki > 0 && n->kids[ki-1]->elems[1]) {
+		    /*
+		     * Child ki has only one element, but child
+		     * ki-1 has two or more. So we need to move a
+		     * subtree from ki-1 to ki.
+		     */
+		    trans234_subtree_right(n, ki-1, &ki, &index);
+		} else if (ki < 3 && n->kids[ki+1] &&
+			   n->kids[ki+1]->elems[1]) {
+		    /*
+		     * Child ki has only one element, but ki+1 has
+		     * two or more. Move a subtree from ki+1 to ki.
+		     */
+		    trans234_subtree_left(n, ki+1, &ki, &index);
+		} else {
+		    /*
+		     * ki has only one element, and has no
+		     * neighbour with more than one. So pick a
+		     * neighbour and merge it with ki, taking an
+		     * element down from n to go in the middle.
+		     * 
+		     * (Since at all points we have avoided
+		     * descending to a node with only one element,
+		     * we can be sure that n is not reduced to
+		     * nothingness by this move, _unless_ it was
+		     * the very first node, ie the root of the
+		     * tree. In that case we remove the now-empty
+		     * root and replace it with its single large
+		     * child as shown.)
+		     */
+		    trans234_subtree_merge(n, ki>0 ? ki-1 : ki, &ki, &index);
+		    sub = n->kids[ki];
+
+		    if (!n->elems[0]) {
+			/*
+			 * The root is empty and needs to be
+			 * removed.
+			 */
+			LOG(("  shifting root!\n"));
+			t->root = sub;
+			sub->parent = NULL;
+			sfree(n);
+		    }
+		}
+	    }
+	    n = sub;
 	}
 	if (!retval)
 	    retval = n->elems[ei];
@@ -788,8 +937,8 @@ static void *delpos234_internal(tree234 *t, int index) {
 	    return NULL;	       /* although this shouldn't happen */
 
 	/*
-	 * Treat special case: this is the one remaining item in
-	 * the tree. n is the tree root (no parent), has one
+	 * Treat special case: this is the one remaining item
+	 * in the tree. n is the tree root (no parent), has one
 	 * element (no elems[1]), and has no kids (no kids[0]).
 	 */
 	if (!n->parent && !n->elems[1] && !n->kids[0]) {
@@ -1126,15 +1275,276 @@ static node234 *split234_internal(tree234 *t, int index) {
 	    ki = 3;
 	}
 	/*
-	 * Recurse down to subtree ki. If it has only one element,
-	 * we have to do some transformation to start with.
+	 * Recurse down to subtree ki. We want to make sure that it
+	 * has _lots_ of elements.
 	 */
 	LOG(("  moving to subtree %d\n", ki));
 	if (!n->kids[ki])
 	    break;
-	if (!n->kids[ki]->elems[1]) {
-	    LOG(("  subtree has only one element!\n"));
-	    n = ensure234(t, n, ki, &index);
+	if (!n->kids[ki]->elems[2]) {
+	    node234 *sub;
+
+	    LOG(("  subtree has fewer than three elements\n"));
+	    sub = n->kids[ki];
+
+	    /*
+	     * We want to make sure child ki has three elements, so
+	     * that if we use one up in merging two nodes below it,
+	     * it will still have more than one.
+	     */
+	    if (ki > 0 && ki < 3 && n->elems[ki]) {
+		/*
+		 * We have a neighbour on either side. We have many
+		 * cases:
+		 * 
+		 *  - We are medium, at least one of our neighbours
+		 *    is non-small. Move over a subtree from a
+		 *    non-small neighbour.
+		 * 
+		 *  - We are medium, both our neighbours are small.
+		 *    Move one of our subtrees _away_ into a
+		 *    neighbour, and merge with the other
+		 *    neighbour. (We must choose carefully which
+		 *    neighbour to move a subtree into; we have to
+		 *    arrange for our resulting search path to lead
+		 *    down into the _large_ node, not the medium
+		 *    one, that's left over!)
+		 * 
+		 *  - We are small, both our neighbours are
+		 *    non-small. Move over a subtree from each
+		 *    neighbour.
+		 * 
+		 *  - We are small, at least one of our neighbours
+		 *    is small. Merge with a neighbour.
+		 */
+		LOG(("  we have two neighbours\n"));
+		if (sub->elems[1]) {
+		    /* we are medium */
+		    if (n->kids[ki-1]->elems[1]) {
+			/* our left neighbour is non-small */
+			LOG(("  medium with non-small left neighbour\n"));
+			trans234_subtree_right(n, ki-1, &ki, &index);
+		    } else if (n->kids[ki+1]->elems[1]) {
+			/* our right neighbour is non-small */
+			LOG(("  medium with non-small right neighbour\n"));
+			trans234_subtree_left(n, ki+1, &ki, &index);
+		    } else {
+			LOG(("  medium with two small neighbours\n"));
+			/* both neighbours are small */
+			if (index > sub->counts[0] + 1 + sub->counts[1]) {
+			    /* move subtree left, merge with RH neighbour */
+			    LOG(("  moving left, merging with right\n"));
+			    trans234_subtree_left(n, ki, &ki, &index);
+			    trans234_subtree_merge(n, ki, &ki, &index);
+			} else {
+			    /* move subtree right, merge with LH neighbour */
+			    LOG(("  moving right, merging with left\n"));
+			    trans234_subtree_right(n, ki, &ki, &index);
+			    sub = n->kids[ki-1];
+			    trans234_subtree_merge(n, ki-1, &ki, &index);
+			}
+		    }
+		} else {
+		    /* we are small */
+		    if (!n->kids[ki-1]->elems[1]) {
+			/* our left neighbour is small too */
+			LOG(("  small with small left neighbour\n"));
+			sub = n->kids[ki-1];
+			trans234_subtree_merge(n, ki-1, &ki, &index);
+		    } else if (!n->kids[ki+1]->elems[1]) {
+			/* our right neighbour is small too */
+			LOG(("  small with small right neighbour\n"));
+			trans234_subtree_merge(n, ki, &ki, &index);
+		    } else {
+			/* both our neighbours are non-small */
+			LOG(("  small with two non-small neighbours\n"));
+			trans234_subtree_right(n, ki-1, &ki, &index);
+			trans234_subtree_left(n, ki+1, &ki, &index);
+		    }
+		}
+	    } else {
+		/*
+		 * We have neighbours on only one side. We have
+		 * many cases again:
+		 * 
+		 *  - We are medium, our neighbour is non-small.
+		 *    Move a subtree from the neighbour.
+		 * 
+		 *  - We are medium, our neighbour is small, we
+		 *    have a non-small neighbour beyond that. Move
+		 *    a subtree from the next-but-one into the
+		 *    neighbour, then move a subtree from the
+		 *    neighbour into us.
+		 * 
+		 *  - We are medium, our neighbour is small, we
+		 *    have a small neighbour beyond that. Move a
+		 *    subtree from us into the neighbour, then one
+		 *    from there into the next-but-one, then merge
+		 *    with the neighbour. (Note that everything
+		 *    that was originally within us is still in us
+		 *    when we finish.)
+		 * 
+		 *  - We are medium, our neighbour is small, we
+		 *    have no neighbours beyond that. Hence, our
+		 *    parent must be the root. Make do. [1]
+		 * 
+		 *  - We are small, our neighbour is large. Move
+		 *    two subtrees from the neighbour.
+		 * 
+		 *  - We are small, our neighbour is small. Merge
+		 *    with the neighbour.
+		 * 
+		 *  - We are small, our neighbour is medium, we
+		 *    have a non-small neighbour beyond that. Move
+		 *    a subtree from the next-but-one into the
+		 *    neighbour, and then move two subtrees from
+		 *    there to us.
+		 * 
+		 *  - We are small, our neighbour is medium, we
+		 *    have a small neighbour beyond that. Move a
+		 *    subtree from the neighbour into the one
+		 *    beyond, and merge with the now-small
+		 *    neighbour.
+		 * 
+		 *  - We are small, our neighbour is medium, we
+		 *    have no neighbours beyond that. Hence, our
+		 *    parent must be the root. Move a subtree from
+		 *    the neighbour to ourselves and make do. [1]
+		 * 
+		 * [1] `Make do' means that we are a medium node
+		 * with a small neighbour, the only children of a
+		 * small root. This is perfectly OK if one of our
+		 * elements doesn't end up being used in a merge at
+		 * the next level. If it _does_, we are reduced to
+		 * being one of two small children of a small root
+		 * - so we must come _back_ and merge the root into
+		 * its children.
+		 */
+		int one, two, merge, neighbours;
+		void (*away)(node234 *n, int ki, int *k, int *index);
+		void (*toward)(node234 *n, int ki, int *k, int *index);
+
+		if (ki == 0) {
+		    one = 1; two = 2; merge = 0;
+		    away = trans234_subtree_right;
+		    toward = trans234_subtree_left;
+		} else {
+		    one = ki-1; two = ki-2; merge = one;
+		    away = trans234_subtree_left;
+		    toward = trans234_subtree_right;
+		}
+
+		if (ki == 1 || (ki == 0 && !n->elems[1]))
+		    neighbours = 1;
+		else
+		    neighbours = 2;
+
+		LOG(("  we are on the %s end\n", ki==0 ? "left" : "right"));
+		if (sub->elems[1]) {
+		    /* we are medium */
+		    if (n->kids[one]->elems[1]) {
+			/* neighbour is non-small */
+			LOG(("  medium, non-small\n"));
+			toward(n, one, &ki, &index);
+		    } else if (neighbours == 1) {
+			/* only one small neighbour; make do */
+			LOG(("  medium, small, none; MAKE DO\n"));
+		    } else if (n->kids[two]->elems[1]) {
+			/* next-but-one is non-small */
+			LOG(("  medium, small, non-small\n"));
+			toward(n, two, &ki, &index);
+			toward(n, one, &ki, &index);
+		    } else {
+			/* next-but-one is small */
+			LOG(("  medium, small, small\n"));
+			away(n, ki, &ki, &index);
+			away(n, one, &ki, &index);
+			sub = n->kids[merge];
+			trans234_subtree_merge(n, merge, &ki, &index);
+		    }
+		} else {
+		    /* we are small */
+		    if (n->kids[one]->elems[2]) {
+			/* neighbour is large */
+			LOG(("  small, large\n"));
+			toward(n, one, &ki, &index);
+			toward(n, one, &ki, &index);
+		    } else if (!n->kids[one]->elems[1]) {
+			/* neighbour is small */
+			LOG(("  small, small\n"));
+			sub = n->kids[merge];
+			trans234_subtree_merge(n, merge, &ki, &index);
+		    } else if (neighbours == 1) {
+			/* only one neighbour which is medium */
+			LOG(("  small, medium, none; move and MAKE DO\n"));
+			toward(n, one, &ki, &index);
+			/* now make do */
+		    } else if (!n->kids[two]->elems[1]) {
+			/* neighbour is medium, next-but-one is small */
+			LOG(("  small, medium, small\n"));
+			away(n, one, &ki, &index);
+			sub = n->kids[merge];
+			trans234_subtree_merge(n, merge, &ki, &index);
+		    } else {
+			/* neighbour is medium, next-but-one is non-small */
+			LOG(("  small, medium, non-small\n"));
+			toward(n, two, &ki, &index);
+			toward(n, one, &ki, &index);
+			toward(n, one, &ki, &index);
+		    }
+		}
+	    }
+	    /*
+	     * We should have ended up with sub still pointing at
+	     * the subtree we're actually going to.
+	     */
+	    assert(sub == n->kids[ki]);
+
+	    /*
+	     * Check if we've reduced n to smallness or to
+	     * nonexistence in all this madness. If n is the root,
+	     * we might have reduced it completely to nonexistence,
+	     * so we'd better shift the tree root. (If we've
+	     * reduced the root to smallness, we don't care; we can
+	     * deal with that later.)
+	     * 
+	     * If n is not the root but has been reduced to
+	     * smallness, it MUST be the case that n is one of two
+	     * small children of a small root, and so we can merge
+	     * the root into the children.
+	     */
+	    if (!n->elems[1]) {
+		/* n is small or nonexistent */
+		if (!n->parent) {
+		    /* n is root */
+		    if (!n->elems[0]) {
+			/* n is nonexistent. Shift root. */
+			LOG(("  root is defunct, new root is %p\n", n->kids[0]));
+			t->root = n->kids[0];
+			n->kids[0]->parent = NULL;
+			sfree(n);
+		    }
+		} else {
+		    /* n is not root */
+		    /* n MUST be small but not nonexistent */
+		    assert(n->elems[0]);
+		    /* n MUST be child of the root */
+		    assert(n->parent != NULL && n->parent->parent == NULL);
+		    /* n MUST be one of only two children */
+		    assert(n->parent->elems[1] == NULL);
+		    /* n's sibling MUST also be small */
+		    assert(n->parent->kids[0]->elems[1] == NULL &&
+			   n->parent->kids[1]->elems[1] == NULL);
+		    LOG(("  must go back and merge root into kids\n"));
+		    n = t->root->kids[0];
+		    trans234_subtree_merge(t->root, 0, NULL, NULL);
+		    n->parent = NULL;
+		    sfree(t->root);
+		    t->root = n;
+		}
+	    }
+
+	    n = sub;
 	} else
 	    n = n->kids[ki];
     }
