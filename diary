@@ -221,6 +221,7 @@ class output:
 
     def htmlsafe(self, text):
 	text = string.replace(text, "&", "&amp;")
+	text = string.replace(text, "...", "&#8230;")
 	text = string.replace(text, "<", "&lt;")
 	text = string.replace(text, ">", "&gt;")
 	text = string.replace(text, "\"", "&quot;")
@@ -328,27 +329,36 @@ class output:
             self.mono_words = []
 
     def quote(self, opening):
-	self.html = self.html + "&quot;"
+	if self.html_ok:
+	    self.html = self.html + ["&#8217;","&#8216;"][opening != 0]
+	elif self.html_title:
+	    self.subj = self.subj + ["&#8217;","&#8216;"][opening != 0]
         self.mono_add_word(["'","`"][opening != 0], self.mono_attr, 0)
         # '
 
     def emph(self, on):
-	if on:
-	    self.html = self.html + "<em>"
-	else:
-	    self.html = self.html + "</em>"
+	if self.html_ok:
+	    self.html = self.html + ["</em>","<em>"][on != 0]
+	elif self.html_title:
+	    self.subj = self.subj + ["</em>","<em>"][on != 0]
         self.mono_add_word("_", self.mono_attr, 0)
 
     def bold(self, on):
+	if self.html_ok:
+	    self.html = self.html + ["</b>","<b>"][on != 0]
+	elif self.html_title:
+	    self.subj = self.subj + ["</b>","<b>"][on != 0]
+
 	if on:
-	    self.html = self.html + "<b>"
             self.mono_attr = self.mono_attr | ATTR_BOLD
 	else:
-	    self.html = self.html + "</b>"
             self.mono_attr = self.mono_attr & ~ATTR_BOLD
 
     def url(self, text):
-	self.html = self.html + "<a href=\"" + text + "\">" + self.htmlsafe(text) + "</a>"
+	if self.html_ok:
+	    self.html = self.html + "<a href=\"" + text + "\">" + self.htmlsafe(text) + "</a>"
+	elif self.html_title:
+	    self.subj = self.subj + "<a href=\"" + text + "\">" + self.htmlsafe(text) + "</a>"
         self.mono_show_para()
         if self.mono_bullet == 1:
             self.mono_bullet = 2
@@ -362,7 +372,10 @@ class output:
         self.mono_words = []
 
     def name(self, text):
-	self.html = self.html + "<lj user=\"" + text + "\">"
+	if self.html_ok:
+	    self.html = self.html + "<lj user=\"" + text + "\">"
+	elif self.html_title:
+	    self.subj = self.subj + "<lj user=\"" + text + "\">"
 
     def posturlmode(self, on):
         self.mono_ok = (on == 0)
@@ -381,10 +394,17 @@ class output:
 	pass
 
     def word(self, text):
-	if self.html_ok:
-	    self.html = self.html + self.htmlsafe(text)
-	elif self.html_title:
-	    self.subj = self.subj + text
+	if self.html_ok or self.html_title:
+	    # Special case: a dash by itself in a word is replaced
+	    # by a Unicode en-dash.
+	    if text == "-":
+		htmltext = "&#8211;"
+	    else:
+		htmltext = self.htmlsafe(text)
+	    if self.html_title:
+		self.subj = self.subj + htmltext
+	    else:
+		self.html = self.html + htmltext
         if self.mono_ok:
             self.mono_add_word(text, self.mono_attr, 0)
 
@@ -840,7 +860,7 @@ while 1:
 	    dict["day"] = time.strftime("%d", nowlocal)
 	    dict["hour"] = time.strftime("%H", nowlocal)
 	    dict["min"] = time.strftime("%M", nowlocal)
-	    #dict["security"] = "private"
+	    dict["security"] = "private"
 	    ret = ljproto.ljcall(dict)
 	    if not ljproto.ljok(ret):
 		print "Unable to post to LJ: " + ljproto.ljerror(ret)
