@@ -118,7 +118,7 @@ def parse(lex):
             if dcl == None: dcl = self.declarator(1) # non-abstract only
             n.append(dcl)
             if self.peektype() == lt_assign:
-                self.get(lt_assign)
+                self.eat(lt_assign)
                 n.append(self.initializer())
             return n
 
@@ -610,15 +610,19 @@ def parse(lex):
         
         def postfix_expression(self):
             if self.peektype() == lt_lparen:
-                n = node("postfix_expression")
-                self.eat(lt_lparen)
-                n.append(self.type_name())
-                self.eat(lt_rparen)
-                self.eat(lt_lbrace)
-                n.append(self.initializer_list())
-                if self.peektype() == lt_comma:
-                    self.eat(lt_comma)
-                self.eat(lt_rbrace)
+                lpar = self.eat(lt_lparen)
+                if not self.type_name_peek():
+                    self.unget(lpar)
+                    n = self.primary_expression()
+                else:
+                    n = node("postfix_expression")
+                    n.append(self.type_name())
+                    self.eat(lt_rparen)
+                    self.eat(lt_lbrace)
+                    n.append(self.initializer_list())
+                    if self.peektype() == lt_comma:
+                        self.eat(lt_comma)
+                    self.eat(lt_rbrace)
             else:
                 n = self.primary_expression()
             while 1:
@@ -685,7 +689,7 @@ def parse(lex):
                 return n
             elif t == lt_bitand or t == lt_times or t == lt_plus or t == lt_minus or t == lt_bitnot or t == lt_lognot:
                 n = node("unary_expression")
-                n.append(t)
+                n.append(self.get())
                 n.append(self.cast_expression())
                 return n
             else:
