@@ -47,4 +47,3 @@ whether anyone <em>really</em> implements it this way.
 to add bidi support and Arabic shaping to PuTTY. As of 2004-05-23,
 their initial code is in the PuTTY snapshots; however it was <em>not</em>
 released in the 0.55 bugfix release due to stability issues.
-this code 
