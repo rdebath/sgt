@@ -2,6 +2,7 @@ Summary: Visual Studio project files (.DSP/.DSW)
 Class: wish
 Difficulty: taxing
 Priority: low
+Fixed-in: 2004-01-18
 Content-type: text/x-html-body
 
 <p>
@@ -24,4 +25,5 @@ unlikely to add .DSP/.DSW support ourselves because we don't have much
 use for it.
 
 <p>
-Patch (unreviewed): 3FD5C596.2030606@bidsnc.com
+<em>Update:</em> <code>mkfiles.pl</code> now generates these project
+files. Many thanks to Joe Yates.
