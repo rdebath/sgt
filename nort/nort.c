@@ -3,16 +3,30 @@
  * modified almost out of all recognition
  */
 
+/*
+ * TODO:
+ * 
+ *  - User interface for weapons and options selection and
+ *    scorekeeping.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 
 #include "sdlstuff.h"
 #include "beebfont.h"
 
+#define ABSOLUTE_MAX_SPEED 25
+
+#define lenof(x) ( sizeof((x)) / sizeof(*(x)) )
+
 #define sign(x) ( (x) < 0 ? -1 : (x) > 0 ? +1 : 0 )
 
 #define plot(x,y,c) ( scrdata[(y)*640+(x)*2] = scrdata[(y)*640+(x)*2+1] = c )
 #define pixel(x,y) ( scrdata[(y)*640+(x)*2] )
+
+#define plotc(x,y,c) ( (x)<0||(x)>319||(y)<0||(y)>239 ? 0 : plot(x,y,c) )
+#define pixelc(x,y) ( (x)<0||(x)>319||(y)<0||(y)>239 ? 0 : pixel(x,y) )
 
 int puttext(int x, int y, int c, char const *text)
 {
@@ -26,7 +40,7 @@ int puttext(int x, int y, int c, char const *text)
 	for (ix = 0; ix < 8; ix++)
 	    for (iy = 0; iy < 8; iy++)
 		if (beebfont[ch+iy] & (0x80>>ix))
-		    plot(x+ix, y+iy, c);
+		    plotc(x+ix, y+iy, c);
 	x += 8;
     }
 }
@@ -34,6 +48,14 @@ int puttext(int x, int y, int c, char const *text)
 int drawline(int x1, int y1, int x2, int y2, int c)
 {
     int dx, dy, lx, ly, sx, sy, dl, ds, d, i;
+    int dot, dotting;
+
+    /*
+     * Setting bit 8 in `c' causes the line to be dotted
+     * alternately on and off.
+     */
+    dotting = c & 256;
+    c &= 255;
 
     /*
      * Simple Bresenham's line drawing should be adequate here.
@@ -69,15 +91,17 @@ int drawline(int x1, int y1, int x2, int y2, int c)
      * 2*dl and move up one pixel when it's gone past zero.
      */
     d = dl;
-    plot(x1, y1, c);
+    plotc(x1, y1, c);
+    dot = 256;
     for (i = 0; i < dl; i++) {
+	dot ^= dotting;
 	d -= 2*ds;
 	if (d < 0) {
 	    d += 2*dl;
 	    x1 += sx; y1 += sy;
 	}
 	x1 += lx; y1 += ly;
-	plot(x1, y1, c);
+	if (dot) plotc(x1, y1, c);
     }
 }
 
@@ -99,7 +123,7 @@ int fillcircle(int x, int y, int r, int c)
     while (dy >= dx) {
 
 	/* Plot at (dy,dx) in all eight octants. */
-#define doplot(Dy,Dx) ( plot(x+(Dx),y+(Dy),c|pixel(x+(Dx),y+(Dy))) )
+#define doplot(Dy,Dx) ( plotc(x+(Dx),y+(Dy),c|pixelc(x+(Dx),y+(Dy))) )
 	for (i = 0; i < dy; i++) {
 	    doplot(+i,+dx); doplot(+i,-dx);
 	    doplot(-i,+dx); doplot(-i,-dx);
@@ -132,16 +156,43 @@ enum {
 
 SDL_Joystick *joys[2];
 
+int cloak(int players)
+{
+    SDL_Color colours[2];
+    colours[0].r = colours[0].g = colours[0].b = 0;
+    if (!(players & 1))
+	colours[0].r = 255;
+    colours[1].r = colours[1].g = colours[1].b = 0;
+    if (!(players & 2))
+	colours[1].g = 255;
+    SDL_SetColors(screen, colours, 1, 2);
+}
+
 int play_game(void)
 {
     int x, y, c;
     int i, p, gameover;
     char const startstring[] = "BOTH PLAYERS PRESS X TO START";
+    int scrfill;
+
+    struct options {
+	/*
+	 * FIXME: If and when we support more than two players,
+	 * own_fatal will become some amount more complex, because
+	 * team play will have at least three options (all trails
+	 * fatal, your own trail is OK but teammates' are fatal,
+	 * and teammates can freely drive over one another). Scary.
+	 */
+	int own_fatal;
+	int auto_accel;
+	int scrfill_v;
+	int scrfill_h;
+    } opts;
 
     struct player {
 	int buttons[8];		       /* sq,x,tr,ci,l1,r1,l2,r2 */
-	int colour;
-	int x, y, dx, dy, fire_dx, fire_dy;
+	int colour, cloaked;
+	int x, y, dx, dy, fire_dx, fire_dy, speedmod;
 	int steering_delay, button_delay[8];
 	int dead;
     };
@@ -205,11 +256,11 @@ int play_game(void)
 
     /*
      * OK, we're ready to play the actual game. Set up the player
-     * structures.
+     * structures and options.
      */
     for (p = 0; p < 2; p++) {
 	players[p].y = 120;
-	players[p].x = (p == 0 ? 1 : 319);
+	players[p].x = (p == 0 ? 1 : 318);
 	players[p].dy = 0;
 	players[p].dx = (p == 0 ? +1 : -1);
 	players[p].colour = p+1;
@@ -217,16 +268,22 @@ int play_game(void)
 	players[p].buttons[1] = players[p].buttons[2] = ACT_ACCEL;
 	players[p].buttons[4] = players[p].buttons[6] = ACT_RIFLE;
 	players[p].buttons[5] = players[p].buttons[7] = ACT_TELEPORT;
+	players[p].cloaked = 0;
 	players[p].steering_delay = 0;
 	for (i = 0; i < 8; i++)
 	    players[p].button_delay[i] = 0;
 	players[p].dead = 0;
     }
+    opts.own_fatal = 0;
+    opts.auto_accel = 0;
+    opts.scrfill_v = 0;
+    opts.scrfill_h = 0;
 
     /*
      * And begin the main game loop. Ooh!
      */
     gameover = 0;
+    scrfill = 0;
     while (!gameover) {
 	SDL_Event event;
 
@@ -248,7 +305,7 @@ int play_game(void)
 	/*
 	 * Respond to controller activity.
 	 */
-	for (p = 0; p < 2; p++) {
+	for (p = 0; p < 2; p++) if (!players[p].dead) {
 	    int extended;
 
 	    /*
@@ -298,14 +355,16 @@ int play_game(void)
 	     * ACT_EXTEND, which acts as a shift key so we need to
 	     * know if it's pressed _before_ doing anything else.
 	     */
-	    extended = 0;
+	    extended = 1;
+	    players[p].speedmod = (opts.auto_accel ? +1 : 0);
 	    for (i = 0; i < 8; i++)
 		if (players[p].buttons[i] == ACT_EXTEND &&
 		    SDL_JoystickGetButton(joys[p], i))
-		    extended = 1;
+		    extended = 2;
 
-#define pcoord(xx,yy,n) ( (xx) = players[p].x + players[p].fire_dx * n, \
-			  (yy) = players[p].y + players[p].fire_dy * n )
+#define pcoord(xx,yy,n) \
+    ( (xx) = players[p].x + players[p].fire_dx * extended * (n), \
+      (yy) = players[p].y + players[p].fire_dy * extended * (n) )
 
 	    for (i = 0; i < 8; i++) {
 		if (players[p].button_delay[i]) {
@@ -314,22 +373,20 @@ int play_game(void)
 		    switch(players[p].buttons[i]) {
 		      case ACT_ACCEL:
 			{
-			    int speed;
-			    speed = abs(players[p].dx) + abs(players[p].dy);
-			    if (speed < 4) speed++;
-			    players[p].dx = sign(players[p].dx) * speed;
-			    players[p].dy = sign(players[p].dy) * speed;
+			    players[p].speedmod = +1;
 			}
 			break;
 		      case ACT_DECEL:
-			players[p].dx = sign(players[p].dx);
-			players[p].dy = sign(players[p].dy);
+			{
+			    if (players[p].speedmod == 0)
+				players[p].speedmod = -1;
+			}
 			break;
 		      case ACT_RIFLE:
 			{
 			    int bx, by, ex, ey;
 			    pcoord(bx, by, 20);
-			    pcoord(ex, ey, 95);
+			    pcoord(ex, ey, 96);
 			    drawline(bx, by, ex, ey, 3);
 			    players[p].button_delay[i] = 3;
 			}
@@ -342,41 +399,131 @@ int play_game(void)
 			    players[p].button_delay[i] = 3;
 			}
 			break;
+		      case ACT_MGUN:
+			{
+			    int bx, by, ex, ey;
+			    pcoord(bx, by, 20);
+			    pcoord(ex, ey, 96);
+			    drawline(bx, by, ex, ey, 3 | 256);
+			    players[p].button_delay[i] = 3;
+			}
+			break;
+		      case ACT_CAGE:
+			{
+			    int cx, cy;
+			    pcoord(cx, cy, 80);
+			    drawline(cx-20, cy-15, cx-20, cy+15, 3);
+			    drawline(cx+20, cy-15, cx+20, cy+15, 3);
+			    drawline(cx-15, cy-20, cx+15, cy-20, 3);
+			    drawline(cx-15, cy+20, cx+15, cy+20, 3);
+			    players[p].button_delay[i] = 3;
+			}
+			break;
+		      case ACT_BOLAS:
+			{
+			    int bx, by, blx, bly, elx, ely, ex, ey;
+			    pcoord(bx, by, 28);
+			    pcoord(blx, bly, 32);
+			    pcoord(elx, ely, 66);
+			    pcoord(ex, ey, 70);
+			    drawline(blx, bly, elx, ely, 3);
+			    drawline(bx-4, by-4, bx+4, by-4, 3);
+			    drawline(bx+4, by-4, bx+4, by+4, 3);
+			    drawline(bx+4, by+4, bx-4, by+4, 3);
+			    drawline(bx-4, by+4, bx-4, by-4, 3);
+			    drawline(ex-4, ey-4, ex+4, ey-4, 3);
+			    drawline(ex+4, ey-4, ex+4, ey+4, 3);
+			    drawline(ex+4, ey+4, ex-4, ey+4, 3);
+			    drawline(ex-4, ey+4, ex-4, ey-4, 3);
+			    players[p].button_delay[i] = 3;
+			}
+			break;
+		      case ACT_FLIB_KRONT:
+			{
+			    int bx, by, j;
+			    char const word[][2] = {
+				"F","L","I","B"," ","K","R","O","N","T"
+			    };
+			    for (j = 0; j < lenof(word); j++) {
+				pcoord(bx, by, 32+8*j);
+				puttext(bx-4, by-3, 3, word[j]);
+			    }
+			    players[p].button_delay[i] = 3;
+			}
+			break;
+		      case ACT_TELEPORT:
+			{
+			    int nx, ny;
+			    pcoord(nx, ny, 50);
+			    players[p].x = (nx<0?0 : nx>319?319 : nx);
+			    players[p].y = (ny<0?0 : ny>239?239 : ny);
+			    players[p].button_delay[i] = 8;
+			}
+			break;
+		      case ACT_CLOAK:
+			{
+			    players[p].cloaked = !players[p].cloaked;
+			    players[p].button_delay[i] = 8;
+			}
+			break;
 		    }
 		}
+	    }
+
+	    /*
+	     * Now do acceleration and deceleration, having decided
+	     * which one to do while processing the button presses
+	     * above.
+	     */
+	    if (players[p].speedmod > 0) {
+		int speed;
+		speed = abs(players[p].dx) + abs(players[p].dy);
+		if (speed < 4) speed++;
+		players[p].dx = sign(players[p].dx) * speed;
+		players[p].dy = sign(players[p].dy) * speed;
+	    } else if (players[p].speedmod < 0) {
+		players[p].dx = sign(players[p].dx);
+		players[p].dy = sign(players[p].dy);
 	    }
 	}
 
 	/*
 	 * Move the players.
 	 */
-	for (i = 0;
-	     i < abs(players[0].dx) || i < abs(players[0].dy) ||
-	     i < abs(players[1].dx) || i < abs(players[1].dy); i++) {
+	for (i = ABSOLUTE_MAX_SPEED; i-- ;) {
 	    /*
-	     * Move each player on by one pixel and mark a
-	     * preliminary spot where they're moving to. These are
-	     * used to detect both players moving to the same spot
-	     * at the same instant, so that neither player is given
-	     * an advantage by coding details.
+	     * Move each player on by one pixel, and in the process
+	     * detect whether any player has had a head-on with
+	     * another player's exact position.
 	     */
 	    for (p = 0; p < 2; p++) {
 		int pix;
-		if (!players[p].dead) {
-		    if (i < abs(players[p].dx) || i < abs(players[p].dy)) {
-			players[p].x += sign(players[p].dx);
-			players[p].y += sign(players[p].dy);
-		    }
-		    pix = pixel(players[p].x, players[p].y);
-		    if (pix >= 4) {
-			/* Player has hit another player head-on. */
-			players[p].dead = 1;
-			players[pix-4].dead = 1;
-		    } else if (pix &~ players[p].colour) {
-			/* Player has run into an obstacle. */
+		if (!players[p].dead &&
+		    i < abs(players[p].dx) || i < abs(players[p].dy)) {
+		    players[p].x += sign(players[p].dx);
+		    players[p].y += sign(players[p].dy);
+		    if (players[p].x <= 0 || players[p].x >= 319 ||
+			players[p].y <= 0 || players[p].y >= 239) {
+			/* Clip hard to screen boundaries. */
 			players[p].dead = 1;
 		    } else {
-			plot(players[p].x, players[p].y, 4+p);
+			int p2;
+			for (p2 = 0; p2 < p; p2++)
+			    if (players[p2].x == players[p].x &&
+				players[p2].y == players[p].y)
+				break;
+			if (p2 < p) {
+			    /* Player has hit another player head-on. */
+			    players[p].dead = 1;
+			    players[p2].dead = 1;
+			} else {
+			    pix = pixelc(players[p].x, players[p].y);
+			    if ((pix &~ players[p].colour) ||
+				(opts.own_fatal && pix != 0)) {
+				/* Player has run into an obstacle. */
+				players[p].dead = 1;
+			    }
+			}
 		    }
 		}
 	    }
@@ -385,8 +532,11 @@ int play_game(void)
 	     * Now update each pixel to the player's real colour.
 	     */
 	    for (p = 0; p < 2; p++)
-		if (!players[p].dead)
-		    plot(players[p].x, players[p].y, players[p].colour);
+		if (!players[p].dead &&
+		    i < abs(players[p].dx) || i < abs(players[p].dy))
+		    plotc(players[p].x, players[p].y,
+			  pixelc(players[p].x, players[p].y) | 
+			  players[p].colour);
 	}
 
 	/*
@@ -396,6 +546,41 @@ int play_game(void)
 	    if (players[p].dead)
 		fillcircle(players[p].x, players[p].y, 20, players[p].colour);
 
+	/*
+	 * Move the screen boundaries inwards if screen filling is
+	 * enabled.
+	 */
+	if (scrfill < 1000) {
+	    scrfill++;
+	    if (opts.scrfill_v && scrfill < 240) {
+		int x, y, y2;
+		y = scrfill/2;
+		y2 = 239 - y;
+		for (x = 0; x < 319; x++) {
+		    plot(x, y, 3);
+		    plot(x, y2, 3);
+		}
+	    }
+	    if (opts.scrfill_h && scrfill < 320) {
+		int x, x2, y;
+		x = scrfill/2;
+		x2 = 319 - x;
+		for (y = 0; y < 239; y++) {
+		    plot(x, y, 3);
+		    plot(x2, y, 3);
+		}
+	    }
+	}
+
+	/*
+	 * Set the colour palette for any cloaked players.
+	 */
+	i = 0;
+	for (p = 0; p < 2; p++)
+	    if (players[p].cloaked)
+		i |= players[p].colour;
+	cloak(i);
+
 	scr_done();
 
 	/*
@@ -403,7 +588,7 @@ int play_game(void)
 	 * matter of seeing whether at least one player is dead; in
 	 * future (if I can add multi-tap support) it might be a
 	 * more interesting function that takes team play into
-	 * account.,
+	 * account.
 	 */
 	for (p = 0; p < 2; p++)
 	    if (players[p].dead)
@@ -413,9 +598,12 @@ int play_game(void)
     }
 
     /*
-     * Now the game is over, just wait for a button press (either
+     * Now the game is over. Restore the colour palette (in case
+     * one or more players were cloaked at the time of the game
+     * ending) and then just wait for a button press (either
      * player) before continuing.
      */
+    cloak(0);
     {
 	int done = 0;
 	SDL_Event event;
