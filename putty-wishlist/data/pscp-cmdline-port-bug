@@ -9,8 +9,8 @@ Content-type: text/x-html-body
 
 <p>
 There have been a lot of reports that the <tt>-P port</tt>
-command-line argument is ignored in PSCP 0.53 (with it instead using
-port 22 regardless).
+command-line argument is ignored in PSCP (and PSFTP) 0.53 (with it
+instead using port 22 regardless).
 
 <p>
 This occurs whenever the protocol is not explicitly set to SSH in a
