@@ -1,0 +1,38 @@
+Summary: X11 forwarding to implicitly specified local display broken
+Class: bug
+Difficulty: fun
+Priority: high
+Absent-in: 0.55
+Present-in: 0.56
+Fixed-in: 2004-11-19
+Content-type: text/x-html-body
+
+<p>
+In PuTTY and Plink 0.56, X11 forwarding would not work if the local X
+display location was not specified in the configuration dialog or a
+saved session, and the location inferred from the environment was of
+the form <tt>:0.0</tt> (i.e., no hostname or transport type specified
+before the colon), or if no local display is specified anywhere (in
+which case a hard-coded default of <tt>:0</tt> will be used).
+
+<p>
+This is more likely to affect users of the Unix version running PuTTY
+on their local machines, who will expect the display location to be
+taken from the environment; under Windows, users are more likely to
+specify the X display location explicitly, and also old versions of
+PuTTY defaulted to <tt>localhost:0</tt>, which could persist in saved
+sessions / Default Settings. Windows users could however be affected
+if they leave the display location blank in the configuration and rely
+on PuTTY's default of <tt>localhost:0</tt>.
+
+<p>
+This is fixed as of 2004-11-19. Workarounds for 0.56 include:
+<ul>
+<li>Specify an argument like <tt>--display unix:0</tt> (Unix PuTTY
+only)
+<li>Change the environment variable <tt>DISPLAY</tt> in PuTTY/Plink's
+environment to the form <tt>unix:0</tt> (or <tt>localhost:0</tt> on
+Windows) 
+<li>Specify the display location explicitly in PuTTY's configuration
+dialog
+</ul>
