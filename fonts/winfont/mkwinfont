@@ -17,7 +17,7 @@ def frombyte(s):
 def fromword(s):
     return frombyte(s[0:1]) + 256 * frombyte(s[1:2])
 def fromdword(s):
-    return fromword(s[0:2]) + 65536 * fromword(s[2:4])
+    return fromword(s[0:2]) | (fromword(s[2:4]) << 16)
 
 def asciz(s):
     i = string.find(s, "\0")
