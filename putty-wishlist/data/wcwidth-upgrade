@@ -2,6 +2,7 @@ Summary: Upgrade wcwidth() to Markus Kuhn's latest version
 Class: semi-bug
 Difficulty: fun
 Priority: low
+Fixed-in: 2005-03-24
 Content-type: text/x-html-body
 
 <p>
@@ -11,9 +12,9 @@ code point (e.g., single-width, zero-width/combining, or double-width).
 
 <p>
 The version we use is a freely available implementation from
-Markus&nbsp;Kuhn which dates from 2001-Sep or before. There is a
+Markus&nbsp;Kuhn which dates from 2001-01-12. There is a
 <a href="http://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c">newer version</a>
-of Markus Kuhn's implementation available; it appears to be dated
+of Markus&nbsp;Kuhn's implementation available; it appears to be dated
 2003-05-20, be based on Unicode 4.0, and include some code points
 <a href="unicode-more-planes.html">outside the BMP</a>, which our
 version doesn't.
