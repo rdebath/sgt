@@ -1,5 +1,5 @@
 #! /usr/bin/perl
-# $Id: bugs2html,v 1.5 2002/05/06 17:48:55 ben Exp $
+# $Id: bugs2html,v 1.6 2002/05/10 22:54:31 jacob Exp $
 
 use FileHandle;
 use POSIX;
@@ -156,7 +156,9 @@ EOH
 	$h eq "priority" && ($desc = $prioritydesc{$hdrs->{$h}});
 	$h eq "difficulty" && ($desc = $difficultydesc{$hdrs->{$h}});
 	print HTML "<b>$h</b>: ";
-	if (defined($desc)) {
+        if ($h eq "depends") {
+            print HTML map "<a href=\"$_.html\">$_</a>", (split ' ', $hdrs->{$h});
+	} elsif (defined($desc)) {
 	    print HTML "<i>@{[$hdrs->{$h}]}:</i> $desc";
 	} else {
 	    print HTML $hdrs->{$h};
