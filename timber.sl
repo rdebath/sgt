@@ -370,11 +370,22 @@ define timber_getheader(processed) {
 
 % Detect a message separator line. Theoretically we need only require that
 % the line begins "From ", but in practice some mail systems aren't strict
-% about quoting other such lines, so we'll hack a bit.
+% about quoting other such lines, so we'll detect the exact date format.
 define timber_issep() {
     variable s;
-    push_spot(); eol(); go_left(4); s = timber_la("19"); pop_spot();
-    return s and timber_la("From ");
+    !if (timber_la("From "))
+        return 0;
+    push_spot(); bol(); push_mark(); eol(); s = bufsubstr(); pop_spot();
+    if (strlen(s) < 24)
+        return 0;
+    s = substr(s, strlen(s)-23, 24);
+    !if (string_match(substr(s, 1, 12),
+                      "[A-Z][a-z][a-z] [A-Z][a-z][a-z] [0-9 ][0-9] [0-9 ]", 1)
+         or
+         string_match(substr(s, 13, 12),
+                      "[0-9]:[0-9][0-9]:[0-9][0-9] [0-9][0-9][0-9][0-9]", 1))
+        return 0;
+    return 1;
 }
 
 % Convert a buffer containing a raw mail folder into a buffer containing
