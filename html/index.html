@@ -1,0 +1,219 @@
+<html>
+<head>
+<title>Constructing Polyhedra from Repelling Points on a Sphere</title>
+</head>
+<link rel="stylesheet" type="text/css" href="../sitestyle.css" name="Simon Tatham's Home Page Style">
+<body>
+<h1 align=center>Constructing Polyhedra from Repelling Points on a Sphere</h1>
+
+<p>
+<i>by <a href="../">Simon Tatham</a>, mathematician and programmer</i>
+</p>
+
+<h2>Introduction</h2>
+
+<p>
+Some time around 1993, I went for a university interview. In the
+waiting room, I met another guy who was waiting for an interview,
+and we got talking. He said that at school he had recently been
+doing a project on buckminsterfullerene, the strange polyhedral form
+of carbon in which sixty carbon atoms combine into the shape of a
+truncated icosahedron. In particular, his chemistry teacher had been
+speculating about why this curious shape should form, and had
+conjectured that if you took 60 points on the surface of a sphere,
+caused them to mutually repel (while still constrained to the
+sphere's surface) and let them move to an equilibrium state, they
+might naturally form into the vertices of the buckminsterfullerene
+shape.
+
+<p>
+This struck me as a fun idea to play with, so when I went home I
+cooked up some simulation software and gave it a try. Unfortunately,
+although I was perfectly competent to write the code for the
+repelling points, I didn't do so well at writing code to visualise
+the result helpfully. I was left with a vague feeling that I didn't
+get the buckminsterfullerene shape, but I couldn't have usefully
+described what I did get.
+
+<p>
+More recently I was asked by a friend to see if I could produce a
+solid with seven faces, for use as a stage prop representing a
+seven-sided die. It occurred to me that an interesting way to
+construct a reasonably symmetric seven-faced solid might be to do
+the same trick again: constrain seven mutually repelling points to
+the surface of a sphere and let them find equilibrium, but instead
+of using them as the vertices of a polyhedron, draw a tangent plane
+to the sphere at each point and see what polyhedron those planes
+enclosed.
+
+<p>
+It's now been ten years since I originally experimented in this
+area, and now I'm much better at maths, so this time I've managed to
+do a proper job, and create software which can sensibly draw the
+actual polyhedra obtained by these techniques. So here are some
+interesting results and some pretty pictures on the web for
+everybody else to enjoy.
+
+<h2>Construction</h2>
+
+<p>
+My 1993 attempt at this problem used an extremely simple technique
+to display the results. I simply projected my sphere on to a circle
+on the screen, and displayed the points in two distinct forms
+according to whether they were on the front or the back side. So for
+60 points, it would have looked something like this:
+
+<p align=center>
+<a href="sixtypoints.png"><img src="sixtypoints.png"
+alt="[300x300 greyscale PNG, 10KB]" width=300 height=300 border=0></a>
+
+<p>
+From this diagram you can observe that the points are arranged in
+something like a triangular lattice, and deduce that therefore the
+solid depicted is probably <em>not</em> the buckminsterfullerene
+structure which is composed of pentagons and hexagons. But it's not
+easy, in general, to figure out what sort of polyhedron is
+represented by one of these diagrams; how about this one, with 13
+points?
+
+<p align=center>
+<a href="thirteenpoints.png"><img src="thirteenpoints.png"
+alt="[300x300 greyscale PNG, 7KB]" width=300 height=300 border=0></a>
+
+<p>
+I know <em>I</em> couldn't stare at that set of points and work out
+what sort of polyhedron it would end up looking like. So I wrote
+some software to do the job for me. For those who are interested,
+I'll now describe the techniques I used; for everyone else, if you
+skip on to the next section there will be more pretty pictures :-)
+
+<ul>
+<li>
+<em>The face construction</em>: in this case we are given a set of n
+points, and we must construct a polyhedron with n faces, with each
+face being the tangent plane to the sphere at one of the given
+points.
+
+<p>
+To do this I began by drawing each face plane separately. I rotated
+the whole point set until one point was at the very top of the
+sphere, and then I computed the intersection lines of every other
+tangent plane with the horizontal one at the top. Then I simply
+generated PostScript which drew that set of intersecting lines on a
+page, so that the human viewer could easily pick out the central
+polygon in the middle of the mess. It typically looked something
+like this:
+
+<p align=center>
+<a href="facediagram.png"><img src="facediagram.png"
+alt="[400x400 greyscale PNG, 20KB]" width=400 height=400 border=0></a>
+</li>
+
+<p>
+This represents one face of the 13-sided polyhedron generated from
+the above set of 13 points. Each face is numbered; the diagram shows
+the number of the face at the centre, and each intersection line is
+labelled with the number of the other plane involved. At the centre
+of the diagram is the actual desired polygon. In principle a full
+set of these diagrams should have been adequate to construct the
+desired polyhedron: simply print them all out, cut out the central
+polygon from each sheet, and glue them to each other in the manner
+indicated by the numeric labels shown around each face.
+
+<p>
+However, this seemed like far too much work; much better to simply
+generate a 3D model of the polyhedron and display it on the screen.
+In order to pick out the face boundary among all those crisscrossing
+lines, I notionally expanded a circle out from the centre point of
+the face until it touched a line. Then I knew that point on that
+line was part of the face boundary; so I then moved along that line
+until I encountered a crossing point with another line, then turned
+left on to <em>that</em> line and did the same thing again, and so
+on until I returned to where I'd started. This allowed me to end up
+with a clear definition of each polygonal face, and then I simply
+reversed the rotation which had brought one point to the top in
+order to put that face back in its proper place. Repeat for every
+point, and we have a model:
+
+<p align=center>
+<a href="thirteenfaces.png"><img src="thirteenfaces.png"
+alt="[300x300 greyscale PNG, 13KB]" width=300 height=300 border=0></a>
+
+</li>
+<li>
+<em>The vertex construction</em>: in this case we are given a set of
+n points, and we want to find a convex polyhedron with those points
+as vertices. In other words, what we actually want is the <em>convex
+hull</em> of those points: the smallest convex shape containing them.
+
+<p>
+Finding convex hulls is a common topic in algorithms textbooks, and
+I'm sure there are highly efficient algorithms to do it very quickly
+and efficiently; but I knew the precise format of the output I
+wanted, I didn't know whether any existing algorithms would be
+easily adapted to produce that output even once I'd researched them,
+and in any case I thought it would be fun to figure it out for
+myself. So what I did was: for each <em>pair</em> of vertices, I
+rotated the sphere so that that pair was aligned along a vertical
+line, then I projected the whole point set into the horizontal plane
+so that my two points were mapped on to a single one. Then I sorted
+all the other points into order of angle from the fulcrum point, so
+that they were in the order you'd see them if you stood at the
+fulcrum and turned around slowly. Finally I examined that list of
+angles to see if there was a gap of size pi or greater; if so, that
+implied that a line could be drawn through my fulcrum point in such
+a way that all the other points were on the same side of it. In
+other words, this told me whether my fulcrum point was on the convex
+hull of the projected point set, which (returning to three
+dimensions) would be true if and only if the line between the two
+original points was part of the 3D convex hull.
+
+<p>
+This gave me the precise set of <em>edges</em> of the polyhedron I
+wanted. Now all I needed was to assemble those edges into faces. So
+you take an edge, you walk along it to a vertex, you look at all the
+other edges leaving that vertex, and you pick the one that allows
+you to turn left by the sharpest amount. Repeat until you get back
+to where you started, and you've circumnavigated a face. So once
+again we have now generated a 3D polyhedron model, in precisely the
+same form as the last one:
+
+<p align=center>
+<a href="thirteenvertices.png"><img src="thirteenvertices.png"
+alt="[195x195 greyscale PNG, 12KB]" width=195 height=195 border=0></a>
+
+</ul>
+
+<!--
+
+Still to do:
+
+ - write up results and show pictures.
+    * show general principle of triangles in convex hulls
+    * exhibit 8-point case as only known counterexample
+    * mention corresponding order-3 vertices in face construction
+      and show 8-point case there too.
+    * show the platonic solid cases: 4,6,12 actually do generate
+      platonic solids, 8 and 20 fail to owing to instability of
+      non-triangles
+    * show some of the more interesting cases: 7,9,10, perhaps 11
+      and 13 too although those are getting a bit tedious.
+    * show 60-vertex case and demonstrate its clear lack of being C60
+    * show 32-face case and demonstrate that _is_ C60
+
+ - provide tarball of the software and example files. Write a README.
+
+ - mention possible future work to generate nets?
+
+-->
+
+<hr>
+(comments to <a href="mailto:&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;">&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;</a>)
+<br>
+(thanks to
+<a href="http://www.chiark.greenend.org.uk/">chiark</a>
+for hosting this page)
+<br>
+(last modified on <!--LASTMOD-->[insert date here]<!--END-->)
+</body>
+</html>
