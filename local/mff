@@ -1,4 +1,5 @@
 #!/bin/sh
+{ restricted-hours; } >&2 2>/dev/null && exit 0
 FRIENDS=`cat << EOF
 
 westley larch agrajag pteppic bagpuss robin lenin eliza war pooz ghoti cemerson
