@@ -2,6 +2,7 @@ Summary: Option to start up in full screen mode
 Class: wish
 Priority: medium
 Difficulty: fun
+Depends: resize
 Content-type: text/x-html-body
 
 <p>
@@ -21,3 +22,10 @@ that way too). Then again, perhaps not; I'm not sure whether it's
 really helpful to have <em>two</em> full-screen PuTTYs open at once.
 At least one user definitely wants it to work this way for maximised
 windows, though.
+
+<p>
+This should perhaps be considered in the context of
+<a href="resize.html">a general overhaul of resize handling</a>.
+
+<p>
+Patch (unreviewed): 40E631F174C41E4DBE52727E137AF927C043E6@EXCHVS1.cs.cornell.edu
