@@ -87,7 +87,8 @@
      (when (or
 	      (equal class "Gecko\0Mozilla-bin\0")
 	      (equal class "mozilla-bin\0Mozilla-bin\0")
-	      (equal class "gnotravex\0Gnotravex\0"))
+	      (equal class "gnotravex\0Gnotravex\0")
+	      (equal class "win\0Xpdf\0"))
 	(window-put w 'ignore-program-position t)
      )
   )
