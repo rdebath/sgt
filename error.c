@@ -34,6 +34,11 @@ static void do_error(int code, va_list ap) {
 	sprintf(error, "unrecognised option `-%.200s'", sp);
 	flags = PREFIX;
 	break;
+      case err_eventtype:
+	sp = va_arg(ap, char *);
+	sprintf(error, "unrecognised event type `%.200s'", sp);
+	flags = PREFIX;
+	break;
       case err_extraarg:
 	sp = va_arg(ap, char *);
 	sprintf(error, "unexpected additional argument `%.200s'", sp);

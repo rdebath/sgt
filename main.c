@@ -12,6 +12,7 @@ char *dbpath;
 int main(int argc, char **argv) {
     int nogo;
     int errs;
+    int event_type = T_EVENT;
     enum { NONE, INIT, ADD, LIST, CRON, DUMP, LOAD } command;
     char *args[4];
     int nargs = 0;
@@ -123,14 +124,10 @@ int main(int argc, char **argv) {
 		    }
 		    break;
 		    /*
-		     * FIXME. Put cases here for single-char
-		     * options that require parameters. An example
-		     * is shown, commented out.
+		     * Single-char options that require parameters.
 		     */
 		  case 'D':
-		    /*
-		     * Option requiring parameter.
-		     */
+		  case 't':
 		    p++;
 		    if (!*p && argc > 1)
 			--argc, p = *++argv;
@@ -148,6 +145,11 @@ int main(int argc, char **argv) {
 			sfree(dbpath);
 			dbpath = smalloc(1+strlen(p));
 			strcpy(dbpath, p);
+			break;
+		      case 't':
+			event_type = name_to_type(p);
+			if (event_type == INVALID_TYPE)
+			    fatal(err_eventtype, p);
 			break;
 		    }
 		    p = NULL;	       /* prevent continued processing */
@@ -190,7 +192,7 @@ int main(int argc, char **argv) {
 	db_init();
 	break;
       case ADD:
-	caltrap_add(nargs, args, lenof(args));
+	caltrap_add(nargs, args, lenof(args), event_type);
 	break;
       case LIST:
 	caltrap_list(nargs, args, lenof(args));

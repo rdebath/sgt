@@ -23,6 +23,7 @@ enum {
     err_nomemory,		       /* no arguments */
     err_optnoarg,		       /* option `-%s' requires an argument */
     err_nosuchopt,		       /* unrecognised option `-%s' */
+    err_eventtype,		       /* unrecognised event type `%s' */
     err_extraarg,		       /* unexpected additional argument */
     err_addargno,		       /* `add' requires 1-4 args */
     err_listargno,		       /* `list' requires 0-2 args */
@@ -95,7 +96,7 @@ const char *const version;
 /*
  * add.c
  */
-void caltrap_add(int nargs, char **args, int nphysargs);
+void caltrap_add(int nargs, char **args, int nphysargs, int type);
 
 /*
  * list.c
@@ -149,7 +150,8 @@ enum {
      * in list mode we already know what colour to paint the day
      * line.
      */
-    T_HOL1, T_HOL2, T_HOL3, T_EVENT, T_TODO
+    T_HOL1, T_HOL2, T_HOL3, T_EVENT, T_TODO,
+    INVALID_TYPE = -1
 };
 #define is_hol(type) ( (type) >= T_HOL1 && (type) <= T_HOL3 )
 

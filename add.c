@@ -8,12 +8,12 @@
 #include <unistd.h>
 #include "caltrap.h"
 
-void caltrap_add(int nargs, char **args, int nphysargs)
+void caltrap_add(int nargs, char **args, int nphysargs, int type)
 {
     Date sd, ed;
     Time st, et;
     int i;
-    char msg[512];
+    char msg[512], *p;
     struct entry ent;
 
     if (nargs < 1 || nargs > 4)
@@ -105,16 +105,20 @@ void caltrap_add(int nargs, char **args, int nphysargs)
 	printf("Existing entries in the week surrounding the start point:\n");
 	list_entries(sd - 3, 0, sd + 4, 0);
 	printf("Now enter message, on a single line,\n"
-	       "or just press Return to cancel the operation.\n"
+	       "or press ^D or ^C to cancel the operation.\n"
 	       "> ");
 	fflush(stdout);
     }
 
     if (!fgets(msg, sizeof(msg), stdin))
+	*msg = '\0';
+    p = msg + strcspn(msg, "\r\n");
+    if (!*p) {
+	printf("\nOperation cancelled.\n");
+	fflush(stdout);
 	return;
-    msg[strcspn(msg, "\r\n")] = '\0';
-    if (!msg[0])
-	return;
+    }
+    *p = '\0';
 
     ent.id = -1;		       /* cause a new id to be allocated */
     ent.sd = sd;
@@ -122,7 +126,7 @@ void caltrap_add(int nargs, char **args, int nphysargs)
     ent.ed = ed;
     ent.et = et;
     ent.length = ent.period = 0;       /* FIXME: implement these */
-    ent.type = T_EVENT;		       /* FIXME: implement this */
+    ent.type = type;
     ent.description = msg;
     db_add_entry(&ent);
 }
