@@ -22,9 +22,9 @@ import ljproto
 #    easily done by not bothering to paste into Mono; really all I
 #    need is the ability to paste to Mono only).
 #
-#  - Support for friends-only and private entries (uncertain when
-#    if ever the former will be useful, but the latter will be
-#    handy for testing purposes)
+#  - Support for friends-only, specific-friend-group, and private
+#    entries (uncertain when if ever the first two will be useful,
+#    but the latter will be handy for testing purposes)
 #
 #  - Completely silly feature: editor brackets [Like this. --Ed]
 #    which would look better in italics where that's available.
@@ -726,7 +726,10 @@ while 1:
 
     if s == "m\n":
 	f = os.popen("mtribs | less -r", "w")
+	# For preview purposes, assume a plausible nameline
 	for i in out.mono:
+	    if i == "\031":
+		i = "\007B\007CRFrom: \007CGinsert nameline here"
 	    f.write(i + "\n")
 	f.close()
     elif s == "h\n":
