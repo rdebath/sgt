@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <stdlib.h>
+#include <string.h>
 #include "caltrap.h"
 
 static void dump_callback(void *vctx, struct entry *ent)
