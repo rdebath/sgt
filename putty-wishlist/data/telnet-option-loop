@@ -1,0 +1,16 @@
+Summary: PuTTY violates RFC-854 option-loop prevention
+Class: bug
+Priority: medium
+Difficulty: fun
+Present-in: 0.57
+Content-type: text/plain
+
+RFC 854 includes the following rule to prevent option-negotiation loops:
+
+      b. If a party receives what appears to be a request to enter some
+      mode it is already in, the request should not be acknowledged.
+      This non-response is essential to prevent endless loops in the
+      negotiation.  It is required that a response be sent to requests
+      for a change of mode -- even if the mode is not changed.
+
+PuTTY gets this wrong for options that it doesn't support.
