@@ -27,8 +27,7 @@ We do not yet have a Unix port of Pageant (although another agent can be
 used).
 
 <p>
-See also the
-<a href="http://www.chiark.greenend.org.uk/~sgtatham/putty/faq.html#QA.3.2">FAQ</a>.
+See also the <a href="../faq.html#faq-unix">FAQ</a>.
 
 <p>
 <em>Update:</em> as of 0.54, we think this is good enough to release.
