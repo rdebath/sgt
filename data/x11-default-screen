@@ -1,5 +1,5 @@
 Summary: PuTTY doesn't pass on the screen number in X11 forwarding
-Class: wish
+Class: bug
 Priority: medium
 Difficulty: fun
 Present-in: 2002-12-31
