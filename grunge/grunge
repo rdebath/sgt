@@ -724,15 +724,11 @@ class menu:
     def scan(self, my, myb, first_attempt):
 	# First, see if we're continuing an existing scan, and
 	# start a new one if not.
-	sys.stderr.write("scan(%s,%d,%d)\n" % (str(self), my, myb))
-	sys.stderr.write("id=%d self.id=%d\n" % (scan_id, self.scan_id))
 	if self.scan_id != scan_id:
-	    sys.stderr.write("Starting new scan\n")
 	    self.scan_id = new_scan()
 	    self.scan_pos = 0
 	    self.scan_parent = None
 	    self.scan_pass = 1
-	sys.stderr.write("id=%d pos=%d parent=%s pass=%d\n" % (self.scan_id, self.scan_pos, self.scan_parent, self.scan_pass))
 	# Now scan all the items in this menu after scan_pos.
 	for i in range(self.scan_pos, len(self.lines)):
 	    line = self.lines[i]
@@ -751,7 +747,6 @@ class menu:
 		    # We adjust the y position to be an exact
 		    # number of screenfuls down the menu.
 		    return self, i - (i % (height-4)), ""
-	sys.stderr.write("Item scan completed\n")
 	# Failing that, look for a submenu and scan into that.
 	for i in range(self.scan_pos, len(self.lines)):
 	    line = self.lines[i]
@@ -764,31 +759,25 @@ class menu:
 		line[2].scan_pos = 0
 		line[2].scan_parent = self
 		line[2].scan_pass = self.scan_pass
-		sys.stderr.write("Found a submenu\n")
 		return line[2], 0, None
 	# We've scanned everything in this menu, so set the scan id
 	# to -1 to ensure dead bits of the scan won't be continued
 	# here.
-	sys.stderr.write("Finished scan in this menu\n")
 	self.scan_id = -1
 	# Now see if we can move up to the parent.
 	if self.scan_parent != None:
-	    sys.stderr.write("Moving to parent\n")
 	    return self.scan_parent, self.scan_parent.scan_pos, None
 	# If none of the above, we've hit the end of the scan. If
 	# we were on pass one, reset to pass two and y-coordinate 0
 	# and go round again.
-	sys.stderr.write("Checking pass number\n")
 	if self.scan_pass == 1:
 	    self.scan_pass = 2
 	    self.scan_pos = 0
 	    self.scan_id = scan_id
-	    sys.stderr.write("Restarting on pass 2\n")
 	    return self, self.scan_pos, None
 	# No - we really _have_ reached the end of the scan. Return
 	# the top of our own menu, and an itemid of "" (meaning
 	# `don't continue scanning').
-	sys.stderr.write("Completely finished\n")
 	return self, 0, ""
 
 # We get the threshold timestamps for the various age-selected item
@@ -962,7 +951,6 @@ def showmenus(mainmenu, escmenu, startmenu, my):
 		    while 1:
 			m, my, itemid = m.scan(my, myb, first_attempt)
 			first_attempt = 0
-			sys.stderr.write("scan returned %s %d %s\n" % (str(m), my, itemid))
 			if itemid != None:
 			    break
 		    if itemid != "":
