@@ -225,7 +225,7 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int show) {
 
     setup_sockets();
 
-    ShowWindow (listener_hwnd, SW_SHOWMINIMIZED);
+    ShowWindow (listener_hwnd, SW_HIDE);
 
     while (GetMessage (&msg, NULL, 0, 0) == 1) {
         TranslateMessage (&msg);
