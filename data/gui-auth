@@ -29,3 +29,9 @@ to spoof.
 
 <p>
 All optional, of course.
+
+<p>
+Someone's already created a
+<a href="http://cvs.sourceforge.net/cgi-bin/viewcvs.cgi/*checkout*/tortoisecvs/TortoiseCVS/src/TortoisePlink/TortoisePlink.patch?rev=1.1">patch</a>
+to build a GUI Plink for
+<a href="http://www.tortoisecvs.org/">TortoiseCVS</a>.
