@@ -2,6 +2,7 @@ Summary: Data transfer during SSH2 KEX causes confusion
 Class: bug
 Priority: medium
 Difficulty: tricky
+Fixed-in: 2004-11-25
 Content-type: text/x-html-body
 
 <p>If there is data being transferred through PuTTY while the SSH2
@@ -58,3 +59,6 @@ from F-Secure.) This will seem intermittent.
 There aren't any really satisfactory workarounds - either using SSH-1
 or disabling key re-exchange will both work, but have obvious
 drawbacks.
+
+<p>
+<em>Update:</em> should be fixed as of the 2004-11-25 snapshot.
