@@ -181,9 +181,11 @@ $1 = "Timber";
     definekey("timber_undefined", "^Y", $1);
 
     % Return unfolds a message, _or_ moves to and unfolds the first
-    % unread message if it's pressed at the top of the buffer.
+    % unread message if it's pressed at the top of the buffer. ^C^S
+    % just unfolds a message.
     definekey("timber_press_ret", "^J", $1);
     definekey("timber_press_ret", "^M", $1);
+    definekey("timber_unfold", "^C^S", $1);
 
     % Space pages down; Minus and B page up.
     definekey("page_down", " ", $1);
@@ -191,9 +193,10 @@ $1 = "Timber";
     definekey("page_up", "B", $1);
     definekey("page_up", "b", $1);
 
-    % Backspace folds a message.
-    definekey("timber_fold", "^H", $1);
+    % Backspace folds a message. So does ^C^X.
+    % definekey("timber_fold", "^H", $1); (^H doesn't 'cos it's Help)
     definekey("timber_fold", "^?", $1);
+    definekey("timber_fold", "^C^X", $1);
 
     % N (next) and P (prev) fold the current message and unfold the
     % next or previous in line.
