@@ -3,6 +3,7 @@ Class: semi-bug
 Difficulty: tricky
 Priority: high
 Content-type: text/x-html-body
+Fixed-in: 2003-10-13
 
 <p>
 There are persistent reports of PuTTY's port forwarding not working
@@ -43,9 +44,6 @@ any of those. If anyone wants to save me some manual-grubbing by
 letting me know how to do that conveniently, it would be helpful.
 
 <p>
-Implementation notes: 
-<tt>16112.28530.918046.276274@chiark.greenend.org.uk</tt>
-
-<p>
-Patch (unreviewed):
-<tt>Pine.LNX.4.44.0307081113060.6374-200000@maggie.lkpg.cendio.se</tt>
+<em>Update:</em> we have implemented a fix as of the 2003-10-13
+snapshot. It would be helpful if someone could tell us whether it
+makes SMB forwarding work.
