@@ -1,6 +1,6 @@
 # -*- mode: sh; mode: fold -*-
 # Simon Tatham's standardised chunk of .bashrc
-# $Revision: 1.21 $
+# $Revision: 1.22 $
 
 #{{{ I don't like .bash_history files. They wet their nests.
 unset HISTFILE
@@ -98,9 +98,7 @@ unset bashrc_dovars
 set +o ignoreeof
 set -P # disable bash's daft symlink confusion in pwd
 
-for i in net v vdir d; do
-  if [ x`type -t $i` = xalias ]; then unalias $i; fi
-done
+unalias -a # dammit, if there are any aliases _I_ want to do them!
 alias ed='ed -p "* "'
 alias dir='ls -l'
 ls -d --color=auto . >&/dev/null && alias ls='ls --color=auto'
