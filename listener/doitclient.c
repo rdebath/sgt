@@ -488,7 +488,7 @@ void showversion(void)
     char *v;
     extern char doitlib_revision[];
 
-    v = makeversion(versionbuf, "$Revision: 1.24 $");
+    v = makeversion(versionbuf, "$Revision: 1.25 $");
     if (v)
 	printf("doitclient revision %s", v);
     else
@@ -1201,9 +1201,7 @@ int main(int argc, char **argv)
         }
 	path = do_path_translate(arg, verbose);
 	printf("%s\n", path);
-	close(sock);
 	return 0;
-        break;
     }
     errcode = 0;
     msg = do_fetch_line(sock, ctx);
