@@ -7,12 +7,26 @@
 # arithmetic operations are between correct (and explicitly specified) types
 # and all implicit type conversions are made explicit.
 
-# Big remaining FIXMEs are ...
+# Remaining serious FIXMEs are ...
 #
 # - Castability.
 #
 # - Type unification (filling in blanks in parameter lists, adding dimension
 #   to unspecified-length arrays).
+#
+# - Initialisers.
+#
+# - Floats.
+#
+# - Missing operators: sizeof, unary &, ?:.
+#
+# - Bitfields.
+#
+# - Old-style (K&R) argument declarations.
+#
+# - Missing statements: goto, break, continue, do...while, switch.
+#
+# - Labelled statements.
 
 import string
 
@@ -92,16 +106,18 @@ func_unspecified = -1
 # The tuple expected in each node type is given in a comment.
 op_BEGIN = _enum(t_END)
 op_blk = _enum() # not finalised yet
+op_strconst = _enum() # (stringdata)
 op_variable = _enum() # (scope, varname)
 op_cast = _enum() # (srctype, desttype, operand)
 op_deref = _enum() # (operand)
 op_if = _enum() # (condition, thenclause, elseclause)
 op_while = _enum() # (condition, loopbody)
 op_for = _enum() # (initialiser, test, increment, loopbody)
-op_preinc = _enum()
-op_postinc = _enum()
-op_predec = _enum()
-op_postdec = _enum()
+op_return = _enum() # (value)
+op_preinc = _enum() # (operand, incrementquantity)
+op_postinc = _enum() # (operand, incrementquantity)
+op_predec = _enum() # (operand, incrementquantity)
+op_postdec = _enum() # (operand, incrementquantity)
 op_structmember = _enum() # (operand, uid, s_or_u, membernumber)
 op_funcall = _enum() # (function, argumenttuple)
 op_END = _enum()
@@ -294,8 +310,11 @@ class typesystem:
         return type[1] == t_function
 
     def isarray(self, type):
-        "Determine whether a type is a function."
+        "Determine whether a type is an array."
         return type[1] == t_array
+    def ispointer(self, type):
+        "Determine whether a type is a pointer."
+        return type[1] == t_pointer
 
     def referenced(self, type):
         "Return the referenced type of a pointer, or None if not a pointer."
@@ -401,6 +420,29 @@ class typesystem:
                     ret = type2[:1] + (base,) + type2[2:]
             return ret, ret, ret # ltype, rtype and outtype all the same
 
+    def unify(self, type1, type2):
+        "Unify two types. Return the unified type, or None if incompatible."
+        if type1[0] != type2[0]:
+            return None
+        if type1[1] != type2[1]:
+            return None
+        if type1[1] == t_pointer or type1[1] == t_struct or type1[1] == t_union:
+            if type1[2] != type2[2]:
+                return None
+            return type1
+        if type1[1] == t_array:
+            if type1[2] != type2[2]:
+                return None
+            if type1[2] == array_unspecified:
+                type1 = type1[:2] + (type2[2],)
+            if type2[2] != array_unspecified and type2[2] != type1[2]:
+                return None
+        if type1[1] == t_function:
+            if type1[2] != type2[2]:
+                return None
+            if type1[3] == func_unspecified:
+                FIXME() # finish this stuff
+
     # Operations required on a type are
     #  - determine whether two types are compatible
     #  - construct a composite type from two (each fills in blanks in other)
@@ -423,9 +465,31 @@ class optree:
 class err_generic_semantic_error:
     def __init__(self):
         self.message = "semantic error"
+        self.warning = 0
+    def warning(self, errfunc):
+        self.warning = 1
+        errfunc(self)
+class err_string_bogusesc(err_generic_semantic_error):
+    def __init__(self, char):
+        self.message = "invalid escape sequence in string: `\\" + char + "'"
+class err_implicitdecl(err_generic_semantic_error):
+    def __init__(self, fname):
+        self.message = "implicitly declaring `extern int " + fname + "()'"
+class err_unop_arith(err_generic_semantic_error):
+    def __init__(self, op):
+        self.message = "operator " + lex_names[op] + " requires operand of arithmetic type"
+class err_unop_arithptr(err_generic_semantic_error):
+    def __init__(self, op):
+        self.message = "operator " + lex_names[op] + " requires operand of arithmetic or pointer type"
+class err_unop_int(err_generic_semantic_error):
+    def __init__(self, op):
+        self.message = "operator " + lex_names[op] + " requires operand of integer type"
 class err_deref_nonpointer(err_generic_semantic_error):
     def __init__(self):
         self.message = "attempt to dereference a non-pointer"
+class err_subscript_nonpointer(err_generic_semantic_error):
+    def __init__(self):
+        self.message = "attempt to apply array subscript to non-pointers"
 class err_arrow_nonpointer(err_generic_semantic_error):
     def __init__(self):
         self.message = "attempt to apply `->' operator to a non-pointer"
@@ -467,7 +531,11 @@ class err_multi_scq(err_generic_semantic_error):
         lex_names[one] + " and " + lex_names[two]
 
 def defaulterrfunc(err):
-    sys.stderr.write("<input>:" + "%d:%d: " % (err.line, err.col) + err.message + "\n")
+    if err.warning:
+        warning = "warning: "
+    else:
+        warning = ""
+    sys.stderr.write("<input>:" + "%d:%d: " % (err.line, err.col) + warning + err.message + "\n")
 
 # Scopes for variables, typedefs, struct and union tags, etc.
 
@@ -570,6 +638,11 @@ class semantics:
         error.col = object.col
         raise error
 
+    def warning(self, object, error):
+        error.line = object.line
+        error.col = object.col
+        error.warning(self.errfunc)
+
     def display(self):
         self.types.display()
         self.topdecls.display()
@@ -646,6 +719,37 @@ class semantics:
     pt_unary_expression: 1, pt_cast_expression: 1, pt_binary_expression: 1,
     pt_conditional_expression: 1, pt_assignment_expression: 1}
 
+    strconstmap = {"a":"\007","b":"\010","f":"\014","n":"\012",
+    "r":"\015","t":"\011","v":"\013"}
+
+    def strconst(self, exp, instr):
+        "Parse the inside of a string constant, returning a string."
+        ret = ""
+        while instr != "":
+            if instr[0] == "\\":
+                if len(instr) == 0:
+                    raise "Should never happen! Backslash before close quote."
+                if instr[1] in "xX":
+                    i = 2
+                    while i < len(instr) and instr[i] in instr.hexdigits:
+                        i = i + 1
+                    ret = ret + chr(string.atoi(instr[2:i], 16))
+                elif instr[1] in "01234567":
+                    i = 2
+                    while i < len(instr) and i < 4 and instr[i] in "01234567":
+                        i = i + 1
+                    ret = ret + chr(string.atoi(instr[1:i], 8))
+                elif instr[1] in "abfnrtv":
+                    i = 2
+                    ret = ret + self.strconstmap[instr[1]]
+                else:
+                    self.error(exp, err_string_bogusesc(instr[1]))
+            else:
+                i = 1
+                ret = ret + instr[0]
+            instr = instr[i:]
+        return ret
+
     def expr(self, scope, exp, funccontext=0, wholevarcontext=0):
 	# Process an expression.
 	# Return a tuple (type, value, lvalue, tree).
@@ -697,7 +801,11 @@ class semantics:
                     # cause an implicit declaration of the identifier as
                     # an unprototyped int-returning extern function.
                     if funccontext:
-                        FIXME() # implicit declaration of function
+                        self.warning(exp, err_implicitdecl(exp.list[0].text))
+                        ftype = self.types.basictype(t_int, 0)
+                        ftype = self.types.unprotofunc(ftype)
+                        scope.addvar(exp.list[0].text, sc_extern, ftype)
+                        s, v = scope.findvar(exp.list[0].text)
                     else:
                         self.error(exp, err_undecl_ident(exp.list[0].text))
                 # Fix up types. Functions and arrays must become pointers
@@ -707,9 +815,19 @@ class semantics:
                     type = self.types.transmogrify(type)
                 return type, None, 1, optree(op_variable, s, exp.list[0].text)
 	    elif exp.list[0].type == lt_charconst:
-                raise "FIXME: can't parse char constants yet"
+                text = exp.list[0].text
+                assert len(text) >= 2 and text[0] == "'" and text[-1] == "'"
+                const = self.strconst(exp, text[1:-1])
+                if len(const) != 1:
+                    self.error(exp, err_charconst_notlen1())
+                return (0, t_char), ord(const), 0, optree(t_char, ord(const))
 	    elif exp.list[0].type == lt_stringconst:
-                raise "FIXME: can't parse string constants yet"
+                text = exp.list[0].text
+                assert len(text) >= 2 and text[0] == '"' and text[-1] == '"'
+                const = self.strconst(exp, text[1:-1]) + "\0"
+                # CONFIGURABLE: could make strings writable here
+                type = self.types.ptrtype((tq_const, t_char), 0)
+                return type, None, 0, optree(op_strconst, const)
 	    elif exp.list[0].type == lt_floatconst:
                 raise "FIXME: can't parse float constants yet"
 	    else:
@@ -720,17 +838,7 @@ class semantics:
                 raise "FIXME: C9X (type_name){initializer_list} NYI"
             elif exp.list[1].type in [lt_increment, lt_decrement]:
                 operand = self.expr(scope, exp.list[0])
-                if exp.list[1].type == lt_increment:
-                    op = op_postinc
-                else:
-                    op = op_postdec
-                if not operand[2]:
-                    self.error(exp, err_assign_nonlval())
-                lt, rt, outt = self.types.usualarith(operand[0], operand[0])
-                if outt == None:
-                    raise "Arrgh, usualarith died! Shouldn't happen."
-                if operand[0] != outt: operand = self.typecvt(operand, outt)
-                return operand[0], None, 0, optree(op, operand[0], operand)
+                return self.incdec(operand, exp.list[1].type, op_postinc, op_postdec)
             elif exp.list[1].type == pt_argument_expression_list:
                 # For _this_ recursive call to expr, we set the `funccontext'
                 # parameter, because a pure identifier at the next level down
@@ -755,21 +863,39 @@ class semantics:
                         self.error(exp, err_narg_mismatch(variad, nargs, npar))
                 # Evaluate each argument and convert to a sensible type.
                 # (For arguments whose type is given in the prototype, this
-                # is a simple implicit cast. For others, FIXME, we must be
+                # is a simple implicit cast. For others, we must be
                 # a bit more flexible.)
                 argexprs = ()
                 for i in range(npar):
                     arg = self.expr(scope, exp.list[1].list[i])
-                    if i >= nargs:
-                        FIXME() # Argument to a variadic function.
-                    elif nargs == func_unspecified:
-                        FIXME() # Argument to an unprototyped function.
+                    if nargs == func_unspecified:
+                        # Argument to an unprototyped function.
+                        # Do the usual arithmetic conversions.
+                        if self.types.isarith(arg[0]):
+                            type = self.types.usualarith(arg[0], arg[0])
+                            assert type != None
+                            if type != arg[0]:
+                                arg = self.typecvt(arg, type, 0)
+                    elif i >= nargs:
+                        # Argument to a variadic function.
+                        # Do the usual arithmetic conversions.
+                        if self.types.isarith(arg[0]):
+                            type = self.types.usualarith(arg[0], arg[0])
+                            assert type != None
+                            if type != arg[0]:
+                                arg = self.typecvt(arg, type, 0)
                     else:
                         type = self.types.argument(functype, i)
-                        if not self.types.isunknown(type):
+                        if not self.types.isunknown(type) and arg[0] != type:
                             arg = self.typecvt(arg, type, 0)
                         else:
-                            FIXME() # Argument to a partially prototyped func
+                            # Argument to a partially prototyped function.
+                            # Do the usual arithmetic conversions.
+                            if self.types.isarith(arg[0]):
+                                type = self.types.usualarith(arg[0], arg[0])
+                                assert type != None
+                                if type != arg[0]:
+                                    arg = self.typecvt(arg, type, 0)
                 return rettype, None, 0, optree(op_funcall, operand, argexprs)
             elif exp.list[1].type in [lt_dot, lt_arrow]:
                 operand = self.expr(scope, exp.list[0])
@@ -790,8 +916,20 @@ class semantics:
                 optree(op_structmember, operand, structure, i)
                 return ret
             else:
+                # FIXME. Could insert warning here that says the _outer_
+                # thing should be the pointer and not the subscript.
                 operand = self.expr(scope, exp.list[0])
-                raise "FIXME: can't handle array dereferences yet"
+                subscript = self.expr(scope, exp.list[1])
+                sum = self.binop(exp, lt_plus, operand, subscript)
+                # Now dereference.
+                desttype = self.types.referenced(sum[0])
+                if desttype == None:
+                    self.error(exp, err_subscript_nonpointer())
+                # Transmogrify types: function -> function ptr, and
+                # array -> ptr to element type.
+                if not wholevarcontext:
+                    desttype = self.types.transmogrify(desttype)
+                return desttype, None, 1, optree(op_deref, sum)
 	elif exp.type == pt_unary_expression:
             if exp.list[0].type == lt_times:
                 operand = self.expr(scope, exp.list[1])
@@ -803,12 +941,16 @@ class semantics:
                 if not wholevarcontext:
                     desttype = self.types.transmogrify(desttype)
                 return desttype, None, 1, optree(op_deref, operand)
-            else:
-                #  increment decrement
-                #  sizeof
-                #  bitand
-                #  plus minus bitnot lognot
-                raise "FIXME: can't handle most unary operators yet"
+            elif exp.list[0].type in [lt_increment, lt_decrement]:
+                operand = self.expr(scope, exp.list[1])
+                return self.incdec(operand, exp.list[0].type, op_preinc, op_predec)
+            elif exp.list[0].type in [lt_plus, lt_minus, lt_bitnot, lt_lognot]:
+                operand = self.expr(scope, exp.list[1]) 
+                return self.unop(exp, exp.list[0].type, operand)
+            elif exp.list[0].type == lt_sizeof:
+                raise "FIXME: sizeof NYI"
+            elif exp.list[0].type == lt_bitand:
+                raise "FIXME: address-take NYI"
         elif exp.type == pt_cast_expression:
             src = self.expr(scope, exp.list[1])
             desttype = self.typename(exp.list[0], scope)
@@ -816,7 +958,7 @@ class semantics:
 	elif exp.type == pt_binary_expression:
             lhs = self.expr(scope, exp.list[0])
             rhs = self.expr(scope, exp.list[2])
-            return self.binop(exp.list[1].type, lhs, rhs)
+            return self.binop(exp, exp.list[1].type, lhs, rhs)
 	elif exp.type == pt_conditional_expression:
             raise "FIXME: can't handle conditional operator yet"
 	elif exp.type == pt_assignment_expression:
@@ -834,6 +976,25 @@ class semantics:
 	    return type, value, lvalue, tree
 	else:
 	    assert 0, "unexpected node in expression"
+    
+    def incdec(self, operand, which, opinc, opdec):
+        if which == lt_increment:
+            op = opinc
+        else:
+            op = opdec
+        if not operand[2]:
+            self.error(exp, err_assign_nonlval())
+        if self.types.isarith(operand[0]):
+            lt, rt, outt = self.types.usualarith(operand[0], operand[0])
+            assert outt != None
+            increment = 1
+        elif self.types.ispointer(operand[0]):
+            outt = operand[0]
+            increment = self.target.typesize(self.types.referenced(operand[0]))
+        else:
+            raise "FIXME: ++ or -- on wrong type, need proper error"
+        if operand[0] != outt: operand = self.typecvt(operand, outt, 0)
+        return operand[0], None, 0, optree(op, operand, increment)
 
     def typename(self, tn, scope):
         stg, fnspecs, basetype = self.do_declspecs(tn.list[0], scope)
@@ -851,23 +1012,63 @@ class semantics:
         # FIXME: compile-time conversion when feasible.
         return desttype, None, 0, optree(op_cast, src[0], desttype, src)
 
-    def binop(self, op, lhs, rhs):
+    def binop(self, exp, op, lhs, rhs):
         "Process a binary operator."
         # Must perform type conversion.
         if self.types.isarith(lhs[0]) and self.types.isarith(rhs[0]):
             lt, rt, outt = self.types.usualarith(lhs[0], rhs[0])
             if outt == None:
                 self.error(lhs, err_incompat_types_binop(op))
-            if lhs[0] != lt: lhs = self.typecvt(lhs, lt)
-            if rhs[0] != rt: rhs = self.typecvt(lhs, rt)
-        elif 0: # plus or minus, and exactly one is pointer
-            pass
+            if lhs[0] != lt: lhs = self.typecvt(lhs, lt, 0)
+            if rhs[0] != rt: rhs = self.typecvt(lhs, rt, 0)
+        elif op in [lt_plus, lt_minus] and \
+        (self.types.isarith(lhs[0]) and self.types.ispointer(rhs[0])) or \
+        (self.types.isarith(rhs[0]) and self.types.ispointer(lhs[0])):
+            # Canonify so pointer is on the left.
+            if self.types.ispointer(rhs[0]):
+                rhs, lhs = lhs, rhs
+            # Integer-promote the integer.
+            discard1, discard2, intt = self.types.usualarith(rhs[0], rhs[0])
+            # Find the element size of the pointer.
+            esize = self.target.typesize(self.types.referenced(lhs[0]))
+            # Multiply the integer by that.
+            val = self.target.intconst(intt, esize)
+            esizeoptree = intt, val, 0, optree(intt, val)
+            distance = optree(lt_times, intt, rhs, esizeoptree)
+            # Now do the addition.
+            return lhs[0], None, 0, optree(op, lhs[0], lhs, distance)
+        else:
+            self.error(exp, err_binop_type_mismatch)
         # Perform constant arithmetic if possible.
         if lhs[1] != None and rhs[1] != None:
             newval = self.target.binop(op, outt, lt, lhs[1], rt, rhs[1])
             return outt, newval, 0, optree(outt, newval)
         else:
             return outt, None, 0, optree(op, outt, lhs, rhs)
+
+    def unop(self, exp, op, operand):
+        "Process a unary arithmetic operator: + - ! ~"
+        # Must perform type conversion.
+        if self.types.isarith(operand[0]):
+            lt, rt, outt = self.types.usualarith(operand[0], operand[0])
+            assert outt != None
+            if operand[0] != outt: operand = self.typecvt(operand, outt, 0)
+        # Type checking: for + and - we need an arithmetic type,
+        # for ~ we need an _integer_ type, and for ! we need either
+        # an arithmetic type or a pointer.
+        if op in [lt_plus, lt_minus] and not self.types.isarith(operand[0]):
+            self.error(err_unop_arith(op))
+        if op == lt_bitnot and not self.types.isint(operand[0]):
+            self.error(err_unop_int(op))
+        if op == lt_lognot and not self.types.isarith(operand[0]) \
+        and not self.types.ispointer(operand[0]):
+            self.error(err_unop_arithptr(op))
+        # Perform constant arithmetic if possible.
+        if operand[1] != None:
+            newval = self.target.unop(op, outt, operand[1])
+            return outt, newval, 0, optree(outt, newval)
+        else:
+            return outt, None, 0, optree(op, outt, operand)
 
     def do_declaration(self, scope, decl):
         # The declaration specifiers can contain storage class qualifiers,
@@ -1060,11 +1261,12 @@ class semantics:
         t, id = self.do_declarator(funcdef.list[1], self.topdecls, basetype, argscope)
         if not self.types.isfunction(t):
             FIXME() # function declaration with non-function declarator
+        rettype = self.types.returned(t)
         # FIXME: go through potential list-of-oldstyle-argument-decls
-	blk = self.do_block(argscope, funcdef.list[3])
+	blk = self.do_block(argscope, rettype, funcdef.list[3])
         # FIXME: assign `value' of function
 
-    def do_block(self, outerscope, blk):
+    def do_block(self, outerscope, rettype, blk):
 	assert blk.type == pt_compound_statement
 	stmts = []
         blkscope = scope(sc_auto, [sc_auto,sc_register,sc_static], outerscope)
@@ -1072,10 +1274,10 @@ class semantics:
 	    if i.type == pt_declaration:
 		self.do_declaration(blkscope, i)
 	    else:
-		stmts.extend(self.do_statement(blkscope, i))
+		stmts.extend(self.do_statement(blkscope, rettype, i))
 	return optree(op_blk, blkscope, stmts)
     
-    def do_statement(self, blkscope, stmt):
+    def do_statement(self, blkscope, rettype, stmt):
         ret = []
 	while stmt.type == pt_labeled_statement:
             raise "FIXME: can't yet handle labels"
@@ -1083,28 +1285,37 @@ class semantics:
 	if self.exprnodes.has_key(stmt.type):
 	    type, value, lvalue, tree = self.expr(blkscope, stmt)
             ret.append(tree)
-	elif stmt.type == pt_selection_statement:
+	elif stmt.type == pt_selection_statement and stmt.list[0].type == lt_if:
             condition = self.expr(blkscope, stmt.list[1])
-            consequence = self.do_statement(blkscope, stmt.list[2])
-            if stmt.list[0].type == lt_if:
-                if len(stmt.list) > 3:
-                    alternative = self.do_statement(stmt.list[3])
-                else:
-                    alternative = None
-                ret.append(optree(op_if, condition, consequence, alternative))
+            consequence = self.do_statement(blkscope, rettype, stmt.list[2])
+            if len(stmt.list) > 3:
+                alternative = self.do_statement(blkscope, rettype, stmt.list[3])
             else:
-                ret.append(optree(op_while, condition, consequence))
+                alternative = None
+            ret.append(optree(op_if, condition, consequence, alternative))
 	elif stmt.type == pt_iteration_statement and stmt.list[0].type == lt_for:
             if stmt.list[1].type == pt_declaration:
                 raise "FIXME: can't yet handle `for' with declaration"
             initialiser = self.expr(blkscope, stmt.list[1])
             test = self.expr(blkscope, stmt.list[2])
             increment = self.expr(blkscope, stmt.list[3])
-            loopbody = self.do_statement(blkscope, stmt.list[4])
+            loopbody = self.do_statement(blkscope, rettype, stmt.list[4])
             ret.append(optree(op_for, initialiser, test, increment, loopbody))
+	elif stmt.type == pt_iteration_statement and stmt.list[0].type == lt_while:
+            condition = self.expr(blkscope, stmt.list[1])
+            loopbody = self.do_statement(blkscope, rettype, stmt.list[2])
+            ret.append(optree(op_while, condition, loopbody))
+	elif stmt.type == pt_jump_statement and stmt.list[0].type == lt_return:
+            if len(stmt.list) == 1:
+                # Void return. FIXME: warn if rettype isn't void
+                retval = None
+            else:
+                retval = self.expr(blkscope, stmt.list[1])
+                retval = self.typecvt(retval, rettype, 0)
+            ret.append(optree(op_return, retval))
         elif stmt.type == pt_compound_statement:
             newscope = scope(sc_auto, [sc_auto,sc_register,sc_static], blkscope)
-            ret.append(self.do_block(newscope, stmt))
+            ret.append(self.do_block(newscope, rettype, stmt))
         else:
             stmt.display(0)
 	    raise "FIXME: can't handle this statement type yet"

@@ -19,6 +19,14 @@ class target:
     t_long: -0x80000000L, t_ulong: 0L,
     t_longlong: -0x8000000000000000L, t_ulonglong: 0L}
 
+    intsizeof = {
+    t_bool: 1,
+    t_char: 1, t_schar: 1, t_uchar: 1,
+    t_short: 2, t_ushort: 2,
+    t_int: 4, t_uint: 4,
+    t_long: 4, t_ulong: 4,
+    t_longlong: 8, t_ulonglong: 8}
+
     inttouint = {
     t_int: t_uint, t_uint: t_uint,
     t_long: t_ulong, t_ulong: t_ulong,
@@ -32,6 +40,12 @@ class target:
 	if value > self.intmaxvals[type]:
 	    value = value - (self.intmaxvals[self.inttouint[type]] + 1)
 	return value
+
+    def typesize(self, type):
+        type = type[1] # only base type
+        if self.intsizeof.has_key(type):
+            return self.intsizeof[type]
+        raise "FIXME: typesize not fully implemented in this target"
 
     size_t = t_uint
 
