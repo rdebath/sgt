@@ -12,8 +12,6 @@ Immediate things that need doing:
 
 Longer-term things I'd like:
 
- - Dump and load mechanism just in case db gets funted.
-
  - TODO tracking
     + TODOs have a start date (they will need doing after that time,
       but aren't required yet)
@@ -58,3 +56,63 @@ Longer-term things I'd like:
 	 depends critically on the fact that SQLite supports
 	 transactions, so it's a good job it does :-)
 
+----------------
+
+So. Proposed db schema:
+
+Table `ENTRIES' now contains a whole load of columns:
+
+ - start date & time (may not be null)
+ - end date & time (may be null)
+ - length and repeat period (may be null)
+ - description
+ - type (event, various types of holiday, todo)
+ - id
+
+Table `FREEIDS' contains columns:
+
+ - first
+ - last
+
+This solves a variety of current problems:
+
+ - `timeless' all-day events are now events running from midnight to
+   midnight, which means they Just Work with all date&time formatted
+   stuff.
+
+ - TODOs have a start date&time (default is when they were entered)
+   and a potential end.
+
+ - Multiday events are supported.
+
+ - Regular events are supported through the length and repeat
+   period. The Calling, for example, would be deemed to start on a
+   Tuesday at 9pm, have a length of 5 hours and a repeat period of
+   14 days. Should timing change in future, we can simply assign it
+   an end date and start a new Calling item from a later point.
+    * Weekend itself should be a regular event!
+
+ - ID numbers allow the modification and deletion of existing
+   events.
+
+Other things that need doing along with this:
+
+ - Holidays need to come in several varieties so that the colours
+   can override one another: weekends and bank holidays override
+   booked holidays.
+
+ - Figuring out what's going on during a particular time period is
+   now much more fun due to lengthy and repeated events. We need
+   some fairly hefty post-db-query processing.
+
+ - Being forced to enter an end date/time is going to be a pest.
+    + Meetings actually have end times.
+    + Appointments (eg dentist) should probably be considered
+      zero-length, since I get there at the right time and they go
+      on as long as they need.
+    + Parties ideally want to end at midnight, although actually
+      there's no reason they can't be zero-length as well.
+    + I think the default should be to make end time equal start
+      time. In general this feature won't be used anyway, since it's
+      mostly for multiday events. Might come in handy for meetings
+      too though.

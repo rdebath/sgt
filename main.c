@@ -11,7 +11,7 @@ char *dbpath;
 int main(int argc, char **argv) {
     int nogo;
     int errs;
-    enum { NONE, INIT, ADD, LIST, CRON } command;
+    enum { NONE, INIT, ADD, LIST, CRON, DUMP, LOAD } command;
     char *args[2];
     int nargs = 0;
     char *homedir;
@@ -60,6 +60,10 @@ int main(int argc, char **argv) {
 			    nogo = TRUE;
 			} else if (!strcmp(opt, "-init")) {
 			    command = INIT;
+			} else if (!strcmp(opt, "-dump")) {
+			    command = DUMP;
+			} else if (!strcmp(opt, "-load")) {
+			    command = LOAD;
 			} else if (!strcmp(opt, "-version")) {
 			    showversion();
 			    nogo = TRUE;
@@ -192,6 +196,12 @@ int main(int argc, char **argv) {
 	break;
       case CRON:
 	caltrap_cron(nargs, args, lenof(args));
+	break;
+      case DUMP:
+	caltrap_dump(nargs, args, lenof(args));
+	break;
+      case LOAD:
+	caltrap_load(nargs, args, lenof(args));
 	break;
     }
 

@@ -26,6 +26,9 @@ enum {
     err_addargno,		       /* `add' requires 1 or 2 args */
     err_listargno,		       /* `list' requires 0-2 args */
     err_cronargno,		       /* `cron' requires 2 args */
+    err_dumpargno,		       /* `dump' requires no args */
+    err_loadargno,		       /* `load' requires 0-1 args */
+    err_loadfmt,		       /* error parsing dump file */
     err_date,		               /* unable to parse date `%s' */
     err_time,		               /* unable to parse time `%s' */
     err_nodb,		               /* db doesn't exist, try --init */
@@ -93,6 +96,12 @@ int caltrap_list(int nargs, char **args, int nphysargs);
 int caltrap_cron(int nargs, char **args, int nphysargs);
 
 /*
+ * dump.c
+ */
+int caltrap_dump(int nargs, char **args, int nphysargs);
+int caltrap_load(int nargs, char **args, int nphysargs);
+
+/*
  * main.c
  */
 char *dbpath;
@@ -107,5 +116,6 @@ typedef void (*list_callback_fn_t)(void *, Date, Time, char *);
 void db_list_entries(Date start, Time starttime,
                      Date end, Time endtime,
                      list_callback_fn_t fn, void *ctx);
+void db_dump_entries(list_callback_fn_t fn, void *ctx);
 
 #endif
