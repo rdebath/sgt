@@ -11,10 +11,10 @@
  * sell copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following
  * conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
  * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -124,13 +124,13 @@ static int add234_insert(node234 *left, void *e, node234 *right,
     lcount = countnode234(left);
     rcount = countnode234(right);
     while (n) {
-	LOG(("  at %p: %p/%d [%p] %p/%d [%p] %p/%d [%p] %p/%d\n",
+	LOG(("  at %p: %p/%d \"%s\" %p/%d \"%s\" %p/%d \"%s\" %p/%d\n",
 	     n,
 	     n->kids[0], n->counts[0], n->elems[0],
 	     n->kids[1], n->counts[1], n->elems[1],
 	     n->kids[2], n->counts[2], n->elems[2],
 	     n->kids[3], n->counts[3]));
-	LOG(("  need to insert %p/%d [%p] %p/%d at position %d\n",
+	LOG(("  need to insert %p/%d \"%s\" %p/%d at position %d\n",
 	     left, lcount, e, right, rcount, ki));
 	if (n->elems[1] == NULL) {
 	    /*
@@ -247,11 +247,11 @@ static int add234_insert(node234 *left, void *e, node234 *right,
 	    if (m->kids[2]) m->kids[2]->parent = m;
 	    if (n->kids[0]) n->kids[0]->parent = n;
 	    if (n->kids[1]) n->kids[1]->parent = n;
-	    LOG(("  left (%p): %p/%d [%p] %p/%d [%p] %p/%d\n", m,
+	    LOG(("  left (%p): %p/%d \"%s\" %p/%d \"%s\" %p/%d\n", m,
 		 m->kids[0], m->counts[0], m->elems[0],
 		 m->kids[1], m->counts[1], m->elems[1],
 		 m->kids[2], m->counts[2]));
-	    LOG(("  right (%p): %p/%d [%p] %p/%d\n", n,
+	    LOG(("  right (%p): %p/%d \"%s\" %p/%d\n", n,
 		 n->kids[0], n->counts[0], n->elems[0],
 		 n->kids[1], n->counts[1]));
 	    left = m;  lcount = countnode234(left);
@@ -294,7 +294,7 @@ static int add234_insert(node234 *left, void *e, node234 *right,
 	(*root)->parent = NULL;
 	if ((*root)->kids[0]) (*root)->kids[0]->parent = (*root);
 	if ((*root)->kids[1]) (*root)->kids[1]->parent = (*root);
-	LOG(("  new root is %p/%d [%p] %p/%d\n",
+	LOG(("  new root is %p/%d \"%s\" %p/%d\n",
 	     (*root)->kids[0], (*root)->counts[0],
 	     (*root)->elems[0],
 	     (*root)->kids[1], (*root)->counts[1]));
@@ -312,7 +312,7 @@ static void *add234_internal(tree234 *t, void *e, int index) {
     void *orig_e = e;
     int c;
 
-    LOG(("adding node %p to tree %p\n", e, t));
+    LOG(("adding element \"%s\" to tree %p\n", e, t));
     if (t->root == NULL) {
 	t->root = mknew(node234);
 	t->root->elems[1] = t->root->elems[2] = NULL;
@@ -328,7 +328,7 @@ static void *add234_internal(tree234 *t, void *e, int index) {
 
     n = t->root;
     while (n) {
-	LOG(("  node %p: %p/%d [%p] %p/%d [%p] %p/%d [%p] %p/%d\n",
+	LOG(("  node %p: %p/%d \"%s\" %p/%d \"%s\" %p/%d \"%s\" %p/%d\n",
 	     n,
 	     n->kids[0], n->counts[0], n->elems[0],
 	     n->kids[1], n->counts[1], n->elems[1],
@@ -578,19 +578,19 @@ static void trans234_subtree_right(node234 *n, int ki, int *k, int *index) {
     dest = n->kids[ki+1];
 
     LOG(("  trans234_subtree_right(%p, %d):\n", n, ki));
-    LOG(("    parent %p: %p/%d [%p] %p/%d [%p] %p/%d [%p] %p/%d\n",
+    LOG(("    parent %p: %p/%d \"%s\" %p/%d \"%s\" %p/%d \"%s\" %p/%d\n",
 	 n,
 	 n->kids[0], n->counts[0], n->elems[0],
 	 n->kids[1], n->counts[1], n->elems[1],
 	 n->kids[2], n->counts[2], n->elems[2],
 	 n->kids[3], n->counts[3]));
-    LOG(("    src %p: %p/%d [%p] %p/%d [%p] %p/%d [%p] %p/%d\n",
+    LOG(("    src %p: %p/%d \"%s\" %p/%d \"%s\" %p/%d \"%s\" %p/%d\n",
 	 src,
 	 src->kids[0], src->counts[0], src->elems[0],
 	 src->kids[1], src->counts[1], src->elems[1],
 	 src->kids[2], src->counts[2], src->elems[2],
 	 src->kids[3], src->counts[3]));
-    LOG(("    dest %p: %p/%d [%p] %p/%d [%p] %p/%d [%p] %p/%d\n",
+    LOG(("    dest %p: %p/%d \"%s\" %p/%d \"%s\" %p/%d \"%s\" %p/%d\n",
 	 dest,
 	 dest->kids[0], dest->counts[0], dest->elems[0],
 	 dest->kids[1], dest->counts[1], dest->elems[1],
@@ -632,19 +632,19 @@ static void trans234_subtree_right(node234 *n, int ki, int *k, int *index) {
     }
     LOG(("    after: k,index = %d,%d\n", (*k), (*index)));
 
-    LOG(("    parent %p: %p/%d [%p] %p/%d [%p] %p/%d [%p] %p/%d\n",
+    LOG(("    parent %p: %p/%d \"%s\" %p/%d \"%s\" %p/%d \"%s\" %p/%d\n",
 	 n,
 	 n->kids[0], n->counts[0], n->elems[0],
 	 n->kids[1], n->counts[1], n->elems[1],
 	 n->kids[2], n->counts[2], n->elems[2],
 	 n->kids[3], n->counts[3]));
-    LOG(("    src %p: %p/%d [%p] %p/%d [%p] %p/%d [%p] %p/%d\n",
+    LOG(("    src %p: %p/%d \"%s\" %p/%d \"%s\" %p/%d \"%s\" %p/%d\n",
 	 src,
 	 src->kids[0], src->counts[0], src->elems[0],
 	 src->kids[1], src->counts[1], src->elems[1],
 	 src->kids[2], src->counts[2], src->elems[2],
 	 src->kids[3], src->counts[3]));
-    LOG(("    dest %p: %p/%d [%p] %p/%d [%p] %p/%d [%p] %p/%d\n",
+    LOG(("    dest %p: %p/%d \"%s\" %p/%d \"%s\" %p/%d \"%s\" %p/%d\n",
 	 dest,
 	 dest->kids[0], dest->counts[0], dest->elems[0],
 	 dest->kids[1], dest->counts[1], dest->elems[1],
@@ -672,19 +672,19 @@ static void trans234_subtree_left(node234 *n, int ki, int *k, int *index) {
     dest = n->kids[ki-1];
 
     LOG(("  trans234_subtree_left(%p, %d):\n", n, ki));
-    LOG(("    parent %p: %p/%d [%p] %p/%d [%p] %p/%d [%p] %p/%d\n",
+    LOG(("    parent %p: %p/%d \"%s\" %p/%d \"%s\" %p/%d \"%s\" %p/%d\n",
 	 n,
 	 n->kids[0], n->counts[0], n->elems[0],
 	 n->kids[1], n->counts[1], n->elems[1],
 	 n->kids[2], n->counts[2], n->elems[2],
 	 n->kids[3], n->counts[3]));
-    LOG(("    dest %p: %p/%d [%p] %p/%d [%p] %p/%d [%p] %p/%d\n",
+    LOG(("    dest %p: %p/%d \"%s\" %p/%d \"%s\" %p/%d \"%s\" %p/%d\n",
 	 dest,
 	 dest->kids[0], dest->counts[0], dest->elems[0],
 	 dest->kids[1], dest->counts[1], dest->elems[1],
 	 dest->kids[2], dest->counts[2], dest->elems[2],
 	 dest->kids[3], dest->counts[3]));
-    LOG(("    src %p: %p/%d [%p] %p/%d [%p] %p/%d [%p] %p/%d\n",
+    LOG(("    src %p: %p/%d \"%s\" %p/%d \"%s\" %p/%d \"%s\" %p/%d\n",
 	 src,
 	 src->kids[0], src->counts[0], src->elems[0],
 	 src->kids[1], src->counts[1], src->elems[1],
@@ -725,19 +725,19 @@ static void trans234_subtree_left(node234 *n, int ki, int *k, int *index) {
     }
     LOG(("    after: k,index = %d,%d\n", (*k), (*index)));
 
-    LOG(("    parent %p: %p/%d [%p] %p/%d [%p] %p/%d [%p] %p/%d\n",
+    LOG(("    parent %p: %p/%d \"%s\" %p/%d \"%s\" %p/%d \"%s\" %p/%d\n",
 	 n,
 	 n->kids[0], n->counts[0], n->elems[0],
 	 n->kids[1], n->counts[1], n->elems[1],
 	 n->kids[2], n->counts[2], n->elems[2],
 	 n->kids[3], n->counts[3]));
-    LOG(("    dest %p: %p/%d [%p] %p/%d [%p] %p/%d [%p] %p/%d\n",
+    LOG(("    dest %p: %p/%d \"%s\" %p/%d \"%s\" %p/%d \"%s\" %p/%d\n",
 	 dest,
 	 dest->kids[0], dest->counts[0], dest->elems[0],
 	 dest->kids[1], dest->counts[1], dest->elems[1],
 	 dest->kids[2], dest->counts[2], dest->elems[2],
 	 dest->kids[3], dest->counts[3]));
-    LOG(("    src %p: %p/%d [%p] %p/%d [%p] %p/%d [%p] %p/%d\n",
+    LOG(("    src %p: %p/%d \"%s\" %p/%d \"%s\" %p/%d \"%s\" %p/%d\n",
 	 src,
 	 src->kids[0], src->counts[0], src->elems[0],
 	 src->kids[1], src->counts[1], src->elems[1],
@@ -763,19 +763,19 @@ static void trans234_subtree_merge(node234 *n, int ki, int *k, int *index) {
     right = n->kids[ki+1];            rightlen = n->counts[ki+1];
 
     LOG(("  trans234_subtree_merge(%p, %d):\n", n, ki));
-    LOG(("    parent %p: %p/%d [%p] %p/%d [%p] %p/%d [%p] %p/%d\n",
+    LOG(("    parent %p: %p/%d \"%s\" %p/%d \"%s\" %p/%d \"%s\" %p/%d\n",
 	 n,
 	 n->kids[0], n->counts[0], n->elems[0],
 	 n->kids[1], n->counts[1], n->elems[1],
 	 n->kids[2], n->counts[2], n->elems[2],
 	 n->kids[3], n->counts[3]));
-    LOG(("    left %p: %p/%d [%p] %p/%d [%p] %p/%d [%p] %p/%d\n",
+    LOG(("    left %p: %p/%d \"%s\" %p/%d \"%s\" %p/%d \"%s\" %p/%d\n",
 	 left,
 	 left->kids[0], left->counts[0], left->elems[0],
 	 left->kids[1], left->counts[1], left->elems[1],
 	 left->kids[2], left->counts[2], left->elems[2],
 	 left->kids[3], left->counts[3]));
-    LOG(("    right %p: %p/%d [%p] %p/%d [%p] %p/%d [%p] %p/%d\n",
+    LOG(("    right %p: %p/%d \"%s\" %p/%d \"%s\" %p/%d \"%s\" %p/%d\n",
 	 right,
 	 right->kids[0], right->counts[0], right->elems[0],
 	 right->kids[1], right->counts[1], right->elems[1],
@@ -820,13 +820,13 @@ static void trans234_subtree_merge(node234 *n, int ki, int *k, int *index) {
 	LOG(("    after: k,index = %d,%d\n", (*k), (*index)));
     }
 
-    LOG(("    parent %p: %p/%d [%p] %p/%d [%p] %p/%d [%p] %p/%d\n",
+    LOG(("    parent %p: %p/%d \"%s\" %p/%d \"%s\" %p/%d \"%s\" %p/%d\n",
 	 n,
 	 n->kids[0], n->counts[0], n->elems[0],
 	 n->kids[1], n->counts[1], n->elems[1],
 	 n->kids[2], n->counts[2], n->elems[2],
 	 n->kids[3], n->counts[3]));
-    LOG(("    merged %p: %p/%d [%p] %p/%d [%p] %p/%d [%p] %p/%d\n",
+    LOG(("    merged %p: %p/%d \"%s\" %p/%d \"%s\" %p/%d \"%s\" %p/%d\n",
 	 left,
 	 left->kids[0], left->counts[0], left->elems[0],
 	 left->kids[1], left->counts[1], left->elems[1],
@@ -853,7 +853,7 @@ static void *delpos234_internal(tree234 *t, int index) {
 	    int ki;
 	    node234 *sub;
 
-	    LOG(("  node %p: %p/%d [%p] %p/%d [%p] %p/%d [%p] %p/%d index=%d\n",
+	    LOG(("  node %p: %p/%d \"%s\" %p/%d \"%s\" %p/%d \"%s\" %p/%d index=%d\n",
 		 n,
 		 n->kids[0], n->counts[0], n->elems[0],
 		 n->kids[1], n->counts[1], n->elems[1],
@@ -1102,7 +1102,7 @@ static node234 *join234_internal(node234 *left, void *sep,
     int relht = *height;
     int ki;
 
-    LOG(("  join: joining %p [%p] %p, relative height is %d\n",
+    LOG(("  join: joining %p \"%s\" %p, relative height is %d\n",
 	 left, sep, right, relht));
     if (relht == 0) {
 	/*
@@ -1257,7 +1257,7 @@ static node234 *split234_internal(tree234 *t, int index) {
      * ensure this doesn't happen.
      */
     while (n) {
-	LOG(("  node %p: %p/%d [%p] %p/%d [%p] %p/%d [%p] %p/%d index=%d\n",
+	LOG(("  node %p: %p/%d \"%s\" %p/%d \"%s\" %p/%d \"%s\" %p/%d index=%d\n",
 	     n,
 	     n->kids[0], n->counts[0], n->elems[0],
 	     n->kids[1], n->counts[1], n->elems[1],
@@ -1562,7 +1562,7 @@ static node234 *split234_internal(tree234 *t, int index) {
 	node234 *sib;
 	int i;
 
-	LOG(("  split node %p: %p/%d [%p] %p/%d [%p] %p/%d [%p] %p/%d\n",
+	LOG(("  split node %p: %p/%d \"%s\" %p/%d \"%s\" %p/%d \"%s\" %p/%d\n",
 	     n,
 	     n->kids[0], n->counts[0], n->elems[0],
 	     n->kids[1], n->counts[1], n->elems[1],
@@ -1602,13 +1602,13 @@ static node234 *split234_internal(tree234 *t, int index) {
 	    sib->counts[0] = countnode234(rptr);
 	    lptr = n;
 	    rptr = sib;
-	    LOG(("  left node %p: %p/%d [%p] %p/%d [%p] %p/%d [%p] %p/%d\n",
+	    LOG(("  left node %p: %p/%d \"%s\" %p/%d \"%s\" %p/%d \"%s\" %p/%d\n",
 		 n,
 		 n->kids[0], n->counts[0], n->elems[0],
 		 n->kids[1], n->counts[1], n->elems[1],
 		 n->kids[2], n->counts[2], n->elems[2],
 		 n->kids[3], n->counts[3]));
-	    LOG(("  right node %p: %p/%d [%p] %p/%d [%p] %p/%d [%p] %p/%d\n",
+	    LOG(("  right node %p: %p/%d \"%s\" %p/%d \"%s\" %p/%d \"%s\" %p/%d\n",
 		 sib,
 		 sib->kids[0], sib->counts[0], sib->elems[0],
 		 sib->kids[1], sib->counts[1], sib->elems[1],
@@ -1634,15 +1634,15 @@ static node234 *split234_internal(tree234 *t, int index) {
 		rptr->parent = lptr->parent = NULL;
 		if (rsep) {
 		    int height = rlevel - level;
-		    LOG(("  final join: rfrag [%p], rsep [%p],"
-			 " rroot [%p] heightdiff=%d\n",
+		    LOG(("  final join: rfrag %p, rsep \"%s\","
+			 " rroot %p heightdiff=%d\n",
 			 rfrag, rsep, rptr, height));
 		    rptr = join234_internal(rfrag, rsep, rptr, &height);
 		}
 		if (lsep) {
 		    int height = level - llevel;
-		    LOG(("  final join: lroot [%p], lsep [%p],"
-			 " lfrag [%p] heightdiff=%d\n",
+		    LOG(("  final join: lroot %p, lsep \"%s\","
+			 " lfrag %p heightdiff=%d\n",
 			 lptr, lsep, lfrag, height));
 		    lptr = join234_internal(lptr, lsep, lfrag, &height);
 		}
@@ -1739,8 +1739,8 @@ static node234 *split234_internal(tree234 *t, int index) {
 		if (left) {
 		    if (rsep) {
 			int height = rlevel - level;
-			LOG(("  final join: rfrag [%p], rsep [%p],"
-			     " root [%p] heightdiff=%d\n",
+			LOG(("  final join: rfrag %p, rsep \"%s\","
+			     " root %p heightdiff=%d\n",
 			     rfrag, rsep, t->root, height));
 			t->root = join234_internal(rfrag, rsep,
 						   t->root, &height);
@@ -1751,8 +1751,8 @@ static node234 *split234_internal(tree234 *t, int index) {
 		} else {
 		    if (lsep) {
 			int height = level - llevel;
-			LOG(("  final join: root [%p], lsep [%p],"
-			     " lfrag [%p] heightdiff=%d\n",
+			LOG(("  final join: root %p, lsep \"%s\","
+			     " lfrag %p heightdiff=%d\n",
 			     t->root, lsep, lfrag, height));
 			t->root = join234_internal(t->root, lsep,
 						   lfrag, &height);
@@ -1774,7 +1774,7 @@ static node234 *split234_internal(tree234 *t, int index) {
 	     * If `left' is FALSE, we do the same thing with the
 	     * element to the right.
 	     */
-	    LOG(("  found grandad %p: %p/%d [%p] %p/%d [%p] %p/%d [%p] %p/%d\n",
+	    LOG(("  found grandad %p: %p/%d \"%s\" %p/%d \"%s\" %p/%d \"%s\" %p/%d\n",
 		 n,
 		 n->kids[0], n->counts[0], n->elems[0],
 		 n->kids[1], n->counts[1], n->elems[1],
@@ -1786,7 +1786,7 @@ static node234 *split234_internal(tree234 *t, int index) {
 	    } else {
 		rsep = n->elems[ki];
 	    }
-	    LOG((", removing element %d (%p)\n", ki, n->elems[ki]));
+	    LOG((", removing element %d (\"%s\")\n", ki, n->elems[ki]));
 
 	    /*
 	     * We want to shrink node n so that element ki
@@ -1820,15 +1820,15 @@ static node234 *split234_internal(tree234 *t, int index) {
 
 		if (rsep) {
 		    int height = rlevel - level;
-		    LOG(("  final join: rfrag [%p], rsep [%p],"
-			 " rroot [%p] heightdiff=%d\n",
+		    LOG(("  final join: rfrag %p, rsep \"%s\","
+			 " rroot %p heightdiff=%d\n",
 			 rfrag, rsep, rptr, height));
 		    rptr = join234_internal(rfrag, rsep, rptr, &height);
 		}
 		if (lsep) {
 		    int height = level - llevel;
-		    LOG(("  final join: lroot [%p], lsep [%p],"
-			 " lfrag [%p] heightdiff=%d\n",
+		    LOG(("  final join: lroot %p, lsep \"%s\","
+			 " lfrag %p heightdiff=%d\n",
 			 lptr, lsep, lfrag, height));
 		    lptr = join234_internal(lptr, lsep, lfrag, &height);
 		}
@@ -1859,7 +1859,7 @@ static node234 *split234_internal(tree234 *t, int index) {
 		    n->elems[i] = NULL;
 		}
 	    }
-	    LOG(("  grandad %p is now: %p/%d [%p] %p/%d [%p] %p/%d [%p] %p/%d\n",
+	    LOG(("  grandad %p is now: %p/%d \"%s\" %p/%d \"%s\" %p/%d \"%s\" %p/%d\n",
 		 n,
 		 n->kids[0], n->counts[0], n->elems[0],
 		 n->kids[1], n->counts[1], n->elems[1],
@@ -2135,8 +2135,8 @@ void verifytree(tree234 *tree, void **array, int arraylen) {
         if (i >= arraylen)
             error("tree contains more than %d elements", arraylen);
         if (array[i] != p)
-            error("enum at position %d: array says [%p]%s, tree says [%p]%s",
-                   i, array[i], array[i], p, p);
+            error("enum at position %d: array says %s, tree says %s",
+                   i, array[i], p);
     }
     if (ctx.elemcount != i) {
         error("tree really contains %d elements, enum gave %d",
@@ -2261,6 +2261,12 @@ int mycmp(void *av, void *bv) {
 #define lenof(x) ( sizeof((x)) / sizeof(*(x)) )
 
 char *strings[] = {
+    "0", "2", "3", "I", "K", "d", "H", "J", "Q", "N", "n", "q", "j", "i",
+    "7", "G", "F", "D", "b", "x", "g", "B", "e", "v", "V", "T", "f", "E",
+    "S", "8", "A", "k", "X", "p", "C", "R", "a", "o", "r", "O", "Z", "u",
+    "6", "1", "w", "L", "P", "M", "c", "U", "h", "9", "t", "5", "W", "Y",
+    "m", "s", "l", "4",
+#if 0
     "a", "ab", "absque", "coram", "de",
     "palam", "clam", "cum", "ex", "e",
     "sine", "tenus", "pro", "prae",
@@ -2272,6 +2278,7 @@ char *strings[] = {
     "aardvark", "wyvern", "dragon", "elf", "dwarf", "orc", "goblin",
     "pixie", "basilisk", "warg", "ape", "lizard", "newt", "shopkeeper",
     "wand", "ring", "amulet"
+#endif
 };
 
 #define NSTR lenof(strings)
@@ -2547,4 +2554,10 @@ int main(void) {
     return 0;
 }
 
+#endif
+
+#if 0 /* sorted list of strings might be useful */
+{
+    "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x",
+}
 #endif
