@@ -1,10 +1,11 @@
 #!/usr/bin/perl
 
 print << 'EOF';
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <HTML><HEAD>
 <TITLE>PuTTY Feedback and Bug Reporting</TITLE>
+<link rel="stylesheet" type="text/css" href="sitestyle.css" title="PuTTY Home Page Style">
 </HEAD>
-<link rel="stylesheet" type="text/css" href="sitestyle.css" name="PuTTY Home Page Style">
 <BODY>
 <h1 align=center>PuTTY Feedback and Bug Reporting</h1>
 

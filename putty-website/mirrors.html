@@ -1,7 +1,8 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <HTML><HEAD>
 <TITLE>PuTTY Web Site Mirrors</TITLE>
+<link rel="stylesheet" type="text/css" href="sitestyle.css" title="PuTTY Home Page Style">
 </HEAD>
-<link rel="stylesheet" type="text/css" href="sitestyle.css" name="PuTTY Home Page Style">
 <BODY>
 <h1 align=center>PuTTY Web Site Mirrors</h1>
 
@@ -198,7 +199,7 @@ in the UK.
 in the US.
 </ul>
 
-<a name="guidelines"><h2>Mirroring guidelines</h2></a>
+<h2><a name="guidelines">Mirroring guidelines</a></h2>
 
 <p>
 The PuTTY web site is not available through rsync or any organised
@@ -224,7 +225,7 @@ correctly. This script requires sed, perl and GNU wget, and it also
 assumes your web server is Apache (you'll need to replace the
 "<code>.htaccess</code>" file with your server's equivalent if not).
 
-<code><pre style="margin-left: 3em;">
+<pre style="margin-left: 3em;">
 #!/bin/sh 
 
 # Fetch the main web site.
@@ -258,7 +259,7 @@ echo "Redirect temp /<b><i>MY_PATH</i></b>/latest/ http://<b><i>MY_URL</i></b>/$
 # given any strange MIME types by the web server.
 echo "AddType application/octet-stream .hlp" &gt;&gt; .htaccess
 echo "AddType application/octet-stream .cnt" &gt;&gt; .htaccess
-</pre></code>
+</pre>
 
 <p><hr>If you want to comment on this web site, see the
 <a href="feedback.html">Feedback page</a>.
