@@ -1,0 +1,6 @@
+.cvsignore
+logfile
+diagnostics
+*.passwd
+golem
+connect.telnet
