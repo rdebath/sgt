@@ -23,3 +23,9 @@ Going in the other direction, several people have asked if it could
 be possible to start PuTTY <em>without</em> starting a terminal
 window and a shell - just have PuTTY sit in the background and do
 port forwarding only. This would also be possible in theory.
+
+<p>
+Similarly, perhaps we should also support running (e.g.) psftp
+sessions over an existing connection rather than forcing a new TCP/SSH
+connection, using the same sort of inter-process communication as with
+Pageant. Needs careful implementation to avoid opening security holes.
