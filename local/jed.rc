@@ -1,5 +1,5 @@
 % -*- mode: slang; mode: fold -*-
-% Simon Tatham: version $Revision: 1.17 $
+% Simon Tatham: version $Revision: 1.18 $
 
 %{{{ load Emacs keybindings to start with
 
@@ -658,7 +658,7 @@ define jedrc_is_in_lib(file) {
     variable s = get_jed_library_path();
     variable n;
 
-    n = strchop (s, ',', '');
+    n = strchop (s, ',', 0);
     while (n > 0) {
         s = dircat((), file);
         n--;
