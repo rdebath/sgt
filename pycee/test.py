@@ -30,3 +30,4 @@ if action == "lex":
         print token.type, "`" + token.text + "'"
 else:
     tree = c_parse.parse(l)
+    tree.display(0)

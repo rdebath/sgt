@@ -1,6 +1,7 @@
 # Python module to lex C. A bit ambitious, but sounds like fun :-)
 
 import re
+import sys
 
 # Base code so I can declare a bunch of enumerations
 _enumval = 0
@@ -198,7 +199,7 @@ class lexer:
         self.typedefs = {}
         self.line = 1
         self.col = 1
-        self.pushback = None
+        self.pushback = []
 
     def feed(self, text):
         "Feed the lexer some text."
@@ -217,11 +218,8 @@ class lexer:
         # FIXME: do this bit
 
     def unget(self, lexeme):
-        "Return a lexeme to the input. One lexeme of pushback is allowed."
-        if self.pushback != None:
-            FIXME()
-        else:
-            self.pushback = lexeme
+        "Return a lexeme to the input."
+        self.pushback.append(lexeme)
 
     def peek(self):
         "Peek at the next lexeme, non-destructively."
@@ -237,13 +235,14 @@ class lexer:
         "was going to provide another '&'. It will call hungry() first,\n"\
         "just in case, but if hungry() is not overridden it will just return."
 
-        if self.pushback:
-            ret = self.pushback
-            self.pushback = None
+        if self.pushback != []:
+            ret = self.pushback[-1]
+            self.pushback[-1:] = []
             return ret
 
         while 1:
             lex = self._realget()
+            sys.stdout.write(lex.text)
             if lex == None:
                 break
             if lex.type == lt_comment and not self.wantcomments:
