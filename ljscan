@@ -129,9 +129,20 @@ while 1:
 	continue
     ljusers.append((ss[0], s))
 
+# Get command-line options.
+scan = 1
+args = []
+for i in sys.argv[1:]:
+    if i[0] == "-":
+	if i == "-n":
+	    scan = 0
+	else:
+	    print "ignoring unrecognised command-line argument:", i
+    else:
+	args.append(i)
+
 # Filter list of users by command-line arguments.
-if len(sys.argv) > 1:
-    args = sys.argv[1:]
+if len(args) > 0:
     ljusers2 = []
     for i in ljusers:
 	if i[0] in args:
@@ -150,18 +161,20 @@ newlist = []
 changelist = []
 samelist = []
 faillist = []
+reportlist = []
 
 for t in ljusers:
     username, description = t
-    url = template % username
-    f = urllib.urlopen(url)
-    data = f.read()
-    f.close()
-    p = myparser(mysha())
-    p.feed(data)
-    p.close()
-    h = p.formatter.sha.hexdigest()
-    hdata = p.formatter.sha.data()
+    if scan:
+	url = template % username
+	f = urllib.urlopen(url)
+	data = f.read()
+	f.close()
+	p = myparser(mysha())
+	p.feed(data)
+	p.close()
+	h = p.formatter.sha.hexdigest()
+	hdata = p.formatter.sha.data()
 
     # So username t has journal hash h. Compare this with the last
     # update and see if it's changed.
@@ -180,7 +193,13 @@ for t in ljusers:
 	oldhash = ""
 	oldtime = None
 
-    if p.formatter.sha.datalen() < 256 or not p.clean:
+    if not scan:
+	writeout = 0
+	if oldtime == None:
+	    newlist.append((None, description))
+	else:
+	    reportlist.append((float(oldtime), description))
+    elif p.formatter.sha.datalen() < 128 or not p.clean:
 	# Basic error handling: in case of failure to retrieve the
 	# page, or in case the page was pathetically small (meaning
 	# that it probably says `Timeout retrieving page' or
@@ -230,6 +249,7 @@ def timealpha(a,b):
 newlist.sort(alphabetical)
 changelist.sort(alphabetical)
 samelist.sort(timealpha)
+reportlist.sort(timealpha)
 faillist.sort(alphabetical)
 
 # And finally output everything.
@@ -239,15 +259,25 @@ def printout(a):
     else:
 	ts = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(a[0]))
     print ts, a[1]
-if len(newlist):
-    print "Journals not previously known to ljscan:"
-    for i in newlist: printout(i)
-if len(changelist):
-    print "Journals which have changed since the last scan:"
-    for i in changelist: printout(i)
-if len(samelist):
-    print "Journals which are unchanged since the last scan:"
-    for i in samelist: printout(i)
-if len(faillist):
-    print "Journals which were not retrievable in this scan:"
-    for i in faillist: printout(i)
+
+if scan:
+    if len(newlist):
+	print "Journals not previously known to ljscan:"
+	for i in newlist: printout(i)
+    if len(changelist):
+	print "Journals which have changed since the last scan:"
+	for i in changelist: printout(i)
+    if len(samelist):
+	print "Journals which are unchanged since the last scan:"
+	for i in samelist: printout(i)
+    if len(faillist):
+	print "Journals which were not retrievable in this scan:"
+	for i in faillist: printout(i)
+else:
+    if len(reportlist):
+	print "Journals which have been scanned before:"
+	for i in reportlist: printout(i)
+    if len(newlist):
+	print "Journals which have not been scanned before:"
+	for i in newlist: printout(i)
+    
