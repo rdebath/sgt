@@ -4,6 +4,7 @@ DESTDIR = .
 # for `make install'
 PREFIX = /usr/local
 BINDIR = $(PREFIX)/bin
+SCRIPTDIR = $(PREFIX)/bin
 MANDIR = $(PREFIX)/man/man1
 INSTALL = install
 IPROG =#   flags for installing programs (default none)
@@ -30,7 +31,7 @@ release: lns.1
 	rm -rf reltmp
 
 install: lns.1
-	mkdir -p $(BINDIR)
-	$(INSTALL) $(IPROG) lns $(BINDIR)/lns
+	mkdir -p $(SCRIPTDIR)
+	$(INSTALL) $(IPROG) lns $(SCRIPTDIR)/lns
 	mkdir -p $(MANDIR)
 	$(INSTALL) $(IDATA) lns.1 $(MANDIR)/lns.1

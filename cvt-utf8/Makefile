@@ -4,6 +4,7 @@ DESTDIR = .
 # for `make install'
 PREFIX = /usr/local
 BINDIR = $(PREFIX)/bin
+SCRIPTDIR = $(PREFIX)/bin
 MANDIR = $(PREFIX)/man/man1
 INSTALL = install
 
@@ -28,7 +29,7 @@ release: cvt-utf8.1
 	rm -rf reltmp
 
 install: cvt-utf8.1
-	mkdir -p $(BINDIR)
-	$(INSTALL) cvt-utf8 $(BINDIR)/cvt-utf8
+	mkdir -p $(SCRIPTDIR)
+	$(INSTALL) cvt-utf8 $(SCRIPTDIR)/cvt-utf8
 	mkdir -p $(MANDIR)
 	$(INSTALL) -m 0644 cvt-utf8.1 $(MANDIR)/cvt-utf8.1

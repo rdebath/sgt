@@ -4,6 +4,7 @@ DESTDIR = .
 # for `make install'
 PREFIX = /usr/local
 BINDIR = $(PREFIX)/bin
+SCRIPTDIR = $(PREFIX)/bin
 MANDIR = $(PREFIX)/man/man1
 INSTALL = install
 IPROG =#   flags for installing programs (default none)
@@ -30,7 +31,7 @@ release: multi.1
 	rm -rf reltmp
 
 install: multi.1
-	mkdir -p $(BINDIR)
-	$(INSTALL) $(IPROG) multi $(BINDIR)/multi
+	mkdir -p $(SCRIPTDIR)
+	$(INSTALL) $(IPROG) multi $(SCRIPTDIR)/multi
 	mkdir -p $(MANDIR)
 	$(INSTALL) $(IDATA) multi.1 $(MANDIR)/multi.1
