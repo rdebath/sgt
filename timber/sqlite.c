@@ -545,9 +545,17 @@ static void ab_set_name (int contact_id,
 			 const char *new_name)
 {
     sql_open(ab);
-    sql_exec_printf (ab,
-		     "UPDATE contacts SET name = '%q' WHERE contact_id = %i",
-		     new_name, contact_id);
+    if (new_name) {
+	sql_exec_printf (ab,
+			 "UPDATE contacts SET name = '%q' "
+			 "WHERE contact_id = %i",
+			 new_name, contact_id);
+    } else {
+	sql_exec_printf (ab,
+			 "UPDATE contacts SET name = NULL "
+			 "WHERE contact_id = %i",
+			 contact_id);
+    }
 }
 
 void ab_display_name (/*const*/ char *contact_id)
