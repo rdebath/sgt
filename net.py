@@ -43,6 +43,14 @@ def validate(game):
     # Any integer is a valid game seed.
     return 1
 
+def itoa(n):
+    # The usual tedious function to stringify a potentially-long
+    # integer without the trailing L.
+    s = str(n)
+    if s[-1:] == 'L':
+        s = s[:-1]
+    return s
+
 class PredictableRNG:
     # I'm going to use MD5, which is way overkill but easy to remember!
     def __init__(self, seed):
@@ -573,8 +581,8 @@ def new_game(menuitem=None, seed=None):
         wrapstr = "wrapping"
     else:
         wrapstr = "non-wrapping"
-    win.set_title("Net %dx%d %s (%d)" % \
-    (NSQUARES_X, NSQUARES_Y, wrapstr, game.currgame))
+    win.set_title("Net %dx%d %s (%s)" % \
+    (NSQUARES_X, NSQUARES_Y, wrapstr, itoa(game.currgame)))
     redraw(darea)
 
 def restart_game(menuitem=None):
