@@ -1,0 +1,6 @@
+#!/usr/local/gnu/bin/bash
+set -- `stty 2>/dev/null | tr -s ';\n' '\n\n' | grep columns`
+cols=${3-80}
+finger stig@mono.org |
+  perl -ne 'BEGIN{$a=0;}s/\^[\[\]]/\e/g,print if $a;$a=1 if /^Plan/' |
+  mtribs -b49 -s$[$cols-1]
