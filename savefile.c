@@ -14,6 +14,7 @@ gamestate *savepos_load(levelset *set, char *user, int savenum) {
     char fname[FILENAME_MAX];
     gamestate *state;
     int nlines, levnum;
+    int i, j;
 
     fname[sizeof(fname)-1] = '\0';
     strncpy(fname, SAVEDIR, sizeof(fname));
@@ -49,10 +50,16 @@ gamestate *savepos_load(levelset *set, char *user, int savenum) {
 	if (ishdr(buf, "Level: ")) {
 	    levnum = atoi(buf+7);
 	    state = gamestate_new(set->levels[levnum-1]->width,
-				      set->levels[levnum-1]->height);
+				  set->levels[levnum-1]->height);
 	    state->levnum = levnum;
+	    state->title = set->levels[levnum-1]->title;
+	    state->status = PLAYING;
 	} else if (ishdr(buf, "Moves: ")) {
 	    state->movenum = atoi(buf + 7);
+	} else if (ishdr(buf, "Gold: ")) {
+	    state->gold_got = atoi(buf + 6);
+	} else if (ishdr(buf, "TotalGold: ")) {
+	    state->gold_total = atoi(buf + 11);
 	} else if (ishdr(buf, "Map: ")) {
 	    if (state->leveldata == NULL) {
 		fatal_error_string = "Map before size in save file";
@@ -81,6 +88,18 @@ gamestate *savepos_load(levelset *set, char *user, int savenum) {
 
     fclose(fp);
 
+    /*
+     * Find the player.
+     */
+    for (j = 0; j < state->height; j++) {
+	for (i = 0; i < state->width; i++) {
+	    if (state->leveldata[j*state->width+i] == '@') {
+		state->player_x = i;
+		state->player_y = j;
+	    }
+	}
+    }
+
     return state;
 }
 
@@ -108,7 +127,9 @@ void savepos_save(levelset *set, char *user, int savenum, gamestate *state) {
 	return;
     }
 
-    fprintf(fp, "Level: %dMoves: %d\n", state->levnum+1, state->movenum);
+    fprintf(fp, "Level: %d\nMoves: %d\nGold: %d\nTotalGold: %d\n",
+	    state->levnum, state->movenum, state->gold_got,
+	    state->gold_total);
     for (i = 0; i < state->height; i++) {
 	fprintf(fp, "Map: %.*s\n", state->width,
 		state->leveldata + i * state->width);

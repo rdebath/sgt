@@ -32,15 +32,17 @@ gamestate *init_game (level *lev) {
     int i, j;
 
     ret = gamestate_new(lev->width, lev->height);
-    ret->status = PLAYING;
     memcpy(ret->leveldata, lev->leveldata, lev->width * lev->height);
-    ret->gold_got = ret->gold_total = 0;
+    ret->title = lev->title;
     ret->movenum = 0;
-    for (j = 0; j < lev->height; j++) {
-	for (i = 0; i < lev->width; i++) {
-	    if (ret->leveldata[j*lev->width+i] == '$')
+    ret->gold_got = 0;
+    ret->status = PLAYING;
+    ret->gold_total = 0;
+    for (j = 0; j < ret->height; j++) {
+	for (i = 0; i < ret->width; i++) {
+	    if (ret->leveldata[j*ret->width+i] == '$')
 		ret->gold_total++;
-	    if (ret->leveldata[j*lev->width+i] == '@') {
+	    if (ret->leveldata[j*ret->width+i] == '@') {
 		ret->player_x = i;
 		ret->player_y = j;
 	    }

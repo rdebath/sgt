@@ -31,6 +31,7 @@
 typedef struct {
     enum { PLAYING, COMPLETED, DIED, BROKEN } status;
     char *leveldata;
+    char *title;
     int width, height;
     int player_x, player_y;
     int gold_got, gold_total;
@@ -80,6 +81,7 @@ typedef struct {
  * levelset_nlevels.
  */
 gamestate *gamestate_new(int width, int height);
+gamestate *gamestate_copy(gamestate *);
 void gamestate_free(gamestate *);
 
 level *level_new(void);

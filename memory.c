@@ -61,6 +61,8 @@ gamestate *gamestate_copy(gamestate *state) {
     ret->player_y = state->player_y;
     ret->gold_got = state->gold_got;
     ret->gold_total = state->gold_total;
+    ret->levnum = state->levnum;
+    ret->title = state->title;
     ret->movenum = state->movenum;
 
     return ret;

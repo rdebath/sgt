@@ -16,7 +16,7 @@ int main(int argc, char **argv) {
 	level *l;
 	gamestate *gs;
 	progress p;
-	int i, action;
+	int i, action, n, saveslot;
 	gamestate *saves[10];
 
 	get_user(user, sizeof(user));
@@ -38,11 +38,15 @@ int main(int argc, char **argv) {
 	    if (action > 0) {
 		l = set->levels[action-1];
 		gs = init_game(l);
+		gs->levnum = action;
+		saveslot = 0;
 	    } else if (action < -10) {
 		break;		       /* direct quit from main menu */
 	    } else {
 		/* load a saved position */
 		gs = gamestate_copy(saves[-action]);
+		l = set->levels[gs->levnum-1];
+		saveslot = -action;
 	    }
 	    if (gs) {
 		screen_level_init();
@@ -56,12 +60,38 @@ int main(int argc, char **argv) {
 			gamestate_free(gs);
 			gs = newgs;
 		    } else if (k == 's') {
-			/* FIXME: save the game */
+			n = screen_saveslot_ask('s', saves, saveslot);
+			if (n >= 0) {
+			    saveslot = n;
+			    saves[saveslot] = gamestate_copy(gs);
+			    savepos_save(set, user, saveslot, gs);
+			}
 		    } else if (k == 'r') {
-			/* FIXME: restore the game */
+			n = screen_saveslot_ask('r', saves, saveslot);
+			if (n >= 0) {
+			    saveslot = n;
+			    gamestate_free(gs);
+			    gs = gamestate_copy(saves[saveslot]);
+			    l = set->levels[gs->levnum-1];
+			}
 		    } else if (k == 'q') {
 			break;
 		    }
+		}
+		if (gs->status != PLAYING) {
+		    char *msg;
+		    if (gs->status == DIED) {
+			msg = "GAME OVER";
+		    } else if (gs->status == COMPLETED) {
+			msg = "LEVEL COMPLETE";
+			p.levnum = gs->levnum;
+			p.date = time(NULL);
+			progress_save(set, user, p);
+		    } else {
+			msg = "!INTERNAL ERROR!";
+		    }
+		    screen_level_display(gs, msg);
+		    screen_level_finish();
 		}
 	    }
 	}

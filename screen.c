@@ -75,7 +75,6 @@ void screen_init(void) {
     keypad(stdscr, 1);
     move(0,0);
     refresh();
-    leaveok(stdscr, 1);
     if (has_colors()) {
 	start_color();
 	for (i = 0; i < lenof(attrs); i++) {
@@ -120,6 +119,14 @@ void screen_level_finish(void) {
      * allow the user time to read everything, and then close the
      * window.
      */
+    int sw, sh;
+    char msg[] = "(Press any key)";
+
+    getmaxyx(stdscr, sh, sw);
+
+    screen_prints((sw-(sizeof(msg)-1))/2, sh-1, T_INSTRUCTIONS, msg);
+    move(0,0);
+    refresh();
     getch();
 }
 
@@ -166,16 +173,16 @@ void screen_level_display(gamestate *s, char *message) {
     /*
      * Display status line.
      */
-    sprintf(buf, "%d) ", 1 /* FIXME: s->levelnum */);
+    sprintf(buf, "%d) ", s->levnum);
     screen_prints(dx, dy+s->height, T_STATUS_1, buf);
-    screen_prints(dx+strlen(buf), dy+s->height, T_STATUS_2,
-		  "Level Title" /* FIXME: s->title */);
+    screen_prints(dx+strlen(buf), dy+s->height, T_STATUS_2, s->title);
     sprintf(buf, "%2d", s->gold_got);
     screen_prints(dx+s->width-5, dy+s->height, T_STATUS_2, buf);
     screen_printc(dx+s->width-3, dy+s->height, T_STATUS_1, '/');
     sprintf(buf, "%2d", s->gold_total);
     screen_prints(dx+s->width-2, dy+s->height, T_STATUS_2, buf);
 
+    move(0,0);
     refresh();
 }
 
@@ -194,15 +201,27 @@ int screen_level_getmove(void) {
 	if (i >= 'A' && i <= 'Z')
 	    i += 'a' - 'A';
     } while (i != 'h' && i != 'j' && i != 'k' && i != 'l' && i != 'q' &&
-	     i != 's' && (i < '0' || i > '9'));
+	     i != 's' && i != 'r' && (i < '0' || i > '9'));
     return i;
+}
+
+/*
+ * Format a save slot into a string.
+ */
+void saveslot_fmt(char *buf, int slotnum, gamestate *gs) {
+    if (gs) {
+	sprintf(buf, "%d) Level:%3d Moves:%4d   ", (slotnum+1)%10,
+		gs->levnum, gs->movenum);
+    } else {
+	sprintf(buf, "%d) [empty save slot]      ", (slotnum+1)%10);
+    }
 }
 
 /*
  * Display the levels-or-saves main menu. Returns a level number (1
  * or greater), a save number (0 to -9), or a `quit' signal (-100).
  */
-int screen_main_menu(levelset *set, gamestate *saves,
+int screen_main_menu(levelset *set, gamestate **saves,
 		     int maxlev, int startlev) {
     const int colwidth = 26, colgap = 8;
     const int height = 21, llines = height-5;
@@ -237,7 +256,7 @@ int screen_main_menu(levelset *set, gamestate *saves,
 	 */
 	for (i = 0; i < 10; i++) {
 	    char buf[40];
-	    sprintf(buf, "%d) [empty save slot]      ", (i+1)%10);
+	    saveslot_fmt(buf, i, saves[i]);
 	    screen_prints(dx2, dy+7+i,
 			  i == save ? T_LIST_SELECTED : T_LIST_ELEMENT, buf);
 	}
@@ -290,6 +309,7 @@ int screen_main_menu(levelset *set, gamestate *saves,
 	screen_prints(dx2+colwidth-24, dy+height-2, T_INSTRUCTIONS, "saved position, and R to");
 	screen_prints(dx2+colwidth-26, dy+height-1, T_INSTRUCTIONS, "resume playing from there.");
 
+	move(0,0);
 	refresh();
 	k = getch();
 	if (k >= 'A' && k <= 'Z') k += 'a'-'A';
@@ -316,5 +336,58 @@ int screen_main_menu(levelset *set, gamestate *saves,
 	    return level+1;
 	if (k == 'r')
 	    return -save;
+    }
+}
+
+int screen_saveslot_ask(char action, gamestate **saves, int defslot) {
+    const int width = 28;
+    const int height = 14;
+    int sx, sy, dx, dy;
+    int i, k;
+    char buf[50];
+
+    getmaxyx(stdscr, sy, sx);
+    dx = (sx - width) / 2;
+    dy = (sy - height) / 2;
+
+    while (1) {
+	for (i = 1; i < width-1; i++) {
+	    screen_printc(dx+i, dy, T_LIST_BOX, '-');
+	    screen_printc(dx+i, dy+height-1, T_LIST_BOX, '-');
+	}
+	for (i = 1; i < height-1; i++) {
+	    screen_printc(dx, dy+i, T_LIST_BOX, '|');
+	    screen_printc(dx+width-1, dy+i, T_LIST_BOX, '|');
+	}
+	screen_printc(dx, dy, T_LIST_BOX, '+');
+	screen_printc(dx, dy+height-1, T_LIST_BOX, '+');
+	screen_printc(dx+width-1, dy, T_LIST_BOX, '+');
+	screen_printc(dx+width-1, dy+height-1, T_LIST_BOX, '+');
+	screen_prints(dx+1, dy+1, T_INSTRUCTIONS,
+		      "Press 0-9 to pick a slot  ");
+	screen_prints(dx+1, dy+height-2, T_INSTRUCTIONS,
+		      (action == 's' ?
+		       "   Y to save over slot X  " :
+		       "Y to restore from slot X  "));
+	screen_printc(dx+24, dy+height-2, T_INSTRUCTIONS, '0'+(defslot+1)%10);
+	for (i = 0; i < 10; i++) {
+	    saveslot_fmt(buf, i, saves[i]);
+	    screen_prints(dx+1, dy+i+2,
+			  i == defslot ? T_LIST_SELECTED : T_LIST_ELEMENT,
+			  buf);
+	}
+	move(0,0);
+	refresh();
+	k = getch();
+	if (k >= 'A' && k <= 'Q') {
+	    k += 'a'-'A';
+	}
+	if (k >= '0' && k <= '9') {
+	    defslot = (k+9-'0') % 10;
+	}
+	if (k == 'y')
+	    return defslot;
+	if (k == 'n' || k == 'q')
+	    return -1;
     }
 }
