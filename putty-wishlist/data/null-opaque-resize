@@ -2,6 +2,8 @@ Summary: Opaque resizes under NT cause trouble
 Class: semi-bug
 Priority: medium
 Difficulty: tricky
+Present-in: 2001-03-26 0.51
+Fixed-in: 0.52
 Content-type: text/x-html-body
 
 <p>
@@ -11,3 +13,7 @@ the contents of the screen have been trashed and no resize event is
 sent to the server. Perhaps redisplay during resizing should be
 reimplemented in a way that doesn't change the terminal buffer's
 size at all.
+
+<p>
+Original report:
+<tt>Pine.LNX.4.33.0105081849050.32668-100000@sziami.cs.bme.hu</tt>
