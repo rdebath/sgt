@@ -1,0 +1,103 @@
+#!/usr/bin/env perl
+
+@floats = (
+  2.10194769649e-44, # 0000000F
+  5.73831721141e-42, # 00000FFF
+  1.46936653723e-39, # 000FFFFF
+  2.52435474624e-29, # 0FFFFFFF
+);
+
+@doubles = (
+  7.410984687618698162649e-323, # 000000000000000F
+  2.023198819719904598403e-320, # 0000000000000FFF
+  5.180648845879850950599e-318, # 00000000000FFFFF
+  1.326247364412638738532e-315, # 000000000FFFFFFF
+  3.395193265495029139594e-313, # 0000000FFFFFFFFF
+  8.691694759793261337050e-311, # 00000FFFFFFFFFFF
+  2.225073858507200889025e-308, # 000FFFFFFFFFFFFF
+  1.288229753919426518623e-231, # 0FFFFFFFFFFFFFFF
+);
+
+@dblorder = &order("d", 8, \@doubles);
+@fltorder = &order("f", 4, \@floats);
+
+if (scalar @ARGV == 0) {
+  print "usage: float [-f | -h] [-s | -d] <number>...\n";
+  print "       -f    treat input numbers as decimal floating-point\n";
+  print "       -h    treat input numbers as hex strings\n";
+  print "       -s    work in single precision\n";
+  print "       -d    work in double precision\n";
+  print "\n";
+  print "Byte orders for this platform (shown with 0 representing LSB):\n";
+  @order = ();
+  for ($i = 0; $i < 4; $i++) { $order[$fltorder[$i]] = $i; }
+  print "  single precision: ", (join "", @order), "\n";
+  for ($i = 0; $i < 8; $i++) { $order[$dblorder[$i]] = $i; }
+  print "  double precision: ", (join "", @order), "\n";
+}
+
+$size = $mode = "x";
+
+foreach $arg (@ARGV) {
+  if ($arg =~ /^-(.)(.*)/) {
+    while ($arg =~ /^-(.)(.*)/) {
+      $arg = "-$2";
+      if ($1 eq "h") { $mode = "h"; next; }
+      if ($1 eq "f") { $mode = "f"; next; }
+      if ($1 eq "s") { $size = "s"; next; }
+      if ($1 eq "d") { $size = "d"; next; }
+    }
+  } else {
+    if ($size eq "x" || $mode eq "x") {
+      print STDERR "$arg: please specify size (-s or -d) and mode (-h or -f)\n";
+      next;
+    }
+    if ($size eq "s") {
+      $n = 4; $order = \@fltorder; $pack = "f";
+    } else {
+      $n = 8; $order = \@dblorder; $pack = "d";
+    }
+    if ($mode eq "h") {
+      @array = (unpack "C*", pack "H*", $arg), 0,0,0,0,0,0,0,0;
+      @data = ();
+      for ($i = 0; $i < $n; $i++) {
+        $data[$order->[$i]] = $array[$n-1-$i];
+      }
+      $number = pack "C*", @data;
+      &display($pack, $n, $number, $order);
+    } else {
+      $number = pack $pack, $arg;
+      &display($pack, $n, $number, $order);
+    }
+  }
+}
+
+sub order {
+  my ($pack, $n, $array) = @_;
+  @order = ();
+  %bytes = ();
+  for ($i = 0; $i < $n; $i++) {
+    @str = unpack "C*", pack $pack, $array->[$i];
+    $results = 0;
+    for ($j = 0; $j < $n; $j++) {
+      if ($str[$j] != 0 && !$bytes{$j}) {
+        $bpos = $j;
+        $results++;
+      }
+    }
+    die "results = $results not 1!\n" unless $results == 1;
+    $bytes{$bpos} = 1;
+    push @order, $bpos;
+  }
+  @order;
+}
+
+sub display {
+  my ($pack, $n, $data, $order) = @_;
+  $flt = unpack $pack, $data;
+  @d1 = unpack "C*", $data;
+  @d2 = ();
+  foreach $i (@$order) { unshift @d2, $d1[$i]; }
+  $hex = unpack "H*", pack "C*", @d2;
+  printf "%-16s %.19g\n", $hex, $flt;
+}
