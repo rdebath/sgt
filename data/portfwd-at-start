@@ -1,0 +1,106 @@
+Summary: "unexpected packet type 91" with tunnel open during connection setup
+Class: bug
+Present-in: 0.53b 2003-06-04
+
+Report of message "Unexpected response to shell/command request:
+packet type 91" - seems to be correlated with seeing "Opening
+forwarded connection" before "Allocated pty" in Event log.
+
+Sounds to me like the connection setup code is insufficiently able to
+cope with asynchrony.
+
+ref <28ssdvsa2meifm4mnriadpcffs2ahuul73@smtp.image.dk> and prior in
+thread.
+
+Excerpts from bug reports:
+
+----------
+2003-06-05 00:21:20     Looking up host "server.example.com"
+2003-06-05 00:21:20     Connecting to X.Y.Z.W port 22
+2003-06-05 00:21:20     Server version: SSH-2.0-OpenSSH_3.4p1
+2003-06-05 00:21:20     We claim version: SSH-2.0-PuTTY-Snapshot-2003-06-04
+2003-06-05 00:21:20     Using SSH protocol version 2
+2003-06-05 00:21:21     Doing Diffie-Hellman group exchange
+2003-06-05 00:21:21     Doing Diffie-Hellman key exchange
+2003-06-05 00:21:30     Host key fingerprint is:
+2003-06-05 00:21:30     ssh-dss 1024 XX:XX:XX:XX:XX:XX:XX:XX:XX:XX:XX:XX:XX:XX:XX:XX
+2003-06-05 00:21:30     Initialised AES-256 client->server encryption
+2003-06-05 00:21:30     Initialised AES-256 server->client encryption
+2003-06-05 00:21:30     Initialised zlib (RFC1950) compression
+2003-06-05 00:21:30     Initialised zlib (RFC1950) decompression
+2003-06-05 00:21:31     Reading private key file "C:\some\path\to\key.PPK"
+2003-06-05 00:21:31     Offered public key
+2003-06-05 00:21:31     Offer of public key accepted
+2003-06-05 00:21:32     Access granted
+2003-06-05 00:21:32     Opened channel for session
+2003-06-05 00:21:32     Requesting X11 forwarding
+2003-06-05 00:21:32     X11 forwarding enabled
+2003-06-05 00:21:32     Local port 10119 forwarding to news.example.com:119
+2003-06-05 00:21:32     Local port 8080 forwarding to proxy.example.com:8080
+2003-06-05 00:21:32     Opening forwarded connection to news.example.com:119
+2003-06-05 00:21:32     Allocated pty
+2003-06-05 00:21:32     Unexpected response to shell/command request: packet type 91
+
+And a bit more verbose (another run with the same behaviour):
+
+Event Log: Offered public key
+Incoming packet type 60 / 0x3c (SSH2_MSG_USERAUTH_PK_OK)
+Event Log: Offer of public key accepted
+Outgoing packet type 50 / 0x32 (SSH2_MSG_USERAUTH_REQUEST)
+Incoming packet type 52 / 0x34 (SSH2_MSG_USERAUTH_SUCCESS)
+Event Log: Access granted
+Outgoing packet type 90 / 0x5a (SSH2_MSG_CHANNEL_OPEN)
+Incoming packet type 91 / 0x5b (SSH2_MSG_CHANNEL_OPEN_CONFIRMATION)
+Event Log: Opened channel for session
+Event Log: Requesting X11 forwarding
+Outgoing packet type 98 / 0x62 (SSH2_MSG_CHANNEL_REQUEST)
+Incoming packet type 99 / 0x63 (SSH2_MSG_CHANNEL_SUCCESS)
+Event Log: X11 forwarding enabled
+Event Log: Local port 10119 forwarding to news.example.com:119
+Event Log: Local port 8080 forwarding to proxy.example.com:8080
+Outgoing packet type 98 / 0x62 (SSH2_MSG_CHANNEL_REQUEST)
+Event Log: Opening forwarded connection to news.example.com:119
+Outgoing packet type 90 / 0x5a (SSH2_MSG_CHANNEL_OPEN)
+Incoming packet type 99 / 0x63 (SSH2_MSG_CHANNEL_SUCCESS)
+Event Log: Allocated pty
+Outgoing packet type 98 / 0x62 (SSH2_MSG_CHANNEL_REQUEST)
+Incoming packet type 91 / 0x5b (SSH2_MSG_CHANNEL_OPEN_CONFIRMATION)
+Event Log: Unexpected response to shell/command request: packet type 91
+
+Reproduced using netcat: "nc -vvvvvv localhost 10119" runned many times
+while PuTTY is connecting.
+----------
+
+Previous report:
+----------
+PuTTY Release 0.53b
+Windows 95 B
+SSH2
+Server version: SSH-2.0-OpenSSH_3.4p1
+
+The problem/symptom: PuTTY shows a message box with "Unexpected response to
+shell/command request: packet type 91" and goes into inactive mode where
+port forwarding isn't possible (I guess it's line 5236 in ssh.c).
+
+How to reproduce: Have PuTTY forward a local port to a machine on the other
+end. Try to use the forwarded port while starting PuTTY and connecting to
+the remote host.
+
+I have the problem with an internal news server on my university which I
+read through an SSH forwarded port using Forte Agent that I tell to fetch
+news before PuTTY is connected. Forte Agent waits 1 second between retries.
+
+[...]
+
+It seems PuTTY sends an SSH2_MSG_CHANNEL_OPEN interleaved with other
+packets and then gets confused when it sees the reply
+SSH2_MSG_CHANNEL_OPEN_CONFIRMATION.
+
+I should probably also note that the problem is periodic, and whenever I
+have seen the problem and the event log (5 times or so) it has had "Opening
+forwarded connection to news.example.com:119" just before "Allocated pty".
+
+Also I have found netcat better to provoke the error by trying "nc -vvv
+localhost 10119" just before running "C:\Programmer\putty\putty.exe -load
+ask" in another prompt.
+----------
