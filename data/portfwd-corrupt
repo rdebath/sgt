@@ -1,6 +1,7 @@
 Summary: Reports of port forwarding corruption
 Class: bug
 Present-in: 0.53b 2003-06-29 0.54
+Priority: high
 Content-type: text/x-html-body
 
 <p>
