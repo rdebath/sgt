@@ -3,6 +3,7 @@ Class: semi-bug
 Priority: medium
 Difficulty: fun
 Content-type: text/plain
+Fixed-in: 2004-11-28
 
 pterm currently runs a GTK timer function every 20ms (fifty times a
 second). This timer function takes care of calling term_update() to
