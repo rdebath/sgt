@@ -1,10 +1,21 @@
-Summary: PSFTP and PSCP can't handle > 2 GB files
+Summary: PSFTP and PSCP can't handle big files (> 2 GB, > 4 GB)
 Class: semi-bug
 Priority: medium
 Difficulty: fun
 Content-type: text/x-html-body
 
-<p>PSCP ought to handle really really big (&gt;2Gb) files. There's been
-a report that it doesn't do so properly. (Apparently this will only
+<p>
+The file transfer utilities (PSCP and PSFTP) ought to handle
+really really big (&gt;2Gb) files. There have been reports
+that they don't do so properly. (Apparently, on Windows, this will only
 be meaningful under an NT-series OS; the 95 series inherently can't
 handle more than 2Gb in any case.)
+
+<p>
+2004-04-27: One symptom we've had reported a lot recently is the error
+message "Assertion failed: actuallen &lt;= len, file scp.c, line 1435"
+for files &gt;2GB. As of the 2004-04-28 snapshot, there should be a
+fix which will make this go away (thanks to Krzysztof Kowalczyk), but
+we've not been able to test than, and in any case files over 4GB are
+<em>still</em> not supported (and this would require some upheaval to
+fix).
