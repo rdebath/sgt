@@ -1,0 +1,29 @@
+Summary: Discard sensitive material in Pageant on hibernation
+Class: wish
+Priority: low
+Content-type: text/x-html-body
+
+<p>
+It's been suggested that Pageant (and anything else storing private
+key material long-term) should forget (wipe) all its unencrypted keys
+when a system hibernates, to avoid them being stored to disk; it
+should at least reload the keys and ask for passphrases again after a
+hibernation.
+Apparently the windows messages BT_APMQUERYSUSPEND and PBT_APMSUSPEND
+would be useful here.
+
+<p>
+Low priority because:
+<ul>
+<li>
+If you have physical access to the machine, then you've compromised
+its security anway; you can just install a trojan pageant which will
+happily snarf the passphrases from keys for you, or perpetrate any one
+of a number of other attacks.
+</li>
+<li>
+Pageant doesn't currently attempt to prevent key material being
+written to disk. (We don't for instance use VirtualLock(); see Peter
+Gutmann's comments on its deficiencies in various places.)
+</li>
+</ul>
