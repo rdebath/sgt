@@ -5,12 +5,59 @@ Priority: medium
 Content-type: text/x-html-body
 
 <p>
-It would clearly be desirable for PuTTY to be able to act as a front
-end for Windows command interpreters (Command Prompt, bash, etc).
+Lots of people ask whether PuTTY would be able to act as a front end
+for Windows command interpreters (Command Prompt, bash, etc), in
+place of the not-very-pleasant standard console window.
 
 <p>
-In a pipe? Probably only for NT-class systems?
+I haven't investigated this very closely, but it's not clear to me
+that this would be useful for anything except Cygwin. I've used
+Windows telnetds, and they look to me as if they're working in a
+fundamentally different way from a Unix telnetd. When you issue a
+command that scrolls the screen a lot, it seems to get _redrawn_
+from the server end rather than scrolled - as if the server had its
+own image of what the console screen ought to look like and was
+running something like <code>libcurses</code> to reproduce that
+image on the client side.
 
 <p>
-Workaround for now is to set up a local SSH or telnet server, of
-course.
+This leads me to conjecture that Windows's equivalent of a pty works
+more like /dev/vcs than /dev/pty* - Windows will still do the
+terminal emulation itself, and all you can do is read the results
+off a rectangular screen buffer and transfer them to an output
+device. So there would be no scope, in this model, for PuTTY to
+supply superior terminal emulation.
+
+<p>
+The alternative to that, of course, would be to ignore Windows's pty
+equivalent (whatever it is) and run the application in an ordinary
+pair of pipes instead. But this doesn't seem to work very well for
+the ordinary Windows Command Prompt utility: if you do that, you
+lose the command-line editing and recall which the console device
+provides.
+
+<p> As far as I can tell (and this is still all deductions based on
+observation, and might be wrong), the Cygwin library takes a
+completely different approach: the first Cygwin program you run in a
+Windows console will turn part of itself into a terminal emulator,
+create some pipes, and run the rest of the program in those pipes.
+If the program spawns other programs, they are passed the same
+pipes, and all terminal emulation is done by whichever program was
+first to get hold of the real console device. So in <em>this</em>
+model, PuTTY could contribute: it could run (say) Cygwin bash in a
+pair of pipes, and apply its own terminal emulation to the data it
+received from bash. However, there's still the question of what it
+would do about local line editing (which Unix utilities would still
+want to enable sometimes). I suspect Cygwin has a means of dealing
+with this, which a hypothetical local-PuTTY would have to implement.
+
+<p>
+In summary: I believe Windows does not supply an interface at the
+right level to make it sensibly possible to run a Command Prompt
+inside PuTTY's terminal emulator. I believe it would be possible in
+theory, but quite fiddly, to turn PuTTY into a local xterm-alike for
+the use of Cygwin programs only; but this is significantly less
+useful than the original goal of making it a generic replacement for
+the Command Prompt window. So unless anyone can correct my
+deductions above, I don't think this has a sufficiently high
+benefit-to-effort ratio to be worth doing.
