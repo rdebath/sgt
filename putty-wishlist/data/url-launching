@@ -33,7 +33,7 @@ There is a third-party patch to PuTTY to add this feature, called
 <a href="http://www.groehn.net/nutty/">Nutty</a>.
 We won't be incorporating it into PuTTY as it doesn't take account of
 several of our
-<a href="http://www.tartarus.org/~simon/puttydoc/AppendixD.htm">design principles</a>:
+<a href="http://www.tartarus.org/~simon/puttydoc/AppendixD.html">design principles</a>:
 <ul>
 <li>it isn't cross-OS portable (Windows-specific URL launching and
 platform-independent URL finding are entangled in the same source
