@@ -417,6 +417,8 @@ dfa_enable_highlight_cache("timber.dfa", $1);
 dfa_define_highlight_rule("^[F:].*$", "comment", $1);
 dfa_define_highlight_rule("^\\|[^: \t]*[: ]", "Qkeyword", $1);
 dfa_define_highlight_rule("^\\+.*$", "preprocess", $1);
+dfa_define_highlight_rule("^\\>.*$", "operator", $1);
+dfa_define_highlight_rule("^\\<.*$", "error", $1);
 dfa_define_highlight_rule("^[ \240]-- $", "keyword", $1);
 dfa_define_highlight_rule("^[ \240]> *> *>.*$", "preprocess", $1);
 dfa_define_highlight_rule("^[ \240]> *>.*$", "comment", $1);
@@ -690,7 +692,14 @@ define timber_getheader(processed) {
     eol();
     result = bufsubstr();
     go_right_1();
-    while (looking_at(string1) or looking_at(string2)) {
+    while (1) {
+        if (looking_at(">") or looking_at("<")) {
+            eol();
+            go_right_1();
+            continue;
+        }
+        !if (looking_at(string1) or looking_at(string2))
+            break;
 	go_right_1();
 	skip_white();
 	push_mark();
@@ -884,7 +893,7 @@ define timber_header_key() {
 % Unfold the message or attachment under the cursor. If it's a message,
 % we must ensure the Status line says RO.
 define timber_unfold() {
-    variable header, h2, c, showing, firstpart, leadchr;
+    variable header, header_hiding, h2, c, showing, firstpart, leadchr;
 
     bol();
     while (is_line_hidden() and not bobp()) {
@@ -904,11 +913,19 @@ define timber_unfold() {
 	    c = what_char();
 	    if (c == '|') {
 		h2 = timber_header_key();
-		if (strlen(h2))
+		if (strlen(h2)) {
 		    header = h2;
+                    header_hiding = 0; % safeguard against runaway <>
+                }
 		!if (is_substr(strlow(timber_boringhdrs),
-			       strlow(":"+header+":")))
+			       strlow(":"+header+":")) or header_hiding)
 		    set_line_hidden(0);
+            } else if (c == '>') {
+                header_hiding = 1;
+                set_line_hidden(0);
+            } else if (c == '<') {
+                header_hiding = 0;
+                set_line_hidden(1);
 	    } else if (c == '!' or c == ':') {
 		if (c == '!' and firstpart) {
 		    firstpart = 0;
@@ -1027,14 +1044,22 @@ define timber_bom() {
 
 % Unhide _all_ headers in the current message.
 define timber_fullhdr() {
+    variable c;
     timber_bom();
     push_spot();
     eol();
     go_right_1();
-    while (what_char == '|' and bolp()) {
-	set_line_hidden(0);
-	eol();
-	go_right_1();
+    while (bolp()) {
+        c = what_char();
+        if (c == '|') {
+            set_line_hidden(0);
+        } else if (c == '>' or c == '<') {
+            set_line_hidden(1);
+        } else {
+            break;
+        }
+        eol();
+        go_right_1();
     }
     pop_spot();
     recenter(1);
@@ -1105,7 +1130,7 @@ define timber_get_mimepart(use_decoded) {
     variable encoding = "7BIT";	       % default
     variable type = "text/plain";      % default
     variable headerchr, leadchr, topchr, nestlevel;
-    variable mark, top, bottom;
+    variable mark, top, bottom, c;
 
     mark = create_user_mark();
 
@@ -1136,7 +1161,12 @@ define timber_get_mimepart(use_decoded) {
 
     eol();
     go_right_1();
-    while (what_char == headerchr and not eolp()) {
+    while (not eolp()) {
+        c = what_char();
+        if (c == '<' or c == '>')
+            continue;
+        !if (c == headerchr)
+            break;
 	go_right_1();
 	if (timber_ila("Content-Transfer-Encoding: ")) {
 	    go_right(27);
@@ -2394,6 +2424,11 @@ define timber_reply_common(all) {
     eol();
     go_right_1();
     while (1) {
+        if (bolp() and (timber_la(">") or timber_la("<"))) {
+            eol();
+            go_right_1();
+            continue;
+        }
 	if (bolp() and timber_la("|")) {
 	    if (timber_ila("|From:")) {
 		go_right(6);
