@@ -132,6 +132,8 @@ class SphericalPic:
         #    its job is to trace round the projection boundary from
         #    p1 to p2, on the assumption that the projected line
         #    _left_ the projected area at p1 and _returns_ at p2.
+	#  - wholeboundary() creates a path tracing round the
+	#    entire boundary.
         #  - endpath() ends the current path.
         #  - endshape() ends the current shape.
 	#  - prologue() does any required preparation of the
@@ -139,6 +141,11 @@ class SphericalPic:
 	#  - epilogue() does any required cleanup of the projection
 	#    object.
 	proj.prologue()
+
+	proj.newshape(self.background)
+	proj.wholeboundary()
+	proj.endshape()
+
         for shape in self.shapes:
 	    initialised = 0
 
@@ -538,6 +545,9 @@ class Hemisphere:
             ab = ab + 360
         self.psprint("0 0 1", aa, ab, "arc")
 
+    def wholeboundary(self):
+        self.psprint("0 0 1 0 360 arc closepath")
+
     def endpath(self):
         self.psprint("closepath")
 
@@ -754,6 +764,14 @@ class GnomonicPolygon:
 	    self.poly[i][1] * self.scale + self.origin[1], "lineto")
 	self.psprint(p2b[0] * self.scale + self.origin[0], \
 	p2b[1] * self.scale + self.origin[1], "lineto")
+
+    def wholeboundary(self):
+        self.psprint(self.poly[-1][0]*self.scale + self.origin[0], \
+	self.poly[-1][1]*self.scale + self.origin[1], "moveto")
+	for i in range(len(self.poly)):
+	    self.psprint(self.poly[i][0] * self.scale + self.origin[0], \
+	    self.poly[i][1] * self.scale + self.origin[1], "lineto")
+	self.psprint("closepath")
 
     def endpath(self):
         self.psprint("closepath")
