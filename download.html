@@ -380,7 +380,8 @@ PuTTYtel), and also the help files</b></td>
 This <code>.tar.gz</code> source archive should build the latest
 release version of PuTTY for Unix. (We currently do not supply
 development snapshots in this format; see below for instructions on
-accessing our CVS repository if you need up-to-date Unix source.)
+accessing our Subversion repository if you need up-to-date Unix
+source.)
 
 <p>
 To build the source, you will need to unpack this archive, change
@@ -456,43 +457,36 @@ PuTTY from source.
 </tr>
 </table>
 
-<h2>Access via CVS</h2>
+<h2>Access via Subversion</h2>
 
 <p>
 If you want to keep track of the PuTTY development right up to the
 minute, or view the change logs for each of the files in the source
-base, you can access the PuTTY master CVS repository directly.
+base, you can access the PuTTY master Subversion repository directly.
 
 <p>
-You can access the repository by means of CVS pserver. The CVSROOT
-variable you need is
-"<code>:pserver:cvsuser@cvs.tartarus.org:/home/cvs</code>". Password
-is "<code>anonymous</code>"; check out module "<code>putty</code>".
-In other words, on a typical Unix CVS setup, you can check out a
-copy of the PuTTY development code using the commands
+The Subversion URL you need for the PuTTY trunk development is
+<code>svn://ixion.tartarus.org/main/putty</code>. So you could check
+out the trunk version of PuTTY using a command such as <code>svn co svn://ixion.tartarus.org/main/putty</code>
 
-<blockquote>
-<code>cvs -d :pserver:cvsuser@cvs.tartarus.org:/home/cvs login</code>
-<br>
-(enter the password "<code>anonymous</code>" when prompted)
-<br>
-<code>cvs -d :pserver:cvsuser@cvs.tartarus.org:/home/cvs co putty</code>
-<br>
-(PuTTY should now be checked out for you. You will not need to enter
-the password again.)
-</blockquote>
+<p>
+To check out branches of the code, replace <code>putty</code> with
+the branch name (such as <code>putty-branch-0.56</code>). You can
+see what branches exist using the command <code><code>svn ls
+svn://ixion.tartarus.org/main</code>.
 
 <p>
 In case you aren't able to access the real PuTTY repository using
-pserver, we also provide a <code>tar.gz</code> archive of the CVS
-repository, updated every night. So if you want to browse PuTTY's
-CVS history, you could download that, unpack it, and point a local
-CVS client at it. Click here to download the CVS archive:
-<a href="putty-cvs.tar.gz">putty-cvs.tar.gz</a>.
+Subversion over the network, we also provide a gzip-compressed
+Subversion dump file of the repository, updated every night. So if
+you want to browse PuTTY's revision history, you could download
+that, unpack it, and point a local Subversion client at it. Click
+here to download the dump file:
+<a href="putty-svn.dump.gz">putty-svn.dump.gz</a>.
 
 <p>
-Alternatively, you can browse the CVS repository on the WWW,
-<a href="http://cvs.tartarus.org/putty/">here</a>.
+Alternatively, you can browse the Subversion repository on the WWW,
+<a href="http://www.tartarus.org/~simon-anonsvn/viewcvs.cgi/putty/">here</a>.
 </p>
 
 <p><hr>If you want to comment on this web site, see the
