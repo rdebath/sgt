@@ -1,6 +1,6 @@
 # -*- mode: sh; mode: fold -*-
 # Simon Tatham's standardised chunk of .bashrc
-# $Revision: 1.32 $
+# $Revision: 1.33 $
 
 #{{{ I don't like .bash_history files. They wet their nests.
 unset HISTFILE
@@ -360,12 +360,25 @@ x() {
 
 rfc() {
   local filename
-  if test "$1" = "index"; then
-    filename=rfc-index.txt
-  else
-    filename=rfc$1.txt
-  fi
-  wget -q -O - http://sunsite.org.uk/rfc/$filename | less
+  local host
+  host="sunsite.org.uk"
+  while test $# -gt 0; do
+    case $1 in
+      -h) host="$2"; shift;;
+      -i) host=www.ietf.org;;
+      --help) echo "Usage: rfc [-i] [-h hostname] [index | rfc-number]";
+              return 0;;
+      -*) echo Unrecognised option "$1" >&2; return 1 ;;
+      *) if test "$1" = "index"; then
+           filename=rfc-index.txt
+	 else
+	   filename=rfc$1.txt
+	 fi ;;
+    esac
+    shift
+  done
+
+  wget -q -O - "http://$host/rfc/$filename" | less
 }
 
 #}}}
