@@ -75,6 +75,10 @@ propgroup other {
 
     property use view_entry_disabled;
     property use comment_userpic_style;
+
+    property string journals_to_avoid {
+        des = "Journals to avoid (on friendsfriends etc)";
+    }
 }
 
 propgroup text {
@@ -107,6 +111,8 @@ set comment_bar_two_fgcolor = "#000000";
 set comment_userpic_style = "small";
 
 set box_width = 600;
+
+set journals_to_avoid = "";
 
 function print_stylesheet () {
 """body, td {
@@ -263,6 +269,26 @@ function print_entry (Page p, Entry e, Color bgcolor, Color fgcolor, bool hide_t
     #$datetime = $e.time->date_format("med")+"|<b>" 
     #    + $e.time->time_format() + "</b>";
     $datetime = $e.time->date_format("%%da%% %%yyyy%%-%%mm%%-%%dd%% %%HH%%:%%min%%");
+
+    # We never omit posts if we're actually viewing the journal in
+    # question.
+    if ($e.journal.username != $p.journal.username) {
+        var string avoid;
+        $avoid = " " + $*journals_to_avoid + " ";
+        if ($avoid->contains(" " + $e.journal.username + " ")) {
+            var string journal = $e.journal->as_string();
+            """
+<tr><td></td><td valign="top">
+<table width="$*box_width" cellpadding="2" cellspacing="0" border="0" summary="" class="entrybox">
+<tr align='left'>
+<td bgcolor="$*outline" align="center">
+<table width="100%" cellpadding="5" cellspacing="0" border="0" summary="">
+<tr bgcolor="$*stronger_back" align='left'>
+<td class="caption">Omitted <a href="$e.permalink_url">post</a> from $journal</td>
+</tr></table></td></tr></table></td></tr>""";
+            return;
+        }
+    }
 
     if (defined $e.userpic)
     {
