@@ -27,7 +27,7 @@ exist in Unicode. Plan to map this to U+FFFD REPLACEMENT CHARACTER
 (we're assured it's not very important).
 
 <li>Code point <code>0xA8</code>: the character table above indicates
-it's U+00BD INVERTED QUESTION MARK, but another table we've seen shows
+it's U+00BF INVERTED QUESTION MARK, but another table we've seen shows
 a glyph like U+00A7 SECTION SIGN. Which is correct?
 
 </ul>
