@@ -4,6 +4,7 @@ Difficulty: fun
 Priority: high
 Present-in: 0.53 0.53b
 Absent-in: 0.52 2001-11-24
+Fixed-in: 2003-04-13
 Content-type: text/x-html-body
 
 <p>
@@ -23,3 +24,6 @@ This vulnerability corresponds to CVE
 <a href="http://cve.mitre.org/cgi-bin/cvename.cgi?name=CAN-2003-0069">
 CAN-2003-0069
 </a>.
+
+<p>
+<b>SGT, 2003-04-12</b>: Just fixed this.
