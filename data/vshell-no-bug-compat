@@ -1,0 +1,21 @@
+Summary: Bug compatibility modes accidentally triggered for VShell.
+Class: bug
+Priority: medium
+Difficulty: fun
+Content-type: text/x-html-body
+
+<p>
+It appears that the triggers for bug compatibility modes in
+ssh_detect_bugs() are too lax. For instance, the following version
+string (presented by
+<a href="http://www.vandyke.com/products/vshell/">VShell</a>):
+
+<blockquote><tt>SSH-2.0-2.0.1 (official) VShell</tt></blockquote>
+
+<p>
+is mistakenly triggering the HMAC bug compatibility mode.
+
+<p>
+(It might also be nice if users could force particular bug
+compatibility modes on or off in the configuration, as well as having
+them automatically detected.)
