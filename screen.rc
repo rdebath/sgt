@@ -1,0 +1,10 @@
+termcap  vt220 'AF=\E[3%dm:AB=\E[4%dm'
+terminfo vt220 'AF=\E[3%p1%dm:AB=\E[4%p1%dm'
+termcap  linux 'AF=\E[3%dm:AB=\E[4%dm'
+terminfo linux 'AF=\E[3%p1%dm:AB=\E[4%p1%dm'
+termcap  xterm 'AF=\E[3%dm:AB=\E[4%dm'
+terminfo xterm 'AF=\E[3%p1%dm:AB=\E[4%p1%dm'
+escape ^\^\
+startup_message off
+shell -/bin/bash
+vbell off
