@@ -20,7 +20,8 @@ print << 'EOF';
 <a href="maillist.html">Updates</a> |
 <a href="feedback.html">Feedback</a> |
 <a href="changes.html">Changes</a> |
-<a href="wishlist.html">Wishlist</a></p>
+<a href="wishlist.html">Wishlist</a> |
+<a href="team.html">Team</a></p>
 EOF
 
 open FAQ, $ENV{"HOME"} . "/pub/putty/doc/AppendixA.html";
