@@ -166,5 +166,6 @@ test find_attr_value =>
 test equivalence_transform =>
     ["init"],
     ["set-contact phone 0 '(020) 7222 1234'"],
-    ["find-contact phone 0 '(020) 7811 8181'"],
-    ["find-contact phone 0 '0207-222-1234'"];
+    ["find-contact phone '(020) 7811 8181'"],
+    ["find-contact phone '0207-222-1234'",
+     stdout => "0;<DATETIME>;;(020) 7222 1234\n"];
