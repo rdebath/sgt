@@ -16,3 +16,15 @@ works out of it's part of a multi-byte sequence or not.
 <p>
 It's been suggested that PuTTY should have an option to work like
 this.
+
+<p>
+<b>SGT adds</b>: This sounds like a nice simple feature on the face
+of it, but unfortunately UTF-8 complicates it a lot. What should
+happen when the terminal is in UTF-8 mode (or, hypothetically and if
+we ever get round to it, some other multi-byte character encoding)?
+Should we send a bare 9B <em>anyway</em>, causing an illegal UTF-8
+sequence but keeping compatibility with any software which is
+scanning the incoming byte stream for a precise sequence of
+<em>bytes</em>? Or should we send C2 9B, the UTF-8 encoding of
+U+009B? Or should we simply outlaw this mode completely in UTF-8
+mode?
