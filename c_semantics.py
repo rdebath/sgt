@@ -217,18 +217,60 @@ class optree:
 	self.type = type
 	self.tuple = extras
 
+# Error reporting.
+
+class err_generic_semantic_error:
+    def __init__(self):
+        self.message = "semantic error"
+class err_deref_nonpointer(err_generic_semantic_error):
+    def __init__(self):
+        self.message = "attempt to dereference a non-pointer"
+class err_assign_nonlval(err_generic_semantic_error):
+    def __init__(self):
+        self.message = "attempt to assign to a non-lvalue"
+class err_nonconst_expr(err_generic_semantic_error):
+    def __init__(self):
+        self.message = "expected constant expression"
+class err_incompat_types_binop(err_generic_semantic_error):
+    def __init__(self, token):
+        self.message = "incompatible types for " + lex_names[token]
+class err_invalid_type(err_generic_semantic_error):
+    def __init__(self, typespecs):
+        self.message = "unrecognised type `"
+        for i in typespecs:
+            text = lex_names[i][1:-1] # strip ` and '
+            if self.message[-1] != '`': self.message = self.message + " "
+            self.message = self.message + text
+        self.message = self.message + "'"
+class err_multi_scq(err_generic_semantic_error):
+    def __init__(self, one, two):
+        self.message = "multiple storage class qualifiers " + \
+        lex_names[one] + " and " + lex_names[two]
+
+def defaulterrfunc(err):
+    sys.stderr.write("<input>:" + "%d:%d: " % (err.line, err.col) + err.message + "\n")
+
 # The actual semantic analysis phase.
 
 class semantics:
     "Class to perform, and hold the results of, semantic analysis of a C\n"\
     "translation unit."
     
-    def __init__(self, parsetree, target):
+    def __init__(self, parsetree, target, errfunc=defaulterrfunc):
         self.functions = []
         self.topdecls = []
 	self.target = target
         self.types = typesystem(target)
-        self.do_tran_unit(parsetree)
+        self.errfunc = errfunc
+        try:
+            self.do_tran_unit(parsetree)
+        except err_generic_semantic_error, err:
+            self.errfunc(err)
+
+    def error(self, object, error):
+        error.line = object.line
+        error.col = object.col
+        raise error
 
     def display(self):
         for i in self.topdecls:
@@ -358,7 +400,7 @@ class semantics:
                 operand = self.expr(exp.list[1])
                 desttype = self.types.referenced(operand[0])
                 if desttype == None:
-                    ERROR() # operand must be of pointer type
+                    self.error(exp, err_deref_nonpointer())
                 return desttype, None, 1, optree(operand)
             else:
                 #  increment decrement
@@ -382,14 +424,14 @@ class semantics:
             lhs = self.expr(exp.list[0])
             rhs = self.expr(exp.list[2])
             if not lhs[2]:
-                ERROR() # non-lvalue on left of assignment
+                self.error(exp, err_assign_nonlval())
             else:
                 if lhs[0] != rhs[0]: rhs = self.typecvt(rhs, lhs[0], 0)
                 return lhs[0], None, 0, optree(exp.list[1].type, lhs[0], lhs, rhs)
 	elif exp.type == pt_constant_expression:
 	    type, value, lvalue, tree = self.expr(exp.list[0])
 	    if value == None:
-		ERROR() # non-constant constant expression
+                self.error(exp, err_nonconst_expr())
 	    return type, value, lvalue, tree
 	else:
 	    assert 0, "unexpected node in expression"
@@ -416,7 +458,7 @@ class semantics:
         if self.types.isarith(lhs[0]) and self.types.isarith(rhs[0]):
             lt, rt, outt = self.types.usualarith(lhs[0], rhs[0])
             if outt == None:
-                ERROR() # can't combine these two types
+                self.error(lhs, err_incompat_types_binop(op))
             if lhs[0] != lt: lhs = self.typecvt(lhs, lt)
             if rhs[0] != rt: rhs = self.typecvt(lhs, rt)
         elif 0: # plus or minus, and exactly one is pointer
@@ -466,7 +508,7 @@ class semantics:
         for i in specs.list:
             if i.type == pt_storage_class_qualifier:
                 if stg != None:
-                    ERROR() # more than one storage class qualifier
+                    self.error(i, err_multi_scq(stg, i.list[0].type))
                 else:
                     stg = i.list[0].type
             elif i.type == pt_type_qualifier:
@@ -494,7 +536,7 @@ class semantics:
         elif sts == (lt_typedefname,):
             basetype = self.types.findtypedef(tspec.text, typequals)
         else:
-            ERROR() # unrecognised type specifier `typespecs'
+            self.error(specs, err_invalid_type(typespecs))
         return stg, fnspecs, basetype
 
     def do_declarator(self, dcl, t):

@@ -142,11 +142,12 @@ def parse(lex, errfunc=defaulterrfunc):
             else:
                 self.error(err_expected_token(type))
 
-        def node(self, type):
+        def node(self, type, firstobj=None):
             n = node(type)
-            lexeme = self.peek()
-            n.line = lexeme.line
-            n.col = lexeme.col
+            if firstobj == None:
+                firstobj = self.peek()
+            n.line = firstobj.line
+            n.col = firstobj.col
             return n
 
         def error(self, errobj):
@@ -181,7 +182,7 @@ def parse(lex, errfunc=defaulterrfunc):
             return n
 
         def function_definition(self, ds=None, dcl=None):
-            n = self.node(pt_function_definition)
+            n = self.node(pt_function_definition, ds)
             if ds == None: ds = self.declaration_specifiers()
             n.append(ds)
             if dcl == None: dcl = self.declarator(1) # non-abstract only
@@ -204,7 +205,7 @@ def parse(lex, errfunc=defaulterrfunc):
             return n
 
         def declaration(self, ds=None, dcl=None):
-            n = self.node(pt_declaration)
+            n = self.node(pt_declaration, ds)
             if ds == None: ds = self.declaration_specifiers()
             n.append(ds)
             if dcl != None or self.peektype() != lt_semi:
@@ -231,7 +232,7 @@ def parse(lex, errfunc=defaulterrfunc):
             return n
 
         def init_declarator_list(self, dcl=None):
-            n = self.node(pt_init_declarator_list)
+            n = self.node(pt_init_declarator_list, dcl)
             n.append(self.init_declarator(dcl))
             while self.peektype() == lt_comma:
                 self.eat(lt_comma)
@@ -239,7 +240,7 @@ def parse(lex, errfunc=defaulterrfunc):
             return n
         
         def init_declarator(self, dcl=None):
-            n = self.node(pt_init_declarator)
+            n = self.node(pt_init_declarator, dcl)
             if dcl == None: dcl = self.declarator(1) # non-abstract only
             n.append(dcl)
             if self.peektype() == lt_assign:
@@ -840,7 +841,7 @@ def parse(lex, errfunc=defaulterrfunc):
             while 1:
                 t = self.peektype()
                 if t in operators:
-                    n = self.node(pt_binary_expression)
+                    n = self.node(pt_binary_expression, expr)
                     n.append(expr)
                     n.append(self.get())
                     n.append(nextfunc())
@@ -874,7 +875,7 @@ def parse(lex, errfunc=defaulterrfunc):
             expr = self.logical_OR_expression(uexp)
             if self.peektype() == lt_query:
                 self.eat(lt_query)
-                n = self.node(pt_conditional_expression)
+                n = self.node(pt_conditional_expression, expr)
                 n.append(expr)
                 n.append(self.expression())
                 self.eat(lt_colon)
@@ -901,7 +902,7 @@ def parse(lex, errfunc=defaulterrfunc):
             if self.peektype() in [lt_assign, lt_timeseq, lt_slasheq,
             lt_moduloeq, lt_pluseq, lt_minuseq, lt_lshifteq, lt_rshifteq,
             lt_bitandeq, lt_bitxoreq, lt_bitoreq]:
-                n = self.node(pt_assignment_expression)
+                n = self.node(pt_assignment_expression, uexp)
                 n.append(uexp)
                 n.append(self.get())
                 n.append(self.assignment_expression())
