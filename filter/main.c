@@ -86,6 +86,7 @@ int main(int argc, char **argv)
 	dup2(slavefd, 0);
 	dup2(slavefd, 1);
 	dup2(slavefd, 2);
+	setsid();
 	setpgrp();
 	tcsetpgrp(0, getpgrp());
 	/* Close everything _else_, for tidiness. */
