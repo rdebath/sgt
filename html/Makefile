@@ -15,7 +15,6 @@ all: points60.png \
      faces7.png \
      faces8.png \
      faces9.png \
-     faces9a.png \
      faces10.png \
      faces11.png \
      faces32.png
