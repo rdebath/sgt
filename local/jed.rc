@@ -1,5 +1,5 @@
 % -*- mode: slang; mode: fold -*-
-% Simon Tatham: version $Revision: 1.23 $
+% Simon Tatham: version $Revision: 1.24 $
 
 %{{{ load Emacs keybindings to start with
 
@@ -828,12 +828,53 @@ define sig() {
 }
 
 %}}}
+%{{{ Internal to this .jedrc: hacks to support changes in jed 0.99
+
+% In a staggeringly irritating manoeuvre, Mr Davis in his infinite wisdom
+% decided to make incompatible changes to create_blocal_var(), strchop()
+% and strchopr(), and mkdir. Here we create functions which will work in
+% both versions above and below that boundary.
+
+define jedrc_create_blocal_var(name, type) {
+    if (_jed_version < 9900)
+        create_blocal_var(name, type);
+    else
+        create_blocal_var(name);
+}
+
+define jedrc_strchop(s, delim, quote) {
+    variable a, alen, i;
+
+    if (_jed_version >= 9900) {
+        a = strchop (s, delim, quote);
+        (alen,,) = array_info(a); alen = alen[0];
+        for (i = 0; i < alen; i++)
+            a[i];
+        alen;
+    } else
+        strchop (s, delim, quote);
+}
+
+define jedrc_strchopr(s, delim, quote) {
+    variable a, alen, i;
+
+    if (_jed_version >= 9900) {
+        a = strchopr (s, delim, quote);
+        (alen,,) = array_info(a); alen = alen[0];
+        for (i = 0; i < alen; i++)
+            a[i];
+        alen;
+    } else
+        strchopr (s, delim, quote);
+}
+
+%}}}
 %{{{ Internal to this .jedrc: look for a file in the Jed library
 define jedrc_is_in_lib(file) {
     variable s = get_jed_library_path();
-    variable n;
+    variable n, a, alen;
 
-    n = strchop (s, ',', 0);
+    n = jedrc_strchop (s, ',', 0);
     while (n > 0) {
         s = dircat((), file);
         n--;
@@ -1029,7 +1070,7 @@ define cvs_log() {
     bob();
     bol_fsearch("-----");
     recenter(1);
-    create_blocal_var("cvs-file", 's');
+    jedrc_create_blocal_var("cvs-file", 's');
     set_blocal_var(file, "cvs-file");
 }
 define cvs_annotate() {
@@ -1056,7 +1097,7 @@ define cvs_annotate() {
     setbuf_info((getbuf_info & ~1) | 8); % clear modified bit, set readonly
     goto_line(line);
     recenter(0);
-    create_blocal_var("cvs-file", 's');
+    jedrc_create_blocal_var("cvs-file", 's');
     set_blocal_var(file, "cvs-file");
 }
 add_completion("cvs_log");
