@@ -10,13 +10,18 @@
 #define BLKMIN 512
 #define BLKMAX 1024
 
+struct file {
+    FILE *fp;
+    int refcount;
+};
+
 struct buffer {
     btree *bt;
 };
 
 struct bufblk {
     int len;			       /* number of bytes in block, always */
-    FILE *fp;			       /* non-NULL indicates a file block */
+    struct file *file;		       /* non-NULL indicates a file block */
     int filepos;		       /* only meaningful if fp!=NULL */
     unsigned char *data;	       /* only used if fp==NULL */
 };
@@ -26,20 +31,17 @@ static bt_element_t bufblkcopy(void *state, void *av)
     struct bufblk *a = (struct bufblk *)av;
     struct bufblk *ret;
 
-    if (a->fp) {
+    if (a->file) {
 	ret = (struct bufblk *)malloc(sizeof(struct bufblk));
 	ret->data = NULL;
-	/*
-	 * If I start reference-counting links to file structures,
-	 * this is a place where I have to add a ref.
-	 */
+	a->file->refcount++;
     } else {
 	ret = (struct bufblk *)malloc(sizeof(struct bufblk) + BLKMAX);
 	ret->data = (unsigned char *)(ret+1);
 	memcpy(ret->data, a->data, BLKMAX);
     }
 
-    ret->fp = a->fp;
+    ret->file = a->file;
     ret->filepos = a->filepos;
     ret->len = a->len;
 
@@ -50,11 +52,14 @@ static void bufblkfree(void *state, void *av)
 {
     struct bufblk *a = (struct bufblk *)av;
 
-    /*
-     * If I start reference-counting links to file structures, this
-     * is where I drop a ref count and potentially free a file
-     * structure.
-     */
+    if (a->file) {
+	a->file->refcount--;
+
+	if (a->file->refcount == 0) {
+	    fclose(a->file->fp);
+	    free(a->file);
+	}
+    }
 
     free(a);
 }
@@ -104,14 +109,15 @@ extern buffer *buf_new_from_file(FILE *fp)
 {
     buffer *buf = buf_new_empty();
     struct bufblk *blk;
+    struct file *file;
+
+    file = (struct file *)malloc(sizeof(struct file));
+    file->fp = fp;
+    file->refcount = 1;		       /* the reference we're about to make */
 
     blk = (struct bufblk *)malloc(sizeof(struct bufblk));
     blk->data = NULL;
-    blk->fp = fp;
-    /*
-     * If I start reference-counting links to file structures, this
-     * is a place where I have to add a ref.
-     */
+    blk->file = file;
     blk->filepos = 0;
 
     fseek(fp, 0, SEEK_END);
@@ -196,9 +202,9 @@ extern void buf_fetch_data(buffer *buf, void *vdata, int len, int pos)
 	if (thislen > len)
 	    thislen = len;
 
-	if (blk->fp) {
-	    fseek(blk->fp, blk->filepos + poswithin, SEEK_SET);
-	    fread(data, thislen, 1, blk->fp);
+	if (blk->file) {
+	    fseek(blk->file->fp, blk->filepos + poswithin, SEEK_SET);
+	    fread(data, thislen, 1, blk->file->fp);
 	} else {
 	    memcpy(data, blk->data + poswithin, thislen);
 	}
@@ -228,7 +234,7 @@ static void buf_bt_cleanup(btree *bt, int index)
     a = (struct bufblk *)bt_index(bt, index);
     b = (struct bufblk *)bt_index(bt, index+1);
 
-    if (!a || !b || a->fp || b->fp) return;
+    if (!a || !b || a->file || b->file) return;
 
     if (a->len >= BLKMIN && b->len >= BLKMIN) return;
 
@@ -285,14 +291,10 @@ static int buf_bt_splitpoint(btree *bt, int pos)
     blk = (struct bufblk *)bt_index(bt, index);
     newblk = (struct bufblk *)bufblkcopy(NULL, blk);
 
-    if (!newblk->fp) {
+    if (!newblk->file) {
 	memcpy(newblk->data, blk->data + poswithin, blk->len - poswithin);
     } else {
 	newblk->filepos += poswithin;
-	/*
-	 * If I start reference-counting links to file structures,
-	 * this is a place where I have to add a ref.
-	 */
     }
     blk->len = poswithin;
     newblk->len -= poswithin;
@@ -352,7 +354,7 @@ extern void buf_insert_data(buffer *buf, void *vdata, int len, int pos)
 	blk->data = (unsigned char *)(blk+1);
 	memcpy(blk->data, data, blklen);
 	blk->len = blklen;
-	blk->fp = NULL;
+	blk->file = NULL;
 	blk->filepos = 0;
 
 	data += blklen;
