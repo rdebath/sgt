@@ -1997,13 +1997,144 @@ cmpfn234 cmp;
 /* The tree representation of the same data. */
 tree234 *tree;
 
+/*
+ * Routines to provide a diagnostic printout of a tree. Currently
+ * relies on every element in the tree being a one-character string
+ * :-)
+ */
+typedef struct {
+    char **levels;
+} dispctx;
+
+int dispnode(node234 *n, int level, dispctx *ctx) {
+    if (level == 0) {
+	int xpos = strlen(ctx->levels[0]);
+	int len;
+
+	if (n->elems[2])
+	    len = sprintf(ctx->levels[0]+xpos, " %s%s%s",
+			  n->elems[0], n->elems[1], n->elems[2]);
+	else if (n->elems[1])
+	    len = sprintf(ctx->levels[0]+xpos, " %s%s",
+			  n->elems[0], n->elems[1]);
+	else
+	    len = sprintf(ctx->levels[0]+xpos, " %s",
+			  n->elems[0]);
+	return xpos + 1 + (len-1) / 2;
+    } else {
+	int xpos[4], nkids;
+	int nodelen, mypos, myleft, x, i;
+
+	xpos[0] = dispnode(n->kids[0], level-3, ctx);
+	xpos[1] = dispnode(n->kids[1], level-3, ctx);
+	nkids = 2;
+	if (n->kids[2]) {
+	    xpos[2] = dispnode(n->kids[2], level-3, ctx);
+	    nkids = 3;
+	}
+	if (n->kids[3]) {
+	    xpos[3] = dispnode(n->kids[3], level-3, ctx);
+	    nkids = 4;
+	}
+
+	if (nkids == 4)
+	    mypos = (xpos[1] + xpos[2]) / 2;
+	else if (nkids == 3)
+	    mypos = xpos[1];
+	else
+	    mypos = (xpos[0] + xpos[1]) / 2;
+	nodelen = nkids * 2 - 1;
+	myleft = mypos - ((nodelen-1)/2);
+	assert(myleft >= xpos[0]);
+	assert(myleft + nodelen-1 <= xpos[nkids-1]);
+
+	x = strlen(ctx->levels[level]);
+	while (x <= xpos[0] && x < myleft)
+	    ctx->levels[level][x++] = ' ';
+	while (x < myleft)
+	    ctx->levels[level][x++] = '_';
+	if (nkids==4)
+	    x += sprintf(ctx->levels[level]+x, ".%s.%s.%s.",
+			 n->elems[0], n->elems[1], n->elems[2]);
+	else if (nkids==3)
+	    x += sprintf(ctx->levels[level]+x, ".%s.%s.",
+			 n->elems[0], n->elems[1]);
+	else
+	    x += sprintf(ctx->levels[level]+x, ".%s.",
+			 n->elems[0]);
+	while (x < xpos[nkids-1])
+	    ctx->levels[level][x++] = '_';
+	ctx->levels[level][x] = '\0';
+
+	x = strlen(ctx->levels[level-1]);
+	for (i = 0; i < nkids; i++) {
+	    int rpos, pos;
+	    rpos = xpos[i];
+	    if (i > 0 && i < nkids-1)
+		pos = myleft + 2*i;
+	    else
+		pos = rpos;
+	    if (rpos < pos)
+		rpos++;
+	    while (x < pos && x < rpos)
+		ctx->levels[level-1][x++] = ' ';
+	    if (x == pos)
+		ctx->levels[level-1][x++] = '|';
+	    while (x < pos || x < rpos)
+		ctx->levels[level-1][x++] = '_';
+	    if (x == pos)
+		ctx->levels[level-1][x++] = '|';
+	}
+	ctx->levels[level-1][x] = '\0';
+
+	x = strlen(ctx->levels[level-2]);
+	for (i = 0; i < nkids; i++) {
+	    int rpos = xpos[i];
+
+	    while (x < rpos)
+		ctx->levels[level-2][x++] = ' ';
+	    ctx->levels[level-2][x++] = '|';
+	}
+	ctx->levels[level-2][x] = '\0';
+
+	return mypos;
+    }
+}
+
+void disptree(tree234 *t) {
+    dispctx ctx;
+    char *leveldata;
+    int width = count234(t);
+    int ht = height234(t) * 3 - 2;
+    int i;
+
+    if (!t->root) {
+	printf("[empty tree]\n");
+    }
+
+    leveldata = smalloc(ht * (width+2));
+    ctx.levels = smalloc(ht * sizeof(char *));
+    for (i = 0; i < ht; i++) {
+	ctx.levels[i] = leveldata + i * (width+2);
+	ctx.levels[i][0] = '\0';
+    }
+
+    (void) dispnode(t->root, ht-1, &ctx);
+
+    for (i = ht; i-- ;)
+	printf("%s\n", ctx.levels[i]);
+
+    sfree(ctx.levels);
+    sfree(leveldata);
+}
+
 typedef struct {
     int treedepth;
     int elemcount;
 } chkctx;
 
 int chknode(chkctx *ctx, int level, node234 *node,
-             void *lowbound, void *highbound) {
+	    void *lowbound, void *highbound) {
     int nkids, nelems;
     int i;
     int count;
@@ -2417,6 +2548,7 @@ int main(void) {
             addtest(strings[j]);
             in[j] = 1;
         }
+	disptree(tree);
 	findtest();
     }
 
