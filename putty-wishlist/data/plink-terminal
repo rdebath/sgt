@@ -1,0 +1,23 @@
+Summary: Terminal emulation in Plink
+Class: wish
+Difficulty: tricky
+Priority: never
+Content-type: text/x-html-body
+
+<p>
+Plink is designed as a data transport tool, and is not intended for
+interactive use; as such it performs no interpretation on the data it
+transfers.
+
+<p>
+However, people occasionally ask for an option in Plink to handle
+terminal escape codes, so that you get `PuTTY in a console window'.
+
+<p>
+Unless there's some good reason why running PuTTY full-screen isn't
+enough to address this wish, we're unlikely to consider it worth the
+extra effort and code bloat.
+
+<p>
+Perhaps it's possible to augment the Windows console with terminal
+emulation capabilities &agrave; la <code>ANSI.SYS</code>?
