@@ -23,8 +23,8 @@ MKREGULAR = \
 DUALS = \
     hexakisicosahedron \
     hexakisoctahedron \
-    deltoidalhexecontahedron \
-    deltoidalicositetrahedron \
+    trapezoidalhexecontahedron \
+    trapezoidalicositetrahedron \
     triakisoctahedron \
     triakisicosahedron \
     pentakisdodecahedron \
@@ -42,10 +42,10 @@ hexakisicosahedron: greatrhombicosidodecahedron ../dual.py
 hexakisoctahedron: greatrhombicuboctahedron ../dual.py
 	../dual.py $< $@
 
-deltoidalhexecontahedron: smallrhombicosidodecahedron ../dual.py
+trapezoidalhexecontahedron: smallrhombicosidodecahedron ../dual.py
 	../dual.py $< $@
 
-deltoidalicositetrahedron: smallrhombicuboctahedron ../dual.py
+trapezoidalicositetrahedron: smallrhombicuboctahedron ../dual.py
 	../dual.py $< $@
 
 triakisoctahedron: truncatedcube ../dual.py
