@@ -166,6 +166,8 @@ foreach $a (@aheaders) {
     $data = &canonlf($data) if $ctype =~ /^(text|message)\//;
     $data = &b64($data);
     $enc = "base64";
+  } elsif (&contains_hibit_chars($data)) {
+    $enc = "8bit";
   } else {
     $enc = "7bit";
   }
@@ -204,15 +206,22 @@ exit 0;
 
 sub needsencode {
   my ($data) = @_;
-  return 1 if &contains_hibit_chars($data); # hibits need encoding
-  return 1 if $data =~ /\nFrom /s || $data =~ /^From /s;
-  return 1 if $data =~ /[^\n]{78}/s; # lines too long
-  return 1 if $data =~ /\s\n/s || $data =~ /\s$/s; # trailing space
+  return 1 if &contains_unprint_chars($data);
+  return 1 if substr($data, -1) ne "\n";
+#  return 1 if $data =~ /\nFrom /s || $data =~ /^From /s;
+#  return 1 if $data =~ /[^\n]{78}/s; # lines too long
+#  return 1 if $data =~ /\s\n/s || $data =~ /\s$/s; # trailing space
 }
 
 sub contains_hibit_chars {
   my ($data) = @_;
   $data =~ y/\0-\177//d;
+  return length $data != 0;
+}
+
+sub contains_unprint_chars {
+  my ($data) = @_;
+  $data =~ y/\n\t\040-\176\240-\377//d;
   return length $data != 0;
 }
 
