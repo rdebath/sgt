@@ -7,11 +7,6 @@
  *    reopen?). Then we can ref-count the file structure, and close
  *    the underlying FILE * if all links to it vanish.
  * 
- *  - Need btree enhanced with an element-free function and the
- *    native ability to free an entire tree _full of stuff_; the
- *    current implementation of buf_bt_free is completely wasting
- *    all the clever ref-counting.
- * 
  *  - Need to handle >2Gb files! A major limiting factor here is
  *    the B-tree property size limit :-( Either malloc a long long
  *    for each tree node, or stitch together two ints in some
