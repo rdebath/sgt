@@ -159,6 +159,12 @@ more than one PC and the PCs have different drive mappings. Once
 DoIt has decided where it's connecting to, it will look up the host
 name and use the appropriate drive mappings section.
 
+Host names are matched as prefixes, so you can write `host mypc'
+rather than having to specify `mypc.company.com' in full. In
+particular, this means that if you want a universal section to apply
+to _all_ hosts, you can do this by providing a zero-length prefix -
+just use a line containing the word `host' on its own.
+
 Finding the server
 ------------------
 
