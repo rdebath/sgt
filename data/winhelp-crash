@@ -1,0 +1,31 @@
+Summary: Context help causes WinHelp crash after PuTTY help files upgraded
+Class: semi-bug
+Difficulty: taxing
+Content-type: text/x-html-body
+
+<p>
+Invoking context help from within Windows PuTTY after the PuTTY help
+files on a system have been replaced has been observed to cause
+WinHelp to crash.
+
+<p>
+Since the crash occurs in <tt>winhelp.exe</tt>, it's almost certainly
+a WinHelp bug, but perhaps there is something we can do to avoid
+triggering it. We're out of ideas, though.
+
+<p>
+The symptoms I observed (on Win98SE, and also on 2000 when I had
+access to it, IIRC) were:
+
+<ul>
+<li>When using new .HLP and .CNT files (e.g., downloaded into a new
+   directory, alongside a new version of PuTTY such as a development
+   snapshot), invoking context help consistently causes WINHELP.EXE to
+   crash and leave a putty.TMP file lying around.
+<li>However, invoking the Help file without context by pressing
+   (say) the Help button on PuTTY's configuration dialog, or invoking it
+   from a session's system menu, works fine, and subsequently to that,
+   context help works too.
+<li>Deleting the hidden putty.GID file that appears alongside the PuTTY
+   help files the first time they're used doesn't appear to help.
+</ul>
