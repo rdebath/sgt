@@ -118,7 +118,7 @@ Time parse_time(char *str)
     return (h * 60 + m) * 60 + s;
 }
 
-Date today()
+void now(Date *dd, Time *tt)
 {
     time_t t;
     struct tm tm;
@@ -127,9 +127,18 @@ Date today()
     t = time(NULL);
     tm = *localtime(&t);
 
-    ret = ymd_to_date(tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
-    assert(ret != INVALID_DATE);
+    *dd = ymd_to_date(tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
+    assert(*dd != INVALID_DATE);
 
+    *tt = (tm.tm_hour * 60 + tm.tm_min) * 60 + tm.tm_sec;
+}
+
+Date today(void)
+{
+    Date ret;
+    Time t;
+
+    now(&ret, &t);
     return ret;
 }
 

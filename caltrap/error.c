@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <errno.h>
 #include "caltrap.h"
 
 /*
@@ -34,6 +35,14 @@ static void do_error(int code, va_list ap) {
 	break;
       case err_addargno:
 	sprintf(error, "`add' command expects one or two arguments");
+	flags = PREFIX;
+	break;
+      case err_listargno:
+	sprintf(error, "`list' command expects at most two arguments");
+	flags = PREFIX;
+	break;
+      case err_cronargno:
+	sprintf(error, "`cron' command expects exactly two arguments");
 	flags = PREFIX;
 	break;
       case err_date:
@@ -67,6 +76,10 @@ static void do_error(int code, va_list ap) {
       case err_dberror:
 	sp = va_arg(ap, char *);
 	sprintf(error, "database error: %.200s", sp);
+	flags = PREFIX;
+	break;
+      case err_cronpipe:
+	sprintf(error, "error opening pipe: %.200s", strerror(errno));
 	flags = PREFIX;
 	break;
     }
