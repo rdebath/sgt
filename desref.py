@@ -1,4 +1,5 @@
-# Python reference implementation of DES
+# Python reference implementation of DES.
+# Includes the algorithm modifications used in Unix crypt(3).
 
 def bitpos(bitnum, size):
     return 1L << (size - bitnum)
@@ -74,11 +75,14 @@ def key_setup(key):
         C = leftrot(C, leftshifts[i])
         D = leftrot(D, leftshifts[i])
         ret.k[i] = PC2(C, D)
+
+    ret.saltbits = 0 # disables the crypt(3) modification
+
     return ret
 
 # The function f used in each round of the algorithm.
 # R is 32 bits; K is 48.
-def f(R, K):
+def f(R, K, saltbits):
 
     # f needs subfunctions:
     #   E(R) [32 bits -> 48]
@@ -152,7 +156,14 @@ def f(R, K):
             ret = (ret << 1) | bit(i, y, 32)
         return ret
 
-    x = E(R) ^ K
+    x = E(R)
+    if saltbits != 0:
+        # crypt(3) hack, not present in DES proper.
+        # Exchange, between the two 24-bit halves of the output of E,
+        # all bits specified by the 24-bit mask "saltbits".
+        xv = (x ^ (x >> 24)) & saltbits
+        x = x ^ (xv | (xv << 24))
+    x = x ^ K
     y = 0
     for i in range(8):
         y = (y << 4) | S(i, (x >> (6*(7-i))) & 0x3F)
@@ -166,7 +177,7 @@ def des_cipher(data, keysched, direction):
     else:
         sched = range(15,-1,-1)
     for i in sched:
-        L,R = R, L ^ f(R, keysched.k[i])
+        L,R = R, L ^ f(R, keysched.k[i], keysched.saltbits)
     data = glue2x32(R, L)
     data = initperm(data, -1)
     return data
@@ -182,6 +193,79 @@ def des_test(key, plain, cipher):
     if myplain != plain:
         print "func=decipher " + errstring + " wrongplain="+hex(myplain)
 
+# ----------------------------------------------------------------------
+# Unix crypt(3) wrapper
+
+def crypt_asctobin(c):
+    i = ord(c)
+    if i >= ord('a'):
+        n = i - ord('a') + 38   # 'a'..'z' denote 38..63
+    elif i >= ord('A'):
+        n = i - ord('A') + 12   # 'A'..'Z' denote 12..37
+    else:
+        n = i - ord('.') +  0   # '.','/','0'..'9' denote 0..11
+    return n & 0x3F
+
+def crypt_bintoasc(n):
+    n = n & 0x3F
+    if n >= 38:
+        return chr(n - 38 + ord('a'))
+    elif n >= 12:
+        return chr(n - 12 + ord('A'))
+    else:
+        return chr(n -  0 + ord('.'))
+
+def crypt(passwd, salt):
+    key = 0L
+    # The salt bits come up in a weird order.
+    saltorig = crypt_asctobin(salt[1])
+    saltorig = (saltorig << 6) | crypt_asctobin(salt[0])
+    saltbits = 0
+    for i in range(12):
+        saltbits = saltbits << 1
+        if saltorig & (1 << i): saltbits = saltbits | 1
+    passwd = passwd + "\0\0\0\0\0\0\0\0"
+    # Ordinary DES key usage ignores the low bit of each byte of the key.
+    # When encrypting a password, the high bit is far less likely to
+    # contain entropy than the low bit. So we shift the whole key left by
+    # 1, so that the seven useful bits of each password char go into the
+    # seven bits actually used in each key byte.
+    for i in range(8):
+        key = (key << 8) | ((ord(passwd[i]) & 0x7F) << 1)
+    keysched = key_setup(key)
+    keysched.saltbits = saltbits << 12
+    result = 0
+    for i in range(25):
+        result = des_cipher(result, keysched, +1)
+    # Output conversion
+    result = result << 2
+    output = ""
+    for i in range(11):
+        output = crypt_bintoasc(result & 0x3F) + output
+        result = result >> 6
+    output = crypt_bintoasc((saltorig >> 6) & 0x3F) + output
+    output = crypt_bintoasc(saltorig & 0x3F) + output
+    return output
+
+def crypttest(passwd, salt, result):
+    myresult = crypt(passwd, salt)
+    if myresult != result:
+        print "func=crypt passwd=" + passwd + " salt=" + salt + \
+        " result=" + result + " wrongresult=" + myresult
+
+# ----------------------------------------------------------------------
+
 des_test(0x1234567887654321L, 0xabcddcbafedccdefL, 0x784eb1b76fd1a0fcL)
 des_test(0x7a6b7d6c9e0d1e4cL, 0x53debb4b5fb921deL, 0L)
 des_test(0x7a6b7d6c9e0d1e4cL, 0xb3c6a9f5d6e1f2c8L, 0xa68687f8719f7478L)
+
+crypttest("_JRa{IkM","T5","T5rcEcD3VBZzw")
+crypttest("DWPV}aph","ll","llUhimnUIKl2s")
+crypttest("sHgSUy`X","am","am7YV6OuLhvLE")
+crypttest("zvvjodWU","Ao","AoCO1MDUngqCQ")
+crypttest("Y\}GL|nY","lk","lk/aHEsYalukw")
+crypttest("|@SoNdA|","I1","I1.obEi2dv2lM")
+crypttest("[ycFcO^N","SN","SNNTOizmtuyeA")
+crypttest("vZUWAI`k","4N","4N81tqdiGfjxw")
+crypttest("pNTMRRwA","dN","dNijIMI8qTjVg")
+crypttest("jm{Mt|pZ","fn","fn4gDknJdjyuQ")
