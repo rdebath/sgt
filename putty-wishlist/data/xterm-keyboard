@@ -2,8 +2,9 @@ Summary: Better xterm keyboard compatibility
 Class: wish
 Priority: low
 Difficulty: fun
-Content-type: text/plain
+Content-type: text/x-html-body
 
+<pre>
 PuTTY claims a terminal type of "xterm" by default, but doesn't actually
 default to being compatible with xterm.  Even in xterm function-key mode,
 PuTTY doesn't actually generate the right sequences for everything.
@@ -13,7 +14,7 @@ versions of xterm, but I (BJH) think that a sensible baseline would be the
 "xterm" terminfo entry in ESR's master terminfo database.
 
 Here are the keyboard definition parts of that, expanded for convenience:
-kf1	F1	ESC O P
+
 kf2	F2	ESC O Q
 kf3	F3	ESC O R
 kf4	F4	ESC O S
@@ -52,3 +53,6 @@ gets ";5" and shift+control gets ";6".  SS3 sequences gain a similar
 digit after the SS3 and before the letter.
 
 Overall, it's a bit of a mess, isn't it?  Not sure what we should do, yet.
+
+Ref: <a href="http://bugs.debian.org/167629">Debian Bug #167629</a>.
+</pre>
