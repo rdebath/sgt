@@ -1,0 +1,21 @@
+Summary: Honour the http_proxy et al environment variables
+Class: wish
+Difficulty: fun
+Content-type: text/x-html-body
+
+<p>
+It might be nice if at least the command-line tools (plink et al)
+could honour the commonly used environment variables
+<tt>http_proxy</tt>, <tt>ftp_proxy</tt>, <tt>no_proxy</tt> (etc?),
+using them to automatically configure use of PuTTY's HTTP proxy
+features.
+
+<p>
+Of course, there would have to be some obvious and easy way to
+override this, because in many circumstances it wouldn't be The Right
+Thing to do.
+
+<p>
+I'm not sure whether there are written standards for the names and
+contents of these variables anywhere or whether they're just defined
+by common practice.
