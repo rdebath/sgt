@@ -9,8 +9,10 @@ int main(int ac, char **av) {
 	char *p = *++av;
 	if (!strcmp(p, "-f"))
 	    full = 1;
+	else if (!strcmp(p, "-F"))
+	    full = 2;
 	else {
-	    fprintf(stderr, "usage: %s [-f]\n", pname);
+	    fprintf(stderr, "usage: %s [-f | -F]\n", pname);
 	    exit (1);
 	}
     }
@@ -24,8 +26,9 @@ int main(int ac, char **av) {
 	printf("\n");
     }
     if (full) {
-	printf("\n");
-	for (i=10; i<16; i++) {
+	if (full != 2)
+	    printf("\n");
+	for (i=(full == 2 ? 8 : 10); i<16; i++) {
 	    printf("%1X0 ", i);
 	    for (j=0; j<16; j++) printf(" %c", j+(i<<4));
 	    printf("\n");
