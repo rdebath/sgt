@@ -1,4 +1,4 @@
-COMPILE = $(CC) $(CFLAGS) -I.. -MD -c -o $@ $<
+COMPILE = $(CC) $(PS2) $(CFLAGS) -I.. -MD -c -o $@ $<
 
 linuxrc: linuxrc.o sdlstuff.o game256.o swash.o beebfont.o
 	$(CC) $(LFLAGS) -o $@ $^ -lSDL -lpthread

@@ -1,4 +1,4 @@
-COMPILE = $(CC) $(CFLAGS) -I.. -MD -c -o $@ $<
+COMPILE = $(CC) $(PS2) $(CFLAGS) -I.. -MD -c -o $@ $<
 
 ntris: ntris.o ntrissdl.o sdlstuff.o beebfont.o utils.o
 	$(CC) $(LFLAGS) -o $@ $^ -lSDL -lpthread
