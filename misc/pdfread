@@ -6,6 +6,8 @@ import re
 import types
 import zlib
 
+diagnostic_errors = 0
+
 pdfwhitespace = "\000\011\012\014\015\040"
 pdfdelimiter = "()[]{}<>/%"
 pdfregular = ""
@@ -17,7 +19,10 @@ for i in range(256):
 def fassert(s, err):
     if not s:
         sys.stderr.write(err + "\n")
-        sys.exit(1)
+        if diagnostic_errors:
+            raise "ooh"
+        else:
+            sys.exit(1)
 
 def pdflex(s, list):
     while 1:
@@ -41,7 +46,7 @@ def pdflex(s, list):
             if len(s) > n:
                 list.append(s[:n])
                 s = s[n:]
-                if list[-1] == "stream" or list[-1] == "endobj":
+                if list[-1] == "stream" or list[-1] == "endobj" or list[-1] == "startxref":
                     break
         elif s[0] == "[" or s[0] == "]":
             list.append(s[0])
@@ -130,87 +135,6 @@ def pdfparse(list):
         parsed.append(pdfobj(list))
     return parsed
 
-args = sys.argv[1:]
-if len(args) == 0:
-    print "usage: pdfread <filename>"
-    print "   or: pdfread <filename> <objnum>"
-    print "   or: pdfread <filename> <objnum> <gennum>"
-    print "   or: pdfread <filename> -p <pagenum>"
-    sys.exit(0)
-
-filename = args[0]
-args = args[1:]
-
-number = -1 # indicates we're starting from the root object
-gen = -1 # indicates we want the latest generation
-page = None # indicates we're not in page mode, unless we later are
-
-if len(args) > 0:
-    if args[0] == "-p" and len(args) > 1:
-        page = string.atoi(args[1])
-        args = args[2:]
-    else:
-        number = string.atoi(args[0])
-        args = args[1:]
-        if len(args) > 0:
-            gen = string.atoi(args[0])
-
-f = open(filename, "rb")
-
-f.seek(0, 2) # go to end of file
-flen = f.tell()
-
-# This is ad-hockery. If it ever lets me down I'll have to do better.
-trailsize = 512
-if trailsize > flen: trailsize = flen
-f.seek(-trailsize, 2)
-trailer = f.read(trailsize)
-
-linelist = []
-
-while len(trailer) > 0:
-    ri = string.find(trailer, "\r")
-    ni = string.find(trailer, "\n")
-    if ri < 0: ri = len(trailer)
-    if ni < 0: ni = len(trailer)
-    mi = min(ri, ni)
-    if ri+ni == mi*2+1:
-        ei = mi+2
-    else:
-        ei = mi+1
-    line = trailer[0:mi]
-    trailer = trailer[ei:]
-    linelist.append(line)
-
-# Parse to find the (first) xref section offset.
-if len(linelist)<=3 or linelist[-3]!="startxref" or linelist[-1]!="%%EOF":
-    sys.stderr.write("unable to find xref section offset\n")
-    sys.exit(1)
-xrefoff = string.atoi(linelist[-2])
-
-if number < 0:
-    # Now parse to find the trailer section.
-    n = len(linelist) - 1
-    while n >= 0:
-        if linelist[n] == "trailer":
-            break
-        n = n - 1
-
-    if n < 0:
-        sys.stderr.write("unable to find trailer section\n")
-        sys.exit(1)
-
-    lexed = []
-    d = ""
-    while n < len(linelist):
-        s = linelist[n] + "\n"
-        d = d + s
-        d = pdflex(d, lexed)
-        n = n + 1
-    parsed = pdfparse(lexed)
-    fassert(type(parsed[1]) == types.DictType, "expected dictionary in trailer")
-    number, gen = parsed[1]["/Root"]
-
 def pdfgetline(f, chomp=0):
     s = ""
     while 1:
@@ -268,7 +192,11 @@ def fetchobj(f, xrefoff, number, gen, printout=0):
             if s == "": break
             d = d + s
             d = pdflex(d, lexed)
+            if lexed[-1] == "startxref":
+                break
         parsed = pdfparse(lexed)
+        if number == -1:
+            return parsed
         fassert(type(parsed[0]) == types.DictType, "expected dictionary in trailer")
         # Now look backwards to find the previous xref section.
         prevstr = parsed[0].get("/Prev", "")
@@ -318,6 +246,73 @@ def fetchobj(f, xrefoff, number, gen, printout=0):
             break
     parsed = pdfparse(lexed)
     return parsed
+
+args = sys.argv[1:]
+if len(args) == 0:
+    print "usage: pdfread <filename>"
+    print "   or: pdfread <filename> <objnum>"
+    print "   or: pdfread <filename> <objnum> <gennum>"
+    print "   or: pdfread <filename> -p <pagenum>"
+    sys.exit(0)
+
+if args[0] == "-d":
+    args = args[1:]
+    diagnostic_errors = 1
+
+filename = args[0]
+args = args[1:]
+
+number = -1 # indicates we're starting from the root object
+gen = -1 # indicates we want the latest generation
+page = None # indicates we're not in page mode, unless we later are
+
+if len(args) > 0:
+    if args[0] == "-p" and len(args) > 1:
+        page = string.atoi(args[1])
+        args = args[2:]
+    else:
+        number = string.atoi(args[0])
+        args = args[1:]
+        if len(args) > 0:
+            gen = string.atoi(args[0])
+
+f = open(filename, "rb")
+
+f.seek(0, 2) # go to end of file
+flen = f.tell()
+
+# This is ad-hockery. If it ever lets me down I'll have to do better.
+trailsize = 512
+if trailsize > flen: trailsize = flen
+f.seek(-trailsize, 2)
+trailer = f.read(trailsize)
+
+linelist = []
+
+while len(trailer) > 0:
+    ri = string.find(trailer, "\r")
+    ni = string.find(trailer, "\n")
+    if ri < 0: ri = len(trailer)
+    if ni < 0: ni = len(trailer)
+    mi = min(ri, ni)
+    if ri+ni == mi*2+1:
+        ei = mi+2
+    else:
+        ei = mi+1
+    line = trailer[0:mi]
+    trailer = trailer[ei:]
+    linelist.append(line)
+
+# Parse to find the (first) xref section offset.
+if len(linelist)<=3 or linelist[-3]!="startxref" or linelist[-1]!="%%EOF":
+    sys.stderr.write("unable to find xref section offset\n")
+    sys.exit(1)
+xrefoff = string.atoi(linelist[-2])
+
+if number < 0:
+    trailer = fetchobj(f, xrefoff, -1, -1)
+    fassert(type(trailer[0]) == types.DictType, "expected dictionary in trailer")
+    number, gen = trailer[0]["/Root"]
 
 if page != None:
     page = page - 1 # PDF pages are traditionally numbered from one
