@@ -106,7 +106,7 @@ variable timber_boringhdrs =
 ":X-Originating-IP:";
 
 % The version number of Timber.
-variable timber_version = "v0.1";
+variable timber_version = "v0.2";
 
 % This is used in a couple of places so it's kept here for reusability.
 variable timber_headerline =
@@ -239,6 +239,12 @@ $1 = "Timber";
     % M-r (for replying) selects the current MIME part.
     definekey("timber_selattach", "^[R", $1);
     definekey("timber_selattach", "^[r", $1);
+
+    % Disallow ^X^C in Timber buffers: you _might_ want to bomb out of
+    % Jed while running Timber, but you probably don't. People who really
+    % do can switch to *scratch* and do it there, or use M-x, or something.
+    % Just to show they really mean it.
+    definekey("timber_dontexit", "^X^C", $1);
 }
 
 % The highlighting mode for Timber.
@@ -249,6 +255,10 @@ enable_highlight_cache("timber.dfa", $1);
 define_highlight_rule("^[FM].*$", "comment", $1);
 define_highlight_rule("^\\|[^: ]*[: ]", "Qkeyword", $1);
 define_highlight_rule("^\\+.*$", "preprocess", $1);
+define_highlight_rule("^ -- $", "keyword", $1);
+define_highlight_rule("^ > *> *>.*$", "preprocess", $1);
+define_highlight_rule("^ > *>.*$", "comment", $1);
+define_highlight_rule("^ >.*$", "string", $1);
 define_highlight_rule("^ .*$", "normal", $1);
 define_highlight_rule("^\\* ..D.*$", "dollar", $1);
 define_highlight_rule("^\\! [^\\[].*$", "delimiter", $1);
@@ -258,14 +268,37 @@ define_highlight_rule(".*$", "normal", $1);
 build_highlight_table($1);
 #endif
 
-% The keymap for a Timber composer buffer.
+% The highlighting mode for Timber composers: should highlight correct
+% sig separators and quoted text. And "^From ", just to make it unlikely
+% that I'll accidentally write a message that does it.
 $1 = "TimberC";
+create_syntax_table ($1);
+set_syntax_flags ($1, 0);
+#ifdef HAS_DFA_SYNTAX
+enable_highlight_cache("timberc.dfa", $1);
+define_highlight_rule("^-- $", "keyword", $1);
+define_highlight_rule("^From ", "Qkeyword", $1);
+define_highlight_rule("^> *> *>.*$", "preprocess", $1);
+define_highlight_rule("^> *>.*$", "comment", $1);
+define_highlight_rule("^>.*$", "string", $1);
+define_highlight_rule(".*", "normal", $1);
+build_highlight_table($1);
+#endif
+
+% The keymap for a Timber composer buffer.
 !if (keymap_p($1)) {
     make_keymap($1);
     definekey("timber_sendmsg", "^X^S", $1);
     definekey("timber_killmsg", "^Xk", $1);
     definekey("timber_bcc_self", "^Os", $1);
     definekey("timber_bcc_self", "^OS", $1);
+    definekey("timber_dontexit", "^X^C", $1);
+}
+
+% Used when the user mistakenly tries to exit Jed without shutting down
+% Timber correctly first.
+define timber_dontexit() {
+    error("You probably didn't mean to do ^X^C while Timber was running!");
 }
 
 % Used when a key is pressed which has no effect in Timber.
@@ -1458,6 +1491,7 @@ define timber_open_composer() {
     erase_buffer();
     text_mode();
     use_keymap("TimberC");
+    use_syntax_table("TimberC");
 
     insert("X-Mailer: Jed/Timber " + timber_version + "\n");
     insert(timber_custom_headers);
