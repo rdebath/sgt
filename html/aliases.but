@@ -313,8 +313,8 @@ Irritatingly, one thing you \e{can't} do is turn off parsing of
 shell comments (another \cw{bash} feature) for one command only.
 This would be incredibly useful if you had an IRC client or utility
 which expected a channel name on the command line: you could
-redefine the utility name as an alias and arrange that \q{\cw{irc -c
-#foobar}} was parsed in the useful way rather than by treating
+redefine the utility name as an alias and arrange that \cq{irc -c
+#foobar} was parsed in the useful way rather than by treating
 everything after the hash as a comment! But unfortunately, this
 doesn't seem to work: comments must have already been parsed by the
 time the alias substitution takes place.
@@ -322,17 +322,12 @@ time the alias substitution takes place.
 Finally, a helpful technique for restoring sanity. As soon as you
 start defining aliases that modify the behaviour of existing
 commands, you also start wondering if you can easily turn them off
-when necessary. For the rare occasions when you \e{do} want
-wildcards expanded on the \c{find} command line, you could
-explicitly type \c{/usr/bin/find} to prevent the alias from being
-used. Alternatively, you could make use of the fact that alias
-substitution happens before variable expansion, define the very
-simple shell function
-
-\c real() { "$@"; }
-
-and then run \c{real find} to avoid the alias. This technique will
-allow you to bypass any alias definition.
+when necessary. It's worth bearing in mind that you can bypass any
+alias definition by prefixing it with a backslash: instead of
+starting your command with \cq{find}, use \cq{\\find}. This works
+because alias lookup happens before backslash escapes are processed,
+so the shell actually looks for an alias called \cq{\\find}, which
+doesn't exist.
 
 \U Summary
 
