@@ -2,6 +2,7 @@ Summary: "unexpected packet type 91" with tunnel open during connection setup
 Class: bug
 Present-in: 0.53b 2003-06-04 0.54
 Content-type: text/x-html-body
+Fixed-in: 2004-11-28
 
 <p>
 (See also <a href="ext-data-at-start.html">`ext-data-at-start'</a>.)
@@ -109,3 +110,10 @@ Also I have found netcat better to provoke the error by trying "nc -vvv
 localhost 10119" just before running "C:\Programmer\putty\putty.exe -load
 ask" in another prompt.
 ----------</pre>
+
+<p>
+<b>SGT, 2004-11-27</b>: I've rearchitected the SSH back end
+somewhat, so that it's now a hybrid of coroutine-based sequential
+code and random dispatch-table handling of incoming packets. This
+<em>ought to solve this problem, although I'm unable to immediately
+test it.
