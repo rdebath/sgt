@@ -1,0 +1,10 @@
+Summary: Auto-scrolling while selecting should have variable speed
+Class: wish
+Difficulty: fun
+Priority: medium
+Content-type: text/plain
+
+A present, if term_mouse() gets a drag event above or below the
+window, it scrolls the window by one line.  It would be better if
+the amount of scrolling were proportional to the distance by which
+the mouse pointer was outside the window.
