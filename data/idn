@@ -1,0 +1,17 @@
+Summary: Support for Internationalized Domain Names (IDNs)
+Class: wish
+Difficulty: tricky
+Priority: low
+Content-type: text/x-html-body
+
+<p>
+We've had a couple of requests for IDN support
+(<a href="ftp://ftp.rfc-editor.org/in-notes/rfc3490.txt">RFC3490</a> et al)
+in PuTTY.
+
+<p>
+Ideally this would be implemented by the OS. However it's been
+suggested to us that Microsoft at least won't add anything "until at
+least Longhorn". There are various libraries out there such as the
+<a href="http://www.verisign.com/nds/naming/idn/sdk.html">VeriSign IDN SDK</a>
+and <a href="http://www.gnu.org/software/libidn/">GNU libidn</a>.
