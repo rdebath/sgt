@@ -30,6 +30,9 @@ put stuff into the scrollback, switch to the alternate screen, enlarge the
 window to the height of the screen and then switch back from the alternate
 screen, you end up with the cursor on line 24, rather than at the bottom of
 the screen with the text that used to be on line 24.  This is clearly wrong.
+Richard Boulton has a
+<a href="http://www.tartarus.org/~richard/putty-patches/#patch_altscreen_resize_cursorpos">
+patch</a> to fix this.
 
 <p>(cf. <a href="resize-no-truncate.html">`resize-no-truncate'</a> for the
 case where the number of columns is changed.)
