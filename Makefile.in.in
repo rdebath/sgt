@@ -40,7 +40,7 @@ install: enigma
 		$(INSTALL_DATA) $$i $(datadir)/enigma; \
 	done
 	mkdir -p $(localstatedir)/enigma
-	-chown root.games $(localstatedir)/enigma && chmod 0770 $(localstatedir)/enigma
+	-chown root.games $(localstatedir)/enigma && chmod 2770 $(localstatedir)/enigma
 
 clean:
 	rm -f *.o enigma
