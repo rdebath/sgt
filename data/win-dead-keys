@@ -20,7 +20,11 @@ the storage behind the pointer should be, but Googling indicates that
 this usage is not uncommon.
 
 <p>
-Fix tested on Win2K (and by a third party on WinXP).
+Fixed as of 2003-03-25 tested on Win2K (and by a third party on WinXP).
+<ul>
+<li>Aaargh, but apparently it breaks dead keys on Win98SE, which were
+working perfectly well before. *sigh*
+</ul>
 
 <p>
 This may sort out some other keyboard problems people have been
