@@ -1,0 +1,48 @@
+Summary: Add VERSIONINFO resource to Windows binaries
+Class: wish
+Difficulty: tricky
+Priority: medium
+Content-type: text/x-html-body
+
+<p>
+A number of people have asked us to include a
+<a href="http://msdn.microsoft.com/library/en-us/tools/tools/versioninfo_resource.asp"><code>VERSIONINFO</code> resource</a>
+in the Windows binaries we ship, declaring a version number.
+<ul>
+<li>Some people find it more convenient to look at the file properties
+to identify a binary than to run it.
+<li>Some remote auditing tools apparently pick up on this information.
+<li>It also affects <a href="http://www.jrsoftware.org/isinfo.php">Inno
+Setup's</a> behaviour.
+</ul>
+
+<p>
+Such a version numbering scheme needs to take into account our daily
+snapshots, and thus to be updated in an automated way.
+
+<p>
+We do have a complete patch to do this, but it breaks on Visual C,
+whose resource compiler doesn't accept C-style string concatenation
+with macros (<code>"foo" MACRO "bar"</code>), unlike the other
+toolchains we support. (If anyone knows of a way to do this in VC,
+we'd be interested to hear from you.) The alternative approach is to
+generate the <tt>.rc</tt> files from a Perl script or similar, which
+is suboptimal in a number of regards.
+
+<p>
+(The PuTTY binaries also contain XML
+<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/sbscs/setup/application_manifests.asp">application manifests</a>
+to improve appearance on Windows XP; these contain a mandatory version
+number, which is currently hard-coded to 1.0.0.0. This should probably
+be corrected too, although we don't currently know of anything that
+looks at this version number.)
+
+<p>
+Mailing list references:
+<ul>
+<li>&lt;10a901c4c0f3$777e2c40$7e01a8c0@firma.elfin.pl&gt;
+<li>&lt;481131084.20040804120755@tgbyte.de&gt;
+<li>&lt;A7716A9BADA071448E43F17F12D9EEE02AA0BC@dc1mailbox02.mpls.digitalriver.com&gt;
+<li>&lt;20050225212543.GP27241@chiark.greenend.org.uk&gt;
+(patch that works for everything except VC)
+</ul>
