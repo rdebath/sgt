@@ -3,7 +3,17 @@ Class: wish
 Priority: medium
 Difficulty: fun
 Content-type: text/x-html-body
+Fixed-in: 2003-03-07
 
 <p>
 It's possible that a screen-clear should push the previous screen
 contents into the scrollback, rather than losing it completely.
+
+<p>
+<b>SGT, 2003-03-07</b>: Thanks to Richard Boulton for a patch doing
+just this. In addition, his patch also arranges that when an
+application switches to the alternate screen, the previous contents
+of the primary screen are <em>temporarily</em> pushed into the
+scrollback, so you can check what you were doing just before starting
+the application. When the primary screen is restored, those lines
+come back out of the scrollback.
