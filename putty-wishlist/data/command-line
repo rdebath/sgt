@@ -3,6 +3,7 @@ Class: wish
 Priority: high
 Difficulty: tricky
 Content-type: text/x-html-body
+Fixed-in: 2002-08-10
 
 <p> The PuTTY tools have a pathetic set of command-line options.
 Among the things we should support but don't are:
@@ -12,7 +13,9 @@ Among the things we should support but don't are:
 Unified command-line handling between all the tools, including the
 GUI ones. (This is moderately tricky in itself, because we'd have to
 split up the single command line received by WinMain() into argc and
-argv.)
+argv. Interestingly shell32.dll provides a function called
+CommandLineToArgvW() which does this for Unicode strings, but
+appears to provide no equivalent for ordinary strings.)
 <li>
 Command-line control of at least ciphers, SSH protocol, compression,
 port forwarding, and public-key authentication. Perhaps more.
