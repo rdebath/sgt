@@ -285,12 +285,15 @@ new releases.
 When mirroring our web site, you will need to be careful of the
 binary downloads. They are hosted on a different server, for
 bandwidth reasons, so a conventional "<code>wget -r</code>" will not
-fetch them at all. Instead, you will need at least two invocations
+fetch them at all (which rather defeats the point of having a mirror
+in the first place). Instead, you will need at least two invocations
 of wget. Also, the release binaries are stored under a directory
 called "<code>latest</code>", but this actually returns an HTTP
 temporary redirect to a numbered directory such as
 "<code>0.53</code>". Ideally a mirror should reproduce this
-behaviour as well.
+behaviour as well. (Please check that the binaries are accessible
+from your Download page <em>before</em> notifying us of your
+mirror!)
 
 <p>
 Here is a sample shell script to create a working PuTTY mirror site
