@@ -1,6 +1,6 @@
 # -*- mode: sh; mode: fold -*-
 # Simon Tatham's standardised chunk of .bashrc
-# $Revision: 1.5 $
+# $Revision: 1.6 $
 
 #{{{ I don't like .bash_history files. They wet their nests.
 unset HISTFILE
@@ -38,7 +38,7 @@ bashrc_dovars() {
   foo=`type -p less`
   if [ -n "$foo" ]; then export PAGER=$foo; export LESS=-M; fi
   foo=`type -p jed`
-  if [ -n "$foo" ]; then export VISUAL=$foo; fi
+  if [ -n "$foo" ]; then export VISUAL=$foo; export EDITOR=$foo; fi
   export FAST_PNEWS=y
   export TRNINIT="-F>\  -h +hFrom +hNewsgroups +hDate +hFollowup-To -Os -q"
   export ATTRIBUTION="%)f <%>f> wrote:"
