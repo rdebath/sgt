@@ -1,6 +1,6 @@
 # -*- mode: sh; mode: fold -*-
 # Simon Tatham's standardised chunk of .bashrc
-# $Revision: 1.36 $
+# $Revision: 1.37 $
 
 #{{{ I don't like .bash_history files. They wet their nests.
 unset HISTFILE
@@ -156,6 +156,11 @@ findcmd ping
 findcmd traceroute
 findcmd route
 unset findcmd
+
+# mcd, to make a directory and immediately change into it.
+mcd() {
+  mkdir -p "$1" && cd "$1"
+}
 
 #}}}
 #{{{ keybindings to run Timber
