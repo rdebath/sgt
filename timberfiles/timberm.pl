@@ -32,6 +32,21 @@ if ($type eq "text/html") {
   }
   close PIPE;
   exit 0;
+} elsif ($type eq "text/plain") {
+  # A sensible `decoding' step for plain text is to wrap its lines to about
+  # 75 columns, since some people will persist in sending mail with each
+  # paragraph on a single line.
+  while (<F>) {
+    s/^[ \240]// if $stripspace;
+    chomp;
+    while (length $_ > 75) {
+      /^(.{0,75})\s(.*)$/ or /^(.{0,75})(.*)$/;
+      $_ = $2;
+      print "$1\n";
+    }
+    print "$_\n";
+  }
+  exit 0;
 }
 
 # MIME transfer encodings
