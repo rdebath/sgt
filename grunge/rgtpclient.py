@@ -151,6 +151,32 @@ class RGTPConnection:
 	    if len(words) == 2:
 		self.secrets[words[0]] = self._hex2bin(words[1])
 
+    def register1(self):
+	self._putline("REGU")
+	while 1:
+	    s = self._getline()
+	    if s[0] != "1":
+		break
+	if s[0:3] == "250":
+	    regdata = self._getdata()
+	    msg = ""
+	    # Lines beginning with a space are for user consumption.
+	    # Lines not beginning with a space are for maniacs speaking
+	    # RGTP by hand.
+	    for i in regdata:
+		if i[0:1] == " ":
+		    msg = msg + i + "\n"
+	    ok = 1
+	else:
+	    msg = s
+	    ok = 0
+	return ok, msg
+
+    def register2(self, username):
+	self._putline("USER " + username)
+	s = self._getline()
+	return s
+
     def login(self, user, level=2):
 	self._putline("USER " + user + " " + "%d" % level)
 	done = 0
@@ -299,13 +325,21 @@ class RGTPConnection:
 	    item.contribs = []
 	    item.subject = "[notfound]"
 	    while len(data) > 0:
-		if data[0][0] != "^":
-		    throwerror()
 		contrib = self.RGTPContribution()
-		words = string.split(data[0][1:])
-		contrib.sequence = string.atol(words[0], 16)
-		contrib.timestamp = self._timecvt(words[1])
 		contrib.data = []
+		if data[0][0] != "^":
+		    # Some early items, particularly on debug servers,
+		    # might fail to begin with a cookie. In this case we
+		    # invent some sensible data: a blank line to
+		    # disable further admin-line processing...
+		    contrib.data.append("")
+		    contrib.sequence = 0
+		    contrib.timestamp = self._timecvt("00000000")
+		else:
+		    words = string.split(data[0][1:])
+		    contrib.sequence = string.atol(words[0], 16)
+		    contrib.timestamp = self._timecvt(words[1])
+
 		for i in range(1,len(data)):
 		    if len(data[i]) > 1 and data[i][0:2] == "^^":
 			contrib.data = contrib.data + [data[i][1:]]
@@ -389,6 +423,17 @@ class RGTPConnection:
 	    return s
 	return ""
 
+    def newi(self, subject):
+	"Create a new item. Uses previously sent data."
+	self._putline("NEWI "+subject)
+	s = self._getline()
+	while s[0:1] == "1":
+	    s = self._getline()
+	if s[0:3] == "220":
+	    return "ok"
+	else:
+	    return "error"
+
     def reply(self, itemid):
 	"Reply to an item. Uses previously sent data."
 	self._putline("REPL "+itemid)
@@ -433,6 +478,6 @@ class RGTPConnection:
     def close(self):
 	self._putline("QUIT")
 	s = self._getline()
-	if s[0:3] != "280":
+	if s[0:3] != "280" and s[0:3] != "":
 	    throwerror()
 	self.skt.close()
