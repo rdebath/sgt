@@ -47,3 +47,12 @@ whether anyone <em>really</em> implements it this way.
 to add bidi support and Arabic shaping to PuTTY. As of 2004-05-23,
 their initial code is in the PuTTY snapshots; however it was <em>not</em>
 released in the 0.55 bugfix release due to stability issues.
+
+<p>
+A current issue (2004-09-01) is that uninitialised data seems to be
+used in the gaps created when the window is expanded horizontally.
+With the stock snapshot builds this is usually not noticeable (but
+expanding the window by one column can show it up); with a mingw build
+it's much more noticeable; and with a Minefield build, horizontal
+expansion is instant death. Turning off bidi and Arabic shaping makes
+this go away.
