@@ -1,0 +1,177 @@
+#!/usr/bin/perl 
+#
+# Script to check whether there are any new articles in any of the
+# newsgroups you're subscribed to. Assumes ~/.newsrc is correct,
+# current and in standard .newsrc format.
+#
+# Usage:     newschk
+#    or:     newschk news.group another.news.group
+#
+# The name of your news server is obtained from the environment variable
+# NNTPSERVER, or from the file /etc/nntpserver if that's not set.
+#
+# This script supports AUTHINFO GENERIC authentication using the
+# environment variable NNTPAUTH. It will only attempt this if it receives
+# a 480 response from the news server; if your news server isn't paranoid
+# then the script will never need to look at NNTPAUTH.
+
+# Copyright 2002 Simon Tatham. All rights reserved.
+# FIXME: put in a licence notice.
+
+require 5.002;
+use Socket;
+use FileHandle;
+
+foreach $i (@ARGV) {
+  if ($i =~ /^-/) {
+    $verbose=1 if $i eq "-v";
+  } else {
+    $gotgroups = 1;
+    $groups{$i} = 1;
+  }
+}
+
+# Read .newsrc for a list of subscribed groups.
+open NEWSRC, "$ENV{'HOME'}/.newsrc";
+while (<NEWSRC>) {
+  chomp;
+  warn ".newsrc:$.: unrecognised line format\n", next
+    unless /^(.*)([:!]) (\d+-\d+(,\d+-\d+)*)$/;
+  ($grp, $sub, $read) = ($1, $2, $3);
+  if (($gotgroups and $groups{$grp}) or (!$gotgroups and $sub eq ":")) {
+    $groups{$grp} = 0;
+    $chkgroups{$grp} = 1;
+    $read{$grp} = $read;
+  }
+}
+close NEWSRC;
+
+# Warn about any groups specified on the command line that we won't
+# look at.
+foreach $i (keys %groups) {
+  warn "newschk: group $i not mentioned in .newsrc, ignoring\n"
+    if $groups{$i} == 1;
+}
+
+$ns=$ENV{'NNTPSERVER'};
+if (!defined $ns or !length $ns) {
+  $ns = `cat /etc/nntpserver`;
+}
+$port = (getservbyname("nntp", "tcp"))[2];
+$ns = inet_aton($ns);
+$proto = getprotobyname("tcp");
+$paddr = sockaddr_in($port, $ns);
+
+socket(S,PF_INET,SOCK_STREAM,$proto) or die "socket: $!";
+connect(S,$paddr) or die "connect: $!";
+
+S->autoflush(1);
+
+&getline;
+$code =~ /^2\d\d/ or die "newschk: no initial greeting from server\n";
+
+&docmd("MODE READER");
+foreach $group (sort keys %chkgroups) {
+  &docmd("GROUP $group");
+  if ($code == "211") {
+    @results = split " ", $line;
+    $new = &check($group, $read{$group}, $results[2], $results[3]);
+    if ($new) {
+      printf "%s: %d unread article%s\n", $group, $new, ($new==1?"":"s");
+    }
+  } else {
+    warn "newschk: $group: $line\n";
+    $errors = 1;
+  }
+}
+&docmd("QUIT");
+close S;
+exit $errors;
+
+sub putline {
+  my ($line) = @_;
+  print STDERR ">>> $line\n" if $verbose;
+  print S "$line\r\n";
+}
+
+sub getline {
+  $_ = <S>;
+  s/[\r\n]*$//s;
+  $line = $_;
+  $code = substr($_,0,3);
+  print STDERR "<<< $_\n" if $verbose;
+}
+
+sub docmd {
+  my ($cmd) = @_;
+  while (1) {
+    &putline($cmd);
+    &getline;
+    if ($code eq "480") { &auth; } else { last; }
+  }
+  $code =~ /^2\d\d/ or die "failed on `$cmd':\n$_\n";
+}
+
+sub auth {
+  # Authentication.
+  if ($ENV{"NNTPAUTH"}) {
+    $auth = $ENV{"NNTPAUTH"};
+    &putline("AUTHINFO GENERIC $auth");
+    pipe AUTHSTDIN, TOAUTH or die "unable to create pipes";
+    pipe FROMAUTH, AUTHSTDOUT or die "unable to create pipes";
+    $pid = fork;
+    if (!defined $pid) {
+      die "unable to fork for authentication helper";
+    } elsif ($pid == 0) {
+      # we are child
+      $ENV{"NNTP_AUTH_FDS"} = "0.1";
+      open STDIN, "<&AUTHSTDIN";
+      open STDOUT, ">&AUTHSTDOUT";
+      close S;
+      exec $auth;
+    }
+    # we are parent
+    close AUTHSTDIN;
+    close AUTHSTDOUT;
+    autoflush TOAUTH 1;
+    &getline; print TOAUTH "$_\n";
+    while (<FROMAUTH>) {
+      s/[\r\n]*$//s;
+      &putline($_);
+      &getline;
+      print TOAUTH "$_\n";
+    }
+    die "failed authentication\n" unless $? == 0;
+  }
+}
+
+sub check {
+  my ($group, $read, $from, $to) = @_;
+  return 0 if $from == 0 and $to == 0; # this means group is empty
+  # We assume the array of intervals in .newsrc is in ascending
+  # order.
+  my ($new, $term, $lo, $hi);
+  $new = 0;
+  foreach $term (split ",", $read) {
+    ($lo, $hi) = split "-", $term;
+    next if $hi < $lo; # this means nothing about what articles are read
+    #print "$group: checking [$from,$to] against [$lo,$hi]\n";
+    if ($lo > $from) {
+      # We have new articles in [$from, $lo).
+      $new += $lo - $from;
+      #print "$group: now have $new\n";
+    }
+    # Now we have read up to $hi, so we start from the next article
+    # after that.
+    $from = $hi+1;
+    last if $to < $from;
+  }
+  #print "$group: checking [$from,$to] at end\n";
+  if ($from <= $to) {
+    # We have articles remaining above the highest range mentioned
+    # in .newsrc.
+    $new += $to - $from + 1;  # we're counting [$from,$to] not [$from,$to)
+    #print "$group: now have $new\n";
+  }
+  return $new;
+}
