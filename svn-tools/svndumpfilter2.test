@@ -14,6 +14,14 @@ rm -rf test.filtered
 svnadmin create test.filtered && svnadmin load test.filtered < "$infile"
 if test "$?" -gt 0; then echo "*** test failed\n" >&2; exit 1; fi
 
+svnadmin dump --deltas test.full | ./svndumpfilter2 test.full "$subdir" \
+  > test.outdump.deltas
+if test "$?" -gt 0; then echo "*** test failed\n" >&2; exit 1; fi
+
+rm -rf test.filtered.deltas
+svnadmin create test.filtered.deltas && svnadmin load test.filtered.deltas < "$infile"
+if test "$?" -gt 0; then echo "*** test failed\n" >&2; exit 1; fi
+
 dumptree() {
   prev=""
   echo "revision $rev"
@@ -33,7 +41,10 @@ rev=1
 while test "$rev" -le "$youngest"; do
   dumptree test.full "$subdir" > test.dump1
   dumptree test.filtered "$subdir" > test.dump2
+  dumptree test.filtered.deltas "$subdir" > test.dump3
   diff test.dump1 test.dump2
+  if test "$?" -gt 0; then echo "*** test failed\n" >&2; exit 1; fi
+  diff test.dump1 test.dump3
   if test "$?" -gt 0; then echo "*** test failed\n" >&2; exit 1; fi
   rev=$[1+$rev]
 done
