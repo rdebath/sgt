@@ -4,6 +4,7 @@ Difficulty: fun
 Present-in: 2005-01-23
 Priority: medium
 Content-type: text/plain
+Fixed-in: 2005-02-03
 
 The XDMCP specification says that an X server should only accept an
 XDM-AUTHORIZATION-1 if no packet containing the same (N, T) pair has been
