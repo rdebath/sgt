@@ -1,0 +1,19 @@
+Summary: Frontends need control over where do_paint() splits runs
+Class: wish
+Priority: medium
+Difficulty: tricky
+Content-type: text/x-html-body
+
+<p>Currently, the way that <code>do_paint()</code> decides where to split the
+text runs it passes to <code>do_text()</code> is rather <i>ad hoc</i> and
+messy.  It splits whenever there is a change to the "attributes" of the
+characters (subject to <code>term-&gt;attr_mask</code>), which includes
+any changes to the high-order byte of the character codes.  It also splits
+around characters in the U+23BA&ndash;U+23BD range because the Windows
+front-end needs this.
+
+<p>It seems to me (BJH) that we could do with some way for the front end
+to inform the run-splitting code, so that <code>do_paint()</code> could
+put in splits where the front end needs them, and not put in spurious splits
+where it doesn't.  I don't yet have any clear idea how this should work,
+though.
