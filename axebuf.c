@@ -31,6 +31,8 @@ struct bufblk {
     unsigned char *data;	       /* only used if fp==NULL */
 };
 
+typedef int filesize;		       /* FIXME: should be larger */
+
 static bt_element_t bufblkcopy(void *state, void *av)
 {
     struct bufblk *a = (struct bufblk *)av;
@@ -69,19 +71,22 @@ static void bufblkfree(void *state, void *av)
     free(a);
 }
 
-void bufblkpropmake(void *state, bt_element_t av, nodecomponent *dest)
+void bufblkpropmake(void *state, bt_element_t av, void *destv)
 {
     struct bufblk *a = (struct bufblk *)av;
+    filesize *dest = (filesize *)destv;
 
-    dest[0].i = a->len;
+    *dest = a->len;
 }
 
 /* s1 may be NULL (indicating copy s2 into dest). s2 is never NULL. */
-void bufblkpropmerge(void *state, nodecomponent *s1, nodecomponent *s2,
-		     nodecomponent *dest)
+void bufblkpropmerge(void *state, void *s1v, void *s2v, void *destv)
 {
+    filesize *s1 = (filesize *)s1v;
+    filesize *s2 = (filesize *)s2v;
+    filesize *dest = (filesize *)destv;
     if (!s1 && !s2) return;	       /* don't need to free anything */
-    dest[0].i = s2[0].i + (s1 ? s1[0].i : 0);
+    *dest = *s2 + (s1 ? *s1 : 0);
 }
 
 static buffer *buf_new_from_bt(btree *bt)
@@ -95,8 +100,8 @@ static buffer *buf_new_from_bt(btree *bt)
 
 static btree *buf_bt_new(void)
 {
-    return bt_new(NULL, bufblkcopy, bufblkfree,
-		  1, bufblkpropmake, bufblkpropmerge,
+    return bt_new(NULL, bufblkcopy, bufblkfree, sizeof(filesize),
+		  alignof(filesize), bufblkpropmake, bufblkpropmerge,
 		  NULL, 2);
 }
 
@@ -107,7 +112,7 @@ extern void buf_free(buffer *buf)
 }
 
 static int bufblksearch(void *tstate, void *sstate, int ntrees,
-			nodecomponent **props, int *counts,
+			void **props, int *counts,
 			bt_element_t *elts, int *is_elt)
 {
     int *disttogo = (int *)sstate;
@@ -116,7 +121,7 @@ static int bufblksearch(void *tstate, void *sstate, int ntrees,
 
     for (i = 0; i < ntrees; i++) {
 	struct bufblk *blk;
-	int sublen = props[i] ? props[i][0].i : 0;
+	int sublen = props[i] ? *(filesize *)props[i] : 0;
 
 	if ((props[i] && *disttogo < distsofar + sublen) ||
 	    (*disttogo == distsofar + sublen && i == ntrees-1)) {
@@ -319,7 +324,7 @@ static void buf_insert_bt(buffer *buf, btree *bt, int pos)
 }
 
 static int bufblklensearch(void *tstate, void *sstate, int ntrees,
-			   nodecomponent **props, int *counts,
+			   void **props, int *counts,
 			   bt_element_t *elts, int *is_elt)
 {
     int *output = (int *)sstate;
@@ -329,7 +334,7 @@ static int bufblklensearch(void *tstate, void *sstate, int ntrees,
 	struct bufblk *blk;
 
 	if (props[i])
-	    size += props[i][0].i;
+	    size += *(filesize *)props[i];
 
 	if (i < ntrees-1) {
 	    blk = (struct bufblk *)elts[i];
