@@ -860,7 +860,7 @@ while 1:
 	    dict["day"] = time.strftime("%d", nowlocal)
 	    dict["hour"] = time.strftime("%H", nowlocal)
 	    dict["min"] = time.strftime("%M", nowlocal)
-	    dict["security"] = "private"
+	    #dict["security"] = "private"
 	    ret = ljproto.ljcall(dict)
 	    if not ljproto.ljok(ret):
 		print "Unable to post to LJ: " + ljproto.ljerror(ret)
