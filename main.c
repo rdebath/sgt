@@ -10,6 +10,7 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "enigma.h"
 
@@ -214,7 +215,12 @@ int main(int argc, char **argv) {
 	}
     } else {
 	screen_finish();
-	fprintf(stderr, "Fatal error: %s\n", fatal_error_string);
+	if (!fatal_error_string)
+	    fprintf(stderr, "Fatal error and out of memory!\n");
+	else {
+	    fprintf(stderr, "Fatal error: %s\n", fatal_error_string);
+	    free(fatal_error_string);
+	}
 	exit(2);
     }
     screen_finish();

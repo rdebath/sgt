@@ -14,6 +14,9 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+#include <assert.h>
 
 #include "enigma.h"
 
@@ -394,4 +397,83 @@ gamestate *make_move (gamestate *state, char key) {
      * I think we're done!
      */
     return ret;
+}
+
+/*
+ * Validate a level structure to ensure it contains no obvious
+ * mistakes. Returns an error message in `buffer', or NULL.
+ */
+char *validate(level *level, char *buffer, int buflen)
+{
+    int x, y, x1, y1;
+    int c, c1;
+    int w = level->width, h = level->height;
+    char internalbuf[256];	       /* big enough for any of our sprintfs */
+
+    for (y = 0; y < h; y++)
+	for (x = 0; x < w; x++) {
+
+	    c = level->leveldata[w*y+x];
+
+	    /*
+	     * Check that the boundary of the level is solid wall.
+	     */
+	    if ((x == 0 || y == 0 || x == w-1 || y == h-1) &&
+		(c != '+' && c != '-' && c != '|' && c != '%' && c != '&')) {
+		sprintf(internalbuf, "level boundary is not solid at line %d"
+			" column %d", y, x);
+		strncpy(buffer, internalbuf, buflen);
+		buffer[buflen-1] = '\0';
+		return buffer;
+	    }
+
+	    switch (c) {
+	      case 'v': case 'X':
+		/* Down-falling piece; check below it. */
+		x1 = x; y1 = y + 1; break;
+	      case '>': case 'W':
+		/* Right-falling piece; check to its right. */
+		x1 = x + 1; y1 = y; break;
+	      case '^': case 'Z':
+		/* Up-falling piece; check above it. */
+		x1 = x; y1 = y - 1; break;
+	      case '<': case 'Y':
+		/* Left-falling piece; check to its left. */
+		x1 = x - 1; y1 = y; break;
+	      case '@': case '$': case '%': case '-': case '+': case '|':
+	      case '&': case 'E': case 'o': case '8': case '.': case ':':
+	      case ' ':
+		/* Non-falling piece; carry on. */
+		continue;
+	      default:
+		/* Unrecognised character. */
+		if (isprint(c))
+		    sprintf(internalbuf, "unrecognised character `%c' at"
+			    " line %d column %d", c, y, x);
+		else
+		    sprintf(internalbuf, "unrecognised character %d at"
+			    " line %d column %d", (unsigned char)c, y, x);
+		strncpy(buffer, internalbuf, buflen);
+		buffer[buflen-1] = '\0';
+		return buffer;
+	    }
+
+	    /*
+	     * This is an assert rather than a validation check,
+	     * because the boundary check above should have ruled
+	     * out the possibility of it failing _now_ by failing
+	     * earlier.
+	     */
+	    assert(x1 >= 0 && x1 < w && y1 >= 0 && y1 < h);
+	    c1 = level->leveldata[w*y1+x1];
+	    if (c1 == ' ') {
+		sprintf(internalbuf, "`%c' piece resting on thin air"
+			" at line %d column %d", c, y, x);
+		strncpy(buffer, internalbuf, buflen);
+		buffer[buflen-1] = '\0';
+		return buffer;
+	    }
+	}
+
+    return NULL;
 }

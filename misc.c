@@ -25,7 +25,9 @@ char *fatal_error_string;
 jmp_buf fatal_error_jmp_buf;
 
 void fatal(char *string) {
-    fatal_error_string = string;
+    fatal_error_string = malloc(1+strlen(string));
+    if (fatal_error_string)
+	strcpy(fatal_error_string, string);
     longjmp(fatal_error_jmp_buf, 1);
 }
 

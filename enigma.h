@@ -124,6 +124,13 @@ gamestate *make_move (gamestate *, char);
 gamestate *init_game (level *lev);
 
 /*
+ * Also from engine.c, a level validator which checks a level
+ * structure to ensure it contains no obvious mistakes. Returns an
+ * error message in `buffer', or NULL.
+ */
+char *validate(level *level, char *buffer, int buflen);
+
+/*
  * From levelfile.c, the load_levels() function. Given the filename
  * stem of a level set, will load the level set into memory and
  * return a levelset structure.
