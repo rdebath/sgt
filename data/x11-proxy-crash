@@ -3,6 +3,7 @@ Class: bug
 Priority: high
 Content-type: text/x-html-body
 Present-in: 0.53 0.53b 2002-09-29 2002-03-25 2002-12-11
+Fixed-in: 2002-12-19
 
 <p>Opening a forwarded X11 connection over an SSH connection that's using a
 proxy fails to work. (Versions of PuTTY before 2002-10-11 may also crash.)
