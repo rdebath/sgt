@@ -1,20 +1,19 @@
 \cfg{man-identity}{base64}{1}{2004-11-20}{Simon Tatham}{Simon Tatham}
-\cfg{man-mindepth}{1}
 
-\C{base64-manpage} Man page for \cw{base64}
+\title Man page for \cw{base64}
 
-\H{base64-manpage-name} NAME
+\U NAME
 
 \cw{base64} - stand-alone encoder and decoder for base64
 
-\H{base64-manpage-synopsis} SYNOPSIS
+\U SYNOPSIS
 
 \c base64 [ -d ] [ filename ]
 \e bbbbbb   bb     iiiiiiii
-\c base64 -e [ -cwidth ] [ filename ]
-\e bbbbbb bb   bbiiiii     iiiiiiii
+\c base64 -e [ -c width ] [ filename ]
+\e bbbbbb bb   bb iiiii     iiiiiiii
 
-\H{base64-manpage-description} DESCRIPTION
+\U DESCRIPTION
 
 \cw{base64} is a command-line utility for encoding and decoding the
 \q{base64} encoding.
@@ -34,7 +33,7 @@ need to inspect a Content-MD5 header or an SSH private key.
 base64 format \e{alone}. It does not try to understand MIME headers
 or anything other than raw data.
 
-\H{base64-manpage-options} OPTIONS
+\U OPTIONS
 
 By default (if neither \cw{-d} or \cw{-e} is supplied), \cw{base64}
 operates in decode mode.
@@ -52,7 +51,7 @@ and output the decoded data on standard output.
 binary data from standard input or the supplied file name, encode it
 as base64, and output the encoded data on standard output.
 
-\dt \cw{-c}\e{width}
+\dt \cw{-c} \e{width}
 
 \dd If \cw{base64} is operating in encode mode, this controls the
 number of base64 characters output per line of the encoded file.
@@ -72,7 +71,7 @@ parameter passed to \cw{-c} must be a multiple of 4.
 
 }
 
-\H{base64-manpage-licence} LICENCE
+\U LICENCE
 
 \cw{base64} is free software, distributed under the MIT licence.
 Type \cw{base64 --licence} to see the full licence text.

@@ -1,19 +1,19 @@
 \cfg{man-identity}{xcopy}{1}{2004-08-02}{Simon Tatham}{Simon Tatham}
 \cfg{man-mindepth}{1}
 
-\C{xcopy-manpage} Man page for \cw{xcopy}
+\title Man page for \cw{xcopy}
 
-\H{xcopy-manpage-name} NAME
+\U NAME
 
 \cw{xcopy} - read and write text to/from an X selection from the
 command line
 
-\H{xcopy-manpage-synopsis} SYNOPSIS
+\U SYNOPSIS
 
 \c xcopy [ -r ] [ -u | -c ] [ -C ]
 \e bbbbb   bb     bb   bb     bb
 
-\H{xcopy-manpage-description} DESCRIPTION
+\U DESCRIPTION
 
 \cw{xcopy} is a command-line utility for manipulating the X selection.
 
@@ -42,7 +42,7 @@ of handling it in the form of plain text, UTF-8, or compound
 (multiple-character-set) text. Use the \cw{-u}, \cw{-c} and \cw{-C}
 options to control this aspect of its behaviour.
 
-\H{xcopy-manpage-options} OPTIONS
+\U OPTIONS
 
 By default (if \cw{-r} is not supplied), \cw{xcopy} operates in
 write mode.
@@ -91,7 +91,7 @@ window, you might well want to paste a string full of escape
 sequences and control characters, in which case you may need to use
 \cw{-C} to disable conversion to compound text.
 
-\H{xcopy-manpage-bugs} BUGS
+\U BUGS
 
 Occasionally \cw{xcopy -r} completely fails to notice selection data
 owned by another process. I have not yet reproduced this reliably;
@@ -103,7 +103,7 @@ currently supported. There are Xlib functions to do it, although
 they don't appear to work very well (missing out many characters
 which they could have converted).
 
-\H{xcopy-manpage-licence} LICENCE
+\U LICENCE
 
 \cw{xcopy} is free software, distributed under the MIT licence. Type
 \cw{xcopy --licence} to see the full licence text.

@@ -1,18 +1,18 @@
 \cfg{man-identity}{cvt-utf8}{1}{2004-03-24}{Simon Tatham}{Simon Tatham}
-\cfg{man-mindepth}{1}
+\cfg{html-chapter-numeric}{yes}
 
-\C{cvt-utf8-manpage} Man page for \cw{cvt-utf8}
+\title Man page for \cw{cvt-utf8}
 
-\H{cvt-utf8-manpage-name} NAME
+\U NAME
 
 \cw{cvt-utf8} - convert between UTF-8 and Unicode, and analyse Unicode
 
-\H{cvt-utf8-manpage-synopsis} SYNOPSIS
+\U SYNOPSIS
 
 \c cvt-utf8 [flags] [hex UTF-8 bytes and/or U+codepoints]
 \e bbbbbbbb  iiiii   iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
 
-\H{cvt-utf8-manpage-description} DESCRIPTION
+\U DESCRIPTION
 
 \cw{cvt-utf8} is a tool for manipulating and analysing UTF-8 and
 Unicode data. Its functions include:
@@ -35,7 +35,7 @@ print out a verbose analysis of the input data. If you need it to
 read UTF-8 from standard input or to write pure UTF-8 to standard
 output, you can do so using command-line options.
 
-\H{cvt-utf8-manpage-options} OPTIONS
+\U OPTIONS
 
 \dt \cw{-i}
 
@@ -52,7 +52,7 @@ long analysis of the input data.
 \dd Look up each code point in the Unihan database as well as the
 main Unicode character database.
 
-\H{cvt-utf8-manpage-examples} EXAMPLES
+\U EXAMPLES
 
 In \cw{cvt-utf8}'s native mode, it simply analyses input Unicode or
 UTF-8 data. For example, you can give a list of Unicode code
@@ -127,7 +127,7 @@ Chinese text meaning \q{Traditional Chinese}:
 \c                               midst of; hit (target); attain
 \c U-00006587  E6 96 87          <han> literature, culture, writing
 
-\H{cvt-utf8-manpage-admin} ADMINISTRATION
+\U ADMINISTRATION
 
 In order to print the \cw{unicode.org} official name of each
 character, \cw{cvt-utf8} requires file mapping code points to names.
@@ -185,7 +185,7 @@ following locations:
 If either of these files is not found, \cw{cvt-utf8} will still
 perform the rest of its functions.
 
-\H{cvt-utf8-manpage-licence} LICENCE
+\U LICENCE
 
 \cw{cvt-utf8} is free software, distributed under the MIT licence.
 Type \cw{cvt-utf8 --licence} to see the full licence text.
