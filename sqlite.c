@@ -130,38 +130,38 @@ int transaction_open = FALSE;
 
 void db_begin(void)
 {
-#ifndef NOSYNC
-    char *err;
-    assert(db != NULL);
-    assert(!transaction_open);
-    sqlite_exec(db, "BEGIN;", sqlite_null_callback, NULL, &err);
-    if (err) fatal(err_dberror, err);
-    transaction_open = TRUE;
-#endif
+    if (!nosync) {
+	char *err;
+	assert(db != NULL);
+	assert(!transaction_open);
+	sqlite_exec(db, "BEGIN;", sqlite_null_callback, NULL, &err);
+	if (err) fatal(err_dberror, err);
+	transaction_open = TRUE;
+    }
 }
 
 void db_rollback(void)
 {
-#ifndef NOSYNC
-    char *err;
-    assert(db != NULL);
-    assert(transaction_open);
-    sqlite_exec(db, "ROLLBACK;", sqlite_null_callback, NULL, &err);
-    if (err) fatal(err_dberror, err);
-    transaction_open = FALSE;
-#endif
+    if (!nosync) {
+	char *err;
+	assert(db != NULL);
+	assert(transaction_open);
+	sqlite_exec(db, "ROLLBACK;", sqlite_null_callback, NULL, &err);
+	if (err) fatal(err_dberror, err);
+	transaction_open = FALSE;
+    }
 }
 
 void db_commit(void)
 {
-#ifndef NOSYNC
-    char *err;
-    assert(db != NULL);
-    assert(transaction_open);
-    sqlite_exec(db, "COMMIT;", sqlite_null_callback, NULL, &err);
-    if (err) fatal(err_dberror, err);
-    transaction_open = FALSE;
-#endif
+    if (!nosync) {
+	char *err;
+	assert(db != NULL);
+	assert(transaction_open);
+	sqlite_exec(db, "COMMIT;", sqlite_null_callback, NULL, &err);
+	if (err) fatal(err_dberror, err);
+	transaction_open = FALSE;
+    }
 }
 
 void db_close(void)
@@ -169,10 +169,10 @@ void db_close(void)
     if (transaction_open)
 	db_rollback();
     if (db) {
-#ifdef NOSYNC
-	char *err;
-	sqlite_exec(db, "COMMIT;", sqlite_null_callback, NULL, &err);
-#endif
+	if (nosync) {
+	    char *err;
+	    sqlite_exec(db, "COMMIT;", sqlite_null_callback, NULL, &err);
+	}
 	sqlite_close(db);
     }
 }
@@ -195,10 +195,10 @@ void db_open(void)
     if (!db)
 	fatal(err_noopendb, dbpath, err);
 
-#ifdef NOSYNC
-    sqlite_exec(db, "BEGIN;", sqlite_null_callback, NULL, &err);
-    if (err) fatal(err_dberror, err);
-#endif
+    if (nosync) {
+	sqlite_exec(db, "BEGIN;", sqlite_null_callback, NULL, &err);
+	if (err) fatal(err_dberror, err);
+    }
 }
 
 static char *cfg_get_internal(char *key)

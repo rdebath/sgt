@@ -108,6 +108,7 @@ struct mime_details *find_mime_parts(const char *ego, int *nparts);
  * main.c
  */
 extern char *dirpath;
+extern int nosync;
 
 /*
  * store.c

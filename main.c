@@ -12,6 +12,7 @@
 #include "charset.h"
 
 char *dirpath;
+int nosync = FALSE;
 
 void run_command(int argc, char **argv)
 {
@@ -102,6 +103,8 @@ int main(int argc, char **argv) {
 			} else if (!strcmp(opt, "-version")) {
 			    showversion();
 			    nogo = TRUE;
+			} else if (!strcmp(opt, "-nosync")) {
+			    nosync = TRUE;
 			} else if (!strcmp(opt, "-licence") ||
 				   !strcmp(opt, "-license")) {
 			    licence();

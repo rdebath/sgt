@@ -239,14 +239,12 @@ static char *mbox_store_literal_inner(char *boxname,
     /*
      * Done. Sync and close the mbox, then return success.
      */
-#ifndef NOSYNC
-    if (fsync(fd) < 0) {
+    if (!nosync && fsync(fd) < 0) {
 	error(err_perror, boxname, "fsync");
 	if (ftruncate(fd, oldlen) < 0)
 	    error(err_perror, boxname, "ftruncate");
 	return NULL;
     }
-#endif
     if (close(fd) < 0) {
 	error(err_perror, boxname, "close");
 	if (ftruncate(fd, oldlen) < 0)

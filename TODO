@@ -1,3 +1,43 @@
+Work still to do
+----------------
+
+Big things:
+
+ - Unicode fallbacks.
+
+ - Message store editing (destroy-attachment and delete-message).
+    + the big challenge is figuring out how to leave the db+store in
+      a consistent state at all times.
+
+ - Categories, automatic category assignment, index generation
+   (including threading).
+    + automatic category assignment will involve user
+      configurability in some fashion; I'm still thinking embedding
+      Python might be the Way To Go.
+
+ - Mail sending: construction of starting composer buffers,
+   interpreting of pseudo-headers (Queue, Attach*, Fcc/Categories),
+   encoding of the message (RFC2047, and supplying a Content-Type as
+   appropriate), invention of Message-IDs, dealing with queued
+   messages.
+    + interesting charset issue: suppose the charset in which the
+      user _composes_ the message can't handle the input data
+      (display name in a To address, subject with Re: in front of
+      it). Then what?
+
+Smaller things:
+
+ - Fetching of incoming mail.
+
+ - Retrieval-for-display and retrieval-for-save of a single MIME
+   attachment. (Only hard bit is what to do about message/rfc822 in
+   display mode; perhaps we just return the headers? Do we
+   display-parse the message and return _display-parsed_ headers?)
+
+ - Jed interfacing.
+
+ - Alternative ego encoding.
+
 Thoughts on db structure
 ------------------------
 
