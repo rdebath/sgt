@@ -53,6 +53,7 @@ EOF
 
 sub fix_href {
   local ($_) = @_;
-  s/^AppendixA.html// or s/^/http:\/\/www.tartarus.org\/~simon\/puttydoc\//;
+  /^#/ or s/^AppendixA.html// or
+      s/^/http:\/\/www.tartarus.org\/~simon\/puttydoc\//;
   $_;
 }
