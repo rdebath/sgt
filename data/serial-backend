@@ -12,3 +12,8 @@ connection.
 Need to think about how this fits into our UI - unlike every other
 backend so far, serial connections have neither hostname nor port,
 and other connections don't have stop bits and guff like that.
+
+<p>
+Workaround: for NT-class systems, you could use
+<a href="http://www.greenend.org.uk/steve/software/wconsd.c">wconsd</a>
+to turn the serial connection into a telnet connection.
