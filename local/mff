@@ -17,6 +17,7 @@ jules    # Julian Hall
 cassi    # Sally Riordan
 dando    # Dan Curtis
 khamul cain genocide  # Alden Spiess
+joiner   # Kelly ???
 kazmania # Karen Fletcher
 ceb      # Clare Boothby
 amf mimic fragment  # <+-AMF-+>
@@ -28,7 +29,6 @@ catbells # Dave Hinton
 crown    # Jules Hill
 bjh      # Ben Harris
 fiddler  # Sabrina
-golem    # me
 matyjo   # Mary Argent
 fredlegs # Hairy Matt
 vicky    # Vicky Sloane
@@ -52,7 +52,7 @@ eek      # Eek the Bat
 sherbet  # Sherbet the Sheep
 garycook # Gary Cook
 heifere  # Alison Cowe
-desade   # Oliver-Michael Longden
+desade marquis nine  # Oliver-Michael Longden
 rjk      # Richard Kettlewell
 gothbabe # Liz Chapman
 julibaby # Juliet Ehimuan
@@ -60,14 +60,15 @@ rathenar # Kit Scorah
 kallisti # Matt Marcus
 claire   # Claire Lawson
 eviltwin # Emma Bennett
-lark serenity  # Vicky Clarke
+lark serenity spodness geekness  # Vicky Clarke
 elise    # Elisabeth Conolly
+songster # Peter Ellis
 
 arkady   # Eva Myers
 mormegil # Martin Read
 
 EOF
 `
-ME='anakin narg'
+ME='anakin narg golem'
 if test "$1" = "-f"; then f=-f; else f=; fi
 mfinger $f $FRIENDS $ME
