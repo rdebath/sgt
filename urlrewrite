@@ -31,3 +31,7 @@ if t[0] == "http" and t[1] == "www.livejournal.com" and \
             tl[4] = string.join(queries, "&")
             t = tuple(tl)
             print urlparse.urlunparse(t)
+
+if t[0] == "http" and t[1] == "lists.tartarus.org":
+    t = t[:1] + ("tunnel.lists.tartarus.org",) + t[2:]
+    print urlparse.urlunparse(t)
