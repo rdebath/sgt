@@ -2,7 +2,7 @@ Summary: Turn on 'avoid ever using icon title' by default
 Class: wish
 Difficulty: fun
 Priority: medium
-Fixed-in: 2003-01-23
+Fixed-in: 2003-01-23 2003-01-24
 
 <p>
 Separate window and icon titles don't make as much sense in the
@@ -10,3 +10,8 @@ post-Win95 world as in X11/Windows 3 style user interfaces. Judging by
 the mail we get, the resulting behaviour seems to be surprising to a
 fair few users. Perhaps we should turn off use of icon titles by
 default.
+
+<p>
+In fixing this, I've changed the sense of the control in the Windows
+UI - what was `Avoid ever using icon title' is now `Separate window
+and icon titles'. Docs updated accordingly.
