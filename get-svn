@@ -1,0 +1,20 @@
+#!/bin/sh 
+
+mkdir -p $HOME/src
+cd $HOME/src
+
+wget http://subversion.tigris.org/tarballs/subversion-1.1.2.tar.gz || \
+  { echo "Unable to download Subversion" >&2; exit 1; }
+
+{ md5sum -c || { echo "Archive md5sum does not match" >&2; exit 1; }; } << EOF
+11ec307ef937721fddd800f9b36078a5  subversion-1.1.2.tar.gz
+EOF
+
+tar xzvf subversion-1.1.2.tar.gz || \
+  { echo "Error unpacking Subversion" >&2; exit 1; }
+
+cd subversion-1.1.2 && ./configure --prefix=$HOME && make && make install
+
+svn help >& /dev/null || { echo "Error test-running Subversion" >&2; exit 1; }
+
+grep -q ssh+userv $HOME/.subversion/config || perl -i~ -pe '$k==1 and !/^#/ and do { print "ssh+userv = sh -c '\''ssh \$0 userv simon-svn svnserve'\''\n"; $k=2 }; /\[tunnels\]/ and do { s/^# //; $k=1; };' $HOME/.subversion/config
