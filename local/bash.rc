@@ -1,6 +1,6 @@
 # -*- mode: sh; mode: fold -*-
 # Simon Tatham's standardised chunk of .bashrc
-# $Revision: 1.23 $
+# $Revision: 1.24 $
 
 #{{{ I don't like .bash_history files. They wet their nests.
 unset HISTFILE
@@ -26,7 +26,7 @@ addpath() {
 }
 
 addpathback() {
-  local a b
+  local a b c
   # Be able to accept a second argument which is an envvar name
   # Otherwise, default to managing PATH.
   a=${2:-PATH}
