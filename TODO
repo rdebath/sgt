@@ -26,6 +26,15 @@ Less urgent:
       type EVENT? Unclear. Depends on what I'm going to use them
       for!
 
+ - Ability to edit and remove entries given their id.
+    + for starters we need a modified listing mode which _shows_ the
+      ids, then! Perhaps `-l -v', or `-L'.
+       * may also need to explicitly show behind-the-scenes entries
+	 such as textless things (weekends spring to mind).
+    + this ability is a necessary prerequisite for TODO tracking,
+      because otherwise there's no way to mark a TODO as done once
+      you've done it.
+
  - TODO tracking
     + we have type TODO in the db schema; start using it.
     + TODOs have a start date
@@ -34,3 +43,27 @@ Less urgent:
 	 of deadline, might be an interesting experiment.
     + NB some TODOs have no start date. We might need some sort of
       special date meaning `since the dawn of time'. Hmmm.
+       * this would also be useful for e.g. weekends.
+
+ - Birthdays, perhaps?
+    + unclear how this is not exactly equivalent to an EVENT.
+    + perhaps birthdays are not shown on the default calendar
+      display?
+       * in that case, perhaps a more generic `hidden' category
+	 might be more appropriate?
+    + perhaps birthday reminders come in two forms, one a few weeks
+      in advance to arrange a card, and the other nearer the time to
+      get it posted?
+       * more generally, a means of configuring the reminder profile
+	 for particular types of event would be helpful.
+    + Perhaps, then, the right thing is to create a fresh db table
+      which defines event types.
+       * Can configure under what circumstances they show up on the
+	 calendar listing.
+       * Can configure the reminder profile in some fashion.
+       * If we can also configure their colouring, then perhaps we
+	 could even fold all the existing event types into this!
+    + Actually, come to think of it, if you enter a _date_ of birth
+      into the calendar, it can remind you of how old the person is
+      when their birthday rolls round. (Though of course not all
+      birthdays would be suitable for this! :-)
