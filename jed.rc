@@ -1,0 +1,563 @@
+% -*- mode: slang; mode: fold -*-
+% Simon Tatham's .jedrc: version $Revision: 1.1 $
+
+%{{{ load Emacs keybindings to start with
+
+if (BATCH == 0) {
+    () = evalfile("emacs");            % Emacs-like bindings
+}
+
+%}}}
+%{{{ force instant syntax-highlighting update
+
+% Force full screen update on insert/delete keys.
+% Unpleasant, but seems to work: "dummy" seems to be the best way I can
+% find to do nothing and trigger screen updating...
+define dummy() {
+    insert(".");
+    deln(left(1));
+}
+for ($1 = 33; $1 < 127; $1++) {
+    setkey(".dummy \"self_insert_cmd\" call", char($1));
+}
+setkey (".1 deln", "^D");
+setkey(".\"backward_delete_char_untabify\" call dummy", "^?");
+
+%}}}
+%{{{ ^X^D to insert the date
+
+% insert date
+define insert_date() {
+    variable t = time;
+    insert(Sprintf("%s-%s-%s", substr(t,9,2),
+                   substr(t,5,3), substr(t,21,4), 3));
+}
+setkey("insert_date", "^X^D");
+
+%}}}
+%{{{ Extra bindings: ^X^I to toggle insert mode, ^Xg to go to line
+setkey("toggle_overwrite", "^X^I");
+setkey("goto_line_cmd", "^Xg");
+%}}}
+%{{{ turn off the menu bar
+
+% disable top menu bar
+enable_top_status_line (0);
+
+#ifdef MSWINDOWS
+destroy_menubar();
+#endif
+
+%}}}
+%{{{ file functions: ^X^R, M-x cd, M-x revert, M-x insh
+
+define find_file_read_only() {
+    variable file;
+    file = read_file_from_mini ("Find file read-only:");
+    !if (strlen (extract_filename(file))) return;
+
+    find_file (file);
+    pop();
+    set_readonly(1);
+}
+
+define set_buffer_dir (dir) {
+    variable buf, flags;
+    (, buf, flags) = getbuf_info();
+    setbuf_info (dir, buf, flags);
+}
+
+define cd() {
+    variable dir;
+    dir = read_file_from_mini ("Change buffer directory to:");
+    if (file_status(dir) != 2) {
+        error("Expecting directory name.");
+        return;
+    }
+    set_buffer_dir (dir);
+}
+
+define revert() {
+    variable file, dir, line, col;
+
+    (file,dir,,) = getbuf_info();
+    file = dircat(dir,file);
+
+    line = what_line(); col = what_column();
+    delbuf (whatbuf());
+    !if (find_file (file)) message ("File has disappeared! New file.");
+    goto_line(line); goto_column(col);
+}
+
+define insh() {
+    variable cmd;
+    cmd = read_mini ("$", "", "");
+    if (strlen(cmd) > 0) {
+	run_shell_cmd (cmd);
+    }
+}
+
+setkey("find_file_read_only", "^X^R");
+
+%}}}
+%{{{ F7 to execute macro
+
+#ifdef MSDOS MSWINDOWS
+setkey("execute_macro", "^@A");
+#else
+setkey("execute_macro", "^[[18~");
+#endif
+
+%}}}
+%{{{ bookmark functions: F3 to insert bookmark, F4 to go to it
+variable bookmark_str = "\176\174\176";
+define set_bookmark() {
+    insert(bookmark_str);
+}
+define goto_bookmark() {
+    push_spot();
+    bob();
+    if (fsearch(bookmark_str)) {
+        pop_spot();
+        bob();
+        () = fsearch(bookmark_str);
+        deln(strlen(bookmark_str));
+        message("Found and removed bookmark.");
+    } else {
+        pop_spot();
+        error("No bookmark found.");
+    }
+}
+#ifdef MSDOS MSWINDOWS
+setkey("set_bookmark", "^@=");
+setkey("goto_bookmark", "^@>");
+#else
+setkey("set_bookmark", "^[[13~");
+setkey("goto_bookmark", "^[[14~");
+#endif
+%}}}
+%{{{ shell grep_goto function: F9
+
+define grep_goto() {
+    variable filename, line;
+    push_spot();
+    bol_skip_white();
+    push_mark();
+    skip_chars("^:\n");
+    filename = bufsubstr();
+    line = 1;
+    if (looking_at(":")) {
+        go_right_1();
+        push_mark();
+        skip_chars("^:\n");
+        line = integer(bufsubstr());
+    }
+    pop_spot();
+    if (find_file(filename))
+        goto_line(line);
+}
+
+#ifdef MSDOS MSWINDOWS
+setkey("grep_goto", "^@C");
+#else
+setkey("grep_goto", "^[[20~");
+#endif
+%}}}
+%{{{ disable isearch
+
+setkey("search_forward", "^S");
+setkey("search_backward", "^R");
+
+%}}}
+%{{{ redefine bits of C mode
+
+define insert_openbrace_cmd () %{{{
+{
+    insert_char ('{');
+    indent_line ();
+}
+%}}}
+define insert_shutbrace_cmd () %{{{
+{
+    insert_char ('}');
+    indent_line ();
+
+    call("backward_delete_char");
+    call("self_insert_cmd");           % so we get the blink!
+}
+%}}}
+define c_multiline_comment() %{{{
+{
+    bol();
+    skip_white();
+    !if (eolp()) {
+        bol();
+        insert_char('\n');
+        go_left(1);
+    }
+    insert("/*\n*\n*/");
+    go_up(2);
+    indent_line();
+    go_down(2);
+    indent_line();
+    go_up(1);
+    indent_line();
+    eol();
+    insert(" ");
+}
+%}}}
+define c_mode_hook() %{{{
+{
+    variable keymap;
+    keymap = what_keymap();
+    definekey("insert_openbrace_cmd", "{", keymap);
+    definekey("insert_shutbrace_cmd", "}", keymap);
+    definekey("c_multiline_comment", "^XC", keymap);
+}
+%}}}
+
+%}}}
+%{{{ ensure bash scripts are edited in sh mode
+
+define bash_mode() {
+    sh_mode();
+}
+
+%}}}
+%{{{ ^X F is death; disable it
+unsetkey("^Xf");
+unsetkey("^XF");
+%}}}
+%{{{ global variables
+
+#ifdef VMS UNIX
+USE_ANSI_COLORS = 1;
+#endif
+No_Backups = 1;
+Startup_With_File = 0;
+DISPLAY_TIME = 1;
+HIGHLIGHT = 1;
+WANT_SYNTAX_HIGHLIGHT = 1;
+#ifdef MSDOS
+HORIZONTAL_PAN = -1;                   % pan *whole* window
+LINENUMBERS = 2;                       % display line and column numbers
+#else
+HORIZONTAL_PAN = 20;                   % pan current line only
+LINENUMBERS = 1;                       % display line numbers
+#endif
+BLINK = 1;                             % blink matching parenthesis
+TAB_DEFAULT = 8;
+WRAP = 70;                             % wrap column
+ADD_NEWLINE = 0;                       % add newline to file if not present
+IGNORE_BEEP = 1;                       % beep terminal during error messages
+_traceback = 0;                        % don't dump traceback on S-Lang errors
+WRAP_INDENTS = 0;                      % don't indent next line after wrapping
+#ifndef MSDOS OS2
+OUTPUT_RATE    = 0;
+#endif
+Fold_Mode_Ok = 1;
+
+% C-mode variables
+C_INDENT        = 4;                   % indent within block
+C_BRACE         = 0;                   % indent for brace
+C_BRA_NEWLINE   = 0;                   % don't insert a newline before '{'
+C_Colon_Offset  = 2;                   % indent case statements by two
+C_CONTINUED_OFFSET = 4;                % indent for unbraced then-clauses
+C_Preprocess_Indent = 0;               % indent for nested #if/#endifs
+
+#ifdef UNIX
+variable UCB_Mailer; UCB_Mailer = "/usr/ucb/mail";
+#endif
+
+#ifdef MSDOS XWINDOWS
+ALT_CHAR = 27;                         % the Meta- or Alt-key prefix
+#endif
+
+META_CHAR       = -1;   % All chars with hi bit set will self insert
+
+#ifdef MSDOS OS2
+DISPLAY_EIGHT_BIT = 1;
+#else
+DISPLAY_EIGHT_BIT = 160; % Other systems assume ISO Latin 1
+#endif
+
+%}}}
+%{{{ colours
+
+#ifdef XWINDOWS %{{{
+set_color("normal", "#cccccc", "#000000");
+set_color("status", "#ffff55", "#0000bb");
+set_color("region", "#000000", "#bbbbbb");
+set_color("operator", "#ffffff", "#000000");   % +, -, etc..
+set_color("number", "#5555ff", "#000000");     % 10, 2.71, etc..
+set_color("comment", "#bbbb00", "#000000");    % /* comment */
+set_color("string", "#00bb00", "#000000");     % "string" or 'char'
+set_color("keyword", "#ff5555", "#000000");    % if, while, unsigned, ...
+set_color("keyword1", "#55ff55", "#000000");   % exit, NULL, strcpy, ...
+set_color("delimeter", "#ffff55", "#000000");  % {}[](),.;...
+set_color("preprocess", "#00bbbb", "#000000"); % #ifdef ....
+set_color("menu", "#ffffff", "#0000bb");       % menu bar
+set_color("message", "#cccccc", "#000000");    % colour for messages
+set_color("error", "#ffff55", "#bb0000");      % colour for errors
+set_color("dollar", "#bb0000", "#000000");     % dollar sign continuation
+set_color("...", "#55ff55", "#000000");        % fold indicator
+
+call("redraw");
+%}}}
+#else
+#ifdef MSWINDOWS %{{{
+set_color("normal", "204,204,204", "00,00,00");
+set_color("status", "255,255,55", "00,00,187");
+set_color("region", "00,00,00", "187,187,187");
+set_color("operator", "255,255,255", "00,00,00");   % +, -, etc..
+set_color("number", "55,55,255", "00,00,00");     % 10, 2.71, etc..
+set_color("comment", "187,187,00", "00,00,00");    % /* comment */
+set_color("string", "00,187,00", "00,00,00");     % "string" or 'char'
+set_color("keyword", "255,55,55", "00,00,00");    % if, while, unsigned, ...
+set_color("keyword1", "55,255,55", "00,00,00");   % exit, NULL, strcpy, ...
+set_color("delimeter", "255,255,55", "00,00,00");  % {}[](),.;...
+set_color("preprocess", "00,187,187", "00,00,00"); % #ifdef ....
+set_color("menu", "255,255,255", "00,00,187");       % menu bar
+set_color("message", "204,204,204", "00,00,00");    % colour for messages
+set_color("error", "255,255,55", "187,00,00");      % colour for errors
+set_color("dollar", "187,00,00", "00,00,00");     % dollar sign continuation
+set_color("...", "55,255,55", "00,00,00");        % fold indicator
+
+call("redraw");
+%}}}
+#else %{{{
+set_color("normal", "lightgray", "black");
+set_color("status", "yellow", "blue");
+set_color("region", "black", "lightgray");
+set_color("operator", "white", "black");       % +, -, etc..
+set_color("number", "brightblue", "black");    % 10, 2.71, etc..
+set_color("comment", "brown", "black");        % /* comment */
+set_color("string", "green", "black");         % "string" or 'char'
+set_color("keyword", "brightred", "black");    % if, while, unsigned, ...
+set_color("keyword1", "brightgreen", "black"); % exit, NULL, strcpy, ...
+set_color("delimeter", "yellow", "black");     % {}[](),.;...
+set_color("preprocess", "cyan", "black");      % #ifdef ....
+set_color("menu", "white", "blue");            % menu bar
+set_color("message", "lightgray", "black");    % colour for messages
+set_color("error", "yellow", "red");           % colour for errors
+set_color("dollar", "red", "black");           % dollar sign continuation
+set_color("...", "brightgreen", "black");      % fold indicator
+
+#ifdef UNIX VMS
+if (USE_ANSI_COLORS) call ("redraw");
+#else
+call("redraw");
+#endif
+%}}}
+#endif
+#endif
+
+%}}}
+%{{{ terminal setup for Unix
+
+#ifdef UNIX
+$1 = "vt100 vt102 vt200 dec-vt220 vt300 vt320 vt420 xterms sterm";
+if (is_substr($1, getenv("TERM"))) set_term_vtxxx(0);
+#endif
+
+%}}}
+%{{{ M-x i1 to i8, t1 to t8, gnu
+
+%
+% Choose C indentation
+%
+define i(ind) { %{{{
+    variable mode;
+
+    (, mode) = what_mode();
+    if (mode & 2) {
+        C_INDENT = ind;
+        C_BRACE = 0;
+        C_CONTINUED_OFFSET = ind;
+        C_Colon_Offset = ind/2;
+    }
+} %}}}
+define gnu() { %{{{
+    variable mode;
+
+    (, mode) = what_mode();
+    if (mode & 2) {
+        C_INDENT = 2;
+        C_BRACE = 2;
+        C_CONTINUED_OFFSET = 2;
+    }
+} %}}}
+
+define i1() { i(1); }
+define i2() { i(2); }
+define i3() { i(3); }
+define i4() { i(4); }
+define i5() { i(5); }
+define i6() { i(6); }
+define i7() { i(7); }
+define i8() { i(8); }
+
+% Insert a "tab" of as many columns as desired. Use "real" tab characters
+% iff we're at the beginning of a line
+variable VAR_TAB_SIZE;
+VAR_TAB_SIZE = 2;
+define var_tab() { %{{{
+    variable i, j;
+    push_spot();
+    bskip_chars (" \t");
+    if (bolp()) {
+        pop_spot();
+        i = what_column() + VAR_TAB_SIZE - 1;
+        i = i - (i mod VAR_TAB_SIZE);
+        insert_char('.');
+        bol();
+        trim();
+        whitespace(i);
+        call("delete_char_cmd");
+    } else {
+        pop_spot();
+        j = (what_column() - 1) mod VAR_TAB_SIZE;
+        i = TAB;
+        TAB = 0;
+        whitespace (VAR_TAB_SIZE - j);
+        TAB = i;
+    }
+} %}}}
+
+define t(tab) { %{{{
+    VAR_TAB_SIZE = tab;
+    local_setkey("var_tab", "^I");
+} %}}}
+
+define t1() { t(1); }
+define t2() { t(2); }
+define t3() { t(3); }
+define t4() { t(4); }
+define t5() { t(5); }
+define t6() { t(6); }
+define t7() { t(7); }
+define t8() { local_setkey("self_insert_cmd", "^I"); }
+define t9() { t(9); }
+define t10() { t(10); }
+
+%}}}
+%{{{ ^X^] to show column
+
+define showcolm() {
+    message(Sprintf("Cursor is at column %d", what_column(), 1));
+}
+setkey("showcolm", "^X^]");
+
+%}}}
+%{{{ M-x q, Q and sig
+
+% for e-mail and news: quote a paragraph
+define q() {
+    push_spot();
+    EXIT_BLOCK {
+        pop_spot();
+    }
+
+    bol();
+    if (eolp())
+        break;
+
+    while ((what_char() != '\n') and (bobp() == 0)) {
+        go_up(1);
+        bol();
+    }
+    if (what_char() == '\n')
+        go_down(1);
+    bol();
+    while ((what_char() != '\n') and (eobp() == 0)) {
+        insert("> ");
+        !if (down(1))
+            break;
+        bol();
+    }
+}
+
+% and un-quote it again
+define Q() {
+    push_spot();
+    EXIT_BLOCK {
+        pop_spot();
+    }
+
+    bol();
+    if (eolp())
+        break;
+
+    while ((what_char() != '\n') and (bobp() == 0)) {
+        go_up(1);
+        bol();
+    }
+    if (what_char() == '\n')
+        go_down(1);
+    bol();
+    while ((what_char() != '\n') and (eobp() == 0)) {
+        if (what_char() == '>')
+            call("delete_char_cmd");
+        if (what_char() == ' ')
+            call("delete_char_cmd");
+        !if (down(1))
+            break;
+        bol();
+    }
+}
+
+% insert a sig
+define sig() {
+    push_spot();
+    EXIT_BLOCK {
+        pop_spot();
+    }
+
+    eol();
+    if (bolp()) {
+        deln(1);
+    } else {
+        !if (right(1))
+            insert_char('\n');
+    }
+    insert("-- \n");
+    () = insert_file(expand_filename("~/.signature"));
+}
+
+%}}}
+%{{{ ESC 0 inserts `0', so we can type eight zeros using ALT-8 ALT-0
+setkey(". 48 insert_char", "^[0");
+%}}}
+
+#ifdef LOCALHACKS
+%{{{ Local hack for NASM users
+add_mode_for_extension("nasm","asm");
+autoload("nasm_mode", "nasm");
+%}}}
+%{{{ Local hack for ARMASM users
+add_mode_for_extension("armasm","s");
+autoload("armasm_mode", "armasm");
+define armasm_upcase_hook(old, new) {
+    if (strcmp(old, "Push") and
+	strcmp(old, "Pop") and
+	strcmp(old, "Export")) {
+        return new;
+    } else {
+        return old;
+    }
+}
+%}}}
+%{{{ Local hack for Timber users
+autoload("timber", "timber");
+autoload("timber_compose", "timber");
+autoload("timber_only", "timber");
+add_completion("timber");
+add_completion("timber_compose");
+%}}}
+%{{{ Local hack for BC mode users
+autoload("bc_mode", "bcmode");
+%}}}
+%{{{ Local hack: ARM don't approve of physical tabs
+USE_TABS = 0;
+%}}}
+#endif
