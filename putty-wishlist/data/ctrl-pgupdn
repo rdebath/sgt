@@ -7,3 +7,5 @@ Content-Type: text/x-html-body
 <p> Ctrl-PgUp and Ctrl-PgDn to scroll by one line at a time. Despite
 PuTTY's usual policy about keystroke usage, this is a reasonably
 safe change because we don't currently do anything with those keys.
+<p>
+Done on Windows and Unix, not yet Mac.
