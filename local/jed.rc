@@ -1497,7 +1497,11 @@ define cvssvn_annotate() {
 	    ret = run_shell_cmd("cvs annotate " + file);
 	}
     } else {
-	ret = run_shell_cmd("svn annotate " + file);
+	ret = run_shell_cmd("svn-blame 2>/dev/null " + file);
+	if (ret > 0) {
+	    erase_buffer();
+	    ret = run_shell_cmd("svn blame " + file);
+	}
     }
     setbuf_info((getbuf_info & ~1) | 8); % clear modified bit, set readonly
     goto_line(line);
