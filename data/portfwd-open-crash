@@ -1,7 +1,8 @@
 Summary: Crashes with heavy open/close activity in port-forwarding
 Content-type: text/x-html-body
 Class: bug
-Present-in: 0.52 2002-06-06
+Present-in: 0.52 2002-06-05 2002-06-06
+Fixed-in: 2002-06-16
 Priority: high
 
 <p>
@@ -20,14 +21,6 @@ that this is correlated specifically with user input rather than just
 any terminal activity.
 
 <p>
-Individual reports (first is 2002 May 4):
-<ul>
-<li><tt>5.1.0.14.2.20020523234715.01b4cbf8@127.0.0.1</tt>
-<li><tt>Pine.LNX.4.44.0205211753330.6418-100000@bbs.intern</tt>
-  (contains an SSH packet log)
-<li><tt>Pine.LNX.4.44.0206071159080.15544-100000@stum.gink.org</tt>
-<li><tt>000701c1f3cd$b0b87b50$070ca8c0@FITZLT</tt>
-<li><tt>Pine.LNX.4.40.0206120938460.10271-100000@squishy.ameth.org</tt>
-  (contains full event log)
-<li><tt>3D578BB2.10439.7BC05B@localhost</tt> (contains Dr Watson log)
-</ul>
+<em>Update:</em> We believe this is fixed. I (JTN) can consistently
+reproduce the problem in 2002-06-05 but not 2002-06-18 (or
+2002-08-19).
