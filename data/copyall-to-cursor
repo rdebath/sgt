@@ -2,7 +2,8 @@ Summary: "Copy All to Clipboard" misses out screen contents after cursor
 Class: bug
 Difficulty: fun
 Priority: medium
-Present-in: 0.51 0.52 0.53 0.53b 2003-10-29
+Present-in: 0.51 0.52 0.53 0.53b 2003-10-29 0.54
+Fixed-in: 2004-03-11
 Content-type: text/x-html-body
 
 <p>
@@ -16,3 +17,8 @@ current cursor position.
 
 <p>
 The first release this feature was present in is 0.51.
+
+<p>
+<em>Update:</em> This has been fixed. However, we've decided to make
+it copy only up to the last <em>non-empty</em> line on the terminal,
+in case anyone was relying on something like the old behaviour.
