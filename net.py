@@ -2,13 +2,6 @@
 
 # Clone of the FreeNet game at http://www.jurjans.lv/stuff/net/FreeNet.htm
 
-# TODO:
-#
-#  - The original occasionally has barriers between squares within
-#    the grid. Makes the game easier, of course.
-#  - Alternative forms of control? Left/right clicks are OKish, but
-#    I'm not 100% convinced. Middle click to lock is Just Wrong.
-
 from gtk import *
 import GDK
 import random
@@ -22,6 +15,7 @@ SQUARESIZE = 31
 NSQUARES_X = 5
 NSQUARES_Y = 5
 WRAPPING = FALSE
+BARRIER_RATE = 0
 
 darea = pix = None
 
@@ -136,6 +130,25 @@ class NetGame:
             self.arena[sx][sy] = self.arena[sx][sy] | sd
             self.arena[dx][dy] = self.arena[dx][dy] | dd
 
+        # Put in barriers between squares, as clues.
+        barrierlist = []
+        for x in range(NSQUARES_X):
+            for y in range(NSQUARES_Y-wrapoffset):
+                y1 = (y+1) % NSQUARES_Y
+                if not (self.arena[x][y] & D):
+                    barrierlist.append((x,y,x,y1))
+        for x in range(NSQUARES_X-wrapoffset):
+            for y in range(NSQUARES_Y):
+                x1 = (x+1) % NSQUARES_X
+                if not (self.arena[x][y] & R):
+                    barrierlist.append((x,y,x1,y))
+        self.barriers = {}
+        nbarriers = len(barrierlist) * BARRIER_RATE / 100
+        for i in range(nbarriers):
+            index = rng.getint(len(barrierlist))
+            self.barriers[barrierlist[index]] = 1
+            del barrierlist[index]
+
         # Now we've got the network, scramble it.
         for x in range(NSQUARES_X):
             for y in range(NSQUARES_Y):
@@ -149,6 +162,9 @@ class NetGame:
         self.fullredraw = TRUE
         self.completed = FALSE
         self.completion_animation = 0
+
+    def barrier(self, x1, y1, x2, y2):
+        return self.barriers.get((x1,y1,x2,y2))
 
     def compute_active(self):
         list = []
@@ -165,16 +181,20 @@ class NetGame:
             if yp1 == 0 and not WRAPPING: yp1 = None
 
             if xm1 != None and (self.arena[x][y] & L) and \
-            (self.arena[xm1][y] & R) and not (self.arena[xm1][y] & ACTIVE):
+            (self.arena[xm1][y] & R) and not self.barrier(xm1,y,x,y) and \
+            not (self.arena[xm1][y] & ACTIVE):
                 list.append((xm1, y))
             if ym1 != None and (self.arena[x][y] & U) and \
-            (self.arena[x][ym1] & D) and not (self.arena[x][ym1] & ACTIVE):
+            (self.arena[x][ym1] & D) and not self.barrier(x,ym1,x,y) and \
+            not (self.arena[x][ym1] & ACTIVE):
                 list.append((x, ym1))
             if xp1 != None and (self.arena[x][y] & R) and \
-            (self.arena[xp1][y] & L) and not (self.arena[xp1][y] & ACTIVE):
+            (self.arena[xp1][y] & L) and not self.barrier(x,y,xp1,y) and \
+            not (self.arena[xp1][y] & ACTIVE):
                 list.append((xp1, y))
             if yp1 != None and (self.arena[x][y] & D) and \
-            (self.arena[x][yp1] & U) and not (self.arena[x][yp1] & ACTIVE):
+            (self.arena[x][yp1] & U) and not self.barrier(x,y,x,yp1) and \
+            not (self.arena[x][yp1] & ACTIVE):
                 list.append((x, yp1))
 
         for x in range(NSQUARES_X):
@@ -205,12 +225,12 @@ class NetGame:
 	    pass
 	cont = container()
         def draw_thick_line(pix, gc, x1, y1, x2, y2, active, cont=cont):
-	    if cont.phase == 0:
+	    if cont.phase <= 0:
 		draw_line(pix, gc, x1-1, y1, x2-1, y2)
 		draw_line(pix, gc, x1+1, y1, x2+1, y2)
 		draw_line(pix, gc, x1, y1-1, x2, y2-1)
 		draw_line(pix, gc, x1, y1+1, x2, y2+1)
-	    elif cont.phase == 1:
+	    elif cont.phase < 0 or cont.phase == 1:
 		tmp = gc.foreground
 		if active:
 		    gc.foreground = powered
@@ -304,6 +324,27 @@ class NetGame:
 			draw_polygon(pix, gc, TRUE, points)
 			gc.foreground = lines
 			draw_polygon(pix, gc, FALSE, points)
+
+        for cont.phase in range(2):
+            gc.foreground = [lines, barrier][cont.phase]
+            for x in range(NSQUARES_X+1):
+                for y in range(NSQUARES_Y):
+                    x0 = (x+NSQUARES_X-1) % NSQUARES_X
+                    x1 = x % NSQUARES_X
+                    if self.barrier(x0,y,x1,y):
+                        xmin = ORIGIN + SQUARESIZE * x
+                        ymin = ORIGIN + SQUARESIZE * y
+                        ymax = ymin + SQUARESIZE
+                        draw_thick_line(pix, gc, xmin, ymin, xmin, ymax, 0)
+            for x in range(NSQUARES_X):
+                for y in range(NSQUARES_Y+1):
+                    y0 = (y+NSQUARES_Y-1) % NSQUARES_Y
+                    y1 = y % NSQUARES_Y
+                    if self.barrier(x,y0,x,y1):
+                        xmin = ORIGIN + SQUARESIZE * x
+                        ymin = ORIGIN + SQUARESIZE * y
+                        xmax = xmin + SQUARESIZE
+                        draw_thick_line(pix, gc, xmin, ymin, xmax, ymin, 0)
 
     def move(self, x, y, action, undo=FALSE):
         assert(not self.moveinprogress)
@@ -528,7 +569,7 @@ def restart_game(menuitem=None):
     new_game(seed=game.currgame)
 
 def input_game(menuitem=None):
-    global NSQUARES_X, NSQUARES_Y, WRAPPING
+    global NSQUARES_X, NSQUARES_Y, WRAPPING, BARRIER_RATE
     class container:
         pass
     cont = container()
@@ -538,6 +579,7 @@ def input_game(menuitem=None):
                 cont.nsquares_x = string.atoi(cont.widthbox.get_text())
                 cont.nsquares_y = string.atoi(cont.heightbox.get_text())
                 cont.wrapping = cont.wrapping.get_active()
+                cont.barrier_rate = string.atoi(cont.barrierbox.get_text())
                 if cont.nsquares_x >= 3 and cont.nsquares_y >= 3:
                     if cont.editbox.get_text() == "":
                         cont.game = None
@@ -588,6 +630,16 @@ def input_game(menuitem=None):
     cont.wrapping.set_active(WRAPPING)
     dlg.vbox.pack_start(wrapping)
     wrapping.show()
+    hbox = GtkHBox()
+    label = GtkLabel("Barrier rate (percent)")
+    hbox.pack_start(label)
+    label.show()
+    cont.barrierbox = barrierbox = GtkEntry()
+    cont.barrierbox.set_text(str(BARRIER_RATE))
+    hbox.pack_start(barrierbox)
+    barrierbox.show()
+    dlg.vbox.pack_start(hbox)
+    hbox.show()
     label = GtkLabel("Enter game seed")
     dlg.vbox.pack_start(label)
     label.show()
@@ -611,6 +663,7 @@ def input_game(menuitem=None):
         NSQUARES_X = cont.nsquares_x
         NSQUARES_Y = cont.nsquares_y
         WRAPPING = cont.wrapping
+        BARRIER_RATE = cont.barrier_rate
         setup_globals()
         new_game(seed=cont.game)
 
@@ -720,6 +773,7 @@ powered = win.get_window().colormap.alloc(0, 65535, 65535)
 borders = win.get_window().colormap.alloc(grey.red/2,grey.green/2,grey.blue/2)
 lockcolour = win.get_window().colormap.alloc(grey.red*3/4,grey.green*3/4,grey.blue*3/4)
 blue = win.get_window().colormap.alloc(0, 0, 65535)
+barrier = win.get_window().colormap.alloc(65535, 0, 0)
 vbox.add(darea)
 darea.show()
 win.add(vbox)
