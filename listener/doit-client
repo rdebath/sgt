@@ -27,7 +27,7 @@ ourline = auth + cmd + "\r\n"
 s.send(ourline)
 
 status = sf.readline()
-if status[0] == "-":
+if status[0] != "+":
     sys.stderr.write("error: " + status)
     sys.exit(1)
 
