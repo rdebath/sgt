@@ -140,20 +140,31 @@ class Lump:
 	    self.hdrlist.remove(key)
     def propparse(self):
 	index = 0
-	while self.prop[index:index+2] == "K ":
+	while 1:
+	    if self.prop[index:index+2] == "K ":
+		wantval = 1
+	    elif self.prop[index:index+2] == "D ":
+		wantval = 0
+	    elif self.prop[index:index+9] == "PROPS-END":
+		break
+	    else:
+		raise "Unrecognised record in props section"
 	    nlpos = string.find(self.prop, "\n", index)
 	    assert nlpos > 0
 	    namelen = string.atoi(self.prop[index+2:nlpos])
 	    assert self.prop[nlpos+1+namelen] == "\n"
 	    name = self.prop[nlpos+1:nlpos+1+namelen]
 	    index = nlpos+2+namelen
-	    assert self.prop[index:index+2] == "V "
-	    nlpos = string.find(self.prop, "\n", index)
-	    assert nlpos > 0
-	    proplen = string.atoi(self.prop[index+2:nlpos])
-	    assert self.prop[nlpos+1+proplen] == "\n"
-	    prop = self.prop[nlpos+1:nlpos+1+proplen]
-	    index = nlpos+2+proplen
+	    if wantval:
+		assert self.prop[index:index+2] == "V "
+		nlpos = string.find(self.prop, "\n", index)
+		assert nlpos > 0
+		proplen = string.atoi(self.prop[index+2:nlpos])
+		assert self.prop[nlpos+1+proplen] == "\n"
+		prop = self.prop[nlpos+1:nlpos+1+proplen]
+		index = nlpos+2+proplen
+	    else:
+		prop = None
 	    self.props[0].append(name)
 	    self.props[1][name] = prop
     def setprop(self, key, val):
@@ -169,9 +180,12 @@ class Lump:
 	self.prop = ""
 	if len(self.props[0]) > 0:
 	    for key in self.props[0]:
-		self.prop = self.prop + "K %d" % len(key) + "\n" + key + "\n"
 		val = self.props[1][key]
-		self.prop = self.prop + "V %d" % len(val) + "\n" + val + "\n"
+		if val == None:
+		    self.prop = self.prop + "D %d" % len(key) + "\n" + key + "\n"
+		else:
+		    self.prop = self.prop + "K %d" % len(key) + "\n" + key + "\n"
+		    self.prop = self.prop + "V %d" % len(val) + "\n" + val + "\n"
 	    self.prop = self.prop + "PROPS-END\n"
 	# Now fix up the content length headers.
 	if len(self.prop) > 0:
