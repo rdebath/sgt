@@ -16,7 +16,7 @@ string (presented by
 is mistakenly triggering the HMAC bug compatibility mode.
 
 <p>
-A workaround in the current snapshots is to manually turn off
+A workaround in 0.53 is to manually turn off
 detection of the bug (SSH / Bugs panel, "Miscomputes SSH2 HMAC
 keys").
 
