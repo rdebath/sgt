@@ -1,0 +1,45 @@
+Summary: Function and other special keys don't do what people want
+Class: wish
+Difficulty: taxing
+Priority: low
+Content-type: text/x-html-body
+
+<p>
+Many people have written to us to say that the function keys
+(or other `special' keys such as Home and End) don't do what they
+want, presumably in any of the numerous modes we provide.
+
+<p>
+Mapping of keypresses to escape sequences seems to be a horrible
+morass. The simplest way out may actually be to implement
+<a href="key-mapping.html">`key-mapping'</a>.
+
+<p>
+If the function keys don't emit the sequence you want, you'll have to
+tell us what you think they <em>should</em> do. See
+<a href="http://www.chiark.greenend.org.uk/~sgtatham/putty/faq.html#A.6.17">FAQ A.6.17</a>.
+
+<p>
+The following list references emails where people have expressed
+actual opinions about the sequences we should send (and they're not
+completely weird), in case someone on the team is enthusiastic
+enough to try to spot patterns.
+
+<ul>
+<li>018501c105fb$9670f580$6400000a@vt.pl
+<li>007601c13c50$40fd31f0$2c01a8c0@jay
+<li>OF98035BD5.D98013EA-ON80256B83.002DA829@baplc.com
+<li>83AAC73A5DA2244B9CD12C7AA2C309EB581112@srvsutt01.sis.co.uk
+<li>3DB5CD3F.4E01FD26@libero.it
+<li>C1256C87.0030126E.00@mail.is.mumnet.com
+<li>A57B8265AC03994B8B598F1787237C152E52AD@m3rgda.gdansk.ad.pkobp.pl
+<li>DGENLILIJMJKHLPDEIBJMEBOCAAA.ejenner@sykescanada.com
+<li>001101c35c27$7c9008c0$3d00c894@micro03
+<li>3F9B7EA5.3050300@endbracket.net
+<li>6.0.0.22.0.20031203140704.01da8008@mail.strasbourg.4js.com
+<li>etc, etc, etc.
+</ul>
+
+<p>
+See also <a href="xterm-keyboard.html">`xterm-keyboard'</a> (although
+that claims to be full of lies).
