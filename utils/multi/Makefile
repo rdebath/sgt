@@ -5,6 +5,9 @@ DESTDIR = .
 PREFIX = /usr/local
 BINDIR = $(PREFIX)/bin
 MANDIR = $(PREFIX)/man/man1
+INSTALL = install
+IPROG =#   flags for installing programs (default none)
+IDATA = -m 0644  # flags for installing data
 
 all: multi.1
 
@@ -28,6 +31,6 @@ release: multi.1
 
 install: multi.1
 	mkdir -p $(BINDIR)
-	install multi $(BINDIR)/multi
+	$(INSTALL) $(IPROG) multi $(BINDIR)/multi
 	mkdir -p $(MANDIR)
-	install -m 0644 multi.1 $(MANDIR)/multi.1
+	$(INSTALL) $(IDATA) multi.1 $(MANDIR)/multi.1

@@ -5,6 +5,9 @@ DESTDIR = .
 PREFIX = /usr/local
 BINDIR = $(PREFIX)/bin
 MANDIR = $(PREFIX)/man/man1
+INSTALL = install
+IPROG =#   flags for installing programs (default none)
+IDATA = -m 0644  # flags for installing data
 
 all: lns.1
 
@@ -28,6 +31,6 @@ release: lns.1
 
 install: lns.1
 	mkdir -p $(BINDIR)
-	install lns $(BINDIR)/lns
+	$(INSTALL) $(IPROG) lns $(BINDIR)/lns
 	mkdir -p $(MANDIR)
-	install -m 0644 lns.1 $(MANDIR)/lns.1
+	$(INSTALL) $(IDATA) lns.1 $(MANDIR)/lns.1

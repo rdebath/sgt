@@ -5,6 +5,9 @@ DESTDIR = .
 PREFIX = /usr/local
 BINDIR = $(PREFIX)/bin
 MANDIR = $(PREFIX)/man/man1
+INSTALL = install
+IPROG =#   flags for installing programs (default none)
+IDATA = -m 0644  # flags for installing data
 
 X11LIB=-L/usr/X11R6/lib -lX11
 
@@ -33,6 +36,6 @@ release: xcopy.1
 
 install: xcopy xcopy.1
 	mkdir -p $(BINDIR)
-	install xcopy $(BINDIR)/xcopy
+	$(INSTALL) $(IPROG) xcopy $(BINDIR)/xcopy
 	mkdir -p $(MANDIR)
-	install -m 0644 xcopy.1 $(MANDIR)/xcopy.1
+	$(INSTALL) $(IDATA) xcopy.1 $(MANDIR)/xcopy.1

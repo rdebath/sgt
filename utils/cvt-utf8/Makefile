@@ -5,6 +5,7 @@ DESTDIR = .
 PREFIX = /usr/local
 BINDIR = $(PREFIX)/bin
 MANDIR = $(PREFIX)/man/man1
+INSTALL = install
 
 all: cvt-utf8.1
 
@@ -28,6 +29,6 @@ release: cvt-utf8.1
 
 install: cvt-utf8.1
 	mkdir -p $(BINDIR)
-	install cvt-utf8 $(BINDIR)/cvt-utf8
+	$(INSTALL) cvt-utf8 $(BINDIR)/cvt-utf8
 	mkdir -p $(MANDIR)
-	install -m 0644 cvt-utf8.1 $(MANDIR)/cvt-utf8.1
+	$(INSTALL) -m 0644 cvt-utf8.1 $(MANDIR)/cvt-utf8.1
