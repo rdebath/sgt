@@ -13,8 +13,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include <unistd.h>
-#include <pwd.h>
+#ifndef _WIN32
+#  include <unistd.h>
+#  include <pwd.h>
+#endif
 #include <sys/types.h>
 
 #include "enigma.h"
@@ -39,6 +41,10 @@ int ishdr(char *line, char *header) {
  * game positions.
  */
 void get_user(char *buf, int buflen) {
+#ifdef _WIN32
+    if (!GetUserName(buf, &buflen))
+	strncpy(buf, "unknown", buflen);
+#else
     struct passwd *p;
     uid_t uid = getuid();
     char *user;
@@ -73,6 +79,7 @@ void get_user(char *buf, int buflen) {
 	buf[buflen-1] = '\0';
     }
     endpwent();
+#endif
 }
 
 /*

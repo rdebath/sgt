@@ -16,6 +16,22 @@
 int main(int argc, char **argv) {
     char user[64];
 
+#ifdef _WIN32
+    /* chdir to the executable location in case SAVEDIR and LEVELDIR
+     * are relative locations */
+    char startdir[MAX_PATH];
+    char *p, *q;
+
+    GetModuleFileName(GetModuleHandle(NULL), startdir, sizeof(startdir));
+    p = strrchr(startdir, '\\');
+    if ((q = strrchr(p ? p+1 : startdir, '/')))
+	p = q;
+    if (p) {
+	p[0] = '\0';
+	chdir(startdir);
+    }
+#endif
+
     screen_init();
     if (setjmp(fatal_error_jmp_buf) == 0) {
 	char *setname = DEFAULTSET;
