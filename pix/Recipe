@@ -10,8 +10,10 @@
 
 !makefile unix Makefile
 
-bubbles  : [U] bubbles bmpwrite
-filigram : [U] filigram bmpwrite
-greyblur : [U] greyblur bmpwrite
-newton   : [U] newton bmpwrite -lm
-tetra    : [U] tetra bmpwrite -lm
+COMMON   = bmpwrite cmdline
+
+bubbles  : [U] bubbles COMMON
+filigram : [U] filigram COMMON
+greyblur : [U] greyblur COMMON
+newton   : [U] newton COMMON -lm
+tetra    : [U] tetra COMMON -lm

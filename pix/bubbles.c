@@ -30,13 +30,13 @@
 #include <string.h>
 #include <time.h>
 
+#include "misc.h"
+
+#include "cmdline.h"
+
 #include "bmpwrite.h"
 
 #define VERSION "$Revision$"
-
-#define TRUE 1
-#define FALSE 0
-#define lenof(x) (sizeof ((x)) / sizeof ( *(x) ))
 
 int randomupto(int n);
 
@@ -360,236 +360,98 @@ int plot(struct Params params) {
  * Main program: parse the command line and call plot() when satisfied.
  */
 
-int parseint(char const *string, int *ret, char const *name) {
-    int i;
-    i = strspn(string, "0123456789");
-    if (i > 0) {
-	*ret = atoi(string);
-	string += i;
-    } else
-	goto parsefail;
-    if (*string)
-	goto parsefail;
-    return 1;
-    parsefail:
-    fprintf(stderr, "bubbles: unable to parse %s `%s'\n", name, string);
-    return 0;
-}
-
-int parsesize(char const *string, int *x, int *y, char const *name) {
-    int i;
-    i = strspn(string, "0123456789");
-    if (i > 0) {
-	*x = atoi(string);
-	string += i;
-    } else
-	goto parsefail;
-    if (*string++ != 'x')
-	goto parsefail;
-    i = strspn(string, "0123456789");
-    if (i > 0) {
-	*y = atoi(string);
-	string += i;
-    } else
-	goto parsefail;
-    if (*string)
-	goto parsefail;
-    return 1;
-    parsefail:
-    fprintf(stderr, "bubbles: unable to parse %s `%s'\n", name, string);
-    return 0;
-}
-
-int main(int ac, char **av) {
-    char const *usagemsg[] = {
-	"usage: bubbles [options]",
-	"       -o, --output file.bmp   output bitmap name",
-	"       -s, --size NNNxNNN      output bitmap size",
-        "       -r, --radius NNN        maximum bubble radius",
-        "       -m, --minradius NNN     minimum bubble radius",
-        "       -p, --preferred NNN     preferred distance between bubbles",
-        "       -d, --distance NNN      minimum distance between bubbles",
-        "       -M, --metal             draw metal balls instead of bubbles",
-	"       -v, --verbose           report details of what is done",
-    };
-    int usage = FALSE;
+int main(int argc, char **argv) {
     int verbose = 0;
     int metal = FALSE;
     char *outfile = NULL;
-    int imagex = 0, imagey = 0;
+    struct Size imagesize = {0,0};
     int i;
     int radius = 0, minradius = 0, prefradius = 0, distance = 0;
+    struct Params par;
+
+    struct Cmdline options[] = {
+	{1, "--output", 'o', "file.bmp", "output bitmap name",
+		"filename", parsestr, &outfile, NULL},
+	{1, "--size", 's', "NNNxNNN", "output bitmap size",
+		"output bitmap size", parsesize, &imagesize, NULL},
+	{1, "--radius", 'r', "NNN", "maximum bubble radius",
+		"maximum radius", parseint, &radius, NULL},
+	{1, "--minradius", 'm', "NNN", "minimum bubble radius",
+		"minimum radius", parseint, &radius, NULL},
+	{1, "--preferred", 'p', "NNN", "preferred distance between bubbles",
+		"preferred distance", parseint, &prefradius, NULL},
+	{1, "--distance", 'd', "NNN", "minimum distance between bubbles",
+		"minimum distance", parseint, &distance, NULL},
+	{1, "--metal", 'M', NULL, "draw metal balls instead of bubbles",
+		NULL, NULL, NULL, &metal},
+	{1, "--verbose", 'v', NULL, "report details of what is done",
+		NULL, NULL, NULL, &verbose},
+    };
+
+    parse_cmdline("bubbles", argc, argv, options, lenof(options));
+
+    if (argc < 2)
+	usage_message("bubbles [options]", options, lenof(options), NULL, 0);
 
     initrandbig(time(NULL));	       /* FIXME: configurable input seed */
 
-    if (ac < 2) {
-	usage = TRUE;
-    } else while (--ac) {
-	char *arg = *++av;
+    /*
+     * Having read the arguments, now process them.
+     */
 
-	if (arg[0] != '-') {
-            usage = TRUE;
-        } else {
-	    char c = arg[1];
-	    char *val = arg+2;
-	    if (c == '-') {
-		static const struct {
-		    char const *name;
-		    int letter;
-		} longopts[] = {
-		    {"--output", 'o'},
-		    {"--size", 's'},
-		    {"--radius", 'r'},
-		    {"--minradius", 'm'},
-		    {"--preferred", 'p'},
-		    {"--distance", 'd'},
-		    {"--verbose", 'v'},
-		    {"--help", 'h'},
-		    {"--version", 'V'},
-		    {"--metal", 'M'},
-		};
-		int i, j;
-		for (i = 0; i < lenof(longopts); i++) {
-		    j = strlen(longopts[i].name);
-		    if (!strncmp(arg, longopts[i].name, j) &&
-			j == (int)strcspn(arg, "=")) {
-			c = longopts[i].letter;
-			val = arg + j;
-			if (*val) val++;
-			break;
-		    }
-		}
-		if (c == '-') {
-		    fprintf(stderr, "bubbles: unknown long option `%.*s'\n",
-			    (int)strcspn(arg, "="), arg);
-		    return EXIT_FAILURE;
-		}
-	    }
-	    switch (c) {
-	      case 'v':
-		verbose++;
-		break;
-	      case 'h':
-		usage = TRUE;
-		break;
-              case 'M':
-                metal = TRUE;
-                break;
-	      case 'V':
-		{
-		    char *p = VERSION;
-		    int i;
-		    p += strcspn(p, " ");
-		    if (*p) p++;
-		    i = strcspn(p, " $");
-		    printf("bubbles version %.*s\n", i, p);
-		}
-		return EXIT_SUCCESS;
-	      default:		       /* other options require an arg */
-		if (!*val) {
-		    if (!--ac) {
-			fprintf(stderr,
-				"bubbles: option `%s' requires an argument\n",
-				arg);
-			return EXIT_FAILURE;
-		    }
-		    val = *++av;
-		}
-		switch (c) {
-		  case 'o':	       /* --output */
-		    outfile = val;
-		    break;
-		  case 's':	       /* --size */
-		    if (!parsesize(val, &imagex, &imagey, "output image size"))
-			return EXIT_FAILURE;
-		    break;
-                  case 'p':            /* --prefradius */
-		    if (!parseint(val, &prefradius, "preferred distance"))
-			return EXIT_FAILURE;
-		    break;
-                  case 'r':            /* --radius */
-		    if (!parseint(val, &radius, "maximum radius"))
-			return EXIT_FAILURE;
-		    break;
-                  case 'm':            /* --minradius */
-		    if (!parseint(val, &minradius, "minimum radius"))
-			return EXIT_FAILURE;
-		    break;
-                  case 'd':            /* --distance */
-		    if (!parseint(val, &distance, "minimum distance"))
-			return EXIT_FAILURE;
-		    break;
-		}
-		break;
-	    }
-	}
-    }
+    /* If no output file, complain. */
+    if (!outfile) {
+	fprintf(stderr, "bubbles: no output file specified: "
+		"use something like `-o file.bmp'\n");
+	return EXIT_FAILURE;
+    } else
+	par.outfile = outfile;
 
-    if (usage) {
-	int i;
-	for (i = 0; i < lenof(usagemsg); i++)
-	    puts(usagemsg[i]);
-	return ac == 1 ? EXIT_SUCCESS : EXIT_FAILURE;
+    /*
+     * Now complain if no output image size was specified.
+     */
+    if (!imagesize.w || !imagesize.h) {
+	fprintf(stderr, "bubbles: no output size specified: "
+		"use something like `-s 400x400'\n");
+	return EXIT_FAILURE;
     } else {
-	/*
-	 * Having read the arguments, now process them.
-	 */
-	struct Params par;
-
-	/* If no output file, complain. */
-	if (!outfile) {
-	    fprintf(stderr, "bubbles: no output file specified: "
-		    "use something like `-o file.bmp'\n");
-	    return EXIT_FAILURE;
-	} else
-	    par.outfile = outfile;
-
-	/*
-	 * Now complain if no output image size was specified.
-	 */
-	if (!imagex || !imagey) {
-	    fprintf(stderr, "bubbles: no output size specified: "
-		    "use something like `-s 400x400'\n");
-	    return EXIT_FAILURE;
-	} else {
-	    par.width = imagex;
-	    par.height = imagey;
-	}
-
-        /*
-         * If no radius, minradius or distance specified, default
-         * to standard values. Minradius defaults to 0; prefradius
-         * defaults to maxradius.
-         */
-        par.maxradius = (radius > 0 ? radius : 32);
-        par.distance = (distance > 0 ? distance : 8);
-        par.minradius = (minradius > 0 ? minradius : 0);
-        par.prefradius = (prefradius > 0 ? prefradius : par.maxradius);
-
-        par.metal = metal;
-
-	if (verbose > 1)
-	    par.trace = 1;
-	else
-	    par.trace = 0;
-
-	/*
-	 * If we're in verbose mode, regurgitate the final
-	 * parameters.
-	 */
-	if (verbose) {
-            printf("Output file `%s', %d x %d\n",
-                   par.outfile, par.width, par.height);
-            printf("Bubble radius range %d to %d\n",
-                   par.minradius, par.maxradius);
-            printf("Minimum distance %d, preferred distance %d\n",
-                   par.distance, par.prefradius);
-            printf("Appearance: %s\n",
-                   par.metal ? "metal balls" : "bubbles");
-	}
-
-	i = plot(par) ? EXIT_SUCCESS : EXIT_FAILURE;
-
-        return i;
+	par.width = imagesize.w;
+	par.height = imagesize.h;
     }
+
+    /*
+     * If no radius, minradius or distance specified, default
+     * to standard values. Minradius defaults to 0; prefradius
+     * defaults to maxradius.
+     */
+    par.maxradius = (radius > 0 ? radius : 32);
+    par.distance = (distance > 0 ? distance : 8);
+    par.minradius = (minradius > 0 ? minradius : 0);
+    par.prefradius = (prefradius > 0 ? prefradius : par.maxradius);
+
+    par.metal = metal;
+
+    if (verbose > 1)
+	par.trace = 1;
+    else
+	par.trace = 0;
+
+    /*
+     * If we're in verbose mode, regurgitate the final
+     * parameters.
+     */
+    if (verbose) {
+	printf("Output file `%s', %d x %d\n",
+	       par.outfile, par.width, par.height);
+	printf("Bubble radius range %d to %d\n",
+	       par.minradius, par.maxradius);
+	printf("Minimum distance %d, preferred distance %d\n",
+	       par.distance, par.prefradius);
+	printf("Appearance: %s\n",
+	       par.metal ? "metal balls" : "bubbles");
+    }
+
+    i = plot(par) ? EXIT_SUCCESS : EXIT_FAILURE;
+
+    return i;
 }
