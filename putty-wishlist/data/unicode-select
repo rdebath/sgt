@@ -1,0 +1,30 @@
+Summary: Word-at-a-time selection configuration ignores Unicode
+Class: semi-bug
+Difficulty: tricky
+Priority: low
+Content-type: text/x-html-body
+
+<p>
+Currently, the `character classes' configuration on the Selection
+panel for word-at-a-time selection only covers the first 128
+characters. It did not change when PuTTY was upgraded to Unicode.
+
+<p>
+It should probably support configurable selection for Unicode somehow,
+but clearly the UI will need major changes.
+
+<p>
+Currently there is some hard-coded wordness for Unicode that tries to
+do the right thing for particular Unicode ranges, in
+<code>terminal.c:wordtype()</code>. Perhaps the data structure here
+could be used as the basis of a simple UI. (Will need to translate
+existing configurations, of course.)
+
+<p>
+Possibly relevant references:
+<ul>
+<li>"Text Boundaries"
+(<a href="http://www.unicode.org/reports/tr29/">DUTR #29</a>)
+<li>"Line Breaking Properties"
+(<a href="http://www.unicode.org/reports/tr14/">UAX #15</a>)
+</ul>
