@@ -1,5 +1,5 @@
 Summary: Line ending conversion in PSCP and PSFTP
-Difficulty: taxing
+Difficulty: tricky
 Class: wish
 Priority: medium
 Content-type: text/x-html-body
@@ -13,6 +13,13 @@ infozip has one, as does less; anyone want to comment on which is
 better or whether there are better still?)
 
 <p>
-Of course, it would be good to have protocol support rather than
-having to rely on heuristics, but the last discussion on IETF SECSH
-about adding this to SFTP didn't come to any consensus.
+Heuristics shouldn't now be needed at the protocol end for SFTP, as
+<code>SSH_FXF_TEXT</code> has now been proposed in SFTP v4 (see
+<a href="http://www.ietf.org/internet-drafts/draft-ietf-secsh-filexfer-04.txt">draft-ietf-secsh-filexfer-04</a>).
+I don't know what implementations exist.
+
+<p>
+Should we require explicit triggering of this mechanism for local
+files via a command/option, or should we have a "guess" mode? If the
+latter, I think we should be able to spot and cope with Unix-style
+files on a Windows system.
