@@ -1,0 +1,20 @@
+Summary: Bug in Putty's handling of SSH_MSG_CHANNEL_WINDOW_ADJUST
+Content-type: text/plain
+
+From Peter Gutmann:
+
+Actually this isn't so much a bug as (apparently) a conceptual error in the way
+this is implemented.  The problem is that Putty (any version up to 0.53) waits
+for a window adjust after everything it does past the initial handshake.  If my
+server sends a SSH_MSG_CHANNEL_OPEN_CONFIRMATION advertising a window size
+equal to my max packet size of 32K (heck, if I advertise a 4GB window), Putty
+waits for a window adjust before reading anything.  Given that the window is
+already at INT_MAX, I'm not sure how much more window it expects to get before
+it can start.
+
+The fact that it appears to work OK otherwise seems to be an artifact of
+OpenSSH, which sends window adjusts like mad during a connection.  OTOH using
+OpenSSH to connect to a server which just uses one big window isn't a problem,
+while Putty can't get past the initial handshake talking to the same server.
+
+<200210040834.UAA08658@ruru.cs.auckland.ac.nz>
