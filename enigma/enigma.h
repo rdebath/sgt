@@ -136,6 +136,7 @@ void progress_save(levelset *set, char *user, progress p);
 /*
  * From misc.c, miscellaneous things.
  */
+void fatal(char *string);
 int ishdr(char *line, char *header);
 void get_user(char *buf, int buflen);
 time_t parse_date(char *buf);

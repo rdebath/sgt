@@ -59,9 +59,12 @@ int main(int argc, char **argv) {
 		gs = NULL;
 	    } else {
 		/* load a saved position */
-		gs = gamestate_copy(saves[-action]);
+		n = -action;
+		if (!saves[n])   /* don't segfault */
+		    continue;
+		gs = gamestate_copy(saves[n]);
 		l = set->levels[gs->levnum-1];
-		saveslot = -action;
+		saveslot = n;
 	    }
 	    if (gs) {
 		screen_level_init();
@@ -83,7 +86,7 @@ int main(int argc, char **argv) {
 			}
 		    } else if (k == 'r') {
 			n = screen_saveslot_ask('r', saves, saveslot);
-			if (n >= 0) {
+			if (n >= 0 && saves[n]) {
 			    saveslot = n;
 			    gamestate_free(gs);
 			    gs = gamestate_copy(saves[saveslot]);

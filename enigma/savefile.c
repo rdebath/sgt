@@ -32,13 +32,13 @@ gamestate *savepos_load(levelset *set, char *user, int savenum) {
     sprintf(buf, ".%d", savenum+1);
     strncpy(fname + strlen(fname), buf, sizeof(fname)-strlen(fname));
     if (fname[sizeof(fname)-1] != '\0') {
-	fatal_error_string = "File name length overflow";
+	/* filename length overflow */
 	return NULL;
     }
 
     fp = fopen(fname, "r");
     if (!fp) {
-	fatal_error_string = "Unable to read save file";
+	/* can't open save file */
 	return NULL;
     }
 
@@ -47,12 +47,12 @@ gamestate *savepos_load(levelset *set, char *user, int savenum) {
 
     while (fgets(buf, sizeof(buf), fp)) {
 	if (buf[strlen(buf)-1] != '\n') {
-	    fatal_error_string = "Line length overflow in save file";
+	    /* line length overflow in save file */
 	    return NULL;
 	}
 	buf[strcspn(buf, "\r\n")] = '\0';
 	if (state == NULL && !ishdr(buf, "Level: ")) {
-	    fatal_error_string = "Level: line not first in save file";
+	    /* Level: line not first in save file */
 	    return NULL;
 	}
 	if (ishdr(buf, "Level: ")) {
@@ -70,27 +70,27 @@ gamestate *savepos_load(levelset *set, char *user, int savenum) {
 	    state->gold_total = atoi(buf + 11);
 	} else if (ishdr(buf, "Map: ")) {
 	    if (state->leveldata == NULL) {
-		fatal_error_string = "Map before size in save file";
+		/* map before size in save file */
 		return NULL;
 	    }
 	    if ((int)strlen(buf + 5) != state->width) {
-		fatal_error_string = "Wrong length map line in save file";
+		/* wrong length map line in save file */
 		return NULL;
 	    }
 	    if (nlines >= state->height) {
-		fatal_error_string = "Too many map lines in save file";
+		/* too many map lines in save file */
 		return NULL;
 	    }
 	    memcpy(state->leveldata + state->width * nlines,
 		   buf + 5, state->width);
 	    nlines++;
 	} else {
-	    fatal_error_string = "Unrecognised keyword in save file";
+	    /* unrecognised keyword in save file */
 	    return NULL;
 	}
     }
     if (nlines < state->height) {
-	fatal_error_string = "Not enough map lines in save file";
+	/* not enough map lines in save file */
 	return NULL;
     }
 
@@ -123,7 +123,7 @@ void savepos_del(levelset *set, char *user, int savenum) {
     sprintf(buf, ".%d", savenum+1);
     strncpy(fname + strlen(fname), buf, sizeof(fname)-strlen(fname));
     if (fname[sizeof(fname)-1] != '\0') {
-	fatal_error_string = "File name length overflow";
+	/* file name length overflow */
 	return;
     }
     remove(fname);
@@ -143,13 +143,13 @@ void savepos_save(levelset *set, char *user, int savenum, gamestate *state) {
     sprintf(buf, ".%d", savenum+1);
     strncpy(fname + strlen(fname), buf, sizeof(fname)-strlen(fname));
     if (fname[sizeof(fname)-1] != '\0') {
-	fatal_error_string = "File name length overflow";
+	/* File name length overflow */
 	return;
     }
 
     fp = fopen(fname, "w");
     if (!fp) {
-	fatal_error_string = "Unable to write save file";
+	/* unable to write save file */
 	return;
     }
 
@@ -180,19 +180,19 @@ progress progress_load(levelset *set, char *user) {
     strncpy(fname + strlen(fname), user, sizeof(fname)-strlen(fname));
     strncpy(fname + strlen(fname), ".progress", sizeof(fname)-strlen(fname));
     if (fname[sizeof(fname)-1] != '\0') {
-	fatal_error_string = "File name length overflow";
+	/* file name length overflow */
 	return p;
     }
 
     fp = fopen(fname, "r");
     if (!fp) {
-	fatal_error_string = "Unable to read progress file";
+	/* unable to read progress file */
 	return p;
     }
 
     while (fgets(buf, sizeof(buf), fp)) {
 	if (buf[strlen(buf)-1] != '\n') {
-	    fatal_error_string = "Line length overflow in save file";
+	    /* line length overflow in save file */
 	    return p;
 	}
 	buf[strcspn(buf, "\r\n")] = '\0';
@@ -201,7 +201,7 @@ progress progress_load(levelset *set, char *user) {
 	} else if (ishdr(buf, "Date: ")) {
 	    p.date = parse_date(buf+6);
 	} else {
-	    fatal_error_string = "Unrecognised keyword in progress file";
+	    /* unrecognised keyword in progress file */
 	    return p;
 	}
     }
@@ -223,13 +223,13 @@ void progress_save(levelset *set, char *user, progress p) {
     strncpy(fname + strlen(fname), user, sizeof(fname)-strlen(fname));
     strncpy(fname + strlen(fname), ".progress", sizeof(fname)-strlen(fname));
     if (fname[sizeof(fname)-1] != '\0') {
-	fatal_error_string = "File name length overflow";
+	/* file name length overflow */
 	return;
     }
 
     fp = fopen(fname, "w");
     if (!fp) {
-	fatal_error_string = "Unable to write progress file";
+	/* unable to write progress file */
 	return;
     }
 
