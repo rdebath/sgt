@@ -1,0 +1,16 @@
+Summary: Proxy crash caused by uninitialised structure members
+Class: bug
+Difficulty: fun
+Priority: high
+Present-in: 0.53 0.53b
+Fixed-in: 2002-10-23
+Content-type: text/plain
+
+Attempting connection with a proxy could cause a crash due to
+uninitialised structure members in proxy data structures.
+
+I (JTN) had only been able to reproduce this with my own local builds
+(which use a different compiler / libc to the releases and snapshots).
+However, we've had one report of it cropping up with the 0.53b release
+on WinXP Pro. There isn't really a workaround other than to use the
+snapshots instead.
