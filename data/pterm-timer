@@ -46,3 +46,5 @@ absolutely necessary. So, alternative ways of doing the same things:
    future?' The wrapper function described above could call this
    after term_update, and schedule the timer function _anyway_ if it
    says yes.
+
+Patch (unreviewed): Pine.LNX.4.53mb.0304291625260.25393@ask.diku.dk
