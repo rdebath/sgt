@@ -16,6 +16,7 @@ handle more than 2Gb in any case.)
 message "Assertion failed: actuallen &lt;= len, file scp.c, line 1435"
 for files &gt;2GB. As of the 2004-04-28 snapshot, there should be a
 fix which will make this go away (thanks to Krzysztof Kowalczyk), but
-we've not been able to test that, and in any case files over 4GB are
-<em>still</em> not supported (and this would require some upheaval to
-fix).
+we've not been able to test that; also note that the same error can
+still occur if files <a href="pscp-size-change.html">change in size</a>.
+In any case files over 4GB are <em>still</em> not supported (and this
+would require some upheaval to fix).
