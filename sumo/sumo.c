@@ -84,97 +84,6 @@ static void make_text(void);
 FILE *debugfp;
 #endif
 
-static int init_arena(void)
-{
-    /*
-     * For the moment, the arena shape is not configurable. The
-     * original Pascal code for arena-shape configuration is
-     * provided here, but seems unlikely to be useful in the PS2
-     * environment. More appropriate would be some sort of GUI
-     * arena editor - if even that is warranted. More likely a few
-     * predefined arena shapes will cover all the interesting
-     * possibilities.
-     */
-
-    /*
-     *   var
-     *     I,J,K,RC,RS,RE: Integer;
-     *     S,T: String;
-     *   procedure error;
-     *     begin
-     *       writeln('Error in arena specification');
-     *       writeln('Usage: SUMO [arena]');
-     *       writeln('Arena must be specified as 64 or 68 hex digits');
-     *       writeln('Repeated groups can be done, e.g. (6:ff)');
-     *       writeln('  as an abbreviation for ffffffffffff.');
-     *       writeln('  Repeat counts are hex; 0 means 16.');
-     *       writeln('If 68 digits are given, the last 4 give');
-     *       writeln('  the starting coordinates of the players');
-     *       writeln('  in the order X1,Y1,X2,Y2');
-     *       writeln('X is measured from left; Y is measured');
-     *       writeln('  from top. Coordinates may go from 1 to F');
-     *       writeln('Default arena is:');
-     *       writeln('  0ff03ffc(2:7ffe)(8:ffff)(2:7ffe)3ffc0ff037d9');
-     *       Halt;
-     *     end;
-     *   function cvt(I: Integer): Integer;
-     *     begin
-     *       case S[I] of
-     *         '0'..'9': cvt:=ord(S[I])-48;
-     *         'A'..'F': cvt:=ord(S[I])-55;
-     *         'a'..'f': cvt:=ord(S[I])-87;
-     *         else cvt:=0;
-     *       end;
-     *     end;
-     *   procedure Add(I: Integer);
-     *     begin
-     *       T:=T+chr(cvt(I));
-     *     end;
-     *   begin
-     *     if Paramcount<>0 then begin
-     *       S:='';
-     *       for I:=1 to Paramcount do S:=S+Paramstr(I);
-     *       T:='';
-     *       I:=1;
-     *       while I<=length(S) do case S[I] of
-     *         '0'..'9','A'..'F','a'..'f': begin
-     *           Add(I);
-     *           Inc(I);
-     *         end;
-     *         '(': begin
-     *           if I+4>length(S) then error;
-     *           RC:=cvt(I+1);
-     *           if S[I+1]='0' then RC:=16;
-     *           if RC=0 then error;
-     *           if S[I+2]<>':' then error;
-     *           RS:=I+3;
-     *           if cvt(RS)=0 then error;
-     *           RE:=I+3;
-     *           while S[RE+1]<>')' do begin
-     *             if RE+1>length(S) then error;
-     *             Inc(RE);
-     *           end;
-     *           for J:=1 to RC do for K:=RS to RE do Add(K);
-     *           I:=RE+2;
-     *         end;
-     *         else Inc(I);
-     *       end;
-     *       if length(T)=68 then begin
-     *         SX1:=10*(ord(T[65])+1);
-     *         SY1:=10*(ord(T[66])+1);
-     *         SX2:=10*(ord(T[67])+1);
-     *         SY2:=10*(ord(T[68])+1);
-     *         Delete(T,65,4);
-     *       end;
-     *       if length(T)=64 then begin
-     *         for I:=0 to 15 do Arena[I]:=(ord(T[I*4+1]) shl 12) or
-     *           (ord(T[I*4+2]) shl 8) or (ord(T[I*4+3]) shl 4) or (ord(T[I*4+4]));
-     *       end else error;
-     *     end;
-     *   end;
-     */
-}
-
 static int safe(int x, int y)
 {
     if (y < 2 || y>17 || x<2 || x>17)
@@ -557,42 +466,6 @@ static int play_game(void)
 
 }
 
-static int define_keys(void)
-{
-    /*
-     * Keys are not definable, since we have proper PS2 controllers
-     * to work with. Perhaps one day we might need to fiddle with
-     * the button assignments, but probably not in a fully-
-     * configurable fashion unless we suffer _immense_ feature creep!
-     * 
-     * Original Pascal code for key redefinition is preserved here.
-     */
-
-    /*
-     * procedure DefineKeys;
-     *   var
-     *     P,Key: Integer;
-     *     K: byte;
-     *     KK: set of byte;
-     *   begin
-     *     SetCPUbuf(VDUbuf);
-     *     for P = 1 to 2 do for Key = 1 to 5 do begin
-     *       Bar(200,175,319,199,0);
-     *       DrawImage(@PressKey,220,178,0);
-     *       DrawImage(@Player,220,190,0);
-     *       DrawImage(@PlayerNum[P],250,190,0);
-     *       DrawImage(KeyNames[Key],255+2*P,190,0);
-     *       repeat until KState==[];
-     *       repeat KK = KState until KK<>[];
-     *       for K = 0 to 255 do if K in KK then break;
-     *       Keys[P,Key] = K;
-     *     end;
-     *     Bar(200,175,319,199,0);
-     *     DrawImage(Title,200,0,128);
-     *     repeat until KState==[];
-     */
-}
-
 int main(int argc, char **argv)
 {
     int p;
@@ -612,7 +485,6 @@ setbuf(debugfp, NULL);
     joys[0] = SDL_JoystickOpen(0);
     joys[1] = SDL_JoystickOpen(1);
 
-    init_arena();
     make_deliveries();
     make_fire(); 
     expand_title();
@@ -1012,112 +884,6 @@ static int make_deliveries(void)
 	}
 }
 
-#if 0
-/*
- * These images are used for the key redefinition procedure. Not
- * required in the PS2 version.
- */
-
-static unsigned char presskey[8+59*9] = {
-    0,0,0,0,59,0,9,0,
-    137,137,137,137,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,137,0,
-    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,137,137,0,0,0,0,0,0,0,0,0,0,0,137,0,0,
-    0,137,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,137,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,0,137,0,0,0,0,0,0,0,0,0,0,0,0,0,137,0,0,0,137,0,137,137,
-    137,0,0,0,137,137,0,0,0,137,137,137,0,0,137,137,137,0,0,0,137,0,0,137,
-    0,0,137,137,0,0,137,0,0,137,0,0,0,137,137,0,0,137,137,0,0,137,137,137,
-    0,0,0,137,137,137,137,0,0,137,0,0,137,0,137,0,0,137,0,137,0,0,0,0,137,
-    0,0,0,0,0,0,137,0,137,0,0,137,0,0,137,0,137,0,0,137,0,0,0,137,0,0,137,
-    0,0,137,0,137,0,0,137,0,137,137,0,0,0,0,0,137,0,0,0,0,137,137,137,0,0,
-    0,137,137,0,0,0,137,137,0,0,0,0,137,137,0,0,0,137,137,137,0,0,137,0,0,
-    137,0,0,0,137,0,0,137,0,0,137,0,137,0,0,0,0,0,137,0,0,0,0,0,137,0,0,0,
-    0,137,0,0,0,0,0,0,0,137,0,0,0,0,137,0,0,0,137,0,137,0,0,137,0,0,0,0,137,
-    0,0,137,0,0,0,137,0,0,137,0,0,137,0,137,0,0,0,0,137,137,0,0,0,0,0,137,
-    0,0,0,0,0,137,137,137,0,137,137,137,0,0,137,137,137,0,0,0,0,137,0,0,137,
-    0,0,137,137,137,0,0,137,137,137,0,0,0,137,0,0,0,137,137,0,0,137,0,0,0,0,
-    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,137,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,137,137,137,0,0,0,
-    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-};
-
-static unsigned char player[8+28*9] = {
-    0,0,0,0,28,0,9,0,
-    137,137,137,137,0,0,137,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,137,
-    0,0,0,137,0,137,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,137,0,0,0,
-    137,0,137,0,0,0,137,137,0,0,137,0,0,137,0,0,137,137,0,0,137,137,137,
-    0,137,137,137,137,0,0,137,0,0,0,0,0,137,0,137,0,0,137,0,137,0,0,137,
-    0,137,0,0,137,137,0,0,0,0,0,137,0,0,0,137,137,137,0,137,0,0,137,0,137,
-    137,137,0,0,137,0,0,0,137,0,0,0,0,0,137,0,0,137,0,0,137,0,137,0,0,137,
-    0,137,0,0,0,0,137,0,0,0,137,0,0,0,0,0,0,137,0,0,137,137,137,0,0,137,
-    137,137,0,0,137,137,137,0,137,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-    0,137,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,137,137,137,0,
-    0,0,0,0,0,0,0,0,0,0
-};
-static unsigned char playernum[2][8+5*7] = {
-    {0,0,0,0,5,0,7,0,
-    0,0,137,0,0,0,137,137,0,0,0,0,137,0,0,0,0,137,0,0,0,0,137,0,0,
-    0,0,137,0,0,0,137,137,137,0},
-    {0,0,0,0,5,0,7,0,
-    0,137,137,137,0,137,0,0,0,137,0,0,0,0,137,0,137,137,137,0,137,0,0,0,0,
-    137,0,0,0,0,137,137,137,137,137}
-};
-static unsigned char accel[8+46*7] = {
-    0,0,0,0,46,0,7,0,
-    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,137,0,0,0,0,0,0,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-    0,137,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,137,0,0,0,0,0,0,0,0,137,137,
-    0,0,0,137,137,137,0,0,137,137,137,0,0,137,137,0,0,137,0,0,0,137,137,
-    0,0,137,137,137,0,0,0,137,137,0,0,137,137,0,0,0,137,137,0,0,0,0,137,
-    0,137,0,0,0,0,137,0,0,0,0,137,0,0,137,0,137,0,0,137,0,0,137,0,137,
-    0,0,137,0,0,0,0,137,0,137,0,0,0,137,0,0,137,0,137,137,137,0,137,0,
-    0,0,0,137,0,0,0,0,137,137,137,0,0,137,0,0,137,137,137,0,0,137,0,0,
-    0,0,0,137,137,137,0,137,0,0,0,137,137,137,0,137,0,0,137,0,137,0,0,
-    0,0,137,0,0,0,0,137,0,0,0,0,137,0,0,137,0,0,0,0,137,0,0,0,0,137,0,
-    0,137,0,137,0,0,0,137,0,0,0,0,137,137,137,0,0,137,137,137,0,0,137,
-    137,137,0,0,137,137,137,0,0,137,0,0,137,137,137,0,137,0,0,0,0,0,137,
-    137,137,0,0,137,137,0,0,137,137,137
-};
-static unsigned char brake[8+24*7] = {
-    0,0,0,0,24,0,7,0,
-    137,0,0,0,0,0,0,0,0,0,0,0,0,0,0,137,0,0,0,0,0,0,0,0,137,0,0,0,0,0,
-    0,0,0,0,0,0,0,0,0,137,0,0,0,0,0,0,0,0,137,137,137,0,0,137,137,137,
-    0,0,0,137,137,0,0,137,0,0,137,0,0,137,137,0,137,0,0,137,0,137,0,0,
-    137,0,0,0,0,137,0,137,0,137,0,0,137,0,0,137,137,0,0,137,0,137,0,0,
-    0,0,0,137,137,137,0,137,137,0,0,0,137,137,137,0,137,0,0,137,0,137,
-    0,0,0,0,137,0,0,137,0,137,0,137,0,0,137,0,0,0,137,137,137,0,0,137,
-    0,0,0,0,0,137,137,137,0,137,0,0,137,0,0,137,137,137
-};
-static unsigned char left[8+14*7] = {
-    0,0,0,0,14,0,7,0,
-    137,0,0,0,0,0,0,0,0,137,137,0,0,0,137,0,0,0,0,0,0,0,137,0,0,137,0,
-    0,137,0,0,0,137,137,0,0,137,137,0,137,137,0,137,0,0,137,0,0,137,0,
-    137,0,0,137,0,0,137,0,0,137,137,137,0,0,137,0,0,137,0,0,137,0,0,137,
-    0,0,0,0,137,0,0,137,0,0,0,137,0,0,137,137,137,0,137,0,0,0,137,137
-};
-static unsigned char right[8+20*9] = {
-    0,0,0,0,20,0,9,0,
-    0,0,0,0,0,137,0,0,0,0,0,0,137,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-    0,137,0,0,0,0,137,0,0,137,137,137,0,0,137,0,0,137,137,137,0,137,137,
-    137,0,0,137,137,0,137,0,0,137,0,137,0,137,0,0,137,0,137,0,0,137,0,
-    137,0,0,137,0,0,0,0,137,0,137,0,0,137,0,137,0,0,137,0,137,0,0,137,
-    0,0,0,0,137,0,137,0,0,137,0,137,0,0,137,0,137,0,0,137,0,0,0,0,137,
-    0,0,137,137,137,0,137,0,0,137,0,0,137,137,0,0,0,0,0,0,0,0,0,0,137,
-    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,137,137,137,0,0,0,0,0,0,0,0,0,0
-};
-static unsigned char fire[8+14*9] = {
-    0,0,0,0,14,0,9,0,
-    0,137,137,137,0,0,0,0,0,0,0,0,0,0,137,0,0,0,0,0,0,0,0,0,0,0,0,0,137,
-    137,0,137,0,137,137,137,0,0,0,137,137,0,137,0,0,137,0,137,0,0,137,
-    0,137,0,0,137,137,0,0,137,0,137,0,0,0,0,137,137,137,0,137,0,0,137,
-    0,137,0,0,0,0,137,0,0,0,137,0,0,137,0,137,0,0,0,0,0,137,137,137,0,
-    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-};
-
-static unsigned char *keynames[5] = { accel, brake, left, right, fire };
-
-#endif
-
 struct minimax {
     int started;
     int xmin, ymin;
@@ -1206,11 +972,8 @@ static void swash_centre(int xmin, int xmax, int y, char *text,
 			 void (*plot)(void *ctx, int x, int y), void *plotctx)
 {
     int w;
-fprintf(debugfp, "%d\n", __LINE__);
     w = swash_width(text);
-fprintf(debugfp, "%d\n", __LINE__);
     swash_text((xmin + xmax - w)/2, y, text, plot, plotctx);
-fprintf(debugfp, "%d\n", __LINE__);
 }
 
 static void expand_title(void)
