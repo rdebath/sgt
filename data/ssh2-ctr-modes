@@ -162,7 +162,7 @@ Index: sshblowf.c
 +    blowfish_make_context, blowfish_free_context, blowfish_iv, blowfish_key,
 +    blowfish_ssh2_sdctr, blowfish_ssh2_sdctr,
 +    "blowfish-ctr",
-+    8, 128, "Blowfish SDCTR"
++    8, 256, "Blowfish SDCTR"
 +};
 +
  static const struct ssh2_cipher *const blowfish_list[] = {
