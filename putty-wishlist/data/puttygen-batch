@@ -1,0 +1,22 @@
+Summary: Batch mode for Windows PuTTYgen
+Class: wish
+Difficulty: mayhem
+Priority: low
+Content-type: text/x-html-body
+
+<p>
+We're occasionally asked for a means of generating keys
+non-interactively with the Windows version of PuTTYgen; for instance,
+command-line arguments to specify the key type and so on.
+
+<p>
+The main reason that we haven't done this is that interaction would
+still be required; there isn't a source of sufficiently good
+randomness on Windows, so for key generation we make the user generate
+some by waving the mouse around.
+
+<p>
+(The Unix version of PuTTYgen can and does run in a batch mode, as we
+use <tt>/dev/random</tt> there, which is assumed to be a sufficiently
+good source of randomness and doesn't require us to interact with the
+user.)
