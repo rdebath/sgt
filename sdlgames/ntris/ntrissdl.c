@@ -122,17 +122,23 @@ void init_blockpixels(void)
 	}
 }
 
-void block(struct frontend_instance *inst, int x, int y, int col, int type)
+void block(struct frontend_instance *inst, int area,
+	   int x, int y, int col, int type)
 {
     int ix, iy;
     int colours[0xD];
     int light, medium, dark;
     int *p;
 
-    x--;			       /* playing area starts at 1 */
     y *= SQUARE_SIDE;
     x *= SQUARE_SIDE;
-    x += LEFT_EDGE;
+    if (area == AREA_MAIN) {
+	x += LEFT_EDGE;
+    } else if (area == AREA_NEXT) {
+	x += RIGHT_EDGE + SQUARE_SIDE;
+    } else if (area == AREA_HOLD) {
+	x += LEFT_EDGE - 6*SQUARE_SIDE;
+    }
 
     if (col == -1) {
 	for (ix = 0; ix < SQUARE_SIDE; ix++)
@@ -224,7 +230,8 @@ static void play_game(void)
      * Main game loop. We go round this once every frame.
      */
     while (1) {
-	int left, right, anticlock, clockwise, reflect, dropsoft, drophard;
+	int left, right, anticlock, clockwise, reflect;
+	int dropsoft, drophard, hold;
 	int dx, dy;
 	SDL_Event event;
 
@@ -264,7 +271,7 @@ static void play_game(void)
 		pressed[4+i] = 1;
 
 	left = right = anticlock = clockwise = 0;
-	reflect = dropsoft = drophard = 0;
+	reflect = dropsoft = drophard = hold = 0;
 
 	for (i = 0; i < lenof(pressed); i++) {
 	    int tmp = pressed[i];
@@ -288,6 +295,8 @@ static void play_game(void)
 		dropsoft = 1;
 	    if (pressed[i] && actions[i] == ACT_HARDDROP)
 		drophard = 1;
+	    if (pressed[i] && actions[i] == ACT_HOLD)
+		hold = 1;
 	}
 
 	if (dropinhibit) {
@@ -316,6 +325,8 @@ static void play_game(void)
 	    try_anticlock(ti);
 	if (reflect)
 	    try_reflect(ti);
+	if (hold)
+	    try_hold(ti);
 	if (dropsoft || drophard) {
 	    int ret;
 	    if (drophard) {

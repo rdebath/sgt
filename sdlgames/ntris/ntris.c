@@ -284,7 +284,8 @@ struct ntris_instance {
     struct shapeset *ss;
     int play_width, play_height;
     unsigned char (*playarea)[2];
-    int currshape, nextshape, shapecolour, shape_x, shape_y;
+    int currshape, nextshape, holdshape, shapecolour, shape_x, shape_y;
+    int hold_used;
 };
 
 #define PLAYAREA(x,y,n) (inst->playarea[(y)*inst->play_width+(x)][n])
@@ -302,7 +303,7 @@ static int rand_shape(struct ntris_instance *inst)
 }
 
 static void draw_shape(struct ntris_instance *inst, int shape,
-		       int x, int y, int c)
+		       int area, int x, int y, int c)
 {
     unsigned char *p;
 
@@ -311,7 +312,8 @@ static void draw_shape(struct ntris_instance *inst, int shape,
 	int xy, flag;
 	xy = *p++;
 	flag = *p++;
-	block(inst->fe, (x + ((xy>>4) & 0xF)), (y + ( xy     & 0xF)), c, flag);
+	block(inst->fe, area,
+	      (x + ((xy>>4) & 0xF)), (y + (xy & 0xF)), c, flag);
     }
 }
 
@@ -357,11 +359,12 @@ int init_shape(struct ntris_instance *inst)
 {
     inst->shape_x = (inst->play_width - inst->ss->width[inst->currshape]) / 2;
     inst->shape_y = 0;
+    inst->hold_used = FALSE;
     if (!shape_fits(inst, inst->currshape, inst->shape_x, inst->shape_y))
 	return FALSE;
-    draw_shape(inst, inst->currshape, inst->shape_x+1, inst->shape_y,
-	       inst->shapecolour);
-    draw_shape(inst, inst->nextshape, inst->play_width+3, 1, 
+    draw_shape(inst, inst->currshape, AREA_MAIN,
+	       inst->shape_x, inst->shape_y, inst->shapecolour);
+    draw_shape(inst, inst->nextshape, AREA_NEXT, 0, 0,
 	       inst->ss->colours[inst->nextshape]);
     return TRUE;
 }
@@ -387,6 +390,7 @@ struct ntris_instance *init_game(struct frontend_instance *fe,
     inst->currshape = rand_shape(inst);
     inst->shapecolour = inst->ss->colours[inst->currshape];
     inst->nextshape = rand_shape(inst);
+    inst->holdshape = -1;	       /* hold cell starts off empty */
 
     inst->fe = fe;
 
@@ -396,11 +400,11 @@ struct ntris_instance *init_game(struct frontend_instance *fe,
 int try_move_left(struct ntris_instance *inst)
 {
     if (shape_fits(inst, inst->currshape, inst->shape_x-1, inst->shape_y)) {
-	draw_shape(inst, inst->currshape,
-		   inst->shape_x+1, inst->shape_y, -1);
+	draw_shape(inst, inst->currshape, AREA_MAIN,
+		   inst->shape_x, inst->shape_y, -1);
 	inst->shape_x--;
-	draw_shape(inst, inst->currshape,
-		   inst->shape_x+1, inst->shape_y, inst->shapecolour);
+	draw_shape(inst, inst->currshape, AREA_MAIN,
+		   inst->shape_x, inst->shape_y, inst->shapecolour);
 	return TRUE;
     }
     return FALSE;
@@ -409,11 +413,11 @@ int try_move_left(struct ntris_instance *inst)
 int try_move_right(struct ntris_instance *inst)
 {
     if (shape_fits(inst, inst->currshape, inst->shape_x+1, inst->shape_y)) {
-	draw_shape(inst, inst->currshape,
-		   inst->shape_x+1, inst->shape_y, -1);
+	draw_shape(inst, inst->currshape, AREA_MAIN,
+		   inst->shape_x, inst->shape_y, -1);
 	inst->shape_x++;
-	draw_shape(inst, inst->currshape,
-		   inst->shape_x+1, inst->shape_y, inst->shapecolour);
+	draw_shape(inst, inst->currshape, AREA_MAIN,
+		   inst->shape_x, inst->shape_y, inst->shapecolour);
 	return TRUE;
     }
     return FALSE;
@@ -422,11 +426,11 @@ int try_move_right(struct ntris_instance *inst)
 int try_move_down(struct ntris_instance *inst)
 {
     if (shape_fits(inst, inst->currshape, inst->shape_x, inst->shape_y+1)) {
-	draw_shape(inst, inst->currshape,
-		   inst->shape_x+1, inst->shape_y, -1);
+	draw_shape(inst, inst->currshape, AREA_MAIN,
+		   inst->shape_x, inst->shape_y, -1);
 	inst->shape_y++;
-	draw_shape(inst, inst->currshape,
-		   inst->shape_x+1, inst->shape_y, inst->shapecolour);
+	draw_shape(inst, inst->currshape, AREA_MAIN,
+		   inst->shape_x, inst->shape_y, inst->shapecolour);
 	return TRUE;
     }
     return FALSE;
@@ -436,11 +440,11 @@ int try_anticlock(struct ntris_instance *inst)
 {
     if (shape_fits(inst, inst->ss->anticlock[inst->currshape],
 		   inst->shape_x, inst->shape_y)) {
-	draw_shape(inst, inst->currshape,
-		   inst->shape_x+1, inst->shape_y, -1);
+	draw_shape(inst, inst->currshape, AREA_MAIN,
+		   inst->shape_x, inst->shape_y, -1);
 	inst->currshape = inst->ss->anticlock[inst->currshape];
-	draw_shape(inst, inst->currshape,
-		   inst->shape_x+1, inst->shape_y, inst->shapecolour);
+	draw_shape(inst, inst->currshape, AREA_MAIN,
+		   inst->shape_x, inst->shape_y, inst->shapecolour);
 	return TRUE;
     }
     return FALSE;
@@ -450,11 +454,11 @@ int try_clockwise(struct ntris_instance *inst)
 {
     if (shape_fits(inst, inst->ss->clockwise[inst->currshape],
 		   inst->shape_x, inst->shape_y)) {
-	draw_shape(inst, inst->currshape,
-		   inst->shape_x+1, inst->shape_y, -1);
+	draw_shape(inst, inst->currshape, AREA_MAIN,
+		   inst->shape_x, inst->shape_y, -1);
 	inst->currshape = inst->ss->clockwise[inst->currshape];
-	draw_shape(inst, inst->currshape,
-		   inst->shape_x+1, inst->shape_y, inst->shapecolour);
+	draw_shape(inst, inst->currshape, AREA_MAIN,
+		   inst->shape_x, inst->shape_y, inst->shapecolour);
 	return TRUE;
     }
     return FALSE;
@@ -464,14 +468,73 @@ int try_reflect(struct ntris_instance *inst)
 {
     if (shape_fits(inst, inst->ss->reflected[inst->currshape],
 		   inst->shape_x, inst->shape_y)) {
-	draw_shape(inst, inst->currshape,
-		   inst->shape_x+1, inst->shape_y, -1);
+	draw_shape(inst, inst->currshape, AREA_MAIN,
+		   inst->shape_x, inst->shape_y, -1);
 	inst->currshape = inst->ss->reflected[inst->currshape];
-	draw_shape(inst, inst->currshape,
-		   inst->shape_x+1, inst->shape_y, inst->shapecolour);
+	draw_shape(inst, inst->currshape, AREA_MAIN,
+		   inst->shape_x, inst->shape_y, inst->shapecolour);
 	return TRUE;
     }
     return FALSE;
+}
+
+int try_hold(struct ntris_instance *inst)
+{
+    int fresh_shape, fresh_x, fresh_y;
+
+    /*
+     * We can't use the hold feature more than once per drop.
+     */
+    if (inst->hold_used)
+	return FALSE;
+
+    /*
+     * Find the shape that will go into the arena in place of the
+     * held one, and work out where it will start.
+     */
+    fresh_shape = (inst->holdshape >= 0 ? inst->holdshape : inst->nextshape);
+    fresh_x = (inst->play_width - inst->ss->width[fresh_shape]) / 2;
+    fresh_y = 0;
+
+    /*
+     * See if it will fit at all, and return failure if not.
+     */
+    if (!shape_fits(inst, fresh_shape, fresh_x, fresh_y))
+	return FALSE;
+
+    /*
+     * If the hold cell started off empty, we have just used up the
+     * nextshape, so think up a new one.
+     */
+    if (inst->holdshape < 0) {
+	draw_shape(inst, inst->nextshape, AREA_NEXT, 0, 0, -1);
+	inst->nextshape = rand_shape(inst);
+	draw_shape(inst, inst->nextshape, AREA_NEXT, 0, 0,
+		   inst->ss->colours[inst->nextshape]);
+    }
+
+    /*
+     * Remove the current shape, set up the fresh one, and put the
+     * current shape into the hold cell. Also think up a new
+     * nextshape, if the hold cell started off empty.
+     */
+    draw_shape(inst, inst->currshape, AREA_MAIN,
+	       inst->shape_x, inst->shape_y, -1);
+    if (inst->holdshape >= 0)
+	draw_shape(inst, inst->holdshape, AREA_HOLD, 0, 0, -1);
+    inst->holdshape = inst->currshape;
+    inst->currshape = fresh_shape;
+    inst->shape_x = fresh_x;
+    inst->shape_y = fresh_y;
+    inst->shapecolour = inst->ss->colours[inst->currshape];
+    draw_shape(inst, inst->holdshape, AREA_HOLD, 0, 0,
+	       inst->ss->colours[inst->holdshape]);
+    draw_shape(inst, inst->currshape, AREA_MAIN,
+	       inst->shape_x, inst->shape_y, inst->shapecolour);
+
+    inst->hold_used = TRUE;
+
+    return TRUE;
 }
 
 static int check_lines(struct ntris_instance *inst)
@@ -528,7 +591,7 @@ static int check_lines(struct ntris_instance *inst)
 	    int c, flag;
 	    c = PLAYAREA(i,targ,0);
 	    flag = PLAYAREA(i,targ,1);
-	    block(inst->fe, (i+1), targ, (c == 0xFF ? -1 : c), flag);
+	    block(inst->fe, AREA_MAIN, i, targ, (c == 0xFF ? -1 : c), flag);
 	}
     }
 
@@ -538,7 +601,7 @@ static int check_lines(struct ntris_instance *inst)
 static void postdrop(struct ntris_instance *inst)
 {
     write_shape(inst, inst->currshape, inst->shape_x, inst->shape_y);
-    draw_shape(inst, inst->nextshape, inst->play_width+3, 1, -1);
+    draw_shape(inst, inst->nextshape, AREA_NEXT, 0, 0, -1);
     check_lines(inst);
     inst->currshape = inst->nextshape;
     inst->shapecolour = inst->ss->colours[inst->currshape];
