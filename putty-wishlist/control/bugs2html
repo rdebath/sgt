@@ -1,5 +1,5 @@
 #! /usr/bin/perl
-# $Id: bugs2html,v 1.1 2002/05/06 13:22:06 ben Exp $
+# $Id: bugs2html,v 1.2 2002/05/06 13:34:01 ben Exp $
 
 use FileHandle;
 use POSIX;
@@ -130,6 +130,7 @@ sub bug2html {
 EOH
 
     foreach $h (keys %$hdrs) {
+	next if $h eq "content-type";
 	print HTML qq[<b>$h</b>: @{[$hdrs->{$h}]}<br>\n];
     }
 
