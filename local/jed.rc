@@ -1,5 +1,5 @@
 % -*- mode: slang; mode: fold -*-
-% Simon Tatham: version $Revision: 1.20 $
+% Simon Tatham: version $Revision: 1.21 $
 
 %{{{ load Emacs keybindings to start with
 
@@ -34,7 +34,11 @@ setkey(".\"backward_delete_char_untabify\" call dummy", "^?");
 
 %}}}
 %{{{ In read-only buffers, Space, B, G, g, 0 and Z start to page around
-define jedrc_ro_alternate(command, char) {
+define quick_killbuf() {
+    delbuf(whatbuf());
+}
+
+define jedrc_ro_internal_alternate(command, char) {
     variable flags;
     (,,,flags) = getbuf_info();
     if (flags & 8)
@@ -42,14 +46,26 @@ define jedrc_ro_alternate(command, char) {
     else
         jedrc_self_insert();
 }
-setkey (".\"page_down\" \" \" jedrc_ro_alternate", " ");
-setkey (".\"page_up\" \"b\" jedrc_ro_alternate", "b");
-setkey (".\"page_up\" \"B\" jedrc_ro_alternate", "B");
-setkey (".\"beg_of_buffer\" \"g\" jedrc_ro_alternate", "g");
-setkey (".\"beg_of_buffer\" \"0\" jedrc_ro_alternate", "0");
-setkey (".\"end_of_buffer\" \"G\" jedrc_ro_alternate", "G");
-setkey (".\"end_of_buffer\" \"z\" jedrc_ro_alternate", "z");
-setkey (".\"end_of_buffer\" \"Z\" jedrc_ro_alternate", "Z");
+
+define jedrc_ro_slang_alternate(command, char) {
+    variable flags;
+    (,,,flags) = getbuf_info();
+    if (flags & 8)
+        @command();
+    else
+        jedrc_self_insert();
+}
+
+setkey (".\"page_down\" \" \" jedrc_ro_internal_alternate", " ");
+setkey (".\"page_up\" \"b\" jedrc_ro_internal_alternate", "b");
+setkey (".\"page_up\" \"B\" jedrc_ro_internal_alternate", "B");
+setkey (".\"beg_of_buffer\" \"g\" jedrc_ro_internal_alternate", "g");
+setkey (".\"beg_of_buffer\" \"0\" jedrc_ro_internal_alternate", "0");
+setkey (".\"end_of_buffer\" \"G\" jedrc_ro_internal_alternate", "G");
+setkey (".\"end_of_buffer\" \"z\" jedrc_ro_internal_alternate", "z");
+setkey (".\"end_of_buffer\" \"Z\" jedrc_ro_internal_alternate", "Z");
+setkey ("jedrc_ro_slang_alternate(&quick_killbuf,\"q\")", "q");
+setkey ("jedrc_ro_slang_alternate(&quick_killbuf,\"Q\")", "Q");
 
 % We have to do this to override slang_mode's underhand funtation of
 % the C mode keymap
