@@ -1,4 +1,4 @@
-Summary: Per-session configurable icon
+Summary: Custom, per-session configurable icons
 Class: wish
 Difficulty: tricky
 Priority: low
@@ -6,7 +6,8 @@ Content-type: text/x-html-body
 
 <p>
 Yet another means of distinguishing multiple PuTTY sessions: replacing
-the normal PuTTY icon with a different one, on a per-session basis.
+the normal PuTTY window/taskbar icon with a different one, on a
+per-session basis.
 
 <p>
 Technically, the hardest bit of this I see is implementing an icon
