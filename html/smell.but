@@ -1,0 +1,142 @@
+\cfg{xhtml-leaf-level}{0}
+\cfg{chapter}{Question}
+\cfg{text-title-align}{left}
+\cfg{text-indent}{0}
+\cfg{text-chapter-numeric}{yes}
+\cfg{text-chapter-suffix}{. }
+\cfg{text-chapter-underline}{-}
+\cfg{text-section-numeric}{0}{yes}
+\cfg{text-section-suffix}{0}{. }
+\cfg{text-section-underline}{0}{-}
+\cfg{xhtml-chapter-numeric}{yes}
+\cfg{xhtml-chapter-suffix}{. }
+\cfg{xhtml-section-numeric}{0}{yes}
+\cfg{xhtml-section-suffix}{0}{. }
+\cfg{xhtml-section-numeric}{1}{yes}
+\cfg{xhtml-section-suffix}{1}{. }
+
+\cfg{xhtml-head-end}{<link rel='stylesheet' href='sitestyle.css'
+type='text/css' />}
+
+\cfg{xhtml-address-start}{Copyright &copy; 2004
+<a href="./">Simon Tatham</a>.
+<br>This document is
+<a href="http://www.opencontent.org/">OpenContent</a>.
+<br>You may copy and use the text under the terms of the
+<a href="http://www.opencontent.org/opl.shtml">OpenContent
+Licence</a>.
+<br>Please send comments and criticism on this article to
+<a href="mailto:anakin@pobox.com">anakin@pobox.com</a>.}
+
+\title The \q{Simon Tatham Has No Sense Of Smell} FAQ
+
+\preamble I have no sense of smell. When people find this out, they
+all tend to ask me the same set of questions. The standard geek
+response to this situation is to write a FAQ, so here one is.
+
+\preamble Of course, most people who find out I have no sense of
+smell are talking to me in person at the time, so they won't have
+the chance to read this FAQ before they start asking me question
+about it; so I don't expect this FAQ to be very useful in cutting
+down the number of times I get asked these questions. But I enjoyed
+writing it, and hopefully people browsing my web site might enjoy
+reading it, so never mind.
+
+\preamble This FAQ is about me, Simon Tatham. I don't claim to speak
+for all people with this condition. Other people with no sense of
+smell might find that their own answers to some of these questions
+aren't the same as mine. If so, I'd be fascinated to hear from them!
+
+\C{believe} I can't believe you have no sense of smell!
+
+Why not? You'd have no trouble believing somebody was blind, or
+deaf. I'm just missing a different one of the five senses, and I'm
+fortunate that it's not such a vital one as sight or hearing.
+
+\C{word} Is there a short word for the condition, like \q{blind} or
+\q{deaf}?
+
+Yes, but it's not a very well-known word: the condition is
+\e{anosmia}, and people with the condition are \e{anosmic}. (Some
+people claim this covers impaired senses of smell as well as
+completely absent ones, in which case mine is \e{complete} anosmia;
+other people claim that a merely impaired sense of smell is
+\e{hyposmia}, and \q{anosmia} should be reserved for a complete
+absence.)
+
+I don't tend to bother using these words, because I'd only have to
+explain what they meant most of the time.
+
+\C{why} Why don't you have a sense of smell?
+
+I don't know.
+
+It might be partly genetic: my mother has a pretty bad sense of
+smell (but not completely absent). My father has a very acute one,
+though, so I doubt genetics is the whole story.
+
+I used to get a lot of colds when I was little. A biology teacher of
+mine once theorised that I might have all the physical machinery to
+detect smells, but that because my nose was permanently blocked up
+during the vital age range, my brain might have missed its chance to
+learn to interpret the signals coming from that machinery. I'm not
+sure whether this holds water as an argument, though.
+
+\C{miss} Don't you miss having a sense of smell?
+
+Not consciously. I've never had a sense of smell, ever. I can't
+imagine what it would feel like to smell things, so I don't miss
+what I've never experienced.
+
+It causes me the occasional practical problem. I get nervous of gas
+appliances, for example, because I can't detect gas leaks by smell.
+If my smoke alarm goes off in the middle of the night but I can't
+find anything obviously burning, I tend to have to wake up a
+neighbour and get them to come and see if they can smell any smoke
+anywhere.
+
+When I was at school, I mostly thought I was lucky not to be able to
+smell things. The number of times I heard someone sniff and say
+\q{Mmmm, what a lovely smell} was about once a week or less, but the
+number of times I heard someone sniff and say \q{Faugh, who's
+farted?} was more like once a day, so on balance I felt I was ahead
+of the game! These days the balance is closer to even, but I don't
+generally feel too disadvantaged.
+
+Once, when I was nine, a school bully held a bottle of really
+foul-smelling stuff under my nose in order to upset me. I knew I
+wouldn't care, so I took a huge sniff, looked up at him and said
+\q{So what?}. This made him look like an idiot in front of two of
+his friends, and he went out of his way to be nasty to me for months
+after that, but it was well worth it just for the look on his face.
+
+\C{taste} Since taste is partly smell, does that mean you can't taste things?
+
+You have to be a bit careful with the terminology here.
+
+I have a functioning sense of \e{taste}, in the sense of the thing
+you do with the taste buds on your tongue. \q{Sweet}, \q{sour},
+\q{salty}, and \q{bitter} are perfectly meaningful words to me.
+
+What most people perceive when they put food in their mouth is a
+combination of taste (which I can do) and smell (which I can't).
+That combination of senses is sometimes referred to as \q{flavour}.
+My sense of flavour is therefore equivalent to my sense of taste.
+
+There are certainly some kinds of food which I don't find
+particularly interesting, but which other people appear to like, and
+I speculate that this might be because the flavour of those foods is
+mostly in their smell.
+
+So I probably wouldn't make a good restaurant critic or wine taster,
+but on the other hand there are still foods I like and dislike, and
+my limited sense of flavour is still broad enough for me to find
+plenty of variety in food. Perhaps if I'd once had a sense of smell
+and lost it, the spectrum of tastes I can perceive would feel flat
+and uninteresting; but since this is all I've ever had, it doesn't
+bother me in the least.
+
+\C{others} Are there other people with this condition?
+
+Yes. There's a web site full of them here:
+\W{http://www.maxuk.net/nose.html}{The Congenital Anosmia Pages}.

@@ -1,4 +1,9 @@
-all: interfaces.html interfaces.txt aliases.html aliases.txt
+all: interfaces.html interfaces.txt smell.html aliases.html aliases.txt
+
+smell.html: smell.but
+	$(HOME)/src/halibut/build/halibut smell.but
+	mv Manual.html smell.html
+	rm -f output.* Manual.html Contents.html Chapter*.html Section*.html IndexPage.html
 
 interfaces.html interfaces.txt: interfaces.but
 	$(HOME)/src/halibut/build/halibut interfaces.but
@@ -13,5 +18,6 @@ aliases.html aliases.txt: aliases.but
 	rm -f output.* Manual.html Contents.html Chapter*.html Section*.html IndexPage.html
 
 clean:
+	rm -f smell.html
 	rm -f interfaces.html interfaces.txt
 	rm -f aliases.html aliases.txt
