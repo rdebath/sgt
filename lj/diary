@@ -207,7 +207,7 @@ class output:
                 i = i + 1
         return ret
 
-    def mono_show_para(self):
+    def mono_show_para(self, blankable=0):
         quot = self.monoquote
         if self.mono_bullet == 1:
             i1 = (quot[0] + " - ", quot[1], quot[2])
@@ -217,6 +217,8 @@ class output:
         else:
             i1 = i2 = quot
         list = self.mono_wrap_optimal(self.mono_words, i1, i2)
+	if blankable and len(list) == 0:
+	    list = ['']
         self.mono.extend(list)
 
     def htmlsafe(self, text):
@@ -325,7 +327,7 @@ class output:
 	if self.html_ok:
 	    self.html = self.html + "<br>"
         if self.mono_ok:
-            self.mono_show_para()
+            self.mono_show_para(1)
             self.mono_words = []
 
     def quote(self, opening):
@@ -534,7 +536,13 @@ class tokeniser:
 		# word.
 		if len(ret) > 1 and ret[-2] in (string.digits+string.letters):
 		    c2 = self.nextchar() # eat the hyphen
-		    if c2 in (string.digits+string.letters):
+		    if len(c2) > 1:
+			# A magic brace character immediately
+			# follows the hyphen. Hence, we just add
+			# the hyphen to the word and do nothing
+			# magical.
+			break
+		    elif c2 in (string.digits+string.letters):
 			break # discretionary word break
 		    else:
 			neednext = 0 # don't lose the char after the hyphen
@@ -841,13 +849,16 @@ while 1:
     elif s == "p\n" or s == "pm\n":
 	f = open(os.environ["HOME"] + "/src/lj/diary.data", "w")
 	g = os.popen("xcopy 2>/dev/null", "w")
+	h = os.popen("wclip 2>/dev/null", "w")
 	data = out.mono + [\
 	"Message: 7fffffff","From: (dummy edit)", "Please ignore this."]
 	for i in data:
 	    f.write(i + "\n")
 	    g.write(i + "\n")
+	    h.write(i + "\n")
 	f.close()
 	g.close()
+	h.close()
 	print "Mono text written to diary.data file and piped through xcopy."
 	print "Don't forget to have your nameline in the ^Y paste buffer!"
 	if s == "p\n":
