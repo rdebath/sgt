@@ -31,10 +31,14 @@ BEGIN {
 }
 
 
+# Process return codes
+sub success { 0 }
+sub failure { 256 }
+
 sub a_cmd ($@) {
     my ($line, %ret) = @_;
     $ret{line} = $line;
-    $ret{ret} ||= 0;
+    $ret{ret} ||= success;
     $ret{$_} ||= "" for qw (stdin stdout stderr);
     return \%ret;
 }
@@ -127,3 +131,8 @@ test get_history => (["init"],
 		     ["contact-history name 0",
 		      stdout => ("0;<DATETIME>;;Eric\n"
 				 . "0;<DATETIME>;<DATETIME>;Dave\n")]);
+test set_unknown_attr => (["init"],
+                          ["set-contact zxcv 0 Henry",
+			   ret => failure,
+			   stderr => "timber: internal problem: No such " .
+			             "attribute in address book database\n"]);
