@@ -2,7 +2,7 @@ Summary: Trouble with dead keys on Windows
 Class: semi-bug
 Difficulty: taxing
 Priority: medium
-Fixed-in: 2004-03-25
+Fixed-in: 2004-03-27
 Content-type: text/x-html-body
 
 <p>
@@ -23,7 +23,8 @@ should be, but Googling indicates that this usage is not uncommon.
 <p>
 <em>However,</em> this breaks the same situation in (French and German) Win98SE,
 which was working OK before with the <code>WORD[]</code> array. (But
-fixes it for French Win2K.)
+fixes it for French Win2K.) The storage of the array is conditionalised
+on Windows version as of 2004-03-27. *crosses fingers*
 
 <p>
 This area is rich in history. For example:
