@@ -1,0 +1,21 @@
+Summary: Trouble with MapVirtualKeyEx in Korean Win98
+Class: semi-bug
+Priority: low
+Difficulty: taxing
+Content-type: text/plain
+
+It is claimed that MapVirtualKeyEx and ToAsciiEx don't work in
+Korean Win98 (although they're fine in other Korean Windows
+products). Apparently in this version of Windows, MapVirtualKey and
+ToAscii work fine.
+
+It would certainly be easy enough to create a version of PuTTY that
+used the non-Ex variants of the functions, which should then work on
+Korean Win98. But ideally I'd like PuTTY to automatically detect
+whatever the bug is, and switch between the two pairs of functions
+as a result of this detection. If anyone knows how to do this, that
+would be useful.
+
+Priority is low, because as far as I can tell this is really a bug
+in Korean Win98 and it shouldn't have to be PuTTY's job to work
+round it.

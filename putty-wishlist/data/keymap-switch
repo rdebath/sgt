@@ -1,0 +1,12 @@
+Summary: Switching Windows keymaps is ignored
+Class: semi-bug
+Priority: low
+Difficulty: taxing
+Content-type: text/plain
+
+There's been a report that if you switch Windows keymaps while PuTTY
+is running, it doesn't notice: the keymap in force when PuTTY starts
+up remains in force throughout.
+
+This probably doesn't take much actual code to fix, but I don't know
+what causes it or how to fix it, so someone else will have to help out.

@@ -1,0 +1,20 @@
+Summary: Choice of loopback addresses for local port forwardings
+Class: semi-bug
+Priority: low
+Difficulty: fun
+Content-type: text/plain
+
+Someone suggested that it might be useful to be able to specify
+which loopback address PuTTY should bind to when listening on local
+ports for local-to-remote port forwardings. Apparently, if you want
+to, you can listen separately on 127.0.0.1, 127.0.0.2, 127.0.0.3 and
+so on.
+
+This would be useful because it would enable the use of the normal
+port numbers for forwarded services. Might be particularly handy
+when forwarding SMB.
+
+The user interface for this would probably just involve specifying
+the IP address alongside the port number in the Tunnels panel:
+instead of asking to forward port 3456, you'd ask for
+127.0.0.2:3456.
