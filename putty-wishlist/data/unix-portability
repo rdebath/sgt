@@ -1,0 +1,11 @@
+Summary: Extra portability in the Unix port
+Class: wish
+Priority: low
+
+People occasionally send us patches to make the Unix port more portable.
+
+   * FreeBSD 4.7-STABLE
+     wwvn0lvct6s.fsf@rjk.greenend.org.uk
+
+   * NetBSD with gcc-3.x
+     20031126022610.GA13294@babymeat.com
