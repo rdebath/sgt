@@ -27,6 +27,60 @@
 #define FWS(c) ( WSP(c) || (c)=='\n' )
 
 /*
+ * Type definitions and forward references.
+ */
+struct header_type {
+    /* Special case: header_name might begin with `*'
+     * to indicate it's a prefix. */
+    const char *header_name;
+    enum {
+	NO_ENCODED,
+	    ENCODED_COMMENTS,
+	    ENCODED_CPHRASES,
+	    ENCODED_ANYWHERE
+    } rfc2047_location;
+    enum {
+	DO_NOTHING,
+	    EXTRACT_ADDRESSES,
+	    EXTRACT_MESSAGE_IDS,
+	    EXTRACT_DATE,
+	    EXTRACT_SUBJECT,
+	    CONTENT_TYPE,
+	    CONTENT_TRANSFER_ENCODING,
+	    CONTENT_DESCRIPTION,
+    } action;
+};
+struct lexed_header {
+    /*
+     * A pointer to a dynamically allocated array of these
+     * structures is returned from lex_header(). Each element of
+     * the array describes a single token of the message, _plus_
+     * the comment immediately following that token if any.
+     */
+    int is_punct;
+    char const *token;		       /* points into input string */
+    int length;
+    char const *comment;
+    int clength;
+};
+struct mime_details {
+    /*
+     * This structure describes details of a single MIME part.
+     */
+    char const *major, *minor;	       /* the two parts of the MIME type */
+    int majorlen, minorlen;	       /* and the length fields */
+    enum { NONE, QP, BASE64 } transfer_encoding;
+    int charset;
+};
+
+struct lexed_header *lex_header(char const *header, int length, int type);
+void init_mime_details(struct mime_details *md);
+void parse_content_type(struct lexed_header *lh, struct mime_details *md);
+int unquote(const char *in, int inlen, int dblquot, char *out);
+
+int istrlencmp(const char *s1, int l1, const char *s2, int l2);
+
+/*
  * This is the main message-parsing function. It produces two
  * outputs:
  * 
@@ -66,7 +120,10 @@ void parse_message(const char *msg, int len,
 
     const char *p, *q, *r, *s, *message;
     int pass, msglen;
+    struct mime_details toplevel_part;
     int default_charset = CS_CP1252;
+
+    init_mime_details(&toplevel_part);
 
     for (pass = 0; pass < 2; pass++) {
 	/*
@@ -91,6 +148,12 @@ void parse_message(const char *msg, int len,
 	message = msg;
 	msglen = len;
 	p = message;
+
+	if (pass == 1) {
+	    if (toplevel_part.charset != CS_ASCII &&
+		charset_contains_ascii(toplevel_part.charset))
+		default_charset = toplevel_part.charset;
+	}
 
 	while (msglen > 0) {
 	    if (*message == '\n') {
@@ -170,71 +233,15 @@ void parse_message(const char *msg, int len,
 	     * the end of the header (just before the final
 	     * newline).
 	     * 
-	     * printf("Got header \"%.*s\" = \"%.*s\"\n",
-	     *        q-p, p, message-r, r);
+	     * Slight ick: this block is enclosed in `do while (0)'
+	     * so that `continue' will leave it early.
 	     */
 
-	    /*
-	     * OK, time to make a list of all headers that I
-	     * actually need to deal with specifically.
-	     * 
-	     * 	- `Subject' may contain encoded words; it needs its
-	     * 	  text extracting and passing to info().
-	     * 
-	     * 	- `Comments' and any X-header may contain encoded
-	     * 	  words but are otherwise uninteresting.
-	     * 
-	     * 	- `Content-Type' and `Content-Transfer-Encoding'
-	     * 	  need parsing to figure out what to do about a
-	     * 	  MIME part.
-	     * 
-	     * 	- `Content-Description' may contain encoded words;
-	     * 	  it is involved in identifying a MIME part.
-	     * 
-	     * 	- `Date' may contain comments containing encoded
-	     * 	  words; they both need the actual date information
-	     * 	  extracting and passing to info().
-	     * 
-	     * 	- `From', `Sender', `Reply-To', `To', `Cc', `Bcc',
-	     * 	  those six headers prefixed by `Resent-', and
-	     * 	  `Return-Path' may contain comments containing
-	     * 	  encoded words, and also encoded words in phrases
-	     * 	  appearing before email addresses; they all need
-	     * 	  every address extracting and passing to info()
-	     * 	  (marked, obviously, according to which kind of
-	     * 	  header they came from!).
-	     * 
-	     * 	- `Message-ID', `In-Reply-To' and `References' may
-	     * 	  contain comments containing encoded words; they
-	     * 	  all need any actual Message-ID(s) extracting and
-	     * 	  passing to info().
-	     * 
-	     * 	- `Received', `Resent-Date' and `Resent-Message-ID'
-	     * 	  may contain comments containing encoded words,
-	     * 	  but are otherwise uninteresting.
-	     */
-	    {
-		struct header_type {
-		    /* Special case: header_name might begin with `*'
-		     * to indicate it's a prefix. */
-		    const char *header_name;
-		    enum {
-			NO_ENCODED,
-			ENCODED_COMMENTS,
-			ENCODED_CPHRASES,
-			ENCODED_ANYWHERE
-		    } rfc2047_location;
-		    enum {
-			DO_NOTHING,
-			EXTRACT_ADDRESSES,
-			EXTRACT_MESSAGE_IDS,
-			EXTRACT_DATE,
-			EXTRACT_SUBJECT,
-			CONTENT_TYPE,
-			CONTENT_TRANSFER_ENCODING,
-			CONTENT_DESCRIPTION,
-		    } action;
-		};
+#ifdef DIAGNOSTICS
+	    printf("Got header \"%.*s\" = \"%.*s\"\n", q-p, p, message-r, r);
+#endif
+
+	    do {
 		static const struct header_type headers[] = {
 		    /* These are sorted in (case-insensitive) order. */
 		    {"Bcc", ENCODED_CPHRASES, EXTRACT_ADDRESSES},
@@ -242,9 +249,10 @@ void parse_message(const char *msg, int len,
 		    {"Comments", ENCODED_ANYWHERE, DO_NOTHING},
 		    {"Content-Description", ENCODED_ANYWHERE,
 			    CONTENT_DESCRIPTION},
-		    {"Content-Transfer-Encoding", NO_ENCODED,
+		    {"Content-ID", ENCODED_COMMENTS, DO_NOTHING},
+		    {"Content-Transfer-Encoding", ENCODED_COMMENTS,
 			    CONTENT_TRANSFER_ENCODING},
-		    {"Content-Type", NO_ENCODED, CONTENT_TYPE},
+		    {"Content-Type", ENCODED_COMMENTS, CONTENT_TYPE},
 		    {"Date", ENCODED_COMMENTS, EXTRACT_DATE},
 		    {"From", ENCODED_CPHRASES, EXTRACT_ADDRESSES},
 		    {"In-Reply-To", ENCODED_COMMENTS, EXTRACT_MESSAGE_IDS},
@@ -273,6 +281,7 @@ void parse_message(const char *msg, int len,
 		const char *name, *ourname;
 		int namelen, ourlen, prefix, cmp;
 		const struct header_type *hdr;
+		struct lexed_header *lh;
 
 		bot = -1;
 		top = lenof(headers);
@@ -291,7 +300,6 @@ void parse_message(const char *msg, int len,
 		    ourname = p;
 		    ourlen = q - p;
 
-		    cmp = 0;
 		    while (namelen > 0 && ourlen > 0) {
 			cmp = tolower(*name) - tolower(*ourname);
 			if (cmp)
@@ -313,58 +321,49 @@ void parse_message(const char *msg, int len,
 		}
 
 		/*
-		 * Plan for dealing with RFC2047:
-		 * 
-		 *  - For COMMENTS and CPHRASES headers, we must
-		 *    first parse the header. I think the way this
-		 *    works is that we work our way along finding
-		 *    word boundaries and punctuation, and thereby
-		 *    figure out what is and is not a phrase or a
-		 *    comment. We leave marker pointer variables
-		 *    behind us on the way so we know where a
-		 *    disputed sequence of words begins, so that
-		 *    when we reach the end of it and find some
-		 *    punctuation and figure it out, we can then
-		 *    DTRT with it.
-		 * 
-		 *  - Then we have an actual RFC2047-handling
-		 *    engine, which is passed a (pointer,length)
-		 *    pair describing a sequence of words, and
-		 *    which works its way along and passes text to
-		 *    an output function, in either the default
-		 *    charset or the one specified in an RFC2047
-		 *    encoded word. (So it calls the output
-		 *    function repeatedly.)
-		 * 
-		 *  - For the parser's output, this is sufficient
-		 *    in itself. We work our way along the header;
-		 *    every time we identify a bit of text as
-		 *    non-RFC2047able we just output it in the
-		 *    default charset; every time we see some
-		 *    RFC2047able text we call rfc2047(that_text,
-		 *    our_output_fn). For ENCODED_ANYWHERE headers
-		 *    we simply pass the full text straight to
-		 *    rfc2047(headertext, output).
-		 * 
-		 *  - Extracting the subject line for the database
-		 *    takes a little more work, but not much. We
-		 *    simply call rfc2047(headertext, trick_fn)
-		 *    where trick_fn has the same prototype as the
-		 *    real output function but its job is to
-		 *    accumulate UTF-8 text into an allocated
-		 *    buffer. Bingo.
-		 *     * In fact, this probably gives us a neat
-		 * 	 means of extracting people's personal name
-		 * 	 fields as well - just use the same trick.
-		 * 
-		 *  - A nice property of this technique is that any
-		 *    pair of encoded words separated by CRLF SPACE
-		 *    _must_ be passed to rfc2047() as a single
-		 *    unit, so it can deal with that special case
-		 *    entirely internally and hence we have no need
-		 *    to handle it separately in the various types
-		 *    of parseable header. Woo!
+		 * We perform semantic and output header parsing
+		 * entirely separately, since they are largely
+		 * orthogonal; for example, when parsing an
+		 * In-Reply-To header for semantics the important
+		 * thing is the message-ids, and comments are to be
+		 * ignored, but when parsing the same header for
+		 * output the comments are the only _interesting_
+		 * bit in terms of RFC2047 encoding.
 		 */
+
+		/*
+		 * Abandon this header entirely and move straight
+		 * on to the next one if there isn't _something_
+		 * interesting in the header. Everything is
+		 * interesting during pass 1, but during pass 0 we
+		 * only care about Content-Type.
+		 */
+		if (pass == 0 && hdr->action != CONTENT_TYPE)
+		    continue;
+
+		/*
+		 * Perform semantic parsing.
+		 */
+		lh = lex_header(r, message - r, hdr->action);
+#ifdef DIAGNOSTICS
+		{
+		    int i;
+		    for (i = 0; lh[i].token; i++) {
+			printf("%d [%.*s] (%.*s)\n",
+			       lh[i].is_punct,
+			       lh[i].length, lh[i].token,
+			       lh[i].clength, lh[i].comment);
+		    }
+		}
+#endif
+		switch (hdr->action) {
+		  case CONTENT_TYPE:
+		    parse_content_type(lh, &toplevel_part);
+		    break;
+		  default:
+		    break;
+		}
+		sfree(lh);
 
 		/*
 		 * Parse the header for output. The _semantic_
@@ -372,56 +371,144 @@ void parse_message(const char *msg, int len,
 		 * display-prettification, and so we will do that
 		 * separately.
 		 */
-		if (pass == 1) {
-		    s = r;
-		    output(outctx, p, r - p, TYPE_HEADER_NAME, CS_ASCII);
-		    switch (hdr->rfc2047_location) {
-		      case NO_ENCODED:
-			output(outctx, r, message - r, TYPE_HEADER_TEXT,
-			       default_charset);
-			break;
-		      case ENCODED_ANYWHERE:
-			rfc2047(r, message - r, output, outctx,
-				FALSE, default_charset);
-			break;
-		      case ENCODED_COMMENTS:
-			/*
-			 * I believe this much is general to any
-			 * structured header in which comments are
-			 * permitted:
-			 * 
-			 *  - If we see an open paren, we parse a
-			 *    comment, which means we scan up to
-			 *    the closing paren (dodging
-			 *    backslash-quoted characters on the
-			 *    way), and feed the inside of the
-			 *    parens to rfc2047().
-			 * 
-			 *  - If we see a double quote, we parse a
-			 *    quoted string, which means we scan up
-			 *    to the closing quote (dodging
-			 *    backslash-quoted characters on the
-			 *    way of course) and pass that lot
-			 *    straight to output().
-			 */
-			p = r;
-			while (r < message) {
-			    if (*r == '(') {
-				r++;
-				output(outctx, p, r-p, TYPE_HEADER_TEXT,
-				       default_charset);
-				p = r;
-				while (r < message && *r != ')') {
-				    if (*r == '\\' && r+1 < message)
-					r++;
+		if (pass == 0)
+		    continue;
+
+		s = r;
+		output(outctx, p, r - p, TYPE_HEADER_NAME, CS_ASCII);
+		switch (hdr->rfc2047_location) {
+		  case NO_ENCODED:
+		    output(outctx, r, message - r, TYPE_HEADER_TEXT,
+			   default_charset);
+		    break;
+		  case ENCODED_ANYWHERE:
+		    rfc2047(r, message - r, output, outctx,
+			    FALSE, default_charset);
+		    break;
+		  case ENCODED_COMMENTS:
+		    /*
+		     * I believe this much is general to any
+		     * structured header in which comments are
+		     * permitted:
+		     *
+		     *  - If we see an open paren, we parse a
+		     *    comment, which means we scan up to
+		     *    the closing paren (dodging
+		     *    backslash-quoted characters on the
+		     *    way), and feed the inside of the
+		     *    parens to rfc2047().
+		     *
+		     *  - If we see a double quote, we parse a
+		     *    quoted string, which means we scan up
+		     *    to the closing quote (dodging
+		     *    backslash-quoted characters on the
+		     *    way of course) and pass that lot
+		     *    straight to output().
+		     */
+		    p = r;
+		    while (r < message) {
+			if (*r == '(') {
+			    r++;
+			    output(outctx, p, r-p, TYPE_HEADER_TEXT,
+				   default_charset);
+			    p = r;
+			    while (r < message && *r != ')') {
+				if (*r == '\\' && r+1 < message)
 				    r++;
-				}
-				rfc2047(p, r-p, output, outctx,
-					TRUE, default_charset);
-				p = r;
-			    } else if (*r == '"') {
 				r++;
-				while (r < message && *r != '"') {
+			    }
+			    rfc2047(p, r-p, output, outctx,
+				    TRUE, default_charset);
+			    p = r;
+			} else if (*r == '"') {
+			    r++;
+			    while (r < message && *r != '"') {
+				if (*r == '\\' && r+1 < message)
+				    r++;
+				r++;
+			    }
+			} else if (*r == '\\' && r+1 < message) {
+			    r += 2;
+			} else {
+			    r++;
+			}
+		    }
+		    if (r > p)
+			output(outctx, p, r-p, TYPE_HEADER_TEXT,
+			       default_charset);
+		    break;
+		  case ENCODED_CPHRASES:
+		    /*
+		     * This is the most complex case for
+		     * display parsing. The syntax is:
+		     *
+		     *  - a `mailbox' is either a bare address,
+		     *    or a potentially-RFC2047able-phrase
+		     *    followed by an address in angle
+		     *    brackets.
+		     *
+		     *  - an `address' is either a mailbox, or
+		     *    a group. A group is a potentially-
+		     *    RFC2047able-phrase, a colon, a comma-
+		     *    separated list of mailboxes, and a
+		     *    final semicolon.
+		     *
+		     *  - an `address-list' is a comma-
+		     *    separated list of addresses.
+		     *
+		     * In theory there is also a `mailbox-list'
+		     * which is a comma-separated list of
+		     * mailboxes; this is used in some address
+		     * headers. For example, `Reply-To' takes
+		     * an address-list and hence may contain
+		     * groups, but `From' takes a mailbox-list
+		     * and cannot.
+		     *
+		     * However, I'm going to ignore this
+		     * distinction; anyone using group syntax
+		     * in a From header coming into this parser
+		     * will find that the parser will DWIM.
+		     * This doesn't seem to me to be a large
+		     * practical problem, and it makes my life
+		     * easier.
+		     *
+		     * So what I actually do here is:
+		     *
+		     *  - Place a marker.
+		     *
+		     *  - Scan along the string, dodging
+		     *    quoted-strings, backslash-quoted
+		     *    characters and comments, until we see
+		     *    a significant punctuation event.
+		     *    Significant punctuation events are
+		     *    `:', `;', `<', `>', `,' and
+		     *    end-of-string.
+		     *
+		     *  - If we see `:' or `<', then everything
+		     *    between the marker and here is part
+		     *    of a potentially-RFC2047able phrase.
+		     *    Whereas if we see `>', `,', `;' or
+		     *    end-of-string, everything between the
+		     *    marker and here was an addr-spec or
+		     *    nothing at all.
+		     *
+		     *  - So now we re-scan from the marker.
+		     *    Anything in a quoted-string we pass
+		     *    through unchanged; anything in parens
+		     *    we parse as an RFC2047able comment;
+		     *    anything not in either we deal with
+		     *    _as appropriate_ given the above.
+		     */
+		    while (r < message) {
+			int rfc2047able;
+			p = r;
+			while (r < message &&
+			       *r != ':' && *r != ';' &&
+			       *r != '<' && *r != '>' && *r != ',') {
+			    if (*r == '(' || *r == '"') {
+				int end = (*r == '"' ? '"' : ')');
+				r++;
+				while (r < message && *r != end) {
 				    if (*r == '\\' && r+1 < message)
 					r++;
 				    r++;
@@ -432,148 +519,61 @@ void parse_message(const char *msg, int len,
 				r++;
 			    }
 			}
-			if (r > p)
-			    output(outctx, p, r-p, TYPE_HEADER_TEXT,
-				   default_charset);
-			break;
-		      case ENCODED_CPHRASES:
+			if (r < message && (*r == ':' || *r == '<'))
+			    rfc2047able = TRUE;
+			else
+			    rfc2047able = FALSE;
+			if (r < message)
+			    r++;   /* we'll eat this punctuation too */
 			/*
-			 * This is the most complex case for
-			 * display parsing. The syntax is:
-			 * 
-			 *  - a `mailbox' is either a bare address,
-			 *    or a potentially-RFC2047able-phrase
-			 *    followed by an address in angle
-			 *    brackets.
-			 * 
-			 *  - an `address' is either a mailbox, or
-			 *    a group. A group is a potentially-
-			 *    RFC2047able-phrase, a colon, a comma-
-			 *    separated list of mailboxes, and a
-			 *    final semicolon.
-			 * 
-			 *  - an `address-list' is a comma-
-			 *    separated list of addresses.
-			 * 
-			 * In theory there is also a `mailbox-list'
-			 * which is a comma-separated list of
-			 * mailboxes; this is used in some address
-			 * headers. For example, `Reply-To' takes
-			 * an address-list and hence may contain
-			 * groups, but `From' takes a mailbox-list
-			 * and cannot.
-			 * 
-			 * However, I'm going to ignore this
-			 * distinction; anyone using group syntax
-			 * in a From header coming into this parser
-			 * will find that the parser will DWIM.
-			 * This doesn't seem to me to be a large
-			 * practical problem, and it makes my life
-			 * easier.
-			 * 
-			 * So what I actually do here is:
-			 * 
-			 *  - Place a marker.
-			 * 
-			 *  - Scan along the string, dodging
-			 *    quoted-strings, backslash-quoted
-			 *    characters and comments, until we see
-			 *    a significant punctuation event.
-			 *    Significant punctuation events are
-			 *    `:', `;', `<', `>', `,' and
-			 *    end-of-string.
-			 * 
-			 *  - If we see `:' or `<', then everything
-			 *    between the marker and here is part
-			 *    of a potentially-RFC2047able phrase.
-			 *    Whereas if we see `>', `,', `;' or
-			 *    end-of-string, everything between the
-			 *    marker and here was an addr-spec or
-			 *    nothing at all.
-			 * 
-			 *  - So now we re-scan from the marker.
-			 *    Anything in a quoted-string we pass
-			 *    through unchanged; anything in parens
-			 *    we parse as an RFC2047able comment;
-			 *    anything not in either we deal with
-			 *    _as appropriate_ given the above.
+			 * Now re-scan from p.
 			 */
-			while (r < message) {
-			    int rfc2047able;
-			    p = r;
-			    while (r < message &&
-				   *r != ':' && *r != ';' &&
-				   *r != '<' && *r != '>' && *r != ',') {
-				if (*r == '(' || *r == '"') {
-				    int end = (*r == '"' ? '"' : ')');
-				    r++;
-				    while (r < message && *r != end) {
-					if (*r == '\\' && r+1 < message)
-					    r++;
-					r++;
-				    }
-				} else if (*r == '\\' && r+1 < message) {
-				    r += 2;
-				} else {
-				    r++;
-				}
-			    }
-			    if (r < message && (*r == ':' || *r == '<'))
-				rfc2047able = TRUE;
-			    else
-				rfc2047able = FALSE;
-			    if (r < message)
-				r++;   /* we'll eat this punctuation too */
-			    /*
-			     * Now re-scan from p.
-			     */
-			    q = p;
-			    while (1) {
-				if (q < r && *q == '\\' && q+1 < r) {
-				    q += 2;
-				} else if (q < r && *q != '(' && *q != '"') {
-				    q++;
-				} else {
-				    int end;
-				    if (rfc2047able)
-					rfc2047(p, q-p, output, outctx,
-						TRUE, default_charset);
-				    else
-					output(outctx, p, q-p,
-					       TYPE_HEADER_TEXT,
-					       default_charset);
-				    if (q == r)
-					break;
-				    output(outctx, q, 1,
-					   TYPE_HEADER_TEXT, CS_ASCII);
-				    end = (*q == '"' ? '"' : ')');
-				    p = ++q;
-				    while (q < r && *q != end) {
-					if (*q == '\\' && q+1 < r)
-					    q++;
+			q = p;
+			while (1) {
+			    if (q < r && *q == '\\' && q+1 < r) {
+				q += 2;
+			    } else if (q < r && *q != '(' && *q != '"') {
+				q++;
+			    } else {
+				int end;
+				if (rfc2047able)
+				    rfc2047(p, q-p, output, outctx,
+					    TRUE, default_charset);
+				else
+				    output(outctx, p, q-p,
+					   TYPE_HEADER_TEXT,
+					   default_charset);
+				if (q == r)
+				    break;
+				output(outctx, q, 1,
+				       TYPE_HEADER_TEXT, CS_ASCII);
+				end = (*q == '"' ? '"' : ')');
+				p = ++q;
+				while (q < r && *q != end) {
+				    if (*q == '\\' && q+1 < r)
 					q++;
-				    }
-				    if (end == ')')
-					rfc2047(p, q-p, output, outctx,
-						TRUE, default_charset);
-				    else
-					output(outctx, p, q-p,
-					       TYPE_HEADER_TEXT,
-					       default_charset);
-				    if (q == r)
-					break;
-				    output(outctx, q, 1,
-					   TYPE_HEADER_TEXT, CS_ASCII);
-				    p = ++q;
+				    q++;
 				}
+				if (end == ')')
+				    rfc2047(p, q-p, output, outctx,
+					    TRUE, default_charset);
+				else
+				    output(outctx, p, q-p,
+					   TYPE_HEADER_TEXT,
+					   default_charset);
+				if (q == r)
+				    break;
+				output(outctx, q, 1,
+				       TYPE_HEADER_TEXT, CS_ASCII);
+				p = ++q;
 			    }
 			}
-			break;
 		    }
-		    output(outctx, "\n", 1, TYPE_HEADER_TEXT, CS_ASCII);
-		    r = s;
+		    break;
 		}
-	    }
+		output(outctx, "\n", 1, TYPE_HEADER_TEXT, CS_ASCII);
+		r = s;
+	    } while (0);
 
 	    /*
 	     * Eat the newline after the header.
@@ -584,6 +584,243 @@ void parse_message(const char *msg, int len,
 	    }
 	}
     }
+}
+
+struct lexed_header *lex_header(char const *header, int length, int type)
+{
+    struct lexed_header *ret = NULL;
+    struct lexed_header *tok;
+    int retlen = 0, retsize = 0;
+    char const *punct, *p;
+
+    /*
+     * The interesting punctuation elements vary with the type
+     * of header.
+     */
+    switch (type) {
+      default: punct = ""; break;
+      case EXTRACT_ADDRESSES: punct = ":;<>,"; break;
+      case EXTRACT_MESSAGE_IDS: punct = "<>"; break;
+      case EXTRACT_DATE: punct = ",:"; break;
+      case CONTENT_TYPE: punct = "/;="; break;
+    }
+
+    tok = NULL;
+
+    while (1) {
+	/*
+	 * Eat whitespace and comments.
+	 */
+	while (length > 0) {
+	    if (*header == '(') {
+		header++, length--;
+		if (tok)
+		    tok->comment = header;
+		while (length > 0 && *header != ')') {
+		    if (*header == '\\' && length > 1)
+			header++, length--;
+		    header++, length--;
+		}
+		if (tok)
+		    tok->clength = header - tok->comment;
+		tok = NULL;	       /* any further comments are ignored */
+	    } else if (!FWS(*header)) {
+		break;
+	    }
+	    header++, length--;	       /* eat FWS or the closing `)' */
+	}
+
+	/*
+	 * Allocate space for a token structure. Even if this is
+	 * end-of-string, we will need an array element to say so.
+	 */
+	if (retlen >= retsize) {
+	    retsize = retlen + 64;
+	    ret = srealloc(ret, retsize * sizeof(*ret));
+	}
+	tok = &ret[retlen];
+	retlen++;
+
+	if (length <= 0) {
+	    /*
+	     * End of string. Mark a special array element with
+	     * token==NULL and length==0.
+	     */
+	    tok->token = tok->comment = NULL;
+	    tok->length = tok->clength = 0;
+	    tok->is_punct = FALSE;
+	    break;
+	}
+
+	/*
+	 * Now we have a genuine token.
+	 */
+	tok->token = header;
+	tok->comment = NULL;
+	tok->clength = 0;
+
+	/*
+	 * See if it's punctuation.
+	 */
+	tok->is_punct = FALSE;
+	for (p = punct; *p; p++)
+	    if (*p == *header) {
+		tok->is_punct = TRUE;
+		break;
+	    }
+	if (tok->is_punct) {
+	    tok->length = 1;
+	    header++, length--;
+	    continue;
+	}
+
+	/*
+	 * Otherwise, we have a non-punctuation token; follow it
+	 * all the way to the next FWS, comment introducer or
+	 * significant punctuation, while dodging quoted strings
+	 * and quoted pairs.
+	 */
+	while (length > 0 && !FWS(*header) && *header != '(') {
+	    if (*header == '\\' && length > 1) {
+		header++, length--;
+	    } else if (*header == '"') {
+		header++, length--;
+		while (length > 0 && *header != '"') {
+		    if (*header == '\\' && length > 1)
+			header++, length--;
+		    header++, length--;
+		}
+		assert(length == 0 || *header == '"');
+	    } else {
+		for (p = punct; *p; p++)
+		    if (*p == *header)
+			break;
+		if (*p)
+		    break;
+	    }
+	    header++, length--;
+	}
+	tok->length = header - tok->token;
+    }
+
+    return ret;
+}
+
+void init_mime_details(struct mime_details *md)
+{
+    md->major = "text";
+    md->minor = "plain";
+    md->majorlen = 4;
+    md->minorlen = 5;
+    md->transfer_encoding = NONE;
+    md->charset = CS_ASCII;
+}
+
+void parse_content_type(struct lexed_header *lh, struct mime_details *md)
+{
+    /*
+     * If the first three tokens are a word, a slash and another
+     * word, we can collect the MIME type itself.
+     */
+    if ((!lh[0].is_punct && lh[0].length > 0) &&
+	( lh[1].is_punct && lh[1].length > 0 && *lh[1].token == '/') &&
+	(!lh[2].is_punct && lh[2].length > 0)) {
+	md->major = lh[0].token;
+	md->majorlen = lh[0].length;
+	md->minor = lh[2].token;
+	md->minorlen = lh[2].length;
+	lh += 3;
+    }
+
+    /*
+     * Now scan the rest of the header for semicolons. After each
+     * semicolon, we look to see if there's a word, an equals sign
+     * and some other stuff; if so, we process a parameter.
+     */
+    while (lh[0].length > 0) {
+	if (!lh[0].is_punct || *lh[0].token != ';') {
+	    lh++;
+	    continue;
+	}
+
+	/*
+	 * We have a semicolon.
+	 */
+	lh++;
+	if ((!lh[0].is_punct && lh[0].length > 0) &&
+	    ( lh[1].is_punct && lh[1].length > 0 && *lh[1].token == '=') &&
+	    (!lh[2].is_punct && lh[2].length > 0)) {
+	    /*
+	     * We have a `param=value' construction. See if the
+	     * parameter is one we know how to handle.
+	     */
+	    if (!istrlencmp(lh[0].token, lh[0].length, "charset", 7)) {
+		char *cset = smalloc(1 + lh[2].length);
+		int csl;
+
+		csl = unquote(lh[2].token, lh[2].length, TRUE, cset);
+		assert(csl <= lh[2].length);
+		cset[csl] = '\0';
+
+		md->charset = charset_upgrade(charset_from_mimeenc(cset));
+	    }
+
+	    lh += 4;
+	}
+    }
+}
+
+/*
+ * Remove backslash-quoted pairs, and optionally double quotes too,
+ * from a string. Returns the output length.
+ */
+int unquote(const char *in, int inlen, int dblquot, char *out)
+{
+    char *orig_out = out;
+
+    /*
+     * Entertainingly, we don't even need to _track_ whether we're
+     * inside a quoted string! The only function of quotes is to
+     * alter token boundaries, and by the time we come here the
+     * token boundaries have already been settled. So all we need
+     * to do here is to drop any unbackslashed double quote
+     * characters.
+     */
+    while (inlen > 0) {
+	if (dblquot && *in == '"') {
+	    in++, inlen--;
+	    continue;
+	} else if (*in == '\\' && inlen > 1) {
+	    in++, inlen--;
+	}
+	*out++ = *in;
+	in++, inlen--;
+    }
+
+    return out - orig_out;
+}
+
+int istrlencmp(const char *s1, int l1, const char *s2, int l2)
+{
+    int cmp;
+
+    while (l1 > 0 && l2 > 0) {
+	cmp = tolower(*s1) - tolower(*s2);
+	if (cmp)
+	    return cmp;
+	s1++, l1--;
+	s2++, l2--;
+    }
+
+    /*
+     * We've reached the end of one or both strings.
+     */
+    if (l1 > 0)
+	return +1;		       /* s1 is longer, therefore is greater */
+    else if (l2 > 0)
+	return -1;		       /* s2 is longer */
+    else
+	return 0;
 }
 
 void null_output_fn(void *ctx, const char *text, int len,
