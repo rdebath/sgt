@@ -33,10 +33,13 @@ auto: autoconf
 	cd auto && ../configure && make
 release: autoconf
 	if grep FIXME CHANGELOG; then false; else true; fi
-	mkdir enigma-$(VERSION)
-	for i in *.c *.h levels README CHANGELOG LICENCE \
+	mkdir enigma-$(VERSION) enigma-$(VERSION)/levels
+	for i in *.c *.h README CHANGELOG LICENCE \
 	Makefile.in configure.in configure install-sh; do \
 		ln -s ../$$i enigma-$(VERSION); \
+	done
+	for i in levels/*.set levels/*.level; do \
+		ln -s ../../$$i enigma-$(VERSION)/levels; \
 	done
 	tar chzvf enigma-$(VERSION).tar.gz enigma-$(VERSION)
 	rm -rf enigma-$(VERSION)
