@@ -20,14 +20,12 @@ unexpectedly terminating their session.
 <p>
 Also, various servers do not have sane defaults for various terminal
 modes. (Neither SSH nor POSIX define any defaults; they leave them
-up to the implementation, so such servers are within their rights.)
+up to the implementation, so such servers are technically within their
+rights, although I (JTN) consider them buggy nonetheless.)
 Therefore PuTTY should probably send suitable values for certain modes
 by default, and in any case allow users to tweak them. (Often
 <tt>stty</tt> on the server can be used as a workaround, but some
 servers may not have this ability.)
-
-<p>
-A complete UI for terminal modes would be a noticeable amount of work.
 
 <p>
 Recently it was suggested to me that if the user has configured
@@ -42,8 +40,67 @@ though, so perhaps it would be better to leave it as a
 user-configurable option.
 
 <p>
-(This wish applies minimally to Telnet as well, since we can send
+A complete UI for terminal modes would be a noticeable amount of work.
+However, given the underspecification of the area, it seems necessary
+to avoid breaking as many systems as are fixed. Here's a sketch:
+
+<p><pre>  Mode: [DSUSP       [v]]
+  Value:  ( ) Auto (o) This: [^Q        ]
+   __________ _________
+  [Mode______|Value____]
+  [INTR       ^C       ]     [   Add    ]
+  [KILL                ]
+  [ECHO       (auto)   ]     [  Remove  ]
+  [                    ]</pre>
+
+<ul>
+
+<li>"Mode" is a drop-down list of all terminal modes.
+<br>(I will probably use the POSIX names rather than trying to invent our
+own; similarly, I won't attempt to document them all, although I
+would probably mention some "notable" ones.)
+
+<li>The main listbox is a subset of all the terminal modes. If a mode is
+not on this list, no value will be sent.
+<br>(It allows multiple selections for easy removal of lots of modes.)
+
+<li>"Auto" asks the frontend for a value. The frontend has the
+opportunity to say "dunno, don't send anything". Examples:
+<ul>
+<li>For PuTTY proper, ERASE would look at the configured backspace
+character.
+<li>For PuTTY proper, the echoing/editing suggestion above.
+<li>For Plink on Unix, "auto" means "look at your local terminal, and
+propagate that".
+<li>Unix GUI tools probably shouldn't propagate modes from any
+controlling terminal. (After all, <tt>xterm</tt> doesn't.)
+<li>For obscure things on which PuTTY has no opinion, e.g. SWTCH, PuTTY
+will say "dunno" and hence nothing will be sent, whereas Unix Plink
+will return whatever the local terminal has.
+</ul>
+
+<li>The "value" textbox will take a string input and not validate it
+particularly; it will be interpreted by the backend.
+<ul>
+<li>Special characters will have the usual sort of "^C" interpretation
+going on. To indicate "no value" (255 in SSH), I'll probably use
+the empty string.
+</ul>
+
+<li>The default setting will have most (all?) of these present and set to
+"auto", leaving the decision on whether it's sensible to send a value
+to the frontend. (Might leave out some things such as PENDIN where it's
+not clear that they're useful.)
+
+</ul>
+
+<p>
+Configurable options in this area might also be directly usable by
+the pty back end in pterm.
+
+<p>
+Possibly also Telnet to some extent, since we can send
 WILL ECHO / WONT ECHO to announce an intention to do any echoing
 locally, and the server is expected to stop doing its own echoing if
-it thinks we're doing it ourselves. Configurable options in this
-area might also be directly usable by the pty back end in pterm.)
+it thinks we're doing it ourselves. Perhaps that's better handled
+by separate UI, though.
