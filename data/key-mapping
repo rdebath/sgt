@@ -15,12 +15,12 @@ appear as a side benefit of that.
 However, since scripting now looks likely to be a DLL plugin if
 it even happens at all, and since more and more people have written
 to tell us that there are more configurations in use for the
-function keys than we could possibly have dreamed of, I think we're
+<a href="function-keys.html">function keys</a> than we could possibly have dreamed of, I think we're
 eventually going to have to get round to doing a proper key
 remapping facility.
 
 <p>
-The major difficulty in this is that we want PuTTY to end up
+The major difficulty in this is that we want PuTTY to remain
 portable to other operating systems. So we're somehow going to have
 to split the keyboard processing down the middle, so that we have a
 platform-dependent half which converts Windows keyboard messages
