@@ -1,0 +1,14 @@
+Summary: Reducing window width shouldn't lose information
+Class: wish
+Difficulty: fun
+Priority: low
+Content-type: text/x-html-body
+
+<p>
+It might be nice if reducing the width of a terminal window, then
+restoring it, didn't gratuitously lose information from the
+right-hand ends of lines. (Like NiftyTelnet-SSH on the Mac.)
+
+<p>
+This should be relatively easy (it's already the case for the
+scrollback).
