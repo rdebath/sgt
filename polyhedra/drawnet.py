@@ -800,7 +800,7 @@ for v1, v2 in tabpos.values():
 	x24, y24 = x24*2-x13, y24*2-y13
 	lines.append(((x13,y13),(x24,y24)))
 
-    truncheight = None
+    obstacles = []
     for i in range(len(tabvertices)-1):
 	(tx1,ty1),(tx2,ty2) = tabvertices[i:i+2]
 	for (lx1,ly1),(lx2,ly2) in lines:
@@ -820,9 +820,7 @@ for v1, v2 in tabpos.values():
 		((lx2-lx1)**2 + (ly2-ly1)**2)
 		if dp < 0 or dp > 1: continue
 		# We have an intersection.
-		thisheight = (cx1-xa1) * dy - (cy1 - ya1) * dx
-		if truncheight == None or truncheight > thisheight:
-		    truncheight = thisheight
+		obstacles.append((cx1,cy1))
     # Also check the actual endpoints of the lines.
     for (lx1,ly1),(lx2,ly2) in lines:
 	for lx, ly in (lx1,ly1), (lx2,ly2):
@@ -841,17 +839,91 @@ for v1, v2 in tabpos.values():
 	    dpthis = lx*dx + ly*dy
 	    if dpleft < dpthis < dpright:
 		# Intersection.
-		if truncheight == None or dp < truncheight:
-		    truncheight = dp
-    if truncheight != None:
-	maxtabheight = truncheight * 4 / 5 # stop a bit short of the lines
-	X1 = xa1 + maxtabheight * dy
-	Y1 = ya1 - maxtabheight * dx
-	X2 = xb1 + maxtabheight * dy
-	Y2 = yb1 - maxtabheight * dx
+		obstacles.append((lx,ly))
+    if len(obstacles) > 0:
+	# The tab will not fit on the diagram as shown, because
+	# there is some set of points in the way. This set of
+	# points is given in the array `obstacles'.
+	#
+	# We consider three possibilities for reducing the size of
+	# the tab.
+	#
+	#  (a) We cut the tab off horizontally at the height of the
+	#      lowest point.
+	#
+	#  (b) We make the tab's left-hand edge slope more
+	#      shallowly, so that it misses all the obstacle
+	#      points. This may reduce the tab to a triangle, or it
+	#      may leave it as a trapezium.
+	#
+	#  (c) Exactly as (b), but we alter the right-hand edge.
+	#
+	# We consider all three possibilities, and pick the one
+	# which leaves the tab with the greatest area.
+	truncheight = None
+	lpoint = rpoint = None
+	lmgrad = rmgrad = None
+	for x, y in obstacles:
+	    # Case (a).
+	    thisheight = (x-xa1) * dy - (y - ya1) * dx
+	    trimheight = thisheight * 4 / 5 # miss the point by a little
+	    heightdiff = thisheight - trimheight
+	    if truncheight == None or truncheight > trimheight:
+		truncheight = trimheight
+	    # Case (b).
+	    lgrad = thisheight / ((x-xa1) * (xb1-xa1) + (y-ya1) * (yb1-ya1))
+	    if lmgrad == None or lmgrad > lgrad:
+		lmgrad = lgrad
+		lpoint = (x - heightdiff*dy, y + heightdiff*dx)
+	    # Case (c).
+	    rgrad = thisheight / ((x-xb1) * (xa1-xb1) + (y-yb1) * (ya1-yb1))
+	    if rmgrad == None or rmgrad > rgrad:
+		rmgrad = rgrad
+		rpoint = (x - heightdiff*dy, y + heightdiff*dx)
+	assert truncheight != None and lpoint != None and rpoint != None
+	# Assemble the new tabvertices array for case (a).
+	X1 = xa1 + truncheight * dy
+	Y1 = ya1 - truncheight * dx
+	X2 = xb1 + truncheight * dy
+	Y2 = yb1 - truncheight * dx
 	xc1, yc1 = crosspoint(xa1,ya1,xa2,ya2,X1,Y1,X2,Y2)
 	xc2, yc2 = crosspoint(xb1,yb1,xb2,yb2,X1,Y1,X2,Y2)
-	tabvertices = ((xa1,ya1),(xc1,yc1),(xc2,yc2),(xb1,yb1))
+	tabvertices_a = ((xa1,ya1),(xc1,yc1),(xc2,yc2),(xb1,yb1))
+	# Common code between cases (b) and (c).
+	X1 = xa1 + tabheight * dy
+	Y1 = ya1 - tabheight * dx
+	X2 = xb1 + tabheight * dy
+	Y2 = yb1 - tabheight * dx
+	# Now find the crossing point of the two new tab sides, for
+	# each of cases b and c.
+	xcb, ycb = crosspoint(xa1,ya1,lpoint[0],lpoint[1],xb1,yb1,xb2,yb2)
+	xcc, ycc = crosspoint(xa1,ya1,xa2,ya2,xb1,yb1,rpoint[0],rpoint[1])
+	tabvertices_b = [(xa1,ya1),(xcb,ycb),(xb1,yb1)]
+	tabvertices_c = [(xa1,ya1),(xcc,ycc),(xb1,yb1)]
+	# For each of these, check whether it's too high, and trim
+	# the tab horizontally at its original height if so.
+	for tv in tabvertices_b, tabvertices_c:
+	    xc, yc = tv[1]
+	    dp = (xc-xa1) * dy - (yc - ya1) * dx
+	    if dp > tabheight:
+		xc1, yc1 = crosspoint(xa1,ya1,xc,yc,X1,Y1,X2,Y2)
+		xc2, yc2 = crosspoint(xb1,yb1,xc,yc,X1,Y1,X2,Y2)
+		tv[1:2] = [(xc1,yc1),(xc2,yc2)]
+	# Now we have all three possibilities; compute the area of
+	# each.
+	tabvertices = None
+	bestarea = None
+	for tv in tabvertices_a, tabvertices_b, tabvertices_c:
+	    area = 0
+	    for i in range(len(tv)-1):
+		(xc1,yc1), (xc2,yc2) = tv[i:i+2]
+		h1 = (xc1-xa1) * dy - (yc1 - ya1) * dx
+		h2 = (xc2-xa1) * dy - (yc2 - ya1) * dx
+		w = abs((xc2-xc1) * dx + (yc2 - yc1) * dy)
+		area = area + w * (h1+h2)/2
+	    if bestarea == None or area > bestarea:
+		bestarea = area
+		tabvertices = tv
     # Done. Store the tab data.
     vid1 = facepos[f1].vid[v1]
     vid2 = facepos[f1].vid[v2]
