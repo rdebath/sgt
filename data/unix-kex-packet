@@ -14,6 +14,10 @@ through fine. The fault doesn't appear to happen with the Windows
 version, nor with Unix plink (so could be a GUI concurrency problem
 due to the blocking caused by the host key verification dialog?).
 
+Workaround: add the host key to the database first. (Apparently
+this can be done by setting "close window on exit" to "never" in
+the first session, or use contrib/kh2reg.py in PuTTY CVS.)
+
 Reports:
   000701c3fd23$4a4626e0$0400a8c0@capricho
     followup: 000b01c3fd2a$4822cd80$0400a8c0@capricho
