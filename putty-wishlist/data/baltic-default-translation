@@ -1,0 +1,24 @@
+Summary: Change default charset for Baltic Windows from Latin-4 to Latin-7
+Class: wish
+Difficulty: fun
+Priority: low
+Fixed-in: 2003-10-08
+
+<p>
+From a correspondent in <code>.lt</code> (2003 Jul 25):
+
+<blockquote>
+Default codepage for Baltic languages (Lithuanian, Latvian and Estonian)
+should be ISO 8859-13 (Latin-7) instead of current PuTTY's default ISO
+8859-4 (Latin-4). ISO 8859-4 is deprecated, and Windows Baltic codepage
+(CP1257) is basically ISO 8859-13 with several control symbols.
+
+<p>
+ISO 8859-13 is the standard codepage in Latvia and Lithuania. I think
+ISO 8859-15 is standard in Estonia, but this codepage was standartized
+only recently, and in Windows, CP1257 is still Estonia's default.
+</blockquote>
+
+<p>
+Since we don't know any better, this change is implemented as of
+2003-10-08.
