@@ -9,7 +9,12 @@ Content-type: text/x-html-body
 It would be good if Pageant could provide a log of requests that have
 been made of it (who, what, when) - particularly useful if agent
 forwarding is in use. Perhaps something in the style of PuTTY's Event
-Log?
+Log? Perhaps a persistent disk log would also be useful.
 
 <p>
-Probably depends on better key management.
+If nothing else, this gives you a means of finding out if agent
+forwardings have been unexpectedly abused.
+
+<p>
+Probably depends on <a href="pageant-key-mgmt.html">better key management</a>
+to some extent.
