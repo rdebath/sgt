@@ -227,7 +227,7 @@ function personality {
     type 2 - ! if
       # Someone emoted
       100 random 80 cmp 1 cmp ! if
-        "Absolutely" 'Say
+#        "Absolutely" 'Say
       endif
     endif
     type 3 cmp ! if
