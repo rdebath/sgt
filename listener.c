@@ -60,6 +60,8 @@
 #define WM_XUSER     (WM_USER + 0x2000)
 #define WM_NETEVENT  (WM_XUSER + 5)
 
+char listener_revision[] = "$Revision: 1.7 $";
+
 extern char const *listener_appname;
 extern int listener_nports;
 extern int const *listener_ports;
