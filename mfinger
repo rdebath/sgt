@@ -11,6 +11,8 @@ perl -e "use LWP::Simple; print get('$location')" |
        -e '  s/<\/FONT>/\035CA/g;' \
        -e '  s/<STRONG>/\035B/g;' \
        -e '  s/<\/STRONG>/\035b/g;' \
+       -e '  s/<EM>/\035S/g;' \
+       -e '  s/<\/EM>/\035s/g;' \
        -e '  s/<U>/\035U/g;' \
        -e '  s/<\/U>/\035u/g;' \
        -e '  print }' |
