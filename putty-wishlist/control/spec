@@ -1,0 +1,53 @@
+Bug files have the basic format of RFC-822 mail messages, but without any
+of the semantics of particular headers specified by the RFC.  Instead,
+the following headers are defined:
+
+Summary:
+  Contains a brief description of the bug, preferably < 1 line long.
+  Written in plain text.
+
+Class:
+  One of:
+    bug		This is clearly an actual problem we want fixed.
+    semi-bug	This might or might not be a bug, depending on your precise
+		definition of what a bug is.
+    wish	This is a request for an enhancement.
+
+Priority:
+  One of:
+    high	This should be fixed in the next release.
+    medium	This should be fixed one day.
+    low		We aren't sure whether to fix this or not.
+    never	We don't ever intend to fix this.
+
+Difficulty:
+  One of:
+    fun		Just needs tuits, and not many of them.
+    tricky	Needs many tuits.
+    taxing	Needs external things we don't have (standards, users etc)
+    mayhem	Probably impossible
+
+Present-in:
+  Versions of PuTTY that this bug has been observed in.  Space-separated
+  list of entries like:
+    0.52	Indicates a release that contained the bug
+    2002-04-30	Indicates a snapshot that contained the bug
+
+Absent-in:
+  Versions of PuTTY that don't exhibit this bug, (e.g. because they predate
+  its introcuction).  Same format as Present-in.
+
+Fixed-in:
+  Versions of PuTTY after which the bug should be fixed.  Same format as
+  Present-in.
+
+Depends:
+  Bugs that will need to be fixed (or features that will need to be
+  implemented) before this one.  Space-separated list of filenames.
+
+Content-type:
+  The MIME content-type of the body of the message.  text/plain and text/html
+  are supported.
+
+The body of the message contains a fragment of HTML that explains the bug
+in more detail.
