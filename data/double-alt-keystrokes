@@ -1,0 +1,8 @@
+Summary: ALT+nnn character entry method gives doubled characters
+Class: bug
+Absent-in: 0.53b 2002-10-20
+Present-in: 2002-10-22 2003-06-09
+
+Using the ALT+nnn method for entering characters with a given decimal
+code point (e.g. [press left Alt] 6 5 [release left Alt]) gives the
+same keystroke twice.
