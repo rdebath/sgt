@@ -97,6 +97,7 @@ case "$one" in
   mu | muon |\
   ta | tachyon |\
   enigma |\
+  meson |\
   cr | crimson )
     MACHINE=`echo $one | sed 's/\..*$//'`
     MACHINE="$MACHINE.mono.org"
