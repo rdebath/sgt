@@ -1,5 +1,5 @@
 #! /usr/bin/perl
-# $Id: bugs2html,v 1.21 2003/02/15 18:46:35 jacob Exp $
+# $Id: bugs2html,v 1.22 2003/02/27 11:17:58 jacob Exp $
 
 use FileHandle;
 use POSIX;
@@ -193,8 +193,13 @@ precise definition of what a bug is.
 <ul>
 EOF
 
-my @tmp = grep(($bugs{$_}->{class} eq 'semi-bug'), @fullbuglist);
-subtractbugs(\@fullbuglist, printbugs(\@tmp));
+my @semibuglist = grep(($bugs{$_}->{class} eq 'semi-bug'), @fullbuglist);
+subtractbugs(\@fullbuglist, \@semibuglist);
+
+my @tmp = grep(($bugs{$_}->{priority} eq 'high'), @semibuglist);
+subtractbugs(\@semibuglist, printbugs(\@tmp, 1));
+
+printbugs(\@semibuglist);
 
 unnest("</ul>\n");
 
