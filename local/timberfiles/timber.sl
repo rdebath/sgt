@@ -1774,8 +1774,8 @@ define timber_movemsgup() {
     variable here, top, bot, fbuf, tbuf;
 
     here = create_user_mark();
-    %ERROR_BLOCK { goto_user_mark(here); }
-    %EXIT_BLOCK { goto_user_mark(here); }
+    ERROR_BLOCK { goto_user_mark(here); }
+    EXIT_BLOCK { goto_user_mark(here); }
     % Mark the current message.
     bol();
     while (what_char != '*' and not bobp()) { go_up_1(); bol(); }
