@@ -2084,6 +2084,12 @@ define timber_reply_common(all) {
 		    outcc += addr;
 		}
 	    }
+            !if (outcc == "") {
+                % Reply-to-all and there is at least one address involved.
+                % Get confirmation first.
+                !if (timber_yesno("Really reply to everybody? [yn] "))
+                    outcc = "";
+            }
 	}
     }
 
