@@ -464,23 +464,148 @@ static void play_game(void)
     puttext(0, 0, 255, "GAME OVER");
 
     /*
-     * FIXME: this just waits for Escape. We should do something
-     * more sensible here.
+     * Now the game is over. Restore the colour palette (in case
+     * one or more players were cloaked at the time of the game
+     * ending) and then just wait for a Start button or Space press
+     * (either player) before continuing.
      */
     {
-	int flags = 0;
+	int done = 0;
 	SDL_Event event;
 
-	while (flags != 15 && SDL_WaitEvent(&event)) {
+	while (!done && SDL_WaitEvent(&event)) {
 	    switch(event.type) {
+	      case SDL_JOYBUTTONDOWN:
+		if (event.jbutton.button == 9)
+		    done = 1;
+		break;
 	      case SDL_KEYDOWN:
 		if (event.key.keysym.sym == SDLK_ESCAPE)
 		    exit(1);
+		if (event.key.keysym.sym == SDLK_SPACE)
+		    done = 1;
 	    }
 	}
     }
 
     /* FIXME: free ti */
+}
+
+enum { MM_QUIT, MM_GAME, MM_SETUP };
+
+static int main_menu(void)
+{
+    const struct {
+	int y;
+	char const *text;
+	int action;
+    } menu[] = {
+	{124, "Play Game", MM_GAME},
+	{138, "Game Setup", MM_SETUP},
+#ifdef PS2_FIXME_SCR_ADJUST_UNSUPPORTED_SO_FAR
+	{152, "Adjust Screen", MM_SCR_ADJUST},
+	{166, "Exit Ntris", MM_QUIT},
+#else /* PS2 */
+	{152, "Exit Ntris", MM_QUIT},
+#endif /* PS2 */
+    };
+
+    int menumin, j, flags = 0, prevval = 0, redraw;
+    int menulen = (no_quit_option ? lenof(menu)-1 : lenof(menu));
+    int x, y;
+    int action;
+    int index;
+    SDL_Event event;
+
+    /*
+     * Clear the screen and display the main menu.
+     */
+
+    scr_prep();
+    for (x = 0; x < 320; x++)
+	for (y = 0; y < 240; y++)
+	    plot(x, y, 0);
+
+    menumin = 0;
+
+    centretext(50, 255, "Ntris");
+    centretext(66, 255, "by Simon Tatham");
+
+    for (j = menumin; j < menulen; j++)
+	centretext(menu[j].y, 255, menu[j].text);
+
+    scr_done();
+
+    index = menumin;
+    redraw = 1;
+
+    /*
+     * Push an initial event to ensure a redraw happens
+     * immediately.
+     */
+    event.type = SDL_USEREVENT;
+    action = MM_QUIT;
+    SDL_PushEvent(&event);
+
+    while (flags != 3 && SDL_WaitEvent(&event)) {
+
+	switch(event.type) {
+	  case SDL_JOYBUTTONDOWN:
+	    flags |= 1;
+	    break;
+	  case SDL_JOYBUTTONUP:
+	    {
+		int which = event.jbutton.which;
+		if (which != 0) break;
+		if (!(flags & 1)) break;
+		flags |= 2;
+		action = menu[index].action;
+	    }
+	    break;
+	  case SDL_JOYAXISMOTION:
+	    if (event.jaxis.axis == 1) {
+		int val = event.jaxis.value / JOY_THRESHOLD;
+		int which = event.jaxis.which;
+		if (which != 0) break;
+		if (val < 0 && prevval >= 0) {
+		    if (--index < menumin)
+			index = menulen-1;
+		    redraw = 1;
+		} else if (val > 0 && prevval <= 0) {
+		    if (++index >= menulen)
+			index = menumin;
+		    redraw = 1;
+		}
+		prevval = val;
+	    }
+	    break;
+	  case SDL_KEYDOWN:
+	    if (event.key.keysym.sym == SDLK_ESCAPE)
+		exit(1);
+	    break;
+	}
+
+	if (redraw) {
+	    scr_prep();
+	    for (j = menumin; j < menulen; j++) {
+		int c = 0;
+		if (j == index) c = 255;
+		drawline(159-56, menu[j].y-3, 159-52, menu[j].y-3, c);
+		drawline(159-56, menu[j].y-3, 159-56, menu[j].y+1, c);
+		drawline(159-56, menu[j].y+9, 159-52, menu[j].y+9, c);
+		drawline(159-56, menu[j].y+9, 159-56, menu[j].y+5, c);
+		drawline(159+56, menu[j].y-3, 159+52, menu[j].y-3, c);
+		drawline(159+56, menu[j].y-3, 159+56, menu[j].y+1, c);
+		drawline(159+56, menu[j].y+9, 159+52, menu[j].y+9, c);
+		drawline(159+56, menu[j].y+9, 159+56, menu[j].y+5, c);
+	    }
+	    scr_done();
+	    redraw = 0;
+	}
+
+    }
+
+    return action;
 }
 
 static void setup_game(int joy)
@@ -773,9 +898,16 @@ int main(int argc, char **argv)
     opts.hold = 1;
     opts.queue = 8;
 
-    setup_game(0);
-
-    play_game();
-
-    return 0;
+    while (1) {
+	switch (main_menu()) {
+	  case MM_QUIT:
+	    return 0;		       /* finished */
+	  case MM_SETUP:
+	    setup_game(0);
+	    break;
+	  case MM_GAME:
+	    play_game();
+	    break;
+	}
+    }
 }
