@@ -86,7 +86,7 @@ class PredictableRNG:
 class NetGame:
     def __init__(self, game):
         if game == None:
-            game = random.randint(0, 0xFFFF) * 16L
+            game = random.randint(0, 0xFFFF) * 0x10000L
             game = game + random.randint(0, 0xFFFF)
         self.currgame = game
 
