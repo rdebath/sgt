@@ -25,3 +25,7 @@ even after uninstallation, which is bad. (We haven't actually
 <em>tried</em> this yet.)
 
 </ul>
+
+<p>
+One suggested solution is to use
+<a href="http://marcobari.altervista.org/add_path.html">add_path</a>.
