@@ -3,13 +3,6 @@
  * modified almost out of all recognition
  */
 
-/*
- * TODO:
- * 
- *  - User interface for weapons and options selection and
- *    scorekeeping.
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -17,6 +10,7 @@
 #include "beebfont.h"
 
 #define ABSOLUTE_MAX_SPEED 25
+#define JOY_THRESHOLD 4096
 
 #define lenof(x) ( sizeof((x)) / sizeof(*(x)) )
 
@@ -146,15 +140,47 @@ int fillcircle(int x, int y, int r, int c)
  * Actions for controller buttons to perform.
  */
 enum {
+    ACT_NOTHING,
+    /* speed */
+    ACT_ACCEL, ACT_DECEL,
     /* weapons */
     ACT_RIFLE, ACT_BOMB, ACT_MGUN, ACT_CAGE, ACT_BOLAS, ACT_FLIB_KRONT,
     /* functions */
     ACT_TELEPORT, ACT_CLOAK, ACT_EXTEND,
-    /* speed */
-    ACT_ACCEL, ACT_DECEL
+    /* terminator */
+    ACT_LAST
 };
 
 SDL_Joystick *joys[2];
+
+struct options {
+    /*
+     * FIXME: If and when we support more than two players,
+     * own_fatal will become some amount more complex, because
+     * team play will have at least three options (all trails
+     * fatal, your own trail is OK but teammates' are fatal,
+     * and teammates can freely drive over one another). Scary.
+     */
+    int own_fatal;
+    int auto_accel;
+    int scrfill_v;
+    int scrfill_h;
+    int max_speed;
+} opts;
+
+struct player {
+    int buttons[8];		       /* sq,x,tr,ci,l1,r1,l2,r2 */
+    int colour, cloaked;
+    int x, y, dx, dy, fire_dx, fire_dy, speedmod;
+    int steering_delay, button_delay[8];
+    int dead;
+} players[2];
+
+struct scores {
+    int games;
+    int draws;
+    int p[2];
+} scores;
 
 int cloak(int players)
 {
@@ -174,30 +200,6 @@ int play_game(void)
     int i, p, gameover;
     char const startstring[] = "BOTH PLAYERS PRESS X TO START";
     int scrfill;
-
-    struct options {
-	/*
-	 * FIXME: If and when we support more than two players,
-	 * own_fatal will become some amount more complex, because
-	 * team play will have at least three options (all trails
-	 * fatal, your own trail is OK but teammates' are fatal,
-	 * and teammates can freely drive over one another). Scary.
-	 */
-	int own_fatal;
-	int auto_accel;
-	int scrfill_v;
-	int scrfill_h;
-    } opts;
-
-    struct player {
-	int buttons[8];		       /* sq,x,tr,ci,l1,r1,l2,r2 */
-	int colour, cloaked;
-	int x, y, dx, dy, fire_dx, fire_dy, speedmod;
-	int steering_delay, button_delay[8];
-	int dead;
-    };
-
-    struct player players[2];
 
     /*
      * Initially, clear the screen, draw a white border round it,
@@ -263,21 +265,12 @@ int play_game(void)
 	players[p].x = (p == 0 ? 1 : 318);
 	players[p].dy = 0;
 	players[p].dx = (p == 0 ? +1 : -1);
-	players[p].colour = p+1;
-	players[p].buttons[0] = players[p].buttons[3] = ACT_DECEL;
-	players[p].buttons[1] = players[p].buttons[2] = ACT_ACCEL;
-	players[p].buttons[4] = players[p].buttons[6] = ACT_RIFLE;
-	players[p].buttons[5] = players[p].buttons[7] = ACT_TELEPORT;
 	players[p].cloaked = 0;
 	players[p].steering_delay = 0;
 	for (i = 0; i < 8; i++)
 	    players[p].button_delay[i] = 0;
 	players[p].dead = 0;
     }
-    opts.own_fatal = 0;
-    opts.auto_accel = 0;
-    opts.scrfill_v = 0;
-    opts.scrfill_h = 0;
 
     /*
      * And begin the main game loop. Ooh!
@@ -320,9 +313,9 @@ int play_game(void)
 	     * activates any directional weapons or functions.
 	     */
 	    players[p].fire_dx = SDL_JoystickGetAxis(joys[p], 0);
-	    players[p].fire_dx = sign(players[p].fire_dx/4096);
+	    players[p].fire_dx = sign(players[p].fire_dx/JOY_THRESHOLD);
 	    players[p].fire_dy = SDL_JoystickGetAxis(joys[p], 1);
-	    players[p].fire_dy = sign(players[p].fire_dy/4096);
+	    players[p].fire_dy = sign(players[p].fire_dy/JOY_THRESHOLD);
 
 	    if (players[p].steering_delay) {
 		players[p].steering_delay--;
@@ -470,6 +463,8 @@ int play_game(void)
 		}
 	    }
 
+#undef pcoord
+
 	    /*
 	     * Now do acceleration and deceleration, having decided
 	     * which one to do while processing the button presses
@@ -478,7 +473,7 @@ int play_game(void)
 	    if (players[p].speedmod > 0) {
 		int speed;
 		speed = abs(players[p].dx) + abs(players[p].dy);
-		if (speed < 4) speed++;
+		if (speed < opts.max_speed) speed++;
 		players[p].dx = sign(players[p].dx) * speed;
 		players[p].dy = sign(players[p].dy) * speed;
 	    } else if (players[p].speedmod < 0) {
@@ -619,10 +614,390 @@ int play_game(void)
 	    }
 	}
     }
+
+    /*
+     * Update the scores.
+     */
+    scores.games++;
+    if (!players[0].dead)
+	scores.p[0]++;
+    else if (!players[1].dead)
+	scores.p[1]++;
+    else
+	scores.draws++;
+}
+
+int game_setup_done = 0;
+
+enum {
+    MM_GAME, MM_RESET, MM_SETUP, MM_QUIT
+};
+
+int main_menu(void)
+{
+    const struct {
+	int y;
+	char const *text;
+	int action;
+    } menu[] = {
+	{120, "Play Game", MM_GAME},
+	{134, "Reset Scores", MM_RESET},
+	{148, "Game Setup", MM_SETUP},
+	{162, "Exit NORT", MM_QUIT},
+    };
+
+    int menumin, i, j, flags = 0, prevval = 0, redraw;
+    int x, y, c1, c2;
+    SDL_Event event;
+
+    /*
+     * Clear the screen and display the main menu.
+     */
+
+    scr_prep();
+    for (x = 0; x < 320; x++)
+	for (y = 0; y < 240; y++)
+	    plot(x, y, 0);
+
+    if (game_setup_done)
+	menumin = 0;
+    else
+	menumin = 2;		       /* only Setup and Quit allowed */
+
+#define centre(y,text) puttext(160-4*(strlen((text))),y,3,(text))
+    centre(50, "NORT");
+    centre(66, "A SPL@ Production");
+
+    for (i = menumin; i < lenof(menu); i++)
+	centre(menu[i].y, menu[i].text);
+#undef centre
+
+    /*
+     * Display the scores.
+     */
+    if (game_setup_done) {
+	char text[40];
+	int left, right;
+	sprintf(text, "Player 1 %4d", scores.p[0]);
+	left = 148 - 8*strlen(text);
+	puttext(left, 200, 1, text);
+	sprintf(text, "%-4d Player 2", scores.p[1]);
+	puttext(172, 200, 2, text);
+	right = 172 + 8*strlen(text);
+	puttext(156, 200, 3, "-");
+	sprintf(text, "%d game%s", scores.games, scores.games==1?"":"s");
+	puttext(left, 212, 3, text);
+	sprintf(text, "%d drawn", scores.draws);
+	puttext(right - 8*strlen(text), 212, 3, text);
+    }
+
+    scr_done();
+
+    i = menumin;
+    redraw = 1;
+
+    /*
+     * Push an initial event to ensure a redraw happens
+     * immediately.
+     */
+    event.type = SDL_USEREVENT;
+    SDL_PushEvent(&event);
+
+    while (flags != 3 && SDL_WaitEvent(&event)) {
+
+	switch(event.type) {
+	  case SDL_JOYBUTTONDOWN:
+	    if (event.jbutton.button == 1)
+		flags |= 1;
+	    break;
+	  case SDL_JOYBUTTONUP:
+	    if (event.jbutton.button == 1)
+		flags |= 2;
+	    break;
+	  case SDL_JOYAXISMOTION:
+	    if (event.jaxis.axis == 1) {
+		int val = event.jaxis.value / JOY_THRESHOLD;
+		if (val < 0 && prevval >= 0) {
+		    if (--i < menumin)
+			i = lenof(menu)-1;
+		    redraw = 1;
+		} else if (val > 0 && prevval <= 0) {
+		    if (++i >= lenof(menu))
+			i = menumin;
+		    redraw = 1;
+		}
+		prevval = val;
+	    }
+	    break;
+	  case SDL_KEYDOWN:
+	    if (event.key.keysym.sym == SDLK_ESCAPE)
+		exit(1);
+	    break;
+	}
+
+	if (redraw) {
+	    scr_prep();
+	    for (j = menumin; j < lenof(menu); j++) {
+		c1 = (j == i ? 1 : 0);
+		c2 = (j == i ? 2 : 0);
+		drawline(159-52, menu[j].y-3, 159-48, menu[j].y-3, c1);
+		drawline(159-52, menu[j].y-3, 159-52, menu[j].y+1, c1);
+		drawline(159-52, menu[j].y+9, 159-48, menu[j].y+9, c2);
+		drawline(159-52, menu[j].y+9, 159-52, menu[j].y+5, c2);
+		drawline(159+52, menu[j].y-3, 159+48, menu[j].y-3, c2);
+		drawline(159+52, menu[j].y-3, 159+52, menu[j].y+1, c2);
+		drawline(159+52, menu[j].y+9, 159+48, menu[j].y+9, c1);
+		drawline(159+52, menu[j].y+9, 159+52, menu[j].y+5, c1);
+	    }
+	    scr_done();
+	    redraw = 0;
+	}
+
+    }
+
+    return menu[i].action;
+}
+
+void button_symbol(int x, int y, int button)
+{
+    unsigned char fourbuttons[8*4] = {
+	0x7F, 0x41, 0x41, 0x41, 0x41, 0x41, 0x7F, 0x00,
+	0x41, 0x22, 0x14, 0x08, 0x14, 0x22, 0x41, 0x00,
+	0x08, 0x14, 0x14, 0x22, 0x22, 0x41, 0x7F, 0x00,
+	0x1C, 0x22, 0x41, 0x41, 0x41, 0x22, 0x1C, 0x00,
+    };
+
+    char const *otherfour[4] = { "L1", "R1", "L2", "R2" };
+
+    int ix, iy;
+
+    if (button < 4) {
+	for (ix = 0; ix < 8; ix++)
+	    for (iy = 0; iy < 8; iy++)
+		if (fourbuttons[button*8+iy] & (0x80>>ix))
+		    plotc(x+4+ix, y+iy, button+4);
+    } else
+	puttext(x, y, 3, otherfour[button-4]);
+}
+
+void setup_game(void)
+{
+    struct {
+	/* Coordinates of item for each player. */
+	int x[2], y;
+	/* Width of item (for showing selection box). */
+	int w;
+	/* Where to move (relative position in array indices) if the user
+	 * moves the controller. */
+	int up, down, left, right;
+    } items[] = {
+	{{160, 200}, 24+0*12, 2, 1, -2, 0, 0},
+	{{160, 200}, 24+1*12, 2, 1, -1, 0, 0},
+	{{160, 200}, 24+2*12, 2, 1, -1, 0, 0},
+	{{160, 200}, 24+3*12, 2, 1, -1, 0, 0},
+	{{160, 200}, 24+4*12, 2, 1, -1, 0, 0},
+	{{160, 200}, 24+5*12, 2, 1, -1, 0, 0},
+	{{160, 200}, 24+6*12, 2, 1, -1, 0, 0},
+	{{160, 200}, 24+7*12, 2, 1, -1, 0, 0},
+	{{160, 200}, 24+8*12, 2, 1, -1, 0, 0},
+	{{160, 200}, 24+9*12, 2, 1, -1, 0, 0},
+	{{160, 200}, 24+10*12, 2, 1, -1, 0, 0},
+	{{160, 160}, 172+0*12, 8, 1, -1, 0, 0},
+	{{160, 160}, 172+1*12, 14, 1, -1, 0, 0},
+	{{160, 160}, 172+2*12, 3, 1, -1, 0, 0},
+	{{160, 160}, 172+3*12, 1, 2, -1, 0, +1},
+	{{240, 240}, 172+3*12, 1, 1, -2, -1, 0},
+	{{104, 104}, 224, 14, 1, -1, 0, 0},
+    };
+    SDL_Event event;
+    char speedstr[20];
+
+    int i, p;
+    int index[2];
+    int prevjoy[2][2];
+
+    for (p = 0; p < 2; p++) {
+	index[p] = 0;
+	for (i = 0; i < 2; i++)
+	    prevjoy[p][i] = 0;
+    }
+
+    while (1) {
+	/*
+	 * Every time we redisplay, we'll redraw the whole menu. It
+	 * seems simpler to do it that way.
+	 */
+	scr_prep();
+	memset(scrdata, 0, 640*240);
+
+	/*
+	 * Draw selection crosshairs for each player's cursor.
+	 */
+	for (p = 0; p < 2; p++) {
+	    int idx = index[p];
+	    int x = items[idx].x[p], y = items[idx].y, w = items[idx].w*8;
+	    int c = players[p].colour;
+
+	    /* Special case: check if both crosshairs overlap. */
+	    if (index[1-p] == index[p] && items[idx].x[0] == items[idx].x[1])
+		c = 3;
+
+	    drawline(x-8, y-2, x-4, y-2, c);
+	    drawline(x-8, y-2, x-8, y+2, c);
+	    drawline(x-8, y+8, x-4, y+8, c);
+	    drawline(x-8, y+8, x-8, y+4, c);
+	    drawline(x+w+8, y-2, x+w+4, y-2, c);
+	    drawline(x+w+8, y-2, x+w+8, y+2, c);
+	    drawline(x+w+8, y+8, x+w+4, y+8, c);
+	    drawline(x+w+8, y+8, x+w+8, y+4, c);
+	}
+
+	puttext(8, 8, 3, "Assign buttons to weapons and actions:");
+	puttext(16, 24+0*12, 3, "Accelerate");
+	puttext(16, 24+1*12, 3, "Brake");
+	puttext(16, 24+2*12, 3, "Rifle");
+	puttext(16, 24+3*12, 3, "Bomb");
+	puttext(16, 24+4*12, 3, "Machine Gun");
+	puttext(16, 24+5*12, 3, "Cage");
+	puttext(16, 24+6*12, 3, "Bolas");
+	puttext(16, 24+7*12, 3, "FLIB KRONT");
+	puttext(16, 24+8*12, 3, "Teleport");
+	puttext(16, 24+9*12, 3, "Cloaking");
+	puttext(16, 24+10*12, 3, "Extend weapon");
+
+	for (p = 0; p < 2; p++) {
+	    for (i = 0; i < 8; i++) {
+		int act = players[p].buttons[i];
+		if (act != ACT_NOTHING) {
+		    button_symbol(160+40*p, 24+12*(act - (ACT_NOTHING+1)), i);
+		}
+	    }
+	}
+
+	puttext(8, 156, 3, "Select game options:");
+
+	puttext(16, 172+0*12, 3, "Safe trails:");
+	puttext(160, 172+0*12, 3, opts.own_fatal ? "None" : "Your own");
+
+	puttext(16, 172+1*12, 3, "Walls closing in:");
+	puttext(160, 172+1*12, 3,
+		(!opts.scrfill_v && !opts.scrfill_h ? "None" :
+		 opts.scrfill_v && !opts.scrfill_h ? "Top and bottom" :
+		 !opts.scrfill_v && opts.scrfill_h ? "Left and right" :
+		 /* opts.scrfill_v && opts.scrfill_h ? */ "All four"));
+
+	puttext(16, 172+2*12, 3, "Auto-accelerate:");
+	puttext(160, 172+2*12, 3, opts.auto_accel ? "On" : "Off");
+
+	puttext(16, 172+3*12, 3, "Maximum speed:");
+	sprintf(speedstr, "%d", opts.max_speed);
+	puttext(160, 172+3*12, 3, "-");
+	puttext(200, 172+3*12, 3, speedstr);
+	puttext(240, 172+3*12, 3, "+");
+
+	puttext(104, 224, 3, "Finished Setup");
+
+	scr_done();
+
+	while (SDL_WaitEvent(&event)) {
+	    switch(event.type) {
+	      case SDL_JOYAXISMOTION:
+		{
+		    int axis = event.jaxis.axis;
+		    int val = event.jaxis.value / JOY_THRESHOLD;
+		    int displace = 0;
+		    p = event.jaxis.which;
+		    if (val < 0 && prevjoy[p][axis] >= 0) {
+			displace = (axis ?
+				    items[index[p]].down :
+				    items[index[p]].left);
+		    } else if (val > 0 && prevjoy[p][axis] <= 0) {
+			displace = (axis ?
+				    items[index[p]].up :
+				    items[index[p]].right);
+		    }
+		    prevjoy[p][axis] = val;
+		    index[p] = (index[p] + displace) % lenof(items);
+		    if (displace) goto redraw;
+		}
+		break;
+	      case SDL_JOYBUTTONDOWN:
+		{
+		    int button = event.jbutton.button;
+		    p = event.jaxis.which;
+		    if (index[p] >= 0 && index[p] < 11) {
+			int act = ACT_NOTHING+1+index[p];
+			/*
+			 * Assign this button to this action.
+			 */
+			players[p].buttons[button] = act;
+			for (i = 0; i < 8; i++)
+			    if (button != i && players[p].buttons[i] == act)
+				players[p].buttons[i] = ACT_NOTHING;
+			goto redraw;
+		    } else if (index[p] == 11) {
+			/*
+			 * Cycle the safe-trails option.
+			 */
+			opts.own_fatal = !opts.own_fatal;
+			goto redraw;
+		    } else if (index[p] == 12) {
+			/*
+			 * Cycle the screen-fill options..
+			 */
+			if (opts.scrfill_v)
+			    opts.scrfill_h = !opts.scrfill_h;
+			opts.scrfill_v = !opts.scrfill_v;
+			goto redraw;
+		    } else if (index[p] == 13) {
+			/*
+			 * Cycle the auto-accelerate option.
+			 */
+			opts.auto_accel = !opts.auto_accel;
+			goto redraw;
+		    } else if (index[p] == 14) {
+			/*
+			 * Reduce the maximum speed.
+			 */
+			if (opts.max_speed > 1)
+			    opts.max_speed--;
+			goto redraw;
+		    } else if (index[p] == 15) {
+			/*
+			 * Increase the maximum speed.
+			 */
+			if (opts.max_speed < ABSOLUTE_MAX_SPEED)
+			    opts.max_speed++;
+			goto redraw;
+		    } else if (index[p] == 16) {
+			/*
+			 * Finished game setup.
+			 */
+			game_setup_done = 1;
+			return;
+		    }
+		}
+		break;
+	      case SDL_KEYDOWN:
+		if (event.key.keysym.sym == SDLK_ESCAPE)
+		    exit(1);
+		break;
+	    }
+	}
+	redraw:
+    }
+}
+
+void reset_scores(void)
+{
+    scores.p[0] = scores.p[1] = 0;
+    scores.games = scores.draws = 0;
 }
 
 int main(void)
 {
+    int p;
+
     /* Set up the SDL game environment */
     setup();
 
@@ -630,21 +1005,41 @@ int main(void)
     joys[1] = SDL_JoystickOpen(1);
 
     /*
-     * Set up the colour palette. For a Tron game we'll need:
-     * 
-     *  - colour 0 is the black background.
-     *  - colour 1 is red (player 1's trail).
-     *  - colour 2 is green (player 2's trail).
-     *  - colour 3 is white (scenery and weapons fatal to both
-     *    players).
+     * Set up the colour palette.
      */
     {
-	SDL_Color colours[4];
-	colours[0].r = colours[0].g = colours[0].b = 0;
-	colours[1].r = 255; colours[1].g = colours[1].b = 0;
-	colours[2].r = colours[0].b = 0; colours[2].g = 255;
-	colours[3].r = colours[3].g = colours[3].b = 255;
-	SDL_SetColors(screen, colours, 0, 4);
+	static SDL_Color colours[] = {
+	    /*
+	     * These colours are for playing the actual game:
+	     *
+	     *  - colour 0 is the black background.
+	     *  - colour 1 is red (player 1's trail).
+	     *  - colour 2 is green (player 2's trail).
+	     *  - colour 3 is white (scenery and weapons, fatal to
+	     *    both players).
+	     */
+	    {0, 0, 0},
+	    {255, 0, 0},
+	    {0, 255, 0},
+	    {255, 255, 255},
+
+	    /*
+	     * Extra colours for the game setup screen: the colours
+	     * for the PS2 button symbols, in order of the way the
+	     * controller numbers them (sq,x,tr,ci).
+	     */
+	    {255, 128, 170},	       /* square is purpley pink */
+	    {170, 255, 255},	       /* x is pale cyan */
+	    {0, 255, 128},	       /* triangle is slightly bluey green */
+	    {255, 128, 128},	       /* circle is pinky red */
+
+	    /*
+	     * For the game setup screen, we want a grey colour for
+	     * unselected options.
+	     */
+	    {160, 160, 160},
+	};
+	SDL_SetColors(screen, colours, 0, lenof(colours));
     }
 
     /*
@@ -656,7 +1051,44 @@ int main(void)
 	while (SDL_PollEvent(&event));
     }
 
-    play_game();
+    /*
+     * Set up the initial controller button configuration and game
+     * options, for the players to modify the first time they run
+     * the game setup.
+     */
+    for (p = 0; p < 2; p++) {
+	players[p].buttons[0] = ACT_DECEL;
+	players[p].buttons[1] = ACT_ACCEL;
+	players[p].buttons[3] = ACT_RIFLE;
+	players[p].buttons[2] = ACT_TELEPORT;
+	players[p].buttons[5] = players[p].buttons[4] = ACT_NOTHING;
+	players[p].buttons[6] = players[p].buttons[7] = ACT_NOTHING;
+	players[p].colour = p+1;
+	opts.own_fatal = 0;
+	opts.auto_accel = 0;
+	opts.scrfill_v = 0;
+	opts.scrfill_h = 0;
+	opts.max_speed = 4;
+    }
+
+    reset_scores();
+
+    while (1) {
+	switch (main_menu()) {
+	  case MM_QUIT:
+	    return 0;		       /* finished */
+	  case MM_SETUP:
+	    setup_game();
+	    reset_scores();
+	    break;
+	  case MM_RESET:
+	    reset_scores();
+	    break;
+	  case MM_GAME:
+	    play_game();
+	    break;
+	}
+    }
 
     return 0;
 }
