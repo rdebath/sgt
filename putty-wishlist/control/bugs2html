@@ -1,5 +1,5 @@
 #! /usr/bin/perl
-# $Id: bugs2html,v 1.23 2003/05/24 11:19:07 jacob Exp $
+# $Id: bugs2html,v 1.24 2003/06/24 08:23:51 jacob Exp $
 
 use FileHandle;
 use POSIX;
@@ -77,7 +77,8 @@ nest(<<EOF);
 <a href="$baseurl/faq.html">FAQ</a> |
 <a href="$baseurl/docs.html">Docs</a> |
 <a href="$baseurl/download.html">Download</a> |
-<a href="$baseurl/keys.html">Keys</a><br>
+<a href="$baseurl/keys.html">Keys</a> |
+<a href="$baseurl/links.html">Links</a><br>
 <a href="$baseurl/mirrors.html">Mirrors</a> |
 <a href="$baseurl/maillist.html">Updates</a> |
 <a href="$baseurl/feedback.html">Feedback</a> |
@@ -366,7 +367,8 @@ sub bug2html {
 <a href="$baseurl/faq.html">FAQ</a> |
 <a href="$baseurl/docs.html">Docs</a> |
 <a href="$baseurl/download.html">Download</a> |
-<a href="$baseurl/keys.html">Keys</a><br>
+<a href="$baseurl/keys.html">Keys</a> |
+<a href="$baseurl/links.html">Links</a><br>
 <a href="$baseurl/mirrors.html">Mirrors</a> |
 <a href="$baseurl/maillist.html">Updates</a> |
 <a href="$baseurl/feedback.html">Feedback</a> |
