@@ -1,5 +1,5 @@
 % -*- mode: slang; mode: fold -*-
-% Simon Tatham: version $Revision: 1.46 $
+% Simon Tatham: version $Revision: 1.47 $
 
 %{{{ load Emacs keybindings to start with
 
@@ -190,17 +190,34 @@ define set_bookmark() {
     insert(bookmark_str);
 }
 define goto_bookmark() {
+    variable bkmk_fun = "%jedrc_bookmark%";
+    variable repeat, mark;
     push_spot();
-    bob();
-    if (fsearch(bookmark_str)) {
-        pop_spot();
+    if (strcmp(LAST_KBD_COMMAND, bkmk_fun)) {
+        % Last keyboard action wasn't another goto-bookmark, so we
+        % must start from the top.
         bob();
-        () = fsearch(bookmark_str);
+        repeat = 0;
+    } else {
+        % Our last kbd action was to go to and remove another
+        % bookmark. So we replace that one, and search on from
+        % there.
+        set_bookmark();
+        repeat = 1;
+    }
+    if (fsearch(bookmark_str)) {
+        mark = create_user_mark();
+        pop_spot();
+        goto_user_mark(mark);
         deln(strlen(bookmark_str));
         message("Found and removed bookmark.");
+        set_current_kbd_command(bkmk_fun);
     } else {
         pop_spot();
-        error("No bookmark found.");
+        if (repeat)
+            error("No more bookmarks.");
+        else
+            error("No bookmark found.");
     }
 }
 #ifdef MSDOS MSWINDOWS
