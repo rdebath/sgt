@@ -2,10 +2,6 @@
 
 # Read in a polyhedron description, and draw a net in PostScript.
 
-# TODO
-#
-#  - Deal with tabs that overlap one another.
-
 import sys
 import string
 import random
@@ -15,6 +11,7 @@ from crosspoint import crosspoint
 args = sys.argv[1:]
 
 firstface = None
+facelabels = 0
 while len(args) > 0 and args[0][:1] == "-":
     a = args[0]
     args = args[1:]
@@ -23,6 +20,8 @@ while len(args) > 0 and args[0][:1] == "-":
 	break
     elif a[:2] == "-s":
 	firstface = a[2:]
+    elif a == "-f":
+	facelabels = 1
     else:
 	sys.stderr.write("ignoring unknown option \"%s\"\n", a)
 
@@ -580,6 +579,7 @@ for vid2 in outline:
     vidconn[vid2] = vidconn.get(vid2, []) + [vid1]
     vid1 = vid2
 tabpoints = {} # maps (v1,v2) to a list of in-between vertices for the tab
+tabaxes = {} # maps (v1,v2) to a pair of unit vectors, along and across the tab
 for v1, v2 in tabpos.values():
     f1 = edgeface[(v1,v2)] # the face on which we are placing the tab
     f2 = edgeface[(v2,v1)] # the face the tab will end up glued to by a human
@@ -624,6 +624,31 @@ for v1, v2 in tabpos.values():
 	    v3 = faceedges[f2][(i+1)%len(faceedges[f2])][1]
 	assert v3 != v and v3 != vv
 	pts.append(facepos[f1].adjacent[f2].vpos[v3])
+	# Finally, we take one more precaution. If any other tabbed
+	# edges share a vertex with this one, we include the angle
+	# bisector between this edge and that. This ensures that
+	# the two tabs will not overlap.
+	for v3, v4 in tabpos.values():
+	    f3 = edgeface[(v3,v4)]
+	    pvid3 = facepos[f3].vid[v3]
+	    pvid4 = facepos[f3].vid[v4]
+	    pvid1 = facepos[f1].vid[v]
+	    pvid2 = facepos[f1].vid[vv]
+	    if pvid3 == pvid1:
+		pass
+	    elif pvid4 == pvid1:
+		pvid3, pvid4 = pvid4, pvid3
+	    else:
+		continue
+	    if pvid4 == pvid2:
+		continue
+	    p1 = vids[pvid2]
+	    p2 = vids[pvid4]
+	    n1 = sqrt((p1[0]-vpos[0])**2 + (p1[1]-vpos[1])**2)
+	    p1 = (vpos[0] + (p1[0]-vpos[0])/n1, vpos[1] + (p1[1]-vpos[1])/n1)
+	    n2 = sqrt((p2[0]-vpos[0])**2 + (p2[1]-vpos[1])**2)
+	    p2 = (vpos[0] + (p2[0]-vpos[0])/n2, vpos[1] + (p2[1]-vpos[1])/n2)
+	    pts.append(((p1[0]+p2[0])/2, (p1[1]+p2[1])/2))
 	# Now go through the points figuring out which have
 	# interesting angles.
 	if v == v1:
@@ -673,6 +698,7 @@ for v1, v2 in tabpos.values():
 	xc1, yc1 = crosspoint(xa1,ya1,xa2,ya2,X1,Y1,X2,Y2)
 	xc2, yc2 = crosspoint(xb1,yb1,xb2,yb2,X1,Y1,X2,Y2)
 	tabvertices = ((xa1,ya1),(xc1,yc1),(xc2,yc2),(xb1,yb1))
+	tabheight = maxtabheight
     # Stage 3. At this point we have now successfully finished all
     # the 3D geometry: we know the precise shape we would _like_
     # our tab to be in an ideal world. Now there's just the 2D
@@ -685,6 +711,11 @@ for v1, v2 in tabpos.values():
     # find the minimum distance away from the tab baseline at which
     # such an intersection point occurs, and then shorten the tab
     # (possibly a second time) to just below that length.
+    #
+    # Also we include a bisecting edge between every other tabbed
+    # edge and this one. This should ensure that any pair of tabs
+    # which might otherwise have overlapped one another will be
+    # shortened until they don't.
     lines = []
     for vid1, vids2 in vidconn.items():
 	if vid1 == facepos[f1].vid[v1] or vid1 == facepos[f1].vid[v2]:
@@ -698,6 +729,47 @@ for v1, v2 in tabpos.values():
 	if v == v1 or v == v2 or vv == v1 or vv == v2: continue
 	lines.append((facepos[f1].adjacent[f2].vpos[v], \
 	facepos[f1].adjacent[f2].vpos[vv]))
+    for v3, v4 in tabpos.values():
+	f3 = edgeface[(v3,v4)]
+	pvid1 = facepos[f1].vid[v1]
+	pvid2 = facepos[f1].vid[v2]
+	pvid3 = facepos[f3].vid[v3]
+	pvid4 = facepos[f3].vid[v4]
+	if pvid3==pvid1 or pvid4==pvid1 or pvid3==pvid2 or pvid4==pvid2:
+	    continue
+	x1, y1, x2, y2 = vids[pvid1] + vids[pvid2]
+	x3, y3, x4, y4 = vids[pvid3] + vids[pvid4]
+	# Only bother with this if both lines face the other's
+	# centreline.
+	dx34 = x4 - x3
+	dy34 = y4 - y3
+	d34 = sqrt(dx34**2 + dy34**2)
+	dx34 = dx34 / d
+	dy34 = dy34 / d
+	a12 = (x1+x2)/2, (y1+y2)/2
+	a34 = (x3+x4)/2, (y3+y4)/2
+	ret = crosspoint(a12[0],a12[1], a12[0]+dy,a12[1]-dx, \
+	a34[0],a34[1], a34[0]+dy34,a34[1]-dx34)
+	if ret != None:
+	    cx, cy = ret
+	    if (cx-a12[0])*dy - (cy-a12[1])*dx < 0: continue
+	    if (cx-a34[0])*dy34 - (cy-a34[1])*dx34 < 0: continue
+	else:
+	    continue		
+	# Figure out which way round to compute the bisecting line.
+	dp3 = (x3-x1) * (y2-y1) - (y3-y1) * (x2-x1)
+	dp4 = (x4-x1) * (y2-y1) - (y4-y1) * (x2-x1)
+	if abs(dp4) < abs(dp3):
+	    x3, y3, x4, y4 = x4, y4, x3, y3
+	dp1 = (x1-x3) * (y4-y3) - (y1-y3) * (x4-x3)
+	dp2 = (x2-x3) * (y4-y3) - (y2-y3) * (x4-x3)
+	if abs(dp2) < abs(dp1):
+	    x1, y1, x2, y2 = x2, y2, x1, y1
+	x13, y13 = (x1+x3)/2, (y1+y3)/2
+	x24, y24 = (x2+x4)/2, (y2+y4)/2
+	x24, y24 = x24*2-x13, y24*2-y13
+	lines.append(((x13,y13),(x24,y24)))
+
     truncheight = None
     for i in range(len(tabvertices)-1):
 	(tx1,ty1),(tx2,ty2) = tabvertices[i:i+2]
@@ -721,6 +793,26 @@ for v1, v2 in tabpos.values():
 		thisheight = (cx1-xa1) * dy - (cy1 - ya1) * dx
 		if truncheight == None or truncheight > thisheight:
 		    truncheight = thisheight
+    # Also check the actual endpoints of the lines.
+    for (lx1,ly1),(lx2,ly2) in lines:
+	for lx, ly in (lx1,ly1), (lx2,ly2):
+	    dp = (lx-xa1) * dy - (ly-ya1) * dx
+	    if dp < 0 or dp > tabheight:
+		continue
+	    # The point is between the base and the height of
+	    # the tab. Now see if it lies between the tab side
+	    # lines.
+	    left = crosspoint(xa1,ya1,xa2,ya2,\
+	    xa1+dp*dy,ya1-dp*dx, xb1+dp*dy,yb1-dp*dx)
+	    right = crosspoint(xb1,yb1,xb2,yb2,\
+	    xa1+dp*dy,ya1-dp*dx, xb1+dp*dy,yb1-dp*dx)
+	    dpleft = left[0]*dx + left[1]*dy
+	    dpright = right[0]*dx + right[1]*dy
+	    dpthis = lx*dx + ly*dy
+	    if dpleft < dpthis < dpright:
+		# Intersection.
+		if truncheight == None or dp < truncheight:
+		    truncheight = dp
     if truncheight != None:
 	maxtabheight = truncheight * 4 / 5 # stop a bit short of the lines
 	X1 = xa1 + maxtabheight * dy
@@ -731,12 +823,24 @@ for v1, v2 in tabpos.values():
 	xc2, yc2 = crosspoint(xb1,yb1,xb2,yb2,X1,Y1,X2,Y2)
 	tabvertices = ((xa1,ya1),(xc1,yc1),(xc2,yc2),(xb1,yb1))
     # Done. Store the tab data.
+    vid1 = facepos[f1].vid[v1]
+    vid2 = facepos[f1].vid[v2]
     tabvertices = list(tabvertices[1:-1]) # remove the endpoints
-    tabpoints[(facepos[f1].vid[v1],facepos[f1].vid[v2])] = tuple(tabvertices)
+    tabpoints[(vid1, vid2)] = tuple(tabvertices)
     tabvertices.reverse()
-    tabpoints[(facepos[f1].vid[v2],facepos[f1].vid[v1])] = tuple(tabvertices)
+    tabpoints[(vid2, vid1)] = tuple(tabvertices)
+    tabaxes[(vid1, vid2)] = ((dx,dy), (dy,-dx))
+    tabaxes[(vid2, vid1)] = ((-dx,-dy), (dy,-dx))
 
-# Actually print the net.
+# One final thing: although we have arranged for the tabs not to
+# overlap any of the actual faces in the net, we have not yet
+# arranged for them to avoid overlapping one another.
+#
+# In this pass we may safely ignore all of the main net lines,
+# since we have already taken all necessary action to avoid them.
+# Our only concern is with tab lines crossing other tab lines.
+
+# Actually output the net.
 psprint("%!PS-Adobe-1.0")
 psprint("%%Pages: 1")
 psprint("%%EndComments")
@@ -750,6 +854,12 @@ for face, placement in facepos.items():
     if xmax == None or xmax < placement.bbox[2]: xmax = placement.bbox[2]
     if ymin == None or ymin > placement.bbox[1]: ymin = placement.bbox[1]
     if ymax == None or ymax < placement.bbox[3]: ymax = placement.bbox[3]
+for list in tabpoints.values():
+    for x, y in list:
+	if xmin == None or xmin > x: xmin = x
+	if xmax == None or xmax < x: xmax = x
+	if ymin == None or ymin > y: ymin = y
+	if ymax == None or ymax < y: ymax = y
 # Determine scale factor.
 xscale = 550.0 / (xmax-xmin)
 yscale = 550.0 / (ymax-ymin)
@@ -794,6 +904,15 @@ for v1, v2 in tabpos.values():
     psprint(vids[vid1][0], vids[vid1][1], "moveto")
     psprint(vids[vid2][0], vids[vid2][1], "lineto")
 psprint("[", 1 / scale, 4 / scale, "] 0 setdash stroke [] 0 setdash")
+
+if facelabels:
+    psprint("/Helvetica findfont", 4/scale, "scalefont setfont")
+    for face, placement in facepos.items():
+	sx = sy = sn = 0
+	for x, y in placement.vpos.values():
+	    sx, sy, sn = sx+x, sy+y, sn+1
+	psprint(sx/sn, sy/sn, "moveto (%s)" % face)
+	psprint("dup stringwidth pop 2 div neg 0 rmoveto show")
 
 psprint("showpage grestore")
 psprint("%%EOF")
