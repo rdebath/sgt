@@ -1,4 +1,5 @@
 Summary: Unix: "expected key exchange reply packet from server" and crash
+Class: bug
 Present-in: 0.54
 Content-type: text/plain
 
@@ -10,7 +11,8 @@ connecting to one of our correspondents' servers.
 
 If the host key is already in the database, the connection goes
 through fine. The fault doesn't appear to happen with the Windows
-version, nor with Unix plink.
+version, nor with Unix plink (so could be a GUI concurrency problem
+due to the blocking caused by the host key verification dialog?).
 
 Reports:
   000701c3fd23$4a4626e0$0400a8c0@capricho
@@ -19,3 +21,10 @@ Reports:
   40379F51.3030603@glendown.de
     server appears to be SSH-2.0-3.1.0 SSH Secure Shell (non-commercial)
     associated with diffie-hellman-group1-sha1 (as opposed to gex)?
+    log: ixion:~jacob/putty-wishlist/data-mine/unix-kex-packet.d/putty.log
+    protocol looks fine
+  1090364295.14285.12.camel@scrat.iceage
+    server is SSH-2.0-3.2.5 SSH Secure Shell
+    using diffie-hellman-group1-sha1
+    SSH packet log attached - protocol looks fine (although it has extra
+    IGNORE messages interspersed, unlike previous)
