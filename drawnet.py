@@ -13,6 +13,7 @@ args = sys.argv[1:]
 firstface = None
 facelabels = 0
 cmpsign = +1
+picfile = None
 while len(args) > 0 and args[0][:1] == "-":
     a = args[0]
     args = args[1:]
@@ -21,10 +22,29 @@ while len(args) > 0 and args[0][:1] == "-":
 	break
     elif a[:2] == "-s":
 	firstface = a[2:]
-    elif a[:2] == "-R":
+    elif a == "-R":
 	cmpsign = -1
     elif a == "-f":
 	facelabels = 1
+    elif a[:2] == "-p":
+        # Undocumented option which allows you to specify a file
+        # containing a PostScript fragment. That file is included
+        # at the top of the output, and is expected to define a
+        # function called `picture'.
+        #
+        # `picture' will then be called once for each face of the
+        # polyhedron, and passed two arguments. The first argument
+        # will be an orthogonal matrix (a length-9 array listing
+        # the elements of the matrix ordered primarily by columns)
+        # and the second a height. When called, the origin and
+        # clipping path will be set appropriately for `picture' to
+        # transform some sort of spherical graphical description
+        # using the given matrix, project it on to the plane
+        # (z=height), and draw it. This allows a net to be drawn
+        # which folds up to produce a polyhedron covered in a
+        # projection of the original spherical image (e.g. an
+        # icosahedral globe).
+        picfile = a[2:]
     else:
 	sys.stderr.write("ignoring unknown option \"%s\"\n", a)
 
@@ -274,6 +294,8 @@ while 1:
 	# (Verify that they are what they should be.)
 	#debug(dx1, xc1-xc2  # should be equal)
 	#debug(dy1, yc1-yc2  # these should be equal too)
+        # Store the height of the face for convenience.
+        facepos[f].height = (zc1 + zc2) / 2
 	# Now figure out where to translate this face to so that
 	# this edge is brought into exact conjunction with the
 	# corresponding edge on face f.
@@ -960,6 +982,15 @@ psprint("%!PS-Adobe-1.0")
 psprint("%%Pages: 1")
 psprint("%%EndComments")
 psprint("%%Page: 1")
+
+if picfile:
+    f = open(picfile, "r")
+    while 1:
+        s = f.readline()
+        if s == "": break
+        outfile.write(s)
+    f.close()
+
 psprint("gsave")
 
 # Compute the overall bbox.
@@ -987,6 +1018,25 @@ psprint(scale, "dup scale")
 # Now centre the bounding box at the origin.
 psprint(-(xmax+xmin)/2, -(ymax+ymin)/2, "translate")
 psprint(0.5 / scale, "setlinewidth 1 setlinejoin 1 setlinecap")
+# Draw the picture, if we have one.
+if picfile:
+    for f in faces.keys():
+        psprint("gsave newpath")
+        cmd = "moveto"
+        placement = facepos[f]
+        for v in faces[f]:
+            vid = placement.vid[v]
+            psprint(vids[vid][0], vids[vid][1], cmd)
+            cmd = "lineto"
+        psprint("closepath clip")
+        psprint(placement.pos[0], placement.pos[1], "translate")
+        psprint("[")
+        matrix = placement.matrix
+        for x in range(3):
+            psprint(matrix[0][x], matrix[1][x], matrix[2][x])
+        psprint("]", placement.height, "picture")
+        psprint("grestore")
+
 # Draw the cut edges, including tabs.
 psprint("newpath")
 vid0 = outline[-1]
