@@ -1,0 +1,11 @@
+Summary: Restart multiple-file operations in PSFTP
+Class: wish
+Priority: low
+Difficulty: tricky
+Content-type: text/plain
+
+While PSFTP supports "reget" to restart a download, and "mget" to download
+multiple files, it doesn't have a "remget" to restart the download of multiple
+files.  The same applies to "reput" and "mput".  The general case of restarting
+a multiple-file {up,down}load is already handled by "re{get,put} -r", so that
+shouldn't be a problem. 
