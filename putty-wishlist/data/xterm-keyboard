@@ -4,6 +4,11 @@ Priority: low
 Difficulty: fun
 Content-type: text/x-html-body
 
+<p>
+<b>The following is mostly untrue.  Do not depend on it for anything whatever.
+</b>
+If anyone can supply a better description, that would probably be useful.
+</p>
 <pre>
 PuTTY claims a terminal type of "xterm" by default, but doesn't actually
 default to being compatible with xterm.  Even in xterm function-key mode,
