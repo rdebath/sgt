@@ -1,0 +1,26 @@
+Summary: Ability to bypass user authentication in SSH-2
+Class: wish
+Difficulty: fun
+Priority: low
+Content-type: text/x-html-body
+
+<p>
+In principle, it should be possible in SSH-2 to bypass the user
+authentication stage entirely, and ask for the <tt>ssh-connection</tt>
+service (which provides shells, port-forwarding and so on) directly,
+rather than through the <tt>ssh-userauth</tt> service.
+
+<p>
+Currently, PuTTY is hardcoded to try <tt>ssh-userauth</tt>, and will
+bomb out if that is not supported. It should be trivial to add an
+option to try <tt>ssh-connection</tt> instead. (Perhaps we should also
+try it if <tt>ssh-userauth</tt> is refused?)
+
+<p>
+We probably won't add this unless someone asks for it. (At least
+<a href="http://groups.google.com/groups?as_umsgid=K72Xd.57385%24EL5.23278%40trnddc05">one person</a>
+has expressed an interest in using SSH purely for transport.)
+
+<p>
+(This isn't relevant to SSH-1, which doesn't have the modularity of
+SSH-2.)
