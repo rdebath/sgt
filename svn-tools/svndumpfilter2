@@ -1,0 +1,229 @@
+#!/usr/bin/env python
+
+import sys
+import string
+import types
+import md5
+
+# First, the sensible way to deal with a pathname is to split it
+# into pieces at the slashes and thereafter treat it as a list.
+def splitpath(s):
+    list = string.split(s, "/")
+    # Simplest way to remove all empty elements!
+    try:
+	while 1:
+	    list.remove("")
+    except ValueError:
+	pass
+    return list
+
+def joinpath(list, prefix=""):
+    return prefix + string.join(list, "/")
+
+# Now here's a class that tracks a directory tree, storing a
+# user-provided value at each node.
+#
+# We expect to be reading a valid SVN dump file output by SVN
+# itself, so I currently feel no particular obligation to do
+# user-friendly error reporting. Assertion failures or Python
+# exceptions are perfectly adequate, since errors should only show
+# up during development of this script.
+class DirTree:
+    # Each directory within the tree is represented by a
+    # dictionary, with filenames as keys. Entries representing
+    # subdirectories have a tuple containing (userdata,
+    # next-level-dict) as their value; entries representing files
+    # just have a 1-tuple containing (userdata,).
+    def __init__(self):
+	self.topdir = {}
+
+    def mkdir(self, path, data):
+	ps = splitpath(path)
+	d = self.topdir
+	for s in ps[:-1]:
+	    d = d[s][1]
+	s = ps[-1]
+	assert not d.has_key(s)
+	d[s] = (data, {})
+
+    def mkfile(self, path, data):
+	ps = splitpath(path)
+	d = self.topdir
+	for s in ps[:-1]:
+	    d = d[s][1]
+	s = ps[-1]
+	assert not d.has_key(s)
+	d[s] = (data,)
+
+    def find(self, path):
+	ps = splitpath(path)
+	d = self.topdir
+	for s in ps[:-1]:
+	    d = d[s][1]
+	s = ps[-1]
+	assert d.has_key(s)
+	return d[s][0]
+
+    def delete(self, path):
+	ps = splitpath(path)
+	d = self.topdir
+	for s in ps[:-1]:
+	    d = d[s][1]
+	s = ps[-1]
+	assert d.has_key(s)
+	del d[s]
+
+# A class to handle a single lump of RFC822-ish-headers-plus-data
+# read from an SVN dump file.
+
+class Lump:
+    def __init__(self):
+	self.hdrlist = []
+	self.hdrdict = {}
+	self.props = ""
+	self.text = ""
+	self.extant = 1
+	self.proplist = []
+	self.propdict = {}
+    def sethdr(self, key, val):
+	if not self.hdrdict.has_key(key):
+	    self.hdrlist.append(key)
+	self.hdrdict[key] = val
+    def delhdr(self, key):
+	if self.hdrdict.has_key(key):
+	    del self.hdrdict[key]
+	    self.hdrlist.remove(key)
+    def propparse(self):
+	index = 0
+	while self.props[index:index+2] == "K ":
+	    nlpos = string.find(self.props, "\n", index)
+	    assert nlpos > 0
+	    namelen = string.atoi(self.props[index+2:nlpos])
+	    assert self.props[nlpos+1+namelen] == "\n"
+	    name = self.props[nlpos+1:nlpos+1+namelen]
+	    index = nlpos+2+namelen
+	    assert self.props[index:index+2] == "V "
+	    nlpos = string.find(self.props, "\n", index)
+	    assert nlpos > 0
+	    proplen = string.atoi(self.props[index+2:nlpos])
+	    assert self.props[nlpos+1+proplen] == "\n"
+	    prop = self.props[nlpos+1:nlpos+1+proplen]
+	    index = nlpos+2+proplen
+	    self.proplist.append(name)
+	    self.propdict[name] = prop
+    def setprop(self, key, val):
+	if not self.propdict.has_key(key):
+	    self.proplist.append(key)
+	self.propdict[key] = val
+    def correct_headers(self):
+	# First reconstitute the properties block.
+	self.props = ""
+	if len(self.proplist) > 0:
+	    for key in self.proplist:
+		self.props = self.props + "K %d" % len(key) + "\n" + key + "\n"
+		val = self.propdict[key]
+		self.props = self.props + "V %d" % len(val) + "\n" + val + "\n"
+	    self.props = self.props + "PROPS-END\n"
+	# Now fix up the content length headers.
+	if len(self.props) > 0:
+	    self.sethdr("Prop-content-length", str(len(self.props)))
+	else:
+	    self.delhdr("Prop-content-length")
+	if len(self.text) > 0:
+	    self.sethdr("Text-content-length", str(len(self.text)))
+	    m = md5.new()
+	    m.update(self.text)
+	    self.sethdr("Text-content-md5", m.hexdigest())
+	else:
+	    self.delhdr("Text-content-length")
+	    self.delhdr("Text-content-md5")
+	if len(self.props) > 0 or len(self.text) > 0:
+	    self.sethdr("Content-length", str(len(self.props)+len(self.text)))
+	else:
+	    self.delhdr("Content-length")
+
+def read_rfc822_headers(f):
+    ret = Lump()
+    while 1:
+	s = f.readline()
+	if s == "":
+	    return None # end of file
+	if s == "\n":
+	    if len(ret.hdrlist) > 0:
+		break # newline after headers ends them
+	    else:
+		continue # newline before headers is simply ignored
+	if s[-1:] == "\n": s = s[:-1]
+	colon = string.find(s, ":")
+	assert colon > 0
+	assert s[colon:colon+2] == ": "
+	key = s[:colon]
+	val = s[colon+2:]
+	ret.sethdr(key, val)
+    return ret
+
+def read_lump(f):
+    lump = read_rfc822_headers(f)
+    if lump == None:
+	return None
+    pcl = string.atoi(lump.hdrdict.get("Prop-content-length", "0"))
+    tcl = string.atoi(lump.hdrdict.get("Text-content-length", "0"))
+    if pcl > 0:
+	lump.props = f.read(pcl)
+	lump.propparse()
+    if tcl > 0:
+	lump.text = f.read(tcl)
+    return lump
+
+def write_lump(f, lump):
+    if not lump.extant:
+	return
+    lump.correct_headers()
+    for key in lump.hdrlist:
+	val = lump.hdrdict[key]
+	f.write(key + ": " + val + "\n")
+    f.write("\n")
+    f.write(lump.props)
+    f.write(lump.text)
+    if lump.hdrdict.has_key("Prop-content-length") or \
+    lump.hdrdict.has_key("Text-content-length") or \
+    lump.hdrdict.has_key("Content-length"):
+	f.write("\n")
+
+
+
+fr = sys.stdin
+fw = sys.stdout
+
+# Dump file header.
+lump = read_lump(fr)
+while not lump.hdrdict.has_key("Revision-number"):
+    write_lump(fw, lump)
+    lump = read_lump(fr)
+
+revhdr = lump
+
+while revhdr != None:
+    # Read revision header.
+    assert revhdr.hdrdict.has_key("Revision-number")
+    contents = []
+    # Read revision contents.
+    while 1:
+	lump = read_lump(fr)
+	if lump == None or lump.hdrdict.has_key("Revision-number"):
+	    newrevhdr = lump
+	    break
+	contents.append(lump)
+
+    # Alter the contents of the revision.
+
+    # Write out revision.
+    write_lump(fw, revhdr)
+    for lump in contents:
+	write_lump(fw, lump)
+
+    # And loop round again.
+    revhdr = newrevhdr
+
+fr.close()
+fw.close()
