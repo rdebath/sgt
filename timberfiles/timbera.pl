@@ -42,6 +42,11 @@
 # The message will be queued until the specified time instead of being sent
 # immediately.
 
+$MAILCMD = "/usr/lib/sendmail -oem -t -oi";
+if (defined $ENV{"TIMBER_MAILCMD"}) {
+  $MAILCMD = $ENV{"TIMBER_MAILCMD"};
+}
+
 $headers = "";
 $body = "";
 @attachments = ();
@@ -318,7 +323,7 @@ sub mail {
     open OUTPUT, "|at $qtime >/dev/null 2>/dev/null";
     print OUTPUT "/bin/sh << ':'\n";
     print OUTPUT "cut -c2- << '=sendmail-end-input'" .
-                 " | /usr/lib/sendmail -oem -t -oi\n";
+                 " | $MAILCMD\n";
     while ($msg ne "") {
       $nlpos = index($msg, "\n");
       $nlpos = ($nlpos == -1 ? length $msg : $nlpos+1);
@@ -330,7 +335,7 @@ sub mail {
     print OUTPUT ":\n':'\n";
     close OUTPUT;
   } else {
-    open OUTPUT, "|/usr/lib/sendmail -oem -t -oi";
+    open OUTPUT, "|$MAILCMD";
     print OUTPUT "$msg";
     close OUTPUT;
   }
