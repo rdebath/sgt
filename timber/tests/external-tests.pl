@@ -2,6 +2,15 @@ use warnings;
 use strict;
 use Carp;
 
+sub sep (;$) { local $_ = shift || $_; "-----  $_\n" }
+sub SEP (;$) { local $_ = shift || $_; "=====  $_\n" }
+
+sub summary ($$) {
+    my ($failed, $taken) = @_;
+    return "Failed $failed of $taken tests." if $failed;
+    return "Passed all $taken tests.";
+}
+
 
 BEGIN {
     my $binary = shift
@@ -22,49 +31,68 @@ BEGIN {
 }
 
 
-sub a_test ($$@) {
-    my $name = shift;
-    my $line = shift;
+sub a_cmd ($@) {
+    my ($line, %ret) = @_;
+    $ret{line} = $line;
+    $ret{ret} ||= 0;
+    $ret{$_} ||= "" for qw (stdin stdout stderr);
+    return \%ret;
+}
+
+sub run_cmd {
+    my ($name, $cmd) = @_;
+    my ($ret, $stdout, $stderr) = run_timber ($name,
+					      $cmd->{stdin},
+					      $cmd->{line});
+    my @wrong;
+    push @wrong, "Return code was $ret, should have been $cmd->{ret}"
+	unless $cmd->{ret} == $ret;
+    unless ($cmd->{stdout} eq $stdout) {
+	push @wrong, ("STDOUT was:\n$stdout",
+		      "STDOUT should have been:\n$cmd->{stdout}");
+    }
+    unless ($cmd->{stderr} eq $stderr) {
+	push @wrong, ("STDERR was:\n$stderr",
+		      "STDERR should have been:\n$cmd->{stderr}");
+    }
+    return @wrong;
+}
+
+
+sub a_test ($@) {
+    my ($name, @cmd) = @_;
     return {
 	name => $name,
-	line => $line,
-	ret => 0,
-	stdin => "",
-	stdout => "",
-	stderr => "",
+	cmd => \@cmd,
     };
 }
 
 sub run_test {
     my $test = shift;
-    my ($ret, $stdout, $stderr) = run_timber ($test->{name},
-					      $test->{stdin},
-					      $test->{line});
-    my @wrong;
-    push @wrong, "-----  Return code was $ret, should have been $test->{ret}\n"
-	unless $test->{ret} == $ret;
-    unless ($test->{stdout} eq $stdout) {
-	push @wrong, ("-----  STDOUT was:\n$stdout\n"
-		      . "-----  STDOUT should have been:\n$test->{stdout}\n");
+    my $line;
+    for (@{$test->{cmd}}) {
+	++$line;
+	my @wrong = run_cmd $test->{name}, $_;
+	return join ("",
+		     SEP ("Failed $test->{name} at line $line: '$_->{line}'"),
+		     map { sep } @wrong)
+	    if @wrong;
     }
-    unless ($test->{stderr} eq $stderr) {
-	push @wrong, ("-----  STDERR was:\n$stderr\n"
-		      . "-----  STDERR should have been:\n$test->{stderr}\n");
-    }
-    return unless @wrong;
-    return join "", "=====  Failed $test->{name}:\n", @wrong;
+    return;
 }
 
 
 my @test;
 
-push @test, a_test init => "init";
-
+push @test, a_test init => a_cmd "init";
+push @test, a_test get_name => (a_cmd ("init"),
+				a_cmd ("contact-names 0", stdout => "0\n"));
+push @test, a_test set_name => (a_cmd ("init"),
+				a_cmd ("set-contact-name 0 Dave"),
+				a_cmd ("contact-names 0",
+				       stdout => "0:Dave\n"),
+				a_cmd ("set-contact-name 0"),
+				a_cmd ("contact-names 0", stdout => "0\n"));
 
 my @failure = map { run_test($_) } @test;
-if (@failure) {
-    print @failure;
-    printf "=====  Failed %d of %d tests.\n", scalar @failure, scalar @test;
-} else {
-    printf "=====  Passed all %d tests.\n", scalar @test;
-}
+print @failure, SEP summary @failure, @test;
