@@ -12,3 +12,7 @@ screen".
 <p>
 This will require something similar to simple Windows GDI line-printer
 emulation to be implemented.
+
+<p>
+The best you can do currently is copy and paste from the PuTTY window
+to another program, and print from there. 
