@@ -57,6 +57,13 @@ int softdrop(struct ntris_instance *inst);
 void harddrop(struct ntris_instance *inst);
 
 /*
+ * This query function tells the front end the largest dimension of
+ * any shape in the shapeset, for purposes such as allocating
+ * enough screen space for a hold cell or next-piece display.
+ */
+int shape_maxsize(struct ntris_instance *inst);
+
+/*
  * The game logic will call back to this function in response to
  * most of the functions above. It's expected to draw a rectangular
  * block on the screen at the given coordinates (measured in block
@@ -72,7 +79,8 @@ void block(struct frontend_instance *inst, int area,
 enum {
     AREA_MAIN,			       /* the main playing area */
     AREA_HOLD,			       /* the holding cell */
-    AREA_NEXT 			       /* the next-piece display */
+    AREA_NEXT,			       /* the next-piece display */
+    /* Further future-piece displays appear after this one. */
 };
 
 /*

@@ -108,7 +108,8 @@ void block(struct frontend_instance *inst, int area,
     } else if (area == AREA_NEXT) {
 	x += PLAY_WIDTH + 3;
 	y++;
-    }
+    } else
+	return;
     x *= SQUARE_SIDE;
     y *= SQUARE_SIDE;
     if (col < 0) {
