@@ -1,12 +1,10 @@
 Loose ends from coding
 ----------------------
 
- - Fixes inspired by actually importing all my mail:
-    + Can we do _anything_ about default_charset? It's fine as far
-      as it goes, but (much as I had feared) it doesn't go far
-      enough in all cases. If the primary MIME part is multipart,
-      then default_charset needs to be taken from the first
-      _subsidiary_ one. Arrgh. (testDC)
+ - Sort out Content-Disposition. Although it tries to solve the
+   problem of how you deal with multiple text attachments, there's
+   still a policy decision to be made when it comes to messages that
+   don't use it. Find some and see what the sensible choice is.
 
 Functions required of the back end
 ----------------------------------

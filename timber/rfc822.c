@@ -36,6 +36,18 @@
 /*
  * Type definitions and forward references.
  */
+struct mime_record {
+    /*
+     * We are going to need to hold some extra bookkeeping data in
+     * a mime_details. So rather than cluttering up the structure
+     * definition in timber.h, I'm just going to define a container
+     * structure here which adds a couple of extra fields.
+     */
+    struct mime_record *next;	       /* for linking them in a list */
+    const char *rawdescription;	       /* the one in md isn't const */
+    int description_len;	       /* for while description is still raw */
+    struct mime_details md;
+};
 struct header_type {
     /* Special case: header_name might begin with `*'
      * to indicate it's a prefix. */
@@ -77,13 +89,13 @@ void parse_headers(char const *base, char const *message, int msglen,
 		   int full_message, int pass, int default_charset,
 		   parser_output_fn_t output, void *outctx,
 		   parser_info_fn_t info, void *infoctx,
-		   struct mime_details *md);
-void recurse_mime_part(const char *base, struct mime_details *md,
-		       int default_charset,
+		   struct mime_record *md);
+void recurse_mime_part(const char *base, struct mime_record *md,
+		       struct mime_record ***next, int default_charset,
 		       parser_info_fn_t info, void *infoctx);
 struct lexed_header *lex_header(char const *header, int length, int type);
-void init_mime_details(struct mime_details *md);
-void free_mime_details(struct mime_details *md);
+void init_mime_record(struct mime_record *md);
+void free_mime_record(struct mime_record *md);
 void parse_content_type(struct lexed_header *lh, struct mime_details *md);
 void parse_content_disp(struct lexed_header *lh, struct mime_details *md);
 void parse_content_transfer(struct lexed_header *lh, struct mime_details *md);
@@ -137,19 +149,24 @@ void parse_message(const char *message, int msglen,
      */
 
     int pass;
-    struct mime_details toplevel_part;
+    struct mime_record *toplevel_part;
     int default_charset = CS_CP1252;
 
-    init_mime_details(&toplevel_part);
+    toplevel_part = smalloc(sizeof(struct mime_record));
+
+    init_mime_record(toplevel_part);
 
     for (pass = 0; pass < 2; pass++) {
 	/*
 	 * We make two passes over the message header section. In
-	 * the first pass, we only look for a Content-Type header,
-	 * and if we find one we parse it to see if it mentions a
-	 * character set. If so, and if this character set is a
-	 * reasonable superset of ASCII (i.e. not a 7-bit transport
-	 * format such as HZ or UTF-7), we adopt it as the default
+	 * the first pass, we look for MIME part headers and parse
+	 * them, and then we recurse into multiparts and
+	 * message/rfc822 parts to find all the MIME parts in the
+	 * message. In the course of this, we make a note if we
+	 * find anything that mentions a character set. If so, and
+	 * if the first character set mentioned is a reasonable
+	 * superset of ASCII (i.e. not a 7-bit transport format
+	 * such as HZ or UTF-7), we adopt it as the default
 	 * character set in which to parse any text in the headers.
 	 * This is to deal with evil producers which assume the
 	 * target MUA is in the same character set as them and
@@ -161,48 +178,89 @@ void parse_message(const char *message, int msglen,
 	 * In the second pass, we do the main header processing and
 	 * are now able to output a best-effort charset-translated
 	 * form of each header.
+	 * 
+	 * There's a slight phase-order problem in that
+	 * Content-Description headers are best parsed in the first
+	 * pass, but contain arbitrary textual information that
+	 * wants to be interpreted in the default charset.
+	 * Therefore, the first pass saves the Content-Description
+	 * header in its raw form, and after we've finished we go
+	 * back through and charset-parse it.
 	 */
-	if (pass == 1) {
-	    if (toplevel_part.charset != CS_ASCII &&
-		charset_contains_ascii(toplevel_part.charset))
-		default_charset = toplevel_part.charset;
-	}
-
 	parse_headers(message, message, msglen, TRUE, pass, default_charset,
-		      output, outctx, info, infoctx, &toplevel_part);
+		      output, outctx, info, infoctx, toplevel_part);
+
+	if (pass == 0) {
+	    struct mime_record *mr, **next = &toplevel_part->next;
+	    recurse_mime_part(message, toplevel_part, &next,
+			      default_charset, info, infoctx);
+
+	    /*
+	     * Now go through the MIME parts looking at the
+	     * character sets. The first one we find that isn't
+	     * ASCII, we see if it's a not-totally-insane superset
+	     * of it, and if so adopt it as the default charset.
+	     */
+	    for (mr = toplevel_part; mr; mr = mr->next) {
+		if (mr->md.charset != CS_ASCII &&
+		    charset_contains_ascii(mr->md.charset)) {
+		    default_charset = mr->md.charset;
+		    break;
+		}
+	    }
+	}
     }
 
-    recurse_mime_part(message, &toplevel_part, default_charset, info, infoctx);
-    free_mime_details(&toplevel_part);
-}
-
-void recurse_mime_part(const char *base, struct mime_details *md,
-		       int default_charset,
-		       parser_info_fn_t info, void *infoctx)
-{
-    md->charset = charset_upgrade(md->charset);
-
-#ifdef DIAGNOSTICS
-    printf("Got MIME part: %s/%s (%d, cs=%d) at (%d,%d)\n"
-	   "  (%s, fn=\"%s\", b=\"%s\", desc=\"%s\")\n",
-	   md->major, md->minor,
-	   md->transfer_encoding, md->charset,
-	   md->offset, md->length,
-	   md->cd_inline ? "inline" : "attachment",
-	   md->filename, md->boundary, md->description);
-#endif
-
+    /*
+     * Now walk the list of MIME parts, RFC2047-translating each
+     * one's Content-Description, passing it to info(), and freeing
+     * it.
+     */
     {
+	struct mime_record *mr, *mrtmp;
 	struct message_parse_info inf;
 
-	inf.type = PARSE_MIME_PART;
-	inf.header = 0;
-	inf.u.md = *md;		       /* structure copy */
-	info(infoctx, &inf);
-    }
+	mr = toplevel_part;
+	while (mr) {
+	    mrtmp = mr->next;
 
-    if (!istrcmp(md->major, "multipart") &&
-	md->transfer_encoding == NO_ENCODING && md->boundary != NULL) {
+	    if (mr->rawdescription)
+		mr->md.description =
+		    rfc2047_to_utf8_string(mr->rawdescription,
+					   mr->description_len,
+					   FALSE, default_charset);
+
+	    mr->md.charset = charset_upgrade(mr->md.charset);
+
+	    inf.type = PARSE_MIME_PART;
+	    inf.header = 0;
+	    inf.u.md = mr->md;	       /* structure copy */
+	    info(infoctx, &inf);
+
+	    free_mime_record(mr);
+	    sfree(mr);
+	    mr = mrtmp;
+	}
+    }
+}
+
+void recurse_mime_part(const char *base, struct mime_record *mr,
+		       struct mime_record ***next, int default_charset,
+		       parser_info_fn_t info, void *infoctx)
+{
+#ifdef DIAGNOSTICS
+    printf("Got MIME part: %s/%s (%d, cs=%d) at (%d,%d)\n"
+	   "  (%s, fn=\"%s\", b=\"%s\", desc=\"%.*s\")\n",
+	   mr->md.major, mr->md.minor,
+	   mr->md.transfer_encoding, mr->md.charset,
+	   mr->md.offset, mr->md.length,
+	   mr->md.cd_inline ? "inline" : "attachment",
+	   mr->md.filename, mr->md.boundary,
+	   mr->description_len, mr->rawdescription);
+#endif
+
+    if (!istrcmp(mr->md.major, "multipart") &&
+	mr->md.transfer_encoding == NO_ENCODING && mr->md.boundary != NULL) {
 
 	/*
 	 * Go through a multipart looking for instances of the
@@ -210,14 +268,14 @@ void recurse_mime_part(const char *base, struct mime_details *md,
 	 */
 
 	const char *partstart = NULL, *partend = NULL;
-	const char *here = base + md->offset, *end = here + md->length;
-	int blen = strlen(md->boundary);
+	const char *here = base + mr->md.offset, *end = here + mr->md.length;
+	int blen = strlen(mr->md.boundary);
 	int done = FALSE;
 
 	while (here < end && !done) {
 	    if (end - here > blen+2 &&
 		here[0] == '-' && here[1] == '-' &&
-		!istrlencmp(here+2, blen, md->boundary, blen)) {
+		!istrlencmp(here+2, blen, mr->md.boundary, blen)) {
 		int got = FALSE;
 
 		partend = here;
@@ -234,16 +292,17 @@ void recurse_mime_part(const char *base, struct mime_details *md,
 
 		if (got) {
 		    if (partstart) {
-			struct mime_details this_part;
-			init_mime_details(&this_part);
-			this_part.charset = default_charset;
+			struct mime_record *this_part;
+			this_part = smalloc(sizeof(struct mime_record));
+			init_mime_record(this_part);
+			**next = this_part;
+			*next = &this_part->next;
 			parse_headers(base, partstart, partend - partstart,
-				      FALSE, 1, default_charset,
+				      FALSE, 0, default_charset,
 				      null_output_fn, NULL,
-				      null_info_fn, NULL, &this_part);
-			recurse_mime_part(base, &this_part, default_charset,
-					  info, infoctx);
-			free_mime_details(&this_part);
+				      null_info_fn, NULL, this_part);
+			recurse_mime_part(base, this_part, next,
+					  default_charset, info, infoctx);
 		    }
 		    partstart = here;
 		}
@@ -254,9 +313,9 @@ void recurse_mime_part(const char *base, struct mime_details *md,
 		    here++;	       /* eat the newline */
 	    }
 	}
-    } else if (!istrcmp(md->major, "message") &&
-	       !istrcmp(md->minor, "rfc822") &&
-	       md->transfer_encoding == NO_ENCODING) {
+    } else if (!istrcmp(mr->md.major, "message") &&
+	       !istrcmp(mr->md.minor, "rfc822") &&
+	       mr->md.transfer_encoding == NO_ENCODING) {
 	/*
 	 * We recurse into message/rfc822 to find the type of the
 	 * message _body_ (which might in turn hold multiparts).
@@ -265,16 +324,17 @@ void recurse_mime_part(const char *base, struct mime_details *md,
 	 * only parse it for its MIME headers; the rest is
 	 * irrelevant.
 	 */
-	struct mime_details this_part;
-	init_mime_details(&this_part);
-	this_part.charset = default_charset;
-	parse_headers(base, base + md->offset, md->length,
-		      FALSE, 1, default_charset,
+	struct mime_record *this_part;
+	this_part = smalloc(sizeof(struct mime_record));
+	init_mime_record(this_part);
+	**next = this_part;
+	*next = &this_part->next;
+	parse_headers(base, base + mr->md.offset, mr->md.length,
+		      FALSE, 0, default_charset,
 		      null_output_fn, NULL,
-		      null_info_fn, NULL, &this_part);
-	recurse_mime_part(base, &this_part, default_charset,
+		      null_info_fn, NULL, this_part);
+	recurse_mime_part(base, this_part, next, default_charset,
 			  info, infoctx);
-	free_mime_details(&this_part);
     }
 }
 
@@ -282,7 +342,7 @@ void parse_headers(char const *base, char const *message, int msglen,
 		   int full_message, int pass, int default_charset,
 		   parser_output_fn_t output, void *outctx,
 		   parser_info_fn_t info, void *infoctx,
-		   struct mime_details *md)
+		   struct mime_record *mr)
 {
 #ifdef TESTMODE
     char const *endpoint = message + msglen;
@@ -483,17 +543,11 @@ void parse_headers(char const *base, char const *message, int msglen,
 	     */
 
 	    /*
-	     * Abandon this header entirely and move straight
-	     * on to the next one if there isn't _something_
-	     * interesting in the header. Everything is
-	     * interesting during pass 1, but during pass 0 we
-	     * only care about Content-Type.
-	     */
-	    if (pass == 0 && hdr->action != CONTENT_TYPE)
-		continue;
-
-	    /* And for sub-MIME-parts we only care about MIME headers. */
-	    if (!full_message &&
+	     * Abandon this header entirely and move straight on to
+	     * the next one if there isn't _something_ interesting
+	     * in the header. During pass 0, and in sub-MIME-parts,
+	     * we only care about MIME headers. */
+	    if ((pass == 0 || !full_message) &&
 		hdr->action != CONTENT_TYPE &&
 		hdr->action != CONTENT_TRANSFER_ENCODING &&
 		hdr->action != CONTENT_DESCRIPTION &&
@@ -783,22 +837,25 @@ void parse_headers(char const *base, char const *message, int msglen,
 		}
 		break;
 	      case CONTENT_TYPE:
-		parse_content_type(lh, md);
+		if (pass == 0)
+		    parse_content_type(lh, &mr->md);
 		break;
 	      case CONTENT_DISPOSITION:
 		/*
 		 * Content-Disposition is defined in RFC 2183.
 		 */
-		parse_content_disp(lh, md);
+		if (pass == 0)
+		    parse_content_disp(lh, &mr->md);
 		break;
 	      case CONTENT_TRANSFER_ENCODING:
-		parse_content_transfer(lh, md);
+		if (pass == 0)
+		    parse_content_transfer(lh, &mr->md);
 		break;
 	      case CONTENT_DESCRIPTION:
-		sfree(md->description);
-		md->description =
-		    rfc2047_to_utf8_string(r, message - r,
-					   FALSE, default_charset);
+		if (pass == 0) {
+		    mr->rawdescription = r;
+		    mr->description_len = message - r;
+		}
 		break;
 	      case DO_NOTHING:
 		break;
@@ -1026,8 +1083,8 @@ void parse_headers(char const *base, char const *message, int msglen,
 	}
     }
 
-    md->offset = message - base;
-    md->length = msglen;
+    mr->md.offset = message - base;
+    mr->md.length = msglen;
 }
 
 struct lexed_header *lex_header(char const *header, int length, int type)
@@ -1152,28 +1209,31 @@ struct lexed_header *lex_header(char const *header, int length, int type)
     return ret;
 }
 
-void init_mime_details(struct mime_details *md)
+void init_mime_record(struct mime_record *mr)
 {
-    md->major = smalloc(5); strcpy(md->major, "text");
-    md->minor = smalloc(6); strcpy(md->minor, "plain");
-    md->transfer_encoding = NO_ENCODING;
-    md->charset = CS_ASCII;
-    md->cd_inline = FALSE;
-    md->filename_location = NO_FNAME;
-    md->filename = NULL;
-    md->boundary = NULL;
-    md->description = NULL;
-    md->offset = 0;
-    md->length = 0;
+    mr->md.major = smalloc(5); strcpy(mr->md.major, "text");
+    mr->md.minor = smalloc(6); strcpy(mr->md.minor, "plain");
+    mr->md.transfer_encoding = NO_ENCODING;
+    mr->md.charset = CS_ASCII;
+    mr->md.cd_inline = FALSE;
+    mr->md.filename_location = NO_FNAME;
+    mr->md.filename = NULL;
+    mr->md.boundary = NULL;
+    mr->md.description = NULL;
+    mr->md.offset = 0;
+    mr->md.length = 0;
+    mr->next = NULL;
+    mr->rawdescription = 0;
+    mr->description_len = 0;
 }
 
-void free_mime_details(struct mime_details *md)
+void free_mime_record(struct mime_record *mr)
 {
-    sfree(md->major);
-    sfree(md->minor);
-    sfree(md->filename);
-    sfree(md->boundary);
-    sfree(md->description);
+    sfree(mr->md.major);
+    sfree(mr->md.minor);
+    sfree(mr->md.filename);
+    sfree(mr->md.boundary);
+    sfree(mr->md.description);
 }
 
 void parse_content_type(struct lexed_header *lh, struct mime_details *md)
@@ -1578,7 +1638,7 @@ int main(void)
 
 	if (msgsize - msglen < 1024) {
 	    msgsize = msglen + 1024;
-	    message = realloc(message, msgsize);
+	    message = srealloc(message, msgsize);
 	}
 
 	ret = read(0, message + msglen, msgsize - msglen);
@@ -1606,6 +1666,8 @@ int main(void)
      */
     parse_message(message, msglen, test_output_fn, NULL, null_info_fn, NULL);
 
+    sfree(message);
+    
     return 0;
 }
 
