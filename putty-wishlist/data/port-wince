@@ -14,4 +14,7 @@ its early stages yet.
 There's a third-party port at <a
 href="http://pocketputty.aleq.cz/">pocketputty.aleq.cz</a>. At the
 time of writing, I don't think any of us have tried it, it's in an
-early stage of development, and there's no source yet.
+early stage of development, and there's no source yet. It's possible
+that it could be merged into the main tree at some point, but there'd
+need to be some upheaval, primarily to cope with everything being
+wide strings and the like on WinCE.
