@@ -1,0 +1,16 @@
+Summary: Selective logging based on regular expressions
+Class: wish
+Priority: low
+Difficulty: tricky
+Content-type: x-html-body
+
+<pre>
+>Regex logging
+>   Actually if I had any sense, I'd just grep putty's log instead, I
+>   guess.  It'd still be nice to grab matching text and save to a   
+>   separate file directly though, maybe with a timestamp or something.  I
+>   want the moon on a stick, me.
+</pre>
+
+<p>If we were to do this, we'd need to be able to handle having arbitrarily
+many such logs and similar fun things.
