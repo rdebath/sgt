@@ -27,6 +27,24 @@
  * SOFTWARE.
  */
 
+/*
+ * TODO:
+ * 
+ *  - reference counts and bt_clone().
+ *  - user read properties.
+ *     * need to supply a user-defined equivalent to
+ *       bt_lookup_find, which is allowed to look at everything in
+ *       a node, and returns either an element or a subtree index.
+ *  - user write properties.
+ *     * this all happens during write_unlock(), I think. Except
+ *       that we'll now need an _internal_ write_unlock() which
+ *       does everything except user write properties. Sigh.
+ *     * note that we also need a transform function for elements
+ *       (rot13 will certainly require this, and reverse will
+ *       require it if the elements themselves are in some way
+ *       reversible).
+ */
+
 /* ---- btree.h --------------------------------------------------------- */
 
 typedef struct btree btree;
@@ -1580,6 +1598,8 @@ btree *bt_split(btree *bt, bt_element_t element, cmpfn_t cmp, int rel)
 
 #ifdef TEST
 
+#define TEST_DEGREE 4
+
 /*
  * Error reporting function.
  */
@@ -1939,6 +1959,7 @@ void splittest(btree *tree, bt_element_t *array, int arraylen)
     int i;
     btree *tree3, *tree4;
     for (i = 0; i <= arraylen; i++) {
+	printf("splittest: %d\n", i);
 	tree3 = bt_copy(tree);
 	tree4 = bt_splitpos(tree3, i, 0);
 	verifytree(tree3, array, i);
@@ -1965,7 +1986,7 @@ int main(void) {
     for (i = 0; i < (int)NSTR; i++) in[i] = 0;
     array = newn(bt_element_t, MAXTREESIZE);
     arraylen = 0;
-    tree = bt_new(mycmp, 2);
+    tree = bt_new(mycmp, TEST_DEGREE);
 
     verifytree(tree, array, arraylen);
     for (i = 0; i < 10000; i++) {
@@ -2010,7 +2031,7 @@ int main(void) {
      * completeness we'll use it to tear down our unsorted tree
      * once we've built it.
      */
-    tree = bt_new(NULL, 2);
+    tree = bt_new(NULL, TEST_DEGREE);
     verifytree(tree, array, arraylen);
     for (i = 0; i < 1000; i++) {
 	printf("trial: %d\n", i);
@@ -2068,7 +2089,7 @@ int main(void) {
      * Finally, do some testing on split/join on _sorted_ trees. At
      * the same time, we'll be testing split on very small trees.
      */
-    tree = bt_new(mycmp, 2);
+    tree = bt_new(mycmp, TEST_DEGREE);
     arraylen = 0;
     for (i = 0; i < 16; i++) {
 	array_add(array, &arraylen, strings[i]);
@@ -2086,10 +2107,10 @@ int main(void) {
      * also ensure join correctly spots when sorted trees fail the
      * ordering constraint.
      */
-    tree = bt_new(mycmp, 2);
-    tree2 = bt_new(mycmp, 2);
-    tree3 = bt_new(mycmp, 2);
-    tree4 = bt_new(mycmp, 2);
+    tree = bt_new(mycmp, TEST_DEGREE);
+    tree2 = bt_new(mycmp, TEST_DEGREE);
+    tree3 = bt_new(mycmp, TEST_DEGREE);
+    tree4 = bt_new(mycmp, TEST_DEGREE);
     assert(mycmp(strings[0], strings[1]) < 0);   /* just in case :-) */
     bt_add(tree2, strings[1]);
     bt_add(tree4, strings[0]);
