@@ -21,3 +21,16 @@ There has been some discussion of this issue on
 <a href="ftp://ftp.ietf.org/ietf-mail-archive/secsh/">IETF SECSH</a>
 (see for instance the thread "Key Re-Exchange" starting on 4 Apr 2001),
 but no consensus appears to have been reached.
+
+<p>
+Symptoms of this:
+<a href="http://www.ssh.com/products/ssh/">ssh.com</a>'s server, which
+does repeat key exchange every hour or so, will sometimes throw you
+off - a common disconnect message seems to be "Protocol error:
+Received 94 as newkeys". (We've also had a report of "packet too long"
+from F-Secure.) This will seem intermittent.
+
+<p>
+There aren't any really satisfactory workarounds - either using SSH-1
+or disabling key re-exchange will both work, but have obvious
+drawbacks.
