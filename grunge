@@ -1,0 +1,814 @@
+#!/usr/bin/env python
+
+import sys
+import string
+import time
+import os
+
+import rgtpclient
+import term
+
+# Read .grungerc
+rcpath = os.path.normpath(os.path.join(os.environ["HOME"], ".grungerc"))
+secretpath = os.path.normpath(os.path.join(os.environ["HOME"], ".groggsecret"))
+indexpath = os.path.normpath(os.path.join(os.environ["HOME"], ".grungeindex"))
+rc = open(rcpath, "r")
+rcfile = {}
+while 1:
+    line = rc.readline()
+    if line == "":
+	break
+    words = string.split(line)
+    if len(words) == 2:
+	rcfile[words[0]] = words[1]
+rc.close()
+
+def centre(texts, width=79):
+    centrelen = 0
+    for i in range(0, len(texts), 2):
+	centrelen = centrelen + len(texts[i])
+    left = (width - centrelen) / 2
+    s = " " * left
+    for i in texts:
+	s = s + i
+    return s
+
+def formatheader(texts, width=79):
+    centrelen = 0
+    for i in range(0, len(texts), 2):
+	centrelen = centrelen + len(texts[i])
+
+    tildelen = width-10
+    left = (tildelen - centrelen) / 2
+    right = (tildelen - centrelen) - left
+
+    line = "\033[;1;37;44m <| \033[;36m "
+    line = line + " " * left
+    for i in texts:
+	line = line + i
+    line = line + " " * right
+    line = line + " \033[;1;37;44m <| \033[m"
+    list = [line]
+    
+    line = "\033[;1;37;44m _/ \033[;34m "
+    line = line + "~" * tildelen
+    line = line + " \033[;1;37;44m _/ \033[m"
+    list = list + [line]
+    return list
+
+def formatitem(item, width=79):
+    "Format an item. Return as a list of non-LF-terminated strings"
+    list = []
+
+    subjtrunc = item.subject
+    if len(subjtrunc) > width-21:
+	subjtrunc = subjtrunc[:width-24] + "..."
+    centrelen = len(subjtrunc) + 11; # space < 8-char-itemid >
+
+    list = formatheader([subjtrunc + " <", "\033[1m", item.itemid, "\033[;36m", ">"])
+
+    list = list + [item.itemid + ": " + item.subject, ""]
+    if item.contfrom:
+	list = list + ["(Continued from " + item.contfrom + ")", ""]
+    for j in item.contribs:
+	list = list + ["\033[;1;7;44m" + "-" * (width-28) + \
+	"[\033[;7;44m" + time.ctime(j.timestamp) + "\033[1m]--\033[m"]
+	# "From: grogname (userid)"
+	# length 9 + lengrogname + lenuserid
+	grogname = j.grogname
+	userid = j.userid
+	if len(grogname) + len(userid) + 9 > width:
+	    newgrognamelen = width - len(userid) - 9 - 3;
+	    if newgrognamelen < 0: newgrognamelen = 0
+	    grogname = grogname[:newgrognamelen] + "..."
+	if len(grogname) + len(userid) + 9 > width:
+	    newuseridlen = width - len(userid) - 9 - 3;
+	    if newuseridlen < 0: newuseridlen = 0
+	    userid = userid[:newuseridlen] + "..."
+	list = list + ["From: \033[1;32m" + grogname + \
+	" (" + userid + ")\033[m", ""]
+	list = list + j.data[j.skip:j.end] + [""]
+    if item.contin:
+	list = list + ["\033[;1;7;44m" + "-" * width + "\033[m", ""]
+	centretext = "(Continued in " + item.contin + ")"
+	left = (width - len(centretext)) / 2
+	list = list + ["\033[;32m" + " "*left + centretext + "\033[m"]
+
+    return list
+
+def pageitem(indexentry, item):
+    "Page through an item. Might return an itemid to go to instead."
+    class holder:
+	"Holding class"
+    h=holder()
+    def printbl(h=h):
+	bl = ""
+	bll = 0
+	if h.y < h.ymax:
+	    bl = bl + "[\033[1mSPACE\033[m]:More  "
+	    bll = bll + 5+5+4
+	elif h.continued:
+	    bl = bl + "[\033[1m>\033[m]:Next  "
+	    bll = bll + 5+1+4
+	if h.y > 0:
+	    bl = bl + "[\033[1m-\033[m]:Up  "
+	    bll = bll + 5+1+2
+	elif h.contfrom:
+	    bl = bl + "[\033[1m<\033[m]:Previous  "
+	    bll = bll + 5+1+8
+	if h.y < h.ymax:
+	    bl = bl + "[\033[1mQ\033[m]:Exit  "
+	    bll = bll + 5+1+4
+	else:
+	    bl = bl + "[\033[1mQ\033[m]/[\033[1mRET\033[m]:Exit  "
+	    bll = bll + 5+1+3+3+4
+	if h.addable:
+	    bl = bl + "[\033[1mA\033[m]:Add  "
+	    bll = bll + 5+1+3
+	if h.ymax == 0:
+	    percent = 100
+	else:
+	    percent = h.y * 100 / h.ymax
+	blp = "(" + "%d" % percent + "%)"
+	bl = bl + blp
+	bll = bll + len(blp)
+	left = (h.width-bll)/2
+	if left < 0: left = 0
+	sys.stdout.write(" "*left + bl)
+	sys.stdout.flush()
+    def erasebl():
+	sys.stdout.write("\015\033[K")
+	sys.stdout.flush()
+    def getinput(prompt, h=h):
+	sys.stdout.write("\015\033[K" + prompt)
+	sys.stdout.flush()
+	maxlen = h.width - len(prompt)
+	ret = ""
+	while 1:
+	    c = sys.stdin.read(1)
+	    if c == "\n" or c == "\r":
+		return ret
+	    elif c == "\010" or c == "\177":
+		if len(ret) > 0:
+		    ret = ret[:-1]
+		    sys.stdout.write("\010 \010")
+		    sys.stdout.flush()
+	    elif c == "\025":
+		while len(ret) > 0:
+		    ret = ret[:-1]
+		    sys.stdout.write("\010 \010")
+		sys.stdout.flush()
+	    elif ord(c) >= 32 and ord(c) <= 126:
+		if len(ret) < maxlen:
+		    ret = ret + c
+		    sys.stdout.write(c)
+		    sys.stdout.flush()
+	    # FIXME: command recall here would be cool
+    try:
+	term.charmodeon()
+	h.width, h.height = term.getsize()
+	data = formatitem(item, h.width-1) # mind last column
+	h.y = 0
+	h.ymax = len(data) - h.height + 1
+	# FIXME: check write access on whole session
+	h.addable = (item.contin == "")
+	h.contfrom = (item.contfrom != "")
+	h.continued = (item.contin != "")
+	if h.ymax < 0: h.ymax = 0
+	searchtext = ""
+	redraw = 1
+	while 1:
+	    # Redraw if necessary
+	    if redraw:
+		term.cls()
+		for i in range(h.y, h.y+h.height-1):
+		    if i < len(data):
+			print data[i]
+		    else:
+			print ""
+		printbl()
+		redraw = 0
+	    # Update file pointer
+	    if indexentry.fileptr < h.y+h.height-1:
+		indexentry.fileptr = h.y+h.height-1
+		if indexentry.fileptr >= h.ymax:
+		    indexentry.fileptr = h.ymax
+		    indexentry.uptodate = 1
+	    # Get a character
+	    c = string.lower(sys.stdin.read(1))
+	    # Multichars.
+	    if c == "\0":
+		c = c + sys.stdin.read(1)
+	    elif c == "\033":
+		while 1:
+		    cc = sys.stdin.read(1)
+		    c = c + cc
+		    if string.find(string.digits+"[;", cc) < 0:
+			break
+	    # Oddity: Return at end of item becomes Q.
+	    if (c == "\n" or c == "\r") and h.y == h.ymax:
+		c = "q"
+	    # Now process keypresses properly.
+	    if c == " " or c == "+" or c == "\n" or c == "\r" or \
+	    c == "\033[B" or c == "\033[C":
+		dist = { " ": h.height-2, "+": h.height-2, \
+		"\033[C": h.height-2, "\n": 1, "\r": 1, "\033[B": 1 }[c]
+		newy = h.y + dist
+		if newy > h.ymax: newy = h.ymax
+		erasebl()
+		for i in range(h.y+h.height-1, newy+h.height-1):
+		    print data[i]
+		h.y = newy
+		printbl()
+	    elif c == "b" or c == "-" or c == "\033[D" or c == "\033[A":
+		dist = { "b": h.height-2, "-": h.height-2, \
+		"\033[D": h.height-2, "\033[A": 1 }[c]
+		newy = h.y - dist
+		if newy < 0: newy = 0
+		for i in range(h.y-1, newy-1, -1):
+		    term.home()
+		    term.insline()
+		    sys.stdout.write(data[i])
+		term.goto(0, h.height-1)
+		h.y = newy
+		erasebl()
+		printbl()
+	    elif c == "<":
+		if item.contfrom != "":
+		    return item.contfrom
+	    elif c == ">":
+		if item.contin != "":
+		    return item.contin
+	    elif c == "/":
+		text = getinput("Search (blank=last): ")
+		if text != "": searchtext = text
+		ysrch = h.y + h.height - 1
+		while ysrch < len(data):
+		    if string.find(data[ysrch], searchtext) != -1:
+			break
+		    ysrch = ysrch + 1
+		else:
+		    ysrch = len(data)-1
+		    term.beep()
+		if ysrch > h.ymax: ysrch = h.ymax
+		h.y = ysrch - (h.height - 2)
+		if h.y < 0: h.y = 0 # shouldn't happen
+		redraw = 1
+	    elif c == "g":
+		text = getinput("Goto line (now " + "%d"%h.y + "), or end" +\
+		" with % for percent: ")
+		try:
+		    if text[-1:] == "%":
+			ygoto = h.ymax * string.atoi(text[:-1]) / 100
+		    else:
+			ygoto = string.atoi(text)
+		except ValueError:
+		    ygoto = h.y
+		if ygoto < 0:
+		    ygoto = 0
+		    term.beep()
+		if ygoto > h.ymax:
+		    ygoto = h.ymax
+		    term.beep()
+		if h.y != ygoto:
+		    redraw = 1
+		    h.y = ygoto
+		else:
+		    erasebl()
+		    printbl()
+	    elif c == "0":
+		h.y = 0
+		redraw = 1
+	    elif c == "z":
+		h.y = h.ymax
+		redraw = 1
+	    elif c == "q":
+		break
+	    # a to add
+    finally:
+	term.cls()
+	term.charmodeoff()
+    return ""
+
+class item:
+    "holding class"
+
+def parseindex(index, items):
+    contseq = -1
+    conttime = -1
+    contitem = contin = None
+    for e in index:
+	if e.itemid != "":
+	    if not items.has_key(e.itemid):
+		items[e.itemid] = item()
+		items[e.itemid].itemid = e.itemid
+		items[e.itemid].fileptr = 0
+		items[e.itemid].uptodate = 0
+		items[e.itemid].subscription = 3 # both scans
+		items[e.itemid].contfrom = None
+		items[e.itemid].contin = None
+	    i = items[e.itemid]
+	else:
+	    i = None
+	if i != None and e.subject != "":
+	    i.subject = e.subject
+	if e.type == "F": # continuation of this item
+	    i.timestamp = e.timestamp
+	    if contin != None and contseq == e.sequence and conttime == e.timestamp:
+		i.contin = contin.itemid
+		contin.contfrom = i.itemid
+		contin.subscription = i.subscription
+		contitem = contin = None
+	    else:
+		contseq = e.sequence
+		conttime = e.timestamp
+		contitem = i
+	    i.uptodate = 0
+	elif e.type == "C": # new continuation
+	    i.timestamp = e.timestamp
+	    if contitem != None and contseq == e.sequence and conttime == e.timestamp:
+		i.contfrom = contitem.itemid
+		contitem.contin = i.itemid
+		i.subscription = contitem.subscription
+		contitem = contin = None
+	    else:
+		contseq = e.sequence
+		conttime = e.timestamp
+		contin = i
+	elif e.type == "R" or e.type == "E": # reply or edit
+	    i.timestamp = e.timestamp
+	    i.uptodate = 0
+	    if e.type == "E":
+		i.fileptr = 0 # effectively new
+	elif e.type == "I": # new item
+	    i.timestamp = e.timestamp
+    return items
+
+def saveindex(filename, items, lastseq):
+    def stripL(s):
+	if s[-1:] == "L":
+	    s = s[:-1]
+	return s
+    f = open(filename, "w")
+    f.write(stripL(repr(lastseq)) + "\n")
+    for i, v in items.items():
+	f.write(v.itemid + " " + repr(v.timestamp))
+	f.write(" " + "%d" % v.fileptr + " " + "%d" % v.uptodate)
+	f.write(" " + "%d" % v.subscription)
+	if v.contfrom:
+	    f.write(" " + v.contfrom)
+	else:
+	    f.write(" -")
+	if v.contin:
+	    f.write(" " + v.contin)
+	else:
+	    f.write(" -")
+	f.write(" s=" + v.subject + "\n")
+    f.close()
+
+def loadindex(filename):
+    items = {}
+    try:
+	f = open(filename, "r")
+    except IOError:
+	return {}, -1L
+    lastseq = string.atoi(f.readline())
+    while 1:
+	s = f.readline()
+	if s == "": break
+	while s[-1:] == "\n": s = s[:-1]
+	words = string.split(s)
+	subjpos = string.find(s, "s=")
+	i = item()
+	i.itemid = words[0]
+	i.timestamp = string.atof(words[1])
+	i.fileptr = string.atoi(words[2])
+	i.uptodate = string.atoi(words[3])
+	i.subscription = string.atoi(words[4])
+	i.contfrom = words[5]
+	if i.contfrom == "-": i.contfrom = None
+	i.contin = words[6]
+	if i.contin == "-": i.contin = None
+	i.subject = s[subjpos+2:]
+	items[i.itemid] = i
+    return items, lastseq
+
+class menu:
+    "Class describing a Grunge menu context"
+    def _fmtline(self, line, width=79):
+	key, type, aux, text = line
+	i = string.find(text, "&")
+	if i != -1:
+	    text = text[:i] + "\033[1;32m" + text[i+1:i+2] + "\033[m" + text[i+2:]
+	if type == "t":
+	    return centre([aux])
+	elif type == "i":
+	    s = "\033[34m" + aux.itemid + "\033[m  ("
+	    s = s + time.strftime("%b %d %H:%M", time.localtime(aux.timestamp))
+	    s = s + ") "
+	    if aux.subscription == 3: # both scans
+		s = s + " "
+	    elif aux.subscription == 2: # second scan only
+		s = s + "-"
+	    elif aux.subscription == 0: # neither scan
+		s = s + "="
+	    else:
+		s = s + "\033[31m?\033[m" # erroneous scan status
+	    s = s + "[\033[1m" + string.upper(key) + "\033[m] "
+	    if aux.uptodate:
+		s = s + "- "
+	    elif aux.fileptr == 0:
+		s = s + "\033[33m*\033[m "
+	    else:
+		s = s + "\033[31m+\033[m "
+	    if aux.contin: # this is a continued item
+		s = s + "\033[33m  " # indent and yellow the subject line
+	    subj = aux.subject
+	    remainingwidth = width - 36
+	    if len(subj) > remainingwidth:
+		subj = subj[:remainingwidth-3] + "..."
+	    s = s + subj
+	    return s
+	elif type == "m" or type == "s":
+	    s = "                 "
+	    if type == "m":
+		s = s + "  Menu"
+	    else:
+		s = s + "Action"
+	    s = s + "   [\033[1m"
+	    s = s + string.upper(key) + "\033[m] - "
+	    s = s + text
+	    return s
+	# FIXME: need  "Menu  [ESC]= Utilities & EXIT"
+	return centre(["(nyi menu entry)"])
+    def __init__(self, title):
+	self.lines = []
+	self.title = title
+	self.parent = None
+	self.chars = "abcdefghijklmnoprstuvwxyz1234567890"
+    def addchild(self, childmenu, key, text):
+	self.lines.append((key, "m", childmenu, text))
+	childmenu.parent = self
+    def addspecial(self, special, key, text):
+	self.lines.append((key, "s", special, text))
+    def additem(self, itemid, key=""):
+	if key == "":
+	    key = self.chars[0]
+	    self.chars = self.chars[1:] + key
+	self.lines.append((key, "i", itemid, ""))
+    def addblank(self):
+	self.lines.append(("", "t", "", ""))
+    def show(self, ytop, height=24):
+	hdr = formatheader(self.title)
+	term.cls()
+	sy = 0
+	for i in hdr:
+	    sys.stdout.write(i+"\n")
+	    sy = sy + 1
+	sys.stdout.write("\n")
+	sy = sy + 1
+	y = ytop
+	keysused = {}
+	while y < len(self.lines) and sy < height-1:
+	    if keysused.has_key(self.lines[y][0]):
+		break
+	    print self._fmtline(self.lines[y])
+	    y = y + 1
+	    sy = sy + 1
+	sys.stdout.flush()
+	return y
+    def ok(self, y):
+	if y < 0: return 0
+	if y > len(self.lines)-1: return 0
+	return 1
+    def lookup(self, key, ystart, yend):
+	for i in range(ystart, yend):
+	    if self.lines[i][0] == key:
+		return self.lines[i]
+	return None
+
+def mkmenus(items):
+    now = time.time()
+    oneweek = now - 7*24*60*60
+    onemonth = now - 30*24*60*60
+    sixmonths = now - 182*24*60*60
+    oneyear = now - 365*24*60*60
+
+    Mmain = menu(["Grunge Main Menu"])
+    Mnew = menu(["New Items <", "\033[1m", "N", "\033[;36m", ">"])
+    Moneweek = menu(["One Week <", "\033[1m", "W", "\033[;36m", ">"])
+    Monemonth = menu(["One Month <", "\033[1m", "M", "\033[;36m", ">"])
+    Msixmonths = menu(["Six Months <", "\033[1m", "6", "\033[;36m", ">"])
+    Moneyear = menu(["One Year <", "\033[1m", "Y", "\033[;36m", ">"])
+    Mallitems = menu(["All Items <", "\033[1m", "A", "\033[;36m", ">"])
+    Mescape = menu(["Utilities [", "\033[1m", "ESC", "\033[;36m", "]"])
+    Mlogs = menu(["Logs and MOTD [", "\033[1m", "ESC", "\033[;36m", "][",\
+    "\033[1m", "L", "\033[;36m", "]"])
+    Mlogslogs = menu(["Logs Menu [", "\033[1m", "ESC", "\033[;36m", "][",\
+    "\033[1m", "L", "\033[;36m", "][", "\033[1m", "L", "\033[;36m", "]"])
+    Mexit = menu(["Exit Grunge? [", "\033[1m", "ESC", "\033[;36m", "][",\
+    "\033[1m", "X", "\033[;36m", "]"])
+
+    Mmain.addchild(Mnew, "n", "Items with &new text")
+    Mmain.addblank()
+    Mmain.addchild(Moneweek, "w", "Items modified up to a &week ago")
+    Mmain.addchild(Monemonth, "m", "Items modified up to a &month ago")
+    Mmain.addchild(Msixmonths, "6", "Items modified up to &6 months ago")
+    Mmain.addchild(Moneyear, "y", "Items modified up to a &year ago")
+    Mmain.addblank()
+    Mmain.addchild(Mallitems, "a", "&All items")
+
+    Mescape.addchild(Mmain, "g", "&Go to Main Menu", )
+    Mescape.addblank()
+    Mescape.addchild(Mlogs, "l", "&Logs and MOTD")
+    Mescape.addblank()
+    Mescape.addspecial("youropts", "y", "Set &your options")
+    Mescape.addblank()
+    Mescape.addchild(Mexit, "x", "E&xit Grunge")
+
+    Mexit.addchild(Mmain, "n", "&No, return to Main Menu")
+    Mexit.addspecial("exit", "x", "Yes, really e&xit Grunge")
+
+    Mlogs.addchild(Mlogslogs, "l", "&Logs")
+    Mlogs.addblank()
+    Mlogs.addspecial("motd", "v", "&View Message Of The Day")
+
+    Mlogslogs.addspecial("editlog", "e", "&Edit Log")
+
+    itemlist = items.items()
+    def itemcompare(a, b, items=items):
+	def foremost(x, items=items):
+	    # Find foremost item in chain.
+	    level = 0
+	    while x.contin != None:
+		x = items[x.contin]
+		level = level+1
+	    return x, level
+	ai, alevel = foremost(a[1])
+	bi, blevel = foremost(b[1])
+	# Reverse-order on timestamp.
+	if ai.timestamp < bi.timestamp: return +1
+	if ai.timestamp > bi.timestamp: return -1
+	# Next, positive-order on level.
+	if alevel < blevel: return -1
+	if alevel > blevel: return +1
+	# Failing that, positive-order on itemid.
+	if a[0] < b[0]: return -1
+	if a[0] > b[0]: return +1
+	# Itemids identical? Give up.
+	return 0
+    itemlist.sort(itemcompare)
+    for id, item in itemlist:
+	if item.subscription != 0 and not item.uptodate: Mnew.additem(item)
+	if item.timestamp > oneweek: Moneweek.additem(item)
+	if item.timestamp > onemonth: Monemonth.additem(item)
+	if item.timestamp > sixmonths: Msixmonths.additem(item)
+	if item.timestamp > oneyear: Moneyear.additem(item)
+	Mallitems.additem(item)
+
+    Mmain.parent = None # special case
+    Mlogs.parent = Mmain # special case
+
+    return (Mmain, Mescape)
+
+def showmenus(mainmenu, escmenu, height=24):
+    try:
+	term.charmodeon()
+	m = mainmenu
+	my = 0
+	while 1:
+	    myb = m.show(my, height=height)
+	    # FIXME: pretty prompt at bottom of screen
+	    c = string.lower(sys.stdin.read(1))
+	    # FIXME: add scan, sub and unsub
+	    if c == "\033":
+		m = escmenu
+		my = 0
+	    elif c == "q" or c == "\r" or c == "\n":
+		if m.parent != None:
+		    m = m.parent
+		    my = 0
+	    elif c == "+":
+		newy = my + (height-4)
+		if m.ok(newy): my = newy
+	    elif c == "-":
+		newy = my - (height-4)
+		if m.ok(newy): my = newy
+	    elif c == "q":
+		if m.parent != None:
+		    m = m.parent
+		    my = 0
+	    else:
+		result = m.lookup(c, my, myb)
+		if result != None:
+		    if result[1] == "m":
+			m = result[2]
+			my = 0
+		    elif result[1] == "i":
+			return ("i", result[2].itemid)
+		    elif result[1] == "s":
+			return ("s", result[2])
+    finally:
+	term.charmodeoff()
+	term.cls()
+
+def editor(title, width=79, height=24):
+    def redraw(content, initoutput, newcontent, yoff):
+	sys.stdout.write(initoutput)
+	for i in range(len(content)):
+	    # This really is simplistic, for the moment
+	    if content[i] != newcontent[i]:
+		term.goto(0, yoff + i)
+		sys.stdout.write(newcontent[i])
+    ret = []
+    lwidth = 79
+    insert = 1 # FIXME: permament insert-mode setting
+    try:
+	term.charmodeon()
+	term.cls()
+	hdr = formatheader(title)
+	for i in hdr:
+	    sys.stdout.write(i+"\n")
+	print centre(["Enter '", "\033[1m", ".", "\033[m",
+	"' on a line to finish, '", "\033[1m", ".quit", "\033[m", "' or [",
+	"\033[1m", "^O", "\033[m", "][", "\033[1m", "Q","\033[m","] to quit."])
+	print centre(["[", "\033[1m", "^O", "\033[m", "] for options ([",
+	"\033[1m", "CTRL", "\033[m", "] + [", "\033[1m", "O","\033[m","])"])
+	sys.stdout.write("\033[46;30m" + "-"*(lwidth-1) + "|" +
+	"-"*(width-lwidth) + "\033[m\n")
+	yoff = 5
+	ynum = height - yoff
+	initoutput = ""
+	content = [" " * lwidth] * ynum
+	newcontent = [" " * lwidth] * ynum
+	x = 0
+	y = 0
+	ytop = 0
+	ret = [""]
+	while 1:
+	    redraw(content, initoutput, newcontent, yoff)
+	    term.goto(x, y-ytop+yoff)
+	    sys.stdout.flush()
+	    for i in range(len(newcontent)):
+		content[i] = newcontent[i]
+	    c = sys.stdin.read(1)
+	    if c == "\017": # ^O prefixes things
+		c = c + string.lower(sys.stdin.read(1))
+	    elif c == "\033":
+		while 1:
+		    cc = sys.stdin.read(1)
+		    c = c + cc
+		    if string.find(string.digits+"[;", cc) < 0:
+			break
+	    # FIXME: ^D.
+	    # FIXME: ^K, ^Y c'n'p.
+	    # FIXME: ^W, ^T move by words.
+	    # FIXME: ^V, ^Z move by screenfuls.
+	    # FIXME: ^O M/B for block motion.
+	    # FIXME: ^O F for search (*shrug*).
+	    # FIXME: ^O J to justify paragraph.
+	    # FIXME: ^O Space to terminate.
+	    # FIXME: '.' on line alone to terminate.
+	    # FIXME: '.quit' on line alone to quit.
+	    if c == "\n" or c == "\r":
+		ret[y:y+1] = [ret[y][:x], ret[y][x:]]
+		x = 0
+		y = y + 1
+		if ytop < y-ynum+1: ytop = y-ynum+1
+	    elif c == "\017q":
+		break # ^O q quits
+	    elif c == "\001":
+		x = 0
+	    elif c == "\005":
+		x = len(ret[y])
+	    elif c == "\010" or c == "\177":
+		if x > 0:
+		    ret[y] = ret[y][:x-1] + ret[y][x:]
+		    x = x - 1
+		elif y > 0 and len(ret[y-1]) + len(ret[y]) <= lwidth:
+		    x = len(ret[y-1])
+		    ret[y-1:y+1] = [ret[y-1] + ret[y]]
+		    y = y - 1
+	    elif c == "\020" or c == "\033[A": # Up
+		if y > 0:
+		    y = y - 1
+		    if ytop > y: ytop = y
+		    if x > len(ret[y]): x = len(ret[y]) # FIXME: fix x
+		else:
+		    x = 0
+	    elif c == "\006" or c == "\033[C": # Right
+		if x < len(ret[y]):
+		    x = x + 1
+		elif y < len(ret)-1:
+		    x = 0
+		    y = y + 1
+		    if ytop < y-ynum+1: ytop = y-ynum+1
+	    elif c == "\016" or c == "\033[B": # Down
+		if y < len(ret)-1:
+		    y = y + 1
+		    if ytop < y-ynum+1: ytop = y-ynum+1
+		    if x > len(ret[y]): x = len(ret[y]) # FIXME: fix x
+		else:
+		    x = len(ret[y])
+	    elif c == "\006" or c == "\033[D": # Left
+		if x > 0:
+		    x = x - 1
+		elif y > 0:
+		    y = y - 1
+		    if ytop > y: ytop = y
+		    x = len(ret[y])
+	    elif ord(c) >= 32 and ord(c) <= 126:
+		ret[y] = ret[y][:x] + c + ret[y][x+1-insert:]
+		x = x + 1
+		py = y
+		# FIXME. Special case: pressing a space at line end.
+		while len(ret[py]) > lwidth:
+		    # We have wrapped. Trim a space if that's all we need
+		    # to do, otherwise find a whole word and wrap it.
+		    while len(ret[py]) > lwidth and ret[py][-1:] == " ":
+			ret[py] = ret[py][:-1]
+		    if x >= lwidth:
+			x = lwidth
+		    sp = string.rfind(ret[py], " ", 0, lwidth)
+		    if sp == -1:
+			wrap = ret[py][lwidth:]
+			ret[py] = ret[py][:lwidth]
+			if y == py and x > lwidth:
+			    y = y + 1
+			    x = x - lwidth
+		    else:
+			wrap = ret[py][sp+1:]
+			ret[py] = ret[py][:sp]
+			if y == py and x > sp:
+			    y = y + 1
+			    x = x - (sp+1)
+		    py = py + 1
+		    if len(ret) == py or ret[py] == "":
+			ret[py:py] = [wrap]
+		    else:
+			ret[py] = wrap + " " + ret[py]
+	    # Now redraw newcontent to match editor buffer
+	    for i in range(0, ynum):
+		if i+ytop < len(ret):
+		    newcontent[i] = (ret[i+ytop] + " "*lwidth) [:lwidth]
+		else:
+		    newcontent[i] = " "*lwidth
+	    # And go round loop again which will redraw content to match
+	    # newcontent
+    finally:
+	term.charmodeoff()
+	term.cls()
+    return ret
+
+args = sys.argv[1:]
+logfile = None
+dump = 0
+while len(args) > 0 and args[0][:1] == "-":
+    if args[0] == "-d":
+	logfile = sys.stderr
+    if args[0] == "-e":
+	# Editor test. FIXME: this wants removing.
+	text = editor(["Editor Test [", "\033[1m", "grunge -e", "\033[;36m", "]"])
+	for i in text:
+	    print ">", i, "<"
+	sys.exit(0)
+    if args[0] == "-dump":
+	dump = 1
+	c = rgtpclient.RGTPConnection(plogfile=logfile)
+	c.setsecret(os.path.normpath(os.path.join(os.environ["HOME"], ".groggsecret")))
+	c.login(rcfile["userid"])
+	item = c.item(args[1])
+	c.close()
+	for i in formatitem(item):
+	    print i
+	sys.exit(0)
+    args[:1] = []
+
+# FIXME: move the editor from -e to the [a] option when viewing, so we
+# can add stuff.
+
+c = rgtpclient.RGTPConnection(plogfile=logfile)
+c.setsecret(secretpath)
+c.login(rcfile["userid"])
+
+items, lastseq = loadindex(indexpath)
+index = c.index(sequence=lastseq+1)
+if len(index) > 0:
+    lastseq = index[-1].sequence
+items = parseindex(index, items)
+saveindex(indexpath, items, lastseq)
+mainmenu, escmenu = mkmenus(items)
+while 1:
+    # FIXME: don't start again at main menu if we've just come from a menu.
+    t, aux = showmenus(mainmenu, escmenu)
+    if t == "s" and aux == "exit":
+	break
+    elif t == "i":
+	while aux != "":
+	    item = c.item(aux)
+	    aux = pageitem(items[aux], item)
+    else:
+	term.beep() # NYI specials
+    # FIXME: youropts, motd and editlog
+saveindex(indexpath, items, lastseq)
+c.close()
