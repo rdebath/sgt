@@ -2,11 +2,132 @@
 
 import sys
 import string
+import types
+import zlib
+
+pdfwhitespace = "\000\011\012\014\015\040"
+pdfdelimiter = "()[]{}<>/%"
+pdfregular = ""
+for i in range(256):
+    c = chr(i)
+    if not (c in pdfwhitespace or c in pdfdelimiter):
+        pdfregular = pdfregular + c
+
+def fassert(s, err):
+    if not s:
+        sys.stderr.write(err + "\n")
+        sys.exit(1)
+
+def pdflex(s, list):
+    while 1:
+        # Eat whitespace.
+        sl = len(s)
+        while len(s) > 0 and s[0] in pdfwhitespace:
+            s = s[1:]
+        if len(s) == 0:
+            break
+        if s[0] in string.digits:
+            n = 0
+            while len(s) > n and s[n] in string.digits + ".":
+                n = n + 1
+            if len(s) > n:
+                list.append(s[:n])
+                s = s[n:]
+        elif s[0] in pdfregular or s[0] == "/":
+            n = (s[0] == "/")
+            while len(s) > n and s[n] in pdfregular:
+                n = n + 1
+            if len(s) > n:
+                list.append(s[:n])
+                s = s[n:]
+                if list[-1] == "stream" or list[-1] == "endobj":
+                    break
+        elif s[0] == "[" or s[0] == "]":
+            list.append(s[0])
+            s = s[1:]
+        elif s[0] == "<" or s[0] == ">":
+            fassert(len(s) < 2 or s[1] == s[0], "unexpected lone angle bracket in file")
+            if len(s) >= 2:
+                list.append(s[:2])
+                s = s[2:]
+        elif s[0] == "(":
+            n = 1
+            d = 1
+            while len(s) > n and d > 0:
+                if s[n] == "(":
+                    d = d + 1
+                if s[n] == ")":
+                    d = d - 1
+                if s[n] == "\\":
+                    n = n + 1
+                n = n + 1
+            if d == 0:
+                list.append(s[:n])
+                s = s[n:]
+        elif s[0] == "%":
+            ri = string.find(s, "\r")
+            ni = string.find(s, "\n")
+            if ri < 0: ri = len(s)
+            if ni < 0: ni = len(s)
+            mi = min(ri, ni)
+            if ri+ni == mi*2+1:
+                ei = mi+2
+            else:
+                ei = mi+1
+            s = s[ei:]
+    return s
+
+def numeric(s):
+    ss = string.translate(s, " " * 256, string.digits)
+    return len(s) > 0 and len(ss) == 0
+
+def pdfparse(list):
+    def pdfobj(list):
+        fassert(len(list) > 0, "unexpected end of data")
+        if list[0] == "[":
+            del list[0]
+            ret = []
+            while 1:
+                fassert(len(list) > 0, "unexpected end of data in array")
+                if list[0] == "]":
+                    del list[0]
+                    break
+                ret.append(pdfobj(list))
+            return ret
+        elif list[0] == "<<":
+            del list[0]
+            ret = {}
+            while 1:
+                fassert(len(list) > 0, "unexpected end of data in dictionary")
+                if list[0] == ">>":
+                    del list[0]
+                    break
+                fassert(len(list) > 1, "unexpected end of data in dictionary")
+                key = list[0]
+                del list[0]
+                val = pdfobj(list)
+                ret[key] = val
+            return ret
+        elif len(list) >= 3 and numeric(list[0]) and numeric(list[1]) and \
+        list[2] == "R":
+            ret = (string.atoi(list[0]), string.atoi(list[1]))
+            del list[0:3]
+            return ret
+        else:
+            ret = list[0]
+            del list[0]
+            return ret
+    list = list[:] # copy the list
+    parsed = []
+    while len(list) > 0:
+        parsed.append(pdfobj(list))
+    return parsed
 
 args = sys.argv[1:]
 if len(args) == 0:
     print "usage: pdfread <filename>"
     print "   or: pdfread <filename> <objnum>"
+    print "   or: pdfread <filename> <objnum> <gennum>"
     sys.exit(0)
 
 filename = args[0]
@@ -14,6 +135,11 @@ args = args[1:]
 
 if len(args) > 0:
     number = string.atoi(args[0])
+    args = args[1:]
+    if len(args) > 0:
+        gen = string.atoi(args[0])
+    else:
+        gen = -1 # indicates we want the latest generation
 else:
     number = -1 # indicates top-level Catalog object
 
@@ -51,7 +177,6 @@ if len(linelist)<=3 or linelist[-3]!="startxref" or linelist[-1]!="%%EOF":
 xrefoff = string.atoi(linelist[-2])
 
 if number < 0:
-    raise "parsing trailer for root object NYI"
     # Now parse to find the trailer section.
     n = len(linelist) - 1
     while n >= 0:
@@ -63,8 +188,16 @@ if number < 0:
         sys.stderr.write("unable to find trailer section\n")
         sys.exit(1)
 
-    # And now interpret the trailer section until we find the root
-    # object.
+    lexed = []
+    d = ""
+    while n < len(linelist):
+        s = linelist[n] + "\n"
+        d = d + s
+        d = pdflex(d, lexed)
+        n = n + 1
+    parsed = pdfparse(lexed)
+    fassert(type(parsed[1]) == types.DictType, "expected dictionary in trailer")
+    number, gen = parsed[1]["/Root"]
 
 def chomp(s):
     while len(s) > 0 and (s[-1] == "\r" or s[-1] == "\n"):
@@ -76,38 +209,71 @@ offset = None
 while 1:
     f.seek(xrefoff)
     s = chomp(f.readline())
-    assert s == "xref"
+    fassert(s == "xref", "expected 'xref' keyword in xref section")
     while 1:
         s = chomp(f.readline())
         ss = string.split(s)
-        assert len(ss) == 2
+        if len(ss) != 2:
+            break
         start = string.atoi(ss[0])
         nobjs = string.atoi(ss[1])
+        curroff = f.tell()
         if number >= start and number < start + nobjs:
             # Found it.
             f.seek((number - start) * 20, 1)
             entry = f.read(20)
             entryl = string.split(entry)
-            offset = string.atoi(entryl[0])
-            break
-        # Otherwise seek to the end of this bit and try the next
-        # bit.
-        f.seek(nobjs * 20, 1)
-    if offset != None:
-        break
+            gennum = string.atoi(entryl[1])
+            if gen < 0 or gen == gennum:
+                offset = string.atoi(entryl[0])
+        # Seek to the end of this bit and try the next bit.
+        f.seek(curroff + nobjs * 20)
+    # Now parse the following trailer.
+    lexed = []
+    d = ""
+    while 1:
+        s = f.readline()
+        if s == "": break
+        d = d + s
+        d = pdflex(d, lexed)
+    parsed = pdfparse(lexed)
+    fassert(type(parsed[0]) == types.DictType, "expected dictionary in trailer")
     # Now look backwards to find the previous xref section.
-    raise "parsing trailer for previous xref section NYI"
+    prevstr = parsed[0].get("/Prev", "")
+    if prevstr == "":
+        break
+    xrefoff = string.atoi(prevstr)
 
 if offset == None:
     sys.stderr.write("unable to find object number %d\n" % number)
     sys.exit(1)
 
-# Now we know the object offset. Read and print the object.
+# Now we know the object offset. Read and display the object.
 f.seek(offset)
+d = ""
+lexed = []
 while 1:
     s = f.readline()
     if s == "": break
-    sys.stdout.write(s)
-    sl = string.split(s)
-    if len(sl) > 0 and sl[-1] == "endobj":
+    d = d + s
+    dn = pdflex(d, lexed)
+    sys.stdout.write(d[:len(d)-len(dn)])
+    d = dn
+    if lexed[-1] == "stream":
+        sys.stdout.write("\n")
+        parsed = pdfparse(lexed)
+        assert parsed[-1] == "stream"
+        fassert(type(parsed[-2]) == types.DictType, "expected dictionary before 'stream'")
+        streamlen = string.atoi(parsed[-2]["/Length"])
+        streamdata = f.read(streamlen)
+        filt = parsed[-2].get("/Filter", "")
+        if filt == "/FlateDecode":
+            streamdata = zlib.decompress(streamdata)
+        elif filt == "":
+            pass
+        else:
+            raise "filter type %s not supported" % str(filt)
+        sys.stdout.write(streamdata)
+    if lexed[-1] == "endobj":
+        sys.stdout.write("\n")
         break
