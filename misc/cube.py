@@ -165,7 +165,7 @@ class CubeGame:
 
             if dp > 0:
                 # We are going to display this face.
-                facelist.append(cube[face], points)
+                facelist.append((cube[face], points))
                 # Update the bounding box for drawing the cube.
                 for p in points:
                     if self.bbox[0] == None or self.bbox[0] > p[0]:
