@@ -145,3 +145,116 @@ class Rational:
 		string = "0." + ("0"*ndigits+string)[-ndigits:]
 
 	return sign + string
+
+def sqrt(r, maxerr=2L**128, maxsteps=None):
+    if r < 0:
+        raise OverflowError, "rational square root of negative number"
+    elif r == 0:
+        return r
+
+    # We obtain continued fraction coefficients by running Euclid's
+    # algorithm on the square root of r, and 1. This is a fiddly
+    # process; we have to maintain the numbers involved in the
+    # algorithm as A + B sqrt(r), where A and B are rationals.
+    # (However, notice that the actual numbers being divided by
+    # each other in the algorithm will always be integers, since
+    # the only transformation they undergo is having an integer
+    # multiple of one subtracted from the other.)
+
+    a = (0L, 1L)   # 0 + 1 sqrt(r)
+    b = (1L, 0L)   # 1 + 0 sqrt(r)
+
+    steps = 0
+    while 1:
+        # We must do a trial division of a by b, to find out the
+        # next coefficient. Multiply top and bottom by the
+        # conjugate of b in the usual way, so we are dividing
+        #
+        #   ar + as sqrt(r)   (ar + as sqrt(r)) (br - bs sqrt(r))
+        #   --------------- = -----------------------------------
+        #   br + bs sqrt(r)              br^2 - r bs^2
+        #
+        # (ar and br are the rational parts of a and b; as and bs
+        # are the square-root parts, i.e. the coefficients of
+        # sqrt(r).)
+        #
+        # So our resulting number is
+        #
+        #   ar br - r as bs   br as - ar bs
+        #   --------------- + ------------- sqrt(r)
+        #    br^2 - r bs^2    br^2 - r bs^2
+
+        denom = b[0]*b[0] - r*b[1]*b[1]
+        rpart = (a[0]*b[0] - r*a[1]*b[1]) / denom
+        spart = (b[0]*a[1] - a[0]*b[1]) / denom
+
+        # Having done the division, we now need to find the largest
+        # integer below the result.
+        #
+        # We do this in the simplest possible manner: we have a
+        # number of the form A + B sqrt(r), and we repeatedly
+        # subtract 1 to it (easily done since it just goes straight
+        # on to the rational part) and test whether it has become
+        # less than zero.
+        q = 0
+        while 1:
+            rpart = rpart - 1
+            # Now (rpart + spart sqrt(r)) > 0
+            # iff  rpart > -spart sqrt(r)
+            #
+            # which will be true iff either
+            #  (a) rpart and spart are both positive
+            #  (b) rpart > 0, spart < 0 and rpart^2 > r spart^2
+            #  (c) rpart < 0, spart > 0 and rpart^2 < r spart^2
+            if rpart > 0:
+                if spart < 0:
+                    r2 = rpart*rpart
+                    s2 = r*spart*spart
+                    if r2 <= s2:
+                        break
+            else: # rpart < 0
+                if spart > 0:
+                    r2 = rpart*rpart
+                    s2 = r*spart*spart
+                    if r2 >= s2:
+                        break
+                else:
+                    break # rpart, spart both negative
+            q = q + 1
+
+        if r2 == s2:
+            q = q + 1 # division was exact
+            exact = 1
+        else:
+            exact = 0
+
+        # Now we have q; so subtract q*b from a, and swap a and b
+        # over.
+        
+        a = (a[0] - q*b[0], a[1] - q*b[1])
+        b, a = a, b
+
+        # Conveniently enough, we don't need to piddle about with
+        # actually computing the convergents; they are constructed
+        # in exactly the same form as we have been constructing a
+        # and b! In fact abs(b[0])/abs(b[1]) will _be_ our current
+        # convergent. So compute that, and see how far off it is
+        # from the real answer.
+        result = Rational(abs(b[0]), abs(b[1]))
+
+        if exact:
+            break
+
+        steps = steps + 1
+        if maxsteps != None and steps >= maxsteps:
+            break
+
+        # Given A ~ sqrt(B), (A - sqrt(B))(A + sqrt(B)) = A^2 - B.
+        # We want A-sqrt(B), which equals (A^2-B)/(A+sqrt(B)). But
+        # sqrt(B) ~ A, so we'll compute (A^2-B) / 2A and call that
+        # good enough.
+        error = (result * result - r) / (2*result)
+        if maxerr != None and abs(error) < Rational(1,maxerr):
+            break
+
+    return result
