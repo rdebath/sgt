@@ -1,0 +1,23 @@
+Summary: Terminal emulations other than xterm/ECMA-48 (e.g. 3270)
+Class: wish
+Difficulty: tricky
+Priority: never
+Content-type: text/x-html-body
+
+<p>
+PuTTY aims to do one type of terminal emulation (approximately,
+xterm/VTxxx/ECMA-48, which is widely used) and do it well.
+
+<p>
+PuTTY's authors primarily use it to access systems which have a
+termcap/terminfo-like terminal abstraction layer, so the need to
+emulate more than one type of character-cell terminal isn't very
+important to us.
+
+<p>
+We are therefore unlikely to add support for wildly different forms of
+terminal emulation such as IBM 3270 to the core of PuTTY.
+
+<p>
+This probably also goes for extra non-character-cell emulations such
+as tek4014.
