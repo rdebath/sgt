@@ -8,18 +8,17 @@ Content-type: text/x-html-body
 We occasionally get asked to support `SCO-ANSI' (aka `ANSIC'?)
 features (as used by UnixWare etc).
 
-<p>
-Patch (unreviewed): <tt>&lt;1235026314.20030605202751@bigfoot.com&gt;</tt>
-
 <dl>
 
 <dt>Colours</dt>
 <dd>From <code><a href="http://groups.google.com/groups?q=msgid%3Ab1dhv1$s98$1%40hyppo.gu.net">comp.security.ssh</a></code>:
 <pre>Select foreground color              \027[=PsF
-Select background color              \027[=PsG
-Select reverse color                 \027[=PsH
-Select reverse background color      \027[=PsI
-
+Select background color              \027[=PsG</pre>
+These two are supported by PuTTY
+<pre>Select reverse color                 \027[=PsH
+Select reverse background color      \027[=PsI</pre>
+These two aren't yet supported.
+<pre>
             SCO-ANSI Color Table
 --------------------------------------------------
    Ps      Color             Ps      Color
