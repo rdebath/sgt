@@ -1,0 +1,20 @@
+Summary: Checkbox to enable use of wcwidth_cjk()
+Class: wish
+Difficulty: fun
+Priority: medium
+Fixed-in: 2005-03-23
+Content-type: text/x-html-body
+
+<p>
+In <a href="http://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c">Markus
+Kuhn's <tt>wcwidth.c</tt></a>, which PuTTY uses, there is a variant of
+<code>wcwidth()</code> that treats certain characters of ambiguous
+width as being double-width, rather than single-width as the default
+version does.
+
+<p>
+Currently the variant version is commented out and not used. We've had
+a few requests to add an option to use this variant, though.
+
+<p>
+Patch: &lt;20041103083134.GA68873@svm.csie.ntu.edu.tw&gt;
