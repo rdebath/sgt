@@ -804,8 +804,27 @@ def readfile(fname):
 
 need_edit = 1
 need_unlink = 0
+security = None
+fname = None
 if len(sys.argv) > 1:
-    fname = sys.argv[1]
+    doing_args = 1
+    for arg in sys.argv[1:]:
+	if arg[0:1] == "-" and doing_args:
+	    if arg == "--":
+		doing_args = 0
+	    elif arg[0:2] == "-s" and len(arg) > 2:
+		security = arg[2:]
+		if not (security in ["private", "public"]):
+		    sys.stderr.write("warning: unrecognised security value" +\
+		    " \"" + security + "\"\n")
+	else:
+	    if fname != None:
+		sys.stderr.write("warning: ignoring additional argument \"" +\
+		arg + "\"\n")
+	    else:
+		fname = arg
+
+if fname != None:
     try:
 	s = os.stat(fname)
 	if s[6] > 0:
@@ -903,7 +922,8 @@ while 1:
 	    dict["day"] = time.strftime("%d", nowlocal)
 	    dict["hour"] = time.strftime("%H", nowlocal)
 	    dict["min"] = time.strftime("%M", nowlocal)
-	    #dict["security"] = "private"
+	    if security:
+		dict["security"] = security
 	    ret = ljproto.ljcall(dict)
 	    if not ljproto.ljok(ret):
 		print "Unable to post to LJ: " + ljproto.ljerror(ret)
