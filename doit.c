@@ -75,11 +75,11 @@ char *write_clip(char *data, int len)
     clipdata = GlobalAlloc(GMEM_DDESHARE | GMEM_MOVEABLE, len+1);
 
     if (!clipdata) {
-        return "-GlobalAlloc failed\n";
+        return "-unable to allocate clipboard memory\n";
     }
     if (!(lock = GlobalLock(clipdata))) {
         GlobalFree(clipdata);
-        return "-GlobalLock failed\n";
+        return "-unable to lock clipboard memory\n";
     }
 
     memcpy(lock, data, len);
@@ -93,7 +93,7 @@ char *write_clip(char *data, int len)
         return "+\n";
     } else {
         GlobalFree(clipdata);
-        return "-OpenClipboard failed\r\n";
+        return "-unable to write to clipboard\r\n";
     }
 }
 
@@ -104,18 +104,18 @@ char *read_clip(int *is_err)
 
     if (!OpenClipboard(NULL)) {
         *is_err = 1;
-        return "-OpenClipboard failed\r\n";
+        return "-unable to read clipboard\r\n";
     }
     clipdata = GetClipboardData(CF_TEXT);
     CloseClipboard();
     if (!clipdata) {
         *is_err = 1;
-        return "-GetClipboardData failed\r\n";
+        return "-clipboard contains no text\r\n";
     }
     s = GlobalLock(clipdata);
     if (!s) {
         *is_err = 1;
-        return "-GlobalLock failed\r\n";
+        return "-unable to lock clipboard memory\r\n";
     }
     *is_err = 0;
     return s;
