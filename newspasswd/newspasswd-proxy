@@ -1,9 +1,12 @@
 #!/usr/bin/env python
 
+# Search for the text "CONFIG:" for user-configurable settings.
+
 import socket
 import signal
 import select
 import string
+import time
 import popen2
 import sys
 import os
@@ -41,6 +44,7 @@ def reaper():
 def debug(s):
     if debugfile:
 	debugfile.write("%5d " % os.getpid() + lf(s))
+	debugfile.flush()
 
 def server():
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP)
@@ -253,7 +257,6 @@ class ConnectionProxy:
 
     def clientline(self, line):
 	# Received a line from the client.
-	self.dbg_from_client(line)
 	forward = 1 # send unless told otherwise
 
 	# Check for special commands.
@@ -266,6 +269,7 @@ class ConnectionProxy:
 	    if cmdwords[0] == "authinfo":
 		if cmdwords[1] == "user":
 		    # AUTHINFO USER: keep the username.
+		    self.dbg_from_client(line)
 		    self.authdata = [words[2]]
 		    forward = 0
 		    self.to_client("381 thanks, now the password please\r\n")
@@ -273,6 +277,7 @@ class ConnectionProxy:
 		elif cmdwords[1] == "pass":
 		    # AUTHINFO PASS: keep the password and maybe
 		    # authenticate.
+		    self.dbg_from_client(words[0] + " " + words[1] + " xxxx")
 		    forward = 0
 		    if len(self.authdata) < 1:
 			self.to_client("502 please send USER before PASS\r\n")
@@ -298,7 +303,12 @@ class ConnectionProxy:
 
 		else:
 		    # AUTHINFO anythingelse: complain.
+		    self.dbg_from_client(line)
 		    self.to_client("501 proxy only supports USER/PASS\r\n")
+
+	    else:
+		# non-AUTHINFO means we can safely log it.
+		self.dbg_from_client(line)
 
 	    # POST: we require authentication before accepting the
 	    # article.
@@ -306,6 +316,9 @@ class ConnectionProxy:
 		self.to_client("480 proxy needs authentication to post\r\n")
 		self.lastdir = 2
 		forward = 0
+	else:
+	    # log it.
+	    self.dbg_from_client(line)
 
 	# If we're in article context, continue swallowing article.
 	if self.posting:
@@ -331,58 +344,82 @@ class ConnectionProxy:
 	    self.lastdir = 1 # client->server
 
 def connection(client):
+    global debugfile
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP)
+
+    # CONFIG: Here is where you enter your real news server's host
+    # name and port number.
     server.connect(("chiark-tunnel.greenend.org.uk", 119))
     state = ConnectionProxy(server, client)
+
+    # CONFIG: the following two lines of code provide full per-
+    # session logging if uncommented. Note that this logging is
+    # extremely detailed and probably counts as a severe violation
+    # of privacy, so ethically speaking you probably only want to
+    # turn it on if (a) you're the only newsreading user on your
+    # machine, or (b) you really need it for debugging purposes.
+    #
+    # The log files are named according to the time of connection
+    # setup, and left in /var/log/newsproxy. Hence you need to have
+    # created that directory and made it writable to group news (or
+    # whatever will arrange that the running proxy is able to
+    # create log files in it).
+
+    # debugstamp = time.strftime("%Y%m%d.%H%M%S", time.localtime(time.time()))
+    # debugfile = open("/var/log/newsproxy/" + debugstamp + ".%d" % os.getpid(), "w")
+
     # Now we have two connections, client and server. Wait until
     # one becomes readable, then read a line from it and send to
     # the other side.
     list = [client,server]
     sbuffer = cbuffer = ""
     sclosed = cclosed = 0
-    while len(list) > 0:
-	try:
-	    (r, w, e) = select.select(list, [], [])
-	except TypeError, e:
-	    continue
-	if client in r:
-	    buf = client.recv(1024)
-	    if buf == "":
-		# Client has closed; remove it from the select list
-		# and close the sending end of the server
-		# connection in turn.
-		list.remove(client)
-		if not sclosed:
-		    server.shutdown(1) # disallow further sends
-		cclosed = 1
-	    cbuffer = cbuffer + buf
-	if server in r:
-	    buf = server.recv(1024)
-	    if buf == "":
-		# Server has closed; remove it from the select list
-		# and close the sending end of the client
-		# connection in turn.
-		list.remove(server)
-		if not cclosed:
-		    client.shutdown(1) # disallow further sends
-		sclosed = 1
-	    sbuffer = sbuffer + buf
-	# Now look for whole lines in the buffers we've read, and
-	# send them when we see them.
-	while 1:
-	    index = string.find(cbuffer, "\n") + 1
-	    if index == 0 and cclosed: index = len(cbuffer)
-	    if index == 0: break
-	    state.clientline(cbuffer[:index])
-	    cbuffer = cbuffer[index:]
-	while 1:
-	    index = string.find(sbuffer, "\n") + 1
-	    if index == 0 and sclosed: index = len(sbuffer)
-	    if index == 0: break
-	    state.serverline(sbuffer[:index])
-	    sbuffer = sbuffer[index:]
-    server.close()
-    client.close()
+    try:
+        while len(list) > 0:
+	    try:
+	        (r, w, e) = select.select(list, [], [])
+	    except TypeError, e:
+	        continue
+	    if client in r:
+	        buf = client.recv(1024)
+	        if buf == "":
+		    # Client has closed; remove it from the select list
+		    # and close the sending end of the server
+		    # connection in turn.
+		    list.remove(client)
+		    if not sclosed:
+		        server.shutdown(1) # disallow further sends
+		    cclosed = 1
+	        cbuffer = cbuffer + buf
+	    if server in r:
+	        buf = server.recv(1024)
+	        if buf == "":
+		    # Server has closed; remove it from the select list
+		    # and close the sending end of the client
+		    # connection in turn.
+		    list.remove(server)
+		    if not cclosed:
+		        client.shutdown(1) # disallow further sends
+		    sclosed = 1
+	        sbuffer = sbuffer + buf
+	    # Now look for whole lines in the buffers we've read, and
+	    # send them when we see them.
+	    while 1:
+	        index = string.find(cbuffer, "\n") + 1
+	        if index == 0 and cclosed: index = len(cbuffer)
+	        if index == 0: break
+	        state.clientline(cbuffer[:index])
+	        cbuffer = cbuffer[index:]
+	    while 1:
+	        index = string.find(sbuffer, "\n") + 1
+	        if index == 0 and sclosed: index = len(sbuffer)
+	        if index == 0: break
+	        state.serverline(sbuffer[:index])
+	        sbuffer = sbuffer[index:]
+        server.close()
+        client.close()
+    finally:
+	debugfile.close()
 
 debugfile = None
 inetd = 1
