@@ -19,6 +19,7 @@ while [ $# -gt 0 ]; do
     -ssh) CONNECT='exec ssh -C -x -e none -l mono';;
     -nopty) CONNECT='stty -isig -icanon -echo; cat | ssh -C -x -e none -l mono';
             CEND='; stty isig icanon echo'; unset exec ;;
+    -telnet) CONNECT='exec telnet -l mono';;
     -term) TERMSTUFF=$2; shift;;
     -*) echo "Unknown option $1" ;;
     *) MACH=$1;;
@@ -44,7 +45,13 @@ if [ "$MACHINE" = "" ]; then
   echo "Retrieving machine list..."
   tmpfile=/tmp/bouncer.$$.`date +%Y%m%d%H%M%S`
   telnet loads.mono.org > $tmpfile 2>&1
-  MACHINE=`awk 'BEGIN {l=-2} /^HOSTS$/ { l=NR } NR==l+1 && NF==2 { print $1 }' $tmpfile`
+  MACHINE=`awk 'BEGIN {l=-2}/^HOSTS$/ { l=NR } NR==l+1 && NF==2 { print $1 }' $tmpfile`
+  case $MACHINE in
+    *.i.mono.org)
+      echo "CORRECTING FOR WEIRD INTERNAL MACHINE NAME!"
+      MACHINE=`echo $MACHINE | sed 's/i\.mono\.org/mono\.org/'`
+      ;;
+  esac
   if test -n "$MACHINE"; then
     echo "Lowest-loaded machine is $MACHINE."
   else
