@@ -1,0 +1,10 @@
+Summary: DECCOLM should clear the screen
+Class: bug
+Priority: medium
+Difficulty: fun
+Present-in: 0.53b
+Content-type: text/plain
+
+DECCOLM sequences (CSI ? 3 h and CSI ? 3 l) should also clear the screen
+and home the cursor.  They don't in PuTTY, but they do in xterm, and on
+a VT420.
