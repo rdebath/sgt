@@ -7,6 +7,7 @@
 
 extern int linuxrc_main(int argc, char **argv);
 extern int nort_main(int argc, char **argv);
+extern int ntris_main(int argc, char **argv);
 extern int sumo_main(int argc, char **argv);
 
 int main(int argc, char **argv)
@@ -26,6 +27,8 @@ int main(int argc, char **argv)
 
     if (!strcmp(c, "nort"))
 	return nort_main(argc, argv);
+    if (!strcmp(c, "ntris"))
+	return ntris_main(argc, argv);
     if (!strcmp(c, "sumo"))
 	return sumo_main(argc, argv);
 

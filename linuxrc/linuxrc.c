@@ -50,15 +50,15 @@ static void plot_point(void *ignored, int x, int y)
     scrdata[640*y+2*x] = scrdata[640*y+2*x+1] = 1;
 }
 
-static void draw_nort(int cx, int cy)
+static void draw_beebtext(int cx, int cy, char *text)
 {
-    char *text = "NORT";
     int i, x, y;
+    int len = strlen(text);
 
-    cx -= 4*4;
+    cx -= len*4;
     cy -= 4;
 
-    for (i = 0; i < 4; i++) {
+    for (i = 0; i < len; i++) {
 	for (x = 0; x < 8; x++)
 	    for (y = 0; y < 8; y++)
 		if (beebfont[(text[i]-32)*8+y] & (128 >> x)) {
@@ -66,6 +66,16 @@ static void draw_nort(int cx, int cy)
 		}
 	cx += 8;
     }
+}
+
+static void draw_nort(int cx, int cy)
+{
+    draw_beebtext(cx, cy, "NORT");
+}
+
+static void draw_ntris(int cx, int cy)
+{
+    draw_beebtext(cx, cy, "Ntris");
 }
 
 static void draw_sumo(int cx, int cy)
@@ -76,6 +86,7 @@ static void draw_sumo(int cx, int cy)
 }
 
 static struct menuitem menu[] = {
+    {draw_ntris, "/bin/ntris"},
     {draw_nort, "/bin/nort"},
     {draw_sumo, "/bin/sumo"},
 };
