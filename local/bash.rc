@@ -1,6 +1,6 @@
 # -*- mode: sh; mode: fold -*-
 # Simon Tatham's standardised chunk of .bashrc
-# $Revision: 1.13 $
+# $Revision: 1.14 $
 
 #{{{ I don't like .bash_history files. They wet their nests.
 unset HISTFILE
@@ -145,10 +145,11 @@ doPSn() {
 }
 doPSn
 unset doPSn
+unset promptfixed
 promptprefix() {
   case $1 in
-    '' | ' '*) prompttext="$*" ;;
-    *) prompttext=" $*" ;;
+    '' | ' '*) prompttext="$promptfixed$*" ;;
+    *) prompttext="$promptfixed $*" ;;
   esac
   promptspaces=`echo -n "$prompttext" | sed 's/./ /g'`
 }
