@@ -1,0 +1,14 @@
+Summary: Scroll optimisations for Windows
+Class: wish
+Difficulty: tricky
+Priority: medium
+Content-type: text/x-html-body
+
+<p>
+Think about pre-building a bitmap for better scrolling, or
+possibly just doing the old scroll optimisations over again and
+getting them right.
+
+<p>
+Quite apart from the performance improvement, this may also improve
+the experience of people using screen reader software such as JAWS.
