@@ -21,3 +21,8 @@ Examples of reports received so far:
 <li><tt>5.1.0.14.0.20020615214407.023a33a0@amusive.com</tt>
 <li><tt>000501c2263d$190195b0$0200a8c0@quadzone.net</tt>
 </ul>
+
+<p>
+Workaround: the current development snapshots support an alternative
+syntax <tt>putty -load <i>session</i></tt> (and indeed deprecate the
+old @ syntax).
