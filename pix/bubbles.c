@@ -30,7 +30,7 @@
 #include <string.h>
 #include <time.h>
 
-#define VERSION "$Revision: 1.3 $"
+#define VERSION "$Revision: 1.4 $"
 
 #define TRUE 1
 #define FALSE 0
@@ -160,16 +160,51 @@ int squarert(int n) {
 #define N2 31
 static unsigned randpool[N1];
 static int pos;
-void initrandbig(void) {
-    int i;
-    srand(time(NULL));
-    for (i = 0; i < N1; i++)
-	randpool[i] = rand() * rand() * rand();
+void initrandbig(unsigned seed) {
+    int i, j;
+    unsigned seed0, seed1, out;
+
+    seed0 = seed1 = 0;
+    for (j = 0; j < 16; j++) {
+	seed0 |= (seed & (1<<j));
+	seed >>= 1;
+	seed1 |= (seed & (1<<j));
+    }
+
+    /*
+     * We seed the additive congruential pool using a simple linear
+     * congruential random number generator. The good old Spectrum
+     * one (a -> (a*75) % 65537, always use a-1) outputs in the
+     * precise range 0..65535 and so seems quite a useful thing for
+     * this.
+     * 
+     * Since we need 32-bit random numbers, we run two linear
+     * congruential sequences in parallel and bitwise-interleave
+     * the results. This is better than using successive outputs
+     * from the same sequence because it allows us to accept a
+     * 32-bit input seed.
+     * 
+     * (This is not a generally good alternative to a 32-bit LC
+     * generator, because although it has 32 bits of seed it only
+     * has a period of 2^16. For seeding an additive congruential
+     * generator, it's not too bad, though.)
+     */
+    for (i = 0; i < N1; i++) {
+	seed0 = (((seed0+1) * 75) % 65537) - 1;
+	seed1 = (((seed1+1) * 75) % 65537) - 1;
+	out = 0;
+	for (j = 16; j-- ;) {
+	    out |= (seed1 & (1<<j));
+	    out <<= 1;
+	    out |= (seed0 & (1<<j));
+	}
+	randpool[i] = out;
+    }
     pos = 0;
 }
 unsigned randbig(void) {
     unsigned ret;
-    ret = randpool[pos] = randpool[(pos+N1-1)%N1] + randpool[(pos+N2-1)%N1];
+    ret = randpool[pos] += randpool[(pos+N2)%N1];
     pos = (pos+1)%N1;
     return ret;
 }
@@ -476,7 +511,7 @@ int main(int ac, char **av) {
     int i;
     int radius = 0, minradius = 0, prefradius = 0, distance = 0;
 
-    initrandbig();
+    initrandbig(time(NULL));	       /* FIXME: configurable input seed */
 
     if (ac < 2) {
 	usage = TRUE;
