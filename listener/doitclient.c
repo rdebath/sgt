@@ -597,7 +597,7 @@ int main(int argc, char **argv)
         }
 
         a = inet_addr(prehost);
-        if (a == (unsigned long)-1) {
+        if (a == (unsigned long)-1 || a == (unsigned long)0xFFFFFFFF) {
             h = gethostbyname(prehost);
         } else {
             h = gethostbyaddr((const char *)&a, sizeof(a), AF_INET);
