@@ -4,8 +4,7 @@
 
 # TODO
 #
-#  - Draw tabs more sensibly.
-#  - Deal with intersecting tabs.
+#  - Deal with tabs that overlap one another.
 
 import sys
 import string
