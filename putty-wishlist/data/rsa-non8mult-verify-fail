@@ -1,0 +1,23 @@
+Summary: RSA signature validation fails with non-8-bit-multiple keys
+Class: bug
+Difficulty: fun
+Priority: high
+Present-in: 0.53b 2004-02-04
+Fixed-in: 2004-02-07
+
+Charles Wilcox reported a signature validation bug with a large SSH-2
+RSA host key - PuTTY reported `Server's host key did not match the
+signature supplied'. We reproduced this with a 2500-bit RSA host key.
+
+SGT: This _appears_ to be due to me computing the byte count of the
+key by dividing the bit count by 8 and rounding _down_ rather than up.
+Therefore, I can't see how this code could ever have worked on any
+SSH2 RSA key whose length was not a multiple of 8 bits; and therefore
+I'm staggered that we haven't noticed it before! OpenSSH's keygen
+appears to be scrupulous about ensuring the returned key length is
+exactly what you asked for rather than one bit less, but even so I'm
+astonished that _all_ keygen implementations for servers we've ever
+interoperated with have avoided tripping this bug...
+
+JTN: verified that this does indeed occur with 1023-bit and 513-bit
+SSH-2 RSA host keys.
