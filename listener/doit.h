@@ -50,3 +50,19 @@ int doit_read(doit_ctx *ctx, void *buf, int len);
  * form. The resulting packet should be freed after sending.
  */
 void *doit_send(doit_ctx *ctx, void *buf, int len, int *output_len);
+
+/*
+ * These come in handy in a couple of places.
+ */
+
+#define GET_32BIT_MSB_FIRST(cp) \
+  (((unsigned long)(unsigned char)(cp)[3]) | \
+  ((unsigned long)(unsigned char)(cp)[2] << 8) | \
+  ((unsigned long)(unsigned char)(cp)[1] << 16) | \
+  ((unsigned long)(unsigned char)(cp)[0] << 24))
+
+#define PUT_32BIT_MSB_FIRST(cp, value) do { \
+  (cp)[3] = (value); \
+  (cp)[2] = (value) >> 8; \
+  (cp)[1] = (value) >> 16; \
+  (cp)[0] = (value) >> 24; } while (0)

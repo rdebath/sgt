@@ -54,6 +54,9 @@ and doitlib.c. On Solaris or other systems without native socket
 support, you might need to link with `-lsocket -lnsl' or similar. On
 Linux, you should need no special libraries to build the client.
 
+If the Unix compilation fails because the function `realpath' is not
+found, try compiling with -DHAVE_NO_REALPATH.
+
 Install `doitclient' somewhere on your Unix PATH. You may optionally
 want to symlink the binary to some of the alternative names `wf',
 `win', `wcmd', `wclip' and `www'. (What each of these does is

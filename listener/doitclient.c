@@ -8,6 +8,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <stdarg.h>
+
 #include <unistd.h>
 
 #include <sys/time.h>
@@ -31,6 +33,44 @@ char *dupstr(char *s)
     }
     strcpy(ret, s);
     return ret;
+}
+
+/* Allocate the concatenation of N strings. Terminate arg list with NULL. */
+char *dupcat(char *s1, ...)
+{
+    int len;
+    char *p, *q, *sn;
+    va_list ap;
+
+    len = strlen(s1);
+    va_start(ap, s1);
+    while (1) {
+	sn = va_arg(ap, char *);
+	if (!sn)
+	    break;
+	len += strlen(sn);
+    }
+    va_end(ap);
+
+    p = malloc(len + 1);
+    if (!p) {
+	perror("malloc");
+	exit(1);
+    }
+    strcpy(p, s1);
+    q = p + strlen(p);
+
+    va_start(ap, s1);
+    while (1) {
+	sn = va_arg(ap, char *);
+	if (!sn)
+	    break;
+	strcpy(q, sn);
+	q += strlen(q);
+    }
+    va_end(ap);
+
+    return p;
 }
 
 char *get_pwd(void)
@@ -164,7 +204,8 @@ int do_fetch_pascal_string(int sock, doit_ctx *ctx, char *buf)
 /*
  * Helper function to fetch a whole line from the socket.
  */
-char *do_fetch(int sock, doit_ctx *ctx, int line_terminate, int *length)
+char *do_fetch(int sock, doit_ctx *ctx, int line_terminate, int maxlen,
+	       int *length)
 {
     char *cmdline = NULL;
     int cmdlen = 0, cmdsize = 0;
@@ -196,6 +237,11 @@ char *do_fetch(int sock, doit_ctx *ctx, int line_terminate, int *length)
                 }
                 cmdlen++;
                 len--;
+		if (maxlen != 0 && cmdlen >= maxlen) {
+                    cmdline[cmdlen] = '\0';
+                    *length = cmdlen;
+                    return cmdline;
+		}
             }
         }
         len = recv(sock, buf, sizeof(buf), 0);
@@ -209,11 +255,15 @@ char *do_fetch(int sock, doit_ctx *ctx, int line_terminate, int *length)
 char *do_fetch_line(int sock, doit_ctx *ctx)
 {
     int len;
-    return do_fetch(sock, ctx, 1, &len);
+    return do_fetch(sock, ctx, 1, 0, &len);
 }
 char *do_fetch_all(int sock, doit_ctx *ctx, int *len)
 {
-    return do_fetch(sock, ctx, 0, len);
+    return do_fetch(sock, ctx, 0, 0, len);
+}
+char *do_fetch_n(int sock, doit_ctx *ctx, int length, int *len)
+{
+    return do_fetch(sock, ctx, 0, length, len);
 }
 
 /*
@@ -351,7 +401,127 @@ char *path_translate(char *path)
             path = newpath;
         }
     }
+
     return path;
+}
+
+void help(void)
+{
+    char *help[] = {
+	"usage: [doitclient] subcommand [options] [parameters]",
+	"options are:",
+	"  -h, --help         display this text",
+	"  -V, --version      display doitclient version",
+#ifdef FIXME_LICENCE
+	"  -L, --licence, --license    display doitclient licence terms",
+#endif
+	"  -d, --set-dir      run program in your current directory",
+	"  -D, --no-set-dir   run program in DoIt's default directory",
+	"  -p, --path-translate    do path translation on command name",
+	"  -P, --no-path-translate    do not do path translation on command name",
+	"  -v, --verbose      log the transaction to stderr",
+	"subcommands are:",
+	"  win <command>      start Windows GUI process and don't wait",
+	"  wcmd <command>     start Windows CLI process and return output",
+	"  wf <file>          path-translate a file and open in Windows",
+	"  www <URL>          open a URL in Windows's default browser",
+	"  wclip              copy stdin to the Windows clipboard",
+	"  wclip -r           copy the Windows clipboard to stdout",
+    };
+    int i;
+    for (i = 0; i < sizeof(help)/sizeof(*help); i++)
+	puts(help[i]);
+}
+
+char *makeversion(char *buffer, char *revision)
+{
+    char *p = buffer;
+    strcpy(buffer, revision);
+    p += strcspn(p, "0123456789");
+    if (*p) {
+	p[strcspn(p, " $")] = '\0';
+    }
+    if (!*p)
+	return NULL;
+    return p;
+}
+
+void showversion(void)
+{
+    char versionbuf[80];
+    char *v;
+    extern char doitlib_revision[];
+
+    v = makeversion(versionbuf, "$Revision: 1.8 $");
+    if (v)
+	printf("doitclient revision %s", v);
+    else
+	printf("doitclient unknown version");
+
+    v = makeversion(versionbuf, doitlib_revision);
+    if (v)
+	printf(" (doitlib revision %s)\n", v);
+    else
+	printf("\n");
+}
+
+/*
+ * Do path translation including prefixing the current directory.
+ */
+char *do_path_translate(char *arg, int verbose)
+{
+    char *dir, *path, *path2;
+
+    if (verbose) {
+	fprintf(stderr, "doit: path translation: \"%s\"", arg);
+    }
+
+#ifndef HAVE_NO_REALPATH
+    path2 = malloc(PATH_MAX);
+    path = realpath(arg, path2);
+    if (!path) {
+#endif
+	if (arg[0] == '/') {
+	    path = dupstr(arg);
+	} else {
+	    dir = get_pwd();
+	    path = dupcat(dir, "/", arg, NULL);
+	    free(dir);
+	}
+#ifndef HAVE_NO_REALPATH
+    }
+#endif
+	
+    path2 = path_translate(path);
+    free(path);
+
+    if (verbose) {
+	fprintf(stderr, " to \"%s\"\n", path2);
+    }
+
+    return path2;
+}
+
+/*
+ * Send a SetDirectory modifier.
+ */
+void set_dir(int sock, doit_ctx *ctx, int verbose)
+{
+    char *dir, *path;
+
+    dir = get_pwd();
+    path = malloc(strlen(dir)+2);
+    sprintf(path, "%s/", dir);
+    dir = path_translate(path);
+    if (strlen(dir) > 1 && dir[strlen(dir)-1] == '\\')
+	dir[strlen(dir)-1] = '\0';
+    do_doit_send_str(sock, ctx, "SetDirectory\n");
+    do_doit_send_str(sock, ctx, dir);
+    do_doit_send_str(sock, ctx, "\n");
+    if (verbose) {
+	fprintf(stderr, "doit: >>> SetDirectory\ndoit: >>> %s\n", dir);
+    }
+    free(dir);
 }
 
 int main(int argc, char **argv)
@@ -371,11 +541,16 @@ int main(int argc, char **argv)
     int port = DOIT_PORT;
 
     int cmd = 0;
-    char *arg = NULL;
+    char *arg = NULL, *arg2 = NULL;
     int clip_read = 0;
-    int need_readclip_output;
     int nogo = 0, errs = 0;
     int errcode;
+    int verbose = 0;
+
+    typedef enum { TRI_MAYBE, TRI_NO, TRI_YES } troolean;
+
+    troolean set_directory = TRI_MAYBE;
+    troolean path_translation = TRI_MAYBE;
 
     /*
      * Read the config file `.doitrc'.
@@ -411,7 +586,13 @@ int main(int argc, char **argv)
     /*
      * Parse the command line to find out what to actually do.
      */
-    cmd = parse_cmd(argv[0]);          /* are we called as wf, wclip etc? */
+    arg = strrchr(argv[0], '/');
+    if (!arg)
+	arg = argv[0];
+    else
+	arg++;
+    cmd = parse_cmd(arg);	       /* are we called as wf, wclip etc? */
+    arg = NULL;
     /*
      * Parse command line arguments.
      */
@@ -439,15 +620,25 @@ int main(int argc, char **argv)
 			} else
 			    val = NULL;
 			if (!strcmp(opt, "-help")) {
-			    /* FIXME: help(); */
+			    help();
 			    nogo = 1;
 			} else if (!strcmp(opt, "-version")) {
-			    /* FIXME: showversion(); */
+			    showversion();
 			    nogo = 1;
+#ifdef FIXME_LICENCE
 			} else if (!strcmp(opt, "-licence") ||
 				   !strcmp(opt, "-license")) {
-			    /* FIXME: licence(); */
+			    licence();
 			    nogo = 1;
+#endif
+			} else if (!strcmp(opt, "-set-dir")) {
+			    set_directory = TRI_YES;
+			} else if (!strcmp(opt, "-no-set-dir")) {
+			    set_directory = TRI_NO;
+			} else if (!strcmp(opt, "-path-translate")) {
+			    path_translation = TRI_YES;
+			} else if (!strcmp(opt, "-no-path-translate")) {
+			    path_translation = TRI_NO;
 			}
 			/*
 			 * A sample option requiring an argument:
@@ -469,26 +660,48 @@ int main(int argc, char **argv)
 		    break;
 		  case 'h':
 		  case 'V':
+#ifdef FIXME_LICENCE
 		  case 'L':
+#endif
+		  case 'd': case 'D':
+		  case 'p': case 'P':
                   case 'r':
+                  case 'v':
 		    /*
 		     * Option requiring no parameter.
 		     */
 		    switch (c) {
 		      case 'h':
-			/* FIXME: help(); */
+			help();
 			nogo = 1;
 			break;
 		      case 'V':
-			/* FIXME: showversion(); */
+			showversion();
 			nogo = 1;
 			break;
+#ifdef FIXME_LICENCE
 		      case 'L':
-			/* FIXME: licence(); */
+			licence();
 			nogo = 1;
+			break;
+#endif
+		      case 'd':
+			set_directory = TRI_YES;
+			break;
+		      case 'D':
+			set_directory = TRI_NO;
+			break;
+		      case 'p':
+			path_translation = TRI_YES;
+			break;
+		      case 'P':
+			path_translation = TRI_NO;
 			break;
                       case 'r':
                         clip_read = 1;
+                        break;
+                      case 'v':
+                        verbose = 1;
                         break;
 		    }
 		    break;
@@ -547,11 +760,13 @@ int main(int argc, char **argv)
             } else {
                 if (arg == NULL) {
                     arg = dupstr(p);
-                } else {
-                    arg = realloc(arg, 2+strlen(arg)+strlen(p));
-                    strcat(arg, " ");
-                    strcat(arg, p);
-                }
+                } else if (arg2 == NULL) {
+		    arg2 = dupstr(p);
+		} else {
+		    char *tmp = arg2;
+		    arg2 = dupcat(arg2, " ", p, NULL);
+		    free(tmp);
+		}
             }
 	}
     }
@@ -578,22 +793,37 @@ int main(int argc, char **argv)
         e = getenv("DOIT_HOST");
         if (e != NULL) {
             prehost = dupstr(e);
+	    if (verbose)
+		fprintf(stderr,
+			"doit: finding server using DOIT_HOST=%s\n", e);
         } else {
             e = getenv("SSH_CLIENT");
             if (e != NULL) {
                 len = strcspn(e, " ");
                 prehost = dupstr(e);
                 prehost[len] = '\0';
+		if (verbose)
+		    fprintf(stderr,
+			    "doit: finding server using SSH_CLIENT=%s\n", e);
             } else {
                 e = getenv("DISPLAY");
                 if (e != NULL) {
                     len = strcspn(e, ":");
                     prehost = dupstr(e);
                     prehost[len] = '\0';
-                }
+		    if (verbose)
+			fprintf(stderr,
+				"doit: finding server using DISPLAY=%s\n", e);
+                } else {
+		    fprintf(stderr, "doit: unable to find server; try setting"
+			    " DOIT_HOST\n");
+		    return 1;
+		}
             }
         }
 
+	if (verbose)
+	    printf("doit: doing lookup on server name %s\n", prehost);
         a = inet_addr(prehost);
         if (a == (unsigned long)-1 || a == (unsigned long)0xFFFFFFFF) {
             h = gethostbyname(prehost);
@@ -606,6 +836,8 @@ int main(int argc, char **argv)
         }
         memcpy(&hostaddr, h->h_addr, sizeof(hostaddr));
 
+	if (verbose)
+	    printf("doit: found server name %s\n", h->h_name);
         select_hostcfg(h->h_name);
     }
 
@@ -621,6 +853,9 @@ int main(int argc, char **argv)
     sock = make_connection(hostaddr, port);
     if (sock < 0)
         return 1;
+
+    if (verbose)
+	printf("doit: made connection\n");
 
     doit_perturb_nonce(ctx, "client", 6);
     {
@@ -639,29 +874,66 @@ int main(int argc, char **argv)
     }
     free(data);
 
-    need_readclip_output = 0;
+    if (verbose)
+	printf("doit: exchanged nonces\n");
+
     switch (cmd) {
       case WF:
         if (!arg) {
             fprintf(stderr, "doit: \"wf\" requires an argument\n");
             exit(EXIT_FAILURE);
         }
-        dir = get_pwd();
-        path = malloc(2+strlen(dir)+strlen(arg));
-        sprintf(path, "%s/%s", dir, arg);
-        path = path_translate(path);
-        do_doit_send_str(sock, ctx, "ShellExecute\n");
-        do_doit_send_str(sock, ctx, path);
-        do_doit_send_str(sock, ctx, "\n");
+	/* For wf, we do path translation on TRI_MAYBE. */
+	if (path_translation != TRI_NO) {
+	    path = do_path_translate(arg, verbose);
+	} else {
+	    path = dupstr(arg);
+	}
+	/* For wf, we do not do directory changing on TRI_MAYBE. */
+	if (set_directory == TRI_YES) {
+	    set_dir(sock, ctx, verbose);
+	}
+	if (arg2) {
+	    do_doit_send_str(sock, ctx, "ShellExecuteArgs\n");
+	    do_doit_send_str(sock, ctx, path);
+	    do_doit_send_str(sock, ctx, "\n");
+	    do_doit_send_str(sock, ctx, arg2);
+	    do_doit_send_str(sock, ctx, "\n");
+	    if (verbose)
+		fprintf(stderr, "doit: >>> ShellExecuteArgs\n"
+			"doit: >>> %s\ndoit: >>> %s\n", path, arg2);
+	} else {
+	    do_doit_send_str(sock, ctx, "ShellExecute\n");
+	    do_doit_send_str(sock, ctx, path);
+	    do_doit_send_str(sock, ctx, "\n");
+	    if (verbose)
+		fprintf(stderr, "doit: >>> ShellExecute\ndoit: >>> %s\n",
+			path);
+	}
         break;
       case WIN:
         if (!arg) {
             fprintf(stderr, "doit: \"win\" requires an argument\n");
             exit(EXIT_FAILURE);
         }
+	/* For win, we do not do path translation on TRI_MAYBE. */
+	if (path_translation == TRI_YES) {
+	    path = do_path_translate(arg, verbose);
+	} else {
+	    path = dupstr(arg);
+	}
+	/* For win, we do directory changing on TRI_MAYBE. */
+	if (set_directory != TRI_NO) {
+	    set_dir(sock, ctx, verbose);
+	}
+	if (arg2)
+	    path = dupcat(path, " ", arg2, NULL);
         do_doit_send_str(sock, ctx, "CreateProcessNoWait\n");
-        do_doit_send_str(sock, ctx, arg);
+        do_doit_send_str(sock, ctx, path);
         do_doit_send_str(sock, ctx, "\n");
+	if (verbose)
+	    fprintf(stderr, "doit: >>> CreateProcessNoWait\ndoit: >>> %s\n",
+		    path);
         break;
       case WWW:
         if (!arg) {
@@ -671,22 +943,66 @@ int main(int argc, char **argv)
         do_doit_send_str(sock, ctx, "ShellExecute\n");
         do_doit_send_str(sock, ctx, arg);
         do_doit_send_str(sock, ctx, "\n");
+	if (verbose)
+	    fprintf(stderr, "doit: >>> ShellExecute\ndoit: >>> %s\n", arg);
         break;
       case WCLIP:
         if (clip_read) {
+	    int len, clen;
+	    char *p;
+
             do_doit_send_str(sock, ctx, "ReadClipboard\n");
-            need_readclip_output = 1;
+	    if (verbose)
+		fprintf(stderr, "doit: >>> ReadClipboard\n", arg);
+
+	    msg = do_fetch_n(sock, ctx, 4, &len);
+	    clen = GET_32BIT_MSB_FIRST(msg);
+	    free(msg);
+	    if (verbose)
+		fprintf(stderr, "doit: received clipboard data length %d\n",
+			clen);
+	    msg = do_fetch_n(sock, ctx, clen, &len);
+	    p = msg;
+	    if (verbose)
+		fprintf(stderr, "doit: received %d bytes of clipboard data\n",
+			len);
+
+	    while (len > 0) {
+		char *q = memchr(p, '\r', len);
+		if (!q) {
+		    fwrite(p, 1, len, stdout);
+		    break;
+		}
+		fwrite(p, 1, q-p, stdout);
+		len -= q-p;
+		p = q;
+		if (len > 1 && p[0] == '\r' && p[1] == '\n') {
+		    fputc('\n', stdout);
+		    p += 2;
+		    len -= 2;
+		} else {
+		    fputc('\r', stdout);
+		    p++;
+		    len--;
+		}
+	    }
         } else {
             char buf[512];
+	    int size = 0;
             do_doit_send_str(sock, ctx, "WriteClipboard\n");
+	    if (verbose)
+		fprintf(stderr, "doit: >>> WriteClipboard\n", arg);
             while (fgets(buf, sizeof(buf), stdin)) {
                 int newlinepos = strcspn(buf, "\n");
                 do_doit_send(sock, ctx, buf, newlinepos);
+		size += newlinepos;
                 if (buf[newlinepos]) {
                     do_doit_send_str(sock, ctx, "\r\n");
+		    size += 2;
                 }
             }
             shutdown(sock, 1);
+	    fprintf(stderr, "doit: sent %d bytes of clipboard data\n", size);
         }
         break;
       case WCMD:
@@ -694,23 +1010,24 @@ int main(int argc, char **argv)
             fprintf(stderr, "doit: \"wcmd\" requires an argument\n");
             exit(EXIT_FAILURE);
         }
+	/* For wcmd, we do not do path translation on TRI_MAYBE. */
+	if (path_translation == TRI_YES) {
+	    path = do_path_translate(arg, verbose);
+	} else {
+	    path = dupstr(arg);
+	}
+	/* For wcmd, we do directory changing on TRI_MAYBE. */
+	if (set_directory != TRI_NO) {
+	    set_dir(sock, ctx, verbose);
+	}
+	if (arg2)
+	    path = dupcat(path, " ", arg2, NULL);
         do_doit_send_str(sock, ctx, "CreateProcessWithOutput\ncmd /c ");
-        dir = get_pwd();
-        path = malloc(strlen(dir)+2);
-        sprintf(path, "%s/", dir);
-        dir = path_translate(path);
-        if (dir[0] && dir[1] == ':') {
-            do_doit_send(sock, ctx, dir, 2);
-            do_doit_send_str(sock, ctx, " & ");
-            dir += 2;
-        }
-        do_doit_send_str(sock, ctx, "cd ");
-        if (strlen(dir) > 1 && dir[strlen(dir)-1] == '\\')
-            dir[strlen(dir)-1] = '\0';
-        do_doit_send_str(sock, ctx, dir);
-        do_doit_send_str(sock, ctx, " & ");
-        do_doit_send_str(sock, ctx, arg);
+        do_doit_send_str(sock, ctx, path);
         do_doit_send_str(sock, ctx, "\n");
+	if (verbose)
+	    fprintf(stderr,
+		    "doit: >>> CreateProcessWithOutput\ndoit: >>> %s\n", path);
         while ( (len = do_fetch_pascal_string(sock, ctx, pbuf)) > 0) {
             fwrite(pbuf, 1, len, stdout);
         }
@@ -723,41 +1040,21 @@ int main(int argc, char **argv)
     }
     errcode = 0;
     msg = do_fetch_line(sock, ctx);
-    if (msg[0] != '+') {
-        fprintf(stderr, "doit: remote error: %s\n", msg+1);
-    } else if (msg[1]) {
-        /*
-         * Extract error code.
-         */
-        if (atoi(msg+1) != 0)
-            errcode = 1;
-    }
-
-    if (need_readclip_output) {
-        int len;
-        char *p;
-        msg = do_fetch_all(sock, ctx, &len);
-        p = msg;
-
-        while (len > 0) {
-            char *q = memchr(p, '\r', len);
-            if (!q) {
-                fwrite(p, 1, len, stdout);
-                break;
-            }
-            fwrite(p, 1, q-p, stdout);
-            len -= q-p;
-            p = q;
-            if (len > 1 && p[0] == '\r' && p[1] == '\n') {
-                fputc('\n', stdout);
-                p += 2;
-                len -= 2;
-            } else {
-                fputc('\r', stdout);
-                p++;
-                len--;
-            }
-        }
+    if (!msg) {
+	fprintf(stderr, "doit: remote did not send completion message\n");
+	errcode = 1;
+    } else {
+	if (verbose)
+	    fprintf(stderr, "doit: <<< %s\n", msg);
+	if (msg[0] != '+') {
+	    fprintf(stderr, "doit: remote error: %s\n", msg+1);
+	} else if (msg[1]) {
+	    /*
+	     * Extract error code.
+	     */
+	    if (atoi(msg+1) != 0)
+		errcode = 1;
+	}
     }
 
     close(sock);
