@@ -1,5 +1,5 @@
 #! /usr/bin/perl
-# $Id: bugs2html,v 1.4 2002/05/06 13:41:34 ben Exp $
+# $Id: bugs2html,v 1.5 2002/05/06 17:48:55 ben Exp $
 
 use FileHandle;
 use POSIX;
@@ -7,6 +7,25 @@ use POSIX;
 $bugdir = "../data";
 $htmldir = "/u2/bjharris/public-html/putty-wishlist";
 $baseurl = "/~sgtatham/putty";
+
+%classdesc =
+    ('bug'	=> "This is clearly an actual problem we want fixed.",
+     'semi-bug'	=> "This might or might not be a bug, depending on your " .
+                   "precise definition of what a bug is.",
+     'wish'	=> "This is a request for an enhancement.");
+
+%prioritydesc =
+    ('high'	=> "This should be fixed in the next release.",
+     'medium'	=> "This should be fixed one day.",
+     'low'	=> "We aren't sure whether to fix this or not.",
+     'never'	=> "We don't ever intend to fix this.");
+
+%difficultydesc =
+    ('fun'	=> "Just needs tuits, and not many of them.",
+     'tricky'	=> "Needs many tuits.",
+     'taxing'	=> "Needs external things we don't have (standards, users " .
+		   "etc)",
+     'mayhem'	=> "Probably impossible");
 
 open(INDEX, "> $htmldir/index.html") or die "$htmldir/index.html: $!";
 print INDEX <<EOH;
@@ -131,8 +150,18 @@ sub bug2html {
 EOH
 
     foreach $h (keys %$hdrs) {
-	next if $h eq "content-type";
-	print HTML qq[<b>$h</b>: @{[$hdrs->{$h}]}<br>\n];
+	my($desc);
+	$h eq "content-type" && next;
+	$h eq "class" && ($desc = $classdesc{$hdrs->{$h}});
+	$h eq "priority" && ($desc = $prioritydesc{$hdrs->{$h}});
+	$h eq "difficulty" && ($desc = $difficultydesc{$hdrs->{$h}});
+	print HTML "<b>$h</b>: ";
+	if (defined($desc)) {
+	    print HTML "<i>@{[$hdrs->{$h}]}:</i> $desc";
+	} else {
+	    print HTML $hdrs->{$h};
+	}
+	print HTML qq"<br>\n";
     }
 
     if ($hdrs->{'content-type'} =~ "^text/x-html-body") {
