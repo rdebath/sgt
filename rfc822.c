@@ -63,7 +63,7 @@ void parse_message(const char *msg, int len,
      * choke on that.
      */
 
-    const char *p, *q, *r, *message;
+    const char *p, *q, *r, *s, *message;
     int pass, msglen;
     int default_charset = CS_CP1252;
 
@@ -370,25 +370,26 @@ void parse_message(const char *msg, int len,
 		 */
 
 		/*
-		 * Parse the header for output. For
-		 * ENCODED_CPHRASES type headers, we will also do
-		 * the address extraction here so as not to have to
-		 * parse it more than once; for everything else,
-		 * the semantic header parsing is pretty much
-		 * orthogonal to the display-prettification and so
-		 * we will do that separately.
+		 * Parse the header for output. The _semantic_
+		 * header parsing is pretty much orthogonal to this
+		 * display-prettification, and so we will do that
+		 * separately.
 		 */
 		if (pass == 1) {
+		    s = r;
 		    output(p, r - p, TYPE_HEADER_NAME, CS_ASCII);
 		    switch (hdr->rfc2047_location) {
 		      case NO_ENCODED:
 			output(r, message - r, TYPE_HEADER_TEXT,
 			       default_charset);
 			break;
+		      case ENCODED_ANYWHERE:
+			rfc2047(r, message - r, output,
+				FALSE, default_charset);
+			break;
 		      case ENCODED_COMMENTS:
-		      case ENCODED_CPHRASES:   /* FIXME, not really! */
 			/*
-			 * I _believe_ this much is general to any
+			 * I believe this much is general to any
 			 * structured header in which comments are
 			 * permitted:
 			 * 
@@ -437,12 +438,138 @@ void parse_message(const char *msg, int len,
 			    output(p, r-p, TYPE_HEADER_TEXT,
 				   default_charset);
 			break;
-		      case ENCODED_ANYWHERE:
-			rfc2047(r, message - r, output,
-				FALSE, default_charset);
+		      case ENCODED_CPHRASES:
+			/*
+			 * This is the most complex case for
+			 * display parsing. The syntax is:
+			 * 
+			 *  - a `mailbox' is either a bare address,
+			 *    or a potentially-RFC2047able-phrase
+			 *    followed by an address in angle
+			 *    brackets.
+			 * 
+			 *  - an `address' is either a mailbox, or
+			 *    a group. A group is a potentially-
+			 *    RFC2047able-phrase, a colon, a comma-
+			 *    separated list of mailboxes, and a
+			 *    final semicolon.
+			 * 
+			 *  - an `address-list' is a comma-
+			 *    separated list of addresses.
+			 * 
+			 * In theory there is also a `mailbox-list'
+			 * which is a comma-separated list of
+			 * mailboxes; this is used in some address
+			 * headers. For example, `Reply-To' takes
+			 * an address-list and hence may contain
+			 * groups, but `From' takes a mailbox-list
+			 * and cannot.
+			 * 
+			 * For display purposes, however, I'm going
+			 * to ignore this distinction; anyone using
+			 * group syntax in a From header coming
+			 * into this parser will find that the
+			 * parser will DWIM. This doesn't seem to
+			 * me to be a large practical problem, and
+			 * it makes my life easier.
+			 * 
+			 * So what I actually do here is:
+			 * 
+			 *  - Place a marker.
+			 * 
+			 *  - Scan along the string, dodging
+			 *    quoted-strings, backslash-quoted
+			 *    characters and comments, until we see
+			 *    a significant punctuation event.
+			 *    Significant punctuation events are
+			 *    `:', `;', `<', `>', `,' and
+			 *    end-of-string.
+			 * 
+			 *  - If we see `:' or `<', then everything
+			 *    between the marker and here is part
+			 *    of a potentially-RFC2047able phrase.
+			 *    Whereas if we see `>', `,', `;' or
+			 *    end-of-string, everything between the
+			 *    marker and here was an addr-spec or
+			 *    nothing at all.
+			 * 
+			 *  - So now we re-scan from the marker.
+			 *    Anything in a quoted-string we pass
+			 *    through unchanged; anything in parens
+			 *    we parse as an RFC2047able comment;
+			 *    anything not in either we deal with
+			 *    _as appropriate_ given the above.
+			 */
+			while (r < message) {
+			    int rfc2047able;
+			    p = r;
+			    while (r < message &&
+				   *r != ':' && *r != ';' &&
+				   *r != '<' && *r != '>' && *r != ',') {
+				if (*r == '(' || *r == '"') {
+				    int end = (*r == '"' ? '"' : ')');
+				    r++;
+				    while (r < message && *r != end) {
+					if (*r == '\\' && r+1 < message)
+					    r++;
+					r++;
+				    }
+				} else if (*r == '\\' && r+1 < message) {
+				    r += 2;
+				} else {
+				    r++;
+				}
+			    }
+			    if (r < message && (*r == ':' || *r == '<'))
+				rfc2047able = TRUE;
+			    else
+				rfc2047able = FALSE;
+			    if (r < message)
+				r++;   /* we'll eat this punctuation too */
+			    /*
+			     * Now re-scan from p.
+			     */
+			    q = p;
+			    while (1) {
+				if (q < r && *q == '\\' && q+1 < r) {
+				    q += 2;
+				} else if (q < r && *q != '(' && *q != '"') {
+				    q++;
+				} else {
+				    int end;
+				    if (rfc2047able)
+					rfc2047(p, q-p, output,
+						TRUE, default_charset);
+				    else
+					output(p, q-p, TYPE_HEADER_TEXT,
+					       default_charset);
+				    if (q == r)
+					break;
+				    output(q, 1, TYPE_HEADER_TEXT, CS_ASCII);
+				    end = (*q == '"' ? '"' : ')');
+				    p = ++q;
+				    while (q < r && *q != end) {
+					if (*q == '\\' && q+1 < r)
+					    q++;
+					q++;
+				    }
+				    if (end == ')')
+					rfc2047(p, q-p, output,
+						TRUE, default_charset);
+				    else
+					output(p, q-p, TYPE_HEADER_TEXT,
+					       default_charset);
+				    if (q == r)
+					break;
+				    output(q, 1, TYPE_HEADER_TEXT, CS_ASCII);
+				    p = ++q;
+				}
+			    }
+			}
 			break;
 		    }
 		    output("\n", 1, TYPE_HEADER_TEXT, CS_ASCII);
+		    r = s;
 		}
 	    }
 
