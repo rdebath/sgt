@@ -28,7 +28,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define VERSION "$Revision: 1.3 $"
+#define VERSION "$Revision: 1.4 $"
 
 #define TRUE 1
 #define FALSE 0
@@ -829,7 +829,7 @@ int main(int ac, char **av) {
 	i = (!!isbase) + (basex && basey) + (!!gotiscale);
 	if (i > 1) {
 	    fprintf(stderr, "filigram: "
-		    "expected at most one of `-b', `-B', `-i'\n");
+		    "expected at most one of `-b', `-B', `-I'\n");
 	    return EXIT_FAILURE;
 	} else if (i == 0) {
 	    /* Default: isbase is true. */
