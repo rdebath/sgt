@@ -2,7 +2,8 @@ Summary: pscp -load and psftp -load ignore proxy configuration
 Class: bug
 Difficulty: tricky
 Priority: medium
-Present-in: 2003-10-13 0.53b
+Absent-in: 0.53b 2003-03-21
+Present-in: 2003-03-24 2003-10-13
 Content-type: text/plain
 
 When a saved session is used with pscp or psftp with:
