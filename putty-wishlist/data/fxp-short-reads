@@ -22,7 +22,14 @@ the underlying filesystem (whereas we ask for 4k chunks).
 
 <p>
 Since PSFTP/PSCP usually
-<a href="sftp-slow.html">has several requests outstanding</a>
+<a href="sftp-slow.html">have several requests outstanding</a>
 at any one time, dealing with this properly requires a strategy for
 dealing with fragmentation and reassembly. (But this shouldn't be too
-bad as we already deal with out-of-order responses.)
+bad as we already deal with out-of-order responses.) We may also want to
+attempt to adapt to the server's apparent preferred block size,
+although we should be prepared for this adaptation to fail.
+
+<p>
+All this should probably be implemented in as paranoid a manner as
+possible to avoid the server being able to cause unbounded buffering
+at our end.
