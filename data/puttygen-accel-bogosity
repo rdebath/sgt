@@ -25,6 +25,5 @@ back before they work again. (Possibly related: during key generation,
 frobbing Alt appears to count as randomness.)
 
 <p>
-I've heard that under Wine, the menu bar doesn't appear <em>at
-all</em> until you type an appropriate accelerator key. (not sure
-which versions)
+Under Wine (Debian version 0.0.20020904-1), the menu bar doesn't appear <em>at
+all</em> until you type an appropriate accelerator key.
