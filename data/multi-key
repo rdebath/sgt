@@ -10,4 +10,11 @@ pterm.  In other applications if I type "&lt;Multi_Key&gt; ' e" then I get
 an e-acute whereas in pterm I just get 'e.</pre>
 
 <p>
+<tt>unix/gtkwin.c:key_event()</tt> contains the following comment:
+
+<p><pre>/*
+ * NYI: Compose key (!!! requires Unicode faff before even trying)
+ */</pre>
+
+<p>
 (See also <a href="unix-dead-keys.html">`unix-dead-keys'</a>.)
