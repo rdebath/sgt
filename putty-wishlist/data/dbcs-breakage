@@ -58,4 +58,5 @@ don't think a hurried fix is in the general interest.
 <p>
 UTF-8 mode should work reasonably well. A workaround is to use UTF-8
 if possible (perhaps via something such as
-<a href="http://www.pps.jussieu.fr/~jch/software/luit/">luit</a>).
+<a href="http://www.pps.jussieu.fr/~jch/software/luit/">luit</a> or
+<a href="http://www.gnu.org/software/screen/">screen</a>).
