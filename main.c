@@ -27,6 +27,8 @@ void run_command(int argc, char **argv)
 	{ "export-mbox", export_as_mbox }
     };
 
+    assert(argc > 0);
+
     for (j = 0; j < lenof(simple); ++j) {
 	int i;
 	if (strcmp (argv[0], simple[j].name)) continue;
@@ -35,8 +37,6 @@ void run_command(int argc, char **argv)
 	}
 	return;
     }
-
-    assert(argc > 0);
 
     if (!strcmp(argv[0], "init")) {
 	int ret;
@@ -64,6 +64,14 @@ void run_command(int argc, char **argv)
 	if (argc > 1)
 	    charset = charset_from_localenc(argv[1]);
 	send_from_stdin(charset);
+    }
+
+    if (!strcmp (argv[0], "add-contact")) {
+	ab_add_contact();
+    }
+
+    if (!strcmp (argv[0], "list-contacts")) {
+	ab_list_contacts();
     }
 
     if (!strcmp (argv[0], "contact")) {
