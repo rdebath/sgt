@@ -46,7 +46,8 @@
  *    the parent message (from In-Reply-To) if available.
  */
 void parse_message(const char *msg, int len,
-		   parser_output_fn_t output, parser_info_fn_t info)
+		   parser_output_fn_t output, void *outctx,
+		   parser_info_fn_t info, void *infoctx)
 {
     /*
      * Begin at the beginning, and expect to parse headers until we
@@ -125,8 +126,9 @@ void parse_message(const char *msg, int len,
 		     * to translate and output it. The line runs
 		     * from p to message.
 		     */
-		    output(p, message-p, TYPE_HEADER_TEXT, default_charset);
-		    output("\n", 1, TYPE_HEADER_TEXT, CS_ASCII);
+		    output(outctx, p, message-p,
+			   TYPE_HEADER_TEXT, default_charset);
+		    output(outctx, "\n", 1, TYPE_HEADER_TEXT, CS_ASCII);
 		}
 		if (msglen > 0)
 		    message++, msglen--;   /* eat the \n itself */
@@ -362,11 +364,6 @@ void parse_message(const char *msg, int len,
 		 *    entirely internally and hence we have no need
 		 *    to handle it separately in the various types
 		 *    of parseable header. Woo!
-		 * 
-		 * FIXME: this probably means the output function
-		 * will need a context parameter. In fact it was
-		 * probably going to need one anyway, so no problem
-		 * there.
 		 */
 
 		/*
@@ -377,14 +374,14 @@ void parse_message(const char *msg, int len,
 		 */
 		if (pass == 1) {
 		    s = r;
-		    output(p, r - p, TYPE_HEADER_NAME, CS_ASCII);
+		    output(outctx, p, r - p, TYPE_HEADER_NAME, CS_ASCII);
 		    switch (hdr->rfc2047_location) {
 		      case NO_ENCODED:
-			output(r, message - r, TYPE_HEADER_TEXT,
+			output(outctx, r, message - r, TYPE_HEADER_TEXT,
 			       default_charset);
 			break;
 		      case ENCODED_ANYWHERE:
-			rfc2047(r, message - r, output,
+			rfc2047(r, message - r, output, outctx,
 				FALSE, default_charset);
 			break;
 		      case ENCODED_COMMENTS:
@@ -411,7 +408,7 @@ void parse_message(const char *msg, int len,
 			while (r < message) {
 			    if (*r == '(') {
 				r++;
-				output(p, r-p, TYPE_HEADER_TEXT,
+				output(outctx, p, r-p, TYPE_HEADER_TEXT,
 				       default_charset);
 				p = r;
 				while (r < message && *r != ')') {
@@ -419,7 +416,8 @@ void parse_message(const char *msg, int len,
 					r++;
 				    r++;
 				}
-				rfc2047(p, r-p, output, TRUE, default_charset);
+				rfc2047(p, r-p, output, outctx,
+					TRUE, default_charset);
 				p = r;
 			    } else if (*r == '"') {
 				r++;
@@ -435,7 +433,7 @@ void parse_message(const char *msg, int len,
 			    }
 			}
 			if (r > p)
-			    output(p, r-p, TYPE_HEADER_TEXT,
+			    output(outctx, p, r-p, TYPE_HEADER_TEXT,
 				   default_charset);
 			break;
 		      case ENCODED_CPHRASES:
@@ -465,13 +463,13 @@ void parse_message(const char *msg, int len,
 			 * groups, but `From' takes a mailbox-list
 			 * and cannot.
 			 * 
-			 * For display purposes, however, I'm going
-			 * to ignore this distinction; anyone using
-			 * group syntax in a From header coming
-			 * into this parser will find that the
-			 * parser will DWIM. This doesn't seem to
-			 * me to be a large practical problem, and
-			 * it makes my life easier.
+			 * However, I'm going to ignore this
+			 * distinction; anyone using group syntax
+			 * in a From header coming into this parser
+			 * will find that the parser will DWIM.
+			 * This doesn't seem to me to be a large
+			 * practical problem, and it makes my life
+			 * easier.
 			 * 
 			 * So what I actually do here is:
 			 * 
@@ -538,14 +536,16 @@ void parse_message(const char *msg, int len,
 				} else {
 				    int end;
 				    if (rfc2047able)
-					rfc2047(p, q-p, output,
+					rfc2047(p, q-p, output, outctx,
 						TRUE, default_charset);
 				    else
-					output(p, q-p, TYPE_HEADER_TEXT,
+					output(outctx, p, q-p,
+					       TYPE_HEADER_TEXT,
 					       default_charset);
 				    if (q == r)
 					break;
-				    output(q, 1, TYPE_HEADER_TEXT, CS_ASCII);
+				    output(outctx, q, 1,
+					   TYPE_HEADER_TEXT, CS_ASCII);
 				    end = (*q == '"' ? '"' : ')');
 				    p = ++q;
 				    while (q < r && *q != end) {
@@ -554,21 +554,23 @@ void parse_message(const char *msg, int len,
 					q++;
 				    }
 				    if (end == ')')
-					rfc2047(p, q-p, output,
+					rfc2047(p, q-p, output, outctx,
 						TRUE, default_charset);
 				    else
-					output(p, q-p, TYPE_HEADER_TEXT,
+					output(outctx, p, q-p,
+					       TYPE_HEADER_TEXT,
 					       default_charset);
 				    if (q == r)
 					break;
-				    output(q, 1, TYPE_HEADER_TEXT, CS_ASCII);
+				    output(outctx, q, 1,
+					   TYPE_HEADER_TEXT, CS_ASCII);
 				    p = ++q;
 				}
 			    }
 			}
 			break;
 		    }
-		    output("\n", 1, TYPE_HEADER_TEXT, CS_ASCII);
+		    output(outctx, "\n", 1, TYPE_HEADER_TEXT, CS_ASCII);
 		    r = s;
 		}
 	    }
@@ -584,23 +586,24 @@ void parse_message(const char *msg, int len,
     }
 }
 
-void null_output_fn(const char *text, int len, int type, int charset)
+void null_output_fn(void *ctx, const char *text, int len,
+		    int type, int charset)
 {
 }
 
-void null_info_fn(int type, const char *text, int len)
+void null_info_fn(void *ctx, int type, const char *text, int len)
 {
 }
 
 /* FIXME: should this really be in here, or should it go in another module?
  * It is, after all, a _client_ of the parser code. */
-void db_info_fn(int type, const char *text, int len)
+void db_info_fn(void *ctx, int type, const char *text, int len)
 {
     /* FIXME */
 }
 void parse_for_db(const char *message, int msglen)
 {
-    parse_message(message, msglen, null_output_fn, db_info_fn);
+    parse_message(message, msglen, null_output_fn, NULL, db_info_fn, NULL);
 }
 
 #ifdef TESTMODE
@@ -611,13 +614,14 @@ void parse_for_db(const char *message, int msglen)
 #include <fcntl.h>
 
 /*
-gcc -g -DTESTMODE -Icharset -o rfc822{,.c} \
+gcc -Wall -g -DTESTMODE -Icharset -o rfc822{,.c} \
     build/{base64,qp,cs-*,malloc,rfc2047}.o
  */
 
 void fatal(int code, ...) { abort(); }
 
-void test_output_fn(const char *text, int len, int type, int charset)
+void test_output_fn(void *outctx, const char *text, int len,
+		    int type, int charset)
 {
     /* printf("%d (%d) <%.*s>\n", type, charset, len, text); */
     charset_state instate = CHARSET_INIT_STATE;
@@ -645,9 +649,9 @@ void test_output_fn(const char *text, int len, int type, int charset)
 	printf("\033[39;0m");
 }
 
-void test_info_fn(int type, const char *text, int len)
+void test_info_fn(void *infoctx, int type, const char *text, int len)
 {
-    printf("%s: <%.*s>\n", type, len, text);
+    printf("%d: <%.*s>\n", type, len, text);
 }
 
 int main(void)
@@ -681,12 +685,12 @@ int main(void)
     /*
      * First test the info gathering.
      */
-    parse_message(message, msglen, null_output_fn, test_info_fn);    
+    parse_message(message, msglen, null_output_fn, NULL, test_info_fn, NULL);
 
     /*
      * Now test the post-parse output.
      */
-    parse_message(message, msglen, test_output_fn, null_info_fn);
+    parse_message(message, msglen, test_output_fn, NULL, null_info_fn, NULL);
 
     return 0;
 }
