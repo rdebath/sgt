@@ -2,6 +2,7 @@ Summary: Saving session preferences after starting the session
 Class: wish
 Priority: medium
 Difficulty: tricky
+Fixed-in: 2004-12-29
 Content-type: text/x-html-body
 
 <p> When you adjust the properties of a running session using the
