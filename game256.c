@@ -5,6 +5,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <assert.h>
 
 #include "sdlstuff.h"
@@ -200,4 +201,38 @@ void endframe(void)
     long long now = bigclock();
     if (now < frame_end)
 	usleep(frame_end - now);
+}
+
+Image makeimage(int x, int y, int xoff, int yoff)
+{
+    Image ret;
+
+    ret = malloc(8+x*y);
+    if (ret == NULL)
+	abort();
+
+    ret[0] = xoff%256; ret[1] = xoff/256;
+    ret[2] = yoff%256; ret[3] = yoff/256;
+    ret[4] = x%256; ret[5] = x/256;
+    ret[6] = y%256; ret[7] = y/256;
+
+    memset(ret+8, 0, x*y);
+
+    return ret;
+}
+
+void bar(int x1, int y1, int x2, int y2, int c)
+{
+    int x, y;
+
+    if (x2 < x1) { int tmp = x1; x1 = x2; x2 = tmp; }
+    if (y2 < y1) { int tmp = y1; y1 = y2; y2 = tmp; }
+    if (x2 < 0 || x1 >= SCRWIDTH || y2 < 0 || y1 >= SCRHEIGHT) return;
+    if (x1 < 0) x1 = 0;
+    if (y1 < 0) y1 = 0;
+    if (x2 > SCRWIDTH-1) x2 = SCRWIDTH-1;
+    if (y2 > SCRHEIGHT-1) y2 = SCRHEIGHT-1;
+
+    for (y = y1; y <= y2; y++)
+	memset(scrdata+SCRWIDTH*2*y+2*x1, c, 2*(x2+1-x1));
 }
