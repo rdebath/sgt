@@ -8,7 +8,7 @@ Content-type: text/x-html-body
 PuTTY attempts to store its random number seed file
 <code>PUTTY.RND</code> in a sensible place (such as the user's home
 directory), as described in the
-<a href="http://www.chiark.greenend.org.uk/~sgtatham/putty/faq.html#A.5.2">FAQ</a>.
+<a href="http://www.chiark.greenend.org.uk/~sgtatham/putty/faq.html#QA.5.2">FAQ</a>.
 
 <p>
 However, we've had various reports that this isn't working as

@@ -12,7 +12,7 @@ currently there's no way to start it full-screen. There should be.
 <p>
 While we're at it, we may as have well an option for `maximised', even
 though you can already do that
-<a href="http://www.chiark.greenend.org.uk/~sgtatham/putty/faq.html#A.6.1">by other means</a>.
+<a href="http://www.chiark.greenend.org.uk/~sgtatham/putty/faq.html#QA.6.1">by other means</a>.
 
 <p>
 If we're going to do this, we should perhaps also propagate
