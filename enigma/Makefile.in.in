@@ -36,7 +36,7 @@ install: enigma
 	-chown root.games $(bindir)/enigma && chmod 2755 $(bindir)/enigma
 	#$(INSTALL_DATA) $(srcdir)/enigma.1 $(mandir)/man1/enigma.1
 	mkdir -p $(datadir)/enigma
-	for i in $(srcdir)/levels/*; do \
+	for i in $(srcdir)/levels/*.set $(srcdir)/levels/*.level; do \
 		$(INSTALL_DATA) $$i $(datadir)/enigma; \
 	done
 	mkdir -p $(localstatedir)/enigma
