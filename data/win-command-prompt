@@ -1,0 +1,16 @@
+Summary: Ability to backend onto a Windows command interpreter
+Class: wish
+Difficulty: taxing
+Priority: medium
+Content-type: text/x-html-body
+
+<p>
+It would clearly be desirable for PuTTY to be able to act as a front
+end for Windows command interpreters (Command Prompt, bash, etc).
+
+<p>
+In a pipe? Probably only for NT-class systems?
+
+<p>
+Workaround for now is to set up a local SSH or telnet server, of
+course.
