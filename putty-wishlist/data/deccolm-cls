@@ -6,5 +6,5 @@ Present-in: 0.53b
 Content-type: text/plain
 
 DECCOLM sequences (CSI ? 3 h and CSI ? 3 l) should also clear the screen
-and home the cursor.  They don't in PuTTY, but they do in xterm, and on
-a VT420.
+and home the cursor.  As of 2003-03-27, they do so in PuTTY, but the
+precise interaction with DECOM and DECSTBM needs checking against a real VT.
