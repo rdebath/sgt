@@ -35,6 +35,9 @@ static void act_search (void);
 static void act_recentre (void);
 static void act_width (void);
 static void act_offset (void);
+#ifdef TEST_BUFFER
+static void act_diagnostics (void);
+#endif
 
 keyact parse_action (char *name) {
     char *names[] = {
@@ -45,6 +48,9 @@ keyact parse_action (char *name) {
 	"cut", "copy", "paste", "suspend-axe", "goto-position",
 	"toggle-status", "search", "save-file", "exit-and-save",
 	"screen-recentre", "new-width", "new-offset"
+#ifdef TEST_BUFFER
+	, "diagnostics"
+#endif
     };
     keyact actions[] = {
 	act_exit, act_top, act_pgup, act_up, act_home, act_left,
@@ -53,6 +59,9 @@ keyact parse_action (char *name) {
 	act_cut, act_copy, act_paste, act_susp, act_goto,
 	act_togstat, act_search, act_save, act_exitsave,
 	act_recentre, act_width, act_offset
+#ifdef TEST_BUFFER
+	, act_diagnostics
+#endif
     };
     int i;
 
@@ -636,3 +645,13 @@ static void act_offset (void) {
 	    top_pos = new_top;
     }
 }
+
+#ifdef TEST_BUFFER
+static void act_diagnostics(void)
+{
+    extern void buffer_diagnostic(buffer *buf, char *title);
+
+    buffer_diagnostic(filedata, "filedata");
+    buffer_diagnostic(cutbuffer, "cutbuffer");
+}
+#endif

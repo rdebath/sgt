@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -g -c -Wall -I/home/sgtatham/include
+CFLAGS = -g -c -Wall -I/home/sgtatham/include $(XFLAGS)
 LINK = gcc
 LFLAGS =
 LIBS = -L/home/sgtatham/lib -lslang

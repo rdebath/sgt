@@ -7,8 +7,13 @@
 #include "axe.h"
 #include "btree.h"
 
+#ifdef TEST_BUFFER
+#define BLKMIN 4
+#else
 #define BLKMIN 512
-#define BLKMAX 1024
+#endif
+
+#define BLKMAX (2*BLKMIN)
 
 struct file {
     FILE *fp;
@@ -75,6 +80,7 @@ void bufblkpropmake(void *state, bt_element_t av, nodecomponent *dest)
 void bufblkpropmerge(void *state, nodecomponent *s1, nodecomponent *s2,
 		     nodecomponent *dest)
 {
+    if (!s1 && !s2) return;	       /* don't need to free anything */
     dest[0].i = s2[0].i + (s1 ? s1[0].i : 0);
 }
 
@@ -180,15 +186,16 @@ static struct bufblk *buf_convert_to_literal(struct bufblk *blk)
 /*
  * Look at blocks `index' and `index+1' of buf. If they're both
  * literal-data blocks and one of them is undersized, merge or
- * redistribute.
+ * redistribute. Returns 0 if it has not changed the number of
+ * blocks, or 1 if it has merged two.
  */
-static void buf_bt_cleanup(btree *bt, int index)
+static int buf_bt_cleanup(btree *bt, int index)
 {
     struct bufblk *a, *b, *cvt;
     int totallen;
     unsigned char tmpdata[BLKMAX*2];
 
-    if (index < 0) return;
+    if (index < 0) return 0;
 
     a = (struct bufblk *)bt_index(bt, index);
     b = (struct bufblk *)bt_index(bt, index+1);
@@ -205,11 +212,15 @@ static void buf_bt_cleanup(btree *bt, int index)
 	b = cvt;
     }
 
-    if (!a || !b || a->file || b->file) return;
+    if (!a || !b || a->file || b->file) return 0;
 
-    if (a->len >= BLKMIN && b->len >= BLKMIN) return;
+    if (a->len >= BLKMIN && b->len >= BLKMIN) return 0;
 
     assert(a->len <= BLKMAX && b->len <= BLKMAX);
+
+    /* Use bt_index_w to ensure reference count of 1 on both blocks */
+    a = (struct bufblk *)bt_index_w(bt, index);
+    b = (struct bufblk *)bt_index_w(bt, index+1);
 
     /*
      * So, we have one block with size at most BLKMIN, and another
@@ -234,6 +245,8 @@ static void buf_bt_cleanup(btree *bt, int index)
 
 	bt_replace(bt, a, index);
 	bt_replace(bt, b, index+1);
+
+	return 0;
     } else {
 	/*
 	 * Just merge into one.
@@ -243,6 +256,8 @@ static void buf_bt_cleanup(btree *bt, int index)
 
 	bt_replace(bt, a, index);
 	free(bt_delpos(bt, index+1));
+
+	return 1;
     }
 }
 
@@ -259,7 +274,7 @@ static int buf_bt_splitpoint(btree *bt, int pos)
     /*
      * Now split element `index' at position `poswithin'.
      */
-    blk = (struct bufblk *)bt_index(bt, index);
+    blk = (struct bufblk *)bt_index_w(bt, index);   /* ensure ref count == 1 */
     newblk = (struct bufblk *)bufblkcopy(NULL, blk);
 
     if (!newblk->file) {
@@ -268,13 +283,14 @@ static int buf_bt_splitpoint(btree *bt, int pos)
 	newblk->filepos += poswithin;
     }
     blk->len = poswithin;
+    bt_replace(bt, blk, index);
     newblk->len -= poswithin;
     bt_addpos(bt, newblk, index+1);
 
-    buf_bt_cleanup(bt, index-1);
     buf_bt_cleanup(bt, index+1);
+    index -= buf_bt_cleanup(bt, index-1);
 
-    return index+1;
+    return index + 1;
 }
 
 static btree *buf_bt_split(btree *bt, int pos, int before)
@@ -490,3 +506,43 @@ extern void buf_paste(buffer *buf, buffer *cutbuffer, int pos)
     btree *bt = bt_clone(cutbuffer->bt);
     buf_insert_bt(buf, bt, pos);
 }
+
+#ifdef TEST_BUFFER
+static FILE *debugfp = NULL;
+extern void buffer_diagnostic(buffer *buf, char *title)
+{
+    int i, offset;
+    struct bufblk *blk;
+
+    if (!debugfp) {
+	debugfp = fdopen(3, "w");
+	if (!debugfp)
+	    debugfp = fopen("debug.log", "w");
+    }
+
+    if (!buf) {
+	fprintf(debugfp, "Buffer [%s] is null\n", title);
+	return;
+    }
+
+    fprintf(debugfp, "Listing of buffer [%s]:\n", title);
+    offset = 0;
+    for (i = 0; (blk = (struct bufblk *)bt_index(buf->bt, i)) != NULL; i++) {
+	fprintf(debugfp, "%08x: %p, len =%8d,", offset, blk, blk->len);
+	if (blk->file) {
+	    fprintf(debugfp, " file %p pos %8d\n", blk->file, blk->filepos);
+	} else {
+	    int j;
+
+	    for (j = 0; j < blk->len; j++)
+		fprintf(debugfp, " %02x", blk->data[j]);
+
+	    fprintf(debugfp, "\n");
+	}
+	offset += blk->len;
+    }
+    fprintf(debugfp, "Listing concluded\n\n");
+
+    fflush(debugfp);
+}
+#endif

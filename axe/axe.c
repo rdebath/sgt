@@ -9,18 +9,6 @@
  *    the B-tree property size limit :-( Either malloc a long long
  *    for each tree node, or stitch together two ints in some
  *    ghastly fashion.
- *     * Which reminds me: malloced tree properties won't currently
- * 	 work, because there's no interface to ask the user
- * 	 property creation functions to _free_ one. Perhaps
- * 	 propmerge(NULL,NULL,dest).
- *     * Also this means property space must be initialised to
- * 	 something useful so that the user creation function knows
- * 	 to malloc new stuff. I think initialising the pointer
- * 	 field of each nodecomponent union to NULL should be
- * 	 sufficient; _if_ the user is doing mallocing, they'll want
- * 	 the pointer field anyway, and if they're doing static
- * 	 property data then they won't need it initialised in any
- * 	 case so it doesn't matter.
  *
  *  - Multiple buffers, multiple on-screen windows.
  *     + ^X^F to open new file
@@ -38,6 +26,9 @@
  * 	 enables pasting into the search string.
  *     + er, how exactly do we deal with the problem of saving over
  * 	 a file which we're maintaining references to?
+ * 
+ *  - Retire S-Lang in favour of curses, or at the very least
+ *    introduce a switchable abstraction layer.
  */
 
 #include <stdio.h>
