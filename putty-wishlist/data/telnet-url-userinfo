@@ -1,0 +1,13 @@
+Summary: PuTTY should support the full telnet: URL syntax
+Class: bug
+Priority: medium
+Difficulty: fun
+Present-in: 0.53b 2002-12-19
+Content-type: text/x-html-body
+
+<p>
+The <a href="ftp://ftp.rfc-editor.org/in-notes/rfc1738.txt">
+<code>telnet:</code> URL scheme</a> allows for specifying a user name
+and password to log in with.  PuTTY doesn't currently support these.
+PuTTY should at least be capable of ignoring them if they're present, and
+should preferably do something useful with them.
