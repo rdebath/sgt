@@ -699,13 +699,18 @@ int main(int argc, char **argv)
             exit(EXIT_FAILURE);
         }
         do_doit_send_str(sock, ctx, "CreateProcessWithOutput\ncmd /c ");
-        dir = path_translate(get_pwd());
+        dir = get_pwd();
+        path = malloc(strlen(dir)+2);
+        sprintf(path, "%s/", dir);
+        dir = path_translate(path);
         if (dir[0] && dir[1] == ':') {
             do_doit_send(sock, ctx, dir, 2);
             do_doit_send_str(sock, ctx, " & ");
             dir += 2;
         }
         do_doit_send_str(sock, ctx, "cd ");
+        if (strlen(dir) > 1 && dir[strlen(dir)-1] == '\\')
+            dir[strlen(dir)-1] = '\0';
         do_doit_send_str(sock, ctx, dir);
         do_doit_send_str(sock, ctx, " & ");
         do_doit_send_str(sock, ctx, arg);
