@@ -1,0 +1,56 @@
+Summary: Double-byte character set (CJK, &c) display is broken
+Class: semi-bug
+Difficulty: tricky
+Priority: medium
+Content-type: text/x-html-body
+
+<p>
+We've had a report that Korean display got a lot worse in the
+snapshots between r5002 and r5003 <tt>&lt;000001c513c9$e63ae1e0$aa000059@ktd&gt;</tt>.
+Quoth Simon:
+
+<blockquote>
+<p>
+Looking at the code, I think I can see why this is happening. This
+is to do with RDB's idea that when the user selects `use font
+encoding' and a font with a DBCS encoding, the terminal code should
+simply store the individual bytes in individual character cells and
+rely on <code>do_text()</code> being passed a string of these so that <code>TextOut()</code>
+can reconstitute pairs of DBCS bytes into double-width characters.
+
+<p>
+As far as I can tell, <code>terminal.c</code> does not mark the first byte of a
+DBCS character stored in this way. Therefore, the mechanism is
+fundamentally dependent on a <code>do_text()</code> run <em>happening</em> to begin at
+the correct point mod 2! Hence the comment in the mail referenced
+above, which said that there was already some breakage when the
+cursor moved over a double-byte character - the half-character under
+the cursor cannot be properly redrawn. Owing to <a href="font-overflow.html">`font-overflow'</a>,
+though, when you move the cursor over a double-byte character we now
+redraw a lot of text to the right of that as well, and if the cursor
+is on the first half of the character then this is <em>bound</em> to be
+incorrect mod 2; so the problem shows up a lot more readily. I'd bet
+that the same breakage could have been seen in previous versions if
+the window was covered and re-exposed when the cursor was in a
+problem position.
+
+<p>
+A real fix for this would involve implementing proper DBCS support,
+by detecting DBCS lead bytes in the <code>terminal.c</code> input data stream and
+storing both bytes in the same character cell using the existing
+<code>UCSWIDE</code> mechanism. I have occasionally wondered about doing this: I
+envisage that we would co-opt the top half of the <code>unsigned long</code>
+space (never used by any flavour of Unicode/UCS ever) to provide
+more than enough fake character encodings for the purpose.
+
+<p>
+Of course, if we were going to support DBCSes in <code>terminal.c</code> it would
+also be good to be able to support them <em>properly</em>, by translating
+them to Unicode on input.
+
+<p>
+<em>Summary:</em> I think this has always been broken, and now it's merely
+more obviously broken. I regret the effect on CJK users who had
+found the previous behaviour worked just about well enough, but I
+don't think a hurried fix is in the general interest.
+</blockquote>
