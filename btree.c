@@ -251,11 +251,15 @@ static INLINE int bt_is_leaf(btree *bt, nodeptr n)
  */
 static INLINE nodeptr bt_new_node(btree *bt, int nsubtrees)
 {
+    int i;
     nodeptr ret = newn(nodecomponent, bt->maxdegree*2 + 2 + bt->nprops);
     ret[bt->maxdegree*2-1].i = nsubtrees;
     ret[bt->maxdegree*2+1].i = 1;      /* reference count 1 */
 #ifdef TEST
     set_invalid_property(ret + bt->maxdegree * 2 + 2);
+#else
+    for (i = 0; i < bt->nprops; i++)
+	ret[bt->maxdegree*2+2+i].ep = NULL;
 #endif
     testlock(TRUE, TRUE, ret);
     return ret;
@@ -267,6 +271,8 @@ static INLINE nodeptr bt_new_node(btree *bt, int nsubtrees)
 static INLINE void bt_destroy_node(btree *bt, nodeptr n)
 {
     testlock(TRUE, FALSE, n);
+    /* Free the property. */
+    bt->propmerge(bt->userstate, NULL, NULL, n + bt->maxdegree * 2 + 2);
     sfree(n);
 }
 
@@ -339,6 +345,8 @@ static nodeptr bt_clone_node(btree *bt, nodeptr n)
      * Copy the user property explicitly (in case it contains a
      * pointer to an allocated area).
      */
+    for (i = 0; i < bt->nprops; i++)
+	ret[bt->maxdegree*2+2+i].ep = NULL;
     bt->propmerge(bt->userstate, NULL, n + bt->maxdegree * 2 + 2,
 		  ret + bt->maxdegree * 2 + 2);
     return ret;
