@@ -1,0 +1,13 @@
+Summary: PuTTY's response to DA is suboptimal
+Class: semi-bug
+Priority: medium
+Difficulty: fun
+Present-in: 0.53b 2003-03-25
+Content-type: text/plain
+
+At present, PuTTY's default response to DA (CSI c) is CSI ? 6 c, which
+denotes a VT102.  This is slightly inconsistent with xterm, which returns
+CSI ? 1 ; 2 c -- a VT100 with AVO.  Since PuTTY supports quite a few VT400
+options, I suspect it would be more sensible for it to return something
+in the 6x range, perhaps based on the current compatibility level set
+by DECSCL.  Maybe it should even be configurable -- it is on a VT420.
