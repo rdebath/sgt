@@ -1,20 +1,26 @@
 Summary: Support for more colours
 Class: wish
 Priority: low
-Difficulty: tricky
+Difficulty: fun
 Depends: compressed-scrollback
 Content-type: text/x-html-body
 
-<p>It's been suggested that PuTTY could usefully support xterm's 256-colour
-mode.  This would involve having rather more storage for character attributes
-than at present, which in the present (0.55) design of PuTTY would mean using
-64 bits to store each character of scrollback, which is slightly ludicrous.
-When we get around to redesigning the scrollback format so as not to use
-so much memory, adding more attribute bits might become feasible.
+<p>
+It's been suggested that PuTTY could usefully support xterm's 256-colour
+mode (ESC [ 38;5;XX m and ESC [ 48;5;XX m, where XX is a colour
+index from 0-255).
 
-<p>&lt;1042233614.1153.15.camel@evilmagic.org&gt; contains a patch to implement
-this. Unfortunately, it relies on having 64-bit types, which not every
-platform we want to support has; thus it doubles the amount of memory
-taken up by the scrollback, which we don't think this feature is
-worth. Any patch we're likely to accept will need to deal with
-<a href="compressed-scrollback.html">`compressed-scrollback'</a> first.
+<p>
+This would be a pretty easy piece of work, now that we have plenty
+of free bits in the attribute word in the termchar structure.
+However, I'm currently unaware of any applications that use it,
+aside from a vague suggestion that people might put 256-colour codes
+in their colour <code>ls</code> settings.
+
+<p>
+If anyone gives us a good reason why we should want to implement
+this, I'll probably just go ahead and do it.
+
+<p>
+(&lt;1042233614.1153.15.camel@evilmagic.org&gt; contains a patch
+to implement this, but it's very out of date.)
