@@ -1,0 +1,11 @@
+Summary: Ctrl+/ should send the same as Ctrl+_
+Class: wish
+Content-type: text/x-html-body
+Priority: medium
+Difficulty: fun
+
+<p>The Emacs Tutorial claims
+<blockquote>
+On some terminals, you can type C-_ by typing / while holding down CONTROL.
+</blockquote>
+It would be good if PuTTY supported this.
