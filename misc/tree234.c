@@ -677,7 +677,7 @@ static void trans234_subtree_right(node234 *n, int ki, int *k, int *index) {
  */
 static void trans234_subtree_left(node234 *n, int ki, int *k, int *index) {
     node234 *src, *dest;
-    int i, srclen, adjust;
+    int i, adjust;
 
     src = n->kids[ki];
     dest = n->kids[ki-1];
