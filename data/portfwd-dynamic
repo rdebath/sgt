@@ -1,0 +1,23 @@
+Summary: OpenSSH-style dynamic port forwarding
+Class: wish
+Difficulty: tricky
+Priority: low
+Content-type: text/x-html-body
+
+<p>
+We're occasionally asked to implement dynamic port forwarding, where
+PuTTY acts as a proxy for connection requests (using a protocol such
+as SOCKS) and creates tunnels on the fly. This is akin to
+<a href="http://www.openssh.com/">OpenSSH's</a> <code>-D</code> option.
+From the 3.5p1 ssh(1) man page:
+
+<p><pre>-D port
+        Specifies a local ``dynamic'' application-level port forwarding.
+        This works by allocating a socket to listen to port on the local
+        side, and whenever a connection is made to this port, the connec­
+        tion is forwarded over the secure channel, and the application
+        protocol is then used to determine where to connect to from the
+        remote machine.  Currently the SOCKS4 protocol is supported, and
+        ssh will act as a SOCKS4 server.  Only root can forward privi­
+        leged ports.  Dynamic port forwardings can also be specified in
+        the configuration file.</pre>
