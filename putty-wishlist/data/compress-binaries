@@ -1,0 +1,30 @@
+Summary: Compress shipped PuTTY binaries with a tool such as UPX
+Class: wish
+Priority: never
+Content-type: text/x-html-body
+
+<p>
+Occasionally it's suggested that we compress the PuTTY binaries on
+our website with tools such as
+<a href="http://upx.sourceforge.net/">UPX</a>.
+
+<p>
+While it's an interesting idea, it's not currently for us.
+<ul>
+<li>
+Firstly, PuTTY is already quite small and you can comfortably carry
+around the PuTTY tools you're likely to use frequently on a floppy
+disk.
+</li>
+<li>
+Secondly, and more importantly, we provide cryptographic signatures of
+the binaries we've generated with our compilers.  We're as confident
+as we can be that they've not been tampered with between being built
+and being signed; UPXing the binaries would make us a lot less
+confident of this.
+</li>
+</ul>
+
+<p>
+In short, if you want to UPX the binaries, fine, but at the moment
+we're not planning to.
