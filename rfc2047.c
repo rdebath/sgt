@@ -8,6 +8,13 @@
 #include "timber.h"
 #include "charset.h"
 
+/*
+ * We use the RFC 2822 definition of whitespace, rather than
+ * relying on ctype.h.
+ */
+#define WSP(c) ( (c)==' ' || (c)=='\t' )
+#define FWS(c) ( WSP(c) || (c)=='\n' )
+
 static int spot_encoded_word(const char *text, int length)
 {
     int state = 0;
@@ -44,7 +51,7 @@ static int spot_encoded_word(const char *text, int length)
 	    if (c == '?')
 		state++;
 	    break;
-	  case 4:		       /* expect any non-space */
+	  case 4:		       /* expect any non-control char */
 	    if (c >= '\0' && c < ' ')
 		return 0;
 	    if (c == '?')
@@ -76,8 +83,10 @@ static int spot_encoded_word(const char *text, int length)
  * encoded-word is output using the provided default charset.
  */
 void rfc2047(const char *text, int length, parser_output_fn_t output,
-	     void *outctx, int structured, int dequote, int default_charset)
+	     void *outctx, int structured, int display, int default_charset)
 {
+    int quoting = FALSE;
+
     while (length > 0) {
 	const char *startpoint = text;
 	int elen;
@@ -181,20 +190,36 @@ void rfc2047(const char *text, int length, parser_output_fn_t output,
 	    spot_encoded_word(text, length))
 	    /* do not output anything */;
 	else if (text - startpoint > 0) {
-	    if (!dequote) {
+	    if (display) {
 		output(outctx, startpoint, text-startpoint, TYPE_HEADER_TEXT,
 		       default_charset);
 	    } else {
 		const char *p = startpoint;
 		while (p < text) {
-		    if (*p == '"' ||
-			(*p == '\\' && p+1 < text)) {
+		    if (*p == '\n' ||
+			(structured && (*p == '"' || (FWS(*p) && !quoting) ||
+					(*p == '\\' && p+1 < text)))) {
 			if (p > startpoint)
 			    output(outctx, startpoint, p-startpoint,
 				   TYPE_HEADER_TEXT, default_charset);
 			startpoint = p+1;
+			if (*p == '"')
+			    quoting = !quoting;
 			if (*p == '\\')
 			    p++;
+			if (FWS(*p)) {
+			    /*
+			     * When parsing a structured header for
+			     * information, I replace any amount of
+			     * FWS not in a quoted string by a
+			     * single space.
+			     */
+			    output(outctx, " ", 1, TYPE_HEADER_TEXT, CS_ASCII);
+			    while (p < text && FWS(*p))
+				p++;
+			    startpoint = p;
+			    p--;       /* so that subsequent p++ is right */
+			}
 		    }
 		    p++;
 		}

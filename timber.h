@@ -240,7 +240,7 @@ void parse_message(const char *message, int msglen,
  * rfc2047.c
  */
 void rfc2047(const char *text, int length, parser_output_fn_t output,
-	     void *outctx, int structured, int dequote, int default_charset);
+	     void *outctx, int structured, int display, int default_charset);
 
 /*
  * date.c
