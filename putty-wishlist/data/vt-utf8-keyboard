@@ -1,0 +1,52 @@
+Summary: Keyboard mode to support Microsoft standard serial consoles
+Class: wish
+Priority: low
+Difficulty: fun
+Content-type: text/x-html-body
+
+<p>Microsoft have published a
+<a href="http://download.microsoft.com/download/whistler/hwdev3/1.0/WXP/EN-US/VT-UTF8andVT100+v09.exe">
+ standard
+</a>
+describing how PCs should talk to serial consoles.  To avoid compatibility,
+this uses a completely different keyboard mapping from the rest of the
+world, outlined below:
+</p>
+<table>
+<tr><td>Home Key<td>&lt;ESC&gt;h
+<tr><td>End Key<td>&lt;ESC&gt;k
+<tr><td>Insert Key<td>%lt;ESC&gt;+
+<tr><td>Delete Key<td>%lt;ESC&gt;-
+<tr><td>Page Up Key<td>%lt;ESC&gt;?
+<tr><td>Page Down Key<td>%lt;ESC&gt;/
+<tr><td>Function 1 Key<td>%lt;ESC&gt;1
+<tr><td>Function 2 Key<td>%lt;ESC&gt;2
+<tr><td>Function 3 Key<td>%lt;ESC&gt;3
+<tr><td>Function 4 Key<td>%lt;ESC&gt;4
+<tr><td>Function 5 Key<td>%lt;ESC&gt;5
+<tr><td>Function 6 Key<td>%lt;ESC&gt;6
+<tr><td>Function 7 Key<td>%lt;ESC&gt;7
+<tr><td>Function 8 Key<td>%lt;ESC&gt;8
+<tr><td>Function 9 Key<td>%lt;ESC&gt;9
+<tr><td>Function 10 Key<td>%lt;ESC&gt;0
+<tr><td>Function 11 Key<td>%lt;ESC&gt;!
+<tr><td>Function 12 Key<td>%lt;ESC&gt;@
+<tr><td>Shift Modifier<td>%lt;ESC&gt;^S
+<tr><td>Alt Modifier<td>%lt;ESC&gt;^A
+<tr><td>Control Modifier<td>%lt;ESC&gt;^C
+<tr><td>Reserved<td>%lt;ESC&gt;#
+<tr><td>Reserved<td>%lt;ESC&gt;A
+<tr><td>Reserved<td>%lt;ESC&gt;B
+<tr><td>Reserved<td>%lt;ESC&gt;C
+<tr><td>Reserved<td>%lt;ESC&gt;D
+<tr><td>Reserved<td>%lt;ESC&gt;&
+<tr><td>Reserved<td>%lt;ESC&gt;*
+<tr><td>Reserved<td>%lt;ESC&gt;.
+<tr><td>Reserved<td>%lt;ESC&gt;R
+<tr><td>Reserved<td>%lt;ESC&gt;r
+</table>
+
+<p>The modifiers are represented as the codes listed above, prefixed to the
+normal sequences.  If the modifier is pressed alone, its sequence is
+transmitted twice in succession.  If multiple modifiers apply, they're
+transmitted in the order shift, control, alt.
