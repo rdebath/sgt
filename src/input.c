@@ -498,6 +498,11 @@ int talker_parse_sysmsg(char *line, char *user) {
 }
 
 
+int strpfx(const char *a, const char *b)
+{
+    return strncmp(a, b, strlen(b));
+}
+
 void event (enum EventType type, void *auxdat) {
     enum TaskType task;
     struct TaskInfo ti;
@@ -580,39 +585,39 @@ void event (enum EventType type, void *auxdat) {
 	while (*p == ' ')
 	    p++;		       /* skip spaces too */
 
-	if (!strncmp(p, "In", 2))
+	if (!strpfx(p, "In"))
 	    monostate = MENU;
-	else if (!strcmp(p, "Reading View Errors [ESC][Y][V]"))
+	else if (!strpfx(p, "Reading View Errors [ESC][Y][V]"))
 	    monostate = ERRORS;	       /* HACK! But it's the only way. */
-	else if (!strcmp(p, "Modifying Name"))
+	else if (!strpfx(p, "Modifying Name"))
 	    monostate = MOD_NAME;
-	else if (!strcmp(p, "Modifying Edit Name"))
+	else if (!strpfx(p, "Modifying Edit Name"))
 	    monostate = EDITNAME;
-	else if (!strncmp(p, "Logs", 4))
+	else if (!strpfx(p, "Logs"))
 	    monostate = MENU;	       /* logs menu is still a menu... */
-	else if (!strncmp(p, "Scanning", 4))
+	else if (!strpfx(p, "Scanning"))
 	    monostate = SCANNING;      /* simple wait-state */
-	else if (!strncmp(p, "Listing Known Users", 19))
+	else if (!strpfx(p, "Listing Known Users"))
 	    monostate = KNOWNUSERS;
-	else if (!strncmp(p, "Reading Messages", 16))
+	else if (!strpfx(p, "Reading Messages"))
 	    monostate = MESSAGES;
-	else if (!strncmp(p, "Reading All Messages", 20))
+	else if (!strpfx(p, "Reading All Messages"))
 	    monostate = ALLMSGS;
-	else if (!strncmp(p, "Reading", 7)) {
+	else if (!strpfx(p, "Reading")) {
 	    monostate = READING;
 	    strncpy(last_file_title, p+8, sizeof(last_file_title)-1);
 	    last_file_title[sizeof(last_file_title)-1] = '\0';
-	} else if (!strncmp(p, "Editing", 7)) {
+	} else if (!strpfx(p, "Editing")) {
 	    monostate = EDITOR;
 	    strncpy(last_file_title, p+8, sizeof(last_file_title)-1);
 	    last_file_title[sizeof(last_file_title)-1] = '\0';
-	} else if (!strncmp(p, "Talker", 6)) {
+	} else if (!strpfx(p, "Talker")) {
 	    monostate = TALKER;
-	} else if (!strncmp(p, "Utilities", 9))
+	} else if (!strpfx(p, "Utilities"))
 	    monostate = UTILS;
-	else if (!strncmp(p, "Examining", 9))
+	else if (!strpfx(p, "Examining"))
 	    monostate = EXAMINING;
-	else if (!strncmp(p, "Exit", 4)) {
+	else if (!strpfx(p, "Exit")) {
 	    char buffer[200];
 	    fprintf(dfp, "Exiting Monochrome\n");
 	    write (wfd, "\033xx", 3);  /* best to be sure... */
