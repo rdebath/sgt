@@ -18,18 +18,17 @@ def charname(x):
 	key = hexstr(x)
 	while len(key) < 4: key = "0" + key
 	key = string.upper(key)
+	if han_translations:
+	    try:
+		value = handb[key]
+		return "<han> " + value
+	    except KeyError:
+		pass
 	try:
 	    value = db[key]
 	    return string.split(value, ";")[1]
 	except KeyError:
-	    if han_translations:
-		try:
-		    value = handb[key]
-		    return "<han> " + value
-		except KeyError:
-		    return "<no name available>"
-	    else:
-		return "<no name available>"
+	    return "<no name available>"
     else:
 	return ""
 
