@@ -1,6 +1,6 @@
 # -*- mode: sh; mode: fold -*-
 # Simon Tatham's standardised chunk of .bashrc
-# $Revision: 1.48 $
+# $Revision$
 
 #{{{ I don't like .bash_history files. They wet their nests.
 unset HISTFILE
@@ -68,6 +68,19 @@ rmpath() {
   fi
   eval "$varname=\"\$newpath\""
   return 0
+}
+
+showpath() {
+  # Use IFS to separate the path into its components.
+  local IFS i useit colon removed varname oldpath newpath
+
+  # By default we manage $PATH and it's separated by colons. These
+  # can change.
+  varname=${1:-PATH}
+  IFS=${2:-:}
+  eval "oldpath=\"\$$varname\""
+
+  for i in $oldpath; do echo $i; done
 }
 
 #}}}
