@@ -625,6 +625,29 @@ step size, just like addressing a substream of the Infinity
 Machine's memory, and Bob can pick the same substream out of his
 copy of the pad.
 
+<p>
+(Addendum, as of 7-Jul-2003: In fact, given an infinite one-time key
+you can not merely encrypt unbreakably, but you can both encrypt and
+MAC unforgeably in one operation. Break the one-time key into
+infinitely many infinite subsequences in the usual way. Take the
+first of these sequences, and use it to encode the first bit of the
+plaintext, using two bits of key at a time: set one of the first two
+bits of the output, chosen by a key bit, to be equal to the first
+bit of plaintext XORed with the second key bit. Then set one of the
+<em>next</em> two output bits, chosen by a third key bit, to be
+equal to the first plaintext bit XORed with a fourth key bit, and so
+on. So you end up with infinitely many copies of the first plaintext
+bit, stored in an unpredictable infinite subset of the ciphertext,
+XORed with never-again used bits of one-time key. Now take the
+second infinite key subsequence, and use it to encode the second
+plaintext bit infinitely many times in the remaining unused
+ciphertext bits in the same way, and so on. The decryptor must check
+every copy of every bit to provide the MAC functionality; for an
+attacker to correctly alter even one bit of the plaintext, they must
+correctly guess infinitely many key bits in order to work out which
+set of bits must be flipped in the ciphertext. So it is probability
+zero that this scheme could ever be broken.)
+
 <p> 
 So that's symmetric cryptography sorted. The key must be infinite,
 but once it's there it's just as safe as a one-time pad and never
