@@ -20,7 +20,7 @@
 a complicated way.
 
 The command-line arguments to \cw{multi} include a command, a set of
-filenames, and a fragment of Perl. for each of the filenames,
+filenames, and a fragment of Perl. For each of the filenames,
 \cw{multi} will use the fragment of Perl to transform the filename
 into a new filename, and will then invoke the given command, passing
 the old and new filenames as arguments.
