@@ -8,7 +8,8 @@ url = sys.argv[1]
 
 t = urlparse.urlparse(url)
 
-if t[0] == "http" and t[1] == "www.livejournal.com" and t[2][:7] == "/users/":
+if t[0] == "http" and t[1] == "www.livejournal.com" and \
+(t[2][:7] == "/users/" or t[2][:11] == "/community/"):
     # For any link which deals in someone's actual journal, we want
     # to ensure `style=mine' is one of the query variables if there
     # isn't already a style setting.
