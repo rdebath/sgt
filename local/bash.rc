@@ -1,6 +1,6 @@
 # -*- mode: sh; mode: fold -*-
 # Simon Tatham's standardised chunk of .bashrc
-# $Revision: 1.10 $
+# $Revision: 1.11 $
 
 #{{{ I don't like .bash_history files. They wet their nests.
 unset HISTFILE
@@ -41,7 +41,10 @@ bashrc_dovars() {
   if [ -n "$foo" ]; then export VISUAL=$foo; export EDITOR=$foo; fi
   export FAST_PNEWS=y
   export TRNINIT="-F>\  -h +hFrom +hNewsgroups +hDate +hFollowup-To -Os -q"
-  export ATTRIBUTION="%)f <%>f> wrote:"
+  # Complex ATTRIBUTION line for trn, causing the `In article' line to
+  # disappear and also causing spaces to be trimmed from the ends of
+  # the full name part
+  export ATTRIBUTION="%(%)f=^ *\(.*[^ ]\) *?%1:%)f) <%>f> wrote:"
   export HOST_DEFAULTS=-R
   export CVS_RSH=ssh
   # LS_COLORS: file types
