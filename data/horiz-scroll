@@ -1,0 +1,15 @@
+Summary: Horizontal scrollbar
+Class: wish
+Priority: low
+Difficulty: tricky
+Content-type: text/x-html-body
+
+<p>Some people would like a horizonal scrollbar, because they want to be able
+to look at things wider than the screen.  This wouldn't be analagous to the
+vertical scrollbar, since that allows viewing of the (read-only) scrollback,
+whereas a horizontal scrollbar would adjust which part of a larger terminal
+was visible.
+
+<p>A simple workaround for users of Unix systems is to install
+<code>less</code> and use <code>less -S</code> to view their files and command
+output.
