@@ -1,4 +1,4 @@
-Summary: Vulnerabilities discovered by SSHredder test suite (CERT CA-2002-36)
+Summary: SSHredder test suite vulnerabilities (CERT CA-2002-36)
 Class: bug
 Difficulty: fun
 Priority: high
@@ -17,7 +17,7 @@ vulnerability is believed to be fixed in 0.53b (released Nov 12, 2002).
 <p>
 Certain well-chosen malformed or unusual packets can lead to
 remote code execution attacks. See the 
-<a href="http://www.rapid7.com/advisories/R7-0009.txt">Rapid7 advisorory</a>
+<a href="http://www.rapid7.com/advisories/R7-0009.txt">Rapid7 advisory</a>
 and their 
 <a href="http://www.rapid7.com/perl/DownloadRequest.pl?PackageChoice=666">SSHredder</a>
 test suite for details.
