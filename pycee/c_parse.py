@@ -135,6 +135,9 @@ class err_generic_parse_error:
 class err_expected_token(err_generic_parse_error):
     def __init__(self, token):
         self.message = "expected " + lex_names[token]
+class err_eof(err_generic_parse_error):
+    def __init__(self):
+        self.message = "unexpected end of file"
 class err_no_spec_qual(err_generic_parse_error):
     def __init__(self):
         self.message = "expected at least one type specifier or qualifier"
@@ -201,8 +204,12 @@ def parse(lex, errfunc=defaulterrfunc):
 
         def error(self, errobj):
             lexeme = self.peek()
-            errobj.line = lexeme.line
-            errobj.col = lexeme.col
+	    if lexeme == None:
+		errobj.line = self.lex.line
+		errobj.col = self.lex.col
+	    else:
+		errobj.line = lexeme.line
+		errobj.col = lexeme.col
             raise errobj
 
         def translation_unit(self):
@@ -546,6 +553,8 @@ def parse(lex, errfunc=defaulterrfunc):
         def designator(self):
             n = self.node(pt_designator)
             token = self.get()
+	    if token == None:
+		self.error(err_eof())
             n.append(token)
             if token.type == lt_lbracket:
                 n.append(self.constant_expression())
@@ -583,7 +592,7 @@ def parse(lex, errfunc=defaulterrfunc):
         def pointer(self):
             n = self.node(pt_pointer)
             while self.peektype() == lt_times:
-                self.get()
+                self.eat(lt_times)
                 if self.type_qualifier_peek():
                     n.append(self.type_qualifier_list())
                 else:
@@ -690,10 +699,10 @@ def parse(lex, errfunc=defaulterrfunc):
             if ident != None:
                 n.append(ident)
             elif t == lt_default:
-                self.get()
+                self.eat(lt_default)
                 n.append(None)
             elif t == lt_case:
-                self.get()
+                self.eat(lt_case)
                 n.append(self.constant_expression())
             else:
                 assert 0, "parser internal chaos"
@@ -704,6 +713,8 @@ def parse(lex, errfunc=defaulterrfunc):
         def selection_statement(self):
             n = self.node(pt_selection_statement)
             token = self.get()
+	    if token == None:
+		self.error(err_eof())
             n.append(token)
             if token.type != lt_if and token.type != lt_switch:
                 assert 0, "parser internal chaos"
@@ -721,6 +732,8 @@ def parse(lex, errfunc=defaulterrfunc):
         def iteration_statement(self):
             n = self.node(pt_iteration_statement)
             token = self.get()
+	    if token == None:
+		self.error(err_eof())
             n.append(token)
             if token.type == lt_while:
                 self.eat(lt_lparen)
@@ -761,6 +774,8 @@ def parse(lex, errfunc=defaulterrfunc):
         def jump_statement(self):
             n = self.node(pt_jump_statement)
             token = self.get()
+	    if token == None:
+		self.error(err_eof())
             n.append(token)
             if token.type == lt_goto:
                 n.append(self.eat(lt_ident))
@@ -882,6 +897,8 @@ def parse(lex, errfunc=defaulterrfunc):
             if uexp != None:
                 return uexp
             t = self.get()
+	    if t == None:
+		self.error(err_eof())
             if t.type == lt_lparen and self.type_name_peek():
                 n = self.node(pt_cast_expression)
                 n.append(self.type_name())
