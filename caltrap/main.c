@@ -12,6 +12,7 @@ char *dbpath;
 int main(int argc, char **argv) {
     int nogo;
     int errs;
+    int verbose;
     struct entry e;
     enum { NONE, INIT, ADD, LIST, CRON, DUMP, LOAD } command;
     char *args[4];
@@ -21,7 +22,7 @@ int main(int argc, char **argv) {
     /*
      * Set up initial (default) parameters.
      */
-    nogo = errs = FALSE;
+    nogo = errs = verbose = FALSE;
     e.type = T_EVENT;
     e.length = e.period = 0;
 
@@ -98,6 +99,7 @@ int main(int argc, char **argv) {
 		  case 'a':
 		  case 'l':
 		  case 'C':
+		  case 'v':
 		    /*
 		     * Option requiring no parameter.
 		     */
@@ -122,6 +124,9 @@ int main(int argc, char **argv) {
 			break;
 		      case 'C':
 			command = CRON;
+			break;
+		      case 'v':
+			verbose = TRUE;
 			break;
 		    }
 		    break;
@@ -216,7 +221,7 @@ int main(int argc, char **argv) {
 	caltrap_add(nargs, args, lenof(args), &e);
 	break;
       case LIST:
-	caltrap_list(nargs, args, lenof(args));
+	caltrap_list(nargs, args, lenof(args), verbose);
 	break;
       case CRON:
 	caltrap_cron(nargs, args, lenof(args));

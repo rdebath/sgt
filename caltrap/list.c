@@ -16,6 +16,7 @@ struct list_ctx {
     tree234 *future;
     char *day_str, *clr_str, *end_str;
     int line_width;
+    int verbose;
 };
 
 static int entry_cmp(void *av, void *bv)
@@ -67,7 +68,8 @@ static void list_print(struct list_ctx *ctx, struct entry *ent)
 {
     char *dfmt, *tfmt;
 
-    if (ent->type == T_TODO || !*ent->description)
+    if (ent->type == T_TODO || !ent->description ||
+	(!ctx->verbose && !*ent->description))
 	return;
 
     assert(ctx->last_date_printed == ent->sd ||
@@ -91,7 +93,12 @@ static void list_print(struct list_ctx *ctx, struct entry *ent)
     } else {
 	tfmt = format_time(ent->st);
     }
-    print_line(ctx, "%s %s %s", dfmt, tfmt, ent->description);
+    if (ctx->verbose) {
+	print_line(ctx, "%s %s [%d] %s", dfmt, tfmt, ent->id,
+		   ent->description);
+    } else {
+	print_line(ctx, "%s %s %s", dfmt, tfmt, ent->description);
+    }
     sfree(dfmt);
     sfree(tfmt);
 }
@@ -179,7 +186,7 @@ static void list_upto(struct list_ctx *ctx, Date ed, Time et)
 		} else
 		    hol = ent;
 
-		hol->description = "";   /* prevent recurring text entry */
+		hol->description = NULL;/* prevent recurring text entry */
 		hol->sd++;
 		if (datetime_cmp(hol->sd, hol->st, hol->ed, hol->et) < 0)
 		    add234(ctx->future, hol);
@@ -209,6 +216,7 @@ static void list_callback(void *vctx, struct entry *ent)
 {
     struct list_ctx *ctx = (struct list_ctx *)vctx;
     struct entry *dupent;
+    int desclen;
 
     /*
      * If this is a repeating event, or a holiday event, which
@@ -224,7 +232,7 @@ static void list_callback(void *vctx, struct entry *ent)
 	} else if (is_hol(ent->type)) {
 	    ent->sd = ctx->cd;
 	    ent->st = ctx->ct;
-	    ent->description = "";   /* prevent recurring text entry */
+	    ent->description = NULL;   /* prevent recurring text entry */
 	} else {
 	    /*
 	     * This is an ordinary event which started before our
@@ -237,14 +245,21 @@ static void list_callback(void *vctx, struct entry *ent)
     /*
      * Now add this to the list of future events.
      */
-    dupent = smalloc(sizeof(struct entry) + 1 + strlen(ent->description));
+    if (ent->description)
+	desclen = 1 + strlen(ent->description);
+    else
+	desclen = 0;
+    dupent = smalloc(sizeof(struct entry) + desclen);
     *dupent = *ent;		       /* structure copy */
-    dupent->description = (char *)dupent + sizeof(struct entry);
-    strcpy(dupent->description, ent->description);
+    if (ent->description) {
+	dupent->description = (char *)dupent + sizeof(struct entry);
+	strcpy(dupent->description, ent->description);
+    } else
+	dupent->description = NULL;
     add234(ctx->future, dupent);
 }
 
-void list_entries(Date sd, Time st, Date ed, Time et)
+static void real_list_entries(Date sd, Time st, Date ed, Time et, int verbose)
 {
     struct list_ctx ctx;
     struct entry *ent;
@@ -256,6 +271,7 @@ void list_entries(Date sd, Time st, Date ed, Time et)
     ctx.future = newtree234(entry_cmp);
     ctx.day_str = ctx.end_str = "";
     ctx.line_width = get_line_width();
+    ctx.verbose = verbose;
 
     db_list_entries(sd, st, ed, et, list_callback, &ctx);
     list_upto(&ctx, ed, et);
@@ -265,7 +281,12 @@ void list_entries(Date sd, Time st, Date ed, Time et)
     freetree234(ctx.future);
 }
 
-void caltrap_list(int nargs, char **args, int nphysargs)
+void list_entries(Date sd, Time st, Date ed, Time et)
+{
+    real_list_entries(sd, st, ed, et, FALSE);
+}
+
+void caltrap_list(int nargs, char **args, int nphysargs, int verbose)
 {
     Date sd, ed;
 
@@ -293,5 +314,5 @@ void caltrap_list(int nargs, char **args, int nphysargs)
 	}
     }
 
-    list_entries(sd, 0, ed, 0);
+    real_list_entries(sd, 0, ed, 0, verbose);
 }

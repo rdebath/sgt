@@ -126,7 +126,7 @@ void caltrap_add(int nargs, char **args, int nphysargs, struct entry *e);
  * list.c
  */
 void list_entries(Date sd, Time st, Date ed, Time et);
-void caltrap_list(int nargs, char **args, int nphysargs);
+void caltrap_list(int nargs, char **args, int nphysargs, int verbose);
 
 /*
  * cron.c
