@@ -1,0 +1,11 @@
+Summary: Short RSA2 key causes PuTTY crash
+Class: bug
+Present-in: 0.53b 2003-11-03
+
+"If I create a really short RSA2 key (I used 256 bits) it is generated and
+accepted OK, but the PuTTY code (CVS head, 22:00 GMT yesterday) segfaults."
+
+More detail: <20031101102009.GA29907@chiark.greenend.org.uk>
+(includes suspected root cause)
+
+(I've tested that DSA and RSA1 keys don't suffer from the same problem.)
