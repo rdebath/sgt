@@ -134,13 +134,12 @@ void import_mbox_folder(char *folder)
     }
 
     /*
-     * File the last message. We may have to append a `\n' just in
-     * case the mbox ended abruptly.
+     * File the last message, after first removing a trailing
+     * newline if present.
      */
     if (msglen > 0) {
-	if (message[msglen-1] != '\n') {
-	    
-	}
+	if (message[msglen-1] == '\n')
+	    msglen--;
 	import_message(message, msglen);
     }
 

@@ -126,12 +126,18 @@ static int write_mbox(int fd, char *data, int length, int beginning)
     }
 
     /*
-     * Finally flush the queue.
+     * Flush the queue.
      */
     if (qlen > 0) {
 	if (!write_wrapped(fd, queue, qlen) < 0)
 	    return FALSE;
     }
+
+    /*
+     * And finally add a trailing newline.
+     */
+    if (!write_wrapped(fd, "\n", 1) < 0)
+	return FALSE;
 
     return TRUE;
 }
