@@ -875,6 +875,7 @@ def parse(lex, errfunc=defaulterrfunc):
                 n.append(self.unary_expression())
                 return n
             elif t == lt_sizeof:
+		self.eat(lt_sizeof)
                 n = self.node(pt_unary_expression)
                 n.append(t)
                 if self.peektype() == lt_lparen:
@@ -883,6 +884,7 @@ def parse(lex, errfunc=defaulterrfunc):
                     t = self.eat(lt_lparen)
                     if self.type_name_peek():
                         n.append(self.type_name())
+			self.eat(lt_rparen)
                     else:
                         self.unget(t)
                         n.append(self.unary_expression())
