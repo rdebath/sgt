@@ -196,13 +196,21 @@ static const int actions[4+10] = {
     -1, -1
 };
 
+static const int keys[] = {
+    SDLK_z, SDLK_a,
+    SDLK_x, SDLK_s,
+    SDLK_SLASH, SDLK_RETURN, SDLK_QUOTE, SDLK_HASH,
+    SDLK_LSHIFT, SDLK_SPACE
+};
+
 static void play_game(void)
 {
     struct ntris_instance *ti;
+    int prevkeystate[SDLK_LAST], keystate[SDLK_LAST];
     int prevpressed[4+10], pressed[4+10];
     int dropinterval, untildrop;
     int dropinhibit;
-    int i;
+    int i, j;
 
     scr_prep();
     ti = init_game(NULL, PLAY_WIDTH, PLAY_HEIGHT, NULL);
@@ -220,6 +228,8 @@ static void play_game(void)
     untildrop = dropinterval;
     for (i = 0; i < lenof(prevpressed); i++)
 	prevpressed[i] = 1;
+    for (i = 0; i < lenof(keystate); i++)
+	prevkeystate[i] = keystate[i] = 0;
     dropinhibit = 1;
 
     /*
@@ -232,7 +242,7 @@ static void play_game(void)
 	SDL_Event event;
 
 	/*
-	 * Listen to waiting events in case ESC was pressed.
+	 * Listen to waiting events to handle keyboard input.
 	 */
 	while (SDL_PollEvent(&event)) {
 	    int action;
@@ -242,6 +252,15 @@ static void play_game(void)
 		/* Standard catch-all quit-on-escape clause. */
 		if (event.key.keysym.sym == SDLK_ESCAPE)
 		    exit(1);
+		if (event.key.keysym.sym >= 0 &&
+		    event.key.keysym.sym < lenof(keystate))
+		    keystate[event.key.keysym.sym] = 1;
+		break;
+	      case SDL_KEYUP:
+		if (event.key.keysym.sym >= 0 &&
+		    event.key.keysym.sym < lenof(keystate))
+		    keystate[event.key.keysym.sym] = 0;
+		break;
 	    }
 	}
 
@@ -293,6 +312,31 @@ static void play_game(void)
 		drophard = 1;
 	    if (pressed[i] && actions[i] == ACT_HOLD)
 		hold = 1;
+
+	    for (j = 0; j < lenof(keys); j++) {
+		if (keys[j] < 0 || keys[j] > lenof(keystate))
+		    continue;
+		if (!keystate[keys[j]] ||
+		    (prevkeystate[keys[j]] && !repeating_action(j)))
+		    continue;
+		if (j == ACT_LEFT || j == ACT_FASTLEFT)
+		    left = 1;
+		if (j == ACT_RIGHT || j == ACT_FASTRIGHT)
+		    right = 1;
+		if (j == ACT_CLOCKWISE)
+		    clockwise = 1;
+		if (j == ACT_ANTICLOCK)
+		    anticlock = 1;
+		if (j == ACT_REFLECT)
+		    reflect = 1;
+		if (j == ACT_SOFTDROP)
+		    dropsoft = 1;
+		if (j == ACT_HARDDROP)
+		    drophard = 1;
+		if (j == ACT_HOLD)
+		    hold = 1;
+	    }
+	    memcpy(prevkeystate, keystate, sizeof(prevkeystate));
 	}
 
 	if (dropinhibit) {
