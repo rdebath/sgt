@@ -395,3 +395,26 @@ void parse_for_db(const char *ego, const char *location,
     if (myego)
 	sfree(myego);
 }
+
+char *message_location(const char *ego)
+{
+    char **table;
+    int rows, cols;
+    char *err;
+    char *ret;
+
+    db_open();
+
+    sqlite_get_table_printf(db, "SELECT location FROM messages WHERE ego='%q'",
+			    &table, &rows, &cols, &err, ego);
+    if (err) fatal(err_dberror, err);
+    if (rows > 0) {
+	assert(cols == 1);
+	ret = smalloc(1+strlen(table[1]));
+	strcpy(ret, table[1]);
+    } else
+	ret = NULL;
+    sqlite_free_table(table);
+
+    return ret;
+}

@@ -58,6 +58,8 @@ enum {
     err_dberror,                       /* generic db error */
     err_dbfull,			       /* more than 2^53 messages! */
     err_perror,			       /* generic errno error (%s: %s) */
+    err_nosuchmsg,		       /* this message not present in db */
+    err_internal,		       /* internal problem */
 };
 
 /*
@@ -95,6 +97,7 @@ void cfg_set_str(char *key, char *str);
 void cfg_set_int(char *key, int val);
 void parse_for_db(const char *ego, const char *location,
 		  const char *message, int msglen);
+char *message_location(const char *ego);
 
 /*
  * main.c
@@ -107,9 +110,11 @@ extern char *dirpath;
 struct storage {
     char *(*store_literal)(char *message, int msglen);
     void (*store_init)(void);
+    char *(*store_retrieve)(const char *location, int *msglen);
 };
 char *store_literal(char *message, int msglen);
 void store_init(void);
+char *store_retrieve(const char *location, int *msglen);
 
 /*
  * mboxstore.c
@@ -250,5 +255,11 @@ time_t unfmt_date(const char *buf);
  */
 const char *header_name(int header_id);
 const char *encoding_name(int encoding);
+int write_wrapped(int fd, char *data, int length);
+
+/*
+ * export.c
+ */
+void export_message(char *ego);
 
 #endif

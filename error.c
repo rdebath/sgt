@@ -63,6 +63,16 @@ static void do_error(int code, va_list ap) {
 		sp, sp2 ? ": " : "", sp2 ? sp2 : "", strerror(errno));
         flags = PREFIX;
         break;
+      case err_nosuchmsg:
+        sp = va_arg(ap, char *);
+	sprintf(error, "message `%.200s' does not exist in database", sp);
+	flags = PREFIX;
+	break;
+      case err_internal:
+        sp = va_arg(ap, char *);
+	sprintf(error, "internal problem: %s", sp);
+	flags = PREFIX;
+	break;
     }
 
     if (flags & PREFIX)
