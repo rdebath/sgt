@@ -1,4 +1,4 @@
-Summary: Support for public key distribution subsystem `publickey@vandyke.com'
+Summary: Support for public key distribution subsystem `publickey'
 Class: wish
 Difficulty: tricky
 Priority: low
@@ -6,9 +6,10 @@ Content-type: text/x-html-body
 
 <p>
 <a href="http://www.vandyke.com/">VanDyke</a> are pushing an
-implementation-independent subsystem <code>publickey@vandyke.com</code>
+implementation-independent subsystem <code>publickey</code>
+(previously <code>publickey@vandyke.com</code>)
 for the distribution of public keys over SSH-2 connections. See
-<a href="http://www.ietf.org/internet-drafts/draft-galb-secsh-publickey-subsystem-01.txt">draft-galb-secsh-publickey-subsystem-01</a>
+<a href="http://www.ietf.org/internet-drafts/draft-ietf-secsh-publickey-subsystem-00.txt">draft-ietf-secsh-publickey-subsystem-00</a>
 (current at time of writing).
 
 <p>
