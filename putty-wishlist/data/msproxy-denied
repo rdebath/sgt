@@ -1,0 +1,71 @@
+Summary: Connections through MS Proxy Server (HTTP) are spuriously denied
+Class: semi-bug
+Priority: medium
+Difficulty: taxing
+Present-in: 0.53b 2002-12-30
+Content-type: text/x-html-body
+
+<p>Original report (&lt;007801c2b108$5ad5a200$33db8ad8@alexin.ca&gt;):
+<p>
+<pre>
+I believe I have found a bug in Win32 putty .53b. (found in Win2000,
+also tested current dev binary).  I am connection to a NetBSD server 1.6
+running OpenSSH 3.4 on port 443, but had the same problem on an OpenBSD
+server with OpenSSH 3.4.
+
+I am connecting through an authenticated Microsoft Proxy server v2 on
+Windows 2000, using HTTP proxy services.
+
+
+Using Putty, the connection conversation is: 
+
+ CONNECT 216.138.219.54:443 HTTP/1.1
+ Host: 216.138.219.54:443
+ Proxy-Authorization: basic YW1leeljYXNcc3RldmVfYmFya2V5OmluZXNzMTA=
+
+ HTTP/1.1 407 Proxy Access Denied
+ Server: Microsoft-IIS/5.0
+ Date: Tue, 31 Dec 2002 19:32:43 GMT
+ Connection: close
+ Proxy-Authenticate: Negotiate
+ Proxy-Authenticate: NTLM
+ Proxy-Authenticate: Basic realm="53.244.73.245"
+
+And the connection fails with putty event log: 
+"2002-12-31 14:48:08    Connecting to 216.138.219.54 port 443
+2002-12-31 14:48:08     Proxy error: 407 Proxy Access Denied"
+
+
+Using MindTerm 2.0 (an inferior java ssh client), the connection
+conversation is:
+
+ CONNECT 216.138.219.54:443 HTTP/1.0
+ proxy-connection: Keep-Alive
+ pragma: No-Cache
+ user-agent: MindTerm/$Name:  $
+
+ HTTP/1.1 407 Proxy Access Denied
+ Server: Microsoft-IIS/5.0
+ Date: Tue, 31 Dec 2002 19:33:05 GMT
+ Proxy-Authenticate: Negotiate
+ Proxy-Authenticate: NTLM
+ Proxy-Authenticate: Basic realm="53.244.73.245"
+
+----------- and then -----------
+
+ CONNECT 216.138.219.54:443 HTTP/1.0
+ proxy-authorization: Basic YW1leeljYXNcc3RldmVfYmFya2V5OmluZXNzMTA=
+
+ proxy-connection: Keep-Alive
+ pragma: No-Cache user-agent: MindTerm/$Name:  $
+
+ HTTP/1.1  200 Connection established
+ Via: 1.1 YYZXPROXY01
+
+ SSH-1.99-OpenSSH_3.4 NetBSD_Secure_Shell-20020626
+ SSH-2.0-MindTerm_2.0 2.0 (non-commercial)
+ 
+... encrypted, successful connection ....
+</pre>
+
+
