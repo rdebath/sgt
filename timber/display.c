@@ -293,7 +293,7 @@ void display_message(char *ego, int charset, int type, int full)
 	ctx.boring = FALSE;
 	ctx.full = full;
 	parse_message(message, msglen, display_output_fn, &ctx,
-		      null_info_fn, NULL);
+		      null_info_fn, NULL, CS_NONE);
 	printf("\n");		       /* separating blank line */
 	done_blank_line = TRUE;
 

@@ -141,7 +141,8 @@ int latoi(const char *text, int len);
  */
 void parse_message(const char *message, int msglen,
 		   parser_output_fn_t output, void *outctx,
-		   parser_info_fn_t info, void *infoctx)
+		   parser_info_fn_t info, void *infoctx,
+		   int default_charset)
 {
     /*
      * We are not intending to be a _strict_ RFC822 parser here: if
@@ -153,7 +154,16 @@ void parse_message(const char *message, int msglen,
 
     int pass;
     struct mime_record *toplevel_part;
-    int default_charset = CS_CP1252;
+
+    /*
+     * `default_charset' might have been passed in to us if we are
+     * parsing a message to be sent (in which case we consider it
+     * to be in whatever charset the compose buffer was edited in).
+     * If we're parsing a received message, a default charset of
+     * CS_NONE means we should choose our own sensible default.
+     */
+    if (default_charset == CS_NONE)
+	default_charset = CS_CP1252;
 
     toplevel_part = snew(struct mime_record);
 
@@ -354,7 +364,7 @@ void parse_headers(char const *base, char const *message, int msglen,
 #ifdef TESTMODE
     char const *endpoint = message + msglen;
 #endif
-    char const *p, *q, *r, *s;
+    char const *p, *q, *r, *rr, *s;
 
     while (msglen > 0) {
 #ifdef TESTMODE
@@ -1030,6 +1040,14 @@ void parse_headers(char const *base, char const *message, int msglen,
 			    r++;
 			}
 		    }
+		    /*
+		     * Mark the last non-whitespace before this
+		     * piece of punctuation.
+		     */
+		    rr = r;
+		    while (rr > p && FWS(rr[-1]))
+			rr--;
+
 		    if (r < message && (*r == ':' || *r == '<'))
 			rfc2047able = TRUE;
 		    else
@@ -1037,13 +1055,14 @@ void parse_headers(char const *base, char const *message, int msglen,
 		    if (r < message)
 			r++;   /* we'll eat this punctuation too */
 		    /*
-		     * Now re-scan from p.
+		     * Now re-scan from p to rr doing potential
+		     * RFC2047 things.
 		     */
 		    q = p;
 		    while (1) {
-			if (q < r && *q == '\\' && q+1 < r) {
+			if (q < rr && *q == '\\' && q+1 < rr) {
 			    q += 2;
-			} else if (q < r && *q != '(' && *q != '"') {
+			} else if (q < rr && *q != '(' && *q != '"') {
 			    q++;
 			} else {
 			    int end;
@@ -1054,26 +1073,30 @@ void parse_headers(char const *base, char const *message, int msglen,
 				output(outctx, p, q-p,
 				       TYPE_HEADER_TEXT,
 				       default_charset);
-			    if (q == r)
+			    if (q == rr)
 				break;
 			    output(outctx, q, 1,
 				   TYPE_HEADER_TEXT, CS_ASCII);
 			    end = (*q == '"' ? '"' : ')');
 			    p = ++q;
-			    while (q < r && *q != end) {
-				if (*q == '\\' && q+1 < r)
+			    while (q < rr && *q != end) {
+				if (*q == '\\' && q+1 < rr)
 				    q++;
 				q++;
 			    }
 			    rfc2047_decode(p, q-p, output, outctx,
 					   TRUE, TRUE, default_charset);
-			    if (q == r)
+			    if (q == rr)
 				break;
 			    output(outctx, q, 1,
 				   TYPE_HEADER_TEXT, CS_ASCII);
 			    p = ++q;
 			}
 		    }
+		    /*
+		     * And finally output the whitespace and punctuation.
+		     */
+		    output(outctx, rr, r-rr, TYPE_HEADER_TEXT, CS_ASCII);
 		}
 		break;
 	    }
@@ -1629,12 +1652,14 @@ int main(void)
     /*
      * First test the info gathering.
      */
-    parse_message(message, msglen, null_output_fn, NULL, test_info_fn, NULL);
+    parse_message(message, msglen, null_output_fn, NULL, test_info_fn, NULL,
+		  CS_NONE);
 
     /*
      * Now test the post-parse output.
      */
-    parse_message(message, msglen, test_output_fn, NULL, null_info_fn, NULL);
+    parse_message(message, msglen, test_output_fn, NULL, null_info_fn, NULL,
+		  CS_NONE);
 
     sfree(message);
     
