@@ -2,6 +2,7 @@
 
 import sys
 import string
+import re
 import types
 import zlib
 
@@ -45,6 +46,12 @@ def pdflex(s, list):
         elif s[0] == "[" or s[0] == "]":
             list.append(s[0])
             s = s[1:]
+        elif len(s) >= 2 and s[0] == "<" and s[1] != "<":
+            # Single angle brackets delimit a hex string.
+            ci = string.find(s, ">")
+            if ci > 0:
+                list.append(s[:ci+1])
+                s = s[ci+1:]
         elif s[0] == "<" or s[0] == ">":
             fassert(len(s) < 2 or s[1] == s[0], "unexpected lone angle bracket in file")
             if len(s) >= 2:
@@ -204,19 +211,39 @@ if number < 0:
     fassert(type(parsed[1]) == types.DictType, "expected dictionary in trailer")
     number, gen = parsed[1]["/Root"]
 
-def chomp(s):
-    while len(s) > 0 and (s[-1] == "\r" or s[-1] == "\n"):
-        s = s[:-1]
+def pdfgetline(f, chomp=0):
+    s = ""
+    while 1:
+        ss = f.read(64)
+        if ss == "":
+            return "" # even if chomp
+        ri = string.find(ss, "\r")
+        ni = string.find(ss, "\n")
+        if ri < 0: ri = len(ss)
+        if ni < 0: ni = len(ss)
+        mi = min(ri, ni)
+        s = s + ss[:mi]
+        if mi < len(ss):
+            f.seek(mi-len(ss), 1)
+            c1 = f.read(1)
+            assert c1 == "\r" or c1 == "\n"
+            if c1 == "\r":
+                c2 = f.read(1)
+                if c2 != "\n" and c2 != "":
+                    f.seek(-1, 1)
+            break
+    if not chomp:
+        s = s + "\n"
     return s
 
 def fetchobj(f, xrefoff, number, gen, printout=0):
     offset = None
     while 1:
         f.seek(xrefoff)
-        s = chomp(f.readline())
+        s = pdfgetline(f, 1)
         fassert(s == "xref", "expected 'xref' keyword in xref section")
         while 1:
-            s = chomp(f.readline())
+            s = pdfgetline(f, 1)
             ss = string.split(s)
             if len(ss) != 2:
                 break
@@ -237,7 +264,7 @@ def fetchobj(f, xrefoff, number, gen, printout=0):
         lexed = []
         d = ""
         while 1:
-            s = f.readline()
+            s = pdfgetline(f, 0)
             if s == "": break
             d = d + s
             d = pdflex(d, lexed)
@@ -262,7 +289,7 @@ def fetchobj(f, xrefoff, number, gen, printout=0):
     lexed = []
     donestream = 0
     while 1:
-        s = f.readline()
+        s = pdfgetline(f, 0)
         if s == "": break
         d = d + s
         dn = pdflex(d, lexed)
@@ -283,6 +310,8 @@ def fetchobj(f, xrefoff, number, gen, printout=0):
                 pass
             else:
                 raise "filter type %s not supported" % str(filt)
+            # It will really help if we translate line endings now.
+            streamdata = re.sub("\r\n?", "\n", streamdata)
             if printout: sys.stdout.write(streamdata)
         if lexed[-1] == "endobj":
             if printout: sys.stdout.write("\n")
