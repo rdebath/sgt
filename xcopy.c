@@ -208,14 +208,39 @@ int init_X(void) {
         /*
          * We are writing to the selection, so we establish
          * ourselves as selection owner. Also place the data in
-         * CUT_BUFFER0.
+         * CUT_BUFFER0, if it isn't of an exotic type (cut buffers
+         * can only take ordinary string data, it turns out).
          */
         XSetSelectionOwner (disp, XA_PRIMARY, ourwin, CurrentTime);
         if (XGetSelectionOwner (disp, XA_PRIMARY) != ourwin)
             error ("unable to obtain primary X selection\n");
         compound_text_atom = XInternAtom(disp, "COMPOUND_TEXT", False);
-	XChangeProperty(disp, DefaultRootWindow(disp), XA_CUT_BUFFER0,
-			strtype, 8, PropModeReplace, seltext, sellen);
+	if (strtype == XA_STRING) {
+	    /*
+	     * ICCCM-required cut buffer initialisation.
+	     */
+	    XChangeProperty(disp, root, XA_CUT_BUFFER0,
+			    XA_STRING, 8, PropModeAppend, "", 0);
+	    XChangeProperty(disp, root, XA_CUT_BUFFER1,
+			    XA_STRING, 8, PropModeAppend, "", 0);
+	    XChangeProperty(disp, root, XA_CUT_BUFFER2,
+			    XA_STRING, 8, PropModeAppend, "", 0);
+	    XChangeProperty(disp, root, XA_CUT_BUFFER3,
+			    XA_STRING, 8, PropModeAppend, "", 0);
+	    XChangeProperty(disp, root, XA_CUT_BUFFER4,
+			    XA_STRING, 8, PropModeAppend, "", 0);
+	    XChangeProperty(disp, root, XA_CUT_BUFFER5,
+			    XA_STRING, 8, PropModeAppend, "", 0);
+	    XChangeProperty(disp, root, XA_CUT_BUFFER6,
+			    XA_STRING, 8, PropModeAppend, "", 0);
+	    XChangeProperty(disp, root, XA_CUT_BUFFER7,
+			    XA_STRING, 8, PropModeAppend, "", 0);
+	    /*
+	     * Rotate the cut buffers and add our text in CUT_BUFFER0.
+	     */
+	    XRotateBuffers(disp, 1);
+	    XStoreBytes(disp, seltext, sellen);
+	}
         return True;
     }
 }
