@@ -337,7 +337,7 @@ allow you to bypass any alias definition.
 \U Summary
 
 I've presented a Bourne shell trick I call \q{magic aliases}: a
-fusion of aliases with shell functions, allowing the alias to effect
+fusion of aliases with shell functions, allowing the alias to affect
 the rules under which its own command line is evaluated. I've
 strongly advised extreme caution if this trick is actually used, but
 suggested a range of ways that it might nonetheless be useful to a
