@@ -44,8 +44,6 @@ while (<FAQ>) {
 
 print << 'EOF';
 
-<p><hr>If you want to comment on this web site, see the
-<a href="feedback.html">Feedback page</a>.
 <br>
 (last modified on <!--LASTMOD-->[insert date here]<!--END-->)
 </BODY></HTML>
