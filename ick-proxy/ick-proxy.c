@@ -17,6 +17,8 @@
 
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
 
 #define lenof(x) (sizeof((x)) / sizeof(*(x)))
 
