@@ -1,6 +1,7 @@
 Summary: Unix: "expected key exchange reply packet from server" and crash
 Class: bug
 Present-in: 0.54
+Fixed-in: 2005-01-08
 Content-type: text/x-html-body
 
 <p>
