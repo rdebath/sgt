@@ -95,19 +95,24 @@ def endcurses():
 def aprint(scr, y, x, str):
     global nextpair
     attr = 0
-    fg = curses.COLOR_WHITE
-    bg = curses.COLOR_BLACK
+    if curses_has_colour:
+	fg = curses.COLOR_WHITE
+	bg = curses.COLOR_BLACK
     while str != "":
 	i = string.find(str, "\a")
 	if i == -1: i = len(str)
 	if (i > 0):
-	    pair = colour_pairs.get((fg,bg), None)
-	    if pair == None:
-		curses.init_pair(nextpair, fg, bg)
-		colour_pairs[(fg,bg)] = nextpair
-		pair = nextpair
-		nextpair = nextpair + 1
-	    scr.addstr(y, x, str[:i], attr | curses.color_pair(pair))
+	    if curses_has_colour:
+		pair = colour_pairs.get((fg,bg), None)
+		if pair == None:
+		    curses.init_pair(nextpair, fg, bg)
+		    colour_pairs[(fg,bg)] = nextpair
+		    pair = nextpair
+		    nextpair = nextpair + 1
+		realattr = attr | curses.color_pair(pair)
+	    else:
+		realattr = attr
+	    scr.addstr(y, x, str[:i], realattr)
 	    str = str[i:]
 	    x = x + i
 	if str == "": break
@@ -118,18 +123,19 @@ def aprint(scr, y, x, str):
 	if str[1] == "r": attr = attr &~ curses.A_REVERSE
 	if str[1] == "a": attr = 0
 	if str[1] == "C":
-	    cchar = str[2]
-	    lchar = string.lower(cchar)
-	    if cchar == 'A':
-		colour = curses.COLOR_WHITE
-	    elif cchar == 'a':
-		colour = curses.COLOR_BLACK
-	    else:
-		colour = colourmap[lchar]
-	    if cchar >= 'A' and cchar <= 'Z':
-		fg = colour
-	    else:
-		bg = colour
+	    if curses_has_colour:
+		cchar = str[2]
+		lchar = string.lower(cchar)
+		if cchar == 'A':
+		    colour = curses.COLOR_WHITE
+		elif cchar == 'a':
+		    colour = curses.COLOR_BLACK
+		else:
+		    colour = colourmap[lchar]
+		if cchar >= 'A' and cchar <= 'Z':
+		    fg = colour
+		else:
+		    bg = colour
 	    elen = 3
 	str = str[elen:]
 
