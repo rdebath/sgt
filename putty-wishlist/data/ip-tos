@@ -13,8 +13,10 @@ interactive/bulk traffic.
 <p>
 Some thought needs to be given to this: PuTTY terminal sessions are
 obviously `interactive' traffic, PSCP/PSFTP are `bulk', but Plink
-could be either depending on usage, as could random port-forwardings,
-so it would probably need to be configurable.
+could be either depending on usage, as could random port-forwardings.
+Also, we may not <em>want</em> to leak that sort of information about
+an encrypted connection. So it would probably need to be configurable,
+and off by default.
 
 <p>
 Useful references: MS KB
@@ -24,5 +26,9 @@ Useful references: MS KB
 allow user programs to set the ToS).
 
 <p>
-This probably can't be set on Windows &lt;2000. Also, not sure how
-this interacts with DiffServ.
+This probably can't be set on Windows &lt;2000.
+
+<p>
+Need to make sure we understand how one is supposed to use this field
+in today's world; I've a feeling that several sets of semantics may
+have come and gone over the years.
