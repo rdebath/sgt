@@ -17,7 +17,7 @@
 #include <X11/Xutil.h>
 #include <X11/Xatom.h>
 
-void init_X(void);
+int init_X(void);
 void run_X(void);
 void done_X(void);
 void full_redraw(void);
@@ -40,6 +40,7 @@ int reading;                           /* read instead of writing? */
 
 int main(int ac, char **av) {
     int n;
+    int eventloop;
 
     pname = *av;
 
@@ -83,7 +84,7 @@ int main(int ac, char **av) {
         seltext[sellen] = '\0';
     }
 
-    init_X();
+    eventloop = init_X();
     if (!reading) {
         /*
          * If we are writing the selection, we must go into the
@@ -106,7 +107,8 @@ int main(int ac, char **av) {
         close(2);
         chdir("/");
     }
-    run_X();
+    if (eventloop)
+        run_X();
     done_X();
     return 0;
 }
@@ -135,7 +137,10 @@ Window ourwin = None;
 Atom compound_text_atom;
 int screen, wwidth, wheight;
 
-void init_X(void) {
+/*
+ * Returns TRUE if we need to enter an event loop, FALSE otherwise.
+ */
+int init_X(void) {
     Window root;
     int x = 0, y = 0, width = 512, height = 128;
     int i, got = 0;
@@ -143,7 +148,7 @@ void init_X(void) {
     XSizeHints size_hints;
     XClassHint class_hints;
     XTextProperty textprop;
-    XGCValues gcv; 
+    XGCValues gcv;
 
     /* open the X display */
     disp = XOpenDisplay (display);
@@ -175,10 +180,12 @@ void init_X(void) {
         if (XGetSelectionOwner(disp, XA_PRIMARY) == None) {
             /* No primary selection, so use the cut buffer. */
             do_paste(DefaultRootWindow(disp), XA_CUT_BUFFER0, False);
+            return False;
         } else {
             Atom sel_property = XInternAtom(disp, "VT_SELECTION", False);
             XConvertSelection(disp, XA_PRIMARY, XA_STRING,
                               sel_property, ourwin, CurrentTime);
+            return True;
         }
     } else {
         /*
@@ -192,6 +199,7 @@ void init_X(void) {
         compound_text_atom = XInternAtom(disp, "COMPOUND_TEXT", False);
 	XChangeProperty(disp, DefaultRootWindow(disp), XA_CUT_BUFFER0,
 			XA_STRING, 8, PropModeReplace, seltext, sellen);
+        return True;
     }
 }
 
@@ -263,12 +271,14 @@ void do_paste(Window window, Atom property, int Delete) {
                               Delete, AnyPropertyType, &actual_type,
                               &actual_format, &nitems, &bytes_after,
                               (unsigned char **) &data) == Success) {
-        if (actual_type == XA_STRING) {
+        if (actual_type == XA_STRING && nitems > 0) {
             assert(actual_format == 8);
             fwrite(data, 1, nitems, stdout);
+            nread += nitems;
+            assert((nread & 3) == 0);
         }
         XFree(data);
-        if (actual_type != XA_STRING)
+        if (actual_type != XA_STRING || nitems == 0)
             break;
     }
 }
