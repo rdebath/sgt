@@ -2,6 +2,7 @@ Summary: Ability to do NTLM authentication in various contexts (eg. proxy)
 Class: wish
 Difficulty: taxing
 Priority: low
+Content-type: text/x-html-body
 
 <p>
 Occasionally people ask for support for NTLM authentication in various
