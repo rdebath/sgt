@@ -12,6 +12,8 @@ in the Windows binaries we ship, declaring a version number.
 <li>Some people find it more convenient to look at the file properties
 to identify a binary than to run it.
 <li>Some remote auditing tools apparently pick up on this information.
+<li>Some people would like to create installers that depend on a
+particular version of a PuTTY utility.
 <li>It also affects <a href="http://www.jrsoftware.org/isinfo.php">Inno
 Setup's</a> behaviour.
 </ul>
