@@ -1,6 +1,7 @@
 Summary: Minimising / restoring inactive windows loses (Inactive) in title
 Class: bug
 Difficulty: fun
+Fixed-in: 2003-01-15
 Priority: low
 Content-type: text/plain
 
