@@ -7,6 +7,60 @@ import string
 import time
 import ljproto
 
+# Here's the TODO list for potential future enhancements.
+#
+#  - Mono formatting: prefix ]a to lines beginning `Word:'. Need to
+#    watch out for this in wrapping algorithm!
+#
+#  - Configurably pass the Mono text to xcopy instead of shoving it
+#    in diary.data, for ease of diarying at home.
+#     * could have a config file specifying what to do with the
+#       text
+#     * alternatively, the hideous but easy hardwired option: shove
+#       it in diary.data, then call xcopy < diary.data, and ignore
+#       any error. Works everywhere.
+#
+#  - Remove the temporary file when finished (a good criterion for
+#    this is to remove it if it's got a made-up name; if I supply a
+#    real name I probably want to keep it).
+#
+#  - Ability to post to only one medium (posting to LJ only is
+#    easily done by not bothering to paste into Mono; really all I
+#    need is the ability to paste to Mono only).
+#
+#  - Support for friends-only and private entries (uncertain when
+#    if ever the former will be useful, but the latter will be
+#    handy for testing purposes)
+#
+#  - Completely silly feature: editor brackets [Like this. --Ed]
+#    which would look better in italics where that's available.
+#     * Uncertain whether this should be a specialist feature {ed
+#       Oi!} or a generic weak-italics feature {wi [Oi! --Ed]}. Or
+#       both, I suppose.
+#
+#  - Talker-style formatting?
+#     * anakin and golem will make no sense whatsoever in LJ!
+#     * but talker format has historically been my way of reporting
+#       silly conversations from real life.
+#     * need to think about what the HTML equivalent would look like.
+#
+#  - Handling of people's names?
+#     * can use <lj user="simont"> in HTML.
+#     * bolded mono account names on Mono?
+#     * have to be able to specify a single name and have both
+#       formats Just Work, including sensible handling of
+#       situations where one or both media don't have a native
+#       format for the name.
+#     * usually I'd want to use this once and then refer to the
+#       person by their ordinary name after that. Hmmm.
+#     * This may well be far far too much work to bother with.
+#
+#  - Once I used a separating rule (centred ----*-*---- sort of
+#    thing) to delimit disconnected bits of a single entry. Didn't
+#    actually look all that good the way I did it, but if I ever
+#    need it again I should think up a way to do it. (Not sure how
+#    it'd work in HTML, though; <hr> is much too wide.)
+
 # Utility routines.
 def isint(s):
     try:
