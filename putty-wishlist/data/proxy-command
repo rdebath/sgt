@@ -1,0 +1,40 @@
+Summary: Proxying through arbitrary command (e.g. another SSH session)
+Class: wish
+Difficulty: tricky
+Priority: low
+Content-type: text/x-html-body
+
+<p>
+We occasionally get asked to implement use of arbitrary commands as
+proxy-like transports, similar to the ProxyCommand feature of
+<a href="http://www.openssh.com/">OpenSSH</a>.
+
+<p>
+We also get requests to use an SSH server as a `proxy'. These should
+probably be considered an instance of the general case. Treating SSH
+as just another proxy type like HTTP etc isn't feasible - we have
+pages of configuration UI for the `main' session, and all this would need
+to be configurable for the `proxy' session too. In the current model
+all this would have to be crammed in or under the Proxy panel somehow.
+With a ProxyCommand feature you <em>could</em> use Plink as a
+transport and configure it as usual.
+
+<p>
+It's less obvious how a ProxyCommand-type feature should be configured
+on Windows than on Unix, as Windows is much less command-oriented
+(where OpenSSH usually runs).
+
+<p>
+A partial solution is to set up a local (e.g.) SOCKS server which will
+run whatever bizarre command you need. You can then use PuTTY's
+existing proxy facilities. I don't know whether there is a convenient
+product that provides a SOCKS front end and runs arbitrary commands at
+the back end, but there clearly should be. This does of course require
+that your SOCKS server has been started up in the first place, but
+since (if sufficiently clever) it can defer doing anything tricky
+until it's needed, that needn't be an onerous requirement.
+
+<p>
+If <a href="portfwd-dynamic.html">`portfwd-dynamic'</a> were to be
+implemented, this approach would assist those people who need to use
+an SSH server as a proxy.
