@@ -96,38 +96,6 @@ static btree *buf_bt_new(void)
 		  NULL, 2);
 }
 
-extern buffer *buf_new_empty(void)
-{
-    buffer *buf = (buffer *)malloc(sizeof(buffer));
-
-    buf->bt = buf_bt_new();
-
-    return buf;
-}
-
-extern buffer *buf_new_from_file(FILE *fp)
-{
-    buffer *buf = buf_new_empty();
-    struct bufblk *blk;
-    struct file *file;
-
-    file = (struct file *)malloc(sizeof(struct file));
-    file->fp = fp;
-    file->refcount = 1;		       /* the reference we're about to make */
-
-    blk = (struct bufblk *)malloc(sizeof(struct bufblk));
-    blk->data = NULL;
-    blk->file = file;
-    blk->filepos = 0;
-
-    fseek(fp, 0, SEEK_END);
-    blk->len = ftell(fp);
-
-    bt_addpos(buf->bt, blk, 0);
-
-    return buf;
-}
-
 extern void buf_free(buffer *buf)
 {
     bt_free(buf->bt);
@@ -188,34 +156,27 @@ static int buf_bt_find_pos(btree *bt, int pos, int *poswithin)
     return index;
 }
 
-extern void buf_fetch_data(buffer *buf, void *vdata, int len, int pos)
+/*
+ * Convert a file-data block of size at most BUFMAX into a
+ * literal-data block. Returns the replacement block (the old one
+ * still needs freeing) or NULL if no conversion performed.
+ */
+static struct bufblk *buf_convert_to_literal(struct bufblk *blk)
 {
-    int index, poswithin, thislen;
-    unsigned char *data = (unsigned char *)vdata;
+    if (blk->file && blk->len <= BLKMAX) {
+	struct bufblk *ret =
+	    (struct bufblk *)malloc(sizeof(struct bufblk) + BLKMAX);
+	ret->data = (unsigned char *)(ret+1);
+	ret->file = NULL;
+	ret->filepos = 0;
+	ret->len = blk->len;
+	fseek(blk->file->fp, blk->filepos, SEEK_SET);
+	fread(ret->data, blk->len, 1, blk->file->fp);
 
-    index = buf_bt_find_pos(buf->bt, pos, &poswithin);
-
-    while (len > 0) {
-	struct bufblk *blk = (struct bufblk *)bt_index(buf->bt, index);
-
-	thislen = blk->len - poswithin;
-	if (thislen > len)
-	    thislen = len;
-
-	if (blk->file) {
-	    fseek(blk->file->fp, blk->filepos + poswithin, SEEK_SET);
-	    fread(data, thislen, 1, blk->file->fp);
-	} else {
-	    memcpy(data, blk->data + poswithin, thislen);
-	}
-
-	data += thislen;
-	len -= thislen;
-
-	poswithin = 0;
-
-	index++;
+	return ret;
     }
+
+    return NULL;
 }
 
 /*
@@ -225,7 +186,7 @@ extern void buf_fetch_data(buffer *buf, void *vdata, int len, int pos)
  */
 static void buf_bt_cleanup(btree *bt, int index)
 {
-    struct bufblk *a, *b;
+    struct bufblk *a, *b, *cvt;
     int totallen;
     unsigned char tmpdata[BLKMAX*2];
 
@@ -233,6 +194,18 @@ static void buf_bt_cleanup(btree *bt, int index)
 
     a = (struct bufblk *)bt_index(bt, index);
     b = (struct bufblk *)bt_index(bt, index+1);
+
+    if ( a && (cvt = buf_convert_to_literal(a)) != NULL ) {
+	bt_replace(bt, cvt, index);
+	bufblkfree(NULL, a);
+	a = cvt;
+    }
+
+    if ( b && (cvt = buf_convert_to_literal(b)) != NULL ) {
+	bt_replace(bt, cvt, index+1);
+	bufblkfree(NULL, b);
+	b = cvt;
+    }
 
     if (!a || !b || a->file || b->file) return;
 
@@ -329,6 +302,70 @@ static void buf_insert_bt(buffer *buf, btree *bt, int pos)
     btree *right = buf_bt_split(buf->bt, pos, FALSE);
     buf->bt = buf_bt_join(buf->bt, bt);
     buf->bt = buf_bt_join(buf->bt, right);
+}
+
+extern buffer *buf_new_empty(void)
+{
+    buffer *buf = (buffer *)malloc(sizeof(buffer));
+
+    buf->bt = buf_bt_new();
+
+    return buf;
+}
+
+extern buffer *buf_new_from_file(FILE *fp)
+{
+    buffer *buf = buf_new_empty();
+    struct bufblk *blk;
+    struct file *file;
+
+    file = (struct file *)malloc(sizeof(struct file));
+    file->fp = fp;
+    file->refcount = 1;		       /* the reference we're about to make */
+
+    blk = (struct bufblk *)malloc(sizeof(struct bufblk));
+    blk->data = NULL;
+    blk->file = file;
+    blk->filepos = 0;
+
+    fseek(fp, 0, SEEK_END);
+    blk->len = ftell(fp);
+
+    bt_addpos(buf->bt, blk, 0);
+
+    buf_bt_cleanup(buf->bt, 0);
+
+    return buf;
+}
+
+extern void buf_fetch_data(buffer *buf, void *vdata, int len, int pos)
+{
+    int index, poswithin, thislen;
+    unsigned char *data = (unsigned char *)vdata;
+
+    index = buf_bt_find_pos(buf->bt, pos, &poswithin);
+
+    while (len > 0) {
+	struct bufblk *blk = (struct bufblk *)bt_index(buf->bt, index);
+
+	thislen = blk->len - poswithin;
+	if (thislen > len)
+	    thislen = len;
+
+	if (blk->file) {
+	    fseek(blk->file->fp, blk->filepos + poswithin, SEEK_SET);
+	    fread(data, thislen, 1, blk->file->fp);
+	} else {
+	    memcpy(data, blk->data + poswithin, thislen);
+	}
+
+	data += thislen;
+	len -= thislen;
+
+	poswithin = 0;
+
+	index++;
+    }
 }
 
 extern void buf_insert_data(buffer *buf, void *vdata, int len, int pos)
