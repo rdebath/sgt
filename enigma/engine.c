@@ -77,14 +77,7 @@ gamestate *make_move (gamestate *state, char key) {
     /*
      * copy most of the state
      */
-    ret = gamestate_new(state->width, state->height);
-    ret->status = state->status;
-    memcpy(ret->leveldata, state->leveldata, ret->width * ret->height);
-    ret->player_x = state->player_x;
-    ret->player_y = state->player_y;
-    ret->gold_got = state->gold_got;
-    ret->gold_total = state->gold_total;
-    ret->movenum = state->movenum;
+    ret = gamestate_copy(state);
 
     /*
      * get the level width

@@ -9,10 +9,6 @@
 
 #include "enigma.h"
 
-static int ishdr(char *line, char *header) {
-    return !strncmp(line, header, strlen(header));
-}
-
 static level *level_load(char *filename) {
     FILE *fp;
     char buf[FILENAME_MAX+10];
@@ -111,6 +107,7 @@ levelset *levelset_load(char *filename) {
 
     set = levelset_new();
     set->title = NULL;
+    set->name = filename;
 
     while (fgets(buf, sizeof(buf), fp)) {
 	if (buf[strlen(buf)-1] != '\n') {
