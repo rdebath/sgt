@@ -170,7 +170,7 @@ void caltrap_list(int nargs, char **args, int nphysargs)
 
     if (nargs == 0) {
 	sd = today();
-	ed = sd + 21;		       /* three weeks */
+	ed = sd + 14;		       /* two weeks */
     } else if (nargs == 1) {
 	sd = parse_date(args[0]);
 	if (sd == INVALID_DATE)
