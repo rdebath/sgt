@@ -453,16 +453,25 @@ class tokeniser:
 	    return (WHITE, ret)
 	# Anything remaining is WORD.
 	ret = c
+	neednext = 1
 	while 1:
-	    c = self.nextchar()
+	    if neednext:
+		c = self.nextchar()
+	    neednext = 1
 	    if len(c) == 1 and not (c in string.whitespace):
 		ret = ret + c
 	    else:
 		break
 	    if c == "-":
-		# A hyphen breaks, but only _after_ adding it to the word.
-		self.nextchar() # eat the hyphen
-		break
+		# A hyphen breaks, but only between two
+		# alphanumerics, and only _after_ adding it to the
+		# word.
+		if len(ret) > 1 and ret[-2] in (string.digits+string.letters):
+		    c2 = self.nextchar() # eat the hyphen
+		    if c2 in (string.digits+string.letters):
+			break # discretionary word break
+		    else:
+			neednext = 0 # don't lose the char after the hyphen
 	return (WORD, ret)
 
     def curr(self):
