@@ -4,18 +4,6 @@
 
 # TODO
 #
-#  - Before output run, define canonical position for each output
-#    vertex, by finding all vertices in vpos lists which are the
-#    same one and averaging them. Simplest way to do this is to
-#    divide the polyhedron's edges into folded and cut, and loop
-#    over each folded edge, finding the faces on either side of it,
-#    and identifying their two copies of the two vertices in
-#    question.
-#     * Then draw each edge exactly once. A nice way to do this
-# 	might be to go round the cut edges in a single closed path,
-# 	then separately draw each folded edge. Advantage of this is
-# 	that we can make the two edge types look distinct as well.
-#
 #  - Draw tabs.
 #     * Every cut edge appears in two separate places on the net,
 # 	and exactly one of those must have a tab. So first loop
@@ -237,13 +225,6 @@ unplaced = {}
 for i in faces.keys():
     unplaced[i] = 1
 
-# This one stores the coordinates of each edge as finally placed on
-# the net. (Note that each edge is placed at most twice, once in
-# each direction. For folded edges the two are reverses of each
-# other, whereas for cut edges they're in totally separate places.)
-# Values in this hash are 2-tuples of (x,y) tuples.
-edgepos = {}
-
 # Pick an arbitrary face to start off with. Rotate so that its
 # normal vector points upwards, and position it at the origin.
 if firstface != None and not faces.has_key(firstface):
@@ -264,16 +245,18 @@ f = firstface
 # (face-to-be-placed, already-placed-face-to-put-it-next-to).
 nextface = []
 
+# List of folded edges. (In a net, every edge is either folded,
+# meaning that the two faces it separates are adjacent on the
+# paper, or cut, meaning that the two faces are some distance apart
+# and only become adjacent when the net is assembled.)
+folded = []
+
 # Loop round placing each face.
 while 1:
     #debug("placed", f, "at", facepos[f].pos)
 
     # We have just placed face f. Mark it as placed.
     del unplaced[f]
-
-    # Go through and record the position of each edge in face f.
-    for e in faceedges[f]:
-	edgepos[e] = (facepos[f].vpos[e[0]], facepos[f].vpos[e[1]])
 
     # Figure out where each adjacent face would go if we placed it
     # beside f. Form a list of possible next face placements.
@@ -449,12 +432,103 @@ while 1:
     n, p = best
     facepos[n] = facepos[p].adjacent[n]
     f = n
+    folded.append((n,p))
     #break
 
 if len(unplaced) > 0:
     debug("!!!", len(unplaced), "faces still unplaced!")
 
-# Print the net in a simplistic manner.
+# At this stage every face has been placed. However, pairs of
+# adjacent faces which share vertices will each contain their own
+# version of the coordinates of those vertices, so now we go
+# through and do a merge pass where we canonicalise all subtly
+# different versions of the coordinates of the same point into
+# _really_ the same thing. To do this we construct a new hash
+# mapping arbitrarily chosen vertex IDs into coordinates, and each
+# placement structure in facepos[] acquires a new member `vid'
+# giving the vertex ID of each.
+vids = {}
+vaux = {}
+currvid = 0
+for face, placement in facepos.items():
+    placement.vid = {}
+    for v in faces[face]:
+	vids[currvid] = placement.vpos[v]
+	vaux[currvid] = (currvid, 1)
+	placement.vid[v] = currvid
+	currvid = currvid + 1
+# Now we've done that, we go through the list of folded edges
+# (edges joining two faces on the net) and merge the vertices which
+# are common between the two faces sharing that edge.
+foldededges = []
+for f1, f2 in folded:
+    edge = ()
+    for v in faces[f1]:
+	if not (v in faces[f2]): continue
+	vid1 = facepos[f1].vid[v]
+	while vaux[vid1][0] != vid1:
+	    vid1 = vaux[vid1][0]
+	vid2 = facepos[f2].vid[v]
+	while vaux[vid2][0] != vid2:
+	    vid2 = vaux[vid2][0]
+	sx = vids[vid1][0]*vaux[vid1][1] + vids[vid2][0]*vaux[vid2][1]
+	sy = vids[vid1][1]*vaux[vid1][1] + vids[vid2][1]*vaux[vid2][1]
+	sn = vaux[vid1][1] + vaux[vid2][1]
+	vids[currvid] = (sx/sn, sy/sn)
+	vaux[currvid] = (currvid, sn)
+	vaux[vid1] = (currvid, None)
+	vaux[vid2] = (currvid, None)
+	if vids.has_key(vid1): del vids[vid1]
+	if vids.has_key(vid2): del vids[vid2]
+	edge = edge + (currvid,)
+	currvid = currvid + 1
+    foldededges.append(edge)
+    assert len(edge) == 2
+
+for face, placement in facepos.items():
+    for v in faces[face]:
+	vv = placement.vid[v]
+	while vaux[vv][0] != vv:
+	    vv = vaux[vv][0]
+	placement.vid[v] = vv
+
+isfolded = {}
+for i in range(len(foldededges)):
+    repl = ()
+    for vx in foldededges[i]:
+	vv = vx
+	while vaux[vv][0] != vv:
+	    vv = vaux[vv][0]
+	repl = repl + (vv,)
+    foldededges[i] = repl
+    isfolded[repl] = isfolded[(repl[1],repl[0])] = 1
+
+# Put together a single list of cut edges going right round the
+# net.
+graph = {} # maps vid to list of vids
+for face, placement in facepos.items():
+    for e in faceedges[face]:
+	vid1 = placement.vid[e[0]]
+	vid2 = placement.vid[e[1]]
+	if isfolded.get((vid1,vid2), 0): continue
+	graph[vid1] = graph.get(vid1, []) + [vid2]
+	graph[vid2] = graph.get(vid2, []) + [vid1]
+# Now go through the graph starting at an arbitrary point.
+startvid = vid = graph.keys()[0]
+outline = []
+while 1:
+    outline.append(vid)
+    adj = graph[vid]
+    del graph[vid]
+    if len(outline) > 1 and outline[-2] == adj[0]:
+	vid = adj[1]
+    else:
+	vid = adj[0]
+    if vid == startvid:
+	break
+assert len(graph) == 0
+
+# Actually print the net.
 psprint("%!PS-Adobe-1.0")
 psprint("%%Pages: 1")
 psprint("%%EndComments")
@@ -480,14 +554,19 @@ psprint(scale, "dup scale")
 # Now centre the bounding box at the origin.
 psprint(-(xmax+xmin)/2, -(ymax+ymin)/2, "translate")
 psprint(0.5 / scale, "setlinewidth 1 setlinejoin 1 setlinecap")
-# Draw the faces.
-for face, placement in facepos.items():
-    psprint("newpath")
-    cmd = "moveto"
-    for v in faces[face]:
-	psprint(placement.vpos[v][0], placement.vpos[v][1], cmd)
-	cmd = "lineto"
-    psprint("closepath stroke")
+# Draw the cut edges.
+psprint("newpath")
+cmd = "moveto"
+for vid in outline:
+    psprint(vids[vid][0], vids[vid][1], cmd)
+    cmd = "lineto"
+psprint("closepath stroke")
+# Draw the folded edges.
+psprint("newpath")
+for vid1, vid2 in foldededges:
+    psprint(vids[vid1][0], vids[vid1][1], "moveto")
+    psprint(vids[vid2][0], vids[vid2][1], "lineto")
+psprint("stroke")
 
 psprint("showpage grestore")
 psprint("%%EOF")
