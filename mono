@@ -44,7 +44,7 @@ if [ "$MACHINE" = "" ]; then
   fi
 fi
 
-if [ $MACHINE != NOLOGIN ]
+if [ "a$MACHINE" != "aNOLOGIN" ]
 then
   rm -f $tmpfile
   echo "Connecting to $MACHINE."
