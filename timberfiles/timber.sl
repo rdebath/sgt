@@ -208,7 +208,9 @@ variable timber_boringhdrs =
 ":Content-Transfer-Encoding:X-MS-Has-Attach:X-MS-TNEF-Correlator" +
 ":X-Mailman-Version:X-BeenThere:User-Agent:Delivered-To:X-Notes-Item:" +
 ":X-Spam-Level:X-Spam-Status:List-Help:List-Post:List-Unsubscribe:" +
-":List-Subscribe:List-Archive:";
+":List-Subscribe:List-Archive:X-MailScanner:X-MailScanner-SpamCheck:" +
+":Importance:X-OriginalArrivalTime:X-Accept-Language:X-nlh_msg:" +
+":X-nlh_thread:";
 
 %}}}
 %{{{ Non-user-configurable variables
