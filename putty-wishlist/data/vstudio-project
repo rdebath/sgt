@@ -22,3 +22,6 @@ Also, we already supply a Visual C Makefile
 (<code>Makefile.vc</code>), for use with <code>nmake</code>. We're
 unlikely to add .DSP/.DSW support ourselves because we don't have much
 use for it.
+
+<p>
+Patch (unreviewed): 3FD5C596.2030606@bidsnc.com
