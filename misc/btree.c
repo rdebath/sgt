@@ -1,9 +1,9 @@
 /*
- * Flexible B-tree implementation. Supports garbage collection,
- * user-defined node properties, variable degree, and storing the
- * nodes on disk.
+ * Flexible B-tree implementation. Supports reference counting for
+ * copy-on-write, user-defined node properties, and variable
+ * degree.
  * 
- * This file is copyright 2001 Simon Tatham.
+ * This file is copyright 2001,2004 Simon Tatham.
  * 
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -55,20 +55,6 @@
  *    user-supplied copy fn).
  */
 
-/* ---- btree.h --------------------------------------------------------- */
-
-typedef struct btree btree;
-typedef void *bt_element_t;	       /* might change when on disk */
-
-typedef int (*cmpfn_t)(void *state, const bt_element_t, const bt_element_t);
-typedef bt_element_t (*copyfn_t)(void *state, const bt_element_t);
-
-enum {
-    BT_REL_EQ, BT_REL_LT, BT_REL_LE, BT_REL_GT, BT_REL_GE
-};
-
-/* ---- btree.c --------------------------------------------------------- */
-
 #include <stdlib.h>
 #include <assert.h>
 
@@ -77,41 +63,16 @@ enum {
 #include <stdarg.h>
 #endif
 
+#include "btree.h"
+
 /* ----------------------------------------------------------------------
  * Type definitions.
  */
 
-/* Forward-reference typedefs. */
-typedef union nodecomponent nodecomponent;
-typedef nodecomponent *nodeptr;
-
-/*
- * DISK: When storing nodes on disk, node_addr will want to be
- * different from nodeptr (the former specifies a location on disk,
- * whereas the latter points to the in-memory structure you get
- * after you read-lock or write-lock a node).
- * 
- * Hence, for type-checking purposes, and to ensure I don't
- * accidentally confuse node_addr with node_ptr during
- * implementation, I'll define node_addr for the in-memory case as
- * being a struct containing only a nodeptr.
- */
-typedef struct {
-    nodeptr p;
-} node_addr;
-
 static const node_addr NODE_ADDR_NULL = { NULL };
 
 /*
- * A B-tree node is a horrible thing when you're trying to be
- * flexible. It is of variable size, and it contains a variety of
- * distinct types of thing: nodes, elements, some counters, some
- * user-defined properties ... it's a horrible thing. So we define
- * it as an array of unions, each union being either an `int' or a
- * `bt_element_t' or a `node_addr'...
- * 
- * For the in-memory implementation, the array of nodecomponents
- * will take the following form:
+ * The array of nodecomponents will take the following form:
  * 
  *  - (maxdegree) child pointers.
  *  - (maxdegree-1) element pointers.
@@ -119,18 +80,7 @@ static const node_addr NODE_ADDR_NULL = { NULL };
  *    valid; note that `valid' doesn't imply non-NULL).
  *  - one element count.
  *  - one reference count.
- * 
- * DISK: for the on-disk implementation this will be much more fun,
- * since counters will want to be stored alongside each link to a
- * node to save disk access times (instead of one counter in each
- * node).
  */
-
-union nodecomponent {
-    int i;
-    node_addr na;
-    bt_element_t ep;
-};
 
 struct btree {
     int mindegree;		       /* min number of subtrees */
@@ -194,9 +144,7 @@ void testlock(int write, int set, nodeptr n);
 
 /* ----------------------------------------------------------------------
  * Low-level helper routines, which understand the in-memory format
- * of a node and know how to read-lock and write-lock. These are
- * the only routines that should need to change when we move to
- * on-disk trees.
+ * of a node and know how to read-lock and write-lock.
  */
 
 /*
@@ -433,13 +381,14 @@ static INLINE void bt_write_relock(btree *bt, nodeptr n)
     n[bt->maxdegree*2].i = count;
     testlock(TRUE, FALSE, n);
     testlock(TRUE, TRUE, n);
+
+    /*
+     * FIXME: should also update user read properties here.
+     */
 }
 
 static INLINE node_addr bt_write_unlock(btree *bt, nodeptr n)
 {
-    /*
-     * FIXME: should also update user read properties here.
-     */
     node_addr ret;
 
     bt_write_relock(bt, n);
@@ -453,9 +402,8 @@ static INLINE node_addr bt_write_unlock(btree *bt, nodeptr n)
 static INLINE void bt_read_unlock(btree *bt, nodeptr n)
 {
     /*
-     * For trees in memory, we do nothing here. For disk B-trees we
-     * would probably use this function to free the in-memory copy
-     * of a node that we had allocated.
+     * For trees in memory, we do nothing here, except run some
+     * optional testing.
      */
     testlock(FALSE, FALSE, n);
 }
@@ -1822,7 +1770,7 @@ void error(char *fmt, ...) {
 /*
  * See if a tree has a 2-element root node.
  */
-int bt_tworoot(btree *bt)
+static int bt_tworoot(btree *bt)
 {
     nodeptr n;
     int i;
