@@ -1,0 +1,2 @@
+#!/bin/sh
+exec perl -pe 'tr/A-Zn-za-m/N-ZA-Ma-z/' "$@"
