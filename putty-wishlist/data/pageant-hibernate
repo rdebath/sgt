@@ -24,7 +24,7 @@ of a number of other attacks.
 </li>
 <li>
 Pageant doesn't currently attempt to prevent key material being
-written to disk. (We don't for instance use VirtualLock(); see the
-<a href="http://www.chiark.greenend.org.uk/~sgtatham/putty/faq.html#A.7.4">FAQ</a>.)
+written to disk. (We don't for instance use VirtualLock(); see
+<a href="virtuallock.html">`virtuallock'</a>.)
 </li>
 </ul>

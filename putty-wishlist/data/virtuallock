@@ -1,0 +1,37 @@
+Summary: Use of VirtualLock() on Windows for sensitive material
+Class: wish
+Priority: low
+Content-type: text/x-html-body
+
+<p>
+The
+<a href="http://www.chiark.greenend.org.uk/~sgtatham/putty/faq.html#A.7.4">FAQ</a>
+gives our reasoning behind not trying to use
+<code>VirtualLock()</code> on Windows to prevent sensitive material
+such as private keys being written to disk.
+
+<p>
+However, <a href="http://www.cs.auckland.ac.nz/~pgut001/">Peter Gutmann</a>
+has the following comments:
+
+<blockquote>
+<p>
+Actually this may no longer be totally accurate.  I had a long discussion
+about this with some MS technical people and it appears that (at least in
+Win2K and newer) VirtualLock is more effective than expected.  One of the MS
+guys tried everything possible to get VirtualLocked'd memory paged and
+couldn't get it swapped out.  Unfortunately the info for different Windows
+versions and at different times has been conflicting, but it appears that with
+newer versions of Windows it has at least some positive effect.  In retrospect
+I'm glad I was too lazy to take the old VirtualLock() code out of
+<a href="http://www.cs.auckland.ac.nz/~pgut001/cryptlib/">cryptlib</a>.
+
+<p>
+Note that if you do use VirtualLock() you have to jump through a number of
+hoops to handle page-granularity, because although it looks like it's byte-
+aligned it's really page-aligned, and unlocking one region can have the side-
+effect of unlocking nearby regions.
+</blockquote>
+
+<p>
+Message-Id: <code>&lt;200305240418.h4O4I6t19012@medusa01.cs.auckland.ac.nz&gt;</code>
