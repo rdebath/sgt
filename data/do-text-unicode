@@ -1,0 +1,14 @@
+Summary: do_text() is mad in a Unicode world
+Class: wish
+Priority: medium
+Difficulty: tricky
+Content-type: text/h-html-body
+
+<p>
+The current internal interface used to draw text on screen, <code>do_text()
+</code>, dates from the pre-Unicode days of PuTTY, and takes a string of
+eight-bit characters in one argument, and an attribute word (including
+the high-order eight bits of the Unicode characters) in another.
+This is clearly mad, and <code>do_text()</code> should be passed a UCS-2
+string.  This would also allow for longer strings to be passed to
+<code>do_text()</code> at a time.
