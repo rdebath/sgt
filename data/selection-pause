@@ -2,6 +2,8 @@ Summary: Terminal output to pause while mouse selection in progress
 Class: wish
 Priority: low
 Difficulty: tricky
+Present-in: 0.54
+Absent-in: 0.52 0.53 0.53b
 Content-Type: text/x-html-body
 
 <p>
@@ -9,3 +11,9 @@ When selecting with the mouse, it might make sense for further
 incoming data to be buffered until the user lets go, so that they
 aren't trying to work with a moving target. This might also be nice
 when scrolling with the scrollbar.
+
+<p>
+We used to do this, but we broke it in 0.54.
+
+<p>
+Patch (needs Unix fettling): 004801c41291$340fb8e0$024d460a@neptune
