@@ -51,16 +51,22 @@ CSMODULES := $(addprefix cs-,$(CHARSET))
 OBJECTS := $(addsuffix .o,$(MODULES) $(CSMODULES))
 DEPS := $(addsuffix .d,$(MODULES))
 LIBS := -lsqlite
-CFLAGS += $(CFL) -Wall -I$(SRC)charset
+CFLAGS += $(CFL) -Wall -I$(SRC)charset -I.
 
 timber: $(OBJECTS)
 	$(CC) $(LFLAGS) -o timber $(OBJECTS) $(LIBS)
+
+cs-sbcsdat.o: sbcsdat.c
+	$(CC) $(CFLAGS) -MD -o $@ -c $<
+
+sbcsdat.c: $(SRC)charset/sbcsgen.pl $(SRC)charset/sbcs.dat
+	perl $(SRC)charset/sbcsgen.pl $(SRC)charset/sbcs.dat
 
 cs-%.o: $(SRC)charset/%.c
 	$(CC) $(CFLAGS) -MD -o $@ -c $<
 
 %.o: $(SRC)%.c
-	$(CC) $(CFLAGS) -MD -c $<
+	$(CC) $(CFLAGS) -MD -o $@ -c $<
 
 version.o: FORCE
 	$(CC) $(VDEF) -MD -c $(SRC)version.c
