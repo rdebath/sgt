@@ -11,6 +11,8 @@ IPROG =#   flags for installing programs (default none)
 IDATA = -m 0644  # flags for installing data
 
 all: base64.1 base64
+progs: base64
+man: base64.1
 
 base64: base64.c
 	$(CC) $(CFLAGS) -o $@ $<
@@ -33,8 +35,10 @@ release: base64.1
 	tar -C reltmp -chzf $(DESTDIR)/base64.tar.gz base64
 	rm -rf reltmp
 
-install: base64 base64.1
+install: install-progs install-man
+install-progs: base64
 	mkdir -p $(BINDIR)
 	$(INSTALL) $(IPROG) base64 $(BINDIR)/base64
+install-man: base64.1
 	mkdir -p $(MANDIR)
 	$(INSTALL) $(IDATA) base64.1 $(MANDIR)/base64.1

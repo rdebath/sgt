@@ -11,6 +11,8 @@ IPROG =#   flags for installing programs (default none)
 IDATA = -m 0644  # flags for installing data
 
 all: nntpid.1
+man: nntpid.1
+progs:;
 
 %.1: %.but
 	halibut --man=$@ $<
@@ -30,8 +32,10 @@ release: nntpid.1
 	tar -C reltmp -chzf $(DESTDIR)/nntpid.tar.gz nntpid
 	rm -rf reltmp
 
-install: nntpid.1
+install: install-progs install-man
+install-progs:
 	mkdir -p $(SCRIPTDIR)
 	$(INSTALL) $(IPROG) nntpid $(SCRIPTDIR)/nntpid
+install-man: nntpid.1
 	mkdir -p $(MANDIR)
 	$(INSTALL) $(IDATA) nntpid.1 $(MANDIR)/nntpid.1

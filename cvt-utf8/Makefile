@@ -9,6 +9,8 @@ MANDIR = $(PREFIX)/man/man1
 INSTALL = install
 
 all: cvt-utf8.1
+man: cvt-utf8.1
+progs:;
 
 %.1: %.but
 	halibut --man=$@ $<
@@ -28,8 +30,10 @@ release: cvt-utf8.1
 	tar -C reltmp -chzf $(DESTDIR)/cvt-utf8.tar.gz cvt-utf8
 	rm -rf reltmp
 
-install: cvt-utf8.1
+install: install-progs install-man
+install-progs:
 	mkdir -p $(SCRIPTDIR)
 	$(INSTALL) cvt-utf8 $(SCRIPTDIR)/cvt-utf8
+install-man: cvt-utf8.1
 	mkdir -p $(MANDIR)
 	$(INSTALL) -m 0644 cvt-utf8.1 $(MANDIR)/cvt-utf8.1
