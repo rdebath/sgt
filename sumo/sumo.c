@@ -389,11 +389,20 @@ static void check_mirrors(int x, int y, int *dx, int *dy)
 	 * from. All that remains is to invert the component of
 	 * their velocity vector parallel to the line between that
 	 * point and their centre.
+	 * 
+	 * Note that we only do this if that component of their
+	 * velocity really is pointing _towards_ the point of
+	 * contact. (It's possible in some edge cases that it might
+	 * not be, despite the initial velocity vector check. I
+	 * think this can only happen when the ends of two mirrors
+	 * meet.)
 	 */
 	dist = FPSQRT(dist);
 	dotprod = FPDIV(FPMUL(vx, xc-x) + FPMUL(vy, yc-y), dist);
-	vx -= 2*FPDIV(FPMUL(xc-x, dotprod), dist);
-	vy -= 2*FPDIV(FPMUL(yc-y, dotprod), dist);
+	if (dotprod > 0) {
+	    vx -= 2*FPDIV(FPMUL(xc-x, dotprod), dist);
+	    vy -= 2*FPDIV(FPMUL(yc-y, dotprod), dist);
+	}
     }
 
     *dx = vx;
