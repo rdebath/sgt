@@ -49,3 +49,9 @@ their initial code is in the PuTTY snapshots; however it was <em>not</em>
 released in the 0.55 bugfix release due to stability issues. As of
 the 2004-10-16 snapshot, the known issue with horizontal window
 expansion should be fixed.
+
+<p>
+Arabeyes have <a href="http://lists.arabeyes.org/archives/developer/2004/March/msg00300.html">plans</a>
+for further changes to improve Arabic support. One thing they're
+blocking on is <a href="unicode-combining.html">combining character</a>
+support.
