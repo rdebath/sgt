@@ -9,6 +9,7 @@
 # your own on the command line.
 SCREEN=
 MACH=
+TERMSTUFF=
 CONNECT='exec telnet -l mono'
 unset CEND
 stty quit ^^
@@ -18,11 +19,19 @@ while [ $# -gt 0 ]; do
     -ssh) CONNECT='exec ssh -C -x -e none -l mono';;
     -nopty) CONNECT='stty -isig -icanon -echo; cat | ssh -C -x -e none -l mono';
             CEND='; stty isig icanon echo'; unset exec ;;
+    -term) TERMSTUFF=$2; shift;;
     -*) echo "Unknown option $1" ;;
     *) MACH=$1;;
   esac
   shift
 done
+
+# Invent new TERM variable
+case "$TERMSTUFF" in
+  '') NEWTERM="$TERM";;
+  /*) NEWTERM="$TERM$TERMSTUFF";;
+  *) NEWTERM="$TERMSTUFF";;
+esac
 
 # Check if a machine is supplied
 case "$MACH" in
@@ -48,7 +57,7 @@ if [ "a$MACHINE" != "aNOLOGIN" ]
 then
   rm -f $tmpfile
   echo "Connecting to $MACHINE."
-  $SCREEN sh -c "echo -ne '\033[?7l'; $CONNECT $MACHINE $CEND"
+  $SCREEN sh -c "echo -ne '\033[?7l'; TERM=$NEWTERM $CONNECT $MACHINE $CEND"
   echo -ne '\033[?7h'
 else
   echo "Cannot currently get a machine name. This may be due to downtime,"
