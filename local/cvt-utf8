@@ -219,29 +219,35 @@ args = sys.argv[1:]
 output_analysis = 1
 han_translations = 0
 
-if args == []:
-    print "Usage: cvt-utf8 [-o] <hex UTF-8 bytes or U+codepoints>"
+if args == [] or args == ["--help"] or args == ["--help-admin"]:
+    print "Usage: cvt-utf8 [flags] <hex UTF-8 bytes and/or U+codepoints>"
     print "  e.g. cvt-utf8 e2 82 ac"
     print "    or cvt-utf8 U+20ac"
     print "    or cvt-utf8 U-10ffff"
     print ""
-    print "Flags: -o or --output     just output well-formed UTF-8 instead of"
-    print "                          an analysis of the input data"
-    print "       -h                 also give Han definitions from unihan db"
+    print "Flags: -o or --output        just output well-formed UTF-8 instead of"
+    print "                             an analysis of the input data"
+    print "       -h or --han           also give Han definitions from unihan db"
     print ""
-    print "Also:  cvt-utf8 --test    run Markus Kuhn's decoder stress tests" #'
+    print "Also:  cvt-utf8 --test       run Markus Kuhn's decoder stress tests" #'
     print "       cvt-utf8 --input (or -i)"
-    print "                          read, analyse and decode UTF-8 from stdin"
-    print "       cvt-utf8 --build <infile> <outfile>"
-    print "                          convert UnicodeData.txt to unicode db"
-    print "       cvt-utf8 --build-unihan <infile> <outfile>"
-    print "                          convert Unihan.txt to unihan db"
-    print "       cvt-utf8 --fetch-build <outfile>"
-    print "                          "+\
-    "build unicode db by download from unicode.org"
-    print "       cvt-utf8 --fetch-build-unihan <outfile>"
-    print "                          "+\
-    "build Unihan db by download from unicode.org"
+    print "                             read, analyse and decode UTF-8 from stdin"
+    if args == ["--help-admin"]:
+        print "       cvt-utf8 --help       display user help text"
+        print "       cvt-utf8 --help-admin display admin help text (this one)"
+        print "       cvt-utf8 --build <infile> <outfile>"
+        print "                             convert UnicodeData.txt to unicode db"
+        print "       cvt-utf8 --build-unihan <infile> <outfile>"
+        print "                             convert Unihan.txt to unihan db"
+        print "       cvt-utf8 --fetch-build <outfile>"
+        print "                             "+\
+        "build unicode db by download from unicode.org"
+        print "       cvt-utf8 --fetch-build-unihan <outfile>"
+        print "                             "+\
+        "build Unihan db by download from unicode.org"
+    else:
+        print "       cvt-utf8 --help       display this help text"
+        print "       cvt-utf8 --help-admin display admin help text"
     sys.exit(0)
 
 if args[0] == "-o" or args[0] == "--output":
