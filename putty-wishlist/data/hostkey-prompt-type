@@ -1,0 +1,9 @@
+Summary: Host key prompt doesn't state type of key
+Class: semi-bug
+Priority: medium
+Difficulty: fun
+Content-type: text/x-html-body
+
+<p>
+The host key prompt doesn't state the type of the host key (SSH-1 RSA,
+SSH-2 RSA, or SSH-2 DSA). It should.
