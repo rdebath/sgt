@@ -242,7 +242,6 @@ class lexer:
 
         while 1:
             lex = self._realget()
-            sys.stdout.write(lex.text)
             if lex == None:
                 break
             if lex.type == lt_comment and not self.wantcomments:
