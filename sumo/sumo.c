@@ -51,6 +51,15 @@ static int sine[45] = {
 
 static int sx1 = 50, sy1 = 100, sx2 = 170, sy2 = 120;
 
+/*
+ * I think bullets were probably a misfeature in this game. We
+ * allow them to be optionally compiled in, just in case I ever
+ * want them back, but by default I think they're a bad idea.
+ */
+#ifndef HAVE_GUNS
+#define HAVE_GUNS 0
+#endif
+
 #define MAX_BULLETS 3
 
 static int no_quit_option = 0;
@@ -61,7 +70,9 @@ static Image fire, crucible;
 static void make_fire(void);
 static void make_crucible(void);
 static unsigned char tile[8+10*10];
+#if HAVE_GUNS
 static unsigned char bullets[2][8+3*3];
+#endif
 
 static unsigned char spr[2][36][8+20*20];
 static Image (*deliv)[2][26];
@@ -265,6 +276,7 @@ static int arena_friction(int x, int y)
     }    
 }
 
+#if HAVE_GUNS
 static int bullet_can_exist(int x, int y)
 {
     int c;
@@ -289,6 +301,7 @@ static int bullet_can_exist(int x, int y)
 	return 0;
     }
 }
+#endif
 
 /*
  * Check to see if the player has run into any reflecting surfaces,
@@ -530,13 +543,16 @@ static int check_esc(void)
 
 static int play_game(void)
 {
-    Sprite p[2], bs[2][MAX_BULLETS], q, qq;
-    int x1,y1,x15,y15,x2,y2,i,j,jj,gameover;
-    int dx,dy,dvx,dvy,sp;
+    Sprite p[2], q, qq;
+#ifdef HAVE_GUNS
+    Sprite bs[2][MAX_BULLETS];
     int bx[2][MAX_BULLETS],by[2][MAX_BULLETS];
     int bvx[2][MAX_BULLETS], bvy[2][MAX_BULLETS];
-    int x[2],y[2],vx[2],vy[2],rangle[2],angle[2],dying[2];
     int ba[2][MAX_BULLETS];
+#endif
+    int x1,y1,x15,y15,x2,y2,i,j,jj,gameover;
+    int dx,dy,dvx,dvy,sp;
+    int x[2],y[2],vx[2],vy[2],rangle[2],angle[2],dying[2];
     int pfire[2];
     int d1,d2,done,esc,b;
     int vmax, inc, incs;
@@ -547,17 +563,26 @@ static int play_game(void)
 
     const int dead = 30;
 
+#if HAVE_GUNS
+#define ERASEBULLETS \
+    for (i = 2; i-- ;) for (j = MAX_BULLETS; j-- ;) erasesprite(bs[i][j])
+#else
+#define ERASEBULLETS ((void)0)
+#endif
+
 #define ERASEALLSPRITES do { \
     int i, j; \
     for (i = 2; i-- ;) erasesprite(p[i]); \
-    for (i = 2; i-- ;) for (j = MAX_BULLETS; j-- ;) erasesprite(bs[i][j]); \
+    ERASEBULLETS; \
 } while (0)
 
     for (i = 0; i < 2; i++)
 	p[i] = makesprite(40, 40, 0);
+#if HAVE_GUNS
     for (i = 0; i < 2; i++)
 	for (j = 0; j < MAX_BULLETS; j++)
 	    bs[i][j] = makesprite(3, 3, 0);
+#endif
     q = makesprite(0x6C,0x11,0x81);
     qq = makesprite(80,40,-1);
 
@@ -580,8 +605,10 @@ static int play_game(void)
     angle[0] = 0;
     x[1] = sx2 << 16; y[1] = sy2 << 16; vx[1] = 0; vy[1] = 0; rangle[1] = 36;
     angle[1] = 18;
+#if HAVE_GUNS
     for (i = 0; i < 2; i++) for (j = 0; j < MAX_BULLETS; j++)
 	ba[i][j] = FALSE;
+#endif
     dying[0] = 0; dying[1] = 0; gameover = 0;
 
     do {
@@ -595,12 +622,15 @@ static int play_game(void)
 	 * accel/brake, and firing), and friction.
 	 */
 	for (i = 0; i < 2; i++) if (!dying[i]) {
-	    int axis, accel, brake, fire, friction;
+	    int axis, accel, brake, friction;
+#if HAVE_GUNS
+	    int fire = SDL_JoystickGetButton(joys[i], 3);   /* Triangle */
+#endif
 	    axis = SDL_JoystickGetAxis(joys[i], 0) / JOY_THRESHOLD;
 	    accel = SDL_JoystickGetButton(joys[i], 1);   /* X */
 	    brake = SDL_JoystickGetButton(joys[i], 0);   /* Square */
-	    fire = SDL_JoystickGetButton(joys[i], 3);   /* Triangle */
 
+#if HAVE_GUNS
 	    /*
 	     * The player can fire whenever they like, as long as
 	     * they aren't already dying. Even if their centre
@@ -626,6 +656,7 @@ static int play_game(void)
 		}
 	    }
 	    pfire[i] = fire;
+#endif
 
 	    /*
 	     * If the player's centre point is on solid ground,
@@ -672,10 +703,12 @@ static int play_game(void)
 	for (i = 0; i < 2; i++) {
 	    if (vmax < abs(vx[i])) vmax = abs(vx[i]);
 	    if (vmax < abs(vy[i])) vmax = abs(vy[i]);
+#if HAVE_GUNS
 	    for (j = 0; j < MAX_BULLETS; j++) if (ba[i][j]) {
 		if (vmax < abs(bvx[i][j])) vmax = abs(bvx[i][j]);
 		if (vmax < abs(bvy[i][j])) vmax = abs(bvy[i][j]);
 	    }
+#endif
 	}
 	/*
 	 * vmax / incs must be at most 2<<16; hence incs must be at
@@ -695,6 +728,7 @@ static int play_game(void)
 #define INC(v) (((inc+1)*(v)/incs - inc*(v)/incs))
 	for (inc = 0; inc < incs; inc++) {
 
+#if HAVE_GUNS
 	    /*
 	     * Move the bullets.
 	     */
@@ -705,6 +739,7 @@ static int play_game(void)
 		    if (!bullet_can_exist(bx[i][j], by[i][j]))
 			ba[i][j] = FALSE;
 		}
+#endif
 
 	    /*
 	     * Move the players.
@@ -740,6 +775,7 @@ static int play_game(void)
 		if (sp>0) collide(dx,dy,&vx[0],&vy[0],&vx[1],&vy[1]);
 	    }
 
+#if HAVE_GUNS
 	    /*
 	     * Check for collisions between a player and a bullet.
 	     */
@@ -758,9 +794,11 @@ static int play_game(void)
 			    }
 			}
 		    }
+#endif
 
 	}
 
+#if HAVE_GUNS
 	/*
 	 * Draw the bullets.
 	 */
@@ -768,6 +806,7 @@ static int play_game(void)
 	    if (ba[i][j])
 		putsprite(bs[i][j],bullets[i],
 			  bx[i][j] >> 16,by[i][j] >> 16);
+#endif
 
 	/*
 	 * Draw the players.
@@ -893,7 +932,9 @@ static int play_game(void)
     scr_done();
 
     freesprite(q);
+#if HAVE_GUNS
     for (i = 2; i-- ;) for (j = MAX_BULLETS; j-- ;) freesprite(bs[i][j]);
+#endif
     for (i = 2; i-- ;) freesprite(p[i]);
 
 #undef ERASEALLSPRITES
@@ -1533,10 +1574,12 @@ static unsigned char fourtiles[8+20*20] = { 0,0,0,0,20,0,20,0,
     32,33,33,33,33,33,33,33,33,33,32,33,33,33,33,33,33,33,33,33
 };
 
+#if HAVE_GUNS
 static unsigned char bullets[2][8+3*3] = {
     {1,0,1,0,3,0,3,0,0,27,0,27,29,27,0,27,0},
     {1,0,1,0,3,0,3,0,0,28,0,28,30,28,0,28,0},
 };
+#endif
 
 static int deathoffset[14] = {
     0,332,596,800,952,1060,1132,1176,1200,1212,1224,1248,1292,1316
