@@ -8,6 +8,9 @@ Content-type: text/x-html-body
 We occasionally get asked to support `SCO-ANSI' (aka `ANSIC'?)
 features (as used by UnixWare etc).
 
+<p>
+Patch (unreviewed): <tt>&gt;1235026314.20030605202751@bigfoot.com&lt;</code>
+
 <dl>
 
 <dt>Colours</dt>
