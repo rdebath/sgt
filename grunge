@@ -3,6 +3,10 @@
 # Todo:
 #
 #  - Line editing and recall in bottom-line input.
+#  - Scanning subtlety: when a continued item and its continuation
+#    are both new, then although the newer item is listed first,
+#    the older one should be scanned into first so you get the text
+#    of the combined item-pair in chronological order!
 #  - Sessions without write access: be able to start them, and know
 #    what your session is when deciding whether to allow adding.
 #  - "Menu  [ESC]= Utilities and Exit"
@@ -196,6 +200,41 @@ def formatheader(texts):
     list = list + [line]
     return list
 
+transtable = {
+"\x80": "EUR",
+"\x81": "?",
+"\x82": "?",
+"\x83": "?",
+"\x84": "?",
+"\x85": "...",
+"\x86": "?",
+"\x87": "?",
+"\x88": "^",
+"\x89": "?",
+"\x8A": "?",
+"\x8B": "<",
+"\x8C": "OE",
+"\x8D": "?",
+"\x8E": "?",
+"\x8F": "?",
+"\x90": "?",
+"\x91": "`",
+"\x92": "'",
+"\x93": "\"",
+"\x94": "\"",
+"\x95": "-", # this one is actually a bullet!
+"\x96": "-",
+"\x97": "--",
+"\x98": "~",
+"\x99": "(TM)",
+"\x9A": "?",
+"\x9B": ">",
+"\x9C": "?",
+"\x9D": "?",
+"\x9E": "?",
+"\x9F": "?",
+}
+
 def formatitem(item):
     "Format an item. Return as a list of non-LF-terminated strings"
     list = []
@@ -228,7 +267,16 @@ def formatitem(item):
 		userid = userid[:newuseridlen] + "..."
 	    list = list + ["From: \aB\aCG" + grogname + \
 	    " (" + userid + ")\aa\aCA"]
-	list = list + [""] + j.data[j.skip:j.end] + [""]
+	list = list + [""]
+	for line in j.data[j.skip:j.end]:
+	    # Copy this stuff pretty much verbatim, except we deal
+	    # with Win1252 characters by converting them to a
+	    # halfway plausible ASCII equivalent.
+	    outline = ""
+	    for c in line:
+		outline = outline + transtable.get(c,c)
+	    list.append(outline)
+	list = list + [""]
     if item.contin:
 	list = list + ["\aR\aB\aCb" + "-" * width + "\aa\aCA", ""]
 	centretext = "(Continued in " + item.contin + ")"
