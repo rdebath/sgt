@@ -1,0 +1,22 @@
+Summary: Support for IP address ranges (x.x.x.x/y) in proxy exclude list
+Class: wish
+Priority: medium
+Difficulty: fun
+Content-type: text/x-html-body
+
+<p>
+Our proxy exclude list accepts filename-style wildcards
+(192.168.33.* and similar) on IP addresses, because I had the
+wildcard matching engine to spare anyway (having just used it for
+hostnames).
+
+<p>
+Of course I completely forgot that there's already a
+well-established way to specify ranges of IP addresses, that being
+the number-of-leading-bits notation (192.168.33.0/24). Same thing
+applies in IPv6.
+
+<p>
+The proxy exclude list clearly ought to support this notation. It's
+standard, it doesn't clash with any existing behaviour, and it's not
+too hard to do. No reason at all why not.
