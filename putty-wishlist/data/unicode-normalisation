@@ -2,7 +2,7 @@ Summary: Apply Unicode normalisation to combining characters
 Class: wish
 Priority: low
 Difficulty: tricky
-Depends: mdpi
+Depends: mdpi unicode-combining
 Content-type: text/x-html-body
 
 <p>

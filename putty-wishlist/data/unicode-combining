@@ -63,3 +63,5 @@ combining support.
 <em>Update, 2004-10-15:</em> PuTTY now has the ability to store an
 arbitrary number of code points per character cell. Cut and paste is
 implemented correctly, and display is by simple overlaying.
+Normalisation is not yet implemented; see
+<a href="unicode-normalisation.html">`unicode-normalisation'</a>.
