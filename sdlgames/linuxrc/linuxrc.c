@@ -50,6 +50,12 @@ static void plot_point(void *ignored, int x, int y)
     scrdata[640*y+2*x] = scrdata[640*y+2*x+1] = 1;
 }
 
+static void plot_point_conditional(void *ignored, int x, int y, int on)
+{
+    if (on)
+	scrdata[640*y+2*x] = scrdata[640*y+2*x+1] = 1;
+}
+
 static void draw_beebtext(int cx, int cy, char *text)
 {
     int i, x, y;
@@ -85,10 +91,18 @@ static void draw_sumo(int cx, int cy)
 	       plot_point, NULL);
 }
 
+static void draw_rocket(int cx, int cy)
+{
+    char *text = "ROCKET ATTACK";
+    data_text(text, cx - data_width(text)/2, cy - 5,
+	      plot_point_conditional, NULL);
+}
+
 static struct menuitem menu[] = {
     {draw_ntris, "/bin/ntris"},
     {draw_nort, "/bin/nort"},
     {draw_sumo, "/bin/sumo"},
+    {draw_rocket, "/bin/rocket"},
 };
 
 static SDL_Joystick *joys[2];
