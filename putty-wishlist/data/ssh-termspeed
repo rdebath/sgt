@@ -1,0 +1,27 @@
+Summary: Send terminal speeds in SSH
+Class: wish
+Difficulty: fun
+Priority: medium
+Content-type: text/x-html-body
+Fixed-in: 2004-04-25
+
+<p>
+We've had a couple of requests for PuTTY to transmit a terminal speed
+in SSH, as it already does for Telnet and Rlogin protocols.
+
+<p>
+Apparently server defaults in the absence of information from PuTTY
+aren't always helpful; in particular, OpenSSH on HP-UX ends up at 300
+baud(!), and this causes <code>vi</code> and <code>emacs</code> to
+invoke various emergency procedures (e.g., <code>vi</code> uses a
+5-line display).
+
+<p>
+As of 2004-04-25, PuTTY will send terminal speeds in SSH based on the
+same terminal-speed string as for other protocols (which has been
+moved to the Connection panel in the UI).
+
+<p>
+Currently there's no way to turn <em>off</em> the sending of terminal
+speeds in SSH (speeds are <em>always</em> sent). If anyone complains,
+we can change this.
