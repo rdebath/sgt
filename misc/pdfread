@@ -128,20 +128,25 @@ if len(args) == 0:
     print "usage: pdfread <filename>"
     print "   or: pdfread <filename> <objnum>"
     print "   or: pdfread <filename> <objnum> <gennum>"
+    print "   or: pdfread <filename> -p <pagenum>"
     sys.exit(0)
 
 filename = args[0]
 args = args[1:]
 
+number = -1 # indicates we're starting from the root object
+gen = -1 # indicates we want the latest generation
+page = None # indicates we're not in page mode, unless we later are
+
 if len(args) > 0:
-    number = string.atoi(args[0])
-    args = args[1:]
-    if len(args) > 0:
-        gen = string.atoi(args[0])
+    if args[0] == "-p" and len(args) > 1:
+        page = string.atoi(args[1])
+        args = args[2:]
     else:
-        gen = -1 # indicates we want the latest generation
-else:
-    number = -1 # indicates top-level Catalog object
+        number = string.atoi(args[0])
+        args = args[1:]
+        if len(args) > 0:
+            gen = string.atoi(args[0])
 
 f = open(filename, "rb")
 
@@ -204,79 +209,109 @@ def chomp(s):
         s = s[:-1]
     return s
 
-# Now we have an xref table offset and an object number. Go for it.
-offset = None
-while 1:
-    f.seek(xrefoff)
-    s = chomp(f.readline())
-    fassert(s == "xref", "expected 'xref' keyword in xref section")
+def fetchobj(f, xrefoff, number, gen, printout=0):
+    offset = None
     while 1:
+        f.seek(xrefoff)
         s = chomp(f.readline())
-        ss = string.split(s)
-        if len(ss) != 2:
+        fassert(s == "xref", "expected 'xref' keyword in xref section")
+        while 1:
+            s = chomp(f.readline())
+            ss = string.split(s)
+            if len(ss) != 2:
+                break
+            start = string.atoi(ss[0])
+            nobjs = string.atoi(ss[1])
+            curroff = f.tell()
+            if number >= start and number < start + nobjs:
+                # Found it.
+                f.seek((number - start) * 20, 1)
+                entry = f.read(20)
+                entryl = string.split(entry)
+                gennum = string.atoi(entryl[1])
+                if gen < 0 or gen == gennum:
+                    offset = string.atoi(entryl[0])
+            # Seek to the end of this bit and try the next bit.
+            f.seek(curroff + nobjs * 20)
+        # Now parse the following trailer.
+        lexed = []
+        d = ""
+        while 1:
+            s = f.readline()
+            if s == "": break
+            d = d + s
+            d = pdflex(d, lexed)
+        parsed = pdfparse(lexed)
+        fassert(type(parsed[0]) == types.DictType, "expected dictionary in trailer")
+        # Now look backwards to find the previous xref section.
+        prevstr = parsed[0].get("/Prev", "")
+        if prevstr == "":
             break
-        start = string.atoi(ss[0])
-        nobjs = string.atoi(ss[1])
-        curroff = f.tell()
-        if number >= start and number < start + nobjs:
-            # Found it.
-            f.seek((number - start) * 20, 1)
-            entry = f.read(20)
-            entryl = string.split(entry)
-            gennum = string.atoi(entryl[1])
-            if gen < 0 or gen == gennum:
-                offset = string.atoi(entryl[0])
-        # Seek to the end of this bit and try the next bit.
-        f.seek(curroff + nobjs * 20)
-    # Now parse the following trailer.
-    lexed = []
+        xrefoff = string.atoi(prevstr)
+
+    if offset == None:
+        objstr = "%d" % number
+        if gen >= 0:
+            objstr = objstr + " %d" % gen
+        sys.stderr.write("unable to find object number %s\n" % objstr)
+        sys.exit(1)
+
+    # Now we know the object offset. Read and display the object.
+    f.seek(offset)
     d = ""
+    lexed = []
     while 1:
         s = f.readline()
         if s == "": break
         d = d + s
-        d = pdflex(d, lexed)
+        dn = pdflex(d, lexed)
+        if printout: sys.stdout.write(d[:len(d)-len(dn)])
+        d = dn
+        if lexed[-1] == "stream":
+            if printout: sys.stdout.write("\n")
+            parsed = pdfparse(lexed)
+            assert parsed[-1] == "stream"
+            fassert(type(parsed[-2]) == types.DictType, "expected dictionary before 'stream'")
+            streamlen = string.atoi(parsed[-2]["/Length"])
+            streamdata = f.read(streamlen)
+            filt = parsed[-2].get("/Filter", "")
+            if filt == "/FlateDecode":
+                streamdata = zlib.decompress(streamdata)
+            elif filt == "":
+                pass
+            else:
+                raise "filter type %s not supported" % str(filt)
+            if printout: sys.stdout.write(streamdata)
+        if lexed[-1] == "endobj":
+            if printout: sys.stdout.write("\n")
+            break
     parsed = pdfparse(lexed)
-    fassert(type(parsed[0]) == types.DictType, "expected dictionary in trailer")
-    # Now look backwards to find the previous xref section.
-    prevstr = parsed[0].get("/Prev", "")
-    if prevstr == "":
-        break
-    xrefoff = string.atoi(prevstr)
+    return parsed
 
-if offset == None:
-    objstr = "%d" % number
-    if gen >= 0:
-        objstr = objstr + " %d" % gen
-    sys.stderr.write("unable to find object number %s\n" % objstr)
-    sys.exit(1)
+if page != None:
+    # Look down the /Pages tree for a particular page number.
+    catalog = fetchobj(f, xrefoff, number, gen)
+    fassert(type(catalog[3]) == types.DictType, "expected dictionary in Catalog object")
+    pagekids = [catalog[3]["/Pages"]]
+    while 1:
+        obj = None
+        for i in pagekids:
+            pages = fetchobj(f, xrefoff, i[0], i[1])
+            fassert(type(pages[3]) == types.DictType, "expected dictionary in Pages/Page object")
+            if pages[3]["/Type"] == "/Pages":
+                count = string.atoi(pages[3]["/Count"])
+            else:
+                count = 1
+            if page < count:
+                obj = i
+                break
+            page = page - count
+            # and loop round to the next child
+        fassert(obj != None, "unable to find requested page number")
+        if pages[3]["/Type"] == "/Page":
+            number, gen = i
+            break # really got it
+        pagekids = pages[3]["/Kids"]
 
-# Now we know the object offset. Read and display the object.
-f.seek(offset)
-d = ""
-lexed = []
-while 1:
-    s = f.readline()
-    if s == "": break
-    d = d + s
-    dn = pdflex(d, lexed)
-    sys.stdout.write(d[:len(d)-len(dn)])
-    d = dn
-    if lexed[-1] == "stream":
-        sys.stdout.write("\n")
-        parsed = pdfparse(lexed)
-        assert parsed[-1] == "stream"
-        fassert(type(parsed[-2]) == types.DictType, "expected dictionary before 'stream'")
-        streamlen = string.atoi(parsed[-2]["/Length"])
-        streamdata = f.read(streamlen)
-        filt = parsed[-2].get("/Filter", "")
-        if filt == "/FlateDecode":
-            streamdata = zlib.decompress(streamdata)
-        elif filt == "":
-            pass
-        else:
-            raise "filter type %s not supported" % str(filt)
-        sys.stdout.write(streamdata)
-    if lexed[-1] == "endobj":
-        sys.stdout.write("\n")
-        break
+# We have an xref table offset and an object number. Go for it.
+fetchobj(f, xrefoff, number, gen, 1)
