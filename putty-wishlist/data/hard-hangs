@@ -39,9 +39,6 @@ someone thought that sound might be implicated, but I can't find any
 evidence for that now.
 
 <p>
-Stab in the dark: it's not correlated with Visual Studio, is it?
-
-<p>
 Once the system has got into this state, an SSH packet log of a new
 session which hangs might be useful, so we can infer exactly where
 it's hanging and what it might be doing (since there's been a
@@ -50,7 +47,11 @@ suggestion that it's some way into the SSH protocol).
 <p>
 If someone can debug one of the hanging PuTTY processes and tell us
 where it's got stuck, that would be good too.
+<br><em>Update, 2004-03-17</em>: someone did this, and PuTTY is
+hanging in <code>noise_get_light()</code>, around the call to
+<code>GetSystemPowerStatus()</code>.
 
+<p>
 Reports:
 <ul>
 <li>00ad01c1d996$8ed21920$0100a8c0@andrus
@@ -64,3 +65,18 @@ Reports:
 <li><a href="http://groups.google.com/groups?q=msgid%3Ac925c3dc.0402191059.102caeba%40posting.google.com">c925c3dc.0402191059.102caeba@posting.google.com</a>
 <li>001c01c3f7f2$4ca5b3a0$0200a8c0@bart
 </ul>
+
+<p>
+<em>Update, 2004-03-17</em>: one of our correspondents has been trying
+a version of the development code (more or less equivalent to 0.54) with
+the <code>GetSystemPowerStatus()</code> call disabled, and has reported
+that the problem seems to have gone away.
+
+<p>
+So, it looks as if this source of noise should be removed (there are
+<a href="ntpd-slowdown.html">other good reasons</a> too).
+
+<p>
+(Perhaps we've been getting more reports recently because modern BIOI /
+Windows versions / whatever are more upset by frequent calls to the
+APM BIOS or whatever it is than older systems?)
