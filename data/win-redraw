@@ -38,6 +38,8 @@ Reports:
 <br><tt>831xebsg1z.fsf@chiark.greenend.org.uk</tt>
 
 <li>2005-01-13, Win2K SP4, ATI RAGE 128 PRO II (JTN), 1.4GHz
+<br>Quite reproducible. Unable to get Notepad to exhibit the same
+behaviour on similar timescales, so it seems PuTTY-specific.
 <br>(I can also trigger partial redraw failures on the configuration
 dialog by the same method! -- the background
 <a href="http://www.tartarus.org/~jacob/junk/20050118/putty-2005-01-13-noredraw-config.png">becomes green</a>,
