@@ -239,6 +239,8 @@ if args[0] == "--build-unihan":
     while 1:
 	s = infile.readline()
 	if s == "": break
+	while s[-1:] == "\r" or s[-1:] == "\n":
+	    s = s[:-1]
 	sa = string.split(s, "\t")
 	if len(sa) == 3 and sa[1] == "kDefinition" and sa[0][:2] == "U+":
 	    db[sa[0][2:]] = sa[2]
