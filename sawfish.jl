@@ -69,11 +69,13 @@
   ;; Some applications have a nasty habit of trying to place all
   ;; their windows at (0,0). Identify those apps' windows, ignore
   ;; their specified positions, and let Sawfish DTRT.
-  (when (or
-         (equal (caddr (get-x-property w 'WM_CLASS)) "Gecko\0Mozilla-bin\0")
-         (equal (caddr (get-x-property w 'WM_CLASS)) "gnotravex\0Gnotravex\0")
-        )
-   (window-put w 'ignore-program-position t)
+  (let ((class (caddr (get-x-property w 'WM_CLASS))))
+     (when (or
+	      (equal class "Gecko\0Mozilla-bin\0")
+	      (equal class "mozilla-bin\0Mozilla-bin\0")
+	      (equal class "gnotravex\0Gnotravex\0"))
+	(window-put w 'ignore-program-position t)
+     )
   )
 )
 (add-hook 'add-window-hook sgt-add-window)
