@@ -14,7 +14,7 @@ struct list_ctx {
     Date cd, last_date_printed, colour_date;
     Time ct;
     tree234 *future;
-    char *day_str, *end_str;
+    char *day_str, *clr_str, *end_str;
     int line_width;
 };
 
@@ -49,7 +49,7 @@ static void print_line(struct list_ctx *ctx, char *fmt, ...)
     int n;
 
     if (ctx->cd != ctx->colour_date) {
-	ctx->day_str = ctx->end_str = "";
+	ctx->day_str = ctx->clr_str = ctx->end_str = "";
     }
 
     printf("%s", ctx->day_str);
@@ -58,8 +58,9 @@ static void print_line(struct list_ctx *ctx, char *fmt, ...)
     n = vprintf(fmt, ap);
     va_end(ap);
 
-    printf("%*s%s\n", (ctx->line_width > n ? ctx->line_width - n : 0), "",
-	   ctx->end_str);
+    printf("%s%*s%s\n", ctx->clr_str,
+	   (*ctx->end_str && ctx->line_width > n ? ctx->line_width - n : 0),
+	   "", ctx->end_str);
 }
 
 static void list_print(struct list_ctx *ctx, struct entry *ent)
@@ -140,7 +141,8 @@ static void list_upto(struct list_ctx *ctx, Date ed, Time et)
 		     * the terminal is something weird and
 		     * abandoning all use of colour if so.
 		     */
-		    ctx->end_str = "\033[K\033[39;49;0m";
+		    ctx->clr_str = "\033[K";
+		    ctx->end_str = "\033[39;49;0m";
 		    switch (ent->type) {
 		      case T_HOL1: ctx->day_str = "\033[44;37m"; break;
 		      case T_HOL2: ctx->day_str = "\033[46;30m"; break;
