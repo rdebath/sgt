@@ -28,106 +28,16 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <math.h>
 
-#define VERSION "$Revision: 1.4 $"
+#include "bmpwrite.h"
+
+#define VERSION "$Revision$"
 
 #define TRUE 1
 #define FALSE 0
 #define lenof(x) (sizeof ((x)) / sizeof ( *(x) ))
-
-/* ----------------------------------------------------------------------
- * Function prototypes and structure type predeclarations.
- */
-
-struct Bitmap;
-static void fput32(unsigned long val, FILE *fp);
-static void fput16(unsigned val, FILE *fp);
-static void bmpinit(struct Bitmap *bm, char const *filename,
-                    int width, int height);
-static void bmppixel(struct Bitmap *bm,
-                     unsigned char r, unsigned char g, unsigned char b);
-static void bmpendrow(struct Bitmap *bm);
-static void bmpclose(struct Bitmap *bm);
-
-/* ----------------------------------------------------------------------
- * Output routines for 24-bit Windows BMP. (It's a nice simple
- * format which can easily be converted into other formats; please
- * don't shoot me.)
- */
-
-struct Bitmap {
-    FILE *fp;
-    unsigned long padding;
-};
-
-static void fput32(unsigned long val, FILE *fp) {
-    fputc((val >>  0) & 0xFF, fp);
-    fputc((val >>  8) & 0xFF, fp);
-    fputc((val >> 16) & 0xFF, fp);
-    fputc((val >> 24) & 0xFF, fp);
-}
-static void fput16(unsigned val, FILE *fp) {
-    fputc((val >>  0) & 0xFF, fp);
-    fputc((val >>  8) & 0xFF, fp);
-}
-
-static void bmpinit(struct Bitmap *bm, char const *filename,
-                    int width, int height) {
-    /*
-     * File format is:
-     *
-     * 2char "BM"
-     * 32bit total file size
-     * 16bit zero (reserved)
-     * 16bit zero (reserved)
-     * 32bit 0x36 (offset from start of file to image data)
-     * 32bit 0x28 (size of following BITMAPINFOHEADER)
-     * 32bit width
-     * 32bit height
-     * 16bit 0x01 (planes=1)
-     * 16bit 0x18 (bitcount=24)
-     * 32bit zero (no compression)
-     * 32bit size of image data (total file size minus 0x36)
-     * 32bit 0xB6D (XPelsPerMeter)
-     * 32bit 0xB6D (YPelsPerMeter)
-     * 32bit zero (palette colours used)
-     * 32bit zero (palette colours important)
-     *
-     * then bitmap data, BGRBGRBGR... with padding zeros to bring
-     * scan line to a multiple of 4 bytes. Padding zeros DO happen
-     * after final scan line. Scan lines work from bottom upwards.
-     */
-    unsigned long scanlen = 3 * width;
-    unsigned long padding = ((scanlen+3)&~3) - scanlen;
-    unsigned long bitsize = (scanlen + padding) * height;
-    FILE *fp = fopen(filename, "wb");
-    fputs("BM", fp);
-    fput32(0x36 + bitsize, fp); fput16(0, fp); fput16(0, fp);
-    fput32(0x36, fp); fput32(0x28, fp); fput32(width, fp); fput32(height, fp);
-    fput16(1, fp); fput16(24, fp); fput32(0, fp); fput32(bitsize, fp);
-    fput32(0xB6D, fp); fput32(0xB6D, fp); fput32(0, fp); fput32(0, fp);
-
-    bm->fp = fp;
-    bm->padding = padding;
-}
-
-static void bmppixel(struct Bitmap *bm,
-                     unsigned char r, unsigned char g, unsigned char b) {
-    putc(b, bm->fp);
-    putc(g, bm->fp);
-    putc(r, bm->fp);
-}
-
-static void bmpendrow(struct Bitmap *bm) {
-    int j;
-    for (j = 0; j < bm->padding; j++)
-        putc(0, bm->fp);
-}
-
-static void bmpclose(struct Bitmap *bm) {
-    fclose(bm->fp);
-}
 
 /* ----------------------------------------------------------------------
  * Functions to handle complex numbers and lists of them.
@@ -211,7 +121,6 @@ struct Colours {
  */
 static struct Colours *colread(char const *string) {
     struct Colours *ret;
-    int i;
     struct RGB c, *clist;
     int nc, csize;
     char *q;
@@ -284,12 +193,12 @@ static int toint(double d) {
 int plot(struct Params params) {
     int i, j, k;
     Complex z, w, d, prevz;
-    struct Bitmap bm;
+    struct Bitmap *bm;
     int icount, root;
     double iflt, fade;
     const double tolerance = 1e-10;
 
-    bmpinit(&bm, params.outfile, params.width, params.height);
+    bm = bmpinit(params.outfile, params.width, params.height);
 
     for (i = 0; i < params.height; i++) {
         for (j = 0; j < params.width; j++) {
@@ -421,13 +330,13 @@ int plot(struct Params params) {
                 fade *= 256.0;
                 if (fade > 255.0)
                     fade = 255.0;
-                bmppixel(&bm, toint(c.r*fade),
+                bmppixel(bm, toint(c.r*fade),
                          toint(c.g*fade), toint(c.b*fade));
             }
         }
-        bmpendrow(&bm);
+        bmpendrow(bm);
     }
-    bmpclose(&bm);
+    bmpclose(bm);
 
     return 1;
 }
@@ -572,7 +481,6 @@ int main(int ac, char **av) {
 	" - if only one of -x and -y specified, will compute the other so",
 	"   as to preserve the aspect ratio",
     };
-    struct Params par;
     ComplexList roots;
     int usage = FALSE;
     int verbose = FALSE;
@@ -641,7 +549,7 @@ int main(int ac, char **av) {
 		}
 		if (c == '-') {
 		    fprintf(stderr, "newton: unknown long option `%.*s'\n",
-			    strcspn(arg, "="), arg);
+			    (int)strcspn(arg, "="), arg);
 		    return EXIT_FAILURE;
 		}
 	    }

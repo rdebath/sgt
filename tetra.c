@@ -26,9 +26,13 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <time.h>
 #include <math.h>
 
-#define VERSION "$Revision: 1.2 $"
+#include "bmpwrite.h"
+
+#define VERSION "$Revision$"
 
 #define TRUE 1
 #define FALSE 0
@@ -41,95 +45,6 @@
 struct RGB {
     double r, g, b;
 };
-
-struct Bitmap;
-static void fput32(unsigned long val, FILE *fp);
-static void fput16(unsigned val, FILE *fp);
-static void bmpinit(struct Bitmap *bm, char const *filename,
-                    int width, int height);
-static void bmppixel(struct Bitmap *bm,
-                     unsigned char r, unsigned char g, unsigned char b);
-static void bmpendrow(struct Bitmap *bm);
-static void bmpclose(struct Bitmap *bm);
-
-/* ----------------------------------------------------------------------
- * Output routines for 24-bit Windows BMP. (It's a nice simple
- * format which can easily be converted into other formats; please
- * don't shoot me.)
- */
-
-struct Bitmap {
-    FILE *fp;
-    unsigned long padding;
-};
-
-static void fput32(unsigned long val, FILE *fp) {
-    fputc((val >>  0) & 0xFF, fp);
-    fputc((val >>  8) & 0xFF, fp);
-    fputc((val >> 16) & 0xFF, fp);
-    fputc((val >> 24) & 0xFF, fp);
-}
-static void fput16(unsigned val, FILE *fp) {
-    fputc((val >>  0) & 0xFF, fp);
-    fputc((val >>  8) & 0xFF, fp);
-}
-
-static void bmpinit(struct Bitmap *bm, char const *filename,
-                    int width, int height) {
-    /*
-     * File format is:
-     *
-     * 2char "BM"
-     * 32bit total file size
-     * 16bit zero (reserved)
-     * 16bit zero (reserved)
-     * 32bit 0x36 (offset from start of file to image data)
-     * 32bit 0x28 (size of following BITMAPINFOHEADER)
-     * 32bit width
-     * 32bit height
-     * 16bit 0x01 (planes=1)
-     * 16bit 0x18 (bitcount=24)
-     * 32bit zero (no compression)
-     * 32bit size of image data (total file size minus 0x36)
-     * 32bit 0xB6D (XPelsPerMeter)
-     * 32bit 0xB6D (YPelsPerMeter)
-     * 32bit zero (palette colours used)
-     * 32bit zero (palette colours important)
-     *
-     * then bitmap data, BGRBGRBGR... with padding zeros to bring
-     * scan line to a multiple of 4 bytes. Padding zeros DO happen
-     * after final scan line. Scan lines work from bottom upwards.
-     */
-    unsigned long scanlen = 3 * width;
-    unsigned long padding = ((scanlen+3)&~3) - scanlen;
-    unsigned long bitsize = (scanlen + padding) * height;
-    FILE *fp = fopen(filename, "wb");
-    fputs("BM", fp);
-    fput32(0x36 + bitsize, fp); fput16(0, fp); fput16(0, fp);
-    fput32(0x36, fp); fput32(0x28, fp); fput32(width, fp); fput32(height, fp);
-    fput16(1, fp); fput16(24, fp); fput32(0, fp); fput32(bitsize, fp);
-    fput32(0xB6D, fp); fput32(0xB6D, fp); fput32(0, fp); fput32(0, fp);
-
-    bm->fp = fp;
-    bm->padding = padding;
-}
-
-static void bmppixel(struct Bitmap *bm,
-                     unsigned char r, unsigned char g, unsigned char b) {
-    putc(b, bm->fp);
-    putc(g, bm->fp);
-    putc(r, bm->fp);
-}
-
-static void bmpendrow(struct Bitmap *bm) {
-    int j;
-    for (j = 0; j < bm->padding; j++)
-        putc(0, bm->fp);
-}
-
-static void bmpclose(struct Bitmap *bm) {
-    fclose(bm->fp);
-}
 
 /* ----------------------------------------------------------------------
  * Matrix utilities.
@@ -158,7 +73,7 @@ Matrix matmul(Matrix a, Matrix b)
 
 void transform(double *c, Matrix m)
 {
-    int i, j, k;
+    int i, j;
     double ret[3];
 
     for (i = 0; i < 3; i++) {
@@ -199,12 +114,12 @@ double dist(double dx, double dy)
 int plot(struct Params params) {
     int i, j, yi, xi;
     double xf, nxf, yf;
-    struct Bitmap bm;
+    struct Bitmap *bm;
     int height;
 
     height = (sqrt(3)/2) * params.side;
 
-    bmpinit(&bm, params.outfile, params.width, params.height);
+    bm = bmpinit(params.outfile, params.width, params.height);
 
     for (i = 0; i < params.height; i++) {
 	yf = (float)i / height;
@@ -295,11 +210,11 @@ int plot(struct Params params) {
 		c.r = c.g = c.b = 0;
 	    }
 
-	    bmppixel(&bm, c.r*255.0, c.g*255.0, c.b*255.0);
+	    bmppixel(bm, c.r*255.0, c.g*255.0, c.b*255.0);
         }
-        bmpendrow(&bm);
+        bmpendrow(bm);
     }
-    bmpclose(&bm);
+    bmpclose(bm);
 
     return 1;
 }
@@ -378,7 +293,6 @@ int parsebool(char const *string, int *d, char const *name) {
  * Read a colour into an RGB structure.
  */
 int parsecol(char const *string, struct RGB *ret, char const *name) {
-    struct RGB c;
     char *q;
 
     ret->r = strtod(string, &q);
@@ -415,7 +329,6 @@ int main(int ac, char **av) {
 	"       -s, --size NNNxNNN      output bitmap size",
 	"       -v, --verbose           report details of what is done",
     };
-    struct Params par;
     int usage = FALSE;
     int verbose = FALSE;
     char *outfile = NULL;
@@ -473,7 +386,7 @@ int main(int ac, char **av) {
 		}
 		if (c == '-') {
 		    fprintf(stderr, "tetra: unknown long option `%.*s'\n",
-			    strcspn(arg, "="), arg);
+			    (int)strcspn(arg, "="), arg);
 		    return EXIT_FAILURE;
 		}
 	    }
@@ -561,7 +474,6 @@ int main(int ac, char **av) {
 	 */
 	struct Params par;
 	int i;
-	double aspect;
 
 	/* If no output file, complain. */
 	if (!outfile) {
@@ -686,7 +598,6 @@ int main(int ac, char **av) {
 	 * parameters.
 	 */
 	if (verbose) {
-            int i;
             printf("Output file `%s', %d x %d\n",
                    par.outfile, par.width, par.height);
 	}
