@@ -50,10 +50,15 @@ if ($type eq "text/html") {
   exit 0;
 }
 
-# MIME transfer encodings
+# MIME transfer encodings. If we get one of these and $stripspace
+# is set, we MUST destroy all input lines that do not start with a
+# real space or plus sign, and strip the ones that do.
 if ($type eq "quoted-printable") {
   while (<F>) {
-    s/^ // if $stripspace;
+    if ($stripspace) {
+      next if !/^[ \+]/;
+      s/^[ \+]//;
+    }
     s/=\n//;
     $newl = chomp;
     while (/^([^=]*)=(..)(.*)$/) {
@@ -69,6 +74,10 @@ if ($type eq "quoted-printable") {
 } elsif ($type eq "base64") {
   $chars = '';
   while (<F>) {
+    if ($stripspace) {
+      next if !/^[ \+]/;
+      s/^[ \+]//;
+    }
     # Deal with strange footers on the base64 data, for example added by
     # Mailman in the case when a message body is a single base64 part.
     last if /[^A-Za-z0-9+\/= \r\n\t]/;
@@ -82,7 +91,10 @@ if ($type eq "quoted-printable") {
   }
 } elsif ($type eq "x-uuencode") {
   while (<F>) {
-    s/^ // if $stripspace;
+    if ($stripspace) {
+      next if !/^[ \+]/;
+      s/^[ \+]//;
+    }
     @octets = map { $_ == 0x60 ? 0 : $_ - 0x20 } unpack "C*", $_;
     $len = shift @octets;
     if ($len > 0 and $len <= 45) {
@@ -98,7 +110,10 @@ if ($type eq "quoted-printable") {
   }
 } else {
   while (<F>) {
-    s/^ // if $stripspace;
+    if ($stripspace) {
+      next if !/^[ \+]/;
+      s/^[ \+]//;
+    }
     print;
   }
 }
