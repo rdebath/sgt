@@ -40,6 +40,9 @@ while (<FILE>) {
   # for each line, we must rewrite hrefs, although not if the href has
   # a slash in it.
   s/<a href="([^"\/]*)">/'<a href="' . &fix_href($1) . '">'/eg;
+  # don't put in the </body> or </html>, since we're adding text on
+  # the end
+  s/<\/(body|html)>//ig;
   print;
 }
 

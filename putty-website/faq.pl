@@ -39,6 +39,9 @@ while (<FAQ>) {
   last if /^<p><a href='/i;
   # for each line, we must rewrite hrefs
   s/<a href="([^"\/]*)">/'<a href="' . &fix_href($1) . '">'/eg;
+  # don't put in the </body> or </html>, since we're adding text on
+  # the end
+  s/<\/(body|html)>//ig;
   print;
 }
 
