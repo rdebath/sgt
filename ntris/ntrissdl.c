@@ -250,6 +250,7 @@ static void play_game(void)
 	 lineplotsimple, (void *)255);
     line(RIGHT_EDGE+1, BOTTOM_EDGE+1, RIGHT_EDGE+1, 0,
 	 lineplotsimple, (void *)255);
+    do_scores(ti);
     scr_done();
 
     dropinterval = 20;		       /* frames */
