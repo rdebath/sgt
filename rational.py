@@ -202,9 +202,9 @@ def sqrt(r, maxerr=2L**128, maxsteps=None):
         #
         # We do this in the simplest possible manner: we have a
         # number of the form A + B sqrt(r), and we repeatedly
-        # subtract 1 to it (easily done since it just goes straight
-        # on to the rational part) and test whether it has become
-        # less than zero.
+        # subtract 1 from it (easily done since that just comes
+        # straight off the rational part) and test whether it has
+        # become less than zero.
         q = 0
         while 1:
             rpart = rpart - 1
@@ -215,6 +215,7 @@ def sqrt(r, maxerr=2L**128, maxsteps=None):
             #  (a) rpart and spart are both positive
             #  (b) rpart > 0, spart < 0 and rpart^2 > r spart^2
             #  (c) rpart < 0, spart > 0 and rpart^2 < r spart^2
+            r2 = s2 = None
             if rpart > 0:
                 if spart < 0:
                     r2 = rpart*rpart
@@ -231,7 +232,7 @@ def sqrt(r, maxerr=2L**128, maxsteps=None):
                     break # rpart, spart both negative
             q = q + 1
 
-        if r2 == s2:
+        if r2 != None and r2 == s2:
             q = q + 1 # division was exact
             exact = 1
         else:
