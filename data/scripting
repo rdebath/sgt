@@ -1,0 +1,42 @@
+Summary: Scripting support in PuTTY
+Class: wish
+Difficulty: tricky
+Priority: low
+Depends: mdpi
+Content-type: text/x-html-body
+
+<p> Many people would find it useful for PuTTY to have a general
+scripting mechanism. There are a lot of uses for something like
+this:
+
+<ul>
+<li>
+Automating movement through menu systems on servers.
+<li>
+Assigning common commands to function keys.
+<li>
+For MUD users: being able to set up triggers so that PuTTY
+automatically sends commands when particular events happen on the
+server.
+<li>
+Chaining connections. For example, the recommended way to connect to
+<a href="www.mono.org">Monochrome BBS</a>
+is to make a preliminary Telnet connection to a central server which
+will tell you which of the usable machines has the lowest load, and
+then to make a Telnet or SSH connection to that machine. A scripting
+facility would allow PuTTY to do things like this automatically.
+<li>
+Remembering your password for you. (Obviously we don't recommend you
+do this, on security grounds; but in one or two situations it might
+be helpful.)
+</ul>
+
+<p>
+We do have a scripting language half-way written for this purpose,
+though it's unclear when (if) it will ever be finished.
+
+<p>
+A scripting language is liable to be a fairly big piece of code, so
+the language interpreter might end up having to be implemented as a
+DLL plugin. Hence this feature is dependent on us creating a DLL
+plugin interface first.
