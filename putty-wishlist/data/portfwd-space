@@ -22,3 +22,7 @@ We need to fix this (fixed-size buffers are almost always a mistake) but we
 haven't got round to it. If you actually have trouble with this, let us know
 and we'll move it up our priority list.
 </blockquote>
+
+<p>
+If we implemented <a href="portfwd-range.html">`portfwd-range'</a>
+then the need to fix this would become less pressing.
