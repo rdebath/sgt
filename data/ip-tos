@@ -1,0 +1,28 @@
+Summary: Use of IP type-of-service field
+Priority: low
+Class: wish
+Difficulty: tricky
+Content-type: text/x-html-body
+
+<p>
+We've had a very few requests for the PuTTY suite to make use of the
+IP type-of-service (ToS) field - apparently it does make a practical
+difference to a few people using traffic shapers to sort
+interactive/bulk traffic.
+
+<p>
+Some thought needs to be given to this: PuTTY terminal sessions are
+obviously `interactive' traffic, PSCP/PSFTP are `bulk', but Plink
+could be either depending on usage, as could random port-forwardings,
+so it would probably need to be configurable.
+
+<p>
+Useful references: MS KB
+<a href="http://support.microsoft.com/default.aspx?scid=kb;EN-US;q196358">Q196358</a> and
+<a href="http://support.microsoft.com/default.aspx?scid=kb;EN-US;q248611">Q248611</a>
+(which indicates that on Win2K, a registry entry needs to be set to
+allow user programs to set the ToS).
+
+<p>
+This probably can't be set on Windows &lt;2000. Also, not sure how
+this interacts with DiffServ.
