@@ -1,6 +1,6 @@
 Summary: Occasional `Access denied' / `RSA_verify failed'
-Class: bug
-Difficulty: tricky
+Class: wish
+Difficulty: fun
 Content-type: text/x-html-body
 
 <p>
@@ -17,14 +17,13 @@ which apparently resolves to "the <tt>RSA_verify()</tt> function in
 SSL telling [us] <tt>RSA_R_WRONG_SIGNATURE_LENGTH</tt>".
 
 <p>
-A report of this problem can be found
-<a href="http://groups.google.com/groups?selm=3C96431D.7030504%40nospam.icon-labs.com">here</a>.
-
-<p>
-We occasionally see this. We think there's some sort of latent
-intermittent problem in the PuTTY bignum library, and we do plan to
-fix it at some point; what we really need to do is to prepare a trick
-PuTTY with a tweaked random number generator so that once we see the
-bug occur once we can then fix the random seed and replicate it
-consistently for debugging. This is more work than we've had time to
-do as yet.
+<b>SGT, 2002-05-30</b>:
+This is in fact not a complex bignum bug in PuTTY, but is a simple
+disagreement between PuTTY and OpenSSH about the correct way to pad
+RSA signatures in SSH2. It appears that the draft RFC is on our
+side, so this is a bug in OpenSSH, apparently caused by their
+RSA-for-SSH2 implementation being done before the specification was
+finalised. They will hopefully fix it for OpenSSH 3.3. However,
+PuTTY should detect OpenSSH versions which have the bug and pad its
+signatures appropriately for those versions; hence I've reclassified
+this as a nice easy feature addition rather than a hard bug.
