@@ -499,19 +499,13 @@ esac
 #}}}
 #{{{ shell function wrapper on `less' which transforms it into `ls' on dirs
 
-# Annoyingly, I can't bypass shell function expansion in order to
-# find the real `less', so I can't simply define `less' to be a
-# shell function. Instead, I define my shell function under another
-# name and then define `less' itself as an alias to it, because
-# it's easy to inhibit alias expansion.
-bashrc_less_wrapper() {
+less() {
   if test "$#" = 1 && test -d "$1"; then
-    ls "$@"
+    command ls "$@"
   else
-    \less "$@"
+    command less "$@"
   fi
 }
-alias less=bashrc_less_wrapper
 
 #}}}
 #{{{ shell function wrapper on `tr' which allows optional filename args
