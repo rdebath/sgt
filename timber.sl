@@ -109,7 +109,9 @@ variable timber_boringhdrs =
 ":Errors-To:X-X-Sender:X-URL:X-Juno-Line-Breaks:X-Confirm-Reading-To:" +
 ":X-pmrqc:Return-receipt-to:X-Newsgroups:X-Followup-To:Keywords:Summary:" +
 ":X-Automatically-Sent-By:X-MIME-Autoconverted:X-MimeOLE:X-Envelope-To:" +
-":X-Originating-IP:";
+":X-Originating-IP:X-VM-VHeader:X-VM-Last-Modified:X-VM-IMAP-Retrieved:" +
+":X-VM-POP-Retrieved:X-VM-Bookmark:X-VM-v5-Data:X-VM-Labels:" +
+":X-VM-Summary-Format:";
 
 %}}}
 %{{{ Non-user-configurable variables
