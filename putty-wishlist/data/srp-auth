@@ -25,10 +25,12 @@ improvement in the SSH host key model.
 <p>
 Resources:
 <ul>
-<li><a href="http://srp.stanford.edu/">Stanford SRP page</a> and RFC2945
+<li><a href="http://srp.stanford.edu/">Stanford SRP page</a> and
+<a href="ftp://ftp.rfc-editor.org/in-notes/rfc2945.txt">RFC2945</a>
 <li><a href="http://cvs.lysator.liu.se/viewcvs/viewcvs.cgi/lsh/doc/srp-spec.nroff?cvsroot=lsh"><tt>draft-nisse-secsh-srp-01</tt></a> (expired) describing how <a href="http://www.net.lut.ac.uk/psst">LSH</a> implements SRP (as a key exchange method)
 <li><tt>draft-tomh-secsh-srp-00</tt> (expired) describes how Tom Holroyd's <a href="http://members.tripod.com/professor_tom/archives/OpenSSH-3.4p1-srp.patch.gz">OpenSSH patch</a> implements SRP (as a userauth method)
 <li>A <a href="http://www.ietf.org/ietf/IPR/WU-SRP">statement</a> on the IPR issues around SRP
 <li>The IETF SECSH mail archive has discussions of the above drafts.
-<li>RFC2944 describes Telnet SRP authentication.
+<li><a href="ftp://ftp.rfc-editor.org/in-notes/rfc2944.txt">RFC2944</a>
+describes Telnet SRP authentication.
 </ul>
