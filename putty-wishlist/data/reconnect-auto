@@ -1,8 +1,7 @@
 Summary: Reconnect automatically if connection goes down
 Class: wish
 Priority: low
-Depends: reuse-windows
-Depends: disconnect
+Depends: reuse-windows disconnect
 Difficulty: fun
 Content-type: text/x-html-body
 
