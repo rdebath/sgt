@@ -35,8 +35,8 @@ foreach $i (@ARGV) {
 open NEWSRC, "$ENV{'HOME'}/.newsrc";
 while (<NEWSRC>) {
   chomp;
-  warn ".newsrc:$.: unrecognised line format\n", next
-    unless /^(.*)([:!]) (\d+-\d+(,\d+-\d+)*)$/;
+  (warn ".newsrc:$.: unrecognised line format\n"), next
+    unless /^(.*)([:!]) (\d+(-\d+)?(,\d+(-\d+)?)*)$/;
   ($grp, $sub, $read) = ($1, $2, $3);
   if (($gotgroups and $groups{$grp}) or (!$gotgroups and $sub eq ":")) {
     $groups{$grp} = 0;
@@ -154,6 +154,7 @@ sub check {
   $new = 0;
   foreach $term (split ",", $read) {
     ($lo, $hi) = split "-", $term;
+    $hi = $lo if !defined $hi;
     next if $hi < $lo; # this means nothing about what articles are read
     #print "$group: checking [$from,$to] against [$lo,$hi]\n";
     if ($lo > $from) {
