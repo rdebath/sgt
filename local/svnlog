@@ -1,0 +1,39 @@
+#!/bin/sh 
+
+# Wrapper on `svn log' that does what I usually want.
+
+uuid=`svn info | grep '^Repository UUID:' | cut -f3- -d' '`
+
+svn log -v -rHEAD:1 "$@" | \
+  perl -e '
+
+$uuid = shift @ARGV;
+while (<>) {
+    print;
+    next unless /^r(\d+).*(\d+) lines$/;
+    ($rev,$lines) = ($1,$2);
+    # Now parsing a revision record. Omit the changed paths section
+    # if it is going to be a problematic one.
+    if ($uuid eq "cda61777-01e9-0310-a592-d414129be87e" and
+        ($rev eq "4787" or $rev eq "4788")) {
+	print "[svnlog: changed paths section omitted]\n\n";
+	while (<>) {
+            chomp;
+	    last unless length $_ > 0;
+	}
+    } else {
+        # Print the changed paths section as normal.
+	while (<>) {
+	    print;
+	    chomp;
+	    last unless length $_ > 0;
+	}
+    }
+    # Now we have read and printed the blank line coming before the
+    # log message. Now print $lines lines of log.
+    while ($lines-- > 0) {
+        print ($_ = <>);
+    }
+}
+
+' $uuid
