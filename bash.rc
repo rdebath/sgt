@@ -1,6 +1,6 @@
 # -*- mode: sh; mode: fold -*-
 # Simon Tatham's standardised chunk of .bashrc
-# $Revision: 1.30 $
+# $Revision: 1.31 $
 
 #{{{ I don't like .bash_history files. They wet their nests.
 unset HISTFILE
@@ -182,11 +182,15 @@ bashrc_do_bindings
 unset bashrc_do_bindings
 
 #}}}
-#{{{ local analogue for tput
+#{{{ fix tput weirdnesses
 
+# Local tput wrapper which doesn't object to $TERM being unset...
 _bashrc_tput() {
   test -n "$TERM" && tput "$@"
 }
+# ... and for some reason I sometimes get $TERM set _but not
+# exported_, boggle.
+export TERM
 
 #}}}
 #{{{ prompt configuration
