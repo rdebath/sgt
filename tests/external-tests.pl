@@ -84,18 +84,28 @@ sub run_test {
 
 my @test;
 
-push @test, a_test init => a_cmd "init";
-push @test, a_test get_name => (a_cmd ("init"),
-				a_cmd ("contact name 0", stdout => "0\n"));
-push @test, a_test set_name => (a_cmd ("init"),
-				a_cmd ("set-contact name 0 Dave"),
-				a_cmd ("contact name 0",
-				       stdout => "0:Dave\n"),
-				a_cmd ("set-contact name 0 Eric"),
-				a_cmd ("contact name 0",
-				       stdout => "0:Eric\n"),
-				a_cmd ("set-contact name 0"),
-				a_cmd ("contact name 0", stdout => "0\n"));
+sub test ($@) {
+    my $name = shift;
+    my @cmd = map { &a_cmd (@$_) } @_;
+    push @test, a_test $name, @cmd;
+}
 
-my @failure = map { run_test($_) } @test;
-print @failure, SEP summary @failure, @test;
+END {
+    my @failure = map { run_test($_) } @test;
+    print @failure, SEP summary @failure, @test;
+}
+
+
+
+#  Add tests after here.
+
+test init => ["init"];
+test get_name => (["init"],
+		  ["contact name 0", stdout => "0\n"]);
+test set_name => (["init"],
+		  ["set-contact name 0 Dave"],
+		  ["contact name 0", stdout => "0:Dave\n"],
+		  ["set-contact name 0 Eric"],
+		  ["contact name 0", stdout => "0:Eric\n"],
+		  ["set-contact name 0"],
+		  ["contact name 0", stdout => "0\n"]);
