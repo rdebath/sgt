@@ -1,0 +1,9 @@
+Summary: Make PuTTY's blinking cursor use the system-wide blink rate
+Priority: low
+Difficulty: fun
+Class: wish
+Content-type: text/x-html-body
+
+<p>
+It's been suggested that PuTTY's blinking cursor should match the
+configured system-wide blink rate.
