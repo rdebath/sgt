@@ -8,8 +8,13 @@
 static char *helptext[] = {
     "usage:     timber <options> <command> [<arguments>]",
     "options:   -D <dirpath>          specify path to Timber directory",
+    "           --nosync              unsafe but fast database",
+    "                                 (recommended for large imports)",
     "commands:  init                  initialise Timber storage directory",
     "           import-mbox <file>    import an mbox full of messages",
+    "           export <egos>         export message(s) in RFC822 form",
+    "           display <charset> <egos> display message(s) legibly",
+    "           display-full <charset> <egos> display with full headers etc",
     NULL
 };
 
