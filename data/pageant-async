@@ -24,3 +24,77 @@ concurrent SendMessage() calls don't work in the Windows API, or
 some such. So I'm commenting out the async code for the moment
 (there wasn't a Windows Pageant that made helpful use of it anyway
 yet) and returning to the drawing board.
+
+<p>
+<b>Update, 2004-03-22</b>: Since I've just written a long mail to
+one user explaining why this is a difficult problem, it seems
+sensible to paste it in here too.
+
+<p>
+Currently, PuTTY communicates with Pageant by means of sending a
+Windows message asking for an authentication, and waiting for
+Pageant's Windows message handler to return success or failure. This
+is fine as long as Pageant can process every request in negligible
+time. However, as soon as Pageant starts needing to do anything
+GUI-related in response to a request (such as putting up a request
+to ask the user for a passphrase), things get tricky. If Pageant
+puts up a dialog box, this causes a subsidiary message loop to be
+run (so that it can receive messages on the dialog box itself), and
+at the end of that loop it can reply to the original message; the
+difficulty is what to do if a second PuTTY sends _another_ signature
+request message which requires another dialog box while the first
+dialog box is up. Pageant cannot sensibly choose in what order to
+reply to the messages; it can't accept the new message because then
+it would have to stop processing any messages on the first dialog;
+it can't delay accepting the new message because you can't do that
+with SendMessage events (believe me, I've tried). It has no feasible
+option except to completely freeze the first dialog and put up a
+second, which just isn't acceptable (particularly if the two
+requests were for the _same_ key, in which case obviously what it
+really wants to do is finish asking for the passphrase the first
+time and then reply to both requests).
+
+<p>
+So a wholly new mechanism is required. Options include:
+
+<ul>
+<li>
+Rather than Pageant replying to the sign request as its reply to the
+Windows message, it could reply in some other way, such as by
+sending a separate Windows message back. Fine for PuTTY; not so fine
+for Plink, which doesn't currently require a window at all and would
+now have to open one.
+<li>
+Alternatively, perhaps there's some other kind of synchronisation
+object that could be passed through the shared memory used in the
+Windows message (a semaphore or some such) which Pageant could
+signal when it had filled in the request.
+<li>
+Alternatively again, there's the option of abandoning Windows
+messages completely and going for a solution involving some
+completely other Windows IPC mechanism. I'm not sure what the
+options are here; the fact that Cygwin's OpenSSH-derived agent
+(which is presumably compiled from the standard Unix OpenSSH code
+which uses Unix-domain sockets) works at all suggests that at least
+one suitable mechanism exists, but I haven't as yet read the source
+of the Cygwin library to see how it fakes Unix-domain sockets.
+<li>
+While we're here, the security properties must be maintained.
+Windows messages don't use user-based access control: any process
+with access to your GUI display can send messages to your other
+windows, and it's not always the case that all processes running on
+your display are running as the same user (the NT/2k machines at my
+office, for example, have RSH daemons that sometimes put up windows
+which are owned by another user). The current Windows- message
+communication works by passing a shared memory handle through the
+Windows message, and the permissions and ownership on that shared
+memory handle are used to implement the required security. Any
+replacement solution would need to do at least as well, or it would
+be unsuitable for any NT-class OS.
+<li>
+So, this is a pretty open question, and as far as I know there
+aren't any easy answers (certainly no answers easy enough for me to
+have spotted them already, and I have spent some time thinking about
+this). If this could be solved, everything else in the area of
+Pageant enhancements would be simple by comparison.
+</ul>
