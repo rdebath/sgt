@@ -1,19 +1,21 @@
-Summary: Problems with various keyboard layouts / IMEs.
+Summary: Problems with various keyboard layouts / input methods
 Class: bug
 Priority: medium
 Difficulty: taxing
 Content-type: text/x-html-body
 
-<p>Problems with various keyboard layouts. It would be hard for me to
+<p>Problems with various keyboard layouts and input methods.
+It would be hard for me to
 debug these myself because I'd have to be able to work in the same
 keymap as I was testing PuTTY in! If anybody can debug these
 problems it would be greatly appreciated. (Although to get any fixes
 rolled in, you'll probably need to convince us that it won't break for
 anyone <em>else's</em> keyboard layout, and that it works across all
-the Windows versions we support.)
+the Windows versions we support, because we just don't know enough
+about internationalisation.)
 
 <p>(Some of the items below have been on this list for a very long
-time, and may in fact have been fixed.)
+time, and may in fact have been fixed. Please do let us know if so.)
 <ul>
 <li>
 The
@@ -31,6 +33,9 @@ input doesn't work.
 <li>
 A German user has reported that Caps Lock is more like Shift Lock -
 it affects a lot of keys other than alphabetics.
+<li>
+I believe there are also Eastern input mechanisms we don't handle
+sensibly.
 </ul>
 
 <p>
