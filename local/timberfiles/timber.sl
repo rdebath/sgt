@@ -1163,8 +1163,11 @@ define timber_get_mimepart(use_decoded) {
     go_right_1();
     while (not eolp()) {
         c = what_char();
-        if (c == '<' or c == '>')
+        if (c == '<' or c == '>') {
+	    eol();
+	    go_right_1();
             continue;
+	}
         !if (c == headerchr)
             break;
 	go_right_1();
