@@ -101,23 +101,29 @@ static int weekday(Date d)
 
 Date parse_date(char *str)
 {
-    int y, m, d, y2, m2, d2;
+    int y, m, d, y2, m2, d2, delta;
     Date ret;
-    
-    if (sscanf(str, "%d-%d-%d", &y, &m, &d) != 3)
-	return INVALID_DATE;
-    if (d < 1 || d > 31 || m < 1 || m > 12 || y < 1900)
-	return INVALID_DATE;
 
-    ret = ymd_to_date(y, m, d);
+    if (sscanf(str, "%d-%d-%d", &y, &m, &d) == 3) {
+	if (d < 1 || d > 31 || m < 1 || m > 12 || y < 1900)
+	    return INVALID_DATE;
 
-    /*
-     * Double-check the user hasn't entered anything stupid such as
-     * 30th Feb.
-     */
-    date_to_ymd(ret, &y2, &m2, &d2);
-    if (y2 != y || m2 != m || d2 != d)
+	ret = ymd_to_date(y, m, d);
+
+	/*
+	 * Double-check the user hasn't entered anything stupid such as
+	 * 30th Feb.
+	 */
+	date_to_ymd(ret, &y2, &m2, &d2);
+	if (y2 != y || m2 != m || d2 != d)
+	    return INVALID_DATE;
+    } else if (sscanf(str, "+%d", &delta) == 1) {
+	return today() + delta;
+    } else if (sscanf(str, "-%d", &delta) == 1) {
+	return today() - delta;
+    } else {
 	return INVALID_DATE;
+    }
 
     return ret;
 }
