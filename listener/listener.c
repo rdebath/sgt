@@ -53,6 +53,8 @@
 #include <windows.h>
 #include <winsock.h>
 
+#include <stdlib.h>
+
 #define IDI_MAINICON 200
 
 #define WM_XUSER     (WM_USER + 0x2000)
