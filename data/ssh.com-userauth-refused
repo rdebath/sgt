@@ -1,6 +1,7 @@
 Summary: userauth refused when compression enabled with ssh.com 3.2.0
 Present-in: 2002-07-02 2002-08-04
 Content-type: text/x-html-body
+Class: bug
 
 <p>
 We've received reports of the message "Server refused user
@@ -12,6 +13,10 @@ compression enabled. Connection is fine when compression is disabled.
 <p>
 In the code, this message corresponds to not receiving the right
 response to a "ssh-userauth" service request in SSH-2.
+
+<p>
+(Classification as bug is provisional; we've not determined where the
+problem is yet.)
 
 <p>
 Reports:
