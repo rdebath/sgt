@@ -20,7 +20,7 @@ automatically sends commands when particular events happen on the
 server.
 <li>
 Chaining connections. For example, the recommended way to connect to
-<a href="www.mono.org">Monochrome BBS</a>
+<a href="http://www.mono.org/">Monochrome BBS</a>
 is to make a preliminary Telnet connection to a central server which
 will tell you which of the usable machines has the lowest load, and
 then to make a Telnet or SSH connection to that machine. A scripting
