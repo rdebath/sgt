@@ -119,6 +119,12 @@ void display_define_colour(int colour, int fg, int bg)
     };
     char cname[40];
 
+    if (fg < 0 && bg < 0) {
+        /* FIXME: not sure how to support terminal default fg+bg */
+        fg = 7;
+        bg = 0;
+    }
+
     sprintf(cname, "colour%d", colour);
 
     SLtt_set_color(colour, cname, colours[fg], colours[bg]);

@@ -28,8 +28,10 @@ void display_setup(void)
     move(0,0);
     refresh();
     get_screen_size();
-    if (has_colors())
+    if (has_colors()) {
 	start_color();
+        use_default_colors();
+    }
 }
 
 void display_cleanup(void)
@@ -73,11 +75,14 @@ void display_define_colour(int colour, int fg, int bg)
         COLOR_WHITE,
     };
 
-    assert(colour >= 0 && colour < MAXCOLOURS && colour < COLOR_PAIRS-2);
-
-    assert(!(bg & ~7));		       /* bold backgrounds are nonportable */
-    init_pair(colour+1, colours[fg & 7], colours[bg]);
-    attrs[colour] = (fg & 8 ? A_BOLD : 0) | COLOR_PAIR(colour+1);
+    if (fg < 0 && bg < 0) {
+        attrs[colour] = 0;
+    } else {
+        assert(colour >= 0 && colour < MAXCOLOURS && colour < COLOR_PAIRS-2);
+        assert(!(bg & ~7));            /* bold backgrounds are nonportable */
+        init_pair(colour+1, colours[fg & 7], colours[bg]);
+        attrs[colour] = (fg & 8 ? A_BOLD : 0) | COLOR_PAIR(colour+1);
+    }
 }
 
 void display_set_colour(int colour)
