@@ -2,6 +2,7 @@ Summary: pterm aborts if Default Settings has SSH packet logging enabled
 Present-in: 2005-02-04
 Priority: medium
 Difficulty: tricky
+Class: bug
 Content-type: text/plain
 
 Setting the logging type to SSH packet logging in Unix PuTTY, then
