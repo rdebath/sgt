@@ -1,3 +1,57 @@
+/*
+ * TODO:
+ * 
+ *  - Rather than having bufblks point directly to FILE *, have
+ *    them point to a file _structure_, containing a FILE * (and
+ *    possibly also a filename, in case we need to close and
+ *    reopen?). Then we can ref-count the file structure, and close
+ *    the underlying FILE * if all links to it vanish.
+ * 
+ *  - Need btree enhanced with an element-free function and the
+ *    native ability to free an entire tree _full of stuff_; the
+ *    current implementation of buf_bt_free is completely wasting
+ *    all the clever ref-counting.
+ * 
+ *  - Need to handle >2Gb files! A major limiting factor here is
+ *    the B-tree property size limit :-( Either malloc a long long
+ *    for each tree node, or stitch together two ints in some
+ *    ghastly fashion.
+ *     * Which reminds me: malloced tree properties won't currently
+ * 	 work, because there's no interface to ask the user
+ * 	 property creation functions to _free_ one. Perhaps
+ * 	 propmerge(NULL,NULL,dest).
+ *     * Also this means property space must be initialised to
+ * 	 something useful so that the user creation function knows
+ * 	 to malloc new stuff. I think initialising the pointer
+ * 	 field of each nodecomponent union to NULL should be
+ * 	 sufficient; _if_ the user is doing mallocing, they'll want
+ * 	 the pointer field anyway, and if they're doing static
+ * 	 property data then they won't need it initialised in any
+ * 	 case so it doesn't matter.
+ *
+ *  - Thorough testing.
+ * 
+ *  - _Option_ to load a file longhand rather than do the reference
+ *    trick. (Current code is a regression from 2.1 in some ways.)
+ * 
+ *  - Multiple buffers, multiple on-screen windows.
+ *     + ^X^F to open new file
+ *     + ^X^R to open new file RO
+ *     + ^X b to switch buffers in a window
+ *     + ^X o to switch windows
+ *     + ^X 2 to split a window
+ *     + ^X 1 to destroy all windows but this
+ *     + ^X 0 to destroy this window
+ *     + ^X ^ to enlarge this window by one line
+ *     + width settings vary per buffer (aha, _that's_ why I wanted
+ * 	 a buffer structure surrounding the raw B-tree)
+ *     + axe-style minibuffer for entering search terms, rather
+ * 	 than the current rather crap one; in particular this
+ * 	 enables pasting into the search string.
+ *     + er, how exactly do we deal with the problem of saving over
+ * 	 a file which we're maintaining references to?
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
