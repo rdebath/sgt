@@ -2,21 +2,6 @@ Loose ends from coding
 ----------------------
 
  - Fixes inspired by actually importing all my mail:
-    + RFC2047 words may contain high-half characters; some MUAs
-      apparently use QP-in-RFC2047 without actually bothering to QP
-      anything, simply to indicate which charset it should be
-      interpreted in.
-    + RFC2047 words may appear in double quotes. I _think_ RFC2047
-      is fairly explicit that they may not, but actual mail in the
-      wild appears unaware of this and I think the course of wisdom
-      is to parse them anyway.
-    + RFC2047 words may begin partway through a word :-( This is an
-      unfortunate consequence of mailing list managers' tendency to
-      put goop on the front of a Subject line. Again I believe it is
-      contrary to RFC2047, but there's little choice when it's
-      commonly seen in the wild.
-    + We apparently don't correctly handle a lack of whitespace
-      after a header's initial colon.
     + Can we do _anything_ about default_charset? It's fine as far
       as it goes, but (much as I had feared) it doesn't go far
       enough in all cases. If the primary MIME part is multipart,
