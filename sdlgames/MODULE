@@ -1,0 +1,4 @@
+Author: Simon Tatham <anakin@pobox.com>
+Title: Small SDL games
+Description: A collection of small and simple games running under SDL. Currently they probably only run on the console of a Playstation 2 Linux box; full portability across arbitrary SDL back ends has not as yet been a design goal.
+Status: in initial development
