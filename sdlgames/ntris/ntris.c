@@ -543,7 +543,7 @@ int check_lines(struct game_instance *inst)
     int count = 0;
     int i;
 
-    targ = src = 29;
+    targ = src = PLAY_HEIGHT-1;
     while (src >= 0) {
 	int is_line;
 
@@ -893,11 +893,11 @@ gint timer_func(gpointer data)
     }
     inst->acpressed = KEY_PRESSED('\'');
 
-    if (KEY_PRESSED(';') && !inst->cwpressed) {
+    if (KEY_PRESSED('#') && !inst->cwpressed) {
 	if (try_clockwise(inst))
 	    update_minimal(inst);
     }
-    inst->cwpressed = KEY_PRESSED(';');
+    inst->cwpressed = KEY_PRESSED('#');
 
     if (KEY_PRESSED(' ') && !inst->rpressed) {
 	if (try_reflect(inst))
