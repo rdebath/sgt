@@ -62,6 +62,10 @@ gamestate *savepos_load(levelset *set, char *user, int savenum) {
 	}
 	if (ishdr(buf, "Level: ")) {
 	    levnum = atoi(buf+7);
+	    if (levnum <= 0 || levnum > set->nlevels) {
+		/* This save references a nonexistent level number. */
+		return NULL;
+	    }
 	    state = gamestate_new(set->levels[levnum-1]->width,
 				  set->levels[levnum-1]->height);
 	    state->levnum = levnum;
