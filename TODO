@@ -30,6 +30,8 @@ Longer-term things I'd like:
 	 ideally the past should remain unchanged, and the future
 	 should shift. Which probably means regular events should
 	 have a start and an end date, or some such.
+    + Public holidays! Obviously those ought to be listed on any
+      self-respecting calendar.
 
  - Coloured output via terminfo?
     + background colour highlights weekends?
@@ -44,3 +46,13 @@ Longer-term things I'd like:
       that entries can be conveniently deleted and modified.
        * this doesn't want to be shown in the usual calendar
 	 displays; probably a `-v' flag makes it appear.
+       * aha, I think I've just figured out how to allocate IDs. We
+	 maintain a second database table containing ranges of used
+	 IDs. Then allocating a new one is a matter of finding the
+	 first unused ID, using it, and adjusting the table;
+	 reclaiming an ID is slightly more fiddly because you have
+	 to work out whether to merge into the previous entry, into
+	 the next, or both, but is still doable. Note that this
+	 depends critically on the fact that SQLite supports
+	 transactions, so it's a good job it does :-)
+
