@@ -1,5 +1,5 @@
 % -*- mode: slang; mode: fold -*-
-% Simon Tatham: version $Revision: 1.55 $
+% Simon Tatham: version $Revision: 1.56 $
 
 %{{{ load Emacs keybindings to start with
 
@@ -1206,7 +1206,7 @@ define jedrc_parsep(prefix) {
 }
 
 define jedrc_format_paragraph(prefix) {
-    variable mkbot, mktop, item, i, j, thisprefix, prefixlen;
+    variable mkbot, mktop, item, i, j, thisprefix, prefixlen, col;
     if (jedrc_parsep(prefix))
         return;
     push_spot();
@@ -1285,7 +1285,12 @@ define jedrc_format_paragraph(prefix) {
 	goto_user_mark(mktop);
 	bol();
 	while (not eolp()) {
+	    push_mark();
+	    skip_white();
+	    col = what_column();
+	    del_region();
 	    insert(thisprefix);
+	    whitespace(col - 1);
 	    eol();
 	    go_right_1();
 	}
