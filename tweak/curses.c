@@ -6,7 +6,7 @@
 
 #include <curses.h>
 
-#include "axe.h"
+#include "tweak.h"
 
 int display_rows, display_cols;
 

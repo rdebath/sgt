@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 
-#include "axe.h"
+#include "tweak.h"
 
 typedef union keytab keytab;
 

@@ -21,9 +21,9 @@
  *     + ^X ^ to enlarge this window by one line
  *     + width settings vary per buffer (aha, _that's_ why I wanted
  * 	 a buffer structure surrounding the raw B-tree)
- *     + axe-style minibuffer for entering search terms, rather
- * 	 than the current rather crap one; in particular this
- * 	 enables pasting into the search string.
+ *     + hex-editor-style minibuffer for entering search terms,
+ * 	 rather than the current rather crap one; in particular
+ * 	 this enables pasting into the search string.
  *     + er, how exactly do we deal with the problem of saving over
  * 	 a file which we're maintaining references to?
  * 
@@ -89,7 +89,7 @@
 #include <process.h>
 #endif
 
-#include "axe.h"
+#include "tweak.h"
 
 static void init(void);
 static void done(void);
@@ -100,8 +100,8 @@ char hex[256][3];		       /* LUT: binary to hex, 1 byte */
 
 char message[80];
 
-char decstatus[] = "%s <+-AXE-+> "VER": %-18.18s %s posn=%-10d size=%-10d";
-char hexstatus[] = "%s <+-AXE-+> "VER": %-18.18s %s posn=0x%-8X size=0x%-8X";
+char decstatus[] = "%s TWEAK "VER": %-18.18s %s posn=%-10d size=%-10d";
+char hexstatus[] = "%s TWEAK "VER": %-18.18s %s posn=0x%-8X size=0x%-8X";
 char *statfmt = hexstatus;
 
 char last_char;
@@ -140,7 +140,7 @@ int main(int argc, char **argv) {
     if (argc < 2) {
 	fprintf(stderr,
 		"usage: %s [-f] [-l] [-e] filename\n"
-		"    or %s -D to write default axe.rc to stdout\n",
+		"    or %s -D to write default tweak.rc to stdout\n",
 		pname, pname);
 	return 0;
     }
@@ -647,9 +647,9 @@ int parse_quoted (char *buffer) {
 }
 
 /*
- * Suspend AXE. (Or shell out, depending on OS, of course.)
+ * Suspend program. (Or shell out, depending on OS, of course.)
  */
-void suspend_axe(void) {
+void suspend(void) {
 #if defined(unix) && !defined(GO32)
     done();
     raise (SIGTSTP);

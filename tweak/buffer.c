@@ -4,7 +4,7 @@
 #include <ctype.h>
 #include <assert.h>
 
-#include "axe.h"
+#include "tweak.h"
 #include "btree.h"
 
 #ifdef TEST_BUFFER

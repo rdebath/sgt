@@ -11,7 +11,7 @@
 
 #include <slang.h>
 
-#include "axe.h"
+#include "tweak.h"
 
 #if defined(unix) && !defined(GO32)
 static int sigwinch (int sigtype)
@@ -65,7 +65,7 @@ void display_setup(void)
     SLtt_get_terminfo();
 
     if (SLang_init_tty (ABORT, 1, 0) == -1) {
-	fprintf(stderr, "axe: SLang_init_tty: returned error code\n");
+	fprintf(stderr, "tweak: SLang_init_tty: returned error code\n");
 	exit (1);
     }
     SLang_set_abort_signal (NULL);
@@ -73,7 +73,7 @@ void display_setup(void)
 
     get_screen_size ();
     if (SLsmg_init_smg () < 0) {
-	fprintf(stderr, "axe: SLsmg_init_smg: returned error code\n");
+	fprintf(stderr, "tweak: SLsmg_init_smg: returned error code\n");
 	SLang_reset_tty ();
 	exit (1);
     }
