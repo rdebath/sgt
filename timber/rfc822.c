@@ -1441,7 +1441,7 @@ void utf8_string_output(void *vctx, const char *text, int len,
 	midptr = midbuf;
 	while ( (midret = charset_from_unicode(&midptr, &midlen, outbuf,
 					       lenof(outbuf), CS_UTF8,
-					       &outstate, NULL, 0)) > 0) {
+					       &outstate, NULL)) > 0) {
 	    if (ctx->textlen + midret >= ctx->textsize) {
 		ctx->textsize = ctx->textlen + midret + 256;
 		ctx->text = srealloc(ctx->text, ctx->textsize);
@@ -1552,7 +1552,7 @@ void test_output_fn(void *outctx, const char *text, int len,
 	midptr = midbuf;
 	while ( (midret = charset_from_unicode(&midptr, &midlen, outbuf,
 					       lenof(outbuf), CS_UTF8,
-					       &outstate, NULL, 0)) > 0) {
+					       &outstate, NULL)) > 0) {
 	    fwrite(outbuf, 1, midret, stdout);
 	}
     }

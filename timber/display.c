@@ -258,7 +258,7 @@ static void display_output_fn(void *vctx, const char *text, int len,
 	while ( (midret = charset_from_unicode(&midptr, &midlen, outbuf,
 					       lenof(outbuf),
 					       ctx->output_charset,
-					       &outstate, NULL, 0)) > 0) {
+					       &outstate, NULL)) > 0) {
 	    fwrite(outbuf, 1, midret, stdout);
 	}
     }
