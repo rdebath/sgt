@@ -3,6 +3,7 @@ Class: semi-bug
 Priority: low
 Difficulty: fun
 Content-type: text/plain
+Fixed-in: 2002-12-19
 
 Someone suggested that it might be useful to be able to specify
 which loopback address PuTTY should bind to when listening on local
