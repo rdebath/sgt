@@ -1071,6 +1071,7 @@ while 1:
 	    ret = ljproto.ljcall(dict)
 	    if not ljproto.ljok(ret):
 		print "Unable to post to LJ: " + ljproto.ljerror(ret)
+		need_unlink = 0
 	    else:
 		print "Posted to LJ; itemid =", ret["itemid"]
 	else:
