@@ -13,7 +13,7 @@ interest, and - and * are used for comments. So it should be easy
 enough to convert this file into the real interests text, by running
 it through Perl on itself (`perl interests interests').
 
- - Programming
+ + Programming
     + computers
     * Languages
        + C
@@ -28,6 +28,7 @@ it through Perl on itself (`perl interests interests').
        + protocol design
        + modularity
        + interfaces
+          + interoperability
        + Unicode
        + networking
        + terminal emulation
@@ -42,6 +43,7 @@ it through Perl on itself (`perl interests interests').
        + Unix
     * Politics
        + free software
+       + open source
  - Games
     + NetHack
     + puzzles
@@ -57,6 +59,7 @@ it through Perl on itself (`perl interests interests').
     + Yes Minister
     + mindless big-budget films
     + books
+       + reading
        + science fiction
        + fantasy
        + Greg Egan
