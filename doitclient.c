@@ -320,7 +320,10 @@ enum {
     WCLIP,                             /* read/write the clipboard */
     WCMD,                              /* run a process with output */
     WIN,                               /* just run a process */
+    WPATH,                             /* just translate a path */
 };
+
+#define need_connection ( cmd != WPATH )
 
 int parse_cmd(char *verb)
 {
@@ -329,6 +332,7 @@ int parse_cmd(char *verb)
     if (!strcmp(verb, "wclip")) return WCLIP;
     if (!strcmp(verb, "wcmd")) return WCMD;
     if (!strcmp(verb, "win")) return WIN;
+    if (!strcmp(verb, "wpath")) return WPATH;
     return NOTHING;
 }
 
@@ -458,6 +462,7 @@ void help(void)
 	"  www <URL>          open a URL in Windows's default browser",
 	"  wclip              copy stdin to the Windows clipboard",
 	"  wclip -r           copy the Windows clipboard to stdout",
+	"  wpath              path-translate a filename and print to stdout",
     };
     int i;
     for (i = 0; i < sizeof(help)/sizeof(*help); i++)
@@ -483,7 +488,7 @@ void showversion(void)
     char *v;
     extern char doitlib_revision[];
 
-    v = makeversion(versionbuf, "$Revision: 1.23 $");
+    v = makeversion(versionbuf, "$Revision: 1.24 $");
     if (v)
 	printf("doitclient revision %s", v);
     else
@@ -967,60 +972,64 @@ int main(int argc, char **argv)
                     servername);
         select_hostcfg(servername);
 
-        e = getenv("DOIT_PORT");
-        if (e != NULL)
-            port = atoi(e);
-	if (verbose) {
-            ia.s_addr = hostaddr;
-	    fprintf(stderr, "doit: connecting to host %s port %d\n",
-                    inet_ntoa(ia), port);
+        if (need_connection) {
+            e = getenv("DOIT_PORT");
+            if (e != NULL)
+                port = atoi(e);
+            if (verbose) {
+                ia.s_addr = hostaddr;
+                fprintf(stderr, "doit: connecting to host %s port %d\n",
+                        inet_ntoa(ia), port);
+            }
         }
     }
 
-    secretdata = read_secret_file(secret, &secretlen);
-    if (!secretdata)
-        return 1;
-    ctx = doit_init_ctx(secretdata, secretlen);
-    if (!ctx)
-        return 1;
-    memset(secretdata, 0, secretlen);
-    free(secretdata);
+    if (need_connection) {
+        secretdata = read_secret_file(secret, &secretlen);
+        if (!secretdata)
+            return 1;
+        ctx = doit_init_ctx(secretdata, secretlen);
+        if (!ctx)
+            return 1;
+        memset(secretdata, 0, secretlen);
+        free(secretdata);
 
-    sock = make_connection(hostaddr, port);
-    if (sock < 0)
-        return 1;
+        sock = make_connection(hostaddr, port);
+        if (sock < 0)
+            return 1;
 
-    if (verbose)
-	fprintf(stderr, "doit: made connection\n");
+        if (verbose)
+            fprintf(stderr, "doit: made connection\n");
 
-    doit_perturb_nonce(ctx, "client", 6);
-    {
-        int pid = getpid();
-        doit_perturb_nonce(ctx, &pid, sizeof(pid));
-    }
-    data = doit_make_nonce(ctx, &len);
+        doit_perturb_nonce(ctx, "client", 6);
+        {
+            int pid = getpid();
+            doit_perturb_nonce(ctx, &pid, sizeof(pid));
+        }
+        data = doit_make_nonce(ctx, &len);
 
-    while (!doit_got_keys(ctx)) {
-        int ret;
-        if ((ret = do_receive(sock, ctx)) <= 0) {
-            close(sock);
-            if (ret == 0) {
-                fprintf(stderr, "doit: connection unexpectedly closed\n");
-            } else {
-                fprintf(stderr, "doit: network error: %s\n", strerror(errno));
+        while (!doit_got_keys(ctx)) {
+            int ret;
+            if ((ret = do_receive(sock, ctx)) <= 0) {
+                close(sock);
+                if (ret == 0) {
+                    fprintf(stderr, "doit: connection unexpectedly closed\n");
+                } else {
+                    fprintf(stderr, "doit: network error: %s\n", strerror(errno));
+                }
+                return 1;
             }
+        }
+
+        if (do_send(sock, data, len) != len) {
+            close(sock);
             return 1;
         }
-    }
+        free(data);
 
-    if (do_send(sock, data, len) != len) {
-        close(sock);
-        return 1;
+        if (verbose)
+            fprintf(stderr, "doit: exchanged nonces\n");
     }
-    free(data);
-
-    if (verbose)
-	fprintf(stderr, "doit: exchanged nonces\n");
 
     switch (cmd) {
       case WF:
@@ -1184,6 +1193,16 @@ int main(int argc, char **argv)
             close(sock);
             return 1;
         }
+        break;
+      case WPATH:
+        if (!arg) {
+            fprintf(stderr, "doit: \"wpath\" requires an argument\n");
+            exit(EXIT_FAILURE);
+        }
+	path = do_path_translate(arg, verbose);
+	printf("%s\n", path);
+	close(sock);
+	return 0;
         break;
     }
     errcode = 0;
