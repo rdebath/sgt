@@ -677,15 +677,6 @@ define timber_ila(s) {
 % `processed' is 1 if the buffer has already been processed.
 define timber_getheader(processed) {
     variable result;
-    variable string1, string2;
-
-    if (processed) {
-	string1 = "| ";
-	string2 = "|\t";
-    } else {
-	string1 = " ";
-	string2 = "\t";
-    }
 
     result = "";
 
@@ -700,7 +691,12 @@ define timber_getheader(processed) {
             go_right_1();
             continue;
         }
-        !if (looking_at(string1) or looking_at(string2))
+        if (processed) {
+            !if (looking_at("|") or looking_at("+"))
+                break;
+            go_right_1();
+        }
+        !if (looking_at(" ") or looking_at("\t"))
             break;
 	go_right_1();
 	skip_white();
@@ -1100,6 +1096,48 @@ define timber_fullmime() {
 }
 
 %}}}
+%{{{ timber_get_attribute(): extract an attribute from a MIME header
+define timber_get_attribute(string, attrname) {
+    variable i, j, q, len;
+    variable attr, value;
+
+    i = 0;
+    len = strlen(string);
+    while (i < len) {
+        while (i < len and
+               (string[i] == ' ' or string[i] == '\t'))
+            i++;
+        j = i;
+        q = 0;
+        while (j < len and (string[j] != ';' or q != 0)) {
+            if (string[j] == '\\') {
+                j += 2;
+            } else {
+                if (string[j] == '"')
+                    q = not q;
+                j++;
+            }
+        }
+        attr = substr(string, i+1, j-i);
+        if (attrname == NULL)
+            return attr;               % NULL means return the first string
+        if (strncmp(strlow(attr), attrname + "=", strlen(attrname)+1) == 0) {
+            value = substr(attr, strlen(attrname)+2, -1);
+            if (value[0] == '"' and value[strlen(value)-1] == '"')
+                value = substr(value, 2, strlen(value)-2);
+            for (i = 0; value[i]; i++) {
+                if (value[i] == '\\' and value[i+1]) {
+                    value = substr(value, 1, i) + substr(value, i+2, -1);
+                }
+            }
+            return value;
+        }
+        i = j+1;
+    }
+    return NULL;
+}
+
+%}}}
 %{{{ timber_get_mimepart(): position user marks at each end of MIME part
 
 % Helper routine to determine the nesting level of a ! line.
@@ -1127,11 +1165,11 @@ define timber_pling_nestlevel() {
 % attachment to a file we really want to keep any multiparts it may
 % contain).
 %
-% Returns (markattop, markatbottom, type, encoding).
+% Returns (markattop, markatbottom, type, encoding, filename).
 define timber_get_mimepart(use_decoded) {
     variable encoding = "7BIT";	       % default
     variable type = "text/plain";      % default
-    variable headerchr, leadchr, topchr, nestlevel;
+    variable headerchr, leadchr, topchr, nestlevel, text, name, filename;
     variable mark, top, bottom, c;
 
     mark = create_user_mark();
@@ -1163,7 +1201,9 @@ define timber_get_mimepart(use_decoded) {
 
     eol();
     go_right_1();
+    name = filename = NULL;
     while (not eolp()) {
+        bol();
         c = what_char();
         if (c == '<' or c == '>') {
 	    eol();
@@ -1174,20 +1214,24 @@ define timber_get_mimepart(use_decoded) {
             break;
 	go_right_1();
 	if (timber_ila("Content-Transfer-Encoding: ")) {
-	    go_right(27);
-	    push_mark();
-	    eol();
-	    encoding = strup(bufsubstr());
-	}
-	if (timber_ila("Content-Type: ")) {
+	    go_right(26);
+            encoding = strup(timber_getheader(1));
+	} else if (timber_ila("Content-Type: ")) {
 	    go_right(14);
-	    push_mark();
-	    skip_chars("^; \n");
-	    type = strlow(bufsubstr());
-	}
-	eol();
-	go_right_1();
+            text = timber_getheader(1);
+	    type = strlow(timber_get_attribute(text, NULL));
+            name = timber_get_attribute(text, "name");
+	} else if (timber_ila("Content-Disposition: ")) {
+	    go_right(21);
+            text = timber_getheader(1);
+            filename = timber_get_attribute(text, "filename");
+	} else {
+            eol();
+            go_right_1();
+        }
     }
+    if (name == NULL)
+        name = filename;
 
     if (use_decoded) {
         % This might be decoded or it might not be: select our lead char
@@ -1234,7 +1278,7 @@ define timber_get_mimepart(use_decoded) {
     !if (strncmp(type, "text", 4) and strncmp(type, "message", 7))
         encoding += "+";
 
-    return (top, bottom, type, encoding);
+    return (top, bottom, type, encoding, name);
 }
 
 %}}}
@@ -1272,7 +1316,7 @@ define timber_saveattach() {
 	    return;
     }
     mark = create_user_mark();
-    (top, bot, , encoding) = timber_get_mimepart(0);
+    (top, bot, , encoding, ) = timber_get_mimepart(0);
     !if (top == NULL) {
         goto_user_mark(top);
         push_mark();
@@ -1284,27 +1328,27 @@ define timber_saveattach() {
 }
 
 %}}}
-%{{{ timber_viewattach(): save a MIME attachment to a file
+%{{{ timber_viewattach(): view a MIME attachment using an external viewer
 
 % User-overrideable function. If a MIME type can be viewed, return
 % a non-standard temp directory to save the file into, then the
 % desired extension for a temporary file (including the dot -
 % ".jpeg" for example), and then an sprintf template for the
 % command to be run on the file.
-define timber_can_view(type) {
+define timber_can_view(type, name) {
     return (NULL, NULL, NULL);
 }
 
 % View the current MIME part (or whole message, if non-multipart).
 define timber_viewattach() {
     variable mark, top, bot;
-    variable dir, ext, cmd, file, type, encoding;
+    variable dir, ext, cmd, file, type, encoding, name;
     variable fp, buf, array;
 
     mark = create_user_mark();
-    (top, bot, type, encoding) = timber_get_mimepart(0);
+    (top, bot, type, encoding, name) = timber_get_mimepart(0);
     !if (top == NULL) {
-        (dir, ext, cmd) = timber_can_view(type);
+        (dir, ext, cmd) = timber_can_view(type, name);
         !if (cmd == NULL) {
             % If the file extension is null, try looking it up in
             % the MIME types file.
@@ -1345,7 +1389,7 @@ define timber_selattach() {
     variable mark, top, bot;
 
     mark = create_user_mark();
-    (top, bot, , ) = timber_get_mimepart(1);
+    (top, bot, , , ) = timber_get_mimepart(1);
     if (top == NULL) {
         goto_user_mark(mark);
     } else {
@@ -1489,7 +1533,7 @@ define timber_mimedec() {
     variable mark, top, bottom, type, encoding, tmp, decode_cmd;
 
     mark = create_user_mark();
-    (top, bottom, type, encoding) = timber_get_mimepart(1);
+    (top, bottom, type, encoding, ) = timber_get_mimepart(1);
     if (top == NULL) {
         goto_user_mark(mark);
     } else {
@@ -1548,7 +1592,7 @@ define timber_mimerev() {
     variable mark, top;
 
     mark = create_user_mark();
-    (top,,,) = timber_get_mimepart(1);
+    (top,,,,) = timber_get_mimepart(1);
     if (top == NULL) {
         goto_user_mark(mark);
     } else {
@@ -1594,7 +1638,7 @@ define timber_mimedestroy() {
 	return;
     }
 
-    (,,type,) = timber_get_mimepart(1);
+    (,,type,,) = timber_get_mimepart(1);
     goto_user_mark(mark);
     !if (timber_yesno("Really destroy attachment of type "+type+"? [yn] ")) {
         return;
