@@ -1,5 +1,15 @@
 # -*-s2-*-
 
+# TODO:
+#
+#  - See if we can find out where the HTML-escaping is coming from in
+#    string properties, and possibly undo it so as to allow the
+#    <!--SGT-MAGIC-DATE--> thing to happen in my user layer instead
+#    of the layout layer. Have nasty suspicion this is going to
+#    involve manually stripping out &lt; and &gt;.
+#
+#  - Deletion links for comments?
+
 layerinfo type = "layout";
 layerinfo name = "SimonT";
 
@@ -301,7 +311,7 @@ function print_entry (Page p, Entry e, Color bgcolor, Color fgcolor, bool hide_t
     }    
 
     """</td>
-<td align="right">$datetime</td>
+<td align="right"><!--SGT-MAGIC-DATE-->$datetime<!--/SGT-MAGIC-DATE--></td>
 </tr>
 <tr align='left'>
 <td colspan="2" bgcolor="$*entry_back">
