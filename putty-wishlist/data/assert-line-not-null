@@ -1,0 +1,32 @@
+Summary: Assertion failed in terminal.c:lineptr(): line != NULL
+Class: bug
+Present-in: 0.56
+Content-type: text/x-html-body
+
+<p>
+No-one has reproduced this with a current snapshot, and we haven't yet
+been able to reproduce it with 0.56 either.
+
+<p>
+All these instances are in <tt>terminal.c:lineptr()</tt> (the line
+number has changed a lot due to the extensive terminal re-engineering
+since 0.56).
+
+<ul>
+<li><tt>Pine.0410290832480.79579@mozart.musicbox.net</tt>
+  <br>0.56 on WinME and 2K; terminal.c:159
+<li><tt>2164FF46E100024E87C4F72442B267050393955A@mail02.ad.telekom.lv</tt>
+  <br>0.56 on W2KSP2; terminal.c:159
+<li><tt>BB8EDCA75DA7624F9A8B446F68A56C70438A89@PKDWB06C.ad.sprint.com</tt>
+  <br>0.56 on Win2K; terminal.c:159
+  <br>"disable switching to alternate screen" enabled
+</ul>
+
+<p>
+Perhaps an unrelated bug that's already been fixed:
+<ul>
+<li><tt>000d01c4b1c7$ca506090$4296a8c0@nadine</tt>
+  <br>2004-10-14; terminal.c:662; connecting to SunOS
+  <br>reportedly fixed in 2004-10-15, although since other reports
+  indicate the failure is intermittent, perhaps not
+</ul>
