@@ -1,0 +1,13 @@
+Summary: Ability to do NTLM authentication in various contexts (eg. proxy)
+Class: wish
+Difficulty: taxing
+Priority: low
+
+<p>
+Occasionally people ask for support for NTLM authentication in various
+contexts (e.g. for HTTP proxy authentication).
+
+<p>
+NTLM authentication appears to be proprietary to Microsoft; what
+<a href="http://www.innovation.ch/java/ntlm.html">public documentation</a>
+there is appears to be reverse engineered.
