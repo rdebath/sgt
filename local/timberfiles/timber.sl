@@ -2591,15 +2591,7 @@ define timber_only() {
 
 %}}}
 
-%{{{ Now load the user's .timberrc
-
-% Now run the user's .timberrc file, wherein they can change the
-% various variables and fiddle with things.
-if (file_status(expand_filename("~/.timberrc")) == 1) {
-    () = evalfile(expand_filename("~/.timberrc"));
-}
-%}}}
-%{{{ Then set up all the script commands properly
+%{{{ Set up all the script commands to `unset'
 
 % This variable may be reassigned in `.timberrc'. It gives
 % the command used to send mail. This should have the following
@@ -2616,28 +2608,52 @@ if (file_status(expand_filename("~/.timberrc")) == 1) {
 % before doing anything else. (This converts Attach: headers and
 % Attach-Enclosed: headers into proper MIME encapsulation, and
 % deals with Queue: headers.)
-variable timber_sendmail = "perl " + dircat(timber_scripts_dir,"timbera.pl");
+variable timber_sendmail = "unset";
 
 % This variable may be reassigned in `.timberrc'. It gives
 % the full pathname of the program which fetches the user's new mail
 % into a file specified on the command line.
-variable timber_fetch_prog = "perl " + dircat(timber_scripts_dir,"timber.pl");
+variable timber_fetch_prog = "unset";
 
 % This variable may be reassigned in `.timberrc'. It gives
 % the full pathname of the program which sets up Timber buffers.
-variable timber_enbuf_prog = "perl " + dircat(timber_scripts_dir,"timberb.pl");
+variable timber_enbuf_prog = "unset";
 
 % This variable may be reassigned in `.timberrc'. It gives
 % the full pathname of the program which decodes MIME encodings.
-variable timber_mime_prog = "perl " + dircat(timber_scripts_dir,"timberm.pl");
+variable timber_mime_prog = "unset";
 
 % This variable may be reassigned in `.timberrc'. It gives
 % the full pathname of the program which adds line prefixes.
-variable timber_prefix_prog = "perl " + dircat(timber_scripts_dir,"timbere.pl");
+variable timber_prefix_prog = "unset";
 
 % This variable may be reassigned in `.timberrc'. It gives
 % the full pathname of the program which looks up MIME types.
-variable timber_mimetype_prog = "perl " + dircat(timber_scripts_dir,"timbert.pl");
+variable timber_mimetype_prog = "unset";
+
+%}}}
+%{{{ Now load the user's .timberrc
+
+% Now run the user's .timberrc file, wherein they can change the
+% various variables and fiddle with things.
+if (file_status(expand_filename("~/.timberrc")) == 1) {
+    () = evalfile(expand_filename("~/.timberrc"));
+}
+%}}}
+%{{{ Then set up all the script commands properly if .timberrc didn't
+
+if (timber_sendmail == "unset")
+    timber_sendmail = "perl " + dircat(timber_scripts_dir,"timbera.pl");
+if (timber_fetch_prog == "unset")
+    timber_fetch_prog = "perl " + dircat(timber_scripts_dir,"timber.pl");
+if (timber_enbuf_prog == "unset")
+    timber_enbuf_prog = "perl " + dircat(timber_scripts_dir,"timberb.pl");
+if (timber_mime_prog == "unset")
+    timber_mime_prog = "perl " + dircat(timber_scripts_dir,"timberm.pl");
+if (timber_prefix_prog == "unset")
+    timber_prefix_prog = "perl " + dircat(timber_scripts_dir,"timbere.pl");
+if (timber_mimetype_prog == "unset")
+    timber_mimetype_prog = "perl " + dircat(timber_scripts_dir,"timbert.pl");
 
 % The directory containing Timber scripts.
 #ifexists putenv
