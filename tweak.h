@@ -105,4 +105,4 @@ extern int display_input_to_flush(void);
 extern void display_post_error(void);
 extern void display_recheck_size(void);
 
-#endif TWEAK_TWEAK_H
+#endif /* TWEAK_TWEAK_H */
