@@ -282,14 +282,14 @@ int screen_main_menu(levelset *set, gamestate **saves,
 	 * Display the level title list box.
 	 */
 	wattrset(stdscr, attrs[T_LIST_BOX].attrs);
-	for (i = 1; i < colwidth-1; i++) {
+	for (i = 1; i < colwidth+1; i++) {
 	    screen_printc(dx+i, dy, T_LIST_BOX, '-');
 	    screen_printc(dx+i, dy+height-5, T_LIST_BOX, '-');
 	}
 	screen_printc(dx, dy, T_LIST_BOX, '+');
 	screen_printc(dx, dy+height-5, T_LIST_BOX, '+');
-	screen_printc(dx+colwidth-1, dy, T_LIST_BOX, '+');
-	screen_printc(dx+colwidth-1, dy+height-5, T_LIST_BOX, '+');
+	screen_printc(dx+colwidth+1, dy, T_LIST_BOX, '+');
+	screen_printc(dx+colwidth+1, dy+height-5, T_LIST_BOX, '+');
 	for (i = 1; i < height-5; i++) {
 	    char buf[50];
 	    int attr = T_LIST_ELEMENT;
@@ -312,19 +312,21 @@ int screen_main_menu(levelset *set, gamestate **saves,
 		if (i+levtop-1 == level)
 		    attr = T_LIST_SELECTED;
 	    }
-	    if (strlen(buf) < colwidth-2)
-		sprintf(buf+strlen(buf), "%*s", colwidth-2-strlen(buf), "");
-	    buf[colwidth-2] = '\0';
+	    if (strlen(buf) < colwidth)
+		sprintf(buf+strlen(buf), "%*s", colwidth-strlen(buf), "");
+	    buf[colwidth] = '\0';
 	    screen_prints(dx+1, dy+i, attr, buf);
 	    screen_printc(dx, dy+i, T_LIST_BOX, '|');
-	    screen_printc(dx+colwidth-1, dy+i, T_LIST_BOX, '|');
+	    screen_printc(dx+colwidth+1, dy+i, T_LIST_BOX, '|');
 	}
 	screen_prints(dx, dy+height-3, T_INSTRUCTIONS, "Press Up/Down to choose a");
 	screen_prints(dx, dy+height-2, T_INSTRUCTIONS, "level, and RET to play from");
 	screen_prints(dx, dy+height-1, T_INSTRUCTIONS, "the start of that level.");
+	screen_prints(dx, dy+height, T_INSTRUCTIONS, "Press Q to exit Enigma.");
 	screen_prints(dx2+colwidth-26, dy+height-3, T_INSTRUCTIONS, "Press 1-9 or 0 to choose a");
 	screen_prints(dx2+colwidth-24, dy+height-2, T_INSTRUCTIONS, "saved position, and R to");
 	screen_prints(dx2+colwidth-26, dy+height-1, T_INSTRUCTIONS, "resume playing from there.");
+	screen_prints(dx2+colwidth-27, dy+height, T_INSTRUCTIONS, "Press Del to delete a save.");
 
 	move(0,0);
 	refresh();
