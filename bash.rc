@@ -1,6 +1,6 @@
 # -*- mode: sh; mode: fold -*-
 # Simon Tatham's standardised chunk of .bashrc
-# $Revision: 1.20 $
+# $Revision: 1.21 $
 
 #{{{ I don't like .bash_history files. They wet their nests.
 unset HISTFILE
@@ -171,14 +171,144 @@ doPSn() {
 }
 doPSn
 unset doPSn
+
 unset promptfixed
+bashrc_prompt_prefix=
+
 promptprefix() {
   case $1 in
-    '' | ' '*) prompttext="$promptfixed$*" ;;
-    *) prompttext="$promptfixed $*" ;;
+    '' | ' '*) bashrc_prompt_prefix="$*" ;;
+    *) bashrc_prompt_prefix=" $*" ;;
   esac
+  prompttext="$promptfixed$bashrc_prompt_prefix"
   promptspaces=`echo -n "$prompttext" | sed 's/./ /g'`
 }
+
+#}}}
+#{{{ registering pre-prompt commands
+
+# Generic method for adding functionality to _prompt_cmd without
+# having to know the rest of the contents of the function.
+
+bashrc_prompt_fns=:
+
+bashrc_add_prompt_fn() {
+  bashrc_prompt_fns="$bashrc_prompt_fns $1"
+}
+
+_prompt_cmd() {
+  local i
+  for i in $bashrc_prompt_fns; do $i; done
+}
+
+#}}}
+#{{{ registering checks on the current directory
+
+# Method of registering functions to be called on a change of directory.
+
+bashrc_changedir_fns=:
+
+bashrc_add_changedir_fn() {
+  bashrc_changedir_fns="$bashrc_changedir_fns $1"
+}
+
+bashrc_pwd="`pwd -P`"
+
+bashrc_change_cd() {
+  local newpwd="`pwd -P`"
+  local i
+  if [ "$bashrc_pwd" != "$newpwd" ]; then
+    for i in $bashrc_changedir_fns; do $i "$bashrc_pwd" "$newpwd"; done
+  fi
+  bashrc_pwd="$newpwd"
+}
+
+cd() {
+  builtin cd "$@"
+  bashrc_change_cd
+}
+
+pushd() {
+  builtin pushd "$@"
+  bashrc_change_cd
+}
+
+popd() {
+  builtin popd "$@"
+  bashrc_change_cd
+}
+
+#}}}
+#{{{ policing secure areas of the file system
+
+bashrc_is_securedir() {
+  local globsetting
+  local secure
+  local i
+  case $- in *f*) globsetting=-f;; *) globsetting=+f;; esac
+  set -f # inhibit globbing for this function
+  secure=1
+  if [ "$bashrc_securedirs" ]; then
+    for i in $bashrc_securedirs; do
+      case "$1" in $i | $i/*) secure=0;; esac
+    done
+  fi
+  set $globsetting
+  return $secure
+}
+
+bashrc_go_secure() {
+  bashrc_insecure_umask=`umask`
+  umask 077
+  promptcolour=1\;1
+  promptfixed=" secure"
+  promptprefix "$bashrc_prompt_prefix"
+}
+
+bashrc_go_insecure() {
+  umask $bashrc_insecure_umask
+  promptcolour=2
+  promptfixed=
+  promptprefix "$bashrc_prompt_prefix"
+}
+
+bashrc_securedir_change() {
+  local newsecure  
+  local banner
+  local unbanner
+
+  newsecure=yes
+  bashrc_is_securedir "$2" || newsecure=no
+
+  if [ "$bashrc_securedir $newsecure" = "no yes" ]; then
+    # On entering a secure area, save the previous umask, set
+    # the new umask to 077, and print a banner.
+    bashrc_go_secure
+    banner=`tput bold | sed 's/\[1m/\[1;36;44m/'`
+    unbanner=`tput sgr0`
+    echo "$banner  You are now entering a secure area.  $unbanner"
+    echo "$banner  Changed your umask: $bashrc_insecure_umask -> 077.      $unbanner"
+  fi
+  
+  if [ "$bashrc_securedir $newsecure" = "yes no" ]; then
+    # On leaving a secure area, restore the umask.
+    banner=`tput bold | sed 's/\[1m/\[1;36;44m/'`
+    unbanner=`tput sgr0`
+    echo "$banner  You are now leaving a secure area.  $unbanner"
+    echo "$banner  Restored your umask to $bashrc_insecure_umask.         $unbanner"
+    bashrc_go_insecure
+  fi
+
+  bashrc_securedir=$newsecure
+}
+
+bashrc_add_changedir_fn bashrc_securedir_change
+
+bashrc_securedir=no
+if bashrc_is_securedir "`pwd -P`"; then
+  bashrc_securedir=yes
+  bashrc_go_secure
+fi
 
 #}}}
 #{{{ the `i' command
