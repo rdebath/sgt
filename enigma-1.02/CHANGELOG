@@ -1,0 +1,26 @@
+Release 1.02
+------------
+
+ - We no longer repeat the game-completed screen when the user
+   recompletes a level after having completed the game.
+ - Error handling improved so we don't segfault on trying to restore
+   a nonexistent save, and also so we don't segfault if we can't
+   find our level set.
+ - Fixed various bugs in the level-titles list box on the main menu,
+   which don't show up in the standard level set but might if people
+   start designing longer ones.
+
+Release 1.01
+------------
+
+ - configure script now chooses more sensibly between curses and
+   ncurses, and also checks whether *curses.h defines attr_t. Now
+   able to compile on Solaris/gcc.
+ - Renamed config.h to settings.h to stop it being blown away by
+   make distclean.
+ - Added CHANGELOG.
+
+Release 1.0
+-----------
+
+ - Initial release.
