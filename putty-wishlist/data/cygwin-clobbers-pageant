@@ -1,0 +1,47 @@
+Summary: Plink (etc) run under Cygwin cannot talk to Pageant
+Class: bug
+Content-type: text/x-html-body
+Present-in: 0.52
+Absent-in: 0.51
+Priority: medium
+Difficulty: taxing
+
+<p>
+We've had several reports that when utilities such as Plink are run
+under Cygwin, requesting keys from a running Pageant fails.
+
+<p>
+Useful stuff from Angus Duggan:
+
+<p>
+Problem does not occur with Pageant 0.51, but does occur with 0.52
+(version of Plink/PSCP is unimportant)
+
+<p>
+<pre>BTW, I'm still having bizarre problems with plink not communicating with
+Pageant. I have no idea what is going wrong, but Pageant repeatably passes
+the key when plink is invoked from an NT command shell, and repeatably
+doesn't pass the key when invoked from a cygwin bash shell. (Versions 0.51
+and 0.52.) UPDATE: I've just run the debugger on plink; the SendMessage in
+agent_query (pageantc.c) is returning 0 in the bash shell and 1 in the cmd
+shell. On the pageant side, it's the EqualSid() call that is failing when run
+under cygwin. Starting pageant from a cygwin shell, and it works...(BTW, the
+same is true for running under cvs in emacs, but I may have my shell set to
+cygwin bash for that too.) I have not yet worked out why the SID is
+different; I have run mkpasswd and checked the results in cygwin, and tried
+messing with it a bit, but to no avail.</pre>
+
+<p>
+<pre>Here's a followup to the SID differences I reported yesterday, which are
+causing failures under cygwin. I instrumented Pageant to show me the accounts
+for the SIDs, and when Pageant or another application is started directly, it
+runs as BUILTIN\Administrators. When an application is run under cygwin, it
+runs as MACHINE\user. The SID I am using is a member of the Administrators
+group for this machine (Win2K is almost impossible to use for development if
+this is not the case).</pre>
+
+<p>
+Simon was unable to reproduce this. I'm going to speculate that it
+might involve having an <tt>/etc/passwd</tt> that's been populated
+with SIDs by <tt>make-passwd</tt>, and/or be something to do with
+Cygwin's <tt>ntsec</tt> option.
