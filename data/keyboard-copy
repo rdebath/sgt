@@ -1,0 +1,15 @@
+Summary: Should be able to copy to clipboard without mouse
+Class: wish
+Priority: low
+Difficulty: tricky
+Content-type: text/plain
+
+It's been suggested that it should be possible to copy text to the Windows
+clipboard (and equivalents) without using the mouse.  The usual Windows
+idiom for this would be to move one end of the selection using the cursor
+keys, and the other end with the shifted cursor keys.  Obviously imitating
+this directly would be silly, since users need the cursor keys to be sent
+to the server.  One possibility might be to have a separate mode, in the
+style of NCSA Telnet for DOS, which uses Scroll Lock to switch into a mode
+in which no data are received and the cursor keys move a local selection
+cursor around.
