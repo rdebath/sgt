@@ -1,5 +1,5 @@
 Summary: Window title reports offer opportunities for mischief
-Class: bug
+Class: vulnerability
 Difficulty: fun
 Priority: high
 Present-in: 0.53 0.53b

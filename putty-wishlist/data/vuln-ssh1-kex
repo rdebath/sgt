@@ -1,5 +1,5 @@
 Summary: Vulnerability: buffer management bug in SSH1 key exchange
-Class: bug
+Class: vulnerability
 Difficulty: fun
 Priority: high
 Present-in: 0.45 0.46 0.47 0.48 0.49 0.50 0.51 0.52 0.53 0.53b 0.54

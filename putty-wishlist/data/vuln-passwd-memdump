@@ -1,5 +1,5 @@
 Summary: Failure to scrub SSH-2 password from memory after use
-Class: bug
+Class: vulnerability
 Difficulty: fun
 Priority: high
 Present-in: 0.53b
