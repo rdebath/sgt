@@ -4,6 +4,7 @@ Priority: medium
 Difficulty: fun
 Content-type: text/plain
 Present-in: 2005-01-12
+Fixed-in: 2005-01-23
 
 When using an ISO 8-bit character set (like ISO 8859-1), character code 0x9a
 is the C1 control SCI, Single Character Introducer, whose use is "reserved
