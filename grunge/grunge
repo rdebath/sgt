@@ -11,10 +11,29 @@
 #    what your session is when deciding whether to allow adding.
 #  - "Menu  [ESC]= Utilities and Exit"
 #  - Remember: you can (or should be able to) press [ESC]
-#    _anywhere_.
-#  - Implement missing features in editor.
+#    _anywhere_. Places it doesn't yet work:
+#     * ESC should interrupt an editing session, store the editor
+#       contents in some sort of postponed buffer, and be able to
+#       resume with the same text the next time you enter the
+#       editor. Invaluable for re-checking a point in the item you
+#       were adding to (IQ question numbers :-). Bonus points if
+#       hitting <ret> from the utilities menu itself can be made to
+#       return straight to the editor in the same context. Tricky.
+#     * ESC within a file should exit the file and go to the
+#       utilities menu.
+#     * ESC during bottom-line input should abort the input;
+#       anywhere bottom-line input is called from should then be
+#       able to deal with this in a way that ends up in the
+#       utilities menu. (What happens to the edit text if we
+#       interrupt the final stages of adding an edit?)
+#     * Whatever happens, ESC at the about-to-add-edit menu should
+#       make the same thing happen...
+#     * ESC should interrupt scan adjustments (the subsidiary getch
+#       calls after [=] has been pressed).
+#  - Implement missing features in editor. In particular, for ^V
+#    and ^Z to work we need to turn off ISIG on the terminal, which
+#    will be a laugh.
 #  - Set Your Options (grogname and maybe others)
-#  - View MOTD.
 #  - View Edit Log.
 #  - Graceful (naive-newbie-friendly) handling of nonexistence of
 #    config files.
@@ -198,21 +217,22 @@ def formatitem(item):
     for j in item.contribs:
 	list = list + ["\aR\aB\aCb" + "-" * (width-28) + \
 	"[\ab" + time.ctime(j.timestamp) + "\aB]--\aa\aCA"]
-	# "From: grogname (userid)"
-	# length 9 + lengrogname + lenuserid
-	grogname = j.grogname
-	userid = j.userid
-	if len(grogname) + len(userid) + 9 > width:
-	    newgrognamelen = width - len(userid) - 9 - 3;
-	    if newgrognamelen < 0: newgrognamelen = 0
-	    grogname = grogname[:newgrognamelen] + "..."
-	if len(grogname) + len(userid) + 9 > width:
-	    newuseridlen = width - len(userid) - 9 - 3;
-	    if newuseridlen < 0: newuseridlen = 0
-	    userid = userid[:newuseridlen] + "..."
-	list = list + ["From: \aB\aCG" + grogname + \
-	" (" + userid + ")\aa\aCA", ""]
-	list = list + j.data[j.skip:j.end] + [""]
+	if j.userid != "":
+	    # "From: grogname (userid)"
+	    # length 9 + lengrogname + lenuserid
+	    grogname = j.grogname
+	    userid = j.userid
+	    if len(grogname) + len(userid) + 9 > width:
+		newgrognamelen = width - len(userid) - 9 - 3;
+		if newgrognamelen < 0: newgrognamelen = 0
+		grogname = grogname[:newgrognamelen] + "..."
+	    if len(grogname) + len(userid) + 9 > width:
+		newuseridlen = width - len(userid) - 9 - 3;
+		if newuseridlen < 0: newuseridlen = 0
+		userid = userid[:newuseridlen] + "..."
+	    list = list + ["From: \aB\aCG" + grogname + \
+	    " (" + userid + ")\aa\aCA"]
+	list = list + [""] + j.data[j.skip:j.end] + [""]
     if item.contin:
 	list = list + ["\aR\aB\aCb" + "-" * width + "\aa\aCA", ""]
 	centretext = "(Continued in " + item.contin + ")"
@@ -292,10 +312,13 @@ def pageitem(indexentry, item, override):
 	if h.ymax < 0: h.ymax = 0
 	if override == 1:
 	    h.y = 0
-	elif override == 2 or indexentry.uptodate:
+	elif override == 2 or (indexentry != None and indexentry.uptodate):
 	    h.y = h.ymax
 	else:
-	    h.y = indexentry.fileptr - (height-1)
+	    if indexentry != None:
+		h.y = indexentry.fileptr - (height-1)
+	    else:
+		h.y = 0
 	if h.y < 0: h.y = 0
 	if h.y > h.ymax: h.y = h.ymax
 	# FIXME: check write access on whole session
@@ -315,12 +338,13 @@ def pageitem(indexentry, item, override):
 		printbl()
 		redraw = 0
 	    # Update file pointer
-	    indexentry.fileptr = h.y+height-1
-	    if indexentry.fileptr >= len(data):
-		indexentry.fileptr = len(data)
-		indexentry.uptodate = 1
-	    else:
-		indexentry.uptodate = 0
+	    if indexentry != None:
+		indexentry.fileptr = h.y+height-1
+		if indexentry.fileptr >= len(data):
+		    indexentry.fileptr = len(data)
+		    indexentry.uptodate = 1
+		else:
+		    indexentry.uptodate = 0
 	    # Get a character
 	    c = mylc(scr.getch())
 	    # Oddity: Return at end of item becomes Q.
@@ -1388,6 +1412,16 @@ try:
 		    FIXME() # let's have an error page
 		else:
 		    action, grogname, subject = addpage(4, grogname, "", subject)
+	elif t == "s" and aux == "motd":
+	    override = 0
+	    while len(aux) > 1:
+		motd = item()
+		motd.contribs = [c.motd()]
+		motd.subject = "Message of the Day"
+		motd.itemid = "MOTD"
+		motd.contfrom = motd.contin = None
+	        aux, override = pageitem(None, motd, 1)
+		assert aux != "a"
         else:
 	    curses.beep() # NYI specials
         # FIXME: youropts, motd and editlog
