@@ -83,4 +83,9 @@ it?
 sort of paragraph is resumed correctly. {url
 http://www.tartarus.org/foo-bar.html . }And here's the continuation.
 
+Here are some inline URLs. Note also that HTTP prefixes and trailing
+slashes are added where obviously necessary: {url
+http://www.chiark.greenend.org.uk/~sgtatham}, {url
+www.arachsys.com/~jls}, {url www.tartarus.org}.
+
 {1} Here's the text of the footnote.
