@@ -4,15 +4,11 @@
 
 # TODO
 #
-#  - 3.4.3.4 cuboctahedron (formed from midpoints of cube edges)
 #  - 3.4.4.4 small rhombicuboctahedron
 #  - 4.6.8 great rhombicuboctahedron
 #
-#  - 3.5.3.5 icosidodecahedron (formed from midpoints of dodecahedron edges)
 #  - 3.4.5.4 small rhombicosidodecahedron
 #  - 4.6.10 great rhombicosidodecahedron
-#
-#  - 3.6.6, 3.8.8, 3.10.10, 4.6.6, 5.6.6 truncated platonics
 #
 #  - 4.3.3.3 snub cube
 #  - 5.3.3.3 snub dodecahedron
@@ -276,6 +272,18 @@ def edges(p):
 		elist.append((v1,v2))
     return elist
 
+def edgemap(p):
+    # Return a mapping from ordered vertex pairs to the face
+    # containing that edge.
+    emap = {}
+    for f in p.flist:
+	vl = p.faces[f]
+	for i in range(len(vl)):
+	    v1, v2 = vl[i-1], vl[i]  # i==0 neatly causes wraparound
+            assert not emap.has_key((v1,v2))
+            emap[(v1,v2)] = f
+    return emap
+
 class edgedual:
     # This wrapper class takes as input two functions returning
     # dual polyhedron objects, and implements a callable object
@@ -350,6 +358,79 @@ class edgedual:
 
 	return pout
 
+def edgeratio(x, y):
+    # Determine the ratio between the edge lengths of an x-sided
+    # and y-sided regular polygon with the same inscribed circle.
+    return math.tan(math.pi/y) / math.tan(math.pi/x)
+
+class truncate:
+    # This wrapper class takes a function returning a polyhedron
+    # object, and implements a callable object which returns a
+    # truncated form of that polyhedron. Parametrised by a single
+    # real, which indicates the proportion of the original edges to
+    # leave. (0 means truncate at the midpoint; 1 means the null
+    # truncation right at the end.)
+    def __init__(self, p, r):
+	self.p = p
+	self.r = r
+    def __call__(self):
+        p = self.p()
+	pout = polyhedron()
+        e = edges(p)
+        newv = {}
+        r1 = (1.0 + self.r) / 2
+        r2 = (1.0 - self.r) / 2
+        for v1, v2 in e:
+            # Find the locations of each vertex.
+            x1, y1, z1 = p.vertices[v1]
+            x2, y2, z2 = p.vertices[v2]
+            # Find the truncation points.
+            xa, ya, za = r1*x1+r2*x2, r1*y1+r2*y2, r1*z1+r2*z2
+            va = pout.vertex(xa, ya, za)
+            if self.r != 0:
+                xb, yb, zb = r2*x1+r1*x2, r2*y1+r1*y2, r2*z1+r1*z2
+                vb = pout.vertex(xb, yb, zb)
+                newv[(v1,v2)] = [va,vb]
+                newv[(v2,v1)] = [vb,va]
+            else:
+                newv[(v1,v2)] = newv[(v2,v1)] = [va]
+        # Now we have our vertex set. Construct the truncated faces.
+        for f in p.flist:
+            vl = p.faces[f]
+            newvl = []
+            for i in range(len(vl)):
+                v1, v2 = vl[i-1], vl[i] # -1 causes wrap
+                newvl.extend(newv[(v1,v2)])
+            pout.facelist(newvl)
+        # And also we need to construct the _truncation_ faces.
+        em = edgemap(p)
+        for v in p.vlist:
+            # First find a vertex connected to v.
+            vc = None
+            for v1, v2 in e:
+                if v1 == v:
+                    vc = v2
+                    break
+                elif v2 == v:
+                    vc = v1
+                    break
+            assert vc != None
+            # Now repeatedly find the (v,vc) edge, and use the
+            # edgemap to find another vertex connected to v.
+            newvl = []
+            vs = vc
+            while 1:
+                newvl.append(newv[(v,vc)][0])
+                f = em[(v,vc)]
+                fl = p.faces[f]
+                i = fl.index(v)
+                vc = fl[i-1]  # -1 wraps
+                if vc == vs:
+                    break
+            pout.facelist(newvl)
+
+        return pout
+
 class output:
     # This wrapper class takes a function returning a polyhedron
     # object, and implements a callable object which outputs that
@@ -374,6 +455,13 @@ polyhedra = {
 "octahedron": output(octahedron),
 "dodecahedron": output(dodecahedron),
 "icosahedron": output(icosahedron),
+"cuboctahedron": output(truncate(cube, 0)),
+"icosidodecahedron": output(truncate(dodecahedron, 0)),
+"truncatedtetrahedron": output(truncate(tetrahedron, edgeratio(3,6))),
+"truncatedcube": output(truncate(cube, edgeratio(4,8))),
+"truncatedoctahedron": output(truncate(octahedron, edgeratio(3,6))),
+"truncateddodecahedron": output(truncate(dodecahedron, edgeratio(5,10))),
+"truncatedicosahedron": output(truncate(icosahedron, edgeratio(3,6))),
 "rhombicdodecahedron": output(edgedual(cube, octahedron)),
 "rhombictriacontahedron": output(edgedual(dodecahedron, icosahedron)),
 "all": all,
