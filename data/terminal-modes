@@ -5,7 +5,7 @@ Difficulty: tricky
 Content-type: text/x-html-body
 
 <p>
-SSH (both v1 and v2) allows the client to specify the mode it wants
+SSH (both SSH-1 and SSH-2) allows the client to specify the mode it wants
 server-side pseudo-terminals to be opened in. PuTTY does not currently
 specify any such information for either protocol apart from
 <a href="ssh-termspeed.html">terminal speed</a>.
@@ -16,6 +16,15 @@ sort of thing locally, so that (for example) users connecting to the
 <a href="http://www.mono.org">mono.org</a>
 BBS could stop a single press of Ctrl-\ from sending a SIGQUIT and
 unexpectedly terminating their session.
+
+<p>
+Also, various servers do not have sane defaults for various terminal
+modes. (Neither SSH nor POSIX define any defaults; they leave them
+up to the implementation, so such servers are within their rights.)
+Therefore PuTTY should probably send suitable values for certain modes
+by default, and in any case allow users to tweak them. (Often
+<tt>stty</tt> on the server can be used as a workaround, but some
+servers may not have this ability.)
 
 <p>
 A complete UI for terminal modes would be a noticeable amount of work.
