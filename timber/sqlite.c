@@ -291,6 +291,7 @@ char *invent_ego(double count)
 struct db_info_ctx {
     const char *ego;
     int addr_index;
+    int mid_index;
     int mime_index;
 };
 void db_info_fn(void *vctx, struct message_parse_info *info)
@@ -317,12 +318,12 @@ void db_info_fn(void *vctx, struct message_parse_info *info)
 			   sqlite_null_callback, NULL, &err,
 			   ctx->ego,
 			   header_name(info->header),
-			   info->u.mid.index,
-			   info->u.mid.mid);
+			   ctx->mid_index++,
+			   info->u.string);
 	if (err) fatal(err_dberror, err);
 	break;
       case PARSE_SUBJECT:
-	sqlite_exec_printf(db, "INSERT INTO subjects VALUES ("
+	sqlite_exec_printf(db, "INSERT OR REPLACE INTO subjects VALUES ("
 			   "'%q', '%q' );",
 			   sqlite_null_callback, NULL, &err,
 			   ctx->ego,
@@ -331,7 +332,7 @@ void db_info_fn(void *vctx, struct message_parse_info *info)
 	break;
       case PARSE_DATE:
 	fmt_date(info->u.date, datebuf);
-	sqlite_exec_printf(db, "INSERT INTO dates VALUES ("
+	sqlite_exec_printf(db, "INSERT OR REPLACE INTO dates VALUES ("
 			   "'%q', '%q' );",
 			   sqlite_null_callback, NULL, &err,
 			   ctx->ego,

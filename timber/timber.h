@@ -171,10 +171,6 @@ struct mime_details {
     int offset;
     int length;
 };
-struct message_id {
-    char *mid;
-    int index;			       /* which of the References */
-};
 struct address {
     char *display_name;
     char *address;
@@ -213,7 +209,6 @@ struct message_parse_info {
     } header;
     union {
 	struct address addr;
-	struct message_id mid;
 	char *string;
 	time_t date;
 	struct mime_details md;

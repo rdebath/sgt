@@ -594,7 +594,6 @@ void parse_headers(char const *base, char const *message, int msglen,
 		break;
 	      case EXTRACT_MESSAGE_IDS:
 		{
-		    int index = 0;
 		    /*
 		     * Any single word between a pair of <> and
 		     * containing an @ is a Message-ID.
@@ -607,14 +606,11 @@ void parse_headers(char const *base, char const *message, int msglen,
 			    struct message_parse_info inf;
 			    inf.type = PARSE_MESSAGE_ID;
 			    inf.header = hdr->header_id;
-			    inf.u.mid.mid = smalloc(1+lh[1].length);
-			    memcpy(inf.u.mid.mid, lh[1].token, lh[1].length);
-			    inf.u.mid.mid[lh[1].length] = '\0';
-			    inf.u.mid.index = index++;
-			    if (inf.u.mid.index == 0 ||
-				inf.header == H_REFERENCES)
-				info(infoctx, &inf);
-			    sfree(inf.u.mid.mid);
+			    inf.u.string = smalloc(1+lh[1].length);
+			    memcpy(inf.u.string, lh[1].token, lh[1].length);
+			    inf.u.string[lh[1].length] = '\0';
+			    info(infoctx, &inf);
+			    sfree(inf.u.string);
 			}
 			lh++;
 		    }
@@ -1538,7 +1534,7 @@ void test_info_fn(void *ctx, struct message_parse_info *info)
 	break;
       case PARSE_MESSAGE_ID:
 	printf("Message-ID [%s]: <%s>\n", header_name(info->header),
-	       info->u.mid.mid);
+	       info->u.string);
 	break;
       case PARSE_SUBJECT:
 	printf("Subject: %s\n",
