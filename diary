@@ -10,14 +10,9 @@ import ljproto
 
 # Here's the TODO list for potential future enhancements.
 #
-#  - Better {mbreak} handling.
-#     * For a start I want a simple {mbreak} to produce a plausible
-#       title: `(continued)' is fine in an untitled entry, and in a
-#       titled one appending `(part N)' to the title is probably
-#       reasonable.
-#     * Also it'd be quite nice to be able to specify {t stuff}
-#       inside the explicit {mbreak} text, in case the simple (part
-#       N) isn't sufficient.
+#  - It'd be quite nice to be able to specify {t stuff} inside the
+#    explicit {mbreak} text, in case the simple (part N) suffix
+#    isn't sufficient.
 #
 #  - Support for friends-only, specific-friend-group, and private
 #    entries (uncertain when if ever the first two will be useful,
@@ -97,10 +92,12 @@ class output:
 	self.in_ul = 0
         self.timestamp = now
 	self.mono_last_edit_start = -1
+	self.mono_edit_count = 0
         self.mono_new_edit()
         self.mono_bullet = 0
 	self.firstpara = 1
 	self.warnings = []
+	self.mono_title = []
 	pass
 
     def mono_blankline(self):
@@ -121,6 +118,7 @@ class output:
         self.mono.append(msgline)
         self.mono.append("\031") # ^Y means paste in nameline
         self.mono.append("")
+	self.mono_edit_count = self.mono_edit_count + 1
 
     def mono_add_word(self, text, attrs, isbreak):
         self.mono_words.append((text, attrs, isbreak))
@@ -295,6 +293,8 @@ class output:
 	    self.html = self.html + "</p>"
 	if typ == PBULLET:
 	    self.html = self.html + "</li>"
+	if typ == PTITLE:
+	    self.mono_title = self.mono_words
         self.mono_show_para()
         self.mono_blankline()
 
@@ -368,6 +368,20 @@ class output:
 	    self.subj = self.subj + text
         if self.mono_ok:
             self.mono_add_word(text, self.mono_attr, 1)
+
+    def default_mbreak(self):
+	# Invent an mbreak paragraph with default text in it.
+	self.begin_para(PMBREAK)
+	if len(self.mono_title) > 0:
+	    for x, y, z in self.mono_title:
+		self.mono_add_word(x, y, z)
+	    self.whitespace(" ")
+	    self.word("(part")
+	    self.whitespace(" ")
+	    self.word("%d)" % self.mono_edit_count)
+	else:
+	    self.word("(continued)")
+	self.end_para(PMBREAK)
 
 # Read input.
 
@@ -505,7 +519,7 @@ def rdinput(file):
     # Tokens which immediately end a paragraph.
     endpara = [
     (TSIMPLE,"Q"), (TSIMPLE,"q"), (TSIMPLE,"/q"), (TSIMPLE,"/Q"),
-    (TSIMPLE,"pre"), (TSIMPLE,"b"),
+    (TSIMPLE,"pre"), (TSIMPLE,"b"), (TSIMPLE, "mbreak"), 
     (TOPEN, "ljcut"), (TOPEN, "mbreak"), (TOPEN, "t"),
     (PARA,), (EOF,)]
 
@@ -548,13 +562,17 @@ def rdinput(file):
 		t.next() # swallow the close
 		o.ljcut(text)
 	    elif tok == (TSIMPLE, "/ljcut"):
-		t.next() # swallow the close
+		t.next()
 		o.ljcut(None)
 	    elif tok == (TOPEN, "mbreak"):
 		t.next()
 		stack = ["mbreak"]
 		para_type = PMBREAK
 		break
+	    elif tok == (TSIMPLE, "mbreak"):
+		t.next()
+		o.default_mbreak()
+		continue
 	    elif tok == (TOPEN, "t"):
 		t.next()
 		stack = ["t"]
