@@ -3,6 +3,7 @@ Class: wish
 Priority: medium
 Difficulty: tricky
 Content-type: text/x-html-body
+Fixed-in: 2004-10-14
 
 <p>
 The current internal interface used to draw text on screen, <code>do_text()
