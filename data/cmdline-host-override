@@ -3,6 +3,7 @@ Class: bug
 Priority: medium
 Difficulty: fun
 Content-type: text/x-html-body
+Fixed-in: 2003-03-23
 
 <p>
 If both <code>-load</code> and a hostname are specified on PuTTY's command
@@ -11,3 +12,21 @@ shouldn't.  This is because bare hostnames aren't passed through
 <code>cmdline_process_param()</code> in the same way that (e.g.) bare port
 numbers are, so they end up being trampled by
 <code>cmdline_process_saved()</code>.
+
+<p>
+<b>SGT, 2003-03-22</b>: Well, <code>-load</code> is now processed
+immediately rather than being deferred until
+<code>cmdline_process_saved()</code>. This should eliminate this
+sort of bug completely. However, the effect on Plink host names
+isn't exactly what I stated above; instead, specifying a
+<code>-load</code> option that mentions a host name actually
+<em>prevents</em> Plink from looking for an explicit host name. The
+upshot of this is that the command <code>plink -load session
+host</code> will connect to the host specified in the saved session,
+and interpret "<code>host</code>" as the command to run.
+
+<p>
+It's possible that some people really do have a need to load a saved
+session and override only its host name component, but I think this
+behaviour is more generally useful. If anyone complains I can always
+add an explicit <code>-host</code> command-line option.
