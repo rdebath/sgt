@@ -1,0 +1,23 @@
+Summary: PuTTY doesn't apply replay protection to XDM-AUTHORIZATION-1
+Class: bug
+Difficulty: fun
+Present-in: 2005-01-23
+Priority: medium
+Content-type: text/plain
+
+The XDMCP specification says that an X server should only accept an
+XDM-AUTHORIZATION-1 if no packet containing the same (N, T) pair has been
+received in the last 20 minutes.  This provides replay protection, but
+PuTTY's X11 proxy doesn't implement it, leaving it potentally open to
+replay attacks.
+
+NB: I (BJH) think that this 20 minutes is incorrect -- used tokens should
+be remembered until they're so old that they'd be rejected for that reason
+alone, which could be 40 minutes after they're received allowing for clock
+skew.
+
+As a corollory to this, when using XDM-AUTHORIZATION-1 to talk to a local
+server, PuTTY should avoid generating the same token more than once, which
+it can currently do for Unix-domain connections because it doesn't vary the
+address field.  Xlib decrements the address field (starting at 0xffffffff)
+for each connection it makes.
