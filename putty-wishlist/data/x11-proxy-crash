@@ -18,3 +18,14 @@ proxy causes PuTTY to crash.  Reports so far:
 (3.4p1), with HTTP proxying.
 </ul>
 <p>This bug has been present more or less since proxy support was added.
+
+<p>Appears intermittent. If PuTTY doesn't crash, I get the following reported
+in my terminal session:
+<p><pre>X connection to chiark:27.0 broken (explicit kill or server shutdown)</pre>
+<p>If it does crash, I get something like:
+<p><pre>XIO:  fatal IO Error 104 (Connect reset by peer) on X server "chiark:27.0"
+      after 0 requests (0 known processed) with 0 events remaining.</pre>
+
+<p>Appears to be occur regardless of whether there's an X server to connect to.
+When I do have an X server running, it doesn't appear to see any traffic
+when attempting X forwarding through a proxy.
