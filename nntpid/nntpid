@@ -1,0 +1,173 @@
+#!/usr/bin/perl
+#
+# Script to retrieve a single article from a news server, either by
+# message-id or by group name and article number.
+#
+# Usage:     nntpid <messageid>
+#    or:     nntpid messageid               (angle brackets optional)
+#    or:     nntpid news.group.name 1234    (group+number form)
+#
+# The name of your news server is obtained from the environment variable
+# NNTPSERVER, or from the file /etc/nntpserver if that's not set.
+#
+# This script supports AUTHINFO GENERIC authentication using the
+# environment variable NNTPAUTH. It will only attempt this if it receives
+# a 480 response from the news server; if your news server isn't paranoid
+# then the script will never need to look at NNTPAUTH.
+
+# Copyright 2000 Simon Tatham. All rights reserved.
+# FIXME: put in a licence notice.
+
+require 5.002;
+use Socket;
+use FileHandle;
+
+$usage =
+  "usage: nntpid [ -v ] <message-id>\n" .
+  "   or: nntpid [ -v ] <newsgroup> <article-number>\n" .
+  "where: -v                  verbose (print interaction with news server)\n" .
+  " also: nntpid --version    report version number\n" .
+  "       nntpid --help       display this help text\n" .
+  "       nntpid --licence    display (MIT) licence text\n";
+
+$licence =
+  "nntpid is copyright 2000,2004 Simon Tatham.\n" .
+  "\n" .
+  "Permission is hereby granted, free of charge, to any person\n" .
+  "obtaining a copy of this software and associated documentation files\n" .
+  "(the \"Software\"), to deal in the Software without restriction,\n" .
+  "including without limitation the rights to use, copy, modify, merge,\n" .
+  "publish, distribute, sublicense, and/or sell copies of the Software,\n" .
+  "and to permit persons to whom the Software is furnished to do so,\n" .
+  "subject to the following conditions:\n" .
+  "\n" .
+  "The above copyright notice and this permission notice shall be\n" .
+  "included in all copies or substantial portions of the Software.\n" .
+  "\n" .
+  "THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND,\n" .
+  "EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF\n" .
+  "MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND\n" .
+  "NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS\n" .
+  "BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN\n" .
+  "ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN\n" .
+  "CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\n" .
+  "SOFTWARE.\n";
+
+while ($ARGV[0] =~ /^-(.+)$/) {
+  shift @ARGV;
+  $verbose=1, next if $1 eq "v";
+  if ($1 eq "-help") {
+    print STDERR $usage;
+    exit 0;
+  } elsif ($1 eq "-version") {
+    if ('$Revision$' =~ /Revision:\s+(\d+)/) {
+	print "nntpid revision $1\n";
+    } else {
+	print "nntpid: unknown revision\n";
+    }
+    exit 0;
+  } elsif ($1 eq "-licence" or $1 eq "-license") {
+    print $licence;
+    exit 0;
+  }
+}
+
+die $usage if !defined $ARGV[0];
+
+if (defined $ARGV[1]) {
+  $group = $ARGV[0];
+  $mid = $ARGV[1];
+} else {
+  $group = "misc.misc";
+  $mid = $ARGV[0];
+  $mid =~ s/^<//;
+  $mid =~ s/>$//;
+  $mid = "<$mid>";
+}
+
+$ns=$ENV{'NNTPSERVER'};
+if (!defined $ns or !length $ns) {
+  $ns = `cat /etc/nntpserver`;
+}
+$port = (getservbyname("nntp", "tcp"))[2];
+$ns = inet_aton($ns);
+$proto = getprotobyname("tcp");
+$paddr = sockaddr_in($port, $ns);
+
+socket(S,PF_INET,SOCK_STREAM,$proto) or die "socket: $!";
+connect(S,$paddr) or die "connect: $!";
+
+S->autoflush(1);
+
+&getline;
+$code =~ /^2\d\d/ or die "no initial greeting from server\n";
+
+&docmd("MODE READER");
+# some servers require a GROUP before an ARTICLE command
+&docmd("GROUP $group");
+&docmd("ARTICLE $mid");
+while (1) {
+  &getline;
+  s/[\r\n]//g;
+  last if /^\.$/;
+  s/^\.//;
+  print STDOUT "$_\n";
+}
+&docmd("QUIT");
+close S;
+
+sub putline {
+  my ($line) = @_;
+  print STDERR ">>> $line\n" if $verbose;
+  print S "$line\r\n";
+}
+
+sub getline {
+  $_ = <S>;
+  s/[\r\n]*$//s;
+  $code = substr($_,0,3);
+  print STDERR "<<< $_\n" if $verbose;
+}
+
+sub docmd {
+  my ($cmd) = @_;
+  while (1) {
+    &putline($cmd);
+    &getline;
+    if ($code eq "480") { &auth; } else { last; }
+  }
+  $code =~ /^2\d\d/ or die "failed on `$cmd':\n$_\n";
+}
+
+sub auth {
+  # Authentication.
+  if ($ENV{"NNTPAUTH"}) {
+    $auth = $ENV{"NNTPAUTH"};
+    &putline("AUTHINFO GENERIC $auth");
+    pipe AUTHSTDIN, TOAUTH or die "unable to create pipes";
+    pipe FROMAUTH, AUTHSTDOUT or die "unable to create pipes";
+    $pid = fork;
+    if (!defined $pid) {
+      die "unable to fork for authentication helper";
+    } elsif ($pid == 0) {
+      # we are child
+      $ENV{"NNTP_AUTH_FDS"} = "0.1";
+      open STDIN, "<&AUTHSTDIN";
+      open STDOUT, ">&AUTHSTDOUT";
+      close S;
+      exec $auth;
+    }
+    # we are parent
+    close AUTHSTDIN;
+    close AUTHSTDOUT;
+    autoflush TOAUTH 1;
+    &getline; print TOAUTH "$_\n";
+    while (<FROMAUTH>) {
+      s/[\r\n]*$//s;
+      &putline($_);
+      &getline;
+      print TOAUTH "$_\n";
+    }
+    die "failed authentication\n" unless $? == 0;
+  }
+}
