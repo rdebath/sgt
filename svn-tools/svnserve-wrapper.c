@@ -830,7 +830,8 @@ static char *fgetline(FILE *fp)
     return ret;
 }
 
-static struct access *read_access_file(char *username, char *repository)
+static struct access *read_access_file(char *username, char *root,
+				       char *repository)
 {
 
 #define CFG_ERR do { \
@@ -839,17 +840,27 @@ static struct access *read_access_file(char *username, char *repository)
     exit(1); \
 } while (0)
 
+    int fnamelen;
     char *fname, *line;
+    char *p;
     struct access *ac;
     int lineno = 0;
     FILE *fp;
 
-    fname = malloc(strlen(repository) + 256);
+    fnamelen = strlen(root) + strlen(repository) + 256;
+    fname = malloc(fnamelen);
     if (!fname) {
 	fprintf(stderr, "svnserve-wrapper: out of memory\n");
 	exit(1);
     }
-    sprintf(fname, "%s/conf/svnserve-wrapper.conf", repository);
+    p = fname;
+    *p++ = '/';
+    p += sprintf(p, "%s", root[0]=='/' ? root+1 : root);
+    if (p[-1] != '/') *p++ = '/';
+    p += sprintf(p, "%s", repository[0]=='/' ? repository+1 : repository);
+    if (p[-1] != '/') *p++ = '/';
+    p += sprintf(p, "conf/svnserve-wrapper.conf");
+    assert(p - fname < fnamelen);
 
     fp = fopen(fname, "r");
     if (!fp) {
@@ -868,7 +879,7 @@ static struct access *read_access_file(char *username, char *repository)
 
 	while (*p && isspace((unsigned char)*p)) p++;
 
-	if (*p != '#') {
+	if (*p != '#' && *p) {
 	    /*
 	     * A valid config file line contains some
 	     * space-separated fields:
@@ -947,10 +958,7 @@ static struct access *read_access_file(char *username, char *repository)
 
 int main(int argc, char **argv)
 {
-    /*
-     * Usage: svnserve-wrapper <username> <repository>
-     */
-    char *username, *repository, *svnserve;
+    char *username, *root, *repository, *svnserve;
     int fromchild[2], tochild[2];
     int fromchild_closed, stdin_closed;
     int pid;
@@ -958,16 +966,17 @@ int main(int argc, char **argv)
     struct buffer buf_to_child = { NULL,0,0 }, buf_to_stdout = { NULL,0,0 };
     struct svnprotocol_state command_state, response_state;
 
-    if (argc != 3 && argc != 4) {
-	fprintf(stderr, "usage: svnserve-wrapper <username> <repository>"
+    if (argc != 4 && argc != 5) {
+	fprintf(stderr, "usage: svnserve-wrapper <username> <root> <repository>"
 		" [<svnserve-path>]\n");
 	return 1;
     }
 
     username = argv[1];
-    repository = argv[2];
-    if (argc == 4)
-	svnserve = argv[3];
+    root = argv[2];
+    repository = argv[3];
+    if (argc == 5)
+	svnserve = argv[4];
     else
 	svnserve = NULL;
 
@@ -995,7 +1004,7 @@ int main(int argc, char **argv)
 	close(tochild[0]);
 	(svnserve ? execl : execlp)
 	    (svnserve ? svnserve : "svnserve",
-	     "svnserve", "-t", "--tunnel-user", username, NULL);
+	     "svnserve", "-r", root, "-t", "--tunnel-user", username, NULL);
 	perror("svnserve-wrapper: exec");
 	return 127;
     }
@@ -1015,7 +1024,7 @@ int main(int argc, char **argv)
     response_state.outbuf = &buf_to_stdout;
     response_state.outgoing = FALSE;
     command_state.sstate = new_semantic_state(repository);
-    command_state.sstate->ac = read_access_file(username, repository);
+    command_state.sstate->ac = read_access_file(username, root, repository);
 
     while (1) {
 	fd_set reads, writes;
