@@ -4,6 +4,7 @@
  */
 
 #include <stdio.h>
+#include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
@@ -25,6 +26,72 @@
     FD_SET(fd, &set); \
     if (fd >= max) max = fd+1; \
 } while (0)
+
+struct access {
+    char *username;
+    tree234 *paths;
+};
+
+struct access_path {
+    char *path;
+    int allow;
+};
+
+int accesscmp(void *av, void *bv)
+{
+    struct access_path *a = (struct access_path *)av;
+    struct access_path *b = (struct access_path *)bv;
+
+    return strcmp(a->path, b->path);
+}
+
+struct access *new_access_db(char *username)
+{
+    struct access *ac;
+
+    ac = malloc(sizeof(struct access));
+    if (!ac) {
+	fprintf(stderr, "svnserve-wrapper: out of memory\n");
+	exit(1);
+    }
+
+    ac->paths = newtree234(accesscmp);
+    ac->username = username;
+
+    return ac;
+}
+
+void add_access_path(struct access *ac, int allow, char *pathname)
+{
+    struct access_path *path, *prev;
+
+    path = malloc(sizeof(struct access_path));
+    if (!path) {
+	fprintf(stderr, "svnserve-wrapper: out of memory\n");
+	exit(1);
+    }
+
+    path->path = malloc(1+strlen(pathname));
+    if (!path->path) {
+	fprintf(stderr, "svnserve-wrapper: out of memory\n");
+	exit(1);
+    }
+
+    strcpy(path->path, pathname);
+    path->allow = allow;
+
+    prev = add234(ac->paths, path);
+
+    if (prev != path) {
+	/*
+	 * Existing rule for this pathname is superseded.
+	 */
+	del234(ac->paths, prev);
+	add234(ac->paths, path);
+	free(prev->path);
+	free(prev);
+    }
+}
 
 typedef enum {
     SVT_OPEN, SVT_CLOSE, SVT_WORD, SVT_NUMBER, SVT_STRING
@@ -77,6 +144,7 @@ struct svn_semantics {
     char *base_path;
     char *repository;
     tree234 *tokens;
+    struct access *ac;
 };
 
 struct svnprotocol_state {
@@ -186,9 +254,70 @@ char *duptext(union svnprotocol_item *item, char *data)
     return ret;
 }
 
-void check_access(char *base_path, char *path)
+void check_access(struct access *ac, char *base_path, char *path)
 {
-    fprintf(stderr, "check_access <%s> <%s>\n", base_path, path);
+    char *full_path, *p;
+
+    full_path = malloc(10 + strlen(base_path) + strlen(path));
+    if (!full_path) {
+	fprintf(stderr, "svnserve-wrapper: out of memory\n");
+	exit(1);
+    }
+
+    p = full_path;
+
+    if (base_path[0] != '/') *p++ = '/';
+    strcpy(p, base_path);
+    p += strlen(p);
+    assert(p > full_path);
+    if (p[-1] != '/') *p++ = '/';
+    strcpy(p, path + (path[0] == '/' ? 1 : 0));
+    p += strlen(p);
+    if (p[-1] == '/' && p > full_path+1) *--p = '\0';
+
+    /*
+     * Now check the access database.
+     */
+    while (1) {
+	struct access_path testpath, *ap;
+
+	testpath.path = full_path;
+
+	ap = find234(ac->paths, &testpath, NULL);
+
+	if (ap) {
+	    /*
+	     * Search is over. We have found our access entry.
+	     */
+	    if (ap->allow)
+		break;		       /* fine; just free full_path and go */
+	    fprintf(stderr, "svnserve-wrapper: permission for %s to commit"
+		    " to %s denied\n", ac->username, full_path);
+	    exit(1);
+	}
+
+	/*
+	 * Now look one stage further up.
+	 */
+	if (full_path[0] == '/' && !full_path[1]) {
+	    /*
+	     * We have reached the top of the path tree and found
+	     * no entry in the config file. In this situation we
+	     * conservatively avoid allowing the commit, but also
+	     * print an error indicating that the configuration
+	     * file ought to mention it explicitly.
+	     */
+	    fprintf(stderr, "svnserve-wrapper: configuration file does not"
+		    " state default policy for %s\n", ac->username);
+	    exit(1);
+	}
+	p = full_path + strlen(full_path);
+	while (p > full_path && p[-1] != '/') p--;
+	if (p > full_path+1) p--;
+	*p = '\0';
+    }
+
+    free(full_path);
 }
 
 void add_token_path(struct svn_semantics *state, char *token, char *path)
@@ -312,7 +441,6 @@ void parse_svn_message(struct svn_semantics *state, char *data,
 		    /*
 		     * Now we've found the pathname.
 		     */
-fprintf(stderr, "<%s> <%s>\n", q, state->repository);
 		    if (strncmp(q, state->repository,
 				strlen(state->repository)) ||
 			(q[strlen(state->repository)] != '/' &&
@@ -348,7 +476,7 @@ fprintf(stderr, "<%s> <%s>\n", q, state->repository);
 	     * This opens base_path itself. Expect a revision tuple
 	     * which we ignore, followed by a token.
 	     */
-	    check_access(state->base_path, "");
+	    check_access(state->ac, state->base_path, "");
 
 	    ADVANCE;
 
@@ -377,7 +505,7 @@ fprintf(stderr, "<%s> <%s>\n", q, state->repository);
 	    EXPECT(ISTYPE(SVT_STRING));
 
 	    path = duptext(p-1, data);
-	    check_access(state->base_path, path);
+	    check_access(state->ac, state->base_path, path);
 
 	    /*
 	     * delete-entry now provides a revision tuple, which we
@@ -669,6 +797,154 @@ void buffer_read(struct buffer *buf, int fd, int *closed,
     buffer_remove(buf, used);
 }
 
+/*
+ * Read an entire line of text from a file. Return a buffer
+ * malloced to be as big as necessary (caller must free).
+ */
+static char *fgetline(FILE *fp)
+{
+    char *ret = malloc(512);
+    int size = 512, len = 0;
+
+    if (!ret) {
+	fprintf(stderr, "svnserve-wrapper: out of memory\n");
+	exit(1);
+    }
+
+    while (fgets(ret + len, size - len, fp)) {
+	len += strlen(ret + len);
+	if (ret[len-1] == '\n')
+	    break;		       /* got a newline, we're done */
+	size = len + 512;
+	ret = realloc(ret, size);
+	if (!ret) {
+	    fprintf(stderr, "svnserve-wrapper: out of memory\n");
+	    exit(1);
+	}
+    }
+    if (len == 0) {		       /* first fgets returned NULL */
+	free(ret);
+	return NULL;
+    }
+    ret[len] = '\0';
+    return ret;
+}
+
+static struct access *read_access_file(char *username, char *repository)
+{
+
+#define CFG_ERR do { \
+    fprintf(stderr, "svnserve-wrapper: error in config file [%d] at" \
+		" line %d\n", __LINE__, lineno); \
+    exit(1); \
+} while (0)
+
+    char *fname, *line;
+    struct access *ac;
+    int lineno = 0;
+    FILE *fp;
+
+    fname = malloc(strlen(repository) + 256);
+    if (!fname) {
+	fprintf(stderr, "svnserve-wrapper: out of memory\n");
+	exit(1);
+    }
+    sprintf(fname, "%s/conf/svnserve-wrapper.conf", repository);
+
+    fp = fopen(fname, "r");
+    if (!fp) {
+	fprintf(stderr, "svnserve-wrapper: unable to open config file\n");
+	exit(1);
+    }
+    free(fname);
+
+    ac = new_access_db(username);
+
+    while ( (line = fgetline(fp)) != NULL ) {
+	int allow;
+	char *path;
+	char *p = line;
+	lineno++;
+
+	while (*p && isspace((unsigned char)*p)) p++;
+
+	if (*p != '#') {
+	    /*
+	     * A valid config file line contains some
+	     * space-separated fields:
+	     * 
+	     *  - `A' or `D', for `allow' or `deny'.
+	     * 
+	     *  - A path name.
+	     * 
+	     * 	- Zero or more user names (none means this rule
+	     * 	  applies to anybody at all).
+	     * 
+	     * Later rules supersede earlier ones when they apply
+	     * to precisely the same path. However, rules applying
+	     * to more specific paths supersede rules applying to
+	     * their parent (more general) paths. So it would be
+	     * valid, for example, to do something like this:
+	     * 
+	     *   A /putty simon ben owen jacob
+	     *   D /
+	     *   A / simon
+	     * 
+	     * to construct a repository in which `simon' may
+	     * commit to absolutely anything, `ben', `owen' and
+	     * `jacob' may commit only to paths below /putty, and
+	     * nobody else may commit to anything at all.
+	     */
+	    if (*p != 'A' && *p != 'D') CFG_ERR;
+	    allow = (*p == 'A');
+
+	    p++;
+	    while (*p && isspace((unsigned char)*p)) p++;
+
+	    path = p;
+	    while (*p && !isspace((unsigned char)*p)) p++;
+	    if (*p)
+		*p++ = '\0';
+	    while (*p && isspace((unsigned char)*p)) p++;
+
+	    if (*p) {
+		int ok = FALSE;
+		char *user;
+		/*
+		 * If there's at least one user name mentioned, we
+		 * must see if it mentions _us_.
+		 */
+		while (*p) {
+		    user = p;
+		    while (*p && !isspace((unsigned char)*p)) p++;
+		    if (*p)
+			*p++ = '\0';
+		    while (*p && isspace((unsigned char)*p)) p++;
+
+		    if (!strcmp(user, username))
+			ok = TRUE;
+		}
+
+		if (!ok)
+		    goto done;
+	    }
+
+	    /*
+	     * Now add this path to our access database.
+	     */
+	    add_access_path(ac, allow, path);
+	}
+
+	done:
+	free(line);
+    }
+
+    return ac;
+
+#undef CFG_ERR
+
+}
+
 int main(int argc, char **argv)
 {
     /*
@@ -734,6 +1010,7 @@ int main(int argc, char **argv)
     response_state.outbuf = &buf_to_stdout;
     response_state.outgoing = FALSE;
     command_state.sstate = new_semantic_state(repository);
+    command_state.sstate->ac = read_access_file(username, repository);
 
     while (1) {
 	fd_set reads, writes;
