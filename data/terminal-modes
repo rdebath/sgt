@@ -1,0 +1,35 @@
+Summary: Implement sending of terminal modes
+Class: wish
+Priority: medium
+Difficulty: fun
+Content-type: text/x-html-body
+
+<p>
+SSH (both v1 and v2) allows the client to specify the mode it wants
+server-side pseudo-terminals to be opened in.
+
+<p>
+I've always thought it would be nice to be able to configure this
+sort of thing locally, so that (for example) users connecting to the
+<a href="www.mono.org">mono.org</a>
+BBS could stop a single press of Ctrl-\ from sending a SIGQUIT and
+unexpectedly terminating their session.
+
+<p>
+Recently it was suggested to me that if the user has configured
+non-`auto' settings for local echo and/or local line editing, then
+perhaps PuTTY should deliberately send terminal modes which
+compensate for this on the server side? For example, if the user
+turns line editing off at the client end, we could send ICANON so
+that it's turned on at the server end; or conversely if the user
+enables local line editing we could send ~ICANON. It isn't remotely
+clear to me that this would be the right thing in all circumstances,
+though, so perhaps it would be better to leave it as a
+user-configurable option.
+
+<p>
+(This wish applies minimally to Telnet as well, since we can send
+WILL ECHO / WONT ECHO to announce an intention to do any echoing
+locally, and the server is expected to stop doing its own echoing if
+it thinks we're doing it ourselves. Configurable options in this
+area might also be directly usable by the pty back end in pterm.)
