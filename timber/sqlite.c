@@ -34,8 +34,8 @@ struct database {
 #define DATABASE(name,schema) { NULL, FALSE, name, schema, lenof(schema) }
 
 
-void sql_open (struct database *db,
-	       int must_exist)
+void sql_perform_open (struct database *db,
+		       int must_exist)
 {
     char *dbpath;
     char *err;
@@ -59,7 +59,7 @@ void sql_open (struct database *db,
 }
 
 
-void sql_close (struct database *db)
+void sql_perform_close (struct database *db)
 {
     sqlite_close(db->handle);
     db->handle = NULL;
@@ -139,7 +139,7 @@ void sql_init (struct database *db)
 {
     int i;
 
-    sql_open (db, FALSE);
+    sql_perform_open (db, FALSE);
 
     /*
      * Here we set up the database schema.
@@ -148,7 +148,35 @@ void sql_init (struct database *db)
         sql_exec (db, db->schema[i]);
     }
 
-    sql_close(db);
+    sql_perform_close(db);
+}
+
+
+void sql_close (struct database *db)
+{
+    if (db->transaction_open)
+	sql_transact (db, rollback_transaction);
+
+    if (db->handle) {
+	if (nosync) {
+	    char *err;
+	    sqlite_exec(db->handle,"COMMIT;", sqlite_null_callback, NULL,&err);
+	}
+	sql_perform_close(db);
+    }
+}
+
+
+void sql_open (struct database *db)
+{
+    if (db->handle)
+	return;			       /* already open! */
+
+    sql_perform_open (db, TRUE);
+
+    if (nosync) {
+	sql_exec(db, "BEGIN;");
+    }
 }
 
 
@@ -234,27 +262,12 @@ void db_commit(void)
 
 void db_close(void)
 {
-    if (db->transaction_open)
-	db_rollback();
-    if (db->handle) {
-	if (nosync) {
-	    char *err;
-	    sqlite_exec(db->handle,"COMMIT;", sqlite_null_callback, NULL,&err);
-	}
-	sql_close(db);
-    }
+  sql_close(db);
 }
 
 void db_open(void)
 {
-    if (db->handle)
-	return;			       /* already open! */
-
-    sql_open (db, TRUE);
-
-    if (nosync) {
-	sql_exec(db, "BEGIN;");
-    }
+  sql_open(db);
 }
 
 static char *cfg_get_internal(char *key)
