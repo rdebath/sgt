@@ -12,6 +12,8 @@
 #define FALSE 0
 #endif
 
+#define lenof(x) ( sizeof((x)) / sizeof(*(x)) )
+
 /*
  * error.c
  */
@@ -21,10 +23,10 @@ enum {
     err_nomemory,		       /* no arguments */
     err_optnoarg,		       /* option `-%s' requires an argument */
     err_nosuchopt,		       /* unrecognised option `-%s' */
-    err_nodb,                          /* db doesn't exist, try init-db */
-    err_dbexists,                      /* db _does_ exist, can't init */
+    err_direxists,		       /* dir exists, so can't init it */
     err_noopendb,                      /* unable to open db */
     err_dberror,                       /* generic db error */
+    err_perror,			       /* generic errno error (%s: %s) */
 };
 
 /*
@@ -54,8 +56,35 @@ extern const char *const version;
 /*
  * sqlite.c
  */
-extern char *dbpath;
 void db_init(void);
 void db_close(void);
+int cfg_get_int(char *key);
+char *cfg_get_str(char *key);
+
+/*
+ * main.c
+ */
+extern char *dirpath;
+
+/*
+ * store.c
+ */
+struct storage {
+    char *(*store_literal)(char *message, int msglen);
+    void (*store_init)(void);
+};
+char *store_literal(char *message, int msglen);
+void store_init(void);
+
+/*
+ * mboxstore.c
+ */
+const struct storage mbox_store;
+
+/*
+ * config.c
+ */
+int cfg_default_int(char *key);
+char *cfg_default_str(char *key);
 
 #endif

@@ -6,12 +6,16 @@
 #include "timber.h"
 
 static char *helptext[] = {
-    "FIXME: help text goes here",
+    "usage:     timber <options> <command> [<arguments>]",
+    "options:   -D <dirpath>          specify path to Timber directory",
+    "commands:  init                  initialise Timber storage directory",
+    "           import-mbox <file>    import an mbox full of messages",
     NULL
 };
 
 static char *usagetext[] = {
-    "FIXME: usage text goes here",
+    "usage: timber <options> <command> [<arguments>]",
+    "       timber --help for more detailed help",
     NULL
 };
 
