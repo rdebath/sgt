@@ -13,6 +13,7 @@
 
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <time.h>
 #include <errno.h>
 #include <assert.h>
@@ -62,21 +63,6 @@ static void mbox_release_lock(void)
     fcntl(mbox_lockfd, F_SETLK, &lock);
     close(mbox_lockfd);
     mbox_lockfd = -1;
-}
-
-static int write_wrapped(int fd, char *data, int length)
-{
-    while (length > 0) {
-	int ret = write(fd, data, length);
-	if (ret <= 0) {
-	    error(err_perror, "write", NULL);
-	    return FALSE;
-	}
-	length -= ret;
-	data += ret;
-    }
-
-    return TRUE;
 }
 
 static int write_mbox(int fd, char *data, int length, int beginning)
@@ -294,6 +280,67 @@ static char *mbox_store_literal(char *message, int msglen)
     return ret;
 }
 
+static char *mbox_store_retrieve(const char *location, int *msglen)
+{
+    char *locmod = NULL, *boxname = NULL, *message = NULL, *p, *q;
+    int offset, length, msgoff, fd;
+
+    locmod = smalloc(1+strlen(location));
+    strcpy(locmod, location);
+    q = strrchr(locmod, ':');
+    if (!q)
+	return NULL;
+    *q++ = '\0';
+    p = strrchr(locmod, ':');
+    if (!p)
+	return NULL;
+    *p++ = '\0';
+    offset = atoi(p);
+    length = atoi(q);
+    boxname = smalloc(200 + strlen(locmod) + strlen(dirpath));
+    sprintf(boxname, "%s/%s", dirpath, locmod);
+
+    fd = open(boxname, O_RDONLY);
+    if (fd < 0) {
+	error(err_perror, boxname, "open");
+	goto cleanup;
+    }
+    if (lseek(fd, offset, SEEK_SET) < 0) {
+	error(err_perror, boxname, "lseek");
+	goto cleanup;
+    }
+    message = smalloc(length);
+    msgoff = 0;
+    while (msgoff < length) {
+	int ret;
+	ret = read(fd, message + msgoff, length - msgoff);
+	if (ret <= 0) {
+	    if (ret < 0)
+		error(err_perror, boxname, "read");
+	    else
+		error(err_internal, "mail store file ends abruptly");
+	    goto cleanup;
+	}
+	msgoff += ret;
+    }
+
+    /*
+     * FIXME: We must reverse From quoting here. (And also decide
+     * what to do about the mbox separator.)
+     */
+    *msglen = length;
+    goto cleanexit;
+
+    cleanup:
+    sfree(message);
+    message = NULL;
+
+    cleanexit:
+    sfree(boxname);
+    sfree(locmod);
+    return message;
+}
+
 static void mbox_store_init(void)
 {
     char *lockname = smalloc(200 + strlen(dirpath));
@@ -308,4 +355,5 @@ static void mbox_store_init(void)
 const struct storage mbox_store = {
     mbox_store_literal,
     mbox_store_init,
+    mbox_store_retrieve,
 };

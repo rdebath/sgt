@@ -2,6 +2,8 @@
  * misc.c: miscellaneous helper functions for Timber.
  */
 
+#include <unistd.h>
+
 #include "timber.h"
 
 /*
@@ -41,4 +43,23 @@ const char *encoding_name(int encoding)
     if (encoding == BASE64) return "base64";
     if (encoding == UUENCODE) return "uuencode";
     return "clear";
+}
+
+/*
+ * Wrapper on write(1) that guarantees to either write all its data
+ * or die trying.
+ */
+int write_wrapped(int fd, char *data, int length)
+{
+    while (length > 0) {
+	int ret = write(fd, data, length);
+	if (ret <= 0) {
+	    error(err_perror, "write", NULL);
+	    return FALSE;
+	}
+	length -= ret;
+	data += ret;
+    }
+
+    return TRUE;
 }

@@ -29,6 +29,12 @@ void run_command(int argc, char **argv)
 	for (i = 1; i < argc; i++)
 	    import_mbox_folder(argv[i]);
     }
+
+    if (!strcmp(argv[0], "export")) {
+	int i;
+	for (i = 1; i < argc; i++)
+	    export_message(argv[i]);
+    }
 }
 
 int main(int argc, char **argv) {
