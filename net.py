@@ -9,7 +9,7 @@
 #  - The original occasionally has barriers between squares within
 #    the grid. Makes the game easier, of course.
 #  - Alternative forms of control? Left/right clicks are OKish, but
-#    I'm not 100% convinced.
+#    I'm not 100% convinced. Middle click to lock is Just Wrong.
 #  - Some sort of persistent completion indicator, perhaps, in case
 #    you click straight past the finished state and don't realise
 #    you actually finished!
@@ -34,7 +34,7 @@ ORIGIN = BORDER
 TOTALSIZE_X = 2*BORDER + NSQUARES_X * SQUARESIZE
 TOTALSIZE_Y = 2*BORDER + NSQUARES_Y * SQUARESIZE
 
-U, L, D, R, PWR, ACTIVE = 1, 2, 4, 8, 16, 32
+U, L, D, R, PWR, ACTIVE, LOCK = 1, 2, 4, 8, 16, 32, 64
 
 def rotate(flags, n):
     # Rotate `flags' n places clockwise.
@@ -198,6 +198,15 @@ class NetGame:
         gc.foreground = grey
         draw_rectangle(pix, gc, TRUE, 0, 0, TOTALSIZE_X, TOTALSIZE_Y)
 
+	for x in range(NSQUARES_X):
+	    for y in range(NSQUARES_Y):
+		if self.arena[x][y] & LOCK:
+		    gc.foreground = lockcolour
+		else:
+		    gc.foreground = grey
+		draw_rectangle(pix, gc, TRUE, ORIGIN + SQUARESIZE * x, \
+		ORIGIN + SQUARESIZE * y, SQUARESIZE, SQUARESIZE)
+
         gc.foreground = borders
 
         for x in range(NSQUARES_X+1):
@@ -213,7 +222,7 @@ class NetGame:
 		    gc.foreground = lines
 		    k = self.arena[x][y]
 		    act = k & ACTIVE
-		    k = k & ~ACTIVE
+		    k = k & ~(ACTIVE | LOCK)
 
 		    r = (SQUARESIZE-1) / 2
 		    xmid = ORIGIN + SQUARESIZE * x + r
@@ -274,7 +283,17 @@ class NetGame:
     def move(self, x, y, action, undo=FALSE):
         assert(not self.moveinprogress)
 
-        # FIXME: Set the move in progress.
+	if action == 0:
+	    # Just toggle the lock on the square.
+	    self.arena[x][y] = self.arena[x][y] ^ LOCK
+	    self.fullredraw = TRUE
+	    small_redraw()
+	    return
+
+	# Locked squares can't be accidentally moved.
+	if self.arena[x][y] & LOCK:
+	    return
+
         self.movex = x
         self.movey = y
         self.moveact = action
@@ -388,9 +407,8 @@ def sign(x):
 
 def button_event(win, event):
     global timer_inst
-    if (event.button != 1 and event.button != 3) \
-    or event.type != GDK.BUTTON_PRESS:
-        return # we only care about left and right clicks
+    if not (event.button in [1,2,3]) or event.type != GDK.BUTTON_PRESS:
+        return # we only care about left, mid or right clicks
     x = int((event.x + SQUARESIZE - ORIGIN) / SQUARESIZE) - 1
     y = int((event.y + SQUARESIZE - ORIGIN) / SQUARESIZE) - 1
     if x < 0 or x >= NSQUARES_X or y < 0 or y >= NSQUARES_Y:
@@ -398,8 +416,10 @@ def button_event(win, event):
 
     if event.button == 1:
         action = -1 # anticlockwise
-    else:
+    elif event.button == 3:
         action = +1 # clockwise
+    else:
+	action = 0 # toggle lock
 
     if game.moveinprogress:
         game.finish_move()
@@ -541,6 +561,7 @@ grey = win.get_style().bg[STATE_NORMAL]
 lines = win.get_window().colormap.alloc(0, 0, 0)
 powered = win.get_window().colormap.alloc(0, 65535, 65535)
 borders = win.get_window().colormap.alloc(grey.red/2,grey.green/2,grey.blue/2)
+lockcolour = win.get_window().colormap.alloc(grey.red*3/4,grey.green*3/4,grey.blue*3/4)
 blue = win.get_window().colormap.alloc(0, 0, 65535)
 vbox.add(darea)
 darea.show()
