@@ -7,3 +7,8 @@ Content-type: text/x-html-body
 <p>
 While you can start a PuTTY window maximised by Windows mechanisms,
 currently there's no way to start it full-screen. There should be.
+
+<p>
+While we're at it, we may as well an option for `maximised', even
+though you can already do that
+<a href="http://www.chiark.greenend.org.uk/~sgtatham/putty/faq.html#A.5.1">by other means</a>.
