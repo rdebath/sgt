@@ -33,6 +33,56 @@ not updating, which happens sometimes):
 For features planned for the next full release (and already available in
 the development snapshots), see the <a href="wishlist/">wishlist page</a>.
 
+<p>These features are new in beta 0.58 (released 2005-04-05):
+
+<ul>
+<li>
+Wildcards (<code>mput</code>/<code>mget</code>) and recursive file
+transfer in PSFTP.
+<li>
+You can now save your session details from the Change Settings
+dialog box, <em>after</em> you've started your session.
+<li>
+Various improvements to Unicode support, including:
+<ul>
+<li>
+support for right-to-left and bidirectional text (Arabic, Hebrew
+etc). Thanks to
+<a href="http://www.arabeyes.org/"><code>arabeyes.org</code></a>
+for design and most of the implementation.
+<li>
+support for Arabic text shaping, again thanks to
+<code>arabeyes.org</code>.
+<li>support for Unicode combining characters.
+</ul>
+<li>
+Support for the <code>xterm</code> 256-colour control sequences.
+<li>
+Port forwardings can now be reconfigured in mid-session.
+<li>
+Support for IPv6. Thanks to
+<a href="http://unfix.org/"><code>unfix.org</code></a>
+for having patiently maintained the patch for this until we were
+finally ready to integrate it.
+<li>
+More configurability and flexibility in SSH-2 key exchange. In
+particular, PuTTY can now initiate repeat key exchange during the
+session, which means that if your server doesn't initiate it
+(OpenSSH is known not to bother) you can still have the
+cryptographic benefits.
+<li>
+Bug fix: display artefacts caused by characters overflowing their
+character cell should now all be gone. (This would probably have
+bothered Windows ClearType users more than anyone else.)
+<li>
+Bug fix: keepalives are now supported everywhere. (Previously they
+were supported by Windows GUI PuTTY, but were missing in Plink,
+PSFTP and the Unix port.)
+<li>
+Miscellaneous improvements for CJK/IME users; many thanks to Hung-Te
+Lin for assistance.
+</ul>
+
 <p>These features are new in beta 0.57 (released 2005-02-20):
 
 <ul>
