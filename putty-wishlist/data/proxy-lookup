@@ -1,7 +1,7 @@
 Summary: Option to leave DNS lookup to proxies
 Class: wish
-Priority: low
-Difficulty: medium
+Priority: medium
+Difficulty: fun
 Content-type: text/x-html-body
 
 <p>When connecting through a proxy, there should be an option to
@@ -11,3 +11,9 @@ where the client's and proxy's views of the DNS are different
 
 <p>It should be optional; I can imagine wanting to perform the
 lookup locally (for similar reasons).
+
+<p>Workarounds:
+<ul>
+<li>Type IP address into hostname box
+<li>Hack the telnet proxy type to send the HTTP commands?
+</ul>
