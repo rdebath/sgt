@@ -294,9 +294,11 @@ static const char *const ab_schema[] = {
     ");",
 
     "CREATE TABLE attr_types ("
-    "  type VARCHAR PRIMARY KEY"
+    "  type VARCHAR PRIMARY KEY,"
+    "  presentation VARCHAR"
     ");",
-    "INSERT INTO attr_types VALUES ('name');"
+    "INSERT INTO attr_types VALUES ('name', 'identity');",
+    "INSERT INTO attr_types VALUES ('Monochrome', 'lower-case');"
 };
 
 
@@ -575,6 +577,54 @@ struct mime_details *find_mime_parts(const char *ego, int *nparts)
  *  Address book database.
  */
 
+#include <ctype.h>
+
+static void ab_identity_fn (char *value)
+{
+}
+
+static void ab_lower_case_fn (char *value)
+     /*  FIXME:
+      *  Somewhere there is a function that handles unicode properly.
+      *  We should be using that instead of this.
+      */
+{
+    unsigned char *p = (unsigned char *) value;
+    for (; *p; ++p) *p = tolower(*p);
+}
+
+
+struct transform {
+    const char *name;
+    void (*fn) (char *);
+};
+
+static const struct transform presentation[] = {
+    { "identity", ab_identity_fn },
+    { "lower-case", ab_lower_case_fn }
+};
+
+
+static char *ab_transform (const char *in,
+			   const char *name,
+			   const struct transform *p_trans,
+			   int n_trans)
+{
+    if (in) {
+	int i;
+	char *ret = strdup(in);
+	for (i = 0; i < n_trans; ++i) {
+	    if (0 == strcmp (p_trans[i].name, name)) {
+		p_trans[i].fn (ret);
+		return ret;
+	    }
+	}
+	fatal (err_internal, "Unknown address book transform");
+    }
+    return NULL;
+}
+
+
 static char *ab_get_attr (int contact_id,
 			  const char *attr_type)
 {
@@ -595,23 +645,25 @@ static void ab_set_attr (int contact_id,
 			 const char *new_value)
 {
     char *attribute_id;
-    char *type_ref;
+    char *pres, *for_pres = NULL;
     char now[DATEBUF_MAX];
 
     assert (attr_type);
     sql_open(ab);
 
-    type_ref = sql_get_value_printf (ab,
-				     "SELECT type FROM attr_types "
-				     "WHERE type = '%q'",
-				     attr_type);
-    if (!type_ref) {
+    pres = sql_get_value_printf (ab,
+				 "SELECT presentation FROM attr_types "
+				 "WHERE type = '%q'",
+				 attr_type);
+    if (!pres) {
 	fatal (err_internal,
 	       "No such attribute in address book database");
     }
-    sfree(type_ref);
-    sql_transact (ab, begin_transaction);
+    for_pres = ab_transform (new_value, pres,
+			     presentation, lenof(presentation));
+    sfree(pres);
 
+    sql_transact (ab, begin_transaction);
     fmt_date (time(NULL), now);
     attribute_id =
 	sql_get_value_printf (ab,
@@ -637,18 +689,19 @@ static void ab_set_attr (int contact_id,
 	sql_exec_printf (ab,
 			 "INSERT INTO attr_values (attribute_id, value, since)"
 			 " VALUES ('%q', '%q', '%q')",
-			 attribute_id, new_value, now);
+			 attribute_id, for_pres, now);
     }
     sql_transact (ab, commit_transaction);
     sfree(attribute_id);
+    sfree(for_pres);
 }
 
 
 void ab_display_attr_history (const char *contact_id,
 			      const char *attr_type)
      /*  This should really be two separate functions.  We may want times
-	 printed as local time, not UTC.  The function that calls
-	 sql_get_table_printf() should also call sqlite_free_table().
+      *  printed as local time, not UTC.  The function that calls
+      *  sql_get_table_printf() should also call sqlite_free_table().
       */
 {
     char **table;

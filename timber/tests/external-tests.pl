@@ -32,8 +32,8 @@ BEGIN {
 
 
 # Process return codes
-sub success { 0 }
-sub failure { 256 }
+sub success() { 0 }
+sub failure() { 256 }
 
 sub a_cmd ($@) {
     my ($line, %ret) = @_;
@@ -136,3 +136,7 @@ test set_unknown_attr => (["init"],
 			   ret => failure,
 			   stderr => "timber: internal problem: No such " .
 			             "attribute in address book database\n"]);
+test presentation_transform => (["init"],
+                                ["set-contact Monochrome 0 Catbells"],
+                                ["contact Monochrome 0",
+				 stdout => "0:catbells\n"]);
