@@ -1,0 +1,12 @@
+monotoansi : ^H and ^M.
+
+    Every character, x,  that needs to be bold should be given as y^Hx. where
+    y != _
+    Every character that needs to be underlined should be given as _^Hx.
+	
+    and other ^H backspace things.
+
+    ^M - to beginning of line, but don't do nroff thing
+
+tomono : Check bug with sometimes not performing merge when two file names are
+given.
