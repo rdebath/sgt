@@ -1,6 +1,31 @@
 Caltrap wish list
 -----------------
 
+Urgent:
+
+ - TERMINAL QUERYING!
+    + Stop assuming ECMA-48; figure out some plausibly sane way to
+      get terminfo to tell us the colour escape sequences we need.
+    + And also stop assuming an 80-character line. GNU ls's
+      behaviour seems plausible enough: use termios if possible,
+      fall back to getenv("COLOURS") if not, fall back to 80 if not
+      even that.
+
+Less urgent:
+
+ - Ability to enter holiday entries other than by db frobbing.
+
+ - Ability to enter repeated events other than by db frobbing.
+
+ - Concoct a script to set up UK public holidays for a given year.
+   This should be separate from Caltrap proper; probably a shell
+   script would be fine.
+
+ - Multiple-day events.
+    + should these show up as multiple-day in the listing if they're
+      type EVENT? Unclear. Depends on what I'm going to use them
+      for!
+
  - TODO tracking
     + we have type TODO in the db schema; start using it.
     + TODOs have a start date
@@ -9,25 +34,3 @@ Caltrap wish list
 	 of deadline, might be an interesting experiment.
     + NB some TODOs have no start date. We might need some sort of
       special date meaning `since the dawn of time'. Hmmm.
-
- - Multiple-day events.
-    + should these show up somehow in the listing if they're type
-      EVENT? Unclear. Depends on what I'm going to use them for!
-
- - Use of the holiday types.
-    + these should highlight throughout their run.
-
- - Regular events (so that pub, pizza, Calling show up on my leisure
-   calendar).
-    + the db schema now supports these and we can hack them in using
-      --load, but we can't enter them.
-
- - Concoct a script to set up UK public holidays for a given year.
-   This should be separate from Caltrap proper; probably a shell
-   script would be fine.
-
- - Coloured output via terminfo?
-    + background colour highlights weekends?
-    + something to highlight holidays?
-    + simply colouring dates, times and entry text differently would
-      do wonders for immediate legibility.

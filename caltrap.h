@@ -139,8 +139,17 @@ struct entry {
     char *description;
 };
 enum {
-    T_EVENT, T_HOL1, T_HOL2, T_HOL3, T_HOL4, T_TODO
+    /*
+     * This ordering is purely internal, since the database and the
+     * dump files both store entry types as strings. Hence I choose
+     * the ordering to suit the implementation: the holidays come
+     * before everything else so that when we come to print events
+     * in list mode we already know what colour to paint the day
+     * line.
+     */
+    T_HOL1, T_HOL2, T_HOL3, T_EVENT, T_TODO
 };
+#define is_hol(type) ( (type) >= T_HOL1 && (type) <= T_HOL3 )
 
 void db_init(void);
 void db_add_entry(struct entry *);
