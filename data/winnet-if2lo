@@ -1,0 +1,43 @@
+Summary: PuTTY refuses connections to 127.0.0.1 from interface IP addresses
+Class: semi-bug
+Difficulty: tricky
+Priority: high
+Content-type: text/x-html-body
+
+<p>
+There are persistent reports of PuTTY's port forwarding not working
+with SMB connections, although there are just as many reports of it
+working fine. Thanks to Chip Killian's report of this bug and some
+detective work with netstat, I think I've tracked down the cause of
+this problem.
+
+<p>
+When PuTTY's network layer is asked to open a listening socket for
+connections from localhost only, it actively refuses any connections
+that don't come from a loopback source address. This was because I
+was told that at least some Windows systems implement "the weak end
+system model", in which any packet coming in to the system with a
+destination address the machine believes it has will be accepted. In
+other words, if I construct a packet with my own source address (say
+10.1.2.3) and destination 127.0.0.1, and if I convince my IP layer
+to send it to your machine's Ethernet MAC address, then your machine
+might actually accept the connection, send back responses to my MAC
+address with 127.0.0.1 as the source address, and then I've managed
+to make a connection to one of your machine's <em>internal</em> services
+from outside. PuTTY's deliberate check that loopback connections
+come from an actual loopback address largely defeats this attack: if
+I put 127.0.0.1 as the source address of your packets, I might still
+get your machine to believe the first SYN, but all its replies will
+be sent internally and won't come back to me.
+
+<p>
+Unfortunately, at least some versions of Windows connect to a SMB
+share on 127.0.0.1 in such a way that the source of the connection
+appears to be one of the machine's <em>other</em> IP addresses - and
+hence PuTTY will reject the connection and refuse to forward it.
+
+<p>
+To fix this, I suppose PuTTY will need to find out what IP addresses
+the machine believes it owns, so that it can accept connections from
+any of those. If anyone wants to save me some manual-grubbing by
+letting me know how to do that conveniently, it would be helpful.
