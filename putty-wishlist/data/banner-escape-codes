@@ -10,7 +10,7 @@ banner some SSH servers send prior to authentication.
 
 <p>
 The current SSH-2 authentication draft
-<a href="http://www.ietf.org/internet-drafts/draft-ietf-secsh-userauth-17.txt">draft-ietf-secsh-userauth-17</a>
+<a href="http://www.ietf.org/internet-drafts/draft-ietf-secsh-userauth-21.txt">draft-ietf-secsh-userauth-21</a>
 states, in the section about <code>SSH_MSG_USERAUTH_BANNER</code>:
 
 <blockquote>
