@@ -18,10 +18,13 @@
 # variables stay as far out of its likely namespace as they can.
 
 $usage =
-  "usage: multi <cmd> <action> <files>\n" .
+  "usage: multi [flags] <cmd> <action> <files>\n" .
   "  e.g. multi mv 'tr/A-Z/a-z/' *\n" .
-  "   or: multi - <multiple-word-cmd> - <action> <files>\n" .
+  "   or: multi [flags] - <multiple-word-cmd> - <action> <files>\n" .
   "  e.g. multi - svn mv - 'tr/A-Z/a-z/' *\n" .
+  "where: -n                 print commands, but do not execute\n" .
+  "where: -q                 execute commands, but do not print\n" .
+  "where: -r                 reverse order of filenames passed to commands\n" .
   " also: multi --version    report version number\n" .
   "       multi --help       display this help text\n" .
   "       multi --licence    display (MIT) licence text\n";

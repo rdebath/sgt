@@ -83,12 +83,12 @@ void base64_encode_atom(unsigned char *data, int n, char *out) {
 const char usagemsg[] =
     "usage: base64 [-d] [filename]        decode from a file or from stdin\n"
     "   or: base64 -e [-cNNN] [filename]  encode from a file or from stdin\n"
-    " also: base64 --version              report version number\n"
-    "       base64 --help                 display this help text\n"
-    "       base64 --licence              display the (MIT) licence text\n"
     "where: -d     decode mode (default)\n"
     "       -e     encode mode\n"
     "       -cNNN  set number of chars per line for encoded output\n"
+    " also: base64 --version              report version number\n"
+    "       base64 --help                 display this help text\n"
+    "       base64 --licence              display the (MIT) licence text\n"
     ;
 
 void usage(void) {
