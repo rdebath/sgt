@@ -7,7 +7,7 @@
 
 #include <SDL/SDL.h>
 
-SDL_Surface *screen;
+extern SDL_Surface *screen;
 
 #define scrdata ((Uint8 *)screen->pixels)
 
