@@ -1,0 +1,9 @@
+Summary: PuTTY could use RSA keys held on smartcards
+Class: wish
+Priority: low
+Difficulty: taxing
+Content-type: text/x-html-body
+
+<p>It's been suggested that PuTTY could use RSA keys held on a smartcard for
+authentication.  This would require interfacing with smartcard APIs and
+suchlike, and might be an application for the <a href="mdpi.html">MDPI</a>.
