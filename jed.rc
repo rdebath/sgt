@@ -1,5 +1,5 @@
 % -*- mode: slang; mode: fold -*-
-% Simon Tatham: version $Revision: 1.19 $
+% Simon Tatham: version $Revision: 1.20 $
 
 %{{{ load Emacs keybindings to start with
 
@@ -58,15 +58,31 @@ define slang_mode_hook() {
 }
 
 %}}}
-%{{{ ^X^D to insert the date
+%{{{ ^X^D to insert the date; ^X4^D/^X4d to insert eight-digit dates
 
 % insert date
 define insert_date() {
     variable t = time;
-    insert(Sprintf("%s-%s-%s", substr(t,9,2),
-                   substr(t,5,3), substr(t,21,4), 3));
+    insert(sprintf("%s-%s-%s", substr(t,9,2),
+                   substr(t,5,3), substr(t,21,4)));
 }
 setkey("insert_date", "^X^D");
+
+% insert 8-digit date
+define insert_8dig_date(s) {
+    variable t = time;
+    variable y, m, nm, d;
+    d = substr(t,9,2);
+    m = substr(t,5,3);
+    nm = (is_substr("----Jan-Feb-Mar-Apr-May-Jun-Jul-Aug-Sep-Oct-Nov-Dec-", m)
+          / 4);
+    y = substr(t,21,4);
+    insert(sprintf("%s%s%02d%s%s", y, s, nm, s, d));
+}
+setkey("insert_date", "^X^D");
+setkey(". \"-\" insert_8dig_date", "^X4^D");
+setkey(". \"\" insert_8dig_date", "^X4d");
+setkey(". \"\" insert_8dig_date", "^X4D");
 
 %}}}
 %{{{ Extra bindings: ^X^I to toggle insert mode, ^Xg to go to line
