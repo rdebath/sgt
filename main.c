@@ -27,6 +27,9 @@ int main(int argc, char **argv)
     int masterfd, slavefd, pid;
     struct termios oldattrs, newattrs;
     char ptyname[FILENAME_MAX];
+    tstate *state;
+
+    state = tstate_init();
 
     /*
      * Process command line.
@@ -48,7 +51,7 @@ int main(int argc, char **argv)
 		}
 	    }
 	} else {
-	    break;
+	    tstate_argument(state, p);
 	}
     }
     if (errors)
@@ -134,16 +137,32 @@ int main(int argc, char **argv)
 	}
 
 	if (FD_ISSET(masterfd, &rset)) {
+	    char *translated;
+	    int translen;
+
 	    ret = read(masterfd, buf, sizeof(buf));
 	    if (ret <= 0)
 		break;
-	    write(1, buf, ret);
+
+	    translated = translate(state, buf, ret, &translen, 0);
+
+	    write(1, translated, translen);
+
+	    free(translated);
 	}
 	if (FD_ISSET(0, &rset)) {
+	    char *translated;
+	    int translen;
+
 	    ret = read(0, buf, sizeof(buf));
 	    if (ret <= 0)
 		break;
-	    write(masterfd, buf, ret);
+
+	    translated = translate(state, buf, ret, &translen, 1);
+
+	    write(masterfd, translated, translen);
+
+	    free(translated);
 	}
     }
 
