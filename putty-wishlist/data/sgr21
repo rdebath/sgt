@@ -1,0 +1,12 @@
+Summary: PuTTY's interpretation of SGR 21 differ's from Linux's
+Class: semi-bug
+Priority: low
+Difficulty: fun
+Content-type: text/plain
+
+ECMA-48 defines SGR 21 as enabling double-underline.  PuTTY interprets this
+the same as single-underline (SGR 4).  SCOANSI and Linux interpret it as
+turning off bold, and at least some applications seem to rely on this.
+VT520 and xterm don't support this sequence at all.  Perhaps PuTTY should
+align its behaviour with one of the others.  xterm would be more ideologically
+pure, but SCOANSI might be more generally useful.
