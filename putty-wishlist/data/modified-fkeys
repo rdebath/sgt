@@ -1,0 +1,15 @@
+Summary: Unique codes for modified function keys
+Class: wish
+Difficulty: taxing
+Content-type: text/x-html-body
+
+<p>
+We occasionally get requests to provide unique escape sequences for
+function keys with more combinations of modifiers than we currently
+support (e.g., Fn, Shift+Fn, Ctrl+Fn and Ctrl+Shift+Fn).
+
+<p>
+Sometimes it's even suggested what sequences these should send.
+
+<p>
+See also <a href="function-keys.html">`function-keys'</a>.
