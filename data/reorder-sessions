@@ -6,7 +6,8 @@ Content-type: text/x-html-body
 
 <p>
 PuTTY's inflexible alphabetical ordering of saved sessions is not
-necessarily ideal if you have more than one screenful of them. You
+necessarily ideal if you have
+<a href="many-sessions.html">more than one screenful</a> of them. You
 might find that all the ones you use most often are on the second
 page and you have to scroll down for them, whereas the infrequently
 accessed ones are available to a single click.
