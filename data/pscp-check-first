@@ -1,0 +1,11 @@
+Summary: PSCP could check source filespec before connecting
+Class: wish
+Priority: medium
+Difficulty: fun
+Content-Type: text/x-html-body
+
+<p>
+When doing a local-to-remote copy using PSCP, perhaps it could check
+the source filespec <em>before</em> attempting to connect to the
+host. That would save time and effort by notifying the user of a
+typo sooner than otherwise.

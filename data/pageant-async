@@ -1,0 +1,11 @@
+Summary: Requests to Pageant should be asynchronous
+Class: wish
+Priority: medium
+Difficulty: tricky
+Content-type: text/plain
+
+Currently, when PuTTY makes a request to Pageant, it waits in a
+tight loop for the answer. Really it should be able to answer
+Windows messages and do other housekeeping tasks while it's waiting
+for the answer. This would enable Pageant to do a variety of
+time-consuming things in the course of answering a request.

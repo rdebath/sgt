@@ -1,0 +1,16 @@
+Summary: Avoid using message boxes for "connection closed" and friends
+Class: wish
+Priority: medium
+Difficulty: tricky
+Content-Type: text/x-html-body
+
+<p>
+Perhaps, for people who don't like dialog boxes, messages like
+"connection closed" and fatal errors should be configurable to
+appear inside the window instead of popping up sudden message boxes.
+
+<p>
+If we do this, we should probably include a means of distinguishing
+that sort of error output from <em>anything</em> the remote site can
+possibly send. This is potentially a hard problem, so it requires
+some design work.

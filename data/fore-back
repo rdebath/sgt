@@ -1,0 +1,9 @@
+Summary: Specify foreground and background colours separately
+Class: wish
+Priority: low
+Difficulty: fun
+Content-Type: text/x-html-body
+
+<p>
+Allow the "ANSI Green" used for foregrounds to be different from the
+one used for backgrounds (for all values of "Green").

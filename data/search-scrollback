@@ -1,0 +1,11 @@
+Summary: Searching facilities in the scrollback
+Class: wish
+Priority: medium
+Difficulty: tricky
+Content-Type: text/x-html-body
+
+<p>
+One user suggested a search facility for finding text in the
+scrollback. Full-blown regexp-style grep is probably overkill, but a
+Notepad-esque search box (select up/down search direction, select
+case sensitivity, type your text and go) might be feasible.

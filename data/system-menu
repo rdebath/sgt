@@ -1,0 +1,16 @@
+Summary: Expansions to the System menu
+Class: wish
+Priority: medium
+Difficulty: tricky
+Content-Type: text/x-html-body
+
+<p>
+There have been various requests to have various config options
+available conveniently in the System menu instead of having to go
+all the way to Change Settings. A particularly common request is the
+ability to turn logging on and off quickly.
+
+<p>
+Probably this should be done to some extent, but careful thought
+will need to be given to just <em>which</em> features should be
+available from the System menu.

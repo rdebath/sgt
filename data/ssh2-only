@@ -1,0 +1,16 @@
+Summary: Ability to prevent fallback to SSH 1
+Class: wish
+Priority: medium
+Difficulty: fun
+Content-type: text/plain
+
+Currently, PuTTY's choice of SSH protocol can only be expressed as a
+preference. If you ask for an SSH2 connection and only SSH1 is
+available, or vice versa, PuTTY will fall back to whatever it can
+use.
+
+For security reasons we should also allow the user to specify "SSH2
+or nothing", so that if PuTTY couldn't make an SSH2 connection it
+would give up rather than fall back to SSH1. For symmetry, we should
+also support "SSH1 or nothing", though that seems less obviously
+useful.

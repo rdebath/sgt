@@ -1,0 +1,14 @@
+Summary: Offer to reset initial-terminal-state settings
+Class: wish
+Priority: medium
+Difficulty: fun
+Content-Type: text/x-html-body
+
+<p>
+Terminal settings that are modifiable from "Change Settings" but
+which only control an <em>initial</em> state should be handled
+better. Perhaps a sensible procedure would be that if the user
+changes such a setting, then when they hit Apply they get a message
+box: "You have modified the initial state of the Foo setting. This
+change will take effect the next time your terminal is reset. Do you
+want to force it to take effect immediately as well? [yes] [no]".

@@ -1,0 +1,35 @@
+Summary: Saving session preferences after starting the session
+Class: wish
+Priority: medium
+Difficulty: tricky
+Content-type: text/x-html-body
+
+<p> When you adjust the properties of a running session using the
+"Change Settings" menu option, it might be nice to be able to save
+the adjusted settings back to the saved-session slot you loaded
+from, or to a new session slot.
+
+<p> This feature is one of our most requested, but is currently
+pending some design work:
+
+<ul>
+<li>
+If you load an existing saved session exactly "as is", by
+double-clicking or by running "<code>putty @sessionname</code>" or
+whatever, it's reasonably obvious that hitting the Save button in
+mid-session should write the changed details back to the same slot
+you loaded from.
+<li>
+What if you loaded the session, modified a setting or two, and
+<em>then</em> started it? Should a mid-session Save still write back
+to the original slot by default? It sounds as if it obviously
+should ... but what if the one setting you changed was the
+<em>hostname</em>? Suddenly I think it's no longer completely
+obvious that you should be conveniently able to overwrite your
+previous saved session with the new one.
+<li>
+So the user interface for this feature needs some serious thought;
+we have to have a means for working out precisely when it does and
+does not make sense to have an automatic
+save-to-where-we-loaded-from button available.
+</ul>
