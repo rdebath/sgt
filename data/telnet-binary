@@ -3,6 +3,7 @@ Class: bug
 Priority: medium
 Difficulty: fun
 Present-in: 0.53b 2002-12-19
+Fixed-in: 2002-12-20
 Content-type: text/x-html-body
 
 <p>
@@ -15,5 +16,4 @@ a bug.
 
 <p>
 SGT, 2002-12-19: I've checked in an implementation which should
-appear in 2002-12-20 and beyond, but it's untested as yet so I won't
-mark this fixed for the moment.
+appear in 2002-12-20 and beyond.
