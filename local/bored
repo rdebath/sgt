@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 
 import os
+import popen2
 import sys
 import time
+import select
 
 f = open(os.environ["HOME"] + "/.bored", "r")
 maxlen = 0
@@ -16,21 +18,55 @@ while 1:
 
 maxlen = maxlen + 4
 
-now = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time()))
+starttime = time.time()
+now = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(starttime))
 print "---", now
 
+# 30 seconds should be ample timeout for the moment.
+endtime = starttime + 30
+
+stuff = []
 for command in commands:
-    p = os.popen(command + " 2>&1", "r")
-    output = []
-    while 1:
-	s = p.readline()
-	if s == "": break
-	output.append(s)
-    p.close()
-    prefix = ("["+command+"]" + " " * maxlen)[:maxlen]
-    if len(output) > 0:
-	for s in output:
-	    sys.stdout.write(prefix+s)
-	    prefix = " " * maxlen
-    else:
-	sys.stdout.write(prefix + "nothing to report\n")
+    p = popen2.Popen3(command + " 2>&1")
+    if p:
+	p.tochild.close()
+	stuff.append([command, p, []])
+
+while len(stuff) > 0:
+    fds = map(lambda t: t[1].fromchild, stuff) # get list of pipes
+    r, w, x = select.select(fds, [], [], endtime - time.time())
+
+    if len(r) == 0:
+	# We timed out.
+	prefix = ("TIMED OUT:" + " " * maxlen)[:maxlen]
+	sys.stdout.write(prefix)
+	space = ""
+	for t in stuff:
+	    os.kill(t[1].pid, 15)
+	    t[1].fromchild.close()
+	    sys.stdout.write(space + t[0])
+	    space = " "
+	sys.stdout.write("\n")
+	break
+
+    newstuff = []
+    for t in stuff:
+	if t[1].fromchild in r:
+	    s = t[1].fromchild.readline()
+	    if s != "":
+		t[2].append(s)
+		newstuff.append(t)
+	    else:
+		# This command has terminated. Write its output.
+		t[1].fromchild.close()
+		prefix = ("["+t[0]+"]" + " " * maxlen)[:maxlen]
+		if len(t[2]) > 0:
+		    for s in t[2]:
+			sys.stdout.write(prefix+s)
+			prefix = " " * maxlen
+		else:
+		    sys.stdout.write(prefix + "nothing to report\n")
+	else:
+	    # This command was not readable; leave it on the list.
+	    newstuff.append(t)
+    stuff = newstuff
