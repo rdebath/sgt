@@ -1,0 +1,63 @@
+Summary: Ability to lock settings against user changes
+Class: wish
+Priority: never
+Difficulty: tricky
+Content-type: text/x-html-body
+
+<p>
+We get asked reasonably often if it's possible for a sysadmin to set
+up PuTTY saved settings and then lock them, in such a way that their
+users wouldn't be able to fiddle with them.
+
+<p>
+It's not, and I (SGT) don't intend that it ever should be. This is
+for two reasons.
+
+<p>
+For a start, it seems to me to run counter to the whole point of
+software, and certainly the whole point of PuTTY in particular,
+which is to <em>enable</em> people to <em>do useful things</em>. The
+reason I give my free time to develop PuTTY is because I enjoy
+making it possible for people to do things they otherwise would not
+have been able to do - and judging by the mail we get back from
+happy users, they enjoy it too. So adding a feature which would
+allow someone to stop people from doing things they otherwise
+<em>would</em> have been able to do seems to me like a step
+backwards.
+
+<p>
+Secondly, it wouldn't even work; or, at least, it wouldn't work in
+all but the most ludicrously restrictive setups. The reason for this
+is that this sort of restriction is <em>voluntary</em> on the part
+of the application - so all a user would need to bypass it would be
+a modified version of the application, which didn't voluntarily obey
+the restrictions. And this wouldn't be hard to come by; even
+commercial, closed-source programs which try to restrict users from
+doing things give rise to cracking tools, distributed on the Web and
+designed to bypass whatever restriction was imposed by the software.
+A program whose source code is freely available to anyone with a web
+browser would be an order of magnitude easier to do this to. I
+confidently predict that if I implemented a user-restricting feature
+in PuTTY, then it wouldn't take long for someone else to provide a
+version for download which simply ignored the restrictions. So the
+only environment in which a restricted PuTTY would actually be
+secure would be one in which the user was somehow forcibly prevented
+from installing an unrestricted version.
+
+<p>
+(Even locking the Registry itself against updates wouldn't protect
+you against a version of PuTTY which had been modified to store its
+data somewhere else. Really, your only chance of success is if you
+completely prevent users from running any binaries except the ones
+you supply.)
+
+<p>
+In summary: if I have my way then PuTTY will not implement a
+voluntary locking mechanism. Any sysadmin who really,
+<em>really</em> wants such a thing can of course modify the source
+code and implement it themselves, and take whatever precautions they
+feel necessary to ensure users don't download the original version
+and bypass the restrictions; but I don't feel that it's an
+appropriate use of the PuTTY team's time and effort, or an
+appropriate use of space in the standard PuTTY binary (which we're
+still trying to keep small).
