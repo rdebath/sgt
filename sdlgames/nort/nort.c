@@ -698,7 +698,7 @@ int play_game(void)
 int game_setup_done = 0;
 
 enum {
-    MM_GAME, MM_RESET, MM_SETUP, MM_QUIT
+    MM_GAME, MM_RESET, MM_SETUP, MM_QUIT, MM_SCR_ADJUST
 };
 
 int main_menu(void)
@@ -708,10 +708,11 @@ int main_menu(void)
 	char const *text;
 	int action;
     } menu[] = {
-	{120, "Play Game", MM_GAME},
-	{134, "Reset Scores", MM_RESET},
-	{148, "Game Setup", MM_SETUP},
-	{162, "Exit NORT", MM_QUIT},
+	{110, "Play Game", MM_GAME},
+	{124, "Reset Scores", MM_RESET},
+	{138, "Game Setup", MM_SETUP},
+	{152, "Adjust Screen", MM_SCR_ADJUST},
+	{166, "Exit NORT", MM_QUIT},
     };
 
     int menumin, j, flags = 0, prevval = 0, redraw;
@@ -817,14 +818,14 @@ int main_menu(void)
 		int c = 0;
 		if (j == index[0]) c |= 1;
 		if (j == index[1]) c |= 2;
-		drawline(159-52, menu[j].y-3, 159-48, menu[j].y-3, c);
-		drawline(159-52, menu[j].y-3, 159-52, menu[j].y+1, c);
-		drawline(159-52, menu[j].y+9, 159-48, menu[j].y+9, c);
-		drawline(159-52, menu[j].y+9, 159-52, menu[j].y+5, c);
-		drawline(159+52, menu[j].y-3, 159+48, menu[j].y-3, c);
-		drawline(159+52, menu[j].y-3, 159+52, menu[j].y+1, c);
-		drawline(159+52, menu[j].y+9, 159+48, menu[j].y+9, c);
-		drawline(159+52, menu[j].y+9, 159+52, menu[j].y+5, c);
+		drawline(159-56, menu[j].y-3, 159-52, menu[j].y-3, c);
+		drawline(159-56, menu[j].y-3, 159-56, menu[j].y+1, c);
+		drawline(159-56, menu[j].y+9, 159-52, menu[j].y+9, c);
+		drawline(159-56, menu[j].y+9, 159-56, menu[j].y+5, c);
+		drawline(159+56, menu[j].y-3, 159+52, menu[j].y-3, c);
+		drawline(159+56, menu[j].y-3, 159+56, menu[j].y+1, c);
+		drawline(159+56, menu[j].y+9, 159+52, menu[j].y+9, c);
+		drawline(159+56, menu[j].y+9, 159+56, menu[j].y+5, c);
 	    }
 	    scr_done();
 	    redraw = 0;
@@ -1078,6 +1079,93 @@ void reset_scores(void)
     scores.games = scores.draws = 0;
 }
 
+void screen_adjust(void)
+{
+    SDL_Event event;
+    int flags = 0;
+    int x, y, dx, dy;
+    int axis, val, prevval[2];
+    char blankline[] =
+	"\x7F\x7F\x7F\x7F\x7F\x7F\x7F\x7F\x7F\x7F"
+	"\x7F\x7F\x7F\x7F\x7F\x7F\x7F\x7F\x7F\x7F"
+	"\x7F\x7F\x7F\x7F\x7F\x7F\x7F\x7F\x7F\x7F"
+	"\x7F\x7F\x7F\x7F\x7F\x7F\x7F\x7F\x7F";
+    char buffer[40];
+
+    /*
+     * Clear the screen, draw a white border round it, and put up
+     * the instructions for adjusting its position.
+     */
+
+    scr_prep();
+    for (x = 0; x < 320; x++)
+	for (y = 0; y < 240; y++) {
+	    if (x == 0 || x == 319 || y == 0 || y == 239)
+		plot(x, y, WEAPON_COLOUR);
+	    else
+		plot(x, y, 0);
+	}
+    centretext(100, WEAPON_COLOUR, "Use the directional pad on the");
+    centretext(110, WEAPON_COLOUR, "controller to adjust the positioning");
+    centretext(120, WEAPON_COLOUR, "of the screen. Press \"START\" to");
+    centretext(130, WEAPON_COLOUR, "return to the menu when finished.");
+    scr_done();
+
+    /*
+     * Push an initial event to ensure a redraw happens
+     * immediately.
+     */
+    event.type = SDL_USEREVENT;
+    SDL_PushEvent(&event);
+
+    dx = get_dx();
+    dy = get_dy();
+    prevval[0] = prevval[1] = 0;
+
+    while (flags != 3 && SDL_WaitEvent(&event)) {
+	switch(event.type) {
+	  case SDL_JOYBUTTONDOWN:
+	    flags |= 1;
+	    break;
+	  case SDL_JOYBUTTONUP:
+	    {
+		int which = event.jbutton.which;
+		if (which != 0 && which != 1) break;   /* just in case! */
+		if (!(flags & 1)) break;
+		flags |= 2;
+	    }
+	    break;
+	  case SDL_JOYAXISMOTION:
+	    if (event.jaxis.axis != 0 && event.jaxis.axis != 1) break;
+	    axis = event.jaxis.axis;
+	    val = event.jaxis.value / JOY_THRESHOLD;
+	    if (val < 0 && prevval[axis] >= 0) {
+		if (axis == 0)
+		    set_dx(--dx);
+		else
+		    set_dy(--dy);
+	    } else if (val > 0 && prevval[axis] <= 0) {
+		if (axis == 0)
+		    set_dx(++dx);
+		else
+		    set_dy(++dy);
+	    }
+	    prevval[axis] = val;
+	    break;
+	  case SDL_KEYDOWN:
+	    if (event.key.keysym.sym == SDLK_ESCAPE)
+		exit(1);
+	    break;
+	}
+
+	scr_prep();
+	centretext(160, 0, blankline);
+	sprintf(buffer, "dx=%d dy=%d", dx, dy);
+	centretext(160, WEAPON_COLOUR, buffer);
+	scr_done();
+    }
+}
+
 int main(int argc, char **argv)
 {
     int p;
@@ -1166,6 +1254,9 @@ int main(int argc, char **argv)
 	  case MM_SETUP:
 	    setup_game();
 	    reset_scores();
+	    break;
+	  case MM_SCR_ADJUST:
+	    screen_adjust();
 	    break;
 	  case MM_RESET:
 	    reset_scores();
