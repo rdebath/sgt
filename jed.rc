@@ -1,5 +1,5 @@
 % -*- mode: slang; mode: fold -*-
-% Simon Tatham: version $Revision: 1.14 $
+% Simon Tatham: version $Revision: 1.15 $
 
 %{{{ load Emacs keybindings to start with
 
@@ -881,6 +881,17 @@ define cvs_annotate() {
 }
 add_completion("cvs_log");
 add_completion("cvs_annotate");
+%}}}
+%{{{ the pathologically clean-minded M-x polish, which clears *scratch*
+define polish() {
+    variable buf = whatbuf();
+    sw2buf("*scratch*");
+    setbuf_info(getbuf_info() &~ 1);
+    delbuf("*scratch*");
+    sw2buf("*scratch*");
+    setbuf_info(getbuf_info() &~ 1);
+    sw2buf(buf);
+}
 %}}}
 %{{{ Include local hacks if possible
 $1 = expand_filename("~/.jedrc2");
