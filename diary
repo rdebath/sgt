@@ -14,6 +14,15 @@ import ljproto
 #    easily done by not bothering to paste into Mono; really all I
 #    need is the ability to paste to Mono only).
 #
+#  - Better {mbreak} handling.
+#     * For a start I want a simple {mbreak} to produce a plausible
+#       title: `(continued)' is fine in an untitled entry, and in a
+#       titled one appending `(part N)' to the title is probably
+#       reasonable.
+#     * Also it'd be quite nice to be able to specify {t stuff}
+#       inside the explicit {mbreak} text, in case the simple (part
+#       N) isn't sufficient.
+#
 #  - Support for friends-only, specific-friend-group, and private
 #    entries (uncertain when if ever the first two will be useful,
 #    but the latter will be handy for testing purposes)
