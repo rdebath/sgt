@@ -690,6 +690,49 @@ function EntryPage::print_comment (Comment c) {
     """</tr></table></td></tr></table></td></tr></table></td></tr>""";
 }
 
+function EntryPage::print_comment_partial (Comment c) {
+    var string poster = defined $c.poster ? $c.poster->as_string() : "<i>(Anonymous)</i>";
+    var string sub_icon;
+    var int indent = $c.depth * 20;
+    var Color background; var Color color;
+    var int cwidth = $*box_width - $indent;
+    var Link lnk;
+    var string subj = $c.subject != "" ? $c.subject : $*text_nosubject;
+    
+    if ($cwidth < $*box_width*2/3) {
+        $cwidth = $*box_width*2/3;
+    }
+
+    if ($c.depth % 2) {
+        $background = $*comment_bar_one_bgcolor;
+        $color = $*comment_bar_one_fgcolor;
+    } else {
+        $background = $*comment_bar_two_bgcolor;
+        $color = $*comment_bar_two_fgcolor;
+    }
+
+    """
+<tr><td></td><td valign="top">
+<table width="$*box_width" cellpadding="0" cellspacing="0" border="0" summary="">
+<tr><td>
+<table width="$indent" cellpadding="0" cellspacing="0" border="0" summary="">
+<tr><td></td></tr></table>
+</td><td>
+<table width="$cwidth" cellpadding="2" cellspacing="0" border="0" summary="" class="entrybox">
+<tr align='left'>
+<td bgcolor="$*outline" align="center">
+<table width="100%" cellpadding="5" cellspacing="0" border="0" summary="">
+<tr bgcolor="$background" color="$color" align='left'><td align="left">""";
+
+    print "$poster: $subj";
+
+    """</td><td align="right" class="comments">""";
+
+    print "<a href=\"$c.permalink_url\">Link</a>";
+
+    """</td></tr></table></td></tr></table></td></tr></table></td></tr>""";
+}
+
 function ReplyPage::print_body () {
     if (not $.entry.comments.enabled) {
         """<tr><td></td><td><table width="$*box_width" cellpadding="2" cellspacing="0" border="0" summary="" class="entrybox">
