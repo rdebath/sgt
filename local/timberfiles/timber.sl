@@ -203,7 +203,8 @@ variable timber_boringhdrs =
 ":X-Automatically-Sent-By:X-MIME-Autoconverted:X-MimeOLE:X-Envelope-To:" +
 ":X-Originating-IP:X-VM-VHeader:X-VM-Last-Modified:X-VM-IMAP-Retrieved:" +
 ":X-VM-POP-Retrieved:X-VM-Bookmark:X-VM-v5-Data:X-VM-Labels:" +
-":X-VM-Summary-Format:X-Lotus-FromDomain:Content-Disposition:";
+":X-VM-Summary-Format:X-Lotus-FromDomain:Content-Disposition:" +
+":X-MIMETrack:";
 
 %}}}
 %{{{ Non-user-configurable variables
