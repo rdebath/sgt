@@ -1,0 +1,15 @@
+Summary: DNS lookups are synchronous.
+Class: bug
+Priority: medium
+Difficulty: fun
+Content-type: text/x-html-body
+
+<p>DNS lookups are synchronous. We could make them async quite easily,
+which would stop the last potential delay before the PuTTY window
+appears and would also prevent an absent DNS server from hanging
+PuTTY while a remote-to-local port forwarding times out on DNS; but
+ideally I'd like an abstraction of DNS so that we can still port
+later (since the socket API only has synchronous DNS). Porting to
+Unix will be fine (we can use adns), and any thread-capable OS won't
+have a problem. Everything else will just have to degrade gracefully
+to synchronous DNS, which will be fun. :-(

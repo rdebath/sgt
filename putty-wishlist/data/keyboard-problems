@@ -1,0 +1,27 @@
+Summary: Problems with various keyboard layouts.
+Class: bug
+Priority: medium
+Difficulty: taxing
+Content-type: text/x-html-body
+
+<p>Problems with various keyboard layouts. It would be hard for me to
+debug these myself because I'd have to be able to work in the same
+keymap as I was testing PuTTY in! If anybody can debug these
+problems it would be greatly appreciated.
+<ul>
+<li>
+The
+<a href="http://www.users.one.se/liket/svorak/">svorak</a> (Swedish
+Dvorak) layout apparently gets a few control combinations wrong: ^W,
+^V and ^Z.
+<li>
+On the Danish keyboard, apparently the tilde (~) is acting as a dead
+key <em>and</em> generating a code in itself; so if you hit ~ and
+then n, you get a ~ followed by a &ntilde;.
+<li>
+There's been a report from a Korean user that Korean multi-byte
+input doesn't work.
+<li>
+A German user has reported that Caps Lock is more like Shift Lock -
+it affects a lot of keys other than alphabetics.
+</ul>

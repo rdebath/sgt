@@ -1,0 +1,9 @@
+Summary: If PuTTY starts without focus, the cursor does odd things.
+Class: bug
+Priority: medium
+Difficulty: tricky
+Content-type: text/plain
+
+If PuTTY starts up with its window unselected, something slightly
+odd can happen with the cursor: it doesn't revert from box to block
+when the window gains focus.
