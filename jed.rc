@@ -1,5 +1,5 @@
 % -*- mode: slang; mode: fold -*-
-% Simon Tatham: version $Revision: 1.31 $
+% Simon Tatham: version $Revision: 1.32 $
 
 %{{{ load Emacs keybindings to start with
 
@@ -27,7 +27,7 @@ define jedrc_self_insert() {
     call("self_insert_cmd");
 }
 for ($1 = 33; $1 < 127; $1++) {
-    setkey(".dummy \"self_insert_cmd\" call", char($1));
+    setkey("jedrc_self_insert", char($1));
 }
 setkey (".1 deln", "^D");
 setkey(".\"backward_delete_char_untabify\" call dummy", "^?");
