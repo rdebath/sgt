@@ -47,6 +47,8 @@ typedef struct {
     int player_x, player_y;
     int gold_got, gold_total;
     int levnum, movenum;
+    char *sequence;
+    int sequence_size;
 } gamestate;
 
 /*
@@ -135,6 +137,7 @@ void savepos_save(levelset *set, char *user, int savenum, gamestate *state);
 progress progress_load(levelset *set, char *user);
 void progress_save(levelset *set, char *user, progress p);
 char *sequence_load(char *fname);
+void sequence_save(char *fname, gamestate *state);
 
 /*
  * From misc.c, miscellaneous things.
@@ -153,10 +156,11 @@ void screen_finish(void);
 void screen_level_init(void);
 void screen_level_finish(void);
 void screen_level_display(gamestate *s, char *message);
+int screen_finish_getmove(void);
 int screen_level_getmove(void);
 int screen_movie_getmove(void);
 void screen_error_box(char *);
-char *screen_ask_movefile(void);
+char *screen_ask_movefile(int saving);
 int screen_main_menu(levelset *set, gamestate **saves,
 		     int maxlev, int startlev);
 int screen_saveslot_ask(char action, gamestate **saves, int defslot);

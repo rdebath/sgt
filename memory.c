@@ -51,6 +51,8 @@ gamestate *gamestate_new(int width, int height) {
     p->leveldata = mknewn(char, width * height);
     p->width = width;
     p->height = height;
+    p->sequence = NULL;
+    p->sequence_size = 0;
 
     return p;
 }
@@ -68,6 +70,9 @@ gamestate *gamestate_copy(gamestate *state) {
     ret->levnum = state->levnum;
     ret->title = state->title;
     ret->movenum = state->movenum;
+    ret->sequence = smalloc(state->sequence_size);
+    memcpy(ret->sequence, state->sequence, state->movenum);
+    ret->sequence_size = state->sequence_size;
 
     return ret;
 }
@@ -75,6 +80,7 @@ gamestate *gamestate_copy(gamestate *state) {
 void gamestate_free(gamestate *p) {
     if (p) {
 	if (p->leveldata) free(p->leveldata);
+	if (p->sequence) free(p->sequence);
 	free(p);
     }
 }

@@ -128,10 +128,19 @@ void screen_level_finish(void) {
     /*
      * This is called after the last game position (GAME OVER,
      * COMPLETED, ABANDONED) has been displayed. Its task is to
-     * allow the user time to read everything, and then close the
-     * window.
+     * close the window.
      */
-    int sw, sh;
+
+    /* In this implementation, we do nothing. */
+}
+
+int screen_finish_getmove(void) {
+    /*
+     * This is called after showing the final game position. Its
+     * task is to allow the user the chance to see everything and
+     * possibly write out a move sequence file.
+     */
+    int sw, sh, k;
     char msg[] = "(Press any key)";
 
     getmaxyx(stdscr, sh, sw);
@@ -139,7 +148,11 @@ void screen_level_finish(void) {
     screen_prints((sw-(sizeof(msg)-1))/2, sh-1, T_INSTRUCTIONS, msg);
     move(0,0);
     refresh();
-    getch();
+    k = getch();
+    if (k == 'w' || k == 'W')
+	return 'w';
+    else
+	return '\r';
 }
 
 void screen_level_display(gamestate *s, char *message) {
@@ -207,7 +220,7 @@ void screen_level_display(gamestate *s, char *message) {
 
 /*
  * Get a move. Can return 'h','j','k','l', or 'q', or '0'-'9' for
- * saves, or 's', or 'm' (enter movie mode).
+ * saves, or 's', 'm' (enter movie mode) and 'w' (save sequence).
  */
 int screen_level_getmove(void) {
     int i;
@@ -220,7 +233,8 @@ int screen_level_getmove(void) {
 	if (i >= 'A' && i <= 'Z')
 	    i += 'a' - 'A';
     } while (i != 'h' && i != 'j' && i != 'k' && i != 'l' && i != 'q' &&
-	     i != 's' && i != 'r' && (i < '0' || i > '9') && i != 'm');
+	     i != 's' && i != 'r' && (i < '0' || i > '9') &&
+	     i != 'm' && i != 'w');
     return i;
 }
 
@@ -453,7 +467,7 @@ int screen_saveslot_ask(char action, gamestate **saves, int defslot) {
     }
 }
 
-char *screen_ask_movefile(void) {
+char *screen_ask_movefile(int saving) {
     const int width = 40;
     const int height = 4;
     int sx, sy, dx, dy;
@@ -483,8 +497,13 @@ char *screen_ask_movefile(void) {
 	screen_printc(dx, dy+height-1, T_LIST_BOX, '+');
 	screen_printc(dx+width-1, dy, T_LIST_BOX, '+');
 	screen_printc(dx+width-1, dy+height-1, T_LIST_BOX, '+');
-	screen_prints(dx+1, dy+1, T_INSTRUCTIONS,
-		      "Enter a move sequence file name:");
+	if (saving) {
+	    screen_prints(dx+1, dy+1, T_INSTRUCTIONS,
+			  "Enter a move sequence file to save:");
+	} else {
+	    screen_prints(dx+1, dy+1, T_INSTRUCTIONS,
+			  "Enter a move sequence file to load:");
+	}
 	buf[len] = '\0';
 	screen_prints(dx+1, dy+2, T_INPUT, buf);
 	move(dy+2, dx+1+len);
