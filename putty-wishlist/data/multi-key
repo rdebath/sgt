@@ -1,10 +1,13 @@
 Summary: Support for Multi_Key in GTK port
 Class: semi-bug
 Priority: low
-Content-type: text/plain
+Content-type: text/x-html-body
 
-E1Cp2HC-0004Ni-00@chiark.greenend.org.uk:
+<p><tt>E1Cp2HC-0004Ni-00@chiark.greenend.org.uk</tt>:
 
- The Multi_Key (that is the X Compose key) doesn't appear to work in
-pterm.  In other applications if I type "<Multi_Key> ' e" then I get
-an e-acute whereas in pterm I just get 'e.
+<p><pre> The Multi_Key (that is the X Compose key) doesn't appear to work in
+pterm.  In other applications if I type "&lt;Multi_Key&gt; ' e" then I get
+an e-acute whereas in pterm I just get 'e.</pre>
+
+<p>
+(See also <a href="unix-dead-keys.html">`unix-dead-keys'</a>.)
