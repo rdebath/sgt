@@ -18,11 +18,12 @@
 \cw{base64} is a command-line utility for encoding and decoding the
 \q{base64} encoding.
 
-This encoding, defined in RFC 2045, is primarily used to encode
-binary attachments in MIME e-mail, but is widely used in many other
-applications as well. For example, the \q{Content-MD5} mail header
-contains a small piece of base64; SSH private keys are generally
-stored as base64-encoded blobs; and so on.
+This encoding, defined in
+\W{http://www.ietf.org/rfc/rfc2045.txt}{RFC 2045}, is primarily used
+to encode binary attachments in MIME e-mail, but is widely used in
+many other applications as well. For example, the \q{Content-MD5}
+mail header contains a small piece of base64; SSH private keys are
+generally stored as base64-encoded blobs; and so on.
 
 Other utilities, such as \cw{munpack}, exist which will take an
 entire MIME-encoded message, identify the base64-encoded subparts,
