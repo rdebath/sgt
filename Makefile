@@ -19,8 +19,13 @@ endif
 .c.o:
 	$(CC) $(CFLAGS) $*.c
 
+all: axe axe.1
+
 axe:	$(AXE)
 	$(LINK) -o axe $(AXE) $(LIBS)
+
+axe.1:  axe.but
+	halibut --man=$@ $<
 
 clean:
 	rm -f *.o axe
