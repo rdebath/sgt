@@ -2,6 +2,7 @@ Summary: Better diagnostics on failure to load private key file
 Class: wish
 Difficulty: fun
 Priority: low
+Fixed-in: 2003-08-30
 
 Currently some failures to load private key files (PPK) result in
 messages like "Couldn't load private key".
