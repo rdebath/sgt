@@ -14,6 +14,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <sys/types.h>
+#include <sys/stat.h>
+
 #include "enigma.h"
 
 gamestate *savepos_load(levelset *set, char *user, int savenum) {
@@ -147,11 +150,15 @@ void savepos_save(levelset *set, char *user, int savenum, gamestate *state) {
 	return;
     }
 
+    /* For writing this file we want umask 077, so we get file mode 0600. */
+    umask(077);
     fp = fopen(fname, "w");
     if (!fp) {
 	/* unable to write save file */
 	return;
     }
+    /* Now let's be very sure the file mode came out right. */
+    fchmod(fileno(fp), 0600);
 
     fprintf(fp, "Level: %d\nMoves: %d\nGold: %d\nTotalGold: %d\n",
 	    state->levnum, state->movenum, state->gold_got,
@@ -227,11 +234,15 @@ void progress_save(levelset *set, char *user, progress p) {
 	return;
     }
 
+    /* For writing this file we want umask 037, so we get file mode 0640. */
+    umask(037);
     fp = fopen(fname, "w");
     if (!fp) {
 	/* unable to write progress file */
 	return;
     }
+    /* Now let's be very sure the file mode came out right. */
+    fchmod(fileno(fp), 0640);
 
     fmt_date(datebuf, p.date);
     fprintf(fp, "Level: %d\nDate: %s\n", p.levnum, datebuf);

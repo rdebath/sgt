@@ -1,6 +1,11 @@
 Release FIXME
 -------------
 
+ - Ensure save files are written with perms 0600 (only the saving
+   user can read or write them, despite setgid on the enigma
+   binary), and ensure progress files are written 0640 (the games
+   group can read them, so enigma can build a Hall of Fame when I
+   implement that).
  - Disallow periods and slashes in level set names, to confine
    Enigma to reading and writing files _only_ in its designated
    level and save directories. Might just have been a security hole,
