@@ -38,14 +38,16 @@ void run_command(int argc, char **argv)
 	    export_message(argv[i]);
     }
 
-    if (!strcmp(argv[0], "display")) {
+    if (!strcmp(argv[0], "display") ||
+	!strcmp(argv[0], "display-full")) {
 	int i;
 	int charset = CS_ASCII;
 	i = 1;
 	if (i < argc)
 	    charset = charset_from_localenc(argv[i++]);
 	for (; i < argc; i++)
-	    display_message(argv[i], charset, DISPLAY_ANSI);
+	    display_message(argv[i], charset, DISPLAY_ANSI,
+			    !strcmp(argv[0], "display-full"));
     }
 }
 

@@ -233,8 +233,6 @@ void parse_message(const char *message, int msglen,
 					   mr->description_len,
 					   FALSE, default_charset);
 
-	    mr->md.charset = charset_upgrade(mr->md.charset);
-
 	    inf.type = PARSE_MIME_PART;
 	    inf.header = 0;
 	    inf.u.md = mr->md;	       /* structure copy */
@@ -1285,7 +1283,7 @@ void parse_content_type(struct lexed_header *lh, struct mime_record *mr)
 		assert(csl <= lh[2].length);
 		cset[csl] = '\0';
 
-		mr->md.charset = charset_upgrade(charset_from_mimeenc(cset));
+		mr->md.charset = charset_from_mimeenc(cset);
 	    } else if (!istrlencmp(lh[0].token, lh[0].length, SL("name"))) {
 		if (mr->filename_location != CD_FILENAME) {
 		    int len;
@@ -1434,6 +1432,8 @@ void utf8_string_output(void *vctx, const char *text, int len,
     if (charset == CS_NONE)
 	charset = CS_ASCII;
 
+    charset = charset_upgrade(charset);
+
     while ( (inret = charset_to_unicode(&text, &len, midbuf,
 					lenof(midbuf), charset,
 					&instate, NULL, 0)) > 0) {
@@ -1542,6 +1542,8 @@ void test_output_fn(void *outctx, const char *text, int len,
 
     if (type == TYPE_HEADER_NAME)
 	printf("\033[1;31m");
+
+    charset = charset_upgrade(charset);
 
     while ( (inret = charset_to_unicode(&text, &len, midbuf,
 					lenof(midbuf), charset,

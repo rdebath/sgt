@@ -1,23 +1,3 @@
-Loose ends from coding
-----------------------
-
- - Need to work out when _not_ to print attachment ID lines.
-    + Perhaps multipart/mixed lines are merely clutter? There's
-      certainly no reason you'd want to pull out that multipart and
-      save it.
-    + Perhaps ID lines for the parts that actually get printed are
-      unnecessary?
-    + Certainly an ID line in a non-MIME-aware mail, or even in a
-      mail containing only a single part, is overkill.
-
- - It's possible that a little visual separation between ID lines
-   and body text would be helpful too.
-
- - More separation of mechanism from policy: we should not have
-   called charset_upgrade() on the charset values we write into the
-   DB for the MIME parts. We should display the _claimed_ charset,
-   and only use the upgraded one when actually translating.
-
 Thoughts on db structure
 ------------------------
 

@@ -273,7 +273,7 @@ void export_message(char *ego);
  * display.c
  */
 enum { DISPLAY_BARE, DISPLAY_ANSI };
-void display_message(char *ego, int charset, int type);
+void display_message(char *ego, int charset, int type, int full);
 
 /*
  * boringhdr.c

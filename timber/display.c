@@ -9,6 +9,48 @@
 #include "timber.h"
 #include "charset.h"
 
+int mime_parts_overlap(const struct mime_details *md1,
+		       const struct mime_details *md2)
+{
+    /*
+     * Two intervals overlap iff each one's start comes
+     * before the other's end. (This is easily seen by
+     * considering the interval trichotomy law: given two
+     * intervals, either A is entirely below B, or B is
+     * entirely below A, or they overlap. A is entirely
+     * below B iff max(A) < min(B), and vice versa.)
+     */
+    return (md1->offset < md2->offset + md2->length &&
+	    md2->offset < md1->offset + md1->length);
+}
+
+/*
+ * Go through a list of MIME parts, some of which are subparts of
+ * others, and find each one's immediate parent. Returns a
+ * dynamically allocated list of `nmd' integers.
+ */
+int *mime_part_parents(const struct mime_details *md, int nmd)
+{
+    int *ret = smalloc(nmd * sizeof(int));
+    int i, j;
+
+    ret[0] = -1;		       /* special case */
+    for (i = 1; i < nmd; i++) {
+	/*
+	 * Find the parent of part i by searching backwards for the
+	 * nearest part which overlaps it. Simple but effective.
+	 */
+	for (j = i; j-- ;) {
+	    if (mime_parts_overlap(&md[i], &md[j])) {
+		ret[i] = j;
+		break;
+	    }
+	}
+    }
+
+    return ret;
+}
+
 static int displayable(const struct mime_details *md)
 {
     /*
@@ -172,6 +214,7 @@ struct display_output_ctx {
     int output_charset;
     int display_type;
     int boring;
+    int full;
 };
 
 static void display_output_fn(void *vctx, const char *text, int len,
@@ -190,7 +233,7 @@ static void display_output_fn(void *vctx, const char *text, int len,
      * display. This relies on the RFC822 parser always passing us
      * the entire header _name_ as a single string.
      */
-    if (type == TYPE_HEADER_NAME)
+    if (type == TYPE_HEADER_NAME && !ctx->full)
 	ctx->boring = is_boring_hdr(text, len);
     else if (type != TYPE_HEADER_TEXT)
 	ctx->boring = FALSE;
@@ -202,6 +245,10 @@ static void display_output_fn(void *vctx, const char *text, int len,
 	printf("\033[1;31m");
     if (type == TYPE_ATTACHMENT_ID_LINE && ctx->display_type == DISPLAY_ANSI)
 	printf("\033[1;33m");
+
+    if (charset == CS_NONE)
+	charset = CS_ASCII;
+    charset = charset_upgrade(charset);
 
     while ( (inret = charset_to_unicode(&text, &len, midbuf,
 					lenof(midbuf), charset,
@@ -220,13 +267,14 @@ static void display_output_fn(void *vctx, const char *text, int len,
 	printf("\033[39;0m");
 }
 
-void display_message(char *ego, int charset, int type)
+void display_message(char *ego, int charset, int type, int full)
 {
     char *location, *message, *separator;
-    int msglen;
+    int msglen, mindisp;
     struct display_output_ctx ctx;
     struct mime_details *md = NULL;
-    int nmd, i;
+    int nmd, i, *parents = NULL;
+    int done_blank_line;
 
     location = message_location(ego);
     if (!location)
@@ -243,9 +291,11 @@ void display_message(char *ego, int charset, int type)
 	ctx.output_charset = charset;
 	ctx.display_type = type;
 	ctx.boring = FALSE;
+	ctx.full = full;
 	parse_message(message, msglen, display_output_fn, &ctx,
 		      null_info_fn, NULL);
 	printf("\n");		       /* separating blank line */
+	done_blank_line = TRUE;
 
 	/*
 	 * Retrieve the locations of the MIME parts from the
@@ -256,6 +306,19 @@ void display_message(char *ego, int charset, int type)
 	    error(err_internal, "no-mime-parts");
 	    goto cleanup;
 	}
+
+	/*
+	 * Find the parent MIME parts. Also determine whether the
+	 * outermost part is multipart/mixed, in which case we
+	 * don't display an ID line for it ever.
+	 */
+	parents = mime_part_parents(md, nmd);
+	if (!full && nmd > 0 &&
+	    !istrcmp(md[0].major, "multipart") &&
+	    !istrcmp(md[0].minor, "mixed"))
+	    mindisp = 1;
+	else
+	    mindisp = 0;
 
 	/*
 	 * Fix up the Content-Dispositions.
@@ -281,25 +344,28 @@ void display_message(char *ego, int charset, int type)
 	 * For each MIME part, display the text (decoded and
 	 * translated) and/or a heading line giving details of it.
 	 */
-	for (i = 0; i < nmd; i++) {
+	for (i = mindisp; i < nmd; i++) {
 	    /*
 	     * Heading line is of the format
 	     * 
-	     *   [1] filename: description [text/plain, ISO-8859-1]
+	     *   --[1] filename: description [text/plain, ISO-8859-1]
 	     * 
 	     * The separating colon-space between filename and
 	     * description only applies when both are present.
+	     * 
+	     * There are 2 hyphens per indentation level, which
+	     * indicates the nesting depth of the part.
 	     */
-	    {
+	    if (full || md[i].disposition == ATTACHMENT) {
 		const char *charsetstr;
-		int buflen;
+		int buflen, k;
 		char *buf, *p, *sep;
 
 		charsetstr = charset_to_localenc(md[i].charset);
 		if (!charsetstr)
 		    charsetstr = "unknown charset";
 
-		buflen = 40;	       /* the index and all the punctuation */
+		buflen = 40+2*nmd;     /* the index and all the punctuation */
 		if (md[i].filename)
 		    buflen += strlen(md[i].filename);
 		if (md[i].description)
@@ -310,6 +376,11 @@ void display_message(char *ego, int charset, int type)
 
 		buf = smalloc(buflen);
 		p = buf;
+		k = i;
+		while (parents[k] >= mindisp) {
+		    k = parents[k];
+		    p += sprintf(p, "--");
+		}
 		p += sprintf(p, "[%d]", i);
 		sep = " ";
 		if (md[i].filename) {
@@ -335,6 +406,7 @@ void display_message(char *ego, int charset, int type)
 		 */
 		display_output_fn(&ctx, buf, p - buf,
 				  TYPE_ATTACHMENT_ID_LINE, CS_UTF8);
+		done_blank_line = FALSE;
 		sfree(buf);
 	    }
 
@@ -361,8 +433,49 @@ void display_message(char *ego, int charset, int type)
 		    break;
 		}
 
+		if (!done_blank_line)
+		    printf("\n");
 		display_output_fn(&ctx, decoded, declen,
 				  TYPE_BODY_TEXT, md[i].charset);
+		printf("\n");
+		done_blank_line = TRUE;
+	    }
+
+	    /*
+	     * Go up the nesting tree to the ancestors of this
+	     * part, and see which are terminating (i.e. the _next_
+	     * part is not a subpart of them). Output end lines for
+	     * those.
+	     */
+	    {
+		int k, l;
+		k = i;
+		while (parents[k] >= mindisp) {
+		    k = parents[k];
+		    if (i+1 >= nmd ||
+			!mime_parts_overlap(&md[i+1], &md[k])) {
+			/*
+			 * Part k has ended.
+			 */
+			int buflen = 40+2*nmd;
+			char *buf = smalloc(buflen);
+			char *p = buf;
+
+			l = k;
+			while (parents[l] >= mindisp) {
+			    l = parents[l];
+			    p += sprintf(p, "--");
+			}
+
+			p += sprintf(p, "[%d] ends\n", k);
+			display_output_fn(&ctx, buf, p - buf,
+					  TYPE_ATTACHMENT_ID_LINE, CS_UTF8);
+			done_blank_line = FALSE;
+			sfree(buf);
+		    } else
+			break;
+		}
+
 	    }
 	}
 
@@ -372,6 +485,7 @@ void display_message(char *ego, int charset, int type)
 		free_mime_details(&md[i]);
 	    sfree(md);
 	}
+	sfree(parents);
 	sfree(message);
 	sfree(separator);
     }
