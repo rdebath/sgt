@@ -34,6 +34,11 @@
 #define NULL256 NULL64,NULL64,NULL64,NULL64
 
 typedef int (*DFA)[256];
+typedef struct {
+    int len;
+    DFA forward, reverse;
+} Search;
+
 typedef void (*keyact) (void);
 
 typedef struct buffer buffer;
@@ -65,9 +70,8 @@ extern keyact parse_action (char *);
 extern void proc_key (void);
 extern void bind_key (char *, int, keyact);
 
-extern DFA build_dfa (char *, int);
-extern DFA last_dfa (void);
-extern int last_len (void);
+extern Search *build_search (char *, int);
+void free_search(Search *s);
 
 extern int get_str (char *, char *, int);
 extern int parse_quoted (char *);

@@ -111,6 +111,7 @@ static char *default_rc[] = {
     "",
     "# Key bindings: additional movement keys",
     "bind search ^S",
+    "bind search-back ^R",
     "bind goto-position ^XG",
     "bind goto-position ^Xg",
     "bind screen-recentre ^L",
