@@ -39,8 +39,9 @@ these purposes. Users don't normally feel nervous about running `cat'
 on unknown files just to see what's in them; they tend to feel that
 the worst that can happen as a result is that they screw up their
 terminal state and have to reset it - and many users don't even expect
-<em>that</em>, and come and complain to us when it happens (see the
-FAQ). If your terminal is willing to run arbitrary local commands when
+<em>that</em>, and come and complain to us when it happens (see
+<a href="../faq.html#QA.7.12">the FAQ</a>).
+If your terminal is willing to run arbitrary local commands when
 told to by an escape sequence, then you have to adopt a whole new
 level of paranoia, where (for example) any file not trusted by you is
 viewed using `cat -v' rather than `cat', and only when you're certain
