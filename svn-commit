@@ -1,0 +1,115 @@
+#!/usr/bin/perl 
+
+# Convenient utility for committing across multiple directories in
+# Subversion.
+#
+# My experience (svn 1.1) is that this only works if:
+#  (a) there is _some_ Subversion working copy in the shared parent
+#      between the two directories. (I simply maintain an
+#      always-empty directory in my repository to use for this
+#      purpose.)
+#  (b) you specify the exact list of _files_ to commit, not just
+#      the directories.
+#
+# This script is intended to make (b) easier. You pass directory
+# names to this script, and it automatically does `svn status' on
+# each directory to find the list of actual changed files within,
+# and passes the result to `svn commit'.
+#
+# You still have to have done (a).
+
+# Parse Subversion command line arguments. This is grotty, because
+# in order to do it we must know as much as Subversion about which
+# options take arguments. Hence, this list of actual command line
+# options is taken directly from subversion/clients/cmdline/main.c
+# (r11161).
+@opts = (
+["force", '', 0],
+["force-log", '', 0],
+["help", 'h', 0],
+["message", 'm', 1],
+["quiet", 'q', 0],
+["recursive", 'R', 0],
+["non-recursive", 'N', 0],
+["revision", 'r', 1],
+["file", 'F', 1],
+["incremental", '', 0],
+["encoding", '', 1],
+["version", '', 0],
+["verbose", 'v', 0],
+["show-updates", 'u', 0],
+["username", '', 1],
+["password", '', 1],
+["extensions", 'x', 1],
+["targets", '', 1],
+["xml", '', 0],
+["strict", '', 0],
+["stop-on-copy", '', 0],
+["no-ignore", '', 0],
+["no-auth-cache", '', 0],
+["non-interactive", '', 0],
+["dry-run", '', 0],
+["no-diff-deleted", '', 0],
+["notice-ancestry", '', 0],
+["ignore-ancestry", '', 0],
+["diff-cmd", '', 1],
+["diff3-cmd", '', 1],
+["editor-cmd", '', 1],
+["old", '', 1],
+["new", '', 1],
+["revprop", '', 0],
+["relocate", '', 0],
+["config-dir", '', 1],
+["auto-props", '', 0],
+["no-auto-props", '', 0],
+["native-eol", '', 1],
+["limit", '', 1,],
+);
+
+foreach $a (@opts) {
+    $opts{"--" . $a->[0]} = $a->[2];
+    $opts{"-" . $a->[1]} = $a->[2] if $a->[1] ne '';
+}
+
+@newargs = ();
+$doing_opts = 1;
+while (scalar @ARGV > 0) {
+    $arg = shift @ARGV;
+
+    if ($doing_opts and $arg =~ /^-/) {
+	push @newargs, $arg;
+
+	if ($arg eq "--") {
+	    $doing_opts = 0;
+	    next;
+	}
+
+	if ($arg =~ /^([^=]*)=(.*)$/) {
+	    $arg = $1;
+	    $gotval = 1;
+	} elsif ($arg =~ /^(-[^-]).+$/) {
+	    $arg = $1;
+	    $gotval = 1;
+	} else {
+	    $gotval = 0;
+	}
+
+	if ($opts{$arg} == 2 and !$gotval) {
+	    push @newargs, shift @ARGV;
+	}
+    } else {
+	if (-d $arg) {
+	    open PIPE, "svn status $arg |";
+	    while (<PIPE>) {
+		chomp;
+		next if /^\?/ or /^  /;
+		push @newargs, substr($_, 7);
+	    }
+	    close PIPE;
+	} else {
+	    push @newargs, $arg;
+	}
+    }
+}
+
+exec "svn", "commit", @newargs;
