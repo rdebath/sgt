@@ -1,6 +1,6 @@
 Summary: Bug in Putty's handling of SSH_MSG_CHANNEL_WINDOW_ADJUST
 Content-type: text/plain
-Category: bug
+Class: bug
 Priority: medium
 
 From Peter Gutmann:
