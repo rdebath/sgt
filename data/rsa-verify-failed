@@ -2,7 +2,7 @@ Summary: Occasional `Access denied' / `RSA_verify failed' (OpenSSH bug)
 Class: wish
 Difficulty: fun
 Content-type: text/x-html-body
-Fixed-in: 2002-06-01
+Fixed-in: 2002-06-01 0.53
 
 <p>
 With SSH2, OpenSSH (various versions), RSA public key, key

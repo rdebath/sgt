@@ -4,7 +4,7 @@ Difficulty: taxing
 Content-type: text/x-html-body
 Absent-in: 0.52
 Present-in: 2002-05-09
-Fixed-in: 2002-09-03
+Fixed-in: 2002-09-03 0.53
 
 <p>
 The magic we use to get a drop-down list of printers for our raw ANSI

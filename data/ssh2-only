@@ -3,7 +3,7 @@ Class: wish
 Priority: medium
 Difficulty: fun
 Content-type: text/plain
-Fixed-in: 2002-08-08
+Fixed-in: 2002-08-08 0.53
 
 Currently, PuTTY's choice of SSH protocol can only be expressed as a
 preference. If you ask for an SSH2 connection and only SSH1 is
