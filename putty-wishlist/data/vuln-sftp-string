@@ -1,0 +1,49 @@
+Summary: Vulnerability: crafted SFTP string may allow remote code execution
+Class: vulnerability
+Difficulty: fun
+Priority: high
+Present-in: 0.56
+Fixed-in: 0.57
+Content-type: text/x-html-body
+
+<p>
+Many versions of PSFTP and PSCP prior to 0.57 have a heap corruption
+vulnerability in their treatment of string fields in the SSH File
+Transfer Protocol (SFTP).
+
+<p>
+Since a string field is present in the server's response to the
+<code>FXP_OPEN</code> request, this vulnerability can be triggered by
+simply connecting to a malicious SFTP server.
+
+<p>
+(Note however that the vulnerability kicks in <em>after</em> host key
+verification, so the host key of the server has to have been
+accepted to get this far.)
+
+<p>
+SFTP is always used by PSFTP; it is also used by PSCP if available
+(depending on server behaviour). It can be used in both SSH-2 and
+SSH-1 (again, depending on server behaviour). Thus, a malicious server
+can exploit this in all invocations of PSFTP and PSCP, unless the
+<code>-scp</code> option is supplied to PSCP.
+
+<p>
+This bug was discovered by an anonymous contributor to
+<a href="http://www.idefense.com/">iDEFENSE</a>'s
+<a href="http://www.idefense.com/poi/teams/vcp.jsp">Vulnerability
+Contributor Program</a>. It will be documented in a forthcoming
+iDEFENSE advisory.
+
+<p>
+<em>Vulnerability details:</em>
+If a string length that would read off the end of the SFTP packet was
+supplied, <code>sftp.c:sftp_pkt_getstring()</code> would not return a
+pointer to the string, but would return the server-supplied string
+length. <code>fxp_open_recv()</code> would then call <code>mkstr()</code>
+with that length; with a carefully crafted length field,
+<code>mkstr()</code> would <code>malloc(0)</code> due to an integer
+overflow, and then <code>memcpy()</code> data from <code>*NULL</code>
+to that location, leading to a heap corruption. (The data copied to
+the heap is not trivially server-controlled, but it can't be ruled out
+on all platforms.)
