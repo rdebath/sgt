@@ -143,7 +143,7 @@ void import_mbox_folder(char *folder);
  * base64.c
  */
 int base64_decode_length(int input_length);
-int base64_encode_length(int input_length);
+int base64_encode_length(int input_length, int multiline);
 int base64_decode(const char *input, int length, unsigned char *output);
 int base64_encode(const unsigned char *input, int length,
 		  char *output, int multiline);
@@ -152,6 +152,7 @@ int base64_encode(const unsigned char *input, int length,
  * qp.c
  */
 int qp_decode(const char *input, int length, char *output, int rfc2047);
+int qp_rfc2047_encode(const char *input, int length, char *output);
 
 /*
  * rfc822.c
@@ -222,6 +223,7 @@ typedef void (*parser_output_fn_t)(void *ctx, const char *text, int len,
 enum {				       /* values for above `type' argument */
     TYPE_HEADER_NAME,
     TYPE_HEADER_TEXT,
+    TYPE_HEADER_DECODED,
     TYPE_ATTACHMENT_ID_LINE,
     TYPE_BODY_TEXT
 };
@@ -237,8 +239,12 @@ void parse_message(const char *message, int msglen,
 /*
  * rfc2047.c
  */
-void rfc2047(const char *text, int length, parser_output_fn_t output,
-	     void *outctx, int structured, int display, int default_charset);
+void rfc2047_decode(const char *text, int length, parser_output_fn_t output,
+		    void *outctx, int structured, int display,
+		    int default_charset);
+char *rfc2047_encode(const char *text, int length, int input_charset,
+		     const int *output_charsets, int ncharsets,
+		     int structured, int firstlen);
 
 /*
  * date.c

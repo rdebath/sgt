@@ -10,8 +10,6 @@ what charset the composer buffer itself wants to be in. So I must
 convert each of those things from UTF-8 to that charset.
  + If they don't _fit_ in the charset, I must do something clever,
    and I think what it will be is to RFC2047 them (=?UTF-8?...?=).
- + Therefore I need charset_from_unicode to tell me _whether_ there
-   were any inconvertible characters.
 
 When I actually send mail, I will retrieve the composer buffer and
 feed it through my existing RFC822 parser.
@@ -30,49 +28,94 @@ feed it through my existing RFC822 parser.
       been in. That still breaks on Big5 since it doesn't support
       round-trip conversion to Unicode, although the offending
       characters are unlikely to be problematic.
+    - Or is it? That's all very well if my composer charset is
+      8859-1 and my correspondent's display name is in EUC-KR; it
+      means that the display name will get 2047ed on composer buffer
+      construction, and hence when the message undergoes final
+      pre-send encoding the name of the original charset will be
+      available to the encoder to use as an option. But once I move
+      to a UTF-8 composer buffer, this actually becomes _harder_ -
+      it seems obviously right that display names should be legible
+      in the compose buffer, and therefore finding their original
+      charsets would require a db lookup on the email address - if
+      even _that_ was a plausible option.
+    - So perhaps I'm going to decide after all that preserving the
+      sender's charset is not sensible. They didn't deliberately
+      send in a charset _I_ was happy with, after all, and in any
+      case I can't (or won't) do that for the main message text.
+      They can be UTF-8ed, and like it.
 
-So my basic charset problem repeatedly boils down to the following:
- + Attempt to convert a string from one charset to another, and
-   _tell me_ if it failed to represent all source characters in the
-   output.
+So. Actual plan of action:
 
-Also, at some point I will implement Unicode fallbacks in the
-display conversion, in which case I will have a rather different
-problem:
- + Attempt to convert a string from one charset to another, and stop
-   at each unrepresentable source character so that I can decide
-   what to do about it.
+ - Need some sort of routine which will analyse a piece of text
+   (charset specified on input) and escalate through a supplied
+   sequence of charsets to find the first one it fits sensibly into.
 
-This strongly suggests that a sensible adjustment to
-charset_from_unicode() might be to make it _return_ when it hits an
-unconvertable character, in such a way that we get to keep
-everything converted up to that point, _and_ such that we get to see
-where it left off in the input.
- + Then we can get a simple success/failure code out of it for the
-   sending case, but we can supply more interesting handling in the
-   display case.
-
-So. I think a good first step would be to remove the emit(ERROR)
-error handling in the various charset write routines. It's fine in
-the read routines, but for writing I'd rather emit nothing and
-return a failure status.
- + Almost all the current write routines never emit ERROR _after_
-   emitting anything else, which means this change is trivial. The
-   only one that fails this criterion is iso2022s.c, in which it can
-   output the starting sequence(s) and then emit ERROR; a rapid code
-   reordering will sort out that one remaining case, so no problem.
-
-Then we have to fiddle with charset_from_unicode(). I think the best
-thing to do at this stage is simply to fiddle with the errstr
-parameter.
- + The possibility I currently find springing to mind is to replace
-   the pair (errstr,errlen) with a single `int *error'. If non-NULL,
-   conversion will stop at the first difficult character and the int
-   pointed to will be set to TRUE, or if conversion terminates due
-   to running out of space or running out of input it will be set to
-   FALSE. If `error' is NULL, conversion will plough cheerfully
-   through difficult characters by the simple means of ignoring
-   them.
+ - I think I'd prefer to start with the tricky bit, which is the
+   sending (well, RFC822 encoding to begin with) of the message.
+   Trivial noodlings such as constructing the composer buffer can
+   come later. So:
+    + parse_message() is going to do the hard work here.
+       * This means that parse_message() needs to be _told_ its
+	 initial default charset, since for sending it will be
+	 whatever charset the compose buffer was edited in.
+    + The RFC822 headers will be constructed using the output parse
+      from parse_message(). This means I'm going to have to arrange
+      for the right stuff to be RFC2047-encoded.
+       * I could do this by splitting TYPE_HEADER_TEXT into
+	 TYPE_RAW_HEADER_TEXT and TYPE_DECODED_HEADER_TEXT, so that
+	 the display function receiving the output from
+	 parse_message() could collect a UTF-8 buffer
+       * Or alternatively I could do it by having rfc2047() know
+	 whether it's supposed to be encoding or decoding, and do it
+	 before the output function gets it.
+       * I don't think there's any particular reason to prefer
+	 either approach right now, so I'll decide on whim when I
+	 get that far.
+       * On the contrary! When _constructing_ the composer buffer, I
+	 will need a simple function which RFC2047s a UTF-8 string,
+	 so clearly it would make sense to write such a function and
+	 then use it everywhere. I think this dictates the first
+	 solution (TYPE_DECODED_HEADER_TEXT).
+    + The send buffer will contain some special headers which need
+      to be extracted and handled cunningly by the send code.
+       * I _could_ parse these simply by having my output function
+	 catch TYPE_HEADER_NAME with particular header names,
+	 inhibit header output on those ones, and pass the header
+	 text to another routine for handling.
+       * But that seems slightly silly. Better, surely, to lex the
+	 headers in rfc822.c in the usual way, and pass the lexed
+	 headers out to a third utility function?
+	  + aack, no, it isn't quite that simple - the set of
+	    punctuation used in header lexing depends on the header
+	    name, so something horrid would have to happen such as
+	    the utility function having a second call mode in which
+	    it returns the punctuation set. Gaa!
+       * Again, either way would work with sufficient contortions. I
+	 wonder whether there's any nicer way.
+    + So. Step 1 is to splurge through parse_message() to produce a
+      set of fully RFC822-encoded output headers. In so doing, we
+      _also_ remove and parse Attach, Queue and Categories headers.
+    + Queue we can ignore for the moment; we're currently RFC822-
+      encoding the message, and Queue only affects what we do with
+      it after that. Ditto Categories.
+    + Attach, however, is relevant to Step 2, which is to sort out
+      the MIME structure of the message.
+       * First we have to analyse the body text to determine what
+	 charset it should go in. My guess is that the correct
+	 escalation here is ASCII, <editing-charset>, UTF-8.
+       * We also check for Attach headers (and possibly
+	 Attach-Enclosed as well, though I'm less convinced about
+	 those in the new world since we won't need them for
+	 forwarding). I suppose this is the point where we load in
+	 our attachment files (checking they exist in the process)
+	 and scan them to determine an appropriate separator line.
+       * Then we output some MIME headers (conveniently, we have
+	 output all the provided headers already and are in
+	 precisely the right place to output fresh ones). These are
+	 either the body-text headers or a multipart/mixed; then we
+	 either output the body text or multipart each other bit in
+	 turn.
 
 Work still to do
 ----------------

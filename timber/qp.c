@@ -38,6 +38,54 @@ int qp_decode(const char *input, int length, char *output, int rfc2047)
     return output - orig_output;
 }
 
+/*
+ * Timber does not use quoted-printable as an encoding for message
+ * bodies. Therefore, the only reason we need a QP encoder at all
+ * is for RFC2047 headers.
+ * 
+ * This function has the additional feature of just returning the
+ * exact length of an encoded string if `output' is NULL.
+ */
+int qp_rfc2047_encode(const char *input, int length, char *output)
+{
+    /*
+     * The RFC2047 dialect of quoted-printable is as follows:
+     * 
+     *  - Letters, numbers and !*+-/ are encoded literally.
+     *  - Space is encoded as underscore.
+     *  - Everything else is encoded as =xx.
+     */
+    int outlen = 0;
+
+    while (length > 0) {
+	if ((*input >= 'A' && *input <= 'Z') ||
+	    (*input >= 'a' && *input <= 'z') ||
+	    (*input >= '0' && *input <= '9') ||
+	    *input == '!' || *input == '*' || *input == '+' ||
+	    *input == '-' || *input == '/') {
+	    outlen++;
+	    if (output)
+		*output++ = *input;
+	} else if (*input == ' ') {
+	    outlen++;
+	    if (output)
+		*output++ = '_';
+	} else {
+	    outlen += 3;
+	    if (output) {
+		static const char hex[16] = "0123456789ABCDEF";
+		int val = (unsigned char)*input;
+		*output++ = '=';
+		*output++ = hex[(val >> 4) & 0xF];
+		*output++ = hex[val & 0xF];
+	    }
+	}
+	input++, length--;
+    }
+
+    return outlen;
+}
+
 #ifdef TESTMODE
 
 #include <stdio.h>
