@@ -12,9 +12,14 @@ build you a Unix port of Plink, and also <code>pterm</code> - an
 as PuTTY.
 
 <p>
-It isn't yet clear whether we will bother combining the terminal
-emulator and network back end into the same process, to provide a
-Unix port of the full GUI form of PuTTY. It wouldn't be as useful a
-thing on Unix as it would be on Windows; its major value would
-probably be as a pathfinding effort for other ports. If anyone
-really wants it, we'd be interested to know why :-)
+You can also build a Unix port of PuTTY itself. This isn't as useful a
+thing on Unix as it is on Windows; its major value is as a pathfinding
+effort for other ports. If anyone really has a use for it, we'd be
+interested to know why :-)
+
+<p>
+We don't currently have ports of any other PuTTY utilities.
+
+<p>
+See also the
+<a href="http://www.chiark.greenend.org.uk/~sgtatham/putty/faq.html#A.2.2">FAQ</a>.
