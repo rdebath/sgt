@@ -36,8 +36,9 @@ typedef void *bt_element_t;
 typedef union nodecomponent nodecomponent;
 typedef nodecomponent *nodeptr;
 
-typedef int (*cmpfn_t)(void *state, const bt_element_t, const bt_element_t);
-typedef bt_element_t (*copyfn_t)(void *state, const bt_element_t);
+typedef int (*cmpfn_t)(void *state, bt_element_t, bt_element_t);
+typedef bt_element_t (*copyfn_t)(void *state, bt_element_t);
+typedef void (*freefn_t)(void *state, bt_element_t);
 typedef void (*propmakefn_t)(void *state, bt_element_t, nodecomponent *dest);
 /* s1 may be NULL (indicating copy s2 into dest). s2 is never NULL. */
 typedef void (*propmergefn_t)(void *state, nodecomponent *s1,
@@ -79,8 +80,9 @@ union nodecomponent {
     bt_element_t ep;
 };
 
-btree *bt_new(cmpfn_t cmp, copyfn_t copy, int nprops, propmakefn_t propmake,
-	      propmergefn_t propmerge, void *state, int mindegree);
+btree *bt_new(cmpfn_t cmp, copyfn_t copy, freefn_t freeelt,
+	      int nprops, propmakefn_t propmake, propmergefn_t propmerge,
+	      void *state, int mindegree);
 void bt_free(btree *bt);
 btree *bt_clone(btree *bt);
 int bt_count(btree *bt);
