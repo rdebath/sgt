@@ -1,6 +1,6 @@
 # -*- mode: sh; mode: fold -*-
 # Simon Tatham's standardised chunk of .bashrc
-# $Revision: 1.12 $
+# $Revision: 1.13 $
 
 #{{{ I don't like .bash_history files. They wet their nests.
 unset HISTFILE
@@ -10,7 +10,7 @@ rm -f ~/.bash_history
 
 addpath() {
   case $PATH in
-    '') PATH=$1 ;;
+    '') export PATH=$1 ;;
     *:$1:* | $1:* | *:$1 | $1) ;;
     *) export PATH=$1:$PATH ;;
   esac
@@ -18,7 +18,7 @@ addpath() {
 
 addpathback() {
   case $PATH in
-    '') PATH=$1 ;;
+    '') export PATH=$1 ;;
     *:$1:* | $1:* | *:$1 | $1) ;;
     *) export PATH=$PATH:$1 ;;
   esac
