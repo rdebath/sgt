@@ -193,7 +193,7 @@ sub multipart {
           $attach .= "+" . $data[0] . "\n";
           $_ .= $data[0];
         }
-        /name="?([^"]*)/ and $contname = $1;
+        /name="?([^"]*)/i and $contname = $1;
         if (/boundary="([^"]*)"/i) {
           $innersep = "--$1";
         } elsif (/boundary=([^ \t;]*)/) {
