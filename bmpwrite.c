@@ -1,5 +1,5 @@
-/*
- * bmpwrite.c: functions to write out .BMP files
+/* ----------------------------------------------------------------------
+ * Functions to write out .BMP files.
  */
 
 #include <stdio.h>

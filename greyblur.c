@@ -7,13 +7,13 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "misc.h"
+
 #include "bmpwrite.h"
 
-#define VERSION "$Revision: 4787 $"
+#include "cmdline.h"
 
-#define TRUE 1
-#define FALSE 0
-#define lenof(x) (sizeof ((x)) / sizeof ( *(x) ))
+#define VERSION "$Revision: 4787 $"
 
 /* ----------------------------------------------------------------------
  * Actually do the plotting.
@@ -135,198 +135,71 @@ int plot(struct Params par)
  * Main program: parse the command line and call plot() when satisfied.
  */
 
-int parseint(char const *string, int *ret, char const *name) {
-    int i;
-    i = strspn(string, "0123456789");
-    if (i > 0) {
-	*ret = atoi(string);
-	string += i;
-    } else
-	goto parsefail;
-    if (*string)
-	goto parsefail;
-    return 1;
-    parsefail:
-    fprintf(stderr, "greyblur: unable to parse %s `%s'\n", name, string);
-    return 0;
-}
-
-int parsesize(char const *string, int *x, int *y, char const *name) {
-    int i;
-    i = strspn(string, "0123456789");
-    if (i > 0) {
-	*x = atoi(string);
-	string += i;
-    } else
-	goto parsefail;
-    if (*string++ != 'x')
-	goto parsefail;
-    i = strspn(string, "0123456789");
-    if (i > 0) {
-	*y = atoi(string);
-	string += i;
-    } else
-	goto parsefail;
-    if (*string)
-	goto parsefail;
-    return 1;
-    parsefail:
-    fprintf(stderr, "greyblur: unable to parse %s `%s'\n", name, string);
-    return 0;
-}
-
-int main(int ac, char **av) {
-    char const *usagemsg[] = {
-	"usage: greyblur [options]",
-	"       -o, --output file.bmp   output bitmap name",
-	"       -s, --size NNNxNNN      output bitmap size",
-	"       -n, --steps NNN         number of iterations of smoothing",
-	"       -l, --levels NNN        number of levels of output colour",
-	"       -v, --verbose           report details of what is done",
-    };
-    int usage = FALSE;
+int main(int argc, char **argv) {
     int verbose = 0;
     char *outfile = NULL;
-    int imagex = 0, imagey = 0;
+    struct Size imagesize = {0,0};
     int steps = 0, levels = 0;
+    struct Params par;
     int i;
 
-    if (ac < 2) {
-	usage = TRUE;
-    } else while (--ac) {
-	char *arg = *++av;
+    struct Cmdline options[] = {
+	{1, "--output", 'o', "file.bmp", "output bitmap name",
+		"filename", parsestr, &outfile, NULL},
+	{1, "--size", 's', "NNNxNNN", "output bitmap size",
+		"output bitmap size", parsesize, &imagesize, NULL},
+	{1, "--steps", 'n', "NNN", "number of iterations of smoothing",
+		"step count", parseint, &steps, NULL},
+	{1, "--levels", 'l', "NNN", "number of levels of output colour",
+		"level count", parseint, &levels, NULL},
+	{1, "--verbose", 'v', NULL, "report details of what is done",
+		NULL, NULL, NULL, &verbose},
+    };
 
-	if (arg[0] != '-') {
-            usage = TRUE;
-        } else {
-	    char c = arg[1];
-	    char *val = arg+2;
-	    if (c == '-') {
-		static const struct {
-		    char const *name;
-		    int letter;
-		} longopts[] = {
-		    {"--output", 'o'},
-		    {"--size", 's'},
-		    {"--steps", 'm'},
-		    {"--levels", 'p'},
-		    {"--verbose", 'v'},
-		    {"--help", 'h'},
-		    {"--version", 'V'},
-		};
-		int i, j;
-		for (i = 0; i < lenof(longopts); i++) {
-		    j = strlen(longopts[i].name);
-		    if (!strncmp(arg, longopts[i].name, j) &&
-			j == (int)strcspn(arg, "=")) {
-			c = longopts[i].letter;
-			val = arg + j;
-			if (*val) val++;
-			break;
-		    }
-		}
-		if (c == '-') {
-		    fprintf(stderr, "greyblur: unknown long option `%.*s'\n",
-			    (int)strcspn(arg, "="), arg);
-		    return EXIT_FAILURE;
-		}
-	    }
-	    switch (c) {
-	      case 'v':
-		verbose++;
-		break;
-	      case 'h':
-		usage = TRUE;
-		break;
-	      case 'V':
-		{
-		    char *p = VERSION;
-		    int i;
-		    p += strcspn(p, " ");
-		    if (*p) p++;
-		    i = strcspn(p, " $");
-		    printf("greyblur version %.*s\n", i, p);
-		}
-		return EXIT_SUCCESS;
-	      default:		       /* other options require an arg */
-		if (!*val) {
-		    if (!--ac) {
-			fprintf(stderr,
-				"greyblur: option `%s' requires an argument\n",
-				arg);
-			return EXIT_FAILURE;
-		    }
-		    val = *++av;
-		}
-		switch (c) {
-		  case 'o':	       /* --output */
-		    outfile = val;
-		    break;
-		  case 's':	       /* --size */
-		    if (!parsesize(val, &imagex, &imagey, "output image size"))
-			return EXIT_FAILURE;
-		    break;
-                  case 'n':            /* --steps */
-		    if (!parseint(val, &steps, "step count"))
-			return EXIT_FAILURE;
-		    break;
-                  case 'l':            /* --levels */
-		    if (!parseint(val, &levels, "level count"))
-			return EXIT_FAILURE;
-		    break;
-		}
-		break;
-	    }
-	}
-    }
+    parse_cmdline("greyblur", argc, argv, options, lenof(options));
 
-    if (usage) {
-	int i;
-	for (i = 0; i < lenof(usagemsg); i++)
-	    puts(usagemsg[i]);
-	return ac == 1 ? EXIT_SUCCESS : EXIT_FAILURE;
+    if (argc < 2)
+	usage_message("greyblur [options]", options, lenof(options), NULL, 0);
+
+    /*
+     * Having read the arguments, now process them.
+     */
+
+    /* If no output file, complain. */
+    if (!outfile) {
+	fprintf(stderr, "greyblur: no output file specified: "
+		"use something like `-o file.bmp'\n");
+	return EXIT_FAILURE;
+    } else
+	par.outfile = outfile;
+
+    /*
+     * Now complain if no output image size was specified.
+     */
+    if (!imagesize.w || !imagesize.h) {
+	fprintf(stderr, "greyblur: no output size specified: "
+		"use something like `-s 400x400'\n");
+	return EXIT_FAILURE;
     } else {
-	/*
-	 * Having read the arguments, now process them.
-	 */
-	struct Params par;
-
-	/* If no output file, complain. */
-	if (!outfile) {
-	    fprintf(stderr, "greyblur: no output file specified: "
-		    "use something like `-o file.bmp'\n");
-	    return EXIT_FAILURE;
-	} else
-	    par.outfile = outfile;
-
-	/*
-	 * Now complain if no output image size was specified.
-	 */
-	if (!imagex || !imagey) {
-	    fprintf(stderr, "greyblur: no output size specified: "
-		    "use something like `-s 400x400'\n");
-	    return EXIT_FAILURE;
-	} else {
-	    par.width = imagex;
-	    par.height = imagey;
-	}
-
-        par.steps = (steps > 0 ? steps : 5);
-        par.levels = (levels > 0 ? levels : 2);
-
-	/*
-	 * If we're in verbose mode, regurgitate the final
-	 * parameters.
-	 */
-	if (verbose) {
-            printf("Output file `%s', %d x %d\n",
-                   par.outfile, par.width, par.height);
-            printf("Smoothing steps: %d\n", par.steps);
-            printf("Output grey levels: %d\n", par.levels);
-	}
-
-	i = plot(par) ? EXIT_SUCCESS : EXIT_FAILURE;
-
-        return i;
+	par.width = imagesize.w;
+	par.height = imagesize.h;
     }
+
+    par.steps = (steps > 0 ? steps : 5);
+    par.levels = (levels > 0 ? levels : 2);
+
+    /*
+     * If we're in verbose mode, regurgitate the final
+     * parameters.
+     */
+    if (verbose) {
+	printf("Output file `%s', %d x %d\n",
+	       par.outfile, par.width, par.height);
+	printf("Smoothing steps: %d\n", par.steps);
+	printf("Output grey levels: %d\n", par.levels);
+    }
+
+    i = plot(par) ? EXIT_SUCCESS : EXIT_FAILURE;
+
+    return i;
 }

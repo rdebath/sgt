@@ -1,5 +1,5 @@
-/*
- * bmpwrite.h: header defining functions to write out .BMP files.
+/* ----------------------------------------------------------------------
+ * Declarations for functions to write out .BMP files.
  */
 
 #ifndef BMPWRITE_H
