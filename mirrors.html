@@ -241,7 +241,7 @@ wget --no-parent -l0 -r --cut-dirs=1 -nH \
 # version number of the latest release.
 cd putty
 wget http://the.earth.li/~sgtatham/putty/htaccess
-version=`sed 's!.*http://the.earth.li/~sgtatham/putty/!!; s!/!!g' htaccess`
+version=`sed -n 's!.*http://the.earth.li/~sgtatham/putty/\(.*\)/!\1!p' htaccess`
 echo Latest version is $version
 
 # Retrieve the binaries directory for that version from the binaries
