@@ -1,6 +1,7 @@
 while (<>) { push @ints, $1 if /^\s+\+\s+(\S(.*\S)?)\s*$/; }
 print join ", ", grep { $p = $_ ne $z; $z = $_; $p }
   sort { $a cmp $b } map { lc $_ } @ints;
+print "\n";
 __END__
 
 LJ interests list, categorised for easy thinking
@@ -44,10 +45,12 @@ it through Perl on itself (`perl interests interests').
     + NetHack
     + puzzles
     + recreational maths
+       + mathematics
        + infinity
     + strategy
     + tactics
     + Go
+    + The Chairman's Game
  - Entertainment
     + Babylon 5
     + Yes Minister
