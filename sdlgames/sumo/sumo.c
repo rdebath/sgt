@@ -70,7 +70,7 @@ static int makedeath(int player, int angle);
 static int make_deliveries(void);
 static int do_palette(void);
 
-static Image title, draw, win1, win2;
+static Image title, gameon, draw, win1, win2;
 static void expand_title(void);
 static void make_text(void);
 
@@ -269,7 +269,7 @@ static int check_esc(void)
 
 static int play_game(void)
 {
-    Sprite p[2], bs[2][MAX_BULLETS], q;
+    Sprite p[2], bs[2][MAX_BULLETS], q, qq;
     int x1,y1,x15,y15,x2,y2,i,j,jj,gameover;
     int dx,dy,dvx,dvy,sp;
     int bx[2][MAX_BULLETS],by[2][MAX_BULLETS];
@@ -297,6 +297,11 @@ static int play_game(void)
 	for (j = 0; j < MAX_BULLETS; j++)
 	    bs[i][j] = makesprite(3, 3, 0);
     q = makesprite(0x6C,0x11,0x81);
+    qq = makesprite(80,40,-1);
+
+    scr_prep();
+    putsprite(qq, gameon, 240, 200);
+    scr_done();
 
     for (i = 0; i < 26; i++) {
 	initframe(65000);
@@ -542,6 +547,7 @@ static int play_game(void)
     scr_prep();
     erasesprite(q);
     ERASEALLSPRITES;
+    erasesprite(qq);
     scr_done();
 
     freesprite(q);
@@ -652,12 +658,13 @@ static int options_menu(int which)
 
     struct {
 	char *text;
-	enum { RETURN, QUIT, ADJUST } action;
+	enum { RETURN, RESET, QUIT, ADJUST } action;
     } menu[3];
     int nmenu = 0;
     int h, y, i, mpos, prevval;
 
     menu[nmenu].text = "RETURN TO GAME"; menu[nmenu++].action = RETURN;
+    menu[nmenu].text = "RESET SCORES"; menu[nmenu++].action = RESET;
     menu[nmenu].text = "ADJUST SCREEN"; menu[nmenu++].action = ADJUST;
     if (!no_quit_option) {
 	menu[nmenu].text = "EXIT SUMO"; menu[nmenu++].action = QUIT;
@@ -729,6 +736,7 @@ static int options_menu(int which)
 	if (pushed && menu[mpos].action == QUIT) exit(1);
 	if (pushed && menu[mpos].action == RETURN) break;
 	if (pushed && menu[mpos].action == ADJUST) adjust_screen(which);
+	if (pushed && menu[mpos].action == RESET) { sc1=sc2=0; show_scores();}
     }
 
     scr_prep();
@@ -1299,4 +1307,12 @@ static void expand_title(void)
     p.fg = 134;
     swash_centre(0, 80, 141, "PLAYER 2", plot_on_image, &p);
 
+    /*
+     * Prepare a smaller image to be overlaid on the `select for
+     * options' text during a game, since then it's not true.
+     */
+    gameon = makeimage(80, 40, 0, 0);
+    p.image = gameon;
+    p.fg = 137;
+    swash_centre(0, 80, 12, "GAME ON", plot_on_image, &p);
 }
