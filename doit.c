@@ -318,6 +318,7 @@ int listener_newthread(SOCKET sock, int port, SOCKADDR_IN remoteaddr) {
         goto done;
 
     if (!strcmp(cmdline, "ShellExecute")) {
+        int ret;
         /*
          * Read a second line and feed it to ShellExecute(). Give
          * back either "+" (meaning OK) or "-" followed by an error
@@ -325,9 +326,26 @@ int listener_newthread(SOCKET sock, int port, SOCKADDR_IN remoteaddr) {
          */
         free(cmdline); cmdline = NULL;
         cmdline = do_fetch_line(sock, ctx);
-        if (32 >= (int)ShellExecute(listener_hwnd, NULL, cmdline, NULL,
-                                    NULL, SW_SHOWNORMAL)) {
-            do_doit_send_str(sock, ctx, "-ShellExecute failed\n");
+        ret = (int)ShellExecute(listener_hwnd, "open", cmdline, NULL,
+                                NULL, SW_SHOWNORMAL);
+        if (ret <= 32) {
+            char *msg = "-ShellExecute failed: unknown error\n";
+            if (ret == 0) msg = "-ShellExecute failed: Out of memory or resources\n";
+            if (ret == ERROR_FILE_NOT_FOUND) msg = "-ShellExecute failed: File not found\n";
+            if (ret == ERROR_PATH_NOT_FOUND) msg = "-ShellExecute failed: Path not found\n";
+            if (ret == ERROR_BAD_FORMAT) msg = "-ShellExecute failed: Invalid .exe file\n";
+            if (ret == SE_ERR_ACCESSDENIED) msg = "-ShellExecute failed: Access denied\n";
+            if (ret == SE_ERR_ASSOCINCOMPLETE) msg = "-ShellExecute failed: File name association incomplete or invalid\n";
+            if (ret == SE_ERR_DDEBUSY) msg = "-ShellExecute failed: DDE busy\n";
+            if (ret == SE_ERR_DDEFAIL) msg = "-ShellExecute failed: DDE transaction failed\n";
+            if (ret == SE_ERR_DDETIMEOUT) msg = "-ShellExecute failed: DDE transaction timed out\n";
+            if (ret == SE_ERR_DLLNOTFOUND) msg = "-ShellExecute failed: DLL not found\n";
+            if (ret == SE_ERR_FNF) msg = "-ShellExecute failed: File not found\n";
+            if (ret == SE_ERR_NOASSOC) msg = "-ShellExecute failed: No application associated with this file type\n";
+            if (ret == SE_ERR_OOM) msg = "-ShellExecute failed: Out of memory\n";
+            if (ret == SE_ERR_PNF) msg = "-ShellExecute failed: Path not found\n";
+            if (ret == SE_ERR_SHARE) msg = "-ShellExecute failed: Sharing violation\n";
+            do_doit_send_str(sock, ctx, msg);
         } else {
             do_doit_send_str(sock, ctx, "+\n");
         }
