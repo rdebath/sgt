@@ -61,6 +61,7 @@ def isint(s):
 #  - PTITLE is a title paragraph.
 #  - PTITLEQUIET is a quiet title paragraph (appears in the title
 #    on LJ, but is formatted normally on Mono).
+#  - PTITLELJ is an LJ-only title paragraph.
 #  - PTALKER is a talker-formatted paragraph.
 PNORMAL = 1
 PPRE = 2
@@ -68,8 +69,9 @@ PBULLET = 3
 PMBREAK = 4
 PTITLE = 5
 PTITLEQUIET = 6
-PTALKER = 7
-def is_title(typ): return typ == PTITLE or typ == PTITLEQUIET
+PTITLELJ = 7
+PTALKER = 8
+def is_title(typ): return typ in [PTITLE,PTITLEQUIET,PTITLELJ]
 # Mono attribute definitions.
 mono_colours = "AAAAAAAAKRGYBMCW" # 0-7 normal, 8-15 coloured
 ATTR_BOLD = 1
@@ -78,8 +80,11 @@ ATTR_FG = 0xF0
 ATTR_FGSHIFT = 4
 ATTR_FOOTNOTE = 0x90
 ATTR_QUOTED = 0xB0
-# Mono (text,attr,break) combinations for quote prefixes.
-monoquotes = [("", 0, 0), ("  ", ATTR_QUOTED, 0), ("> ", ATTR_QUOTED, 0)]
+ATTR_STORY = 0xA0
+# Mono (text,attr,break) combinations for quote prefixes and
+# story-mode text.
+monoquotes = [("", 0, 0), ("  ", ATTR_QUOTED, 0),
+("> ", ATTR_QUOTED, 0), ("   ", ATTR_STORY, 0)]
 # Regexp matching dangerous things to put at the start of a line.
 monodanger = re.compile(r'^[A-Z][A-Za-z]*:')
 # Maximum length of a Mono edit.
@@ -292,6 +297,8 @@ class output:
 	    self.html_title = 1
 	    if typ == PTITLE:
 		self.mono_attr = self.mono_attr | ATTR_UNDER
+	    elif typ == PTITLELJ:
+		self.mono_ok = 0
 	if typ == PNORMAL and not self.firstpara:
 	    self.html = self.html + "<p>"
 	if typ == PTALKER:
@@ -670,8 +677,10 @@ def rdinput(file):
     # Tokens which immediately end a paragraph.
     endpara = [
     (TSIMPLE,"Q"), (TSIMPLE,"q"), (TSIMPLE,"/q"), (TSIMPLE,"/Q"),
+    (TSIMPLE,"story"), (TSIMPLE,"/story"),
     (TSIMPLE,"pre"), (TSIMPLE,"b"), (TSIMPLE, "mbreak"), 
     (TOPEN, "ljcut"), (TOPEN, "mbreak"), (TOPEN, "t"), (TOPEN, "tq"),
+    (TOPEN, "tlj"),
     (PARA,), (EOF,)]
 
     while 1:
@@ -688,13 +697,17 @@ def rdinput(file):
 	    elif tok == (TSIMPLE, "nocomments"):
 		t.next()
 		nocomments = 1
+	    elif tok == (TSIMPLE, "story"):
+		t.next()
+		o.quote_state(3)
 	    elif tok == (TSIMPLE, "Q"):
 		t.next()
 		o.quote_state(2)
 	    elif tok == (TSIMPLE, "q"):
 		t.next()
 		o.quote_state(1)
-	    elif tok == (TSIMPLE, "/Q") or tok == (TSIMPLE, "/q"):
+	    elif tok == (TSIMPLE, "/Q") or tok == (TSIMPLE, "/q") or \
+	    tok == (TSIMPLE, "/story"):
 		t.next()
 		o.quote_state(0)
 	    elif tok == (TSIMPLE, "pre"):
@@ -739,6 +752,11 @@ def rdinput(file):
 		t.next()
 		stack = ["tq"]
 		para_type = PTITLEQUIET
+		break
+	    elif tok == (TOPEN, "tlj"):
+		t.next()
+		stack = ["tlj"]
+		para_type = PTITLELJ
 		break
 	    elif tok == (NL,) or tok == (PARA,) or tok == (WHITE,):
 		t.next()
@@ -859,7 +877,7 @@ def rdinput(file):
 			o.postnamemode(0)
 		    elif s == "tl":
 			o.tlend()
-		    elif s == "t":
+		    elif s == "t" or s == "tlj":
 			o.end_title()
 		    elif s == "tq":
 			o.end_title()
@@ -1002,9 +1020,18 @@ while 1:
 	data = out.mono + [\
 	"Message: 7fffffff","From: (dummy edit)", "Please ignore this."]
 	for i in data:
-	    f.write(i + "\n")
-	    g.write(i + "\n")
-	    h.write(i + "\n")
+	    try:
+		f.write(i + "\n")
+	    except IOError:
+		pass
+	    try:
+		g.write(i + "\n")
+	    except IOError:
+		pass
+	    try:
+		h.write(i + "\n")
+	    except IOError:
+		pass
 	f.close()
 	g.close()
 	h.close()
