@@ -1,0 +1,121 @@
+This is the README file from Simon Tatham's archive of utility
+programs to deal with polyhedra.
+
+Here is a list of the Python programs provided in this archive and
+their usage instructions:
+
+ - mkpoints.py expects one argument which is a number (call it N),
+   and an optional second argument which is an output file name. (If
+   the latter is absent, it will write to standard output.) It
+   scatters N points randomly on the surface of a sphere, allows
+   them to move under mutual inverse-square repulsion while keeping
+   them constrained to the sphere's surface, waits until they
+   converge to fixed locations, and outputs their locations.
+
+ - nfaces.py expects up to two arguments: an input file and an
+   output file. (If absent, it will read standard input and write to
+   standard output.) From its input file, it expects to read a set
+   of coordinates of points on a sphere, as output by mkpoints.py.
+   To its output file, it writes a description of the polyhedron
+   constructed by extending a tangent plane to the sphere out from
+   each of the supplied points; so its output will necessarily have
+   exactly as many faces as there were points in its input.
+
+ - nvertices.py expects up to two arguments: an input file and an
+   output file. (If absent, it will read standard input and write to
+   standard output.) From its input file, it expects to read a set
+   of coordinates of points on a sphere, as output by mkpoints.py.
+   To its output file, it writes a description of the polyhedron
+   constructed by finding the convex hull of the supplied points; so
+   its output will necessarily have exactly as many vertices as
+   there were points in its input.
+
+ - cleanpoly.py expects up to two arguments: an input file and an
+   output file. (If absent, it will read standard input and write to
+   standard output.) From its input file, it expects to read a
+   polyhedron description as output by either nfaces.py or
+   nvertices.py. To its output file, it writes another polyhedron
+   description. In between, it cleans up the polyhedron description
+   by merging pairs of adjacent faces which point in almost exactly
+   the same direction, and merging pairs of adjacent vertices which
+   are almost exactly in the same place.
+
+   This program is needed in order to produce sensible output from
+   the unusual case of 8 repelling points on a sphere. This is the
+   only case I know of where the points converge to a shape whose
+   convex hull contains a non-triangular face. However, due to
+   rounding errors and incomplete convergence, nvertices.py will
+   actually output the square face as two right-angled triangles on
+   practically the same plane, and nfaces.py will output what should
+   be an order-4 vertex as two adjacent order-3 vertices connected
+   by a tiny edge. cleanpoly.py tidies this up and gives a good idea
+   of what the fully converged answer _should_ look like.
+
+   If you try using this program suite with _really_ large numbers
+   of points, you may find that pairs of faces which really should
+   be separate are considered close enough to parallel that
+   cleanpoly.py will amalgamate them. If this happens, the only
+   thing I can suggest is to stop using cleanpoly.py!
+
+ - drawpoints.py expects up to two arguments: an input file and an
+   output file. (If absent, it will read standard input and write to
+   standard output.) From its input file, it expects to read a set
+   of coordinates of points on a sphere, as output by mkpoints.py.
+   To its output file, it writes PostScript code which draws the set
+   of points projected from a sphere on to a circle, with points on
+   the front of the sphere denoted by O and points at the back
+   denoted by X.
+
+ - drawpoly.py expects up to two arguments: an input file and an
+   output file. (If absent, it will read standard input and write to
+   standard output.) From its input file, it expects to read a
+   polyhedron description as output by any of nfaces.py,
+   nvertices.py or cleanpoly.py. To its output file, it writes
+   PostScript code which draws a wireframe 3D perspective view of
+   the polyhedron described.
+
+ - drawnet.py expects up to two arguments: an input file and an
+   output file. (If absent, it will read standard input and write to
+   standard output.) From its input file, it expects to read a
+   polyhedron description as output by any of nfaces.py,
+   nvertices.py or cleanpoly.py. To its output file, it writes
+   PostScript code which draws a 2D net. If printed out, cut out and
+   folded up, this net should generate the polyhedron described in
+   the input file.
+
+   This program is not yet terribly advanced. Its output quality is
+   low, and it does not automatically generate tabs for gluing the
+   faces together.
+
+In the `examples' directory I supply a set of pre-generated point
+sets and polyhedron descriptions:
+
+ - All the files called `4.points', `5.points' and so on are point
+   sets as output from mkpoints.py. Each file contains as many
+   points as its name suggests.
+
+ - The files called `4.faces', `5.faces' and so on are the result of
+   applying the face construction (nfaces.py) to each of the points
+   files. Thus, each one represents a polyhedron with that many
+   faces.
+
+ - The files called `4.vertices', `5.vertices' and so on are the
+   result of applying the vertex construction (nvertices.py) to each
+   of the points files. Thus, each one represents a polyhedron with
+   that many vertices.
+
+ - The files called `8.faces.unclean' and `8.vertices.unclean' are
+   the actual output of nfaces.py and nvertices.py respectively,
+   when applied to the point set `8.points'. They were then
+   converted into the nicer-looking 8.faces and 8.vertices by
+   cleanpoly.py.
+
+ - The supplied Makefile in the `examples' directory regenerates all
+   the `*.faces' and `*.vertices' files from the `*.points' inputs.
+   It expects to be run under GNU make.
+
+In the `html' subdirectory is the source of my web page on this
+subject, and a Makefile which constructs all the supporting image
+files out of the data in the `examples' subdirectory. The Makefile
+expects to be run under GNU make, and also requires Ghostscript,
+Netpbm and ImageMagick to be installed.
