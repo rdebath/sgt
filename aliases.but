@@ -1,0 +1,344 @@
+\cfg{xhtml-leaf-level}{0}
+\cfg{chapter}{Section}
+\cfg{text-title-align}{left}
+\cfg{text-indent}{0}
+\cfg{text-chapter-numeric}{yes}
+\cfg{text-chapter-suffix}{. }
+\cfg{text-chapter-underline}{-}
+\cfg{text-section-numeric}{0}{yes}
+\cfg{text-section-suffix}{0}{. }
+\cfg{text-section-underline}{0}{-}
+\cfg{xhtml-chapter-numeric}{yes}
+\cfg{xhtml-chapter-suffix}{. }
+\cfg{xhtml-section-numeric}{0}{yes}
+\cfg{xhtml-section-suffix}{0}{. }
+\cfg{xhtml-section-numeric}{1}{yes}
+\cfg{xhtml-section-suffix}{1}{. }
+
+\cfg{xhtml-address-start}{Copyright &copy; 2003 Simon Tatham.
+<br>This document is
+<a href="http://www.opencontent.org/">OpenContent</a>.
+<br>You may copy and use the text under the terms of the
+<a href="http://www.opencontent.org/opl.shtml">OpenContent
+Licence</a>.
+<br>Please send comments and criticism on this article to
+<a href="mailto:anakin@pobox.com">anakin@pobox.com</a>.}
+
+\title Magic Aliases: A Layering Loophole in the Bourne Shell
+
+\preamble by \W{http://pobox.com/~anakin/}{Simon Tatham}
+
+\preamble The Bourne shell contains two entirely different ways to
+define your own commands: shell functions and aliases. This article
+explores the differences between the two, and shows some unexpected
+consequences of the alias mechanism.
+
+\U Introduction
+
+All POSIX-compliant Bourne-style shells allow the user to define
+\e{shell functions}, like this:
+
+\c myfunc() {
+\c     echo First argument was $1
+\c     echo All arguments together were "$@"
+\c }
+
+The shell evaluates a command such as \c{myfunc a b c} in much the
+same way it would evaluate any other command: first it does all the
+usual variable expansion, wildcard expansion and so on, until the
+command line is a list of individual words. Then it examines the
+first of those words, notices that it matches the name of a shell
+function, and runs the function body with the remaining command
+words available as \cw{$1}, \cw{$2} and so on.
+
+This is a simple and flexible way to define new commands. The inside
+of a shell function can do anything that a shell script in a file
+could have done, and has the the additional ability to modify the
+shell's internal state. (For example, a shell function can change
+your current directory, whereas an external shell script cannot.)
+
+Bourne shells also support \e{aliases}, which are defined using a
+command like this:
+
+\c alias dir='ls -l'
+
+Now if you invoke this alias using a command such as \c{dir /etc},
+the shell will notice that the first word on the line is the name of
+an alias, and it will replace that word with the definition. So the
+command line will become \c{ls -l /etc}, which will then be executed
+in the normal way.
+
+It's not obvious why the Bourne shell bothers to support \e{both} of
+these mechanisms. Shell functions, of course, can do things aliases
+can't do: a shell function can loop through its arguments one by
+one, or reverse their order completely, or can use its arguments and
+then do something else afterwards. But the example alias shown above
+could just as easily have been written as a shell function:
+
+\c dir() { ls -l "$@"; }
+
+So if any alias can be rewritten as a shell function, why does the
+Bourne shell support aliases at all? The casual observer would be
+forgiven for speculating that aliases were invented first, became
+largely obsolete once shell functions were available, but still had
+to be supported for backwards compatibility. It does look very much
+as if aliases are a historical wart on the Bourne shell, which add
+no extra functionality and would have been better off being
+abandoned once shell functions were invented.
+
+Well, actually, there \e{are} some things you can do with aliases
+which you can't do without them. In this article I explore those
+things.
+
+\U The Power of Aliases
+
+The power of aliases lies in the fact that they are handled by the
+shell \e{before} all the usual command-line processing. At the time
+when the alias is expanded, the rest of the command line has not had
+variable or wildcard expansions done. This suggests that the alias
+might be able to do something to \e{affect} those expansions.
+
+In fact, once the challenge is put like that, it's not too difficult
+to produce an example. Here's a very simple one, together with the
+shell-function which you might expect to be equivalent:
+
+\c alias lsetc='cd /etc; ls -l'         # as an alias
+\c lsetc() { cd /etc; ls -l "$@"; }     # as a shell function
+
+If you just type \c{lsetc}, or provide some inert arguments such as
+\c{lsetc passwd hosts}, these two implementations will behave
+identically. But if you pass a \e{wildcard} as an argument (\c{lsetc
+*.conf}), something more interesting will happen.
+
+The arguments passed to the shell function, and hence to \c{ls},
+will be the results of expanding the wildcard \c{*.conf} \e{in the
+current directory}; so you'll get a list of all the \c{.conf} files
+in \c{/etc} which also exist in the directory you started in.
+However, the alias version will be converted into \c{cd /etc; ls -l
+*.conf}; and the shell will finish processing the \c{cd} command
+\e{before} expanding the wildcard in the \c{ls}. So if you do this
+with the alias version of the command, you will see a list of all
+the \c{.conf} files in \c{/etc}.
+
+This is all very well, but it's not really very interesting. The
+\c{lsetc} command defined in the above example is a thoroughly
+useless command, because you almost certainly would not want it to
+leave your current directory as \c{/etc} as a side effect. An alias
+containing a semicolon has the power to change the shell environment
+so that its arguments are expanded in a different way; but that
+power is not very useful if it always leaves that changed
+environment for you to clear up afterwards.
+
+If we \e{combine} an alias with a shell function, however, we can
+harness the power of aliases in a more useful fashion. Watch this
+example:
+
+\c lsetc_helper() {
+\c     ls -l "$@"
+\c     cd "$originaldir"
+\c     unset originaldir
+\c }
+\c
+\c alias lsetc='originaldir="$PWD"; cd /etc; lsetc_helper'
+
+This version of the \c{lsetc} command is much closer to being
+useful, since it leaves you in the same directory you started in. It
+now behaves very much like an ordinary shell command, with the
+unusual property that if you give a wildcard on its command line
+then that wildcard is expanded in the context of \c{/etc} instead of
+the current directory.
+
+This is the simplest example of what I call a \e{magic alias}: an
+combination of an alias and a shell function which between them
+cause the alias's command line to be evaluated in a different
+environment from the expected one. A summary of the trick is:
+
+\b You have an alias which saves parts of the shell context, changes
+that context, and then passes the alias's arguments to a helper shell
+function.
+
+\b The helper shell function restores the original shell context which
+was saved by the alias (either before or after doing something with
+the arguments it was given).
+
+\b Thus, the arguments passed to the alias undergo variable and
+wildcard expansion in the \e{altered} shell context, and yet the
+running of the alias as a whole leaves the shell context as it was.
+
+\U Philosophy
+
+This is, of course, a truly \e{horrible} hack, and should not be
+used unless you really know what you're doing.
+
+The Bourne shell syntax is pretty weird and baroque; I doubt anyone
+would disagree that it's highly non-obvious in all sorts of places
+to a shell beginner. But after you've used it for a little while,
+you start to notice an underlying consistency which enables you to
+be confident that you don't need to worry about unexpected behaviour
+in many circumstances.
+
+One important form of this consistency is that the shell expands
+arguments \e{before} passing them to subcommands. Under other
+operating systems (notably DOS), wildcards are expanded by each
+individual system command and program, and each one expands them in
+their own way. A hurriedly written program, for example, might not
+understand wildcards at all; at the other end of the spectrum, you
+could write a rename program that \q{intelligently} parsed your
+command line and understood the intent behind \c{rename *.txt
+*.text}. Sometimes this flexibility is useful to the application
+author, and to the user; but it also means that the user always has
+to remember the subtleties of the wildcard rules for \e{every}
+program they use.
+
+So the Bourne shell's strength is its absolute consistency in this
+regard. Because the \e{shell} expands wildcards before passing them
+to a command, they are guaranteed to be expanded in exactly the same
+way in all cases. Any wildcard which matches at least one file will
+arrive in the subprogram in the form of a list of valid filename
+arguments; so in \e{any} situation where a command expects a list of
+one or more filenames, it is valid to use a wildcard instead. Life
+is simpler for the application programmer, and there are fewer
+tricky special cases to remember for the user, and if a little
+flexibility such as the above rename example is lost in the process,
+that often seems a small price to pay. (In fact, I usually find my
+own bulk renaming needs are more complex than that syntax could
+easily express anyway, so I have a bulk rename utility that uses
+regular expressions! Much more powerful.)
+
+Even with shell functions, this consistency is not broken. Arguments
+to a shell function are expanded in exactly the same way as
+arguments to an external command, before the function begins to run.
+A shell function can do more than an external command - it can alter
+your shell's internal state, such as variables and current directory
+- but there are still limits on how much it can mess with the
+command line you give it.
+
+However, the magic alias trick is a loophole in the Bourne shell's
+otherwise unbroken consistency. It allows you to create commands
+which interpret their command lines at a level which by rights
+\e{ought} to be impossible: a command, for example, which can tell
+the difference between \c{mycmd *.c} and \c{mycmd foo.c bar.c}, even
+when the former ought to expand to the latter. Such a command would
+violate all the expectations a Bourne shell user has acquired about
+the behaviour of commands, and despite the superficial
+user-friendliness to a shell novice, something like this could
+seriously confuse an intermediate-level user.
+
+(Also, there's a much more immediate danger in putting a semicolon
+inside an alias: it causes parsing of composite commands to do
+unexpected things. For example, you should never put \c{&} at the
+end of a magic alias invocation, or the shell function that restores
+your environment to the way it started off will be run in a context
+where it can't affect your original shell!)
+
+As Tom Duff wrote about the legendary Duff's device, \q{I feel a
+combination of pride and revulsion at this discovery}. I began
+investigating this area of the Bourne shell because aliases seemed
+like a completely useless feature, and I was curious to find out
+whether there was any reason why they shouldn't simply be removed.
+Although I discovered that aliases do add something to the Bourne
+shell (i.e. they make things possible which wouldn't be possible by
+other means), it's possible that what I discovered forms the best
+possible argument for why they \e{should} be removed!
+
+I feel strongly that magic aliases should never be used in a default
+shell configuration which will be given to novice users,
+intermediate users, or in fact any user who hasn't been explicitly
+warned to expect it. However, an expert user with a strong stomach
+might nonetheless find it useful to add one or two magic aliases to
+their personal shell configuration files, if they know exactly what
+they're letting themselves in for, and trust themselves to never
+forget that they've done so.
+
+\U Applications
+
+Here's a concrete example of how magic aliases could actually be
+useful.
+
+We've already seen the idea of having command-line wildcards
+evaluated in a different directory from the obvious one. One much
+more simple thing which affects wildcard expansion is just \e{not}
+to expand them at all. Here's a helper function and an alias which
+arrange this:
+
+\c noglob_helper() {
+\c     "$@"
+\c     case "$shopts" in
+\c         *noglob*) ;;
+\c         *) set +f ;;
+\c     esac
+\c     unset shopts
+\c }
+\c
+\c alias noglob='shopts="$SHELLOPTS"; set -f; noglob_helper'
+
+This turns wildcard expansion off completely (\c{set -f}) before
+evaluating the alias's arguments, and then restores it to its
+original state afterwards. So after doing this, you can use the new
+\c{noglob} prefix to avoid globbing the arguments to a particular
+command:
+
+\c $ echo *.c
+\c foo.c bar.c baz.c
+\c $ noglob echo *.c
+\c *.c
+
+This is a fairly benign use of the technique, and also fairly
+unhelpful since it would have been quicker to type \c{echo '*.c'}
+than to bother typing the \c{noglob} prefix! If you're feeling
+brave, you could try defining specific aliases which apply the
+noglob property \e{automatically} to certain commands. One command
+in which wildcards almost always have to be quoted is \c{find}:
+
+\c find . -name '*.[ch]' | xargs grep 'struct treenode'
+
+So if you cover the \c{find} command with an alias much like
+\c{noglob}:
+
+\c alias find='shopts="$SHELLOPTS"; set -f; noglob_helper find'
+
+then you will be able to type \c{find . -name *.[ch]} without fear of
+premature wildcard expansion.
+
+Other possibilities include fiddling with the finer details of the
+globbing options in extended shells (\cw{nocaseglob}, \cw{extglob},
+and \cw{dotglob} in \cw{bash}); I've already mentioned the
+possibility of evaluating wildcards in a different directory (but
+note that this also affects I/O redirections). You could disable
+\cw{bash}'s brace expansion; you could turn on \c{set -C} to avoid
+clobbering existing files with output redirections. The list goes
+on.
+
+Irritatingly, one thing you \e{can't} do is turn off parsing of
+shell comments (another \cw{bash} feature) for one command only.
+This would be incredibly useful if you had an IRC client or utility
+which expected a channel name on the command line: you could
+redefine the utility name as an alias and arrange that \q{\cw{irc -c
+#foobar}} was parsed in the useful way rather than by treating
+everything after the hash as a comment! But unfortunately, this
+doesn't seem to work: comments must have already been parsed by the
+time the alias substitution takes place.
+
+Finally, a helpful technique for restoring sanity. As soon as you
+start defining aliases that modify the behaviour of existing
+commands, you also start wondering if you can easily turn them off
+when necessary. For the rare occasions when you \e{do} want
+wildcards expanded on the \c{find} command line, you could
+explicitly type \c{/usr/bin/find} to prevent the alias from being
+used. Alternatively, you could make use of the fact that alias
+substitution happens before variable expansion, define the very
+simple shell function
+
+\c real() { "$@"; }
+
+and then run \c{real find} to avoid the alias. This technique will
+allow you to bypass any alias definition.
+
+\U Summary
+
+I've presented a Bourne shell trick I call \q{magic aliases}: a
+fusion of aliases with shell functions, allowing the alias to effect
+the rules under which its own command line is evaluated. I've
+strongly advised extreme caution if this trick is actually used, but
+suggested a range of ways that it might nonetheless be useful to a
+user who knows exactly what they're doing.
