@@ -1,0 +1,282 @@
+/* -*- bc -*- */
+/* must be run in GNU bc - nobody else's will do */
+
+/*
+ * Exported functions:
+ *
+ *    invert(a,b)        returns mult inverse of a mod b
+ *    gcd(a,b)           returns the gcd of a and b
+ *    modmin(a,b,c,r,t)  returns x s.t. r <= x <= t
+ *                             and s.t. (ax mod b) is maximal <= c
+ *
+ * Exported procedures:
+ *
+ *    hprint(x,d)        prints x, in hex, with at least d digits (leading 0s)
+ *    dprint(x,d)        prints x, in decimal, with at least d digits
+ *    bprint(x,d)        prints x, in binary, with at least d digits
+ *    confrac(frac)      prints continued fraction terms and convergents
+ *                         for a given number, until accuracy runs out
+ *    confrac(num,denom) same as confrac, but given numerator and denominator
+ *
+ * Exported constants:
+ *
+ *    pi_5000            pi to 5000 bits
+ *
+ * Namespace use:
+ * 
+ *    an auxiliary function used by an exported function terminates
+ *    in `__name' where `name' is the name of the exported function
+ *
+ * Suggested convention:
+ *
+ *    use the variable `void' to assign the ignored results of
+ *    procedures to.
+ */
+
+/*
+ * Print the value x, in base `obase', with at least d digits.
+ */
+define minprint__hprint(x,d) {
+    auto dd;
+    dd = obase^(d-1);
+    while (x < dd && d > 1) {
+        print "0";
+        dd = dd / obase;
+        d = d - 1;
+    }
+    print x;
+}
+
+/*
+ * Print the value x, in binary, with at least d digits.
+ */
+define bprint(x,d) {
+    auto b, null;
+    b = obase;
+    obase = 2;
+    null = minprint__hprint(x, d);
+    obase = b;
+}
+
+/*
+ * Print the value x, in decimal, with at least d digits.
+ */
+define dprint(x,d) {
+    auto b, null;
+    b = obase;
+    obase = A;
+    null = minprint__hprint(x, d);
+    obase = b;
+}
+
+/*
+ * Print the value x, in hex, with at least d digits.
+ */
+define hprint(x,d) {
+    auto b, null;
+    b = obase;
+    obase = 8+8;
+    null = minprint__hprint(x, d);
+    obase = b;
+}
+
+/*
+ * invert a mod b
+ */
+define invert(a,b) {
+    auto q, p, i, t, m;
+
+    m = b;
+    b = a;
+    a = m;
+    /* the above isn't just a swap - we keep m! */
+    p = 0;
+    i = 1;
+    while (b != 1) {
+        t = b;
+        q = a / b;
+        b = a % b;
+        a = t;
+        t = p - q * i;
+        p = i;
+        i = t;
+    }
+    if (i < 0) i = ((i%m) + m) % m;
+    return (i);
+}
+
+define bkt__modmin(a,b,i) {
+    return ((i*a) % b);
+}
+
+define firstmodbelow__modmin(a,b,c) {
+    auto d, s, j, nn, u, t, void;
+
+    /* special case. if a < c, just return 1 because it's got to be that */
+    if (a < c) {return (1);}
+    /* And if c is 1, return the inverse of a mod b */
+    if (c == 1) {return (invert(a,b));}
+
+    /* set up to calculate convergents */
+    if (n == -2) {
+        y = a;
+        z = b;
+        p = 1;
+        q = 0;
+        while (1) {
+            if (n >= -1) {
+                rr = rr * q + p;
+                p = q;
+                q = rr;
+                if (n >= 0) {
+/* print "> init q[",n,"] = ",q,"\n"; */
+                    q[n] = q;
+                }
+            }
+            if (z == 0)
+                break;
+            n = n + 1;
+            t = z;
+            rr = y / z;
+            z = y % z;
+            y = t;
+        }
+    }
+
+    nn = -1;
+    while (1) {
+/* print "> nn=",nn,"\n"; */
+        nn = nn + 2;
+        if ( bkt__modmin(a,b,q[nn]) <= c ) {break;}
+    }
+    if (nn == 1) {
+        /*
+         * Paxson missed this case: q[nn] might not be optimal in
+         * this trivial case.
+         */
+        q = q[nn];
+/* print "> ret q[",nn,"]=",q[nn],"\n"; */
+        u = (b-c + b-a - 1) / (b-a);
+/* print "> try u=",u,"\n"; */
+        if (bkt__modmin(a,b,u) <= c && u < q) {
+            q = u;
+/* print "> better ret=",q,"\n"; */
+        }
+        return (q);
+    }
+    nn = nn - 2;
+/* print "> so nn=",nn,"\n"; */
+    d = bkt__modmin(a,b,q[nn]) - c;
+/* print "> d=",d,"\n"; */
+    s = b - bkt__modmin(a,b,q[nn+1]);
+/* print "> s=",s,"\n"; */
+    j = (d+s-1)/s;
+/* print "> j=",j,"\n"; */
+    return ( q[nn] + j*q[nn+1] );
+}
+
+define modmin(a,b,c,r,t) {
+    auto d, i, s, k, x, /* mark */ n,q[],p,q,y,z,rr;
+    /*
+     * We make use of dynamic variables here: everything after
+     * `mark' is there to be shared between multiple calls to
+     * firstmodbelow from here.
+     */
+
+    /*
+     * reduce a and c mod b
+     */
+    a = a % b;
+    if (a < 0) a = (a + b) % b;
+    c = c % b;
+    if (c < 0) c = (c + b) % b;
+
+    /*
+     * check a,b coprime
+     */
+    i = gcd(a,b);
+    if (i > 1) {
+        a = a / i;
+        b = b / i;
+        c = c / i; /* round down; this is correct */
+    }
+
+    /*
+     * special case: find an exact answer if we can
+     */
+    i = (invert(a,b) * c) % b;
+    i = r + (b - (r-i)%b) % b;  /* next above r */
+    if (i <= t) {
+        return (i);
+    }
+    s = r;
+    n = -2;
+/* print "a=",a,"\n"; */
+/* print "b=",b,"\n"; */
+    while (1) {
+        d = c - bkt__modmin(a,b,s);
+        if (d < 0) { d = d + b; }
+/* print "d=",d,"\n"; */
+        if (d == 0) { return (s); }
+        i = firstmodbelow__modmin(a,b,d);
+/* print "i=",i,"\n"; */
+        k = d/bkt__modmin(a,b,i);
+        if ( (s + k*i) >= t) {
+            break;
+        }
+        s = s + k*i;
+    }
+    k = (t-s) / i; /* Paxson says (t-s)/bkt__modmin(a,b,i). Bloody typos */
+    s = s + k*i;
+    return (s);
+}
+
+/* The good old gcd function */
+define gcd(a,b) {
+    auto t;
+    while (b != 0) {
+        t = b;
+        b = a % b;
+        a = t;
+    }
+    return (a);
+}
+
+define doit__confracr(n, d, e) {
+    auto oscale, n1, d1, nk, dk, nl, ng, dl, dg, i, j, nc, dc;
+    oscale = scale;
+    scale = 0;
+    n = n/1; d = d/1;
+    n1 = 0; nk = 1;
+    d1 = 1; dk = 0;
+    nl = n-e; dl = d;
+    ng = n+e; dg = d;
+    while (dl != 0) {
+        i = nl / dl;
+        if (i != ng / dg) {
+            scale = oscale;
+            return;
+        }
+        j = nl % dl; nl = dl; dl = j;
+        j = ng % dg; ng = dg; dg = j;
+        nc = nk * i + n1;
+        dc = dk * i + d1;
+        print i, " : ", nc, "/", dc, "\n";
+        n1 = nk; nk = nc;
+        d1 = dk; dk = dc;
+    }
+    scale = oscale;
+}
+
+define confracr(n, d) {
+    auto void;
+    void = doit__confracr(n, d, 0);
+}
+
+define confrac(q) {
+    auto z;
+    z = (5+5)^scale(q);
+    z = doit__confracr(z*q, z, 1);
+}
+
+pi_5000 = 3.141592653589793238462643383279502884197169399375105820974944592307816406286208998628034825342117067982148086513282306647093844609550582231725359408128481117450284102701938521105559644622948954930381964428810975665933446128475648233786783165271201909145648566923460348610454326648213393607260249141273724587006606315588174881520920962829254091715364367892590360011330530548820466521384146951941511609433057270365759591953092186117381932611793105118548074462379962749567351885752724891227938183011949129833673362440656643086021394946395224737190702179860943702770539217176293176752384674818467669405132000568127145263560827785771342757789609173637178721468440901224953430146549585371050792279689258923542019956112129021960864034418159813629774771309960518707211349999998372978049951059731732816096318595024459455346908302642522308253344685035261931188171010003137838752886587533208381420617177669147303598253490428755468731159562863882353787593751957781857780532171226806613001927876611195909216420198938095257201065485863278865936153381827968230301952035301852968995773622599413891249721775283479131515574857242454150695950829533116861727855889075098381754637464939319255060400927701671139009848824012858361603563707660104710181942955596198946767837449448255379774726847104047534646208046684259069491293313677028989152104752162056966024058038150193511253382430035587640247496473263914199272604269922796782354781636009341721641219924586315030286182974555706749838505494588586926995690927210797509302955321165;
