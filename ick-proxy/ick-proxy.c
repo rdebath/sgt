@@ -284,7 +284,7 @@ void got_line(struct Connection *c, int fdnum, char *line, int linelen)
     }
 }
 
-void run_daemon(char *daemon_cmd, int port)
+void run_daemon(char **daemon_words, int port)
 {
     struct sockaddr_in addr;
     int addrlen;
@@ -329,7 +329,7 @@ void run_daemon(char *daemon_cmd, int port)
      * Now either spawn the command (if we've been given a
      * command), or fork ourself off as a daemon (if we haven't).
      */
-    if (daemon_cmd) {
+    if (daemon_words) {
         int pid;
 
         signal(SIGCHLD, sigchld);
@@ -342,9 +342,9 @@ void run_daemon(char *daemon_cmd, int port)
             char buf[40];
             sprintf(buf, "%d", ntohs(addr.sin_port));
             setenv("ICK_PROXY", buf, 1);
-            execl("/bin/sh", "sh", "-c", daemon_cmd, NULL);
+            execvp(daemon_words[0], daemon_words);
             fprintf(stderr, "ick-proxy: exec(\"%s\"): %s\n",
-                    daemon_cmd, strerror(errno));
+                    daemon_words[0], strerror(errno));
             exit(127);                 /* if all else fails */
         }
 
@@ -554,7 +554,7 @@ void help(void)
 
 int main(int argc, char **argv)
 {
-    char *daemon_cmd = NULL;
+    char **daemon_words = NULL;
     char *cfgfile = NULL;
     char *testurl = NULL;
     int doing_opts = 1;
@@ -608,7 +608,8 @@ int main(int argc, char **argv)
                 return 1;
             }
         } else {
-            daemon_cmd = p;
+            daemon_words = argv;
+            break;
         }
     }
 
@@ -625,7 +626,7 @@ int main(int argc, char **argv)
 	else
 	    printf("%s\n", ret);
     } else {
-	run_daemon(daemon_cmd, port);
+	run_daemon(daemon_words, port);
     }
 
     return 0;
