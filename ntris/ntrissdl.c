@@ -56,6 +56,7 @@ static int centretext(int y, int c, char const *text)
 }
 
 static SDL_Joystick *joys[2];
+static int maxheight;
 
 static void lineplotsimple(void *ctx, int x, int y)
 {
@@ -134,10 +135,15 @@ void block(struct frontend_instance *inst, int area,
     x *= SQUARE_SIDE;
     if (area == AREA_MAIN) {
 	x += LEFT_EDGE;
-    } else if (area == AREA_NEXT) {
-	x += RIGHT_EDGE + SQUARE_SIDE;
     } else if (area == AREA_HOLD) {
 	x += LEFT_EDGE - 6*SQUARE_SIDE;
+    } else if (area >= AREA_NEXT) {
+	int topy;
+	x += RIGHT_EDGE + SQUARE_SIDE;
+	topy = (maxheight+1) * (area - AREA_NEXT) * SQUARE_SIDE;
+	if (topy + maxheight*SQUARE_SIDE > SCR_HEIGHT)
+	    return;		       /* this next-display doesn't fit */
+	y += topy;
     }
 
     if (col == -1) {
@@ -211,6 +217,7 @@ static void play_game(void)
 
     scr_prep();
     ti = init_game(NULL, PLAY_WIDTH, PLAY_HEIGHT, NULL);
+    maxheight = shape_maxsize(ti);
     init_shape(ti);
     line(LEFT_EDGE-2, 0, LEFT_EDGE-2, BOTTOM_EDGE+1,
 	 lineplotsimple, (void *)255);

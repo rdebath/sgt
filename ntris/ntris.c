@@ -63,6 +63,9 @@
 
 #define lenof(x) (sizeof((x))/sizeof(*(x)))
 
+/* Maximum length of next-piece queue */
+#define NNEXT 10
+
 /*
  * Prefix on each shape string is:
  * 
@@ -124,14 +127,15 @@ static char **default_shapeset = SHAPESET;
 
 struct shapeset {
     void *data[4];		       /* things to free when this dies */
-    unsigned char **shapes;		       /* shapelet -> (coords,flags) pairs */
-    unsigned char *anticlock;		       /* shapelet -> nextshapelet */
-    unsigned char *clockwise;		       /* shapelet -> prevshapelet */
-    unsigned char *reflected;		       /* shapelet -> mirrorshapelet */
-    unsigned char *width;		       /* shapelet -> width */
-    unsigned char *start;		       /* starting shapes */
-    unsigned char *colours;		       /* shape colours */
+    unsigned char **shapes;	       /* shapelet -> (coords,flags) pairs */
+    unsigned char *anticlock;	       /* shapelet -> nextshapelet */
+    unsigned char *clockwise;	       /* shapelet -> prevshapelet */
+    unsigned char *reflected;	       /* shapelet -> mirrorshapelet */
+    unsigned char *width;	       /* shapelet -> width */
+    unsigned char *start;	       /* starting shapes */
+    unsigned char *colours;	       /* shape colours */
     int nstart;			       /* number of starting shapes */
+    int nshapelets;
 };
 
 static struct shapeset *make_shapeset(char **shapes, int nshapes)
@@ -163,6 +167,7 @@ static struct shapeset *make_shapeset(char **shapes, int nshapes)
 	    p += len;
 	}
     }
+    ss->nshapelets = nshapelets;
 
     /*
      * Now allocate the storage for everything.
@@ -284,7 +289,8 @@ struct ntris_instance {
     struct shapeset *ss;
     int play_width, play_height;
     unsigned char (*playarea)[2];
-    int currshape, nextshape, holdshape, shapecolour, shape_x, shape_y;
+    int currshape, holdshape, shapecolour, shape_x, shape_y;
+    int nextshape[10];
     int hold_used;
 };
 
@@ -355,6 +361,25 @@ static void write_shape(struct ntris_instance *inst, int shape, int x, int y)
     }
 }
 
+static void draw_nextshapes(struct ntris_instance *inst, int erase)
+{
+    int i;
+    for (i = 0; i < NNEXT; i++)
+	draw_shape(inst, inst->nextshape[i], AREA_NEXT+i, 0, 0,
+		   erase ? -1 : inst->ss->colours[inst->nextshape[i]]);
+}
+
+static void eat_nextshape(struct ntris_instance *inst)
+{
+    int i;
+    for (i = 0; i < NNEXT; i++) {
+	if (i+1 < NNEXT)
+	    inst->nextshape[i] = inst->nextshape[i+1];
+	else
+	    inst->nextshape[i] = rand_shape(inst);
+    }
+}
+
 int init_shape(struct ntris_instance *inst)
 {
     inst->shape_x = (inst->play_width - inst->ss->width[inst->currshape]) / 2;
@@ -364,9 +389,19 @@ int init_shape(struct ntris_instance *inst)
 	return FALSE;
     draw_shape(inst, inst->currshape, AREA_MAIN,
 	       inst->shape_x, inst->shape_y, inst->shapecolour);
-    draw_shape(inst, inst->nextshape, AREA_NEXT, 0, 0,
-	       inst->ss->colours[inst->nextshape]);
+    draw_nextshapes(inst, FALSE);
     return TRUE;
+}
+
+int shape_maxsize(struct ntris_instance *inst)
+{
+    int i;
+    int max = 0;
+    for (i = 0; i < inst->ss->nshapelets; i++) {
+	if (max < inst->ss->width[i])
+	    max = inst->ss->width[i];
+    }
+    return max;	
 }
 
 struct ntris_instance *init_game(struct frontend_instance *fe,
@@ -374,6 +409,7 @@ struct ntris_instance *init_game(struct frontend_instance *fe,
 {
     struct ntris_instance *inst = malloc(sizeof(struct ntris_instance));
     int nshapes;
+    int i;
 
     if (!shapeset)
 	shapeset = default_shapeset;
@@ -389,7 +425,8 @@ struct ntris_instance *init_game(struct frontend_instance *fe,
     srand(time(NULL));
     inst->currshape = rand_shape(inst);
     inst->shapecolour = inst->ss->colours[inst->currshape];
-    inst->nextshape = rand_shape(inst);
+    for (i = 0; i < NNEXT; i++)
+	inst->nextshape[i] = rand_shape(inst);
     inst->holdshape = -1;	       /* hold cell starts off empty */
 
     inst->fe = fe;
@@ -492,7 +529,8 @@ int try_hold(struct ntris_instance *inst)
      * Find the shape that will go into the arena in place of the
      * held one, and work out where it will start.
      */
-    fresh_shape = (inst->holdshape >= 0 ? inst->holdshape : inst->nextshape);
+    fresh_shape = (inst->holdshape >= 0 ? inst->holdshape :
+		   inst->nextshape[0]);
     fresh_x = (inst->play_width - inst->ss->width[fresh_shape]) / 2;
     fresh_y = 0;
 
@@ -507,16 +545,14 @@ int try_hold(struct ntris_instance *inst)
      * nextshape, so think up a new one.
      */
     if (inst->holdshape < 0) {
-	draw_shape(inst, inst->nextshape, AREA_NEXT, 0, 0, -1);
-	inst->nextshape = rand_shape(inst);
-	draw_shape(inst, inst->nextshape, AREA_NEXT, 0, 0,
-		   inst->ss->colours[inst->nextshape]);
+	draw_nextshapes(inst, TRUE);
+	eat_nextshape(inst);
+	draw_nextshapes(inst, FALSE);
     }
 
     /*
      * Remove the current shape, set up the fresh one, and put the
-     * current shape into the hold cell. Also think up a new
-     * nextshape, if the hold cell started off empty.
+     * current shape into the hold cell.
      */
     draw_shape(inst, inst->currshape, AREA_MAIN,
 	       inst->shape_x, inst->shape_y, -1);
@@ -601,11 +637,11 @@ static int check_lines(struct ntris_instance *inst)
 static void postdrop(struct ntris_instance *inst)
 {
     write_shape(inst, inst->currshape, inst->shape_x, inst->shape_y);
-    draw_shape(inst, inst->nextshape, AREA_NEXT, 0, 0, -1);
+    draw_nextshapes(inst, TRUE);
     check_lines(inst);
-    inst->currshape = inst->nextshape;
+    inst->currshape = inst->nextshape[0];
     inst->shapecolour = inst->ss->colours[inst->currshape];
-    inst->nextshape = rand_shape(inst);
+    eat_nextshape(inst);
 }
 
 int softdrop(struct ntris_instance *inst)
