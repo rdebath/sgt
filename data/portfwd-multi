@@ -2,7 +2,7 @@ Summary: Port forwarding should cope better with already-used ports
 Difficulty: mayhem
 Priority: medium
 Class: semi-bug
-Content-type: text/x-html/body
+Content-type: text/x-html-body
 
 <p>
 When attempting to open a forwarded port that's already bound (e.g.
