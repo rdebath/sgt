@@ -17,7 +17,8 @@ Dvorak) layout apparently gets a few control combinations wrong: ^W,
 <li>
 On the Danish keyboard, apparently the tilde (~) is acting as a dead
 key <em>and</em> generating a code in itself; so if you hit ~ and
-then n, you get a ~ followed by a &ntilde;.
+then n, you get a ~ followed by a &ntilde;.  (OSD: I can't replicate
+this on Win2K with a Danish keymap.  I get only the &ntilde;.)
 <li>
 There's been a report from a Korean user that Korean multi-byte
 input doesn't work.
