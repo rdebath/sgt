@@ -1,0 +1,49 @@
+Summary: Support Unicode combining characters
+Class: wish
+Priority: medium
+Difficulty: tricky
+Content-type: text/x-html-body
+
+<p>
+Unicode contains a number of combining characters (typically
+diacritics) which can in principle be combined with _any_ character
+appearing before them. For example, you can display CE 9B (U+039B
+GREEK CAPITAL LETTER LAMBDA) followed by CC 8A (U+030A COMBINING
+RING ABOVE) and get a lambda with a ring above it, as used in a
+well-known 
+<a href="http://www.stargate-sg1.com/">sci-fi TV series logo</a>.
+
+<p>
+PuTTY in UTF-8 mode currently does not support these combining
+characters at all. It should.
+
+<p>
+At a minimum, it should support the use of combining characters to
+create composite characters that actually exist as their own code
+points in Unicode. Hence, displaying U+030A when the cursor is just
+to the right of a capital A should yield U+00C5 (LATIN CAPITAL
+LETTER A WITH RING ABOVE).
+
+<p>
+Ideally - and this is where it gets hard - PuTTY should support an
+arbitrary sequence of diacritics in any character cell, so that the
+above logo can be displayed in full and copied and pasted sensibly.
+So rather than having exactly one Unicode code point per character
+cell, we would need to make the terminal data structures flexible so
+that more than one code point could be stored in a single char cell.
+That sequence of code points would be transmitted to the Windows
+text display function as a single string, causing the display of the
+correct composition of glyphs; and anyone copying and pasting that
+character cell would get the same sequence of code points too.
+Overwriting that cell would, of course, take out the whole lot in
+one go.
+
+<p>
+Experimentation with xterm in UTF-8 mode suggests that if the
+resulting character does have a Unicode representation then it
+should be used in cut-and-paste: hence sending A (U+0041) followed
+by U+030A should yield a character cell which pastes back as U+00C5.
+More formally, I think what's required is for the sequence of code
+points occupying a character cell to be maintained in Normalisation
+Form C (see
+<a href="http://www.unicode.org/unicode/reports/tr15/">UAX #15</a>).
