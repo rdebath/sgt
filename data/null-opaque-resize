@@ -1,0 +1,13 @@
+Summary: Opaque resizes under NT cause trouble
+Class: semi-bug
+Priority: medium
+Difficulty: tricky
+Content-type: text/x-html-body
+
+<p>
+Opaque resizes under NT cause trouble when the user changes their
+mind and carefully drags the window back to the way it started out:
+the contents of the screen have been trashed and no resize event is
+sent to the server. Perhaps redisplay during resizing should be
+reimplemented in a way that doesn't change the terminal buffer's
+size at all.

@@ -1,0 +1,13 @@
+Summary: Better handling of the connection closing
+Class: semi-bug
+Priority: medium
+Difficulty: tricky
+Content-type: text/x-html-body
+
+<p>Better handling of the connection closing, and of SSH_MSG_DISCONNECT
+being received. Ideally we should maintain our own idea of when and
+whether we <em>expect</em> to see a closure, and only signal clean
+exit when a closure or disconnect arrives that we were expecting. If
+one arrives unexpectedly it should count as an ungraceful closure,
+display a dialog box containing the text out of MSG_DISCONNECT, and
+not close the window unless the user selected "Always".

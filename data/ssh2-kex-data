@@ -1,0 +1,17 @@
+Summary: Data transfer during SSH2 KEX causes confusion
+Class: bug
+Priority: medium
+Difficulty: tricky
+Content-type: text/x-html-body
+
+<p>If there is data being transferred through PuTTY while the SSH2
+repeat key exchange is taking place, it can confuse some servers.
+As far as I'm aware nobody has properly standardised this aspect of
+the SSH2 protocol (what happens to the connection layer while the
+transport layer is in a key exchange phase?) so it isn't clear what
+PuTTY <em>should</em> do in this situation, but a good
+conservative/liberal option would be to accept incoming
+connection-layer packets provided we can decrypt them, and to queue
+outgoing connection-layer packets until the key exchange is
+completed. I can't easily imagine a standards decision that would
+invalidate that behaviour.

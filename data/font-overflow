@@ -1,0 +1,30 @@
+Summary: Fonts that overflow their character cells cause problems
+Class: bug
+Priority: medium
+Difficulty: tricky
+Content-type: text/x-html-body
+
+<p>There's a two-pronged problem with fonts whose characters overlap
+outside their designated rectangular cell.
+<ul>
+<li>
+Firstly, we don't deal
+well with this. Each <em>string</em> passed to
+<code>do_text()</code> is clipped to the rectangle it should be in;
+but <em>within</em> that string there's still scope for overlap
+between character cells. If half the string is then updated then
+there will be artefacts left on the screen; I can't see any obvious
+fix except to always draw one character at a time, which is just
+ghastly.
+<li>
+Secondly, the resize-by-changing-font code has a tendency to choose
+fonts that cause this problem a lot. For bitmap fonts I think this
+is just a hazard of the job - if you ask PuTTY to resize a non-
+resizeable font, you can expect it to do a shoddy job at best - but
+it even happens slightly in Courier New (the very RH edge of the
+lower case m sometimes protrudes into the next character cell),
+which really isn't on. Sadly I have no idea how we can fix this in
+general - if we ask for a smaller width than we really want, then
+(a) we penalise well-behaved fonts, and (b) the spacing when drawing
+a large string will come out wrong.
+</ul>

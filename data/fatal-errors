@@ -1,0 +1,14 @@
+Summary: Fatal error handling is patchy and flaky.
+Class: bug
+Priority: medium
+Difficulty: tricky
+Content-type: text/x-html-body
+
+<p>Fatal error handling is patchy and flaky. It's very easy to throw a
+fatal error, put up a message box, and then receive a Windows
+message containing yet more socket data. The MessageBox message loop
+then dispatches that message automatically and the back end is
+called reentrantly. Chaos ensues. Solution: the fatal error
+behaviour should be much more robust. Close <em>all</em> sockets the
+instant a fatal error occurs; also set some global flags that
+prevent action messages from having any back end effect.

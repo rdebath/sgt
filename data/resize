@@ -1,0 +1,18 @@
+Summary: Resizing the window is still pretty flaky.
+Class: bug
+Priority: medium
+Difficulty: tricky
+Content-type: text/x-html-body
+
+<p>Resizing the window is still pretty flaky. One particular current
+problem is: if you choose a font that fits 80 columns on your screen
+but not 132, then sending ESC[?3h to switch to 132-column mode will
+squish the font just enough to fit 132 columns in a full-width
+window. So far so good; but when you send ESC[?3l to return to 80
+columns, really it would be nice if the window was put back the way
+it started out. Also there's some indication that the squishing
+doesn't work quite right; first PuTTY expands the window to full
+width, then it chooses a font size, and then it leaves a big border
+down each side of the window when that font size fails to fit quite
+right. Really it should recompute the window size once it knows the
+font size.

@@ -1,0 +1,10 @@
+Summary: PSFTP and PSCP can't handle > 2 GB files
+Class: semi-bug
+Priority: medium
+Difficulty: fun
+Content-type: text/x-html-body
+
+<p>PSCP ought to handle really really big (&gt;2Gb) files. There's been
+a report that it doesn't do so properly. (Apparently this will only
+be meaningful under an NT-series OS; the 95 series inherently can't
+handle more than 2Gb in any case.)
