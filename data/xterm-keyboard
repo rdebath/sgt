@@ -9,55 +9,17 @@ Content-type: text/x-html-body
 </b>
 If anyone can supply a better description, that would probably be useful.
 </p>
-<pre>
+<p>
 PuTTY claims a terminal type of "xterm" by default, but doesn't actually
 default to being compatible with xterm.  Even in xterm function-key mode,
 PuTTY doesn't actually generate the right sequences for everything.
-
+</p>
+<p>
 Of course, this is made trickier by the fact that there are many different
-versions of xterm, but I (BJH) think that a sensible baseline would be the
-"xterm" terminfo entry in ESR's master terminfo database.
-
-Here are the keyboard definition parts of that, expanded for convenience:
-
-kf2	F2	ESC O Q
-kf3	F3	ESC O R
-kf4	F4	ESC O S
-kf5	F5	ESC [ 1 5 ~
-kf6	F6	ESC [ 1 7 ~
-kf7	F7	ESC [ 1 8 ~
-kf8	F8	ESC [ 1 9 ~
-kf9	F9	ESC [ 2 0 ~
-kf10	F10	ESC [ 2 1 ~
-kf11	F11	ESC [ 2 3 ~
-kf12	F12	ESC [ 2 4 ~
-kf13	F13	ESC [ 2 5 ~
-kf14	F14	ESC [ 2 6 ~
-kf15	F15	ESC [ 2 8 ~
-kf16	F16	ESC [ 2 9 ~
-kf17	F17	ESC [ 3 1 ~
-kf18	F18	ESC [ 3 2 ~
-kf19	F19	ESC [ 3 3 ~
-kf20	F20	ESC [ 3 4 ~
-kfnd	Find	ESC [ 1 ~
-kich1	Insert	ESC [ 2 ~
-knp	PageDn	ESC [ 6 ~
-kpp	PageUp	ESC [ 5 ~
-kslt	Select	ESC [ 4 ~
-kdch1	Delete	ESC [ 3 ~
-kbs	BackSp	BS
-
-Since then (X11R6), XFree86 have embraced and extended xterm.  Their changes
-haven't been monotonic, and frequently a key has been changed in one release
-only to be changed back again the next.  They toyed with using ESC [ 1 1 ~
-etc for F1-F4 for a while, have alternated between ESC [ 3 ~ and DEL for
-kdch1, and have introduced (twice) ESC O H and ESC O F for Home and End
-respectively.  They've also introduced sequences for shift- and control-
-modified keys.  Shifted tilde sequences get ";2" before the tilde, cotrol
-gets ";5" and shift+control gets ";6".  SS3 sequences gain a similar
-digit after the SS3 and before the letter.
-
-Overall, it's a bit of a mess, isn't it?  Not sure what we should do, yet.
-
+versions of xterm, but current XFree86 xterm seems to be considered the best
+baseline by our users.  Its <code>ctlseqs.ms</code> documents things fairly
+well.
+</p>
+<p>
 Ref: <a href="http://bugs.debian.org/167629">Debian Bug #167629</a>.
-</pre>
+</p>
