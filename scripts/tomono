@@ -162,8 +162,9 @@ sub readfile($$) {
       addedit($editshashref, \$edit, $timestamp) if($edit ne "");
   
       $edit = "";
+      # Keep old timestamp, so we're tied to the previous edit.
       $line = "Message: 00000000\n";
-    } elsif($line =~ /^Message: ([0-9A-Fa-f]{1,8})/)
+    } elsif($line =~ /^Message:(. *)([0-9A-Fa-f]{0,8})/)
     { # Mono style message line (either a directly copied file, or a
       # converted file.
 
@@ -171,8 +172,13 @@ sub readfile($$) {
       addedit($editshashref, \$edit, $timestamp) if($edit ne "");
   
       $edit = "";
-      $timestamp = hex($1);
-      $line = sprintf("Message: %-8lX",$timestamp) . $';
+      if(hex($1)) {
+        $timestamp = hex($2);
+        $line = sprintf("Message:$1%-8lX",$timestamp) . $';
+      } else {
+        # If hex($1) == 0 we keep the timestamp of the previous edit.
+	# $line is already correct
+      }
     } elsif($line =~ /^-{51}\[(.{24})\]--$/)
     { # Email style message line
 
@@ -189,17 +195,18 @@ sub readfile($$) {
       addedit($editshashref, \$edit, $timestamp) if($edit ne "");
   
       $edit = "";
+      # Keep old timestamp
       $line = "Message: 00000000\n";
-    } elsif($line =~ /^From: *\e\[;1;32m(.*?) *\((.{0,8}(?::\d+|))\)\e\[m\n$/) {
-      $line = "From: $1 ($2)\n";
-    } elsif($line =~ /^Subject: *\e\[;4;36m(.*)\e\[m\n$/) {
+    } elsif($line =~ /^From:( *)\e\[;1;32m(.*?)( *)\((.{0,8}(?::\d+|))\)\e\[m\n$/) {
+      $line = "From:$1$2$3($4)\n";
+    } elsif($line =~ /^Subject:( *)\e\[;4;36m(.*)\e\[m\n$/) {
       # ANSI Subject line
-      $line = "Subject: $1\n";
-    } elsif($line =~ /^To: *\eCG(.*)\n$/) {
+      $line = "Subject:$1$2\n";
+    } elsif($line =~ /^To:( *)\eCG(.*)\n$/) {
       # Badly converted (tribbed) To line
-      $line = "To: $1\n";
-    } elsif($line =~ /^To: *\e\[;32m(.*)\e\[m\n$/) {
-      $line = "To: $1\n";
+      $line = "To:$1$2\n";
+    } elsif($line =~ /^To:( *)\e\[;32m(.*)\e\[m\n$/) {
+      $line = "To:$1$2\n";
     }
     $line = ansi2monoline($line);
 
@@ -263,9 +270,9 @@ sub ansi2monoline($) {
 
   while($line =~ /\e\[(.*?)m/) {
     my $ansi = $1;
-    $ansi .= ";" if($ansi !~ /;$/);
     my $pre = $`;
     my $post = $';
+    $ansi .= ";" if($ansi !~ /;$/);
     
     my $mono = '';
     my %oldstate = %state;

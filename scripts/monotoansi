@@ -49,19 +49,20 @@ sub readfile($) {
 
 	if($line =~ /^Message:/) {
 	    $line =~ /^Message:.\s*([0-9A-Fa-f]{1,8})/;
-	    if($1) {
+	    if(hex($1)) {
 		$line = "\033\[;1;7;44m" . ("-" x 51) . "\[\033\[;7;44m" .
 			gmtime(hex($1)) . 
 			"\033\[;1;7;44m\]--\033\[m\n";
 		} else {
 	            $line = "\033\[;1;7;44m" . ("-" x 79) . "\033\[m\n";
 		}
-	} elsif($line =~ /^From: *(.*)\n$/) {
-	    $line = "From: \033\[;1;32m$1\033\[m\n";
-	} elsif($line =~ /^Subject: *(.*)\n$/) {
-	    $line = "Subject: \033\[;4;36m$1\033\[m\n";
-	} elsif($line =~ /^To: *(.*)\n$/) {
-	    $line = "To: \033\[;32m$1\033\[m\n";
+	} elsif($line =~ /^From:( *)(.*)\n$/) {
+	    $line = "From:$1\033\[;1;32m$2\033\[m\n";
+	} elsif($line =~ /^Subject:( *)(.*)\n$/) {
+	    $line = "Subject:$1\033\[;4;36m" .
+	    	    mono2ansiline($2, 1) . "\033\[m\n";
+	} elsif($line =~ /^To:( *)(.*)\n$/) {
+	    $line = "To:$1\033\[;32m$2\033\[m\n";
 	} else {
 	    $line = mono2ansiline($line);
 	}
@@ -73,13 +74,16 @@ sub readfile($) {
 # Convert a line from mono attribute format to ansi attribute format
 # Can be applied to a line already in attribute format and shouldn't change
 # it.
-sub mono2ansiline($) {
+sub mono2ansiline() {
   my $line = shift();
-  my $done = "";
+  my $subjectline = shift();
+  my $done = '';
   my %state = ();
+  my $ansi = '';
+
+  my $newline = ($line =~ s/\n$//);
   
   while($line ne '') {
-    my %oldstate = %state;
     if($line =~ s/\033//) {
 	my $trib = '';
 	$done .= $`;
@@ -130,52 +134,40 @@ sub mono2ansiline($) {
 	} else {
 	    warn "Unknown 'trib '" . substr($line, 0, 1) . "'\n";
 	}
+
+	$ansi = '';
+	if($state{"BOLD"}) {
+	    $ansi .= ";1";
+	}
+	if($state{"DIM"}) {
+	    $ansi .= ";2";
+	}
+	if($state{"BLINK"}) {
+	    $ansi .= ";5";
+	}
+	if($state{"UL"}) {
+	    $ansi .= ";4";
+	}
+	if($state{"REV"} || $state{"STANDOUT"}) {
+	    $ansi .= ";7";
+	}
+	if($state{"FG"}) {
+	    $ansi .= ";" . ($state{"FG"} + 30);
+	}
+	if($state{"BG"}) {
+	    $ansi .= ";" . ($state{"BG"} + 40);
+	}
+
+	if(!$subjectline || $ansi ne '') {
+	    $done .= "\e\[" . $ansi . "m" unless ($line =~ /^\033/);
+	}
     } else {
 	$done .= $line;
 	$line = '';
-	%state = ();
-    }
-
-    if($state{"BOLD"} != $oldstate{"BOLD"}) {
-      if($state{"BOLD"}) { $done .= "\e\[1m"; } else {
-        if($state{"DIM"}) {
-          $done .= "\e\[22;2m";
-	} else {
-          $done .= "\e\[22m";
-	}
-      }
-    }
-    if($state{"DIM"} != $oldstate{"DIM"}) {
-      if($state{"DIM"}) { $done .= "\e\[2m"; } else {
-        if($state{"BOLD"}) {
-          $done .= "\e\[22;1m";
-	} else {
-          $done .= "\e\[22m";
-	}
-      }
-    }
-    if($state{"BLINK"} != $oldstate{"BLINK"}) {
-      if($state{"BLINK"}) { $done .= "\e\[5m"; } else { $done .= "\e\[25m"; }
-    }
-    if($state{"UL"} != $oldstate{"UL"}) {
-      if($state{"UL"}) { $done .= "\e\[4m"; } else { $done .= "\e\[24m"; }
-    }
-    if($state{"REV"} != $oldstate{"REV"}) {
-      if($state{"REV"}) { $done .= "\e\[7m"; } else { $done .= "\e\[27m"; }
-    }
-    if($state{"STANDOUT"} != $oldstate{"STANDOUT"}) {
-      if($state{"STANDOUT"}) { $done .= "\e\[7m"; } else { $done .= "\e\[27m"; }
-    }
-    if($state{"FG"} != $oldstate{"FG"}) {
-      $state{"FG"} = 7 if !defined($state{"FG"});
-      $done .= "\e\[" . ($state{"FG"} + 30) . "m";
-    }
-    if($state{"BG"} != $oldstate{"BG"}) {
-      $state{"BG"} = 0 if !defined($state{"BG"});
-      $done .= "\e\[" . ($state{"BG"} + 40) . "m";
+	$done .= "\e\[m" if($ansi ne '' && !$subjectline);
     }
   }
-  $done .= $line;
+  $done .= "\n" if $newline;
   return $done;
 }
 
