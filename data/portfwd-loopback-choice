@@ -22,3 +22,6 @@ instead of asking to forward port 3456, you'd ask for
 
 (Apparently this is also useful for forwarding Windows Terminal
 Services -- see <99ab3348.0405241707.74fa3d6b@posting.google.com>.)
+
+2004-Aug-10: we've had a report that Windows XP SP2 breaks this.
+(Apparently RC2 worked, but "RTM" - the release - doesn't.)
