@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void main(int ac, char **av) {
+int main(int ac, char **av) {
     int i, j, full = 0;
     char *pname = *av;
 
@@ -31,4 +31,5 @@ void main(int ac, char **av) {
 	    printf("\n");
 	}
     }
+    return 0;
 }
