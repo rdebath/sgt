@@ -1,17 +1,71 @@
 #!/bin/sh
 { restricted-hours; } >&2 2>/dev/null && exit 0
-FRIENDS=`cat << EOF
+FRIENDS=`sed 's/#.*$//' << EOF
 
-westley larch agrajag pteppic bagpuss robin lenin eliza war pooz ghoti cemerson
-jules cassi dando nietzch khamul kazmania ceb mimic abi clare quirka amf markov
-marauder hiccup catbells crown bjh fiddler golem oopamoss matyjo fredlegs vicky
-harker waldo blaknail gawl etoile loony kilinrax cavalr-2 valkyrie fleeg fumble
-arcman weirdo steph scarey silence lizard richard raedwald batboy jinxx scruple
-dj cowe obo eek ezekiel sherbet garycook nding heifere fragment yourself desade
-o jupiter rjk cain genocide wasp gothbabe dead slimy sliiiemy i julibaby sparka
-oo ee rathenar kallisti claire lanark eviltwin lark llama serenity elise
+westley  # Jon Skeet
+larch    # Sophie Tatham
+agrajag evilmike  # Michael Nonweiler
+pteppic  # Clive Ponsonby
+bagpuss  # Alex Barnard
+robin    # Punam
+lenin markov nietzch waldo  # Tim Bramham
+eliza    # Phil Blundell
+war      # Graham Boyd
+pooz     # Piers Walton
+ghoti jupiter  # Kirsten Procter
+cemerson llama  # Chris Emerson
+jules    # Julian Hall
+cassi    # Sally Riordan
+dando    # Dan Curtis
+khamul cain genocide  # Alden Spiess
+kazmania # Karen Fletcher
+ceb      # Clare Boothby
+amf mimic fragment  # <+-AMF-+>
+abi sparka  # Abigail Silvester
+clare oopamoss  # Clare Farrar
+marauder # Olivia Patterson
+silence hiccup yourself slimy sliiiemy i lanark  # Alison Farmer
+catbells # Dave Hinton
+crown    # Jules Hill
+bjh      # Ben Harris
+fiddler  # Sabrina
+golem    # me
+matyjo   # Mary Argent
+fredlegs # Hairy Matt
+vicky    # Vicky Sloane
+blaknail # Ben Parker
+gawl     # Graham Lovell
+etoile   # Yasmin Lentin
+loony    # Emily Knight
+kilinrax # Alex Bowley
+cavalr-2 # David Damerell
+valkyrie # Karen Boyd
+fumble   # Jacob Nevins
+arcman   # Alex Seeley
+obo ezekiel weirdo oo ee  # Gareth Taylor
+steph nding  # Owen Dunn
+cowe scarey  # Brian Cowe
+lizard   # Clare Izard
+raedwald # Jon Jarrett
+scruple  # Emily Cox
+dj       # James Aylett
+eek      # Eek the Bat
+sherbet  # Sherbet the Sheep
+garycook # Gary Cook
+heifere  # Alison Cowe
+desade   # Oliver-Michael Longden
+rjk      # Richard Kettlewell
+gothbabe # Liz Chapman
+julibaby # Juliet Ehimuan
+rathenar # Kit Scorah
+kallisti # Matt Marcus
+claire   # Claire Lawson
+eviltwin # Emma Bennett
+lark serenity  # Vicky Clarke
+elise    # Elisabeth Conolly
 
-arkady mormegil
+arkady   # Eva Myers
+mormegil # Martin Read
 
 EOF
 `
