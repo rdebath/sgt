@@ -4,6 +4,7 @@ Priority: medium
 Difficulty: fun
 Content-type: text/plain
 Present-in: 2005-01-11
+Fixed-in: 2005-01-23
 
 The current SECSH transport draft, draft-ietf-secsh-transport-22.txt,
 specifies a boolean in the KEXINIT packet defined as:
