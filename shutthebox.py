@@ -10,7 +10,7 @@
 # be valid. Your aim is to end a move with all flaps Down; if at
 # any point you have no valid move, you lose.
 #
-# I know of two variant rules about what moves are allowable on a
+# I know of three variant rules about what moves are allowable on a
 # given roll.
 #
 #  - Sally's variant: You must use each die as a unit (like
@@ -26,6 +26,10 @@
 #    that total. Thus, if you roll 5 and 2, or _anything_ else
 #    totalling 7, then you must flip down numbers totalling 7, so
 #    your possible moves are 7, 6-1, 5-2, 4-3 or 4-2-1.
+#
+#  - Mobbsy's variant: Like Becky's variant, but you can flip down
+#    a maximum of two numbers (which must still total the whole
+#    sum).
 
 import sys
 
@@ -58,8 +62,12 @@ class sally:
     for s, r, n in dierolls:
 	movelist[r] = moves(r)
 
-class becky:
-    name = "Becky's variant"
+class Callable:
+    def __init__(self, anycallable):
+	self.__call__ = anycallable
+
+class becky_mobbsy:
+    name = "Common stuff between Becky's and Mobbsy's variants"
 
     d = 36
     dierolls = [
@@ -75,7 +83,7 @@ class becky:
     ("11", 11, 2),
     ("12", 12, 1)]
 
-    def moves(roll):
+    def moves(roll, nmax=12):
 	def recurse(n, total, maximum, prefix, list):
 	    # Recursively find all sets of n distinct numbers, all
 	    # at most `maximum' and summing to `total'. Construct
@@ -94,13 +102,30 @@ class becky:
 		    recurse(n-1, total-i, i-1, prefix+(i,), list)
 
 	list = []
-	for n in range(1, 12):
+	for n in range(1, nmax+1):
 	    recurse(n, roll, 9, (), list)
 	return list
+    moves = Callable(moves)
+
+class becky:
+    name = "Becky's variant"
+
+    d = becky_mobbsy.d
+    dierolls = becky_mobbsy.dierolls
 
     movelist = {}
     for s, r, n in dierolls:
-	movelist[r] = moves(r)
+	movelist[r] = becky_mobbsy.moves(r)
+
+class mobbsy(becky_mobbsy):
+    name = "Mobbsy's variant"
+
+    d = becky_mobbsy.d
+    dierolls = becky_mobbsy.dierolls
+
+    movelist = {}
+    for s, r, n in becky_mobbsy.dierolls:
+	movelist[r] = becky_mobbsy.moves(r, 2)
 
 def movestr(move):
     s = ""
@@ -235,7 +260,7 @@ def analyse(var, how, scoring, file):
     # starting position.
     return value[(1,2,3,4,5,6,7,8,9)]
 
-for variant in sally, becky:
+for variant in sally, becky, mobbsy:
     for scoring in 0, 1:
 	title = "Analysis of " + variant.name
 	if scoring:
