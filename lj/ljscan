@@ -9,6 +9,17 @@ import htmllib
 import formatter
 import sys
 
+# Restore a sensible response to HTTP errors.
+
+class MyURLopener(urllib.FancyURLopener):
+    def http_error_default(self, url, fp, errcode, errmsg, headers):
+        """Default error handler: close the connection and raise IOError."""
+        void = fp.read()
+        fp.close()
+        raise IOError, str(errcode) + " " + errmsg
+
+urllib._urlopener = MyURLopener()
+
 def makedict(attrs):
     attrdict = {}
     for attr in attrs:
@@ -127,6 +138,7 @@ class myparser(htmllib.HTMLParser):
 # Read config file to get list of users.
 ljusers = []
 ljdir = os.environ["HOME"] + "/.ljscan/"
+urltext = ""
 f = open(ljdir + "config", "r")
 while 1:
     s = f.readline()
@@ -138,6 +150,16 @@ while 1:
 	s = s[:-1]
     ss = string.split(s)
     if len(ss) == 0:
+	continue
+    if s[:1] == "!":
+	# Directive line.
+	if string.lower(ss[0]) == "!urls":
+	    if string.lower(ss[1]) in ["yes", "y", "on", "1"]:
+		urltext = "www.livejournal.com/users/"
+	    else:
+		urltext = ""
+	else:
+	    print "ljscan: config: unrecognised directive \""+ss[0]+"\""
 	continue
     ljusers.append((ss[0], s))
 
@@ -182,9 +204,13 @@ for t in ljusers:
     username, description = t
     if scan:
 	url = template % username
-	f = urllib.urlopen(url)
-	data = f.read()
-	f.close()
+	try:
+	    f = urllib.urlopen(url)
+	    data = f.read()
+	    f.close()
+	except IOError, e:
+	    print "Fetching", username+":", str(e)
+	    data = "" # this will already be treated as failure to retrieve
 	p = myparser(mysha())
 	p.feed(data)
 	p.close()
@@ -270,10 +296,10 @@ faillist.sort(alphabetical)
 # And finally output everything.
 def printout(a):
     if a[0] == None:
-	ts = "                   "
+	ts = "                "
     else:
-	ts = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(a[0]))
-    print ts, a[1]
+	ts = time.strftime("%Y-%m-%d %H:%M", time.localtime(a[0]))
+    print ts, urltext + a[1]
 
 if scan:
     if len(newlist):
@@ -286,11 +312,11 @@ if scan:
 	if len(samelist):
 	    print "Journals which are unchanged since the last scan:"
 	    for i in samelist: printout(i)
-	if len(faillist):
-	    print "Journals which were not retrievable in this scan:"
-	    for i in faillist: printout(i)
     elif len(newlist) == 0 and len(changelist) == 0:
 	print "No new or changed journals found in this scan."
+    if len(faillist):
+	print "Journals which were not retrievable in this scan:"
+	for i in faillist: printout(i)
 else:
     if len(reportlist):
 	print "Journals which have been scanned before:"
