@@ -1,0 +1,42 @@
+Summary: An alternative form of keepalive which is two-way
+Class: wish
+Priority: low
+Difficulty: fun
+Content-type: text/x-html-body
+
+<p>
+Anecdotal evidence suggests that at least one type of router is not
+fooled by PuTTY's current SSH keepalive mechanism (sending
+<code>SSH_MSG_IGNORE</code>): it ignores them and disconnects idle
+sessions regardless. I asked the user in question to experiment with
+using repeat key exchanges as an alternative form of keepalive, and
+that turned out to work fine.
+
+<p>
+This leads me to suspect that the router has noticed that the
+<code>SSH_MSG_IGNORE</code> keepalives only transfer data in the
+client-to-server direction: although TCP <em>packets</em> must come
+back the other way carrying acks, no actual <em>data</em> is
+transferred down the TCP connection from server to client. Rekeys
+transfer real data in both directions, so they work better for this
+purpose. (However, they're very CPU-intensive compared to what a
+keepalive ought to be.)
+
+<p>
+It wouldn't be very difficult to rig up an alternative form of
+keepalive, at least in SSH-2, which requested an actual response
+from the server. The obvious approach would be to invent a spurious
+<code>SSH_MSG_GLOBAL_REQUEST</code> ID which no servers would
+understand, so that they would respond with
+<code>SSH_MSG_REQUEST_FAILURE</code>. Much like the OpenSSH "client
+alive" feature, in fact.
+
+<p>
+I envisage this being implemented as a checkbox with wording
+something along the lines of "Use two-way keepalives where
+available"; then we could implement it in SSH-2 immediately, and add
+it to other back end protocols if and when we thought up ways to do
+it. (For example, it's not entirely impossible that there might be
+some fiddly way to make it work in Telnet, perhaps by periodically
+sending <code>IAC WILL</code> followed by a non-existent option
+number; but I haven't tried it and can't be sure.)
