@@ -7,3 +7,6 @@ Content-type: text/x-html-body
 <p>
 Extra back end to connect to a serial port instead of a Telnet or SSH
 connection.
+
+<p>
+Need to think about how this fits into our UI.
