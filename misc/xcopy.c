@@ -29,7 +29,7 @@ void error (char *fmt, ...);
 
 /* set from command-line parameters */
 char *display = NULL;
-int utf8 = 0;
+enum { STRING, CTEXT, UTF8 } mode = STRING;
 
 /* selection data */
 char *seltext;
@@ -56,7 +56,9 @@ int main(int ac, char **av) {
         } else if (!strcmp(p, "-r")) {
             reading = True;
         } else if (!strcmp(p, "-u")) {
-            utf8 = 1;
+            mode = UTF8;
+        } else if (!strcmp(p, "-c")) {
+            mode = CTEXT;
 	} else if (*p=='-') {
 	    error ("unrecognised option `%s'", p);
 	} else {
@@ -160,10 +162,14 @@ int init_X(void) {
     if (!disp)
 	error ("unable to open display");
 
-    if (utf8) {
+    if (mode == UTF8) {
 	strtype = XInternAtom(disp, "UTF8_STRING", False);
 	if (!strtype)
 	    error ("unable to get UTF8_STRING property");
+    } else if (mode == CTEXT) {
+	strtype = XInternAtom(disp, "COMPOUND_TEXT", False);
+	if (!strtype)
+	    error ("unable to get COMPOUND_TEXT property");
     }
 
     /* get the screen and root-window */
