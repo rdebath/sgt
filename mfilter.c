@@ -341,12 +341,19 @@ static int readconn(void *buf, int len)
 	}
 
 	if (FD_ISSET(0, &rfds)) {
+	    char *p, *q;
 
 	    do {
 		ret = read(0, buf, len);
 	    } while (ret < 0 && errno == EINTR);
 
-	    wdata(wfd, buf, ret);
+	    for (p = q = buf; p < (char *)buf+ret; p++) {
+		if (*p != 0x1C)	       /* Ctrl-\ */
+		    *q++ = *p;
+	    }
+
+	    if (q > (char *)buf)
+		wdata(wfd, buf, q - (char *)buf);
 	}
 	if (FD_ISSET(rfd, &rfds)) {
 	    do {
