@@ -1,5 +1,5 @@
 #! /usr/bin/perl
-# $Id: bugs2html,v 1.22 2003/02/27 11:17:58 jacob Exp $
+# $Id: bugs2html,v 1.23 2003/05/24 11:19:07 jacob Exp $
 
 use FileHandle;
 use POSIX;
@@ -96,6 +96,12 @@ If you do not see a feature here, it's also worth checking the
 <a href="$baseurl/changes.html">Changes page</a>
 before mailing us to ask for the feature; it might already have
 been added.
+
+<p>
+The Debian bug-tracking system also accrues bug reports and feature
+requests relating to the experimental
+<a href="http://packages.qa.debian.org/p/putty.html">Debian package</a>
+of the nascent Unix port.
 
 EOF
 
