@@ -1,0 +1,13 @@
+Summary: unfix.org has further IPv6 patches; integrate?
+Class: wish
+Difficulty: fun
+Content-type: text/x-html-body
+
+<p>
+We have integrated IPv6-related patches from
+<a href="http://unfix.org/projects/ipv6/">unfix.org</a> up to their
+patch level 4.
+
+<p>
+However, they are now up to patch level 6 (at the time of writing).
+Should we integrate their further tweaks at some point?
