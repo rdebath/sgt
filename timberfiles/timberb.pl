@@ -14,7 +14,7 @@ open OUT,">".$ARGV[0] and select OUT;
 # Called with POINT at the beginning of the line.
 sub issep($) {
   my ($k) = @_;
-  $k =~ /^From [^ ]+( [A-Z][a-z]{2}){2} [\d ]\d [\d ]\d:\d\d:\d\d \d\d\d\d$/;
+  $k =~ /^From [^ ]+ *( [A-Z][a-z]{2}){2} [\d ]\d [\d ]\d:\d\d:\d\d \d\d\d\d$/;
 }
 
 # Convert a raw mail folder into a Timber-style mail folder.
@@ -155,8 +155,6 @@ sub multipart {
   local $_;
   my ($ret, $attach, $conttype, $contenc, $contdesc, $contname);
   my ($end, $blank, @data, $h, $raw, $cooked);
-
-if ($level == 1) { printf STDERR "got >>>%s<<< (%s)\n", $data, $sep; }
 
   $data =~ y/\n/\r/;
   @data = split /\r/, $data, -1;
