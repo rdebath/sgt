@@ -47,3 +47,12 @@ More formally, I think what's required is for the sequence of code
 points occupying a character cell to be maintained in Normalisation
 Form C (see
 <a href="http://www.unicode.org/unicode/reports/tr15/">UAX #15</a>).
+
+<p>
+Glenn Maynard suggests that all this has a practical application:
+<blockquote>
+Somewhat more usefully, full combining support is needed for Korean.
+As I understand it, while there are a lot of precomposed Korean characters
+available, they don't *all* exist, so real Korean support needs real
+combining support.
+</blockquote>
