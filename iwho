@@ -208,7 +208,7 @@ else:
     server = server[:i]
 
 skt = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-skt.connect(server, port)
+skt.connect((server, port))
 
 myname = pwd.getpwuid(os.getuid()) [0]
 
@@ -266,7 +266,7 @@ while 1:
 
 whoissent = 0
 for i in whois.keys():
-    send("WHOIS :" + i + "\r\n")
+    send("WHOIS " + i + " " + i + "\r\n")
     whoissent = whoissent + 1
 
 whoisgot = 0
