@@ -251,11 +251,11 @@ static void init(void) {
 
     display_setup();
 
-    display_define_colour(COL_BUFFER, -1, -1);
-    display_define_colour(COL_SELECT, 0, 7);
-    display_define_colour(COL_STATUS, 11, 4);
-    display_define_colour(COL_ESCAPE, 9, 0);
-    display_define_colour(COL_INVALID, 11, 0);
+    display_define_colour(COL_BUFFER, -1, -1, FALSE);
+    display_define_colour(COL_SELECT, 0, 7, TRUE);
+    display_define_colour(COL_STATUS, 11, 4, TRUE);
+    display_define_colour(COL_ESCAPE, 9, 0, FALSE);
+    display_define_colour(COL_INVALID, 11, 0, FALSE);
 
     for (i=0; i<256; i++) {
 	sprintf(hex[i], "%02X", i);
@@ -546,6 +546,9 @@ void draw_scr (void) {
     display_refresh ();
 }
 
+volatile int safe_update, update_required;
+void update (void);
+
 /*
  * Get a string, in the "minibuffer". Return TRUE on success, FALSE
  * on break. Possibly syntax-highlight the entered string for
@@ -668,8 +671,6 @@ void suspend(void) {
     strcpy(message, "Suspend function not yet implemented.");
 #endif
 }
-
-volatile int safe_update, update_required;
 
 void update (void) {
     display_recheck_size();

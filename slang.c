@@ -109,7 +109,7 @@ void display_write_chars(char *str, int len)
     SLsmg_write_nchars(str, len);
 }
 
-void display_define_colour(int colour, int fg, int bg)
+void display_define_colour(int colour, int fg, int bg, int reverse)
 {
     static char *colours[16] = {
 	"black", "red", "green", "brown",

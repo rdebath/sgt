@@ -62,7 +62,7 @@ void display_write_chars(char *str, int len)
 #define MAXCOLOURS 32
 int attrs[MAXCOLOURS];
 
-void display_define_colour(int colour, int fg, int bg)
+void display_define_colour(int colour, int fg, int bg, int reverse)
 {
     static int colours[8] = {
         COLOR_BLACK,
@@ -78,10 +78,15 @@ void display_define_colour(int colour, int fg, int bg)
     if (fg < 0 && bg < 0) {
         attrs[colour] = 0;
     } else {
-        assert(colour >= 0 && colour < MAXCOLOURS && colour < COLOR_PAIRS-2);
+        assert(colour >= 0 && colour < MAXCOLOURS);
         assert(!(bg & ~7));            /* bold backgrounds are nonportable */
-        init_pair(colour+1, colours[fg & 7], colours[bg]);
-        attrs[colour] = (fg & 8 ? A_BOLD : 0) | COLOR_PAIR(colour+1);
+	if (colour < COLOR_PAIRS-2) {
+	    init_pair(colour+1, colours[fg & 7], colours[bg]);
+	    attrs[colour] = (fg & 8 ? A_BOLD : 0) | COLOR_PAIR(colour+1);
+	} else {
+	    /* can't allocate a colour pair, so we just use b&w attrs */
+	    attrs[colour] = (fg & 8 ? A_BOLD : 0) | (reverse ? A_REVERSE : 0);
+	}
     }
 }
 
