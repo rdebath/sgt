@@ -13,6 +13,9 @@ if (BATCH == 0) {
 setkey("help_prefix", "^H");
 
 %}}}
+%{{{ FFS, whose silly idea was it to make ` into a quote-next command?
+setkey("self_insert_cmd", "`");
+%}}}
 %{{{ make Backspace work more sensibly in overwrite mode
 
 define jedrc_backspace() {
