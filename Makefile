@@ -33,7 +33,7 @@ auto: autoconf
 	cd auto && ../configure && make
 release: autoconf
 	mkdir enigma-$(VERSION)
-	for i in *.c *.h levels README LICENCE \
+	for i in *.c *.h levels README CHANGELOG LICENCE \
 	Makefile.in configure.in configure install-sh; do \
 		ln -s ../$$i enigma-$(VERSION); \
 	done
