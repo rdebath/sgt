@@ -17,13 +17,13 @@ Low priority because:
 <ul>
 <li>
 If you have physical access to the machine, then you've compromised
-its security anway; you can just install a trojan pageant which will
+its security <em>anyway</em>; you can just install a trojan pageant which will
 happily snarf the passphrases from keys for you, or perpetrate any one
 of a number of other attacks.
 </li>
 <li>
 Pageant doesn't currently attempt to prevent key material being
-written to disk. (We don't for instance use VirtualLock(); see Peter
-Gutmann's comments on its deficiencies in various places.)
+written to disk. (We don't for instance use VirtualLock(); see the
+<a href="http://www.chiark.greenend.org.uk/~sgtatham/putty/faq.html#A.7.4">FAQ</a>.
 </li>
 </ul>
