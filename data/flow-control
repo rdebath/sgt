@@ -1,0 +1,37 @@
+Summary: Be cleverer with SSH-2 flow control to improve bulk throughput
+Class: wish
+Difficulty: tricky
+Priority: low
+Content-type: text/x-html-body
+
+<p>
+(This wish applies to SSH-2; SSH-1 doesn't provide flow control above
+TCP's.)
+
+<p>
+Currently PuTTY's SSH-2 implementation uses a fixed SSH-2 channel
+window size of 16k for each channel. Perhaps we should do something
+cleverer to improve throughput on high-bandwidth or high-latency
+connections.
+
+<p>
+Things are simple if only a single channel is in use, but might
+become more complicated to tune if multiple channels were to be used
+(e.g., port-forwarding of bulk transfers, or some of the wilder
+excesses of <a href="ssh2-generality.html">SSH-2 generality</a>).
+However, the common case is likely to be an SFTP or SCP transfer as
+the only channel of an SSH-2 session.
+
+<p>
+The Pittsburgh Supercomputing Center
+<a href="http://www.psc.edu/networking/hpn-ssh/">suggest</a>
+that basing the SSH window size on the TCP window size from the
+underlying OS can help in some circumstances.
+
+<p>
+If this is done, some higher-level protocols could probably benefit
+from similar adaptation -- notably SFTP, which since it was
+<a href="sftp-slow.html">sped up</a> has also used a 16k "window size"
+of its own for bulk transfers. We've had improvement reported from
+tweaking this and the SSH-2 channel window size on a 100Mbit network
+(ref <tt>41A6366F.9030909@enriva.com</tt>).
