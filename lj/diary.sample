@@ -16,6 +16,9 @@ So there.
 
 {/ljcut}
 
+Here is {name simont Simon}'s name, which should come out as a magic
+LJ user tag on LJ but be normal text on Mono.
+
 {Q}
 This paragraph is quoted. This means that on mono, it should be
 yellow and have angle bracket characters to its left. Other than

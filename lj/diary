@@ -354,8 +354,15 @@ class output:
         self.mono_blankline()
         self.mono_words = []
 
+    def name(self, text):
+	self.html = self.html + "<lj user=\"" + text + "\">"
+
     def posturlmode(self, on):
         self.mono_ok = (on == 0)
+	pass
+
+    def postnamemode(self, on):
+        self.html_ok = (on == 0)
 	pass
 
     def end_title(self):
@@ -635,6 +642,22 @@ def rdinput(file):
 			    # will be treated normally.
 			    stack = stack + ["url"]
 			    break
+		elif tok[1] == "name":
+		    tok = t.next()
+		    name = ""
+		    while tok != (EOF,) and tok != (TCLOSE,):
+			if tok[0] == WORD:
+			    name = name + tok[1]
+			    tok = t.next()
+			else:
+			    o.name(name)
+			    o.postnamemode(1)
+			    if tok[0] == WHITE or tok[0] == NL:
+				t.next()
+			    # Subsequent stuff will be treated
+			    # normally.
+			    stack = stack + ["name"]
+			    break
 		else:
 		    stack = stack + [tok[1]]
 		    t.next()
@@ -661,6 +684,8 @@ def rdinput(file):
 			o.bold(0)
 		    elif s == "url":
 			o.posturlmode(0)
+		    elif s == "name":
+			o.postnamemode(0)
 		    elif s == "t":
 			o.end_title()
 		    elif s == "mbreak":
