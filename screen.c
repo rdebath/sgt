@@ -17,8 +17,6 @@
 
 #include "enigma.h"
 
-#define FIXME 0
-
 #ifndef HAS_ATTR_T
 typedef int attr_t;
 #endif
