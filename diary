@@ -163,9 +163,11 @@ class output:
         self.monoquote = monoquotes[0]
 	self.in_ul = 0
         self.timestamp = now
+	self.mono_last_edit_start = -1
         self.mono_new_edit()
         self.mono_bullet = 0
 	self.firstpara = 1
+	self.warnings = []
 	pass
 
     def mono_blankline(self):
@@ -176,6 +178,10 @@ class output:
         lt = time.localtime(self.timestamp)
         self.timestamp = self.timestamp + 1
         self.mono_blankline()
+	if len(self.mono) - self.mono_last_edit_start >= 48:
+	    msg = "Mono edit at line %d is too long!" % (self.mono_last_edit_start+1)
+	    self.warnings.append(msg)
+	self.mono_last_edit_start = len(self.mono)
         msgline = "Message: %08X" % self.timestamp
         msgline = msgline + " " * 23
         msgline = msgline + time.strftime("(%a %b %e %H:%M:%S %Y)", lt)
@@ -305,6 +311,14 @@ class output:
 
     def finish(self):
 	self.mono_blankline()
+	if len(self.mono) - self.mono_last_edit_start >= 48:
+	    msg = "Mono edit at line %d is too long!" % (self.mono_last_edit_start+1)
+	    self.warnings.append(msg)
+
+	for i in range(len(self.mono)):
+	    if len(self.mono[i]) > 79:
+		msg = "Mono line %d is too long!" % i
+		self.warnings.append(msg)
 
     def begin_para(self, typ):
 	self.html_ok = 1
@@ -577,6 +591,18 @@ def rdinput(file):
 		t.next()
 		o.whitespace(" ")
 
+def readfile(fname):
+    f = open(fname, "r")
+    s = f.readline()
+    if s[:3] != "-*-":
+	# Oops, in our attempt to skip the -*- line we've stupidly
+	# eaten a line of the real file. Close and reopen.
+	f.close()
+	f = open(fname, "r")
+    ret = rdinput(f)
+    f.close()
+    return ret
+
 # Main program.
 #  - Get a filename on stdin; invent a temp name if none given.
 #  - Run an editor over the file if it's new or empty.
@@ -596,15 +622,34 @@ else:
     need_edit = 1
 
 if need_edit:
-    os.system(os.environ["VISUAL"] + " " + fname)
+    f = open(fname, "w")
+    f.write("-*- diary -*-\n\n")
+    f.close()
+    os.system(os.environ["VISUAL"] + " +3 " + fname)
+
+now = time.time()
+nowlocal = time.localtime()
 
 while 1:
-    sys.stdout.write("Edit again, preview Mono, preview Html, Post? [EMHP] ")
+    try:
+	out = readfile(fname)
+	warnings = out.warnings
+    except IOError:
+	warnings = ["Unable to open file for processing."]
+
+    if len(warnings) == 0:
+	warnings = ["File looks OK."]
+
+    for i in warnings:
+	print i
+    print
+
+    sys.stdout.write("Edit again, preview Mono, preview Html, Post, Abort? [EMHPA] ")
     try:
 	s = sys.stdin.readline()
     except KeyboardInterrupt:
 	s = ""
-    if s == "":
+    if s == "" or s == "a\n":
 	print
 	print "Quitting."
 	break
@@ -613,12 +658,15 @@ while 1:
 	os.system(os.environ["VISUAL"] + " " + fname)
 	continue
 
+    if not (s in ["m\n", "h\n", "p\n"]):
+	print "Unknown command."
+	print
+	continue
+
     now = time.time()
     nowlocal = time.localtime()
 
-    f = open(fname, "r")
-    out = rdinput(f)
-    f.close()
+    out = readfile(fname)
 
     if s == "m\n":
 	f = os.popen("mtribs | less -r", "w")
