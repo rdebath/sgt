@@ -13,7 +13,7 @@ int main(int argc, char **argv) {
     int nogo;
     int errs;
     enum { NONE, INIT, ADD, LIST, CRON, DUMP, LOAD } command;
-    char *args[2];
+    char *args[4];
     int nargs = 0;
     char *homedir;
 

@@ -34,8 +34,13 @@ static void do_error(int code, va_list ap) {
 	sprintf(error, "unrecognised option `-%.200s'", sp);
 	flags = PREFIX;
 	break;
+      case err_extraarg:
+	sp = va_arg(ap, char *);
+	sprintf(error, "unexpected additional argument `%.200s'", sp);
+	flags = PREFIX;
+	break;
       case err_addargno:
-	sprintf(error, "`add' command expects one or two arguments");
+	sprintf(error, "`add' command expects between one and four arguments");
 	flags = PREFIX;
 	break;
       case err_listargno:

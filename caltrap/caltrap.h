@@ -23,7 +23,8 @@ enum {
     err_nomemory,		       /* no arguments */
     err_optnoarg,		       /* option `-%s' requires an argument */
     err_nosuchopt,		       /* unrecognised option `-%s' */
-    err_addargno,		       /* `add' requires 1 or 2 args */
+    err_extraarg,		       /* unexpected additional argument */
+    err_addargno,		       /* `add' requires 1-4 args */
     err_listargno,		       /* `list' requires 0-2 args */
     err_cronargno,		       /* `cron' requires 2 args */
     err_dumpargno,		       /* `dump' requires no args */
