@@ -52,8 +52,16 @@
 ;; }}}
 ;; Left-Windows + x to minimise windows {{{
 
+(define (iconify-window-under-pointer)
+   (let ((w (query-pointer-window)))
+      (when (not (null w)) (iconify-window w))
+      )
+   )
+
+(define-command 'iconify-window-under-pointer iconify-window-under-pointer)
+
 (bind-keys window-keymap
-  "H-x" 'iconify-window
+  "H-x" 'iconify-window-under-pointer
 )
 
 ;; }}}
