@@ -590,7 +590,7 @@ int main(int argc, char **argv)
 		cfgfile = *++argv;
             } else if (!strcmp(p, "-t")) {
                 if (--argc <= 0) {
-                    fprintf(stderr, "ick-proxy: -c expected a parameter\n");
+                    fprintf(stderr, "ick-proxy: -t expected a parameter\n");
                     return 1;
                 }
 		testurl = *++argv;
