@@ -5,6 +5,9 @@ DESTDIR = .
 PREFIX = /usr/local
 BINDIR = $(PREFIX)/bin
 MANDIR = $(PREFIX)/man/man1
+INSTALL = install
+IPROG =#   flags for installing programs (default none)
+IDATA = -m 0644  # flags for installing data
 
 all: nntpid.1
 
@@ -28,6 +31,6 @@ release: nntpid.1
 
 install: nntpid.1
 	mkdir -p $(BINDIR)
-	install nntpid $(BINDIR)/nntpid
+	$(INSTALL) $(IPROG) nntpid $(BINDIR)/nntpid
 	mkdir -p $(MANDIR)
-	install -m 0644 nntpid.1 $(MANDIR)/nntpid.1
+	$(INSTALL) $(IDATA) nntpid.1 $(MANDIR)/nntpid.1

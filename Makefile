@@ -7,6 +7,9 @@ DESTDIR = .
 PREFIX = /usr/local
 BINDIR = $(PREFIX)/bin
 MANDIR = $(PREFIX)/man/man1
+INSTALL = install
+IPROG =#   flags for installing programs (default none)
+IDATA = -m 0644  # flags for installing data
 
 all:
 	for i in $(SUBDIRS); do make -C $$i; done
