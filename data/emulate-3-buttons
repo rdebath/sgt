@@ -1,0 +1,10 @@
+Summary: Make left+right click emulate middle-click, like XFree86
+Class: wish
+Priority: low
+Difficulty: fun
+Content-type: text/x-html-body
+
+<p>
+Perhaps (configurably) we could do the X trick of emulating the
+middle button when both buttons are pressed, like XFree86 does, to
+improve X exiles' experience of PuTTY's mouse handling.

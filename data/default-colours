@@ -1,0 +1,17 @@
+Summary: Be able to use the Windows default colour scheme
+Class: wish
+Priority: medium
+Difficulty: fun
+Content-type: text/x-html-body
+
+<p>
+Windows allows you to globally configure the foreground and
+background colour for text in application windows, across
+<em>all</em> applications. Since PuTTY's own foreground and
+background colour are configurable anyway, it currently ignores this
+global configuration.
+
+<p>
+We should have a checkbox in the Colours panel which allows you to
+specify that PuTTY's foreground and background colours should follow
+the Windows default settings.

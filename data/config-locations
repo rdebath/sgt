@@ -1,0 +1,49 @@
+Summary: Store configuration in disk file, HKEY_ALL_USERS, other locations
+Class: wish
+Priority: medium
+Difficulty: tricky
+Content-type: text/x-html-body
+
+<p>
+PuTTY stores its configuration and host keys in the registry under
+HKEY_CURRENT_USER, because we think that by and large that is the
+best single location for the job. However, not everybody agrees, and
+often for good reason. People carrying PuTTY around on a floppy tend
+to want to store their configuration in a disk file on the same
+floppy, so they can take absolutely everything with them from place
+to place. Sysadmins could very well want to store system-wide
+configuration in HKEY_ALL_USERS or HKEY_LOCAL_MACHINE.
+
+<p>
+The major difficulty with this work is one of design: if there are
+contradictory things stored in several of these locations, which one
+should take priority? It seems fairly obvious that HKEY_CURRENT_USER
+or a disk file represent the choices of an individual user, and
+therefore they should override HKEY_ALL_USERS or HKEY_LOCAL_MACHINE
+which merely set defaults over a large number of users. But which of
+CURRENT_USER and a disk file takes priority? Which of ALL_USERS and
+LOCAL_MACHINE? You can make a case for either one either way.
+
+<p>
+After some consideration, I think that probably the simplest thing
+would be for each config location (CURRENT_USER, ALL_USERS,
+LOCAL_MACHINE and disk files) to contain a single "Priority" field -
+so that a sysadmin could arrange for either of ALL and LOCAL to
+have higher priority than the other, depending on local needs. PuTTY
+should scan all config locations and use the priority order it
+finds. Priorities should be unbounded, so that the local user can
+always ensure they have a setup which supersedes the systemwide one.
+
+<p>
+Another question is how to tell PuTTY about a disk file. Specifying
+it on the command line is one obvious way, but not a particularly
+convenient one to set up. Alternatively it could be stored in the
+Registry somewhere - but where? Within one of these interchangeable
+config locations (in which case, what happens if a disk file
+specifies another disk file? Should that be allowed?), or in one
+single place?
+
+<p>
+Finally, although the above design makes it obvious how PuTTY should
+<em>read</em> its configuration, how should it write it? When the
+user wants to save a config change, where should it be saved to?

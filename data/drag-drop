@@ -1,0 +1,32 @@
+Summary: Drag and drop support
+Class: wish
+Priority: low
+Difficulty: tricky
+Content-type: text/x-html-body
+
+<p>
+It might be handy if PuTTY supported drag and drop. Applications
+like Word let you select some text and drag that text around the
+document; if you drag it into PuTTY it would be nice if PuTTY would
+interpret that like a paste operation. Possibly allowing users to
+drag the PuTTY selection out into other windows might be nice too,
+although this would require some careful thought to work out how it
+would interact with the existing mouse behaviour. (Perhaps there is
+no way to make them compatible. Perhaps being able to drag the PuTTY
+selection would have to be something you have to configure on.)
+
+<p>
+Similarly, dragging a URL from a web browser should paste that URL
+into PuTTY. And perhaps other sorts of drag-and-drop should do
+plausible things as well.
+
+<p>
+(A lot of people ask to be able to drag and drop a file out of
+Windows Explorer into PuTTY, and have it automatically start up an
+SCP process to copy that file into the current directory of the
+remote shell. This is not even feasible in theory - there's no
+reliable way for PuTTY to determine what the currect directory of
+the remote shell <em>is</em>. It could be done in principle if you
+didn't mind the files ending up in your home directory rather than
+your current one, but that's a lot less useful and I doubt we'd
+consider it worth the rather complex modifications to PuTTY.)

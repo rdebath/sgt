@@ -1,0 +1,13 @@
+Summary: Line ending conversion in PSCP and PSFTP
+Class: wish
+Priority: medium
+Difficulty: 
+Content-type: text/x-html-body
+
+<p>
+Possibly line-end conversion in PSCP and PSFTP. An option to turn it
+on, an option (enabled by default) to turn it off, and perhaps an
+option to try to auto-detect whether to turn it on or not. (Anyone
+know a good heuristic for distinguishing text from binary files?
+infozip has one, as does less; anyone want to comment on which is
+better or whether there are better still?)

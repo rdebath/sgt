@@ -1,0 +1,27 @@
+Summary: Feature-rich printer support with formatting control
+Class: wish
+Priority: low
+Difficulty: tricky
+Depends: mdpi
+Content-type: text/x-html-body
+
+<p>
+Improved ANSI printer control support. Squirting raw data out to a
+random printer is all very well for people who already have their
+remote application configured with a driver for their specific
+printer, but not ideal if you just want to send a text file and have
+it print in a sensible sort of way. I'd like an alternative printing
+mode using the Windows graphical printing API (where the printing
+application has to draw on the page like a canvas), doing the layout
+myself. Advantages include being able to guarantee the right number
+of columns and rows per page, being able to let the user select
+portrait/landscape, and possibly also doing some escape-sequence
+parsing on the input data stream to handle a variety of simple
+control codes (DEC/ANSI and PCL both spring to mind, and I think the
+simple ones of these could both be supported at once without clashes
+requiring user-level configuration).
+
+<p>
+This is certainly going to be a large piece of code, so if it
+happens at all it will want to be a plugin DLL using the plugin
+interface.

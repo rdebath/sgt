@@ -1,0 +1,16 @@
+Summary: Menu bar in the PuTTY window
+Class: wish
+Priority: medium
+Difficulty: fun
+Content-type: text/x-html-body
+
+<p>
+It might be useful for the PuTTY window to have a menu bar. This
+would provide an easier way to get at the contents of the System
+menu, and would have room for much more stuff (such as logging
+on/off).
+
+<p>
+This would certainly be a configurable feature, if we do it at all.
+PuTTY's minimalist use of screen space is valuable to a number of
+its users. But other people might find it useful.

@@ -1,0 +1,25 @@
+Summary: Support for SSH2: zero, or more than one, terminal per session
+Class: wish
+Priority: medium
+Difficulty: tricky
+Content-type: text/x-html-body
+
+<p>
+SSH 2 is a much more flexible protocol than SSH 1. It doesn't
+require exactly one terminal session per SSH connection; you can
+have more than one, or indeed none at all.
+
+<p>
+It would be nice if PuTTY could make use of this. For example, there
+could be a System menu option to start an extra terminal window
+inside the same SSH connection as the existing one(s). This would be
+more efficient than the existing Duplicate Session command, and also
+wouldn't require repeated authentication (which you don't care that
+much about if you're using public keys, but you might care a lot if
+you don't want to have to type your password in again).
+
+<p>
+Going in the other direction, several people have asked if it could
+be possible to start PuTTY <em>without</em> starting a terminal
+window and a shell - just have PuTTY sit in the background and do
+port forwarding only. This would also be possible in theory.

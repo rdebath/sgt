@@ -1,0 +1,16 @@
+Summary: Toolbar on the PuTTY window
+Class: wish
+Priority: low
+Difficulty: tricky
+Content-type: text/x-html-body
+
+<p>
+The PuTTY window could have a toolbar, containing copy and paste
+buttons, a close button, new-session and duplicate-session, start
+and stop logging, perhaps a drop-down list to select and start a
+saved session.
+
+<p>
+This would certainly be a configurable feature, if we do it at all.
+PuTTY's minimalist use of screen space is valuable to a number of
+its users. But other people might find it useful.

@@ -1,0 +1,17 @@
+Summary: Support for Kerberos and GSSAPI
+Class: wish
+Priority: low
+Difficulty: taxing
+Content-type: text/x-html-body
+
+<p>
+Somebody requested "Kerberos 5 credential forwarding". I don't know
+anything about Kerberos, so if this gets done it will have to be
+done by somebody who does.
+
+<p>
+The SSH 2 drafts also go on about GSSAPI a lot. I'm not sure whether
+GSSAPI is the same thing as Kerberos, or a similar thing, or if one
+is an implementation of the other, or what; but it sounds as if it
+covers roughly the same ground, and we probably ought to support it
+at some point.

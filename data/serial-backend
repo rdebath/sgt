@@ -1,0 +1,9 @@
+Summary: Back end that talks to a serial port instead of a network
+Class: wish
+Priority: medium
+Difficulty: tricky
+Content-type: text/x-html-body
+
+<p>
+Extra back end to connect to a serial port instead of a Telnet or SSH
+connection.

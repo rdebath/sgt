@@ -2,6 +2,7 @@ Summary: SSH client packaged as a DLL for use in other programs
 Class: wish
 Difficulty: tricky
 Priority: low
+Depends: remove-statics
 Content-type: text/plain
 
 A lot of people ask for a DLL that implements an SSH client, so that
@@ -37,12 +38,8 @@ channels was active.)
 
 The biggest immediate problems I see with it are:
 
- - PuTTY isn't currently able to manage more than one connection at
-   a time (although it can manage multiple channels within a
-   connection). This is because most of its variables are global,
-   rather than allocated dynamically per session. A decent DLL would
-   need to have this fixed; fortunately it's a source cleanup I plan
-   to do in any case.
+ - Removal of static variables will have to have already happened,
+   so that the DLL can handle more than one connection at a time.
 
  - PuTTY needs its own event loop, so that it can respond to server-
    side requests (such as repeat key exchange and server-side pings)

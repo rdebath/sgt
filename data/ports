@@ -1,0 +1,26 @@
+Summary: Ports to other operating systems
+Class: wish
+Priority: medium
+Difficulty: tricky
+Content-type: text/x-html-body
+
+<p>
+Ports to other OSes. Among the OSes we'd <em>like</em> to see PuTTY
+running on are:
+
+<ul>
+<li>
+Unix/X. As well as being a pure network application, it would be
+particularly nice if a Unix PuTTY could have an extra back end which
+ran a local shell or command in a pseudo-terminal (or indeed not in
+a pseudo-terminal), making it an alternative to xterm.
+
+<li>
+MacOS. We had a port half-finished at one point, but it isn't clear
+how applicable that code would be to the current state of PuTTY.
+
+<li>
+Windows CE, and/or EPOC or other PDA operating systems. Decent SSH
+clients for PDAs seem to be in short supply (unless you install a
+Java virtual machine and MindTerm).
+</ul>

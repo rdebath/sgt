@@ -1,0 +1,20 @@
+Summary: Use of the System tray
+Class: wish
+Priority: never
+Difficulty: tricky
+Content-type: text/x-html-body
+
+<p>
+Use of the System tray. So many people have requested this that I
+think it's a genuine desirable feature, but I don't want it to bloat
+the core of PuTTY. Therefore, it should be implemented using a
+separate program. There are a variety of programs out there already
+that do this. Here are some links to them.
+  <ul>
+  <li>
+  <a href="http://www.toggle.com/products/minimize/index.html">ToggleMINIMIZE</a>.
+  <li>
+  <a href="http://longwood.cs.ucf.edu/~heimburg/software.html">The Wonderful Icon</a>.
+  <li>
+  <a href="http://www.mlin.net/TraySaver.shtml">TraySaver</a>.
+  </ul>

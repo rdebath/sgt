@@ -1,0 +1,10 @@
+Summary: A GUI client for SFTP
+Class: wish
+Priority: low
+Difficulty: tricky
+Content-type: text/x-html-body
+
+<p>
+A GUI SFTP client. (Possibly it should also be able to use SCP but
+with massively reduced functionality.) Writing big complex GUIs is
+hard work and I simply don't have the effort to spare.

@@ -1,0 +1,9 @@
+Summary: Preference order for authentications
+Class: wish
+Priority: medium
+Difficulty: 
+Content-type: text/x-html-body
+
+<p>
+Ability to select a preference order of authentications, like we can
+already do for ciphers.

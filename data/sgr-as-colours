@@ -1,0 +1,12 @@
+Summary: Be able to change text colour or font in response to SGR Bold, Underline etc
+Class: wish
+Priority: low
+Difficulty: fun
+Content-type: text/x-html-body
+
+<p>
+Allow the user to select a different default colour for underlined
+text, and a different default background colour for bold text, and
+so on. Not everybody wants true WYSIWYG in attribute rendering.
+Also, consider the possibility of changing <em>fonts</em> for some
+of these criteria (might be useful for people with low vision).

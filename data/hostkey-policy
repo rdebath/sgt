@@ -1,0 +1,31 @@
+Summary: Enhanced flexibility in SSH host key policy
+Class: wish
+Priority: medium
+Difficulty: tricky
+Content-type: text/x-html-body
+
+<p>
+PuTTY's host key policy is extremely simple at the moment. The name
+under which a host key is filed in the Registry is exactly the name
+you typed into the Hostname box. This avoids ever trusting the DNS
+for anything.
+
+<p>
+Recent versions of OpenSSH appear to file keys under IP addresses as
+well, although I've never stopped to work out what the semantics of
+this is. (Is a key considered valid only if it appears from the same
+host name _and_ IP address, or if it appears from either, or what?)
+It might be good to sit down and work out what OpenSSH's policy
+actually is, and wonder whether we want to implement it in PuTTY.
+
+<p>
+For the benefit of <em>really</em> weird network setups, it would be
+nice to be able to explicitly <em>specify</em> what name to store a
+host key under. (For example, if you're connecting through an SSH
+port forwarding to the SSH port of another machine, and you've
+previously connected directly to the same machine, then really you
+want to be looking the host key up under the same name as it was
+already stored. You almost certainly <em>don't</em> want to
+permanently associate that host key with the temporary port number
+on your local machine which you've chosen for the forwarding.)
+

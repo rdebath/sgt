@@ -1,0 +1,22 @@
+Summary: Remember window position, or allow it to be configured
+Class: wish
+Priority: never
+Difficulty: fun
+Content-type: text/x-html-body
+
+<p>
+The ability to specify the precise position on the screen you want
+your PuTTY window to open at. This is clearly a very useful thing to
+have, but it would be just as useful for all the <em>other</em>
+Windows apps anyone uses. It shouldn't be the responsibility of
+every single program to include a configuration option to specify
+window position. Instead, it should be the responsibility of the
+Windows system itself, or a third-party program, to remember where
+you like individual programs to go.
+<br>
+One such program is
+<a href="http://www.basta.com/ProdZMover.htm">ZMover</a>
+(shareware); another is
+<a href="http://www.starfishbay.com/handything/">HandyThing</a>
+(free as in beer). If anyone knows of a free (as in speech) one, I'd
+like to hear about it.

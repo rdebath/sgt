@@ -1,0 +1,29 @@
+Summary: Allow frequently used saved sessions to be easy to access
+Class: wish
+Priority: medium
+Difficulty: tricky
+Content-type: text/x-html-body
+
+<p>
+PuTTY's inflexible alphabetical ordering of saved sessions is not
+necessarily ideal if you have more than one screenful of them. You
+might find that all the ones you use most often are on the second
+page and you have to scroll down for them, whereas the infrequently
+accessed ones are available to a single click.
+
+<p>
+You can currently fix this by renaming the sessions - I sometimes
+deliberately start a session name with a zero in order to make it
+appear at the top of the list - but this is far from ideal.
+
+<p>
+One possibility would simply be to allow the user to determine the
+order of the saved sessions, perhaps by dragging them about or by
+using some sort of Up and Down buttons.
+
+<p>
+Alternatively, someone suggested using <em>adaptive</em> ordering: a
+new session is placed in the exact middle of the list, and whenever
+you use a session it moves up the list by one place, so the
+commonly-used ones gradually bubble up towards the top of the list.
+I'm not convinced about this, but it's worth at least considering.

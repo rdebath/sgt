@@ -1,0 +1,13 @@
+Summary: Framework for internationalisation
+Class: wish
+Priority: medium
+Difficulty: tricky
+Content-type: text/x-html-body
+
+<p>
+Extract all the user-visible text to a single location, so it can be
+easily replaced with a set of translations into other languages.
+It's not yet clear whether we want to do this at compile time,
+post-compile time, or using a Windows string resource (probably not
+the latter since we will eventually be porting to non-Windows
+environments).

@@ -1,0 +1,18 @@
+Summary: Authenticate with local X servers
+Class: wish
+Priority: low
+Difficulty: taxing
+Content-type: text/x-html-body
+
+<p>
+X11 forwarding currently doesn't even attempt to authenticate with
+the local X server. In order for it to do so, PuTTY would have to
+know where to look for authentication data. It would be nice if this
+were to happen.
+
+<p>
+It isn't obvious that this is even necessary; we've had X forwarding
+in PuTTY for some months now, including in a major release, and
+nobody has ever complained at the lack of this feature. It may
+simply be that Windows X servers can't be bothered with local
+authentication at all.

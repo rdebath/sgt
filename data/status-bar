@@ -1,0 +1,19 @@
+Summary: Status bar on the PuTTY window
+Class: wish
+Priority: medium
+Difficulty: 
+Content-type: text/x-html-body
+
+<p>
+The PuTTY window could have a status bar with various information on
+it. A visible indicator of whether the connection is secured or not
+(for the paranoids who aren't sure whether they remembered to hit
+the SSH radio button); a display of the cursor coordinates; whether
+the terminal bell is currently overloaded; some sort of visual
+representation of the host key perhaps. Anything else that springs
+to mind.
+
+<p>
+This would certainly be a configurable feature, if we do it at all.
+PuTTY's minimalist use of screen space is valuable to a number of
+its users. But other people might find it useful.
