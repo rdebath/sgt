@@ -3,6 +3,7 @@ Class: semi-bug
 Difficulty: tricky
 Priority: low
 Content-type: text/x-html-body
+Fixed-in: 2003-03-08
 
 <p>I (BJH) think that PuTTY's behaviour when the number of lines on the screen
 is changed is currently wrong.  What it currently does is to keep the bottom
@@ -36,3 +37,6 @@ patch</a> to fix this.
 
 <p>(cf. <a href="resize-no-truncate.html">`resize-no-truncate'</a> for the
 case where the number of columns is changed.)
+
+<p><b>SGT, 2003-03-07</b>: Just accepted a patch from Richard
+Boulton which should fix this.
