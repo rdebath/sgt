@@ -75,6 +75,12 @@ int main(int ac, char **av) {
                     error ("out of memory");
             }
         } while (n > 0);
+        if (sellen == selsize) {
+            seltext = realloc(seltext, selsize += SELDELTA);
+            if (!seltext)
+                error ("out of memory");
+        }
+        seltext[sellen] = '\0';
     }
 
     init_X();
@@ -126,6 +132,7 @@ char *ucasename = "XCopy";
 
 Display *disp = NULL;
 Window ourwin = None;
+Atom compound_text_atom;
 int screen, wwidth, wheight;
 
 void init_X(void) {
@@ -181,6 +188,7 @@ void init_X(void) {
         XSetSelectionOwner (disp, XA_PRIMARY, ourwin, CurrentTime);
         if (XGetSelectionOwner (disp, XA_PRIMARY) != ourwin)
             error ("unable to obtain primary X selection\n");
+        compound_text_atom = XInternAtom(disp, "COMPOUND_TEXT", False);
     }
 }
 
@@ -204,17 +212,28 @@ void run_X(void) {
                 return;
               case SelectionRequest:
                 e2.xselection.type = SelectionNotify;
-                e2.xselection.selection = XA_PRIMARY;
-                e2.xselection.target = XA_STRING;
                 e2.xselection.requestor = ev.xselectionrequest.requestor;
+                e2.xselection.selection = ev.xselectionrequest.selection;
+                e2.xselection.target = ev.xselectionrequest.target;
                 e2.xselection.time = ev.xselectionrequest.time;
                 if (ev.xselectionrequest.target == XA_STRING) {
                     XChangeProperty (disp, ev.xselectionrequest.requestor,
                                      ev.xselectionrequest.property, XA_STRING,
                                      8, PropModeReplace, seltext, sellen);
                     e2.xselection.property = ev.xselectionrequest.property;
-                } else
+                } else if (ev.xselectionrequest.target == compound_text_atom) {
+                    XTextProperty tp;
+                    XmbTextListToTextProperty (disp, &seltext, 1,
+                                               XCompoundTextStyle, &tp);
+                    XChangeProperty (disp, ev.xselectionrequest.requestor,
+                                     ev.xselectionrequest.property,
+                                     ev.xselectionrequest.target,
+                                     tp.format, PropModeReplace,
+                                     tp.value, tp.nitems);
+                    e2.xselection.property = ev.xselectionrequest.property;
+                } else {
                     e2.xselection.property = None;
+                }
                 XSendEvent (disp, ev.xselectionrequest.requestor, False, 0, &e2);
             }
         }
