@@ -1,5 +1,5 @@
 #! /usr/bin/perl
-# $Id: bugs2html,v 1.9 2002/09/14 10:33:17 jacob Exp $
+# $Id: bugs2html,v 1.10 2002/10/25 15:18:21 jacob Exp $
 
 use FileHandle;
 use POSIX;
@@ -86,32 +86,57 @@ nest(<<EOF);
 <a name="fixed"><h2>Fixed things</h2></a>
 
 <p>
-These are items we believe to be already fixed in the development
-snapshots.
+These are items we believe we have already addressed.
+
 EOF
 
-my @fixed = grep(exists($bugs{$_}->{"fixed-in"}), @fullbuglist);
+# Classify fixed bugs by when they were fixed
+my %fixedvers = ();
+foreach my $bug (grep(exists($bugs{$_}->{"fixed-in"}), @fullbuglist)) {
+    my $class;
+    foreach my $ver (split(' ', $bugs{$bug}->{"fixed-in"})) {
+        $newclass = classifyver($ver);
+        $class = $newclass if (!defined($class) ||
+                               compareverclass($class, $newclass) > 0);
+    }
+    $fixedvers{$class} = [] unless defined($fixedvers{$class});
+    push @{$fixedvers{$class}}, $bug;
+}
 
-nest(<<EOF);
-<h3>Bugs (and semi-bugs)</h3>
+# Now spit them out in order.
+foreach my $class (sort compareverclass_s (keys %fixedvers)) {
+
+    nest(<<EOF);
+<h3>Fixed in $class</h3>
 <ul>
 EOF
 
-my @tmp = grep(($bugs{$_}->{class} eq 'bug' ||
-                $bugs{$_}->{class} eq 'semi-bug'), @fixed);
-subtractbugs(\@fullbuglist, printbugs(\@tmp));
-
-unnest("</ul>\n");
-
-nest(<<EOF);
-<h3>Wishes</h3>
+    nest(<<EOF);
+<li>Bugs (and semi-bugs)
 <ul>
 EOF
 
-my @tmp = grep(($bugs{$_}->{class} eq 'wish'), @fixed);
-subtractbugs(\@fullbuglist, printbugs(\@tmp));
+    my @tmp = grep(($bugs{$_}->{class} eq 'bug' ||
+                    $bugs{$_}->{class} eq 'semi-bug'), @{$fixedvers{$class}});
+    subtractbugs(\@fullbuglist, printbugs(\@tmp));
 
-unnest("</ul>\n");
+    unnest("</ul>\n");
+
+    nest(<<EOF);
+<li>Wishes
+<ul>
+EOF
+
+    my @tmp = grep(($bugs{$_}->{class} eq 'wish'), @{$fixedvers{$class}});
+    subtractbugs(\@fullbuglist, printbugs(\@tmp));
+
+    unnest("</ul>\n");
+
+    unnest("</ul>\n");
+
+}
+
+unnest("");
 
 nest(<<EOF);
 <a name="bugs"><h2>Bugs</h2></a>
@@ -327,6 +352,40 @@ Audit trail</a> for this @{[$hdrs->{class}]}.
 EOF
 
     close(HTML);
+}
+
+# Given a version string, return a canonical textual name
+# describing it (equivalence class).
+sub classifyver {
+    my ($ver) = @_;
+    my $name;
+    if   ($ver =~ m/^\d{4}-\d{2}-\d{2}$/) { $name = "current snapshots"; }
+    else                                  { $name = "release " . $ver; }
+    return $name;
+}
+
+# Compare function for equivalence classes as returned by classifyver
+# (version for use with sort)
+sub compareverclass_s {
+    if ($a eq $b) {
+        return 0;
+    } elsif ($a eq "current snapshots") {
+        return 1;
+    } elsif ($b eq "current snapshots") {
+        return -1;
+    } else {
+        my ($aver, $bver) = ($a, $b);
+        map s/^release //, ($aver, $bver);
+        # Should probably be based on Debian version-compare algorithm.
+        # Hacked for now (would break with 0.5, 0.100, 0.53a etc)
+        return ($aver <=> $bver);
+    }
+}
+
+# Wrapper for compareverclass_s with sensible argument passing
+sub compareverclass {
+    ($a, $b) = @_;
+    return compareverclass_s();
 }
 
 sub printbugs {
