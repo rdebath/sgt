@@ -8,7 +8,7 @@ LFLAGS = /incremental:no
 .c.obj:
 	cl $(COMPAT) $(CFLAGS) /c $*.c
 
-LIBS = gdi32.lib user32.lib wsock32.lib
+LIBS = gdi32.lib user32.lib wsock32.lib shell32.lib
 
 all: doit.exe
 

@@ -4,6 +4,32 @@
 #include <stdio.h>
 #include <string.h>
 
+typedef unsigned int uint32;
+
+extern HWND listener_hwnd;
+
+char *auth_make_nonce(SOCKADDR_IN);
+int auth_check_line(char *line, char *nonce, SOCKET);
+
+typedef struct {
+    uint32 h[5];
+} SHA_Core_State;
+
+#define SHA_BLKSIZE 64
+
+typedef struct {
+    SHA_Core_State core;
+    unsigned char block[SHA_BLKSIZE];
+    int blkused;
+    uint32 lenhi, lenlo;
+} SHA_State;
+
+void SHA_Init(SHA_State *s);
+void SHA_Bytes(SHA_State *s, void *p, int len);
+void SHA_Final(SHA_State *s, unsigned char *output);
+
+static char *secretfile = "";
+
 /*
  * Export the application name.
  */
@@ -23,8 +49,14 @@ int listener_newthread(SOCKET sock, int port, SOCKADDR_IN remoteaddr) {
     char *cmdline = NULL;
     int cmdlen = 0, cmdsize = 0;
     char buf[64];
-    int len, newlen;
+    int len, newlen, ret;
+    char *nonce;
 
+    nonce = auth_make_nonce(remoteaddr);
+    send(sock, "+", 1, 0);
+    send(sock, nonce, strlen(nonce), 0);
+    send(sock, "\r\n", 2, 0);
+    
     while (1) {
         len = recv(sock, buf, sizeof(buf), 0);
         if (cmdsize < cmdlen + len + 1) {
@@ -32,19 +64,36 @@ int listener_newthread(SOCKET sock, int port, SOCKADDR_IN remoteaddr) {
             cmdline = realloc(cmdline, cmdsize);
             if (!cmdline) {
                 closesocket(sock);
+                free(nonce);
                 return 0;
             }
         }
         memcpy(cmdline+cmdlen, buf, len);
         cmdline[cmdlen+len] = '\0';
-        newlen = strcspn(buf, "\r\n");
-        if (newlen < len) {
-            buf[newlen] = '\0';
+        cmdlen += len;
+        newlen = strcspn(cmdline, "\r\n");
+        if (newlen < cmdlen) {
+            cmdline[newlen] = '\0';
             break;
         }
     }
-    MessageBox(NULL, buf, "Message!", MB_OK);
-    send(sock, "+ok\r\n", 5, 0);
+    ret = auth_check_line(cmdline, nonce, sock);
+    if (ret > 0) {
+        /*
+         * Things beginning 's' get passed to ShellExecute; things
+         * beginning with 'w' go to WinExec.
+         */
+        char *p = cmdline + ret;
+        if (*p == 'w') {
+            WinExec(p+1, SW_SHOWNORMAL);
+        } else if (*p == 's') {
+            ShellExecute(listener_hwnd, NULL, p+1, NULL, NULL, SW_SHOWNORMAL);
+        }
+        send(sock, "+ok\r\n", 5, 0);
+    } else {
+        send(sock, "-auth failed\r\n", 14, 0);
+    }
+    free(nonce);
     closesocket(sock);
     return 0;
 }
@@ -53,6 +102,68 @@ int listener_newthread(SOCKET sock, int port, SOCKADDR_IN remoteaddr) {
  * Export the function that gets the command line.
  */
 void listener_cmdline(char *cmdline) {
+    secretfile = malloc(1+strlen(cmdline));
+    if (!secretfile)
+        secretfile = "";
+    strcpy(secretfile, cmdline);
+}
+
+/* ======================================================================
+ * Authentication functions.
+ */
+
+char *auth_make_nonce(SOCKADDR_IN addr) {
+    SYSTEMTIME systime;
+    static long unique = 1;
+    SHA_State s;
+    char *ret;
+    unsigned char blk[20];
+    int i;
+
+    GetSystemTime(&systime);
+    unique++;
+
+    ret = malloc(41);
+    if (!ret)
+        return "argh";
+
+    SHA_Init(&s);
+    SHA_Bytes(&s, &addr, sizeof(addr));
+    SHA_Bytes(&s, &systime, sizeof(systime));
+    SHA_Bytes(&s, &unique, sizeof(unique));
+    SHA_Final(&s, blk);
+
+    for (i = 0; i < 20; i++)
+        sprintf(ret + 2*i, "%02x", blk[i]);
+
+    return ret;
+}
+
+int auth_check_line(char *line, char *nonce, SOCKET sk) {
+    char hex[41];
+    unsigned char blk[20];
+    int i;
+    FILE *fp;
+    char buf[256];
+
+    SHA_State s;
+    SHA_Init(&s);
+    SHA_Bytes(&s, nonce, strlen(nonce));
+    fp = fopen(secretfile, "rb");
+    while ((i = fread(buf, 1, sizeof(buf), fp)) > 0)
+        SHA_Bytes(&s, buf, i);
+    fclose(fp);
+    if (strlen(line) >= 40)
+        SHA_Bytes(&s, line+40, strlen(line)-40);
+    SHA_Final(&s, blk);
+
+    for (i = 0; i < 20; i++)
+        sprintf(hex + 2*i, "%02x", blk[i]);
+
+    if (!strncmp(hex, line, 40))
+        return 40;                     /* offset to command */
+    else
+        return 0;                      /* authentication failed */
 }
 
 /* 
@@ -60,17 +171,11 @@ void listener_cmdline(char *cmdline) {
  * SHA implementation, for authentication.
  */
 
-typedef unsigned int uint32;
-
 /* ----------------------------------------------------------------------
  * Core SHA algorithm: processes 16-word blocks into a message digest.
  */
 
 #define rol(x,y) ( ((x) << (y)) | (((uint32)x) >> (32-y)) )
-
-typedef struct {
-    uint32 h[5];
-} SHA_Core_State;
 
 void SHA_Core_Init(SHA_Core_State *s) {
     s->h[0] = 0x67452301;
@@ -121,15 +226,6 @@ void SHA_Block(SHA_Core_State *s, uint32 *block) {
  * the end, and pass those blocks to the core SHA algorithm.
  */
 
-#define BLKSIZE 64
-
-typedef struct {
-    SHA_Core_State core;
-    unsigned char block[BLKSIZE];
-    int blkused;
-    uint32 lenhi, lenlo;
-} SHA_State;
-
 void SHA_Init(SHA_State *s) {
     SHA_Core_Init(&s->core);
     s->blkused = 0;
@@ -148,7 +244,7 @@ void SHA_Bytes(SHA_State *s, void *p, int len) {
     s->lenlo += lenw;
     s->lenhi += (s->lenlo < lenw);
 
-    if (s->blkused && s->blkused+len < BLKSIZE) {
+    if (s->blkused && s->blkused+len < SHA_BLKSIZE) {
         /*
          * Trivial case: just add to the block.
          */
@@ -158,10 +254,10 @@ void SHA_Bytes(SHA_State *s, void *p, int len) {
         /*
          * We must complete and process at least one block.
          */
-        while (s->blkused + len >= BLKSIZE) {
-            memcpy(s->block + s->blkused, q, BLKSIZE - s->blkused);
-            q += BLKSIZE - s->blkused;
-            len -= BLKSIZE - s->blkused;
+        while (s->blkused + len >= SHA_BLKSIZE) {
+            memcpy(s->block + s->blkused, q, SHA_BLKSIZE - s->blkused);
+            q += SHA_BLKSIZE - s->blkused;
+            len -= SHA_BLKSIZE - s->blkused;
             /* Now process the block. Gather bytes big-endian into words */
             for (i = 0; i < 16; i++) {
                 wordblock[i] =
@@ -178,7 +274,7 @@ void SHA_Bytes(SHA_State *s, void *p, int len) {
     }
 }
 
-void SHA_Final(SHA_State *s, uint32 *output) {
+void SHA_Final(SHA_State *s, unsigned char *output) {
     int i;
     int pad;
     unsigned char c[64];
@@ -207,14 +303,10 @@ void SHA_Final(SHA_State *s, uint32 *output) {
 
     SHA_Bytes(s, &c, 8);
 
-    for (i = 0; i < 5; i++)
-        output[i] = s->core.h[i];
-}
-
-void SHA_Simple(void *p, int len, uint32 *output) {
-    SHA_State s;
-
-    SHA_Init(&s);
-    SHA_Bytes(&s, p, len);
-    SHA_Final(&s, output);
+    for (i = 0; i < 5; i++) {
+        output[4*i+0] = (unsigned char) ((s->core.h[i] >> 24) & 0xFF);
+        output[4*i+1] = (unsigned char) ((s->core.h[i] >> 16) & 0xFF);
+        output[4*i+2] = (unsigned char) ((s->core.h[i] >>  8) & 0xFF);
+        output[4*i+3] = (unsigned char) ((s->core.h[i] >>  0) & 0xFF);
+    }
 }
