@@ -2,6 +2,21 @@
 
 # Generate polyhedron description files for the regular polyhedra.
 
+# TODO
+#
+#  - 3.4.3.4 cuboctahedron (formed from midpoints of cube edges)
+#  - 3.4.4.4 small rhombicuboctahedron
+#  - 4.6.8 great rhombicuboctahedron
+#
+#  - 3.5.3.5 icosidodecahedron (formed from midpoints of dodecahedron edges)
+#  - 3.4.5.4 small rhombicosidodecahedron
+#  - 4.6.10 great rhombicosidodecahedron
+#
+#  - 3.6.6, 3.8.8, 3.10.10, 4.6.6, 5.6.6 truncated platonics
+#
+#  - 4.3.3.3 snub cube
+#  - 5.3.3.3 snub dodecahedron
+
 import sys
 import math
 
