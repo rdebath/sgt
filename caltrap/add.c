@@ -16,6 +16,15 @@ void caltrap_add(int nargs, char **args, int nphysargs, struct entry *e)
     char msg[512], *p;
     struct entry ent;
 
+    if (e->length == INVALID_DURATION)
+	e->length = 0;
+
+    if (e->period == INVALID_DURATION)
+	e->period = 0;
+
+    if (e->type == INVALID_TYPE)
+	e->type = T_EVENT;
+
     if (nargs < 1 || nargs > 4)
 	fatal(err_addargno);
     assert(nargs <= nphysargs);
@@ -154,9 +163,9 @@ void caltrap_add(int nargs, char **args, int nphysargs, struct entry *e)
     ent.st = st;
     ent.ed = ed;
     ent.et = et;
-    ent.length = (e->length != INVALID_DURATION ? e->length : 0);
-    ent.period = (e->period != INVALID_DURATION ? e->period : 0);
-    ent.type = (e->type != INVALID_TYPE ? e->type : T_EVENT);
+    ent.length = e->length;
+    ent.period = e->period;
+    ent.type = e->type;
     ent.description = msg;
     db_add_entry(&ent);
 }
