@@ -5,6 +5,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "sdlstuff.h"
 #include "beebfont.h"
@@ -23,6 +24,8 @@
 
 #define plotc(x,y,c) ( (x)<0||(x)>319||(y)<0||(y)>239 ? 0 : plot(x,y,c) )
 #define pixelc(x,y) ( (x)<0||(x)>319||(y)<0||(y)>239 ? 0 : pixel(x,y) )
+
+int no_quit_option = 0;
 
 int puttext(int x, int y, int c, char const *text)
 {
@@ -661,6 +664,7 @@ int main_menu(void)
     };
 
     int menumin, i, j, flags = 0, prevval = 0, redraw;
+    int menulen = (no_quit_option ? lenof(menu)-1 : lenof(menu));
     int x, y, c1, c2;
     SDL_Event event;
 
@@ -682,7 +686,7 @@ int main_menu(void)
     centre(50, "NORT");
     centre(66, "A SPL@ Production");
 
-    for (i = menumin; i < lenof(menu); i++)
+    for (i = menumin; i < menulen; i++)
 	centre(menu[i].y, menu[i].text);
 #undef centre
 
@@ -733,10 +737,10 @@ int main_menu(void)
 		int val = event.jaxis.value / JOY_THRESHOLD;
 		if (val < 0 && prevval >= 0) {
 		    if (--i < menumin)
-			i = lenof(menu)-1;
+			i = menulen-1;
 		    redraw = 1;
 		} else if (val > 0 && prevval <= 0) {
-		    if (++i >= lenof(menu))
+		    if (++i >= menulen)
 			i = menumin;
 		    redraw = 1;
 		}
@@ -751,7 +755,7 @@ int main_menu(void)
 
 	if (redraw) {
 	    scr_prep();
-	    for (j = menumin; j < lenof(menu); j++) {
+	    for (j = menumin; j < menulen; j++) {
 		c1 = (j == i ? 1 : 0);
 		c2 = (j == i ? 2 : 0);
 		drawline(159-52, menu[j].y-3, 159-48, menu[j].y-3, c1);
@@ -1013,9 +1017,12 @@ void reset_scores(void)
     scores.games = scores.draws = 0;
 }
 
-int main(void)
+int main(int argc, char **argv)
 {
     int p;
+
+    if (argc > 1 && !strcmp(argv[1], "-n"))
+	no_quit_option = 1;
 
     /* Set up the SDL game environment */
     setup();
