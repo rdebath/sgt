@@ -1,0 +1,8 @@
+Summary: Allow @ sign in username
+Class: bug
+Difficulty: fun
+Fixed-in: 2004-09-22
+
+We should consistently allow an '@' sign to be included in the username.
+(Some hosting companies appear to have usernames of the form
+'user@example.com'.)
