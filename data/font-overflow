@@ -13,7 +13,8 @@ well with this. Each <em>string</em> passed to
 <code>do_text()</code> is clipped to the rectangle it should be in;
 but <em>within</em> that string there's still scope for overlap
 between character cells. If half the string is then updated then
-there will be artefacts left on the screen.
+there will be artefacts left on the screen.  This seems to be 
+particularly common when using ClearType in Windows XP.
 <li>
 Secondly, the resize-by-changing-font code has a tendency to choose
 fonts that cause this problem a lot. For bitmap fonts I think this
@@ -34,4 +35,5 @@ contents of the rectangle, we always re-paint the whole thing, splitting
 it into smaller rectangles, or joining rectangles together as appropriate.
 This way, we never leave droppings behind, because whenever a character is
 erased, the entire clipping box that was in force when it was painted is
-cleared as well.
+cleared as well.  Unfortunately, implementing this is likely to involve
+substantial changes to the way PuTTY stores the contents of the screen.
