@@ -1,5 +1,5 @@
 #! /usr/bin/perl
-# $Id: bugs2html,v 1.24 2003/06/24 08:23:51 jacob Exp $
+# $Id: bugs2html,v 1.25 2003/07/12 10:27:43 jacob Exp $
 
 use FileHandle;
 use POSIX;
@@ -301,10 +301,11 @@ unnest("");
 unnest("");
 
 nest(<<EOF);
-<h2>Miscellaneous</h2>
+<h2>Uncategorised</h2>
 
 <p>
-Miscategorised bugs/wishes.
+Usually items we don't know enough about, or haven't yet thought about
+enough, to fully classify.
 
 <ul>
 EOF
@@ -350,16 +351,17 @@ sub unnest {
 
 sub bug2html {
     my($bugname, $hdrs, $body, $cvsstat) = @_;
+    my $class = ($hdrs->{class} or "artifact");
 
     open(HTML, "> $htmldir/$bugname.html") or die "$htmldir/$bugname.html: $!";
     print HTML <<EOH;
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <HTML><HEAD>
-<TITLE>PuTTY @{[$hdrs->{class}]} $bugname</TITLE>
+<TITLE>PuTTY $class $bugname</TITLE>
 <link rel="stylesheet" type="text/css" href="$baseurl/sitestyle.css" title="PuTTY Home Page Style">
 </HEAD>
 <BODY>
-<h1 align=center>PuTTY @{[$hdrs->{class}]} $bugname</h1>
+<h1 align=center>PuTTY $class $bugname</h1>
 
 <p align=center>
 <a href="$baseurl/">Home</a> |
@@ -404,7 +406,6 @@ EOH
 	print HTML qq[<p><pre>$body</pre>];
     }
 
-    my $class = ($hdrs->{class} or "artifact");
     print HTML <<EOF;
 <p><a href="http://cvs.tartarus.org/putty-wishlist/data/$bugname">
 Audit trail</a> for this $class.
