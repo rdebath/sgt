@@ -33,7 +33,7 @@ release: cvt-utf8.1
 install: install-progs install-man
 install-progs:
 	mkdir -p $(SCRIPTDIR)
-	$(INSTALL) cvt-utf8 $(SCRIPTDIR)/cvt-utf8
+	$(INSTALL) $(IPROG) cvt-utf8 $(SCRIPTDIR)/cvt-utf8
 install-man: cvt-utf8.1
 	mkdir -p $(MANDIR)
-	$(INSTALL) -m 0644 cvt-utf8.1 $(MANDIR)/cvt-utf8.1
+	$(INSTALL) $(IDATA) cvt-utf8.1 $(MANDIR)/cvt-utf8.1
