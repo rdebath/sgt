@@ -11,9 +11,11 @@
 \cfg{xhtml-chapter-numeric}{yes}
 \cfg{xhtml-chapter-suffix}{. }
 \cfg{xhtml-section-numeric}{0}{yes}
-\cfg{xhtml-section-suffix}{. }
+\cfg{xhtml-section-suffix}{0}{. }
+\cfg{xhtml-section-numeric}{1}{yes}
+\cfg{xhtml-section-suffix}{1}{. }
 
-\cfg{xhtml-address-start}{Copyright &copy; 1999 Simon Tatham.
+\cfg{xhtml-address-start}{Copyright &copy; 2002 Simon Tatham.
 <br>This document is
 <a href="http://www.opencontent.org/">OpenContent</a>.
 <br>You may copy and use the text under the terms of the
@@ -296,6 +298,212 @@ appropriate set of wildcard rules, but now the \e{client} can't
 choose a rule set either. Everybody everywhere must use the One True
 Ruleset defined in the protocol standard.
 
+\C{what} What to specify in an interface design
+
+Many interface designs are written with important facts missing, and
+important points left unspecified. In this section I list a few of
+the common things that are left out.
+
+\H{what-allowables} Allowable values for parameters
+
+For a start, make sure you specify the range of allowable parameters
+in each request and in each response. If a request includes a pointer
+to a data structure, is that pointer allowed to be \cw{NULL}? If it
+includes a string, can the string contain absolutely anything, or
+are there forbidden characters? If it includes two pointers to data
+structures of the same type, are they allowed to be the same
+structure (equal pointers)? Can integer arguments be zero or
+negative? Can floating-point arguments be zero, negative, infinite
+or NaN (Not a Number)? What will happen in each of these cases?
+
+(You don't actually have to be able to handle all these
+possibilities; you only have to \e{state} whether or not you can.
+It's an acceptable design choice to rule that certain parameter
+values are simply \e{illegal}: not in the sense that the function is
+required to return an error if you pass them, but in the sense that
+you must not pass them in the first place and the function is not
+required to handle them correctly. An example in the C library
+standard is passing a null pointer to \cw{strlen()}. However, note
+that any interface between programs that don't trust each other must
+ensure that this type of undefined behaviour doesn't lead to a
+security hole: examples are a network protocol, or a system call
+interface to an OS kernel.)
+
+\H{what-ordering} Ordering constraints
+
+Another important thing to document is the \e{ordering} constraints
+(if any) between requests. Often the implementation of a module
+introduces ordering constraints, which don't even occur to the
+programmer because they hadn't imagined that anyone might ever try
+to violate them. Unfortunately, it's almost always worth assuming
+that if enough people use your implementation of an interface,
+\e{someone} will try to violate any unwritten requirement in it - so
+even if you don't write your code to deal with strange orders of
+function calls, at least write the interface specification to make
+it clear that you haven't. Then anyone who does that has only
+themselves to blame.
+
+Here's a simple example. Suppose you are writing in C or another
+non-garbage-collected language, and you have created an interface
+composed of several functions:
+
+\b \cw{NewContext()} creates a data structure which the rest of the
+interface routines will use to store persistent state.
+
+\b \cw{InitContext()} fills in the structure with some initial data.
+
+\b \cw{ProcessContext()} performs an operation on the context
+structure, and returns some result of that operation.
+
+\b \cw{FreeContext()} cleans up a context structure when the user
+has finished with it, and frees the allocated memory.
+
+The intended order of calls is basically as shown above. Clients are
+expected to call \cw{NewContext()} and then \cw{InitContext()} to
+set things up, call \cw{ProcessContext()} once or more during
+processing, and eventually clean up by calling \cw{FreeContext()}.
+It should be intuitively obvious to any reader that you must not
+call \cw{InitContext()} or \cw{ProcessContext()} on a context you've
+already called \cw{FreeContext()} on, and that you must not call
+\cw{ProcessContext()} on a context before you've called
+\cw{InitContext()} on it. This much is simple.
+
+Now, can I call \cw{InitContext()} \e{twice} on the same context? It
+might make perfect sense - to avoid the memory management overhead
+of freeing one context and creating a new one, I might very well
+want to take a context I already have and re-initialise it with some
+new data. But if the process of initialising a context involves
+allocating memory, this means that \cw{InitContext()} must check
+each of the fields it initialises, and if they contain
+already-allocated data then it must free it before overwriting it
+with new data. Otherwise, calling \cw{InitContext()} twice will
+cause a memory leak. So whether or not I'm allowed to re-initialise
+a context I've already initialised needs to be documented in the
+interface specification. (It's perfectly allowable to decide not to
+bother handling this case, as long as the interface design \e{says
+so}.)
+
+Also, what if I've called \cw{NewContext()}, but in the process of
+gathering data to pass to \cw{InitContext()} I encounter a fatal
+error and have to abandon what I'm doing? To clean everything up I
+need to call \cw{FreeContext()}. But if the implementation was
+written in the assumption that all contexts would be initialised
+before being freed, it might (for example) try to iterate through an
+array freeing the elements, without first checking that the array
+itself was non-\cw{NULL}. In this case freeing an uninitialised
+context would cause a crash, so it should be documented in the
+interface specification as an illegal order of operations.
+
+A good tool for analysing this sort of thing is to imagine a state
+machine. In this example, contexts come in three states
+(\q{uninitialised}, \q{initialised} and \q{destroyed}), and it
+should be obvious that:
+
+\b \cw{NewContext()} creates a context in state \q{uninitialised};
+
+\b \cw{InitContext()} can be given a context in state
+\q{uninitialised}, and will change it to state \q{initialised};
+
+\b \cw{ProcessContext()} is always given a context in state
+\q{initialised}, and leaves it in that state;
+
+\b \cw{FreeContext()} can be given a context in state
+\q{initialised} and will place it in state \q{destroyed}, after
+which it may not be used for anything.
+
+Now if you draw up a table with context states across the top and
+function names down the side, and plot the above statements on that
+table, you will see something like this:
+
+\c                      uninitialised   initialised    destroyed
+\c InitContext()             OK                         NOT OK
+\c ProcessContext()        NOT OK           OK          NOT OK
+\c FreeContext()                            OK          NOT OK
+
+and you can see that the two cells that are not filled in correspond
+exactly to the two questions I raised above: calling
+\cw{InitContext} on an already-initialised context, and calling
+\cw{FreeContext()} on an uninitialised one. Using this sort of
+analysis, you can be reasonably confident that you have considered
+all the ordering questions before you publish your interface design.
+(You may even want to make this sort of state diagram explicit in
+the interface specification itself, so that users can reason about
+your interface the same way you did. And in languages such as
+Eiffel, you can even make your state diagram explicit in the
+\e{language}, so the compiler can check that you aren't calling a
+function in an invalid state.)
+
+\H{what-ownership} Ownership of data
+
+Suppose you have provided an interface that writes out a PNG image
+file. As well as the image data, PNG images may contain textual data
+such as a title and a copyright notice. So your interface might well
+contain a function such as \cw{PNGSetTitle()}, to which I can pass a
+string containing the title I want my image to have.
+
+I might very well call \cw{PNGSetTitle()} right at the start of my
+client routine, and then spend some time putting together the actual
+bitmap data to go in the image. Eventually I call
+\cw{PNGWriteFile()}, and the file is actually created, written to
+disk, and closed. The question is: what happens if I overwrote my
+copy of the title string in between the two calls?
+
+\cw{PNGSetTitle()} might perfectly reasonably just store its
+argument as a pointer to a string, and expect that pointer still to
+point to something reasonable when \cw{PNGWriteFile()} is called. In
+this case I need to be careful not to destroy my own copy of the
+title string between calling \cw{PNGSetTitle()} and
+\cw{PNGWriteFile()}, because my copy of the title string is the only
+copy. On the other hand, \cw{PNGSetTitle()} might be expecting this
+sort of behaviour, and might take a copy of the title string when
+it's called - in which case I can do what I like with my own copy as
+soon as \cw{PNGSetTitle()} returns. A good interface design would
+specify this one way or the other, so I would know whether I could
+safely modify the title string.
+
+This is an example of a data ownership issue. Data ownership issues
+are most common in non-garbage-collected languages, because it's
+always important to know which part of the code has responsibility
+for freeing a particular piece of allocated memory. However, they
+can still occur in GC languages: the above example would still be
+valid in (say) Java.
+
+In a non-garbage-collected language, there would be a third option
+in the above situation: \cw{PNGSetTitle()} could pass ownership of
+the title string to the PNG module, in the sense that the PNG module
+was then responsible for freeing it. This would mean that it was not
+only invalid for me to free the title string before calling
+\cw{PNGWriteFile()}: it would be invalid for me to free it even
+\e{after} that, because the PNG module would have freed it and I
+would cause a crash by freeing it a second time. Also, it would be
+forbidden for me to pass a title string that was \e{not} dynamically
+allocated, or the PNG module would cause a crash by trying to free
+it.
+
+For these reasons, this would be an inconvenient way to define an
+interface, and designers would probably not do it. But ownership
+issues in the opposite direction, dealing with pieces of data
+returned \e{from} interface functions, are much more common.
+Consider \cw{asctime()} in the C library, which returns a pointer to
+a string, but even after that pointer has been given to the user, it
+is still owned by the library, and the user is given constraints on
+how long they can expect it to be valid for. An alternative
+implementation might have been for the C library designers to rule
+that \cw{asctime()} always dynamically allocated its return string;
+then the user could be sure it would continue to be valid for as
+long as they needed it, but would also have to take responsibility
+for ensuring it was eventually freed.
+
+If, like \cw{asctime()}, you do design an interface in which the
+user is given a pointer to data you still own, you should make sure
+you give the user \e{detailed} information on when they can expect
+that data to be valid. And you should make sure it stays valid for
+long enough to be useful - \cw{asctime()} in a multi-threaded
+program is almost useless, because the buffer it returns could
+easily be overwritten by another call to \cw{asctime()} in another
+thread before the first thread has even had a chance to read the
+data out of it. (See \#{FIXME} for more on thread-safety.)
+
 \# original notes follow
 \#
 \#  - When to use an interface
@@ -335,8 +543,8 @@ Ruleset defined in the protocol standard.
 \#      * as network - requests and responses flow in both directions
 \#        + asynchronous - either side may make a request at any time
 \#          - ensure the protocol isn't thrown by race conditions if
-\# 	   both sides initiate a transaction at once and they cross
-\# 	   en route.
+\#            both sides initiate a transaction at once and they cross
+\#            en route.
 \#        + synchronous - the server will only make a request if extra
 \#          information is needed to fulfill a request from the client
 \#      * as function calls - need _callbacks_
@@ -346,13 +554,13 @@ Ruleset defined in the protocol standard.
 \#          called as a result of DispatchMessage, but almost no
 \#          Windows programmers actually know that!)
 \#        - in OO, between two communicating objects, this issue is
-\# 	 rather more extensive. Both objects can call methods of the
-\# 	 other, either of which can call back to methods in the
-\# 	 first before returning. It's not clear _exactly_ how much
-\# 	 the interface needs to document about what callbacks might
-\# 	 and might not happen, but there certainly needs to be
-\# 	 enough specified to ensure one method call can't kick off
-\# 	 an unbounded chain of mutual recursion between the objects.
+\#          rather more extensive. Both objects can call methods of the
+\#          other, either of which can call back to methods in the
+\#          first before returning. It's not clear _exactly_ how much
+\#          the interface needs to document about what callbacks might
+\#          and might not happen, but there certainly needs to be
+\#          enough specified to ensure one method call can't kick off
+\#          an unbounded chain of mutual recursion between the objects.
 \#
 \#  - Specifying requests and responses
 \#    + obviously, specify the range of allowables in each request and
@@ -378,13 +586,13 @@ Ruleset defined in the protocol standard.
 \#      * security advantage: this avoids revealing any details of
 \#        either side's implementation to the other
 \#        - though even in a less enlightened protocol, a decently
-\# 	 paranoid implementation can of course preserve its secrets
-\# 	 by lying
+\#          paranoid implementation can of course preserve its secrets
+\#          by lying
 \#        - but it had better be sure the other guy isn't _relying_ on
-\# 	 aspects of the fictions it invents
+\#          aspects of the fictions it invents
 \#        - protocol-level identifiers are by definition content-free
-\# 	 pure names, so neither side is in any danger of thinking
-\# 	 they can get anything out of it.
+\#          pure names, so neither side is in any danger of thinking
+\#          they can get anything out of it.
 \#      * neutrality: if one side invents descriptors for objects based
 \#        on its own criteria, then the other side is prohibited from
 \#        ever initiating any such object. Protocol-level descriptors
@@ -422,7 +630,7 @@ Ruleset defined in the protocol standard.
 \#        NNTP RFC defines a few response codes to which the user is
 \#        expected to respond by sending an article, but doesn't rule
 \#        out the introduction of others in future. This makes it hard
-\#        to write a futureproof NNTP proxy. Better would have been a
+\#        to write a future-proof NNTP proxy. Better would have been a
 \#        basic division of response codes into categories, and a
 \#        decree that future response codes must be allocated from the
 \#        correct category.
