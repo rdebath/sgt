@@ -39,10 +39,13 @@ someone thought that sound might be implicated, but I can't find any
 evidence for that now.
 
 <p>
-We've had
-<a href="http://groups.google.com/groups?q=msgid%3Ae3374ad6.0402240535.2acd46e5%40posting.google.com">one suggestion</a>
-that Office 2002 may be implicated. If you can corroborate or falsify
-that, please let us know.
+Stab in the dark: it's not correlated with Visual Studio, is it?
+
+<p>
+Once the system has got into this state, an SSH packet log of a new
+session which hangs might be useful, so we can infer exactly where
+it's hanging and what it might be doing (since there's been a
+suggestion that it's some way into the SSH protocol).
 
 <p>
 If someone can debug one of the hanging PuTTY processes and tell us
@@ -57,6 +60,7 @@ Reports:
 <li>3C4550B2.5EDB3F19@nada.kth.se
 <li><a href="http://groups.google.com/groups?q=msgid%3Ae3374ad6.0402170239.2d2a3455%40posting.google.com">e3374ad6.0402170239.2d2a3455@posting.google.com</a>
 <li><a href="http://groups.google.com/groups?q=msgid%3A7bd4d50d.0402200147.5824ed62%40posting.google.com">7bd4d50d.0402200147.5824ed62@posting.google.com</a>
+<br>more info: 9AC105024CEA64458BF66D1DE13CA50DDB44ED@tibbemeexs1.eu.jnj.com
 <li><a href="http://groups.google.com/groups?q=msgid%3Ac925c3dc.0402191059.102caeba%40posting.google.com">c925c3dc.0402191059.102caeba@posting.google.com</a>
 <li>001c01c3f7f2$4ca5b3a0$0200a8c0@bart
 </ul>
