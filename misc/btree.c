@@ -30,7 +30,6 @@
 /*
  * TODO:
  * 
- *  - reference counts and bt_clone().
  *  - user read properties.
  *     * need to supply a user-defined equivalent to
  *       bt_lookup_find, which is allowed to look at everything in
@@ -51,6 +50,7 @@ typedef struct btree btree;
 typedef void *bt_element_t;	       /* might change when on disk */
 
 typedef int (*cmpfn_t)(const bt_element_t, const bt_element_t);
+typedef bt_element_t (*copyfn_t)(const bt_element_t);
 
 enum {
     BT_REL_EQ, BT_REL_LT, BT_REL_LE, BT_REL_GT, BT_REL_GE
@@ -107,6 +107,7 @@ static const node_addr NODE_ADDR_NULL = { NULL };
  *  - one subtree count (current number of child pointers that are
  *    valid; note that `valid' doesn't imply non-NULL).
  *  - one element count.
+ *  - one reference count.
  * 
  * DISK: for the on-disk implementation this will be much more fun,
  * since counters will want to be stored alongside each link to a
@@ -126,6 +127,7 @@ struct btree {
     int depth;			       /* helps to store this explicitly */
     node_addr root;
     cmpfn_t cmp;
+    copyfn_t copy;
 };
 
 /* ----------------------------------------------------------------------
@@ -265,8 +267,9 @@ static INLINE int bt_is_leaf(btree *bt, nodeptr n)
  */
 static INLINE nodeptr bt_new_node(btree *bt, int nsubtrees)
 {
-    nodeptr ret = newn(nodecomponent, bt->maxdegree*2+1);
+    nodeptr ret = newn(nodecomponent, bt->maxdegree*2+2);
     ret[bt->maxdegree*2-1].i = nsubtrees;
+    ret[bt->maxdegree*2+1].i = 1;      /* reference count 1 */
     return ret;
 }
 
@@ -288,26 +291,92 @@ static INLINE nodeptr bt_reuse_node(btree *bt, nodeptr n, int nsubtrees)
 }
 
 /*
+ * Return an extra reference to a node, for purposes of cloning. So
+ * we have to update its reference count as well.
+ */
+static INLINE node_addr bt_ref_node(btree *bt, node_addr n)
+{
+    if (n.p)
+	n.p[bt->maxdegree*2+1].i++;
+    return n;
+}
+
+/*
+ * Drop a node's reference count, for purposes of freeing. Returns
+ * the new reference count.
+ */
+static INLINE int bt_unref_node(btree *bt, nodeptr n)
+{
+    assert(n != NULL);
+    n[bt->maxdegree*2+1].i--;
+    return n[bt->maxdegree*2+1].i;
+}
+
+/*
+ * Clone a node during write unlocking, if its reference count is
+ * more than one.
+ */
+static nodeptr bt_clone_node(btree *bt, nodeptr n)
+{
+    int i;
+    nodeptr ret = newn(nodecomponent, bt->maxdegree*2+2);
+    memcpy(ret, n, (bt->maxdegree*2+1) * sizeof(nodecomponent));
+    if (bt->copy) {
+	for (i = 0; i < bt_elements(bt, ret); i++) {
+	    bt_element_t *e = bt_element(bt, ret, i);
+	    bt_set_element(bt, ret, i, bt->copy(e));
+	}
+    }
+    ret[bt->maxdegree*2+1].i = 1;      /* clone has reference count 1 */
+    n[bt->maxdegree*2+1].i--;	       /* drop original's ref count by one */
+    /*
+     * At this low level, we're allowed to reach directly into the
+     * subtrees to fiddle with their reference counts without
+     * having to lock them.
+     */
+    for (i = 0; i < bt_subtrees(bt, ret); i++) {
+	node_addr na = bt_child(bt, ret, i);
+	if (na.p)
+	    na.p[bt->maxdegree*2+1].i++;   /* inc ref count of each child */
+    }
+    return ret;
+}
+
+/*
+ * Return the node_addr for a currently locked node. NB that this
+ * means node movement must take place during _locking_ rather than
+ * unlocking!
+ */
+static INLINE node_addr bt_node_addr(btree *bt, nodeptr n)
+{
+    node_addr ret;
+    ret.p = n;
+    return ret;
+}
+
+/*
  * The bt_write_lock and bt_read_lock functions should gracefully
  * handle being asked to write-lock a null node pointer, and just
  * return a null nodeptr.
  */
 static INLINE nodeptr bt_write_lock_child(btree *bt, nodeptr a, int index)
 {
-    /*
-     * FIXME: we should check reference counts and potentially
-     * clone the node.
-     */
     node_addr addr = bt_child(bt, a, index);
+    if (addr.p && addr.p[bt->maxdegree*2+1].i > 1) {
+	nodeptr clone = bt_clone_node(bt, addr.p);
+	bt_set_child(bt, a, index, bt_node_addr(bt, clone));
+	return clone;
+    }
     return addr.p;
 }
 static INLINE nodeptr bt_write_lock_root(btree *bt)
 {
-    /*
-     * FIXME: we should check reference counts and potentially
-     * clone the node.
-     */
     node_addr addr = bt->root;
+    if (addr.p && addr.p[bt->maxdegree*2+1].i > 1) {
+	nodeptr clone = bt_clone_node(bt, addr.p);
+	bt->root = bt_node_addr(bt, clone);
+	return clone;
+    }
     return addr.p;
 }
 static INLINE nodeptr bt_read_lock(btree *bt, node_addr a)
@@ -351,18 +420,6 @@ static INLINE void bt_read_unlock(btree *bt, nodeptr p)
      * would probably use this function to free the in-memory copy
      * of a node that we had allocated.
      */
-}
-
-/*
- * Return the node_addr for a currently locked node. NB that this
- * means node movement must take place during _locking_ rather than
- * unlocking!
- */
-static INLINE node_addr bt_node_addr(btree *bt, nodeptr n)
-{
-    node_addr ret;
-    ret.p = n;
-    return ret;
 }
 
 /* ----------------------------------------------------------------------
@@ -676,7 +733,7 @@ static int bt_cmp_less(const bt_element_t a, const bt_element_t b)
  * User-visible administration routines.
  */
 
-btree *bt_new(cmpfn_t cmp, int mindegree)
+btree *bt_new(cmpfn_t cmp, copyfn_t copy, int mindegree)
 {
     btree *ret;
 
@@ -686,6 +743,7 @@ btree *bt_new(cmpfn_t cmp, int mindegree)
     ret->depth = 0;		       /* not even a root right now */
     ret->root = NODE_ADDR_NULL;
     ret->cmp = cmp;
+    ret->copy = copy;
 
     return ret;
 }
@@ -693,6 +751,10 @@ btree *bt_new(cmpfn_t cmp, int mindegree)
 static void bt_free_node(btree *bt, nodeptr n)
 {
     int i;
+
+    /* If we can just drop the node's ref count, we don't need to recurse. */
+    if (bt_unref_node(bt, n))
+	return;
 
     for (i = 0; i < bt_subtrees(bt, n); i++) {
 	nodeptr n2 = bt_write_lock_child(bt, n, i);
@@ -712,6 +774,16 @@ void bt_free(btree *bt)
 	bt_free_node(bt, n);
 
     sfree(bt);
+}
+
+btree *bt_clone(btree *bt)
+{
+    btree *bt2;
+
+    bt2 = bt_new(bt->cmp, bt->copy, bt->mindegree);
+    bt2->depth = bt->depth;
+    bt2->root = bt_ref_node(bt, bt->root);
+    return bt2;
 }
 
 /*
@@ -1506,7 +1578,7 @@ static btree *bt_split_internal(btree *bt1, int index)
     nodeptr n1, n2, n;
     int nnodes, child;
 
-    bt2 = bt_new(bt1->cmp, bt1->mindegree);
+    bt2 = bt_new(bt1->cmp, bt1->copy, bt1->mindegree);
     bt2->depth = bt1->depth;
 
     lnodes = inewn(nodeptr, bt1->depth);
@@ -1599,17 +1671,21 @@ btree *bt_split(btree *bt, bt_element_t element, cmpfn_t cmp, int rel)
 #ifdef TEST
 
 #define TEST_DEGREE 4
+#define BT_COPY bt_clone
+
+int errors;
 
 /*
  * Error reporting function.
  */
 void error(char *fmt, ...) {
     va_list ap;
-    printf("ERROR: ");
+    fprintf(stderr, "ERROR: ");
     va_start(ap, fmt);
-    vfprintf(stdout, fmt, ap);
+    vfprintf(stderr, fmt, ap);
     va_end(ap);
-    printf("\n");
+    fprintf(stderr, "\n");
+    errors++;
 }
 
 /*
@@ -1631,9 +1707,7 @@ int bt_tworoot(btree *bt)
  * and bt_clone() provide a better way to do this for real code. If
  * anyone really needs a genuine physical copy for anything other
  * than testing reasons, I suppose they could always lift this into
- * the admin section above; of course they'd have to arrange to
- * call the provided copy function rather than just copying raw
- * pointers around.)
+ * the admin section above.)
  */
 
 static nodeptr bt_copy_node(btree *bt, nodeptr n)
@@ -1655,8 +1729,12 @@ static nodeptr bt_copy_node(btree *bt, nodeptr n)
 	}
 	bt_read_unlock(bt, n2);
 	
-	if (i < children-1)
-	    bt_set_element(bt, ret, i, bt_element(bt, n, i));
+	if (i < children-1) {
+	    bt_element_t e = bt_element(bt, n, i);
+	    if (bt->copy)
+		e = bt->copy(e);
+	    bt_set_element(bt, ret, i, e);
+	}
     }
 
     return ret;
@@ -1667,7 +1745,7 @@ btree *bt_copy(btree *bt)
     nodeptr n;
     btree *bt2;
 
-    bt2 = bt_new(bt->cmp, bt->mindegree);
+    bt2 = bt_new(bt->cmp, bt->copy, bt->mindegree);
     bt2->depth = bt->depth;
 
     n = bt_read_lock_root(bt);
@@ -1960,7 +2038,7 @@ void splittest(btree *tree, bt_element_t *array, int arraylen)
     btree *tree3, *tree4;
     for (i = 0; i <= arraylen; i++) {
 	printf("splittest: %d\n", i);
-	tree3 = bt_copy(tree);
+	tree3 = BT_COPY(tree);
 	tree4 = bt_splitpos(tree3, i, 0);
 	verifytree(tree3, array, i);
 	verifytree(tree4, array+i, arraylen-i);
@@ -1982,11 +2060,13 @@ int main(void) {
     btree *tree, *tree2, *tree3, *tree4;
 
     setvbuf(stdout, NULL, _IOLBF, 0);
+    setvbuf(stderr, NULL, _IOLBF, 0);
+    errors = 0;
 
     for (i = 0; i < (int)NSTR; i++) in[i] = 0;
     array = newn(bt_element_t, MAXTREESIZE);
     arraylen = 0;
-    tree = bt_new(mycmp, TEST_DEGREE);
+    tree = bt_new(mycmp, NULL, TEST_DEGREE);
 
     verifytree(tree, array, arraylen);
     for (i = 0; i < 10000; i++) {
@@ -2031,7 +2111,7 @@ int main(void) {
      * completeness we'll use it to tear down our unsorted tree
      * once we've built it.
      */
-    tree = bt_new(NULL, TEST_DEGREE);
+    tree = bt_new(NULL, NULL, TEST_DEGREE);
     verifytree(tree, array, arraylen);
     for (i = 0; i < 1000; i++) {
 	printf("trial: %d\n", i);
@@ -2049,7 +2129,7 @@ int main(void) {
      * While we have this tree in its full form, we'll take a copy
      * of it to use in split and join testing.
      */
-    tree2 = bt_copy(tree);
+    tree2 = BT_COPY(tree);
     verifytree(tree2, array, arraylen);/* check the copy is accurate */
     /*
      * Split tests. Split the tree at every possible point and
@@ -2089,14 +2169,14 @@ int main(void) {
      * Finally, do some testing on split/join on _sorted_ trees. At
      * the same time, we'll be testing split on very small trees.
      */
-    tree = bt_new(mycmp, TEST_DEGREE);
+    tree = bt_new(mycmp, NULL, TEST_DEGREE);
     arraylen = 0;
     for (i = 0; i < 16; i++) {
 	array_add(array, &arraylen, strings[i]);
 	ret = bt_add(tree, strings[i]);
 	assert(strings[i] == ret);
 	verifytree(tree, array, arraylen);
-	tree2 = bt_copy(tree);
+	tree2 = BT_COPY(tree);
 	splittest(tree2, array, arraylen);
 	bt_free(tree2);
     }
@@ -2107,10 +2187,10 @@ int main(void) {
      * also ensure join correctly spots when sorted trees fail the
      * ordering constraint.
      */
-    tree = bt_new(mycmp, TEST_DEGREE);
-    tree2 = bt_new(mycmp, TEST_DEGREE);
-    tree3 = bt_new(mycmp, TEST_DEGREE);
-    tree4 = bt_new(mycmp, TEST_DEGREE);
+    tree = bt_new(mycmp, NULL, TEST_DEGREE);
+    tree2 = bt_new(mycmp, NULL, TEST_DEGREE);
+    tree3 = bt_new(mycmp, NULL, TEST_DEGREE);
+    tree4 = bt_new(mycmp, NULL, TEST_DEGREE);
     assert(mycmp(strings[0], strings[1]) < 0);   /* just in case :-) */
     bt_add(tree2, strings[1]);
     bt_add(tree4, strings[0]);
@@ -2153,7 +2233,9 @@ int main(void) {
     verifytree(tree3, array, 2);
     verifytree(tree, array, 0);
 
-    return 0;
+    if (errors)
+	fprintf(stderr, "%d errors!\n", errors);
+    return (errors != 0 ? 1 : 0);
 }
 
 #endif
