@@ -3,13 +3,9 @@ Caltrap wish list
 
 Urgent:
 
- - TERMINAL QUERYING!
+ - TERMINAL TYPE QUERYING!
     + Stop assuming ECMA-48; figure out some plausibly sane way to
       get terminfo to tell us the colour escape sequences we need.
-    + And also stop assuming an 80-character line. GNU ls's
-      behaviour seems plausible enough: use termios if possible,
-      fall back to getenv("COLOURS") if not, fall back to 80 if not
-      even that.
 
 Less urgent:
 

@@ -124,6 +124,7 @@ char *dbpath;
  */
 int name_to_type(const char *name);
 const char *type_to_name(int type);
+int get_line_width(void);
 
 /*
  * Interface to database (sqlite.c, but potentially other back ends
