@@ -254,16 +254,17 @@ sub canonlf {
 
 sub mail {
   my ($msg) = @_;
+  $msg .= "\n" unless substr($msg, -1) eq "\n";
   if ($queue) {
     $sep = 'AAAAAAAAA';
     while (&present($sep, ["", $msg])) { $sep++; }
     open OUTPUT, "|at $qtime";
     print OUTPUT "/usr/lib/sendmail -oem -t -oi << --$sep\n";
-    print OUTPUT "$msg\n--$sep\n";
+    print OUTPUT "${msg}--$sep\n";
     close OUTPUT;
   } else {
     open OUTPUT, "|/usr/lib/sendmail -oem -t -oi";
-    print OUTPUT "$msg\n";
+    print OUTPUT "$msg";
     close OUTPUT;
   }
 }
