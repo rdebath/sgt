@@ -25,6 +25,9 @@
  * GET_32BIT_LSB_FIRST for GET_32BIT_MSB_FIRST, I could create an
  * implementation that worked internally little-endian and gave the
  * same answers at the same speed.
+ * 
+ * This implementation also supports the 160-bit and 224-bit block
+ * sizes as described in chapter 12 of the Rijndael specification.
  */
 
 #include <assert.h>
@@ -62,18 +65,25 @@ struct AESContext {
     int Nb, Nr;
 };
 
-static unsigned char Sbox[256], Sboxinv[256];
-static word32 E0[256], E1[256], E2[256], E3[256];
-static word32 D0[256], D1[256], D2[256], D3[256];
+static const unsigned char Sbox[256], Sboxinv[256];
+static const word32 E0[256], E1[256], E2[256], E3[256];
+static const word32 D0[256], D1[256], D2[256], D3[256];
 
 /*
  * Common macros in both the encryption and decryption routines.
  */
 #define ADD_ROUND_KEY_4 (block[0]^=*keysched++, block[1]^=*keysched++, \
 		         block[2]^=*keysched++, block[3]^=*keysched++)
+#define ADD_ROUND_KEY_5 (block[0]^=*keysched++, block[1]^=*keysched++, \
+		         block[2]^=*keysched++, block[3]^=*keysched++, \
+			 block[4]^=*keysched++)
 #define ADD_ROUND_KEY_6 (block[0]^=*keysched++, block[1]^=*keysched++, \
 		         block[2]^=*keysched++, block[3]^=*keysched++, \
 		         block[4]^=*keysched++, block[5]^=*keysched++)
+#define ADD_ROUND_KEY_7 (block[0]^=*keysched++, block[1]^=*keysched++, \
+		         block[2]^=*keysched++, block[3]^=*keysched++, \
+			 block[4]^=*keysched++, block[5]^=*keysched++, \
+			 block[6]^=*keysched++)
 #define ADD_ROUND_KEY_8 (block[0]^=*keysched++, block[1]^=*keysched++, \
 		         block[2]^=*keysched++, block[3]^=*keysched++, \
 		         block[4]^=*keysched++, block[5]^=*keysched++, \
@@ -112,6 +122,21 @@ static void aes_encrypt_nb_4(AESContext *ctx, word32 *block) {
     MOVEWORD(0); MOVEWORD(1); MOVEWORD(2); MOVEWORD(3);
     ADD_ROUND_KEY_4;
 }
+static void aes_encrypt_nb_5(AESContext *ctx, word32 *block) {
+    int i;
+    static const int C1 = 1, C2 = 2, C3 = 3, Nb = 5;
+    word32 *keysched = ctx->keysched;
+    word32 newstate[5];
+    for (i = 0; i < ctx->Nr-1; i++) {
+	ADD_ROUND_KEY_5;
+	MAKEWORD(0); MAKEWORD(1); MAKEWORD(2); MAKEWORD(3); MAKEWORD(4);
+	MOVEWORD(0); MOVEWORD(1); MOVEWORD(2); MOVEWORD(3); MOVEWORD(4);
+    }
+    ADD_ROUND_KEY_5;
+    LASTWORD(0); LASTWORD(1); LASTWORD(2); LASTWORD(3); LASTWORD(4);
+    MOVEWORD(0); MOVEWORD(1); MOVEWORD(2); MOVEWORD(3); MOVEWORD(4);
+    ADD_ROUND_KEY_5;
+}
 static void aes_encrypt_nb_6(AESContext *ctx, word32 *block) {
     int i;
     static const int C1 = 1, C2 = 2, C3 = 3, Nb = 6;
@@ -130,6 +155,25 @@ static void aes_encrypt_nb_6(AESContext *ctx, word32 *block) {
     MOVEWORD(0); MOVEWORD(1); MOVEWORD(2);
     MOVEWORD(3); MOVEWORD(4); MOVEWORD(5);
     ADD_ROUND_KEY_6;
+}
+static void aes_encrypt_nb_7(AESContext *ctx, word32 *block) {
+    int i;
+    static const int C1 = 1, C2 = 2, C3 = 4, Nb = 7;
+    word32 *keysched = ctx->keysched;
+    word32 newstate[7];
+    for (i = 0; i < ctx->Nr-1; i++) {
+	ADD_ROUND_KEY_7;
+	MAKEWORD(0); MAKEWORD(1); MAKEWORD(2); MAKEWORD(3);
+	MAKEWORD(4); MAKEWORD(5); MAKEWORD(6);
+	MOVEWORD(0); MOVEWORD(1); MOVEWORD(2); MOVEWORD(3);
+	MOVEWORD(4); MOVEWORD(5); MOVEWORD(6);
+    }
+    ADD_ROUND_KEY_7;
+    LASTWORD(0); LASTWORD(1); LASTWORD(2); LASTWORD(3);
+    LASTWORD(4); LASTWORD(5); LASTWORD(6);
+    MOVEWORD(0); MOVEWORD(1); MOVEWORD(2); MOVEWORD(3);
+    MOVEWORD(4); MOVEWORD(5); MOVEWORD(6);
+    ADD_ROUND_KEY_7;
 }
 static void aes_encrypt_nb_8(AESContext *ctx, word32 *block) {
     int i;
@@ -185,6 +229,21 @@ static void aes_decrypt_nb_4(AESContext *ctx, word32 *block) {
     MOVEWORD(0); MOVEWORD(1); MOVEWORD(2); MOVEWORD(3);
     ADD_ROUND_KEY_4;
 }
+static void aes_decrypt_nb_5(AESContext *ctx, word32 *block) {
+    int i;
+    static const int C1 = 5-1, C2 = 5-2, C3 = 5-3, Nb = 5;
+    word32 *keysched = ctx->invkeysched;
+    word32 newstate[5];
+    for (i = 0; i < ctx->Nr-1; i++) {
+	ADD_ROUND_KEY_5;
+	MAKEWORD(0); MAKEWORD(1); MAKEWORD(2); MAKEWORD(3); MAKEWORD(4);
+	MOVEWORD(0); MOVEWORD(1); MOVEWORD(2); MOVEWORD(3); MOVEWORD(4);
+    }
+    ADD_ROUND_KEY_5;
+    LASTWORD(0); LASTWORD(1); LASTWORD(2); LASTWORD(3); LASTWORD(4);
+    MOVEWORD(0); MOVEWORD(1); MOVEWORD(2); MOVEWORD(3); MOVEWORD(4);
+    ADD_ROUND_KEY_5;
+}
 static void aes_decrypt_nb_6(AESContext *ctx, word32 *block) {
     int i;
     static const int C1 = 6-1, C2 = 6-2, C3 = 6-3, Nb = 6;
@@ -203,6 +262,25 @@ static void aes_decrypt_nb_6(AESContext *ctx, word32 *block) {
     MOVEWORD(0); MOVEWORD(1); MOVEWORD(2);
     MOVEWORD(3); MOVEWORD(4); MOVEWORD(5);
     ADD_ROUND_KEY_6;
+}
+static void aes_decrypt_nb_7(AESContext *ctx, word32 *block) {
+    int i;
+    static const int C1 = 7-1, C2 = 7-2, C3 = 7-4, Nb = 7;
+    word32 *keysched = ctx->invkeysched;
+    word32 newstate[7];
+    for (i = 0; i < ctx->Nr-1; i++) {
+	ADD_ROUND_KEY_7;
+	MAKEWORD(0); MAKEWORD(1); MAKEWORD(2); MAKEWORD(3);
+	MAKEWORD(4); MAKEWORD(5); MAKEWORD(6);
+	MOVEWORD(0); MOVEWORD(1); MOVEWORD(2); MOVEWORD(3);
+	MOVEWORD(4); MOVEWORD(5); MOVEWORD(6);
+    }
+    ADD_ROUND_KEY_7;
+    LASTWORD(0); LASTWORD(1); LASTWORD(2); LASTWORD(3);
+    LASTWORD(4); LASTWORD(5); LASTWORD(6);
+    MOVEWORD(0); MOVEWORD(1); MOVEWORD(2); MOVEWORD(3);
+    MOVEWORD(4); MOVEWORD(5); MOVEWORD(6);
+    ADD_ROUND_KEY_7;
 }
 static void aes_decrypt_nb_8(AESContext *ctx, word32 *block) {
     int i;
@@ -834,8 +912,10 @@ void aes_setup(AESContext *ctx, int blocklen,
 	       unsigned char *key, int keylen) {
     int i, j, Nk, rconst;
 
-    assert(blocklen == 16 || blocklen == 24 || blocklen == 32);
-    assert(keylen == 16 || keylen == 24 || keylen == 32);
+    assert(blocklen == 16 || blocklen == 20 || blocklen == 24 ||
+	   blocklen == 28 || blocklen == 32);
+    assert(keylen == 16 || keylen == 20 || keylen == 24 ||
+	   keylen == 28 || keylen == 32);
 
     /*
      * Basic parameters. Words per block, words in key, rounds.
@@ -849,8 +929,12 @@ void aes_setup(AESContext *ctx, int blocklen,
      */
     if (ctx->Nb == 8)
 	ctx->encrypt = aes_encrypt_nb_8, ctx->decrypt = aes_decrypt_nb_8;
+    else if (ctx->Nb == 7)
+	ctx->encrypt = aes_encrypt_nb_7, ctx->decrypt = aes_decrypt_nb_7;
     else if (ctx->Nb == 6)
 	ctx->encrypt = aes_encrypt_nb_6, ctx->decrypt = aes_decrypt_nb_6;
+    else if (ctx->Nb == 5)
+	ctx->encrypt = aes_encrypt_nb_5, ctx->decrypt = aes_decrypt_nb_5;
     else if (ctx->Nb == 4)
 	ctx->encrypt = aes_encrypt_nb_4, ctx->decrypt = aes_decrypt_nb_4;
 
@@ -936,13 +1020,17 @@ int main(void) {
     word32 block[32];
     int i, j, k;
 
-    for (i = 16; i <= 32; i += 8) {
-	for (j = 16; j <= 32; j += 8) {
-	    printf("b%d, k%d: ", i, j);
+    for (i = 16; i <= 32; i += 4) {
+	for (j = 16; j <= 32; j += 4) {
 	    fflush(stdout);
 	    aes_setup(&c, i, key, j);
 	    memset(block, 0, sizeof(block));
+	    printf("b%d, k%d E: ", i, j);
 	    aes_encrypt(&c, block);
+	    for (k = 0; k < i/4; k++)
+		printf("%08x ", block[k]);
+	    printf("\n");
+	    printf("b%d, k%d D: ", i, j);
 	    aes_decrypt(&c, block);
 	    for (k = 0; k < i/4; k++)
 		printf("%08x ", block[k]);

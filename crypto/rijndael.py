@@ -1,7 +1,7 @@
 # Reference Python implementation of Rijndael.
 
 # Global variables expected :-
-#   Nb == no of columns in cipher block (block size / 32; can be 4, 6 or 8)
+#   Nb == no of columns in cipher block (block size / 32; can be 4-8)
 #   Nk == no of columns in cipher key (key len / 32)
 #   Nr == no of rounds
 #   State == array of Nb four-byte arrays
@@ -113,7 +113,9 @@ def subbyte(x):
 
 def shiftrow():
     if Nb == 4: Cj = 0, 1, 2, 3
+    if Nb == 5: Cj = 0, 1, 2, 3
     if Nb == 6: Cj = 0, 1, 2, 3
+    if Nb == 7: Cj = 0, 1, 2, 4
     if Nb == 8: Cj = 0, 1, 3, 4
     for j in range(4):
 	foo = []
@@ -138,10 +140,10 @@ def mixonecolumn(inv, a0, a1, a2, a3):
 def mixcolumn(inv):
     for i in range(Nb):
 	a0, a1, a2, a3 = State[i]
-	State[i] = mixonecolumn(a0, a1, a2, a3)
+	State[i] = mixonecolumn(inv, a0, a1, a2, a3)
 
 def addroundkey(roundkey):
-    print "rk: " + writebox(roundkey)
+    #print "rk: " + writebox(roundkey)
     for i in range(Nb):
 	for j in range(4):
 	    State[i][j] = State[i][j] ^ roundkey[i][j]
@@ -185,20 +187,20 @@ def keyschedule(key):
 
 def one_round(roundkey, is_final):
     bytesub()
-    print "st: " + writebox(State)
+    #print "st: " + writebox(State)
     shiftrow()
-    print "st: " + writebox(State)
+    #print "st: " + writebox(State)
     if not is_final:
 	mixcolumn(0)
-	print "st: " + writebox(State)
+	#print "st: " + writebox(State)
     addroundkey(roundkey)
-    print "st: " + writebox(State)
+    #print "st: " + writebox(State)
 
 def rijndael(bytes, roundkeys):
     setup_state(bytes)
-    print "st: " + writebox(State)
+    #print "st: " + writebox(State)
     addroundkey(roundkeys[0])
-    print "st: " + writebox(State)
+    #print "st: " + writebox(State)
     for i in range(1, Nr):
 	one_round(roundkeys[i], 0)
     one_round(roundkeys[Nr], 1)
@@ -237,16 +239,17 @@ def maintables():
     print "D3:"; maintable(1, 3)
 
 # ----------------------------------------------------------------------
-# Test values.
+# Test encryption of every block size with every key size. The
+# input block and the key are both all zeros in every case.
 
-#Nb = 4
-#Nk = 4
-#Nr = 10
-#
-#sched = keyschedule((0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0))
-#pt = (0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0)
-#ct = rijndael(pt, sched)
-#print writestr(ct)
+for Nb in range(4,9):
+    for Nk in range(4,9):
+	Nr = max(Nb,Nk) + 6
+	sched = keyschedule((0,0,0,0) * Nk)
+	pt = (0,0,0,0) * Nb
+	ct = rijndael(pt, sched)
+	print writestr(ct)
 
-sboxtables()
-maintables()
+# Write out the tables required for a C implementation.
+#sboxtables()
+#maintables()
