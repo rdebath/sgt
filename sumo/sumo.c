@@ -215,12 +215,12 @@ static int lava_platform_check(int x, int y, int radius)
 static int crucible_pocket_check(int x, int y, int r)
 {
     struct { int x, y, r; } pockets[] = {
-	{0 << 16, 20 << 16, 40 << 16},
-	{0 << 16, 220 << 16, 40 << 16},
-	{240 << 16, 20 << 16, 40 << 16},
-	{240 << 16, 220 << 16, 40 << 16},
-	{120 << 16, 20 << 16, 30 << 16},
-	{120 << 16, 220 << 16, 30 << 16},
+	{0 << 16, 20 << 16, 45 << 16},
+	{0 << 16, 220 << 16, 45 << 16},
+	{240 << 16, 20 << 16, 45 << 16},
+	{240 << 16, 220 << 16, 45 << 16},
+	{120 << 16, 20 << 16, 33 << 16},
+	{120 << 16, 220 << 16, 33 << 16},
     };
     int i;
 
@@ -330,17 +330,17 @@ static void check_mirrors(int x, int y, int *dx, int *dy)
 	{240 << 16, 50 << 16, 220 << 16, 70 << 16},
 	/* Top cushions */
 	{30 << 16, 20 << 16, 50 << 16, 40 << 16},
-	{50 << 16, 40 << 16, 80 << 16, 40 << 16},
-	{80 << 16, 40 << 16, 100 << 16, 20 << 16},
-	{140 << 16, 20 << 16, 160 << 16, 40 << 16},
-	{160 << 16, 40 << 16, 190 << 16, 40 << 16},
+	{50 << 16, 40 << 16, 85 << 16, 40 << 16},
+	{85 << 16, 40 << 16, 105 << 16, 20 << 16},
+	{135 << 16, 20 << 16, 155 << 16, 40 << 16},
+	{155 << 16, 40 << 16, 190 << 16, 40 << 16},
 	{190 << 16, 40 << 16, 210 << 16, 20 << 16},
 	/* Bottom cushions */
 	{50 << 16, 200 << 16, 30 << 16, 220 << 16},
-	{80 << 16, 200 << 16, 50 << 16, 200 << 16},
-	{100 << 16, 220 << 16, 80 << 16, 200 << 16},
-	{160 << 16, 200 << 16, 140 << 16, 220 << 16},
-	{190 << 16, 200 << 16, 160 << 16, 200 << 16},
+	{85 << 16, 200 << 16, 50 << 16, 200 << 16},
+	{105 << 16, 220 << 16, 85 << 16, 200 << 16},
+	{155 << 16, 200 << 16, 135 << 16, 220 << 16},
+	{190 << 16, 200 << 16, 155 << 16, 200 << 16},
 	{210 << 16, 220 << 16, 190 << 16, 200 << 16},
     };
     const struct mirror *mirrors;
@@ -1455,17 +1455,17 @@ static void make_crucible(void)
     /* Pockets */
     cctx.c = pocket; cctx.img = crucible;
     cctx.x = 0; cctx.y = 20;
-    circle(40, crucible_plot_pocket, &cctx);
+    circle(45, crucible_plot_pocket, &cctx);
     cctx.x = 0; cctx.y = 220;
-    circle(40, crucible_plot_pocket, &cctx);
+    circle(45, crucible_plot_pocket, &cctx);
     cctx.x = 240; cctx.y = 20;
-    circle(40, crucible_plot_pocket, &cctx);
+    circle(45, crucible_plot_pocket, &cctx);
     cctx.x = 240; cctx.y = 220;
-    circle(40, crucible_plot_pocket, &cctx);
+    circle(45, crucible_plot_pocket, &cctx);
     cctx.x = 120; cctx.y = 20;
-    circle(30, crucible_plot_pocket, &cctx);
+    circle(33, crucible_plot_pocket, &cctx);
     cctx.x = 120; cctx.y = 220;
-    circle(30, crucible_plot_pocket, &cctx);
+    circle(33, crucible_plot_pocket, &cctx);
 
     cctx.c = cushion; cctx.img = crucible;
     /* Left-side cushions */
@@ -1481,18 +1481,18 @@ static void make_crucible(void)
     /* Top cushions */
     cctx.x = 0; cctx.y = -1;
     line(30, 20, 50, 40, crucible_plot_cushion, &cctx);
-    line(50, 40, 80, 40, crucible_plot_cushion, &cctx);
-    line(80, 40, 100, 20, crucible_plot_cushion, &cctx);
-    line(140, 20, 160, 40, crucible_plot_cushion, &cctx);
-    line(160, 40, 190, 40, crucible_plot_cushion, &cctx);
+    line(50, 40, 85, 40, crucible_plot_cushion, &cctx);
+    line(85, 40, 105, 20, crucible_plot_cushion, &cctx);
+    line(135, 20, 155, 40, crucible_plot_cushion, &cctx);
+    line(155, 40, 190, 40, crucible_plot_cushion, &cctx);
     line(190, 40, 210, 20, crucible_plot_cushion, &cctx);
     /* Bottom cushions */
     cctx.x = 0; cctx.y = +1;
     line(30, 220, 50, 200, crucible_plot_cushion, &cctx);
-    line(50, 200, 80, 200, crucible_plot_cushion, &cctx);
-    line(80, 200, 100, 220, crucible_plot_cushion, &cctx);
-    line(140, 220, 160, 200, crucible_plot_cushion, &cctx);
-    line(160, 200, 190, 200, crucible_plot_cushion, &cctx);
+    line(50, 200, 85, 200, crucible_plot_cushion, &cctx);
+    line(85, 200, 105, 220, crucible_plot_cushion, &cctx);
+    line(135, 220, 155, 200, crucible_plot_cushion, &cctx);
+    line(155, 200, 190, 200, crucible_plot_cushion, &cctx);
     line(190, 200, 210, 220, crucible_plot_cushion, &cctx);
 
     /* Table border */
