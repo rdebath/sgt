@@ -2,6 +2,7 @@ Summary: Blank known passwords by default in SSH packet log
 Class: wish
 Priority: low
 Difficulty: fun
+Fixed-in: 2004-10-03
 Content-Type: text/x-html-body
 
 <p>
@@ -29,12 +30,9 @@ authentication, of course.
 A similar option (but not enabled by default) would be to blank the
 data (`payload') fields - again, this information isn't often useful,
 and it would reduce the care that has to be taken with log files.
+(It can also substantially reduce the size of log files.)
 
 <p>
 Obviously this isn't completely secure - even a blanked-out log file
 contains a fair amount of information that's useful to an attacker.
 But it's probably a net improvement.
-
-<p>
-As of Sep 2002, I (JTN) had a 90% complete patch to do this. I should
-revive it and commit it.
