@@ -1,7 +1,7 @@
 Summary: Printer enumeration may cause slow startup
 Class: semi-bug
 Difficulty: tricky
-Priority: low
+Priority: high
 Content-type: text/x-html-body
 Present-in: 0.53 0.53b
 Absent-in: 0.52
@@ -56,3 +56,8 @@ detect the Windows version and use <code>_5</code> on 95-class systems -
 corroborates this approach. (We're <em>already</em> avoiding
 <code>_5</code> on NT because we had problems enumerating network
 printers.) Yuk.
+
+<p>
+<em>Update 2003-02-24:</em> verified that <code>PRINTER_INFO_4</code>
+finds all the printers that <code>PRINTER_INFO_5</code> does on my
+Win2K SP2 setup. Now just need to implement and test the Win9x fork.
