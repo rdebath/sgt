@@ -11,3 +11,6 @@ that the file on disc is at least vaguely up-to-date.
 
 This is done as of 2004-08-13. It incurs some performance overhead, of
 course; if anyone complains, we could make it less frequent, or optional.
+
+Update, 2004-12-16: we've had one complaint about the performance hit
+on Windows in 0.56, so I've added a checkbox to restore the old behaviour.
