@@ -88,7 +88,9 @@ if test $ac_cv_func_strspn = no; then
 fi
 
 dnl Checks for libraries.
-AC_CHECK_LIB(curses,initscr)
 AC_CHECK_LIB(ncurses,initscr)
+if test $ac_cv_lib_ncurses_initscr = no; then
+  AC_CHECK_LIB(curses,initscr)
+fi
 
 AC_OUTPUT(Makefile)
