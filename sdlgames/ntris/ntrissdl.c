@@ -78,7 +78,7 @@ static int drawline(int x1, int y1, int x2, int y2, int c)
  */
 static int *blockpixels[SQUARE_SIDE+1];
 
-void init_blockpixels(void)
+static void init_blockpixels(void)
 {
     int ix, iy;
     int *p;
@@ -123,7 +123,6 @@ void init_blockpixels(void)
     }
 }
 
-enum { TETRIS_SHAPES, PENTRIS_SHAPES, NSHAPESETS };
 static struct options {
     int shapeset;
     int width;
@@ -131,8 +130,8 @@ static struct options {
     int queue;
 } opts;
 
-void block(struct frontend_instance *inst, int area,
-	   int x, int y, int col, int type)
+void ntris_fe_block(struct frontend_instance *inst, int area,
+		    int x, int y, int col, int type)
 {
     int ix, iy;
     int colours[0xD];
@@ -260,12 +259,12 @@ static void do_score(int y, char *title, int score, int evenifzero)
 
 static void do_scores(struct ntris_instance *ti)
 {
-    do_score(100, "Lines", get_score(ti, SCORE_LINES), 1);
-    do_score(116, "Single", get_score(ti, SCORE_SINGLE), 0);
-    do_score(126, "Double", get_score(ti, SCORE_DOUBLE), 0);
-    do_score(136, "Triple", get_score(ti, SCORE_TRIPLE), 0);
-    do_score(146, "Tetris", get_score(ti, SCORE_TETRIS), 0);
-    do_score(156, "Pentris", get_score(ti, SCORE_PENTRIS), 0);
+    do_score(100, "Lines", ntris_get_score(ti, SCORE_LINES), 1);
+    do_score(116, "Single", ntris_get_score(ti, SCORE_SINGLE), 0);
+    do_score(126, "Double", ntris_get_score(ti, SCORE_DOUBLE), 0);
+    do_score(136, "Triple", ntris_get_score(ti, SCORE_TRIPLE), 0);
+    do_score(146, "Tetris", ntris_get_score(ti, SCORE_TETRIS), 0);
+    do_score(156, "Pentris", ntris_get_score(ti, SCORE_PENTRIS), 0);
 }
 
 static void play_game(void)
@@ -279,16 +278,13 @@ static void play_game(void)
 
     scr_prep();
     memset(scrdata, 0, 640*240);
-    ti = init_game(NULL, opts.width, PLAY_HEIGHT,
-		   (opts.shapeset == TETRIS_SHAPES ? tetris_shapes :
-		    opts.shapeset == PENTRIS_SHAPES ? pentris_shapes :
-		    NULL));
+    ti = ntris_init(NULL, opts.width, PLAY_HEIGHT, opts.shapeset);
     left_edge = ((SCR_WIDTH - SQUARE_SIDE * opts.width) / 2);
     if (left_edge < 110)
 	left_edge = 110;
     right_edge = (left_edge + SQUARE_SIDE * opts.width);
-    maxheight = shape_maxsize(ti);
-    init_shape(ti);
+    maxheight = ntris_shape_maxsize(ti);
+    ntris_newshape(ti);
     line(left_edge-2, 0, left_edge-2, BOTTOM_EDGE+1,
 	 lineplotsimple, (void *)255);
     line(left_edge-2, BOTTOM_EDGE+1, right_edge+1, BOTTOM_EDGE+1,
@@ -430,27 +426,27 @@ static void play_game(void)
 	 */
 	scr_prep();
 	if (left)
-	    try_move_left(ti);
+	    ntris_try_left(ti);
 	if (right)
-	    try_move_right(ti);
+	    ntris_try_right(ti);
 	if (clockwise)
-	    try_clockwise(ti);
+	    ntris_try_clockwise(ti);
 	if (anticlock)
-	    try_anticlock(ti);
+	    ntris_try_anticlock(ti);
 	if (reflect)
-	    try_reflect(ti);
+	    ntris_try_reflect(ti);
 	if (hold && opts.hold)
-	    try_hold(ti);
+	    ntris_try_hold(ti);
 	if (dropsoft || drophard) {
 	    int ret;
 	    if (drophard) {
 		ret = 1;
-		harddrop(ti);
+		ntris_harddrop(ti);
 	    } else {
-		ret = softdrop(ti);
+		ret = ntris_softdrop(ti);
 	    }
 	    if (ret) {
-		ret = init_shape(ti);
+		ret = ntris_newshape(ti);
 		if (!ret)
 		    break;
 		do_scores(ti);
