@@ -70,7 +70,10 @@ array_variable = -2
 # node type, so the op_* constants must not overlap the t_* constants.
 # The tuple expected in each node type is given in a comment.
 op_BEGIN = _enum(t_END)
-op_cast = _enum(t_END) # (srctype, desttype, operand)
+op_cast = _enum() # (srctype, desttype, operand)
+op_deref = _enum() # (operand)
+op_if = _enum() # (condition, thenclause, elseclause)
+op_while = _enum() # (condition, loopbody)
 op_END = _enum()
 
 def _sortt(list):
@@ -82,9 +85,10 @@ def _sortt(list):
 class typesystem:
     "Class to hold a system of types."
 
-    def __init__(self):
+    def __init__(self, target):
         self.uniqueid = 0
         self.typedefs = {}
+        self.target = target
 
     def basictype(self, t, quals):
         return (quals, t)
@@ -102,7 +106,100 @@ class typesystem:
         # Add in the extra type qualifiers
         tuple2 = (tuple[0] | quals,) + tuple[1:]
         return tuple2
-    
+
+    inttypes = [t_char, t_schar, t_uchar, t_short, t_ushort, t_bfint, t_int,
+    t_uint, t_long, t_ulong, t_longlong, t_ulonglong, t_bool]
+    flttypes = [t_float, t_double, t_ldouble, t_cfloat, t_cdouble, t_cldouble,
+    t_ifloat, t_idouble, t_ildouble]
+
+    def isarith(self, type):
+        "Determine whether a type is arithmetic."
+        return self.isint(type) or self.isfloat(type)
+    inttypes = {
+    t_bool: 1, t_char: 1, t_uchar: 1, t_schar: 1, t_short: 1, t_ushort: 1,
+    t_int: 1, t_uint: 1, t_long: 1, t_ulong: 1, t_longlong: 1, t_ulonglong: 1
+    }
+    def isint(self, type):
+        "Determine whether a type is integer."
+        return self.inttypes.has_key(type[1])
+    floattypes = {
+    t_float: 1, t_double: 1, t_ldouble: 1, t_cfloat: 1, t_cdouble: 1,
+    t_cldouble: 1, t_ifloat: 1, t_idouble: 1, t_ildouble: 1,
+    }
+    def isfloat(self, type):
+        "Determine whether a type is floating."
+        return self.floattypes.has_key(type[1])
+    # FIXME: target must specify whether char is signed
+    unsignedtypes = {
+    t_bool: 1, t_uchar: 1, t_ushort: 1, t_uint: 1, t_ulong: 1, t_ulonglong: 1
+    }
+    def isunsigned(self, type):
+        "Determine whether a type is unsigned."
+        return self.unsignedtypes.has_key(type[1])
+
+    def referenced(self, type):
+        "Return the referenced type of a pointer, or None if not a pointer."
+        if type[1] == t_pointer:
+            return type[2]
+        else:
+            return None
+
+    def intcontains(self, type1, type2):
+        "Determine whether integer type2 can hold all the values of type1."
+        if self.target.intmaxvals[type1[1]] > self.target.intmaxvals[type2[1]]:
+            return 0
+        if self.target.intminvals[type1[1]] < self.target.intminvals[type2[1]]:
+            return 0
+        return 1
+
+    def intpromote(self, type1):
+        basetype = type1[1]
+        if self.intcontains((0, basetype), (0, t_int)):
+            basetype = t_int
+        elif self.intcontains((0, basetype), (0, t_uint)):
+            basetype = t_uint
+        return type1[:1] + (basetype,) + type1[2:]
+
+    ranks = {
+    t_bool: 0,
+    t_char: 1, t_schar: 1, t_uchar: 1,
+    t_short: 1, t_ushort: 1,
+    t_int: 1, t_uint: 1,
+    t_long: 2, t_ulong: 2,
+    t_longlong: 3, t_ulonglong: 3,
+    }
+    inttouint = {
+    t_int: t_uint, t_uint: t_uint,
+    t_long: t_ulong, t_ulong: t_ulong,
+    t_longlong: t_ulonglong, t_ulonglong: t_ulonglong}
+    def usualarith(self, type1, type2):
+        "Perform the usual arithmetic conversions on two types to return\n"\
+        "a third type."
+        if self.isfloat(type1) or self.isfloat(type2):
+            pass # FIXME
+        else:
+            type1 = self.intpromote(type1)
+            type2 = self.intpromote(type2)
+            u1 = self.isunsigned(type1)
+            u2 = self.isunsigned(type2)
+            if u1 == u2:
+                if self.ranks[type1[1]] < self.ranks[type2[1]]:
+                    ret = type2
+                else:
+                    ret = type1
+            else:
+                # Let type1 be the unsigned one.
+                if u2:
+                    type1, type2 = type2, type1
+                if self.ranks[type1[1]] >= self.ranks[type2[1]]:
+                    ret = type1
+                elif self.intcontains(type1, type2):
+                    ret = type2
+                else:
+                    base = self.inttouint(type2[1])
+                    ret = type2[:1] + (base,) + type2[2:]
+            return ret, ret, ret # ltype, rtype and outtype all the same
+
     # Operations required on a type are
     #  - determine whether two types are compatible
     #  - construct a composite type from two (each fills in blanks in other)
@@ -129,8 +226,8 @@ class semantics:
     def __init__(self, parsetree, target):
         self.functions = []
         self.topdecls = []
-        self.types = typesystem()
 	self.target = target
+        self.types = typesystem(target)
         self.do_tran_unit(parsetree)
 
     def display(self):
@@ -227,6 +324,7 @@ class semantics:
 		    else:
 			t = t | 1
 		type = (t_int,t_uint,t_long,t_ulong,t_longlong,t_ulonglong)[t]
+                type = (0, type)
 		val = 0L
 		if text[0:2] == "0X":
 		    base = 16
@@ -243,7 +341,7 @@ class semantics:
 		    val = val * base + cval
 		val = self.target.intconst(type, val)
 		return type, val, 0, optree(type, val)
-	    elif exp.list[0].type == pt_ident:
+	    elif exp.list[0].type == lt_ident:
 		pass # FIXME
 	    elif exp.list[0].type == pt_charconst:
 		pass # FIXME
@@ -253,19 +351,41 @@ class semantics:
 		pass # FIXME
 	    else:
 		FIXME()
-	    pass
 	elif exp.type == pt_postfix_expression:
-	    pass
+            FIXME()
 	elif exp.type == pt_unary_expression:
-	    pass
+            if exp.list[0].type == lt_times:
+                operand = self.expr(exp.list[1])
+                desttype = self.types.referenced(operand[0])
+                if desttype == None:
+                    ERROR() # operand must be of pointer type
+                return desttype, None, 1, optree(operand)
+            else:
+                #  increment decrement
+                #  sizeof
+                #  bitand
+                #  plus minus bitnot lognot
+                FIXME()
 	elif exp.type == pt_cast_expression:
-	    pass
+            src = self.expr(exp.list[1])
+            desttype = self.typename(exp.list[0])
+            # FIXME: verify explicit castability
+            return self.typecvt(src, desttype, 1)
 	elif exp.type == pt_binary_expression:
-	    pass
+            lhs = self.expr(exp.list[0])
+            rhs = self.expr(exp.list[2])
+            return self.binop(exp.list[1].type, lhs, rhs)
 	elif exp.type == pt_conditional_expression:
-	    pass
+            FIXME()
 	elif exp.type == pt_assignment_expression:
-	    pass
+            exp.display(0)
+            lhs = self.expr(exp.list[0])
+            rhs = self.expr(exp.list[2])
+            if not lhs[2]:
+                ERROR() # non-lvalue on left of assignment
+            else:
+                if lhs[0] != rhs[0]: rhs = self.typecvt(rhs, lhs[0], 0)
+                return lhs[0], None, 0, optree(exp.list[1].type, lhs[0], lhs, rhs)
 	elif exp.type == pt_constant_expression:
 	    type, value, lvalue, tree = self.expr(exp.list[0])
 	    if value == None:
@@ -273,6 +393,40 @@ class semantics:
 	    return type, value, lvalue, tree
 	else:
 	    assert 0, "unexpected node in expression"
+
+    def typename(self, tn):
+        stg, fnspecs, basetype = self.do_declspecs(tn.list[0])
+        t, id = self.do_declarator(tn.list[1], basetype)
+        assert stg == None and fnspecs == {}
+        assert id == None # this must be an abstract declarator
+        return t
+
+    def typecvt(self, src, desttype, explicit):
+        "Process a type conversion, either explicit or implicit."
+        # FIXME: check castability. Implicit castability is quite fun;
+        # in particular an integer is implicitly castable to a pointer
+        # if and only if the integer is known at compile time to be zero.
+        #
+        # FIXME: compile-time conversion when feasible.
+        return desttype, None, 0, optree(op_cast, src[0], desttype, src)
+
+    def binop(self, op, lhs, rhs):
+        "Process a binary operator."
+        # Must perform type conversion.
+        if self.types.isarith(lhs[0]) and self.types.isarith(rhs[0]):
+            lt, rt, outt = self.types.usualarith(lhs[0], rhs[0])
+            if outt == None:
+                ERROR() # can't combine these two types
+            if lhs[0] != lt: lhs = self.typecvt(lhs, lt)
+            if rhs[0] != rt: rhs = self.typecvt(lhs, rt)
+        elif 0: # plus or minus, and exactly one is pointer
+            pass
+        # Perform constant arithmetic if possible.
+        if lhs[1] != None and rhs[1] != None:
+            newval = self.target.binop(op, outt, lt, lhs[1], rt, rhs[1])
+            return outt, newval, 0, optree(outt, newval)
+        else:
+            return outt, None, 0, optree(op, outt, lhs, rhs)
 
     def do_declaration(self, decl):
         # The declaration specifiers can contain storage class qualifiers,
@@ -287,6 +441,24 @@ class semantics:
         # qualifiers. It's illegal to have them on nonfunctions.
         specs = decl.list[0]
         assert specs.type == pt_declaration_specifiers
+        stg, fnspecs, basetype = self.do_declspecs(specs)
+        # We now have our base type. Go through the declarators processing
+        # each one to create derived variants from the base type.
+        defs = []
+        assert decl.list[1].type == pt_init_declarator_list
+        for i in decl.list[1].list:
+            assert i.type == pt_init_declarator
+            dcl = i.list[0]
+            assert dcl.type == pt_declarator
+            t, id = self.do_declarator(dcl, basetype)
+            assert id != None # this declarator may not be abstract
+            if stg == lt_typedef:
+                self.types.addtypedef(id.text, t);
+            else:
+                defs = defs + [[id.text, stg, t]]
+        return defs
+
+    def do_declspecs(self, specs):
         stg = None
         typequals = 0
         fnspecs = {}
@@ -323,62 +495,50 @@ class semantics:
             basetype = self.types.findtypedef(tspec.text, typequals)
         else:
             ERROR() # unrecognised type specifier `typespecs'
+        return stg, fnspecs, basetype
 
-        # We now have our base type. Go through the declarators processing
-        # each one to create derived variants from the base type.
-        defs = []
-        assert decl.list[1].type == pt_init_declarator_list
-        for i in decl.list[1].list:
-            assert i.type == pt_init_declarator
-            dcl = i.list[0]
-            assert dcl.type == pt_declarator
-            t = basetype
-            while 1:
-                # Process a declarator
-                if dcl.list[0].type == pt_pointer:
-                    for i in dcl.list[0].list:
-                        quals = 0
-                        if i != None:
-                            assert i.type == pt_type_qualifier_list
-                            for j in i.list:
-                                assert j.type == pt_type_qualifier
-                                quals = quals | self.typequalmap[j.list[0].type]
-                        t = self.types.ptrtype(t, quals)
-                    dirdcl = dcl.list[1]
-                else:
-                    dirdcl = dcl.list[0]
-                # Process a direct-declarator
-                assert dirdcl.type == pt_direct_declarator
-                for i in dirdcl.list[1:]:
-                    # Deal with array and function derivations
-                    if i == None:
-                        t = self.types.array(t, array_unspecified)
-                    elif i.type == pt_identifier_list or i.type == pt_parameter_type_list:
-			pass # FIXME: function type
-                    else:
-                        # Attempt to parse i as a constant expression with
-			# integer type.
-			type, value, lvalue, tree = self.expr(i)
-			if value != None:
-			    # We have a constant which is our array dimension.
-			    # Cast it to type size_t and use it.
-			    value = self.target.intconst(self.target.size_t(), value)
-			    # WIBNI: see if `value' has changed, and warn if so
-			    t = self.types.array(t, value)
-			else:
-			    t = self.types.vla(t, tree)
-                if dirdcl.list[0].type == pt_declarator:
-                    dcl = dirdcl.list[0]
-                    continue
-                else:
-                    id = dirdcl.list[0]
-                    assert id.type == lt_ident
-                    break
-            if stg == lt_typedef:
-                self.types.addtypedef(id.text, t);
+    def do_declarator(self, dcl, t):
+        while 1:
+            # Process a declarator
+            if dcl.list[0].type == pt_pointer:
+                for i in dcl.list[0].list:
+                    quals = 0
+                    if i != None:
+                        assert i.type == pt_type_qualifier_list
+                        for j in i.list:
+                            assert j.type == pt_type_qualifier
+                            quals = quals | self.typequalmap[j.list[0].type]
+                    t = self.types.ptrtype(t, quals)
+                dirdcl = dcl.list[1]
             else:
-                defs = defs + [[id.text, stg, t]]
-        return defs
+                dirdcl = dcl.list[0]
+            # Process a direct-declarator
+            assert dirdcl.type == pt_direct_declarator
+            for i in dirdcl.list[1:]:
+                # Deal with array and function derivations
+                if i == None:
+                    t = self.types.array(t, array_unspecified)
+                elif i.type == pt_identifier_list or i.type == pt_parameter_type_list:
+                    pass # FIXME: function type
+                else:
+                    # Attempt to parse i as a constant expression with
+                    # integer type.
+                    type, value, lvalue, tree = self.expr(i)
+                    if value != None:
+                        # We have a constant which is our array dimension.
+                        # Cast it to type size_t and use it.
+                        value = self.target.intconst((0, self.target.size_t), value)
+                        # WIBNI: see if `value' has changed, and warn if so
+                        t = self.types.array(t, value)
+                    else:
+                        t = self.types.vla(t, tree)
+            if dirdcl.list[0] != None and dirdcl.list[0].type == pt_declarator:
+                dcl = dirdcl.list[0]
+                continue
+            else:
+                id = dirdcl.list[0]
+                break
+        return t, id
 
     def do_function(self, funcdef):
 	assert funcdef.type == pt_function_definition
@@ -400,11 +560,25 @@ class semantics:
 	return [decls, stmts]
     
     def do_statement(self, stmt):
+        ret = []
 	while stmt.type == pt_labeled_statement:
 	    # FIXME: deal with label
 	    stmt = stmt.list[1]
 	if self.exprnodes.has_key(stmt.type):
 	    type, value, lvalue, tree = self.expr(stmt)
-	    return tree
-	else:
+            ret.append(tree)
+	elif stmt.type == pt_selection_statement:
+            condition = self.expr(stmt.list[1])
+            consequence = self.do_statement(stmt.list[2])
+            if stmt.list[0].type == lt_if:
+                if len(stmt.list) > 3:
+                    alternative = self.do_statement(stmt.list[3])
+                else:
+                    alternative = None
+                stmt = optree(op_if, condition, consequence, alternative)
+            else:
+                stmt = optree(op_while, condition, consequence)
+        else:
+            stmt.display(0)
 	    FIXME()
+        return ret
