@@ -1,8 +1,8 @@
-Summary: Window redraw problems on Windows
+Summary: Window redraw problems on Windows (white areas)
 Class: semi-bug
 Difficulty: taxing
 Priority: medium
-Present-in: 0.56 2005-01-13
+Present-in: 0.56 2005-01-13 0.58
 Content-type: text/x-html-body
 
 <p>
@@ -49,5 +49,9 @@ bizarrely. Also 0.56.)
 <br>Can also reproduce with WordPad menu bar, so probably not our
 problem.
 <br><tt>20050117101008.GI7859@chiark.greenend.org.uk</tt>
+
+<li>0.58 and previous; various video cards, XP Pro / 2000 Pro, many machines
+<br>Correlated with "East Asian Languages" in Region Options
+<br><tt>20050319141100.GA68401@parodius.com</tt> et al
 
 </ul>
