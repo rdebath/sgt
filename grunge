@@ -985,6 +985,8 @@ def editor(title, inittext):
 			ret[py:py] = [wrap]
 		    else:
 			ret[py] = wrap + " " + ret[py]
+	    # Scroll down, if we have gone off the bottom of the screen
+	    if ytop < y-ynum+1: ytop = y-ynum+1
 	    # Now redraw content to match editor buffer
 	    for i in range(0, ynum):
 		if i+ytop < len(ret):
