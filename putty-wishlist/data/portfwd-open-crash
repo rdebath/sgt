@@ -1,0 +1,29 @@
+Summary: Crashes with heavy open/close activity in port-forwarding
+Content-type: text/x-html-body
+Class: bug
+Present-in: 0.52 2002-06-06
+
+<p>
+Apparently, if working in a terminal session at the moment a
+tunnel is opened, there is a chance of causing a crash (either `Out of
+memory!', or `Windows has closed PuTTY due to errors').
+
+<p>
+This tends to be noticeable when lots of port-forwarded connections
+are being opened and closed (tunnelling HTTP or POP/SMTP for example).
+
+<p>
+All reports so far that have mentioned the protocol version have been
+against SSH2, with local-to-remote tunnelling. There are suggestions
+that this is correlated specifically with user input rather than just
+any terminal activity.
+
+<p>
+Individual reports (first is 2002 May 4):
+<ul>
+<li><tt>5.1.0.14.2.20020523234715.01b4cbf8@127.0.0.1</tt>
+<li><tt>Pine.LNX.4.44.0205211753330.6418-100000@bbs.intern</tt>
+  (contains an SSH packet log)
+<li><tt>Pine.LNX.4.44.0206071159080.15544-100000@stum.gink.org</tt>
+<li><tt>000701c1f3cd$b0b87b50$070ca8c0@FITZLT</tt>
+</ul>

@@ -1,0 +1,23 @@
+Summary: Support for tunnelling FTP
+Class: wish
+Priority: low
+Difficulty: tricky
+Depends: mdpi
+Content-type: text/x-html-body
+
+<p>
+FTP is inherently difficult to tunnel over SSH, because it uses
+multiple network connections, so the `obvious' approach of just
+forwarding port 21 doesn't work.
+
+<p>
+To support this, PuTTY would need to grovel inside inside the
+application-layer protocol and rewrite PORT commands and such, or
+alternatively, provide an FTP proxy.
+
+<p>
+Either of these would be quite a large and fiddly feature, and given
+that we already support alternative secure file-transfer solutions
+(scp, sftp), we're unlikely to implement this ourselves. In fact, in
+order not to bloat the core of PuTTY, we probably wouldn't contemplate
+it at all unless it could be implemented as a separate DLL.
