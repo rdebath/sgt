@@ -19,7 +19,8 @@ designed, and that <code>PUTTY.RND</code> is ending up in
 Suggested alternative from
 <code>001201c32fd3$8c5484a0$bc1eb440@hyperwolf</code>: use one of the
 paths returned by <code>SHGetFolderPath</code> (requires some faffing
-wrt old Windows versions).
+wrt old Windows versions - full horrors in
+<code>200310180552.h9I5qHZ21748@cs.auckland.ac.nz</code>).
 
 <p>
 (If this is fixed, perhaps we should continue to support
