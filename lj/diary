@@ -65,11 +65,15 @@ def isint(s):
 #  - PBULLET is a bulletted paragraph.
 #  - PMBREAK is a mono-break paragraph.
 #  - PTITLE is a title paragraph.
+#  - PTITLEQUIET is a quiet title paragraph (appears in the title
+#    on LJ, but is formatted normally on Mono).
 PNORMAL = 1
 PPRE = 2
 PBULLET = 3
 PMBREAK = 4
 PTITLE = 5
+PTITLEQUIET = 6
+def is_title(typ): return typ == PTITLE or typ == PTITLEQUIET
 # Mono attribute definitions.
 mono_colours = "AAAAAAAAKRGYBMCW" # 0-7 normal, 8-15 coloured
 ATTR_BOLD = 1
@@ -279,10 +283,11 @@ class output:
 	if typ == PMBREAK:
 	    self.html_ok = 0
             self.mono_new_edit()
-	if typ == PTITLE:
+	if is_title(typ):
 	    self.html_ok = 0
 	    self.html_title = 1
-            self.mono_attr = self.mono_attr | ATTR_UNDER
+	    if typ == PTITLE:
+		self.mono_attr = self.mono_attr | ATTR_UNDER
 	if typ == PNORMAL and not self.firstpara:
 	    self.html = self.html + "<p>"
 
@@ -291,7 +296,7 @@ class output:
 	# PTITLE paragraph shouldn't cause it to be reset because
 	# titles are done externally to the HTML part of the LJ
 	# entry.
-	if typ != PTITLE:
+	if not is_title(typ):
 	    self.firstpara = 0
 
         self.mono_words = []
@@ -365,6 +370,10 @@ class output:
 
     def postnamemode(self, on):
         self.html_ok = (on == 0)
+	pass
+
+    def posttitlemode(self, on):
+        self.html_ok = self.html_title = (on == 0)
 	pass
 
     def end_title(self):
@@ -538,7 +547,7 @@ def rdinput(file):
     endpara = [
     (TSIMPLE,"Q"), (TSIMPLE,"q"), (TSIMPLE,"/q"), (TSIMPLE,"/Q"),
     (TSIMPLE,"pre"), (TSIMPLE,"b"), (TSIMPLE, "mbreak"), 
-    (TOPEN, "ljcut"), (TOPEN, "mbreak"), (TOPEN, "t"),
+    (TOPEN, "ljcut"), (TOPEN, "mbreak"), (TOPEN, "t"), (TOPEN, "tq"),
     (PARA,), (EOF,)]
 
     while 1:
@@ -595,6 +604,11 @@ def rdinput(file):
 		t.next()
 		stack = ["t"]
 		para_type = PTITLE
+		break
+	    elif tok == (TOPEN, "tq"):
+		t.next()
+		stack = ["tq"]
+		para_type = PTITLEQUIET
 		break
 	    elif tok == (NL,) or tok == (PARA,) or tok == (WHITE,):
 		t.next()
@@ -690,6 +704,9 @@ def rdinput(file):
 			o.postnamemode(0)
 		    elif s == "t":
 			o.end_title()
+		    elif s == "tq":
+			o.end_title()
+			o.posttitlemode(1)
 		    elif s == "mbreak":
 			o.end_para(para_type)
 			break
