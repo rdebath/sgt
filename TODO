@@ -1,11 +1,6 @@
 Caltrap wish list
 -----------------
 
- - Ability to edit entries given their id.
-    + this ability is a necessary prerequisite for TODO tracking,
-      because otherwise there's no way to mark a TODO as done once
-      you've done it.
-
  - Concoct a script to set up UK public holidays for a given year.
    This should be separate from Caltrap proper; probably a shell
    script would be fine.

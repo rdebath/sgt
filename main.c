@@ -14,7 +14,7 @@ int main(int argc, char **argv) {
     int errs;
     int verbose;
     struct entry e;
-    enum { NONE, INIT, ADD, LIST, CRON, DUMP, LOAD, INFO, DEL } command;
+    enum { NONE, INIT, ADD, LIST, CRON, DUMP, LOAD, INFO, EDIT, DEL } command;
     char *args[4];
     int nargs = 0;
     char *homedir;
@@ -23,8 +23,11 @@ int main(int argc, char **argv) {
      * Set up initial (default) parameters.
      */
     nogo = errs = verbose = FALSE;
-    e.type = T_EVENT;
-    e.length = e.period = 0;
+    e.type = INVALID_TYPE;
+    e.length = e.period = INVALID_DURATION;
+    e.sd = e.ed = INVALID_DATE;
+    e.st = e.et = INVALID_TIME;
+    e.description = NULL;
 
     homedir = getenv("HOME");
     if (homedir == NULL) homedir = "/";
@@ -67,6 +70,8 @@ int main(int argc, char **argv) {
 			    command = INIT;
 			} else if (!strcmp(opt, "-info")) {
 			    command = INFO;
+			} else if (!strcmp(opt, "-edit")) {
+			    command = EDIT;
 			} else if (!strcmp(opt, "-delete")) {
 			    command = DEL;
 			} else if (!strcmp(opt, "-dump")) {
@@ -140,6 +145,9 @@ int main(int argc, char **argv) {
 		  case 'D':
 		  case 't':
 		  case 'R':
+		  case 'S':
+		  case 'F':
+		  case 'm':
 		    p++;
 		    if (!*p && argc > 1)
 			--argc, p = *++argv;
@@ -180,6 +188,17 @@ int main(int argc, char **argv) {
 			    } else
 				e.length = 0;
 			}
+			break;
+		      case 'S':
+			if (!parse_datetime(p, &e.sd, &e.st))
+			    fatal(err_datetime, p);
+			break;
+		      case 'F':
+			if (!parse_datetime(p, &e.ed, &e.et))
+			    fatal(err_datetime, p);
+			break;
+		      case 'm':
+			e.description = p;
 			break;
 		    }
 		    p = NULL;	       /* prevent continued processing */
@@ -238,6 +257,9 @@ int main(int argc, char **argv) {
 	break;
       case INFO:
 	caltrap_info(nargs, args, lenof(args));
+	break;
+      case EDIT:
+	caltrap_edit(nargs, args, lenof(args), &e);
 	break;
       case DEL:
 	caltrap_del(nargs, args, lenof(args));
