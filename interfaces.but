@@ -238,10 +238,11 @@ requiring that trust.
 
 To illustrate this I'm going to use a case study: wildcard handling
 in SCP and SFTP. Both of these are file transfer protocols which run
-over SSH, but they are very different in design. In particular, if
-the user asks to retrieve all files from the server which match a
-particular wildcard (such as \q{\c{*.txt}}), then the two protocols
-handle it in completely different ways:
+over SSH \#{FIXME: references?}, but they are very different in
+design. In particular, if the user asks to retrieve all files from
+the server which match a particular wildcard (such as
+\q{\c{*.txt}}), then the two protocols handle it in completely
+different ways:
 
 \b An SCP client sends the wildcard straight to the server, in
 exactly the form the user specified it. The server then searches for
@@ -682,28 +683,165 @@ this might be a practical concern.)
 
 \C{compatibility} Compatibility
 
-\#    + is each party designed to cope with older parties (backward
-\#      compatibility)?
-\#    + is each party designed to make it easy for newer parties to
-\#      cope with it (forward compatibility)?
-\#    + can the protocol deal with client being older than server?
-\#    + can the protocol deal with server being older than client?
-\#    + version negotiation, with backwards compatibility to older
-\#      versions of a protocol
-\#    + optional features negotiated before use
-\#      * perhaps with expandable namespaces
-\#      * inherent extensibility; if this is done properly, it largely
-\#        _removes_ the requirement for version negotiation.
-\#    + proxyability.
-\#      * consider NNTP: some responses say `please send an article',
-\#        others say `command complete'. It isn't obvious which! The
-\#        NNTP RFC defines a few response codes to which the user is
-\#        expected to respond by sending an article, but doesn't rule
-\#        out the introduction of others in future. This makes it hard
-\#        to write a future-proof NNTP proxy. Better would have been a
-\#        basic division of response codes into categories, and a
-\#        decree that future response codes must be allocated from the
-\#        correct category.
+Most interfaces are not perfect when they are first designed. Most
+of them need to be redesigned later, or at least changed in some
+way.
+
+If your interface is a network protocol, or an interface to a shared
+library which can be upgraded independently of the programs which
+depend on it, then making changes to the interface becomes more
+interesting. You can't necessarily guarantee that both sides are
+going to be built to conform to the same version of the interface
+specification. A robust interface can do a lot to make this easier.
+
+The two big questions in compatibility are opposite sides of one
+another:
+
+\b Can each side behave sensibly if the other side is operating on
+an older version of the interface?
+
+\b Can each side behave sensibly if the other side is operating on a
+newer version of the interface?
+
+In the simplest case, compatibility implies that you should not
+change the behaviour of an existing request or response. If a new
+version of the interface specification states that the server is
+allowed to respond in a new way to a particular request, for
+example, then servers which take advantage of this will confuse
+clients which don't know about it.
+
+Extending the protocol rather than changing it is often a good way
+to proceed. Adding a new type of request in a network protocol, or
+example, is fairly safe. Clients which understand the new request
+will have to be aware that older servers may return a \q{request not
+recognised} error, and be prepared to fall back to older request
+types if this happens, but other than that it's a pretty safe way to
+proceed. Of course, it doesn't work so well in shared libraries,
+where adding a new function will cause programs which use it to fail
+to link to the old version of the library.
+
+\H{compat-negotiation} Negotiation
+
+If you do need to extend the protocol in more interesting ways, or
+you really do need to change existing behaviour, there are ways to
+arrange for this not to break compatibility. These ways involve
+somehow \e{negotiating} a common set of protocol features between
+the two sides.
+
+One option is to number the versions of your protocol. Then one or
+both sides announce which version they support at the start of the
+conversation, and each side can change its behaviour as appropriate
+to deal sensibly with the other. When you create a new version of
+the protocol in which the behaviour of existing protocol elements
+changes, you simply assign it a new number, and any new
+implementation which sees a version number lower than that knows to
+expect the old behaviour. (For backwards compatibility, you usually
+want the newer side to downgrade its behaviour so that the older
+side can understand.)
+
+Another approach, if you're foresighted enough to build
+extensibility into the protocol from the start, is to negotiate
+specific protocol features individually. SSH, and its associated
+file transfer protocol SFTP, use this approach in many places:
+
+\b At the start of an SSH connection, each side sends the other a
+list of the cryptographic algorithms it has available for key
+exchange, bulk encryption, integrity protection and so on. The two
+sides then agree on a set of algorithms supported by both. So either
+side can add new algorithms at any time, and they will be used when
+talking to another implementation which supports them and ignored
+the rest of the time.
+
+\b During the session, either side can send requests to the other
+side, which are identified by names. If the other side doesn't
+support that particular feature, it simply returns failure.
+
+\b In SFTP, extensions to the protocol can be negotiated at the
+beginning of a session. If the client and server both agree on such
+an extension, this can cause subsequent parts of the protocol to
+change in incompatible ways.
+
+It's worth noting SSH's approach to naming, as well. All the above
+SSH features (cryptographic algorithms, session requests, SFTP
+extensions and others) are identified by strings. Anybody can invent
+their own features and assign their own identifying strings. To
+prevent clashes between people assigning the same name to two
+different features, the names are of the form
+\c{feature-name@domain}, where \c{domain} is an Internet domain such
+as \c{ssh.com}. The owner of any given domain has authority over
+what SSH protocol features are given names ending in that domain; so
+if you want to be sure nobody is going to clash with your names, you
+simply acquire a domain and name features within that domain.
+Features standardised by the IETF are identified by names that do
+not contain an \c{@} sign.
+
+\H{compat-proxy} Proxy-friendliness
+
+As well as considering whether a client can deal with an older or
+newer server, and whether a server can deal with an older or newer
+client, there is a third dimension to compatibility in network
+protocols, which involves proxies.
+
+Suppose I'm writing an NNTP proxy, which passes most requests
+straight through from the client to the server, and passes most
+responses straight back in the same way. This would be very easy if
+I wanted to pass \e{all} requests and responses through unchanged;
+but I wouldn't be writing the proxy if I didn't want to alter some
+of them. Now If I want to intercept particular NNTP commands and
+deal with them myself rather than passing them on to the server, I
+need to know which of the lines sent by the client \e{are} commands
+- if I respond to any line that says \c{GROUP foo.bar}, for example,
+then things will go horribly wrong if the user attempts to post a
+news article through my proxy which contains that line (which I'm
+likely to do almost immediately when I post an article talking about
+my new news proxy!).
+
+So I have to be able to distinguish between a line sent by the
+client which is a command, and a line sent which is part of an
+article body. In the other direction, I might also need to
+distinguish server lines which are responses or part of article
+bodies. In order to do \e{this}, I need to know when I should expect
+the client or the server to be sending an article.
+
+NNTP is not well designed for this. RFC 977 \#{FIXME: reference}
+defines particular response codes which the server may send to
+indicate that an article follows, and other response codes which the
+server may send to indicate that the client should send an article.
+However, it does not \e{limit} the range of those codes; a future
+extension to NNTP could easily add extra codes which caused unusual
+data to be transferred, and that extension might break a proxy which
+didn't know about it.
+
+If NNTP had been designed to allow for this, RFC 977 might have
+contained statements which said
+
+\b Response codes in the range 215-234 inclusive are followed by
+further lines of text, terminated by a period on a line by itself.
+
+\b Response codes in the range 330-349 inclusive indicate that the
+client should send further lines of text, terminated by a period on
+a line by itself.
+
+\b All other response codes indicate the end of processing for that
+command.
+
+If further extensions to NNTP were required to fit within that
+framework, then I could be confident that as long as my proxy
+followed those rules, it would never interpret a line of text as a
+command or a response unless it was really intended to be one.
+
+In general, then, the guideline for a protocol to be proxy-friendly
+is that the initial specification of the protocol should lay down a
+simple and fixed set of rules governing the overall shape of the
+protocol, in as much detail as a proxy might reasonably need to know
+it. Any old proxy dealing with newer versions of a protocol is going
+to encounter commands and responses which it doesn't understand the
+exact meaning of; but it should at least be able to know how to pass
+them through unchanged without losing track of the rest of the
+protocol.
+
+\# FIXME: perhaps mention PNG as a shining example here? Would need
+\# to excuse it not being a protocol or interface as such :-)
 
 \C{threading} Multithreading and thread-safety
 
@@ -735,6 +873,14 @@ this might be a practical concern.)
 \# Differently. SSH's channel numbers leave a _lot_ of latitude like
 \# this. Perhaps also cite GIF/LZW as an algorithm-specific
 \# interface? Or is that too political?
+
+\# a real biggie: Thou Shalt Not Enumerate Possible User Types And
+\# Cater For Each Individually. I'm sure there must be a fantastic
+\# example of this somewhere, but right now I can't think of one.
+
+\# it's tempting to extol PNG's chunk system as an excellent example
+\# of a proxyable interface despite not being any of the main types
+\# of interface I've covered in this!
 
 \# ------------------------------------------------------------
 
