@@ -48,7 +48,7 @@ Fixed small bug with X forwarding to local displays.
 <li>
 Fixed crashing bug with remote port forwarding.
 <li>
-Fixed handling of SSH2 debug messages (embarrassingly, a bug
+Fixed handling of SSH-2 debug messages (embarrassingly, a bug
 introduced when fixing the previous vulnerability - it was more
 secure but didn't work any more!).
 </ul>
@@ -59,7 +59,7 @@ secure but didn't work any more!).
 <li>Security fix: a vulnerability discovered by iDEFENSE
 (advisory number <a href="http://www.idefense.com/application/poi/display?id=155&type=vulnerabilities&flashstatus=false">10-27-04</a>),
 potentially allowing arbitrary code execution on the client by a
-malicious SSH2 server <em>before host key verification</em>, has been
+malicious SSH-2 server <em>before host key verification</em>, has been
 fixed.
 <li>Ability to restart a session within an inactive window, via a new
 menu option.
@@ -106,7 +106,7 @@ Technologies (advisory number
 potentially allowing arbitrary code execution on the client by a
 malicious server <em>before host key verification</em>, has been
 fixed.
-<li>Bug fix: General robustness of the SSH1 implementation has been improved,
+<li>Bug fix: General robustness of the SSH-1 implementation has been improved,
 which may have fixed further potential security problems although we
 are not aware of any specific ones.
 <li>Bug fix: Random noise generation was hanging some computers and
@@ -136,7 +136,7 @@ Sped up PSFTP.
 Fixed various bugs, notably one which was impeding port-forwarding
 of SMB.
 <li>
-Some default settings changes: SSH and SSH2 are now default, BCE is
+Some default settings changes: SSH and SSH-2 are now default, BCE is
 off.
 </ul>
 
@@ -174,7 +174,7 @@ coding work so it's in the Implausible section.
 
 <li>
 The <em>other</em> feature everyone's been asking for: PuTTYgen can
-now import and export OpenSSH and ssh.com SSH2 private keys, as well
+now import and export OpenSSH and ssh.com SSH-2 private keys, as well
 as PuTTY's own format.
 
 <li>
@@ -237,7 +237,7 @@ A full manual has been written, and is supplied as a Windows Help
 file alongside the program executables.
 
 <li>
-Support for public keys in SSH2, both RSA and DSA. Agent forwarding
+Support for public keys in SSH-2, both RSA and DSA. Agent forwarding
 is supported, but only to OpenSSH servers, because ssh.com have a
 different agent protocol which they haven't published.
 <ul>
@@ -253,7 +253,7 @@ you have the choice.)
 <li>
 PSCP now uses the new SFTP protocol if possible, and only falls back
 to the old scp1 form if SFTP can't be found (for example, if your
-connection is SSH1). This should allow it to interoperate cleanly
+connection is SSH-1). This should allow it to interoperate cleanly
 with ssh.com's product, and is a security improvement besides.
 
 <li>
@@ -282,7 +282,7 @@ this with.
 
 <li>
 Added an SFTP client, for the improved file transfer protocol that
-comes with SSH2.
+comes with SSH-2.
 
 <li>
 Full-screen mode, "like a DOS box". Not really like a DOS box, since
@@ -329,7 +329,7 @@ that disables all bells if it receives them too fast (so that if you
 a week).
 
 <li>
-Support for AES in SSH 2.
+Support for AES in SSH-2.
 
 <li>
 Default Settings can now be used to save a default protocol and port
@@ -363,7 +363,7 @@ Keepalive timeouts can now be specified in seconds rather than
 minutes.
 
 <li>
-Support for Diffie-Hellman group exchange in SSH2.
+Support for Diffie-Hellman group exchange in SSH-2.
 
 <li>
 If you don't supply a username, PSCP now guesses your remote
@@ -434,7 +434,7 @@ than continuing to grow its buffers without bound.
 Bug fix: AltGr should now be fixed. It was broken in 0.51.
 
 <li>
-Bug fix: repeat key exchange in SSH2 is now handled correctly. You
+Bug fix: repeat key exchange in SSH-2 is now handled correctly. You
 should no longer see "Server failed host key check" after your
 session has been running for an hour.
 
@@ -555,7 +555,7 @@ file that turned out to be the wrong format, failed to close the
 file, so you couldn't delete it until the app had shut down.
 
 <li>
-Bug fix: some SSH2 connections were reporting "Server failed host
+Bug fix: some SSH-2 connections were reporting "Server failed host
 key check" on session startup. This was a bug in PuTTY's DSA
 implementation.
 
@@ -571,7 +571,7 @@ presented with a simple hostname. (So a default username, default
 private key, etc, didn't get used.) Now they do.
 
 <li>
-Bug fix: terminal resize events weren't being sent in SSH2. Now they
+Bug fix: terminal resize events weren't being sent in SSH-2. Now they
 are.
 
 <li>
@@ -702,7 +702,7 @@ as a transport).
 <li>
 SSH protocol version 2 support. This is disabled by default unless
 you connect to a v2-only server. Public key authentication isn't
-supported (this places PuTTY technically in violation of the SSH 2
+supported (this places PuTTY technically in violation of the SSH-2
 specification).
 
 <li>
