@@ -1,6 +1,7 @@
 Summary: Trouble creating PuTTY shortcuts in WinXP
 Class: wish
 Priority: low
+Fixed-in: 0.53
 Content-type: text/x-html-body
 
 <p>
@@ -23,6 +24,6 @@ Examples of reports received so far:
 </ul>
 
 <p>
-Workaround: the current development snapshots support an alternative
-syntax <tt>putty -load <i>session</i></tt> (and indeed deprecate the
-old @ syntax).
+As of 0.53, the <code>@session</code> syntax is deprecated in favour
+of <code>-load session</code>. There should be no reason to use an @
+sign in a shortcut any more.
