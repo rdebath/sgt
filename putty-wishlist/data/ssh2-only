@@ -14,3 +14,6 @@ or nothing", so that if PuTTY couldn't make an SSH2 connection it
 would give up rather than fall back to SSH1. For symmetry, we should
 also support "SSH1 or nothing", though that seems less obviously
 useful.
+
+(I really can't see a great need or use for SSH1 only, so I've not
+implemented it.  It would be trivial to do so if it were needed.)
