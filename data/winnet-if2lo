@@ -41,3 +41,11 @@ To fix this, I suppose PuTTY will need to find out what IP addresses
 the machine believes it owns, so that it can accept connections from
 any of those. If anyone wants to save me some manual-grubbing by
 letting me know how to do that conveniently, it would be helpful.
+
+<p>
+Implementation notes: 
+<tt>16112.28530.918046.276274@chiark.greenend.org.uk</tt>
+
+<p>
+Patch (unreviewed):
+<tt>Pine.LNX.4.44.0307081113060.6374-200000@maggie.lkpg.cendio.se</tt>
