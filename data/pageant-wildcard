@@ -1,0 +1,11 @@
+Summary: Accept wildcards on Pageant command line
+Difficulty: fun
+Priority: medium
+Content-type: text/plain
+
+It's been suggested that Pageant's command-line handling (on Windows) should
+include the usual wildcard expansion.  This would allow for doing something
+like "pageant keys/*.ppk" at login to load all the user's keys at once at
+login.  This seems like a good idea.
+
+Message-ID: <200503181634.LAA25372@smart.net>
