@@ -6,5 +6,5 @@ Content-Type: text/x-html-body
 
 <p>
 PSCP should be able to send its log messages to stdout instead of
-stderr, since Windows doesn't provide any easy way to redirect
-stderr.
+stderr, since not all versions of Windows provide an easy way to
+redirect stderr.
