@@ -737,10 +737,21 @@ define timber_enbuf() {
     push_mark();
     eob();
     file = timber_tmpnam();
+    message(timber_enbuf_prog + " " + file);
     pipe_region(timber_enbuf_prog + " " + file);
     del_region();
     insert_file(file);
     timber_remove(file);
+    % Now check that the buffer has been converted successfully. If
+    % not, we should return failure.
+    eob();
+    go_left_1();
+    bol();
+    !if (looking_at("* [end]")) {
+	return 0;
+    } else {
+	return 1;
+    }
 }
 %}}}
 %{{{ timber_blankfolder(): make an empty folder buffer
@@ -809,7 +820,20 @@ define timber_updatemail() {
                           timber_fetch_prog,
                           dircat(timber_folders, timber_inbox), 2));
     pop_spot();
-    timber_enbuf();
+    !if (timber_enbuf()) {
+	% We have a half-formatted mail buffer and bad things have
+	% happened while attempting to format the other half. I
+	% think the most sensible thing we can do right now is to
+	% scream, panic, and bail out of the whole folder without
+	% saving changes to disk.
+	setbuf_info(getbuf_info & ~1); % clear mod bit to make delbuf silent
+	delbuf(whatbuf());
+	timber_is_only = 0;  % don't auto-exit once we've had an error
+	timber_buffers_fewer();
+	timber_release_lock(timber_inbox);
+	error("Error processing new mail; folder abandoned!");
+	return 0;
+    }
     pop_spot();
     if (looking_at("* [end]"))
         message("No new mail in " + timber_inbox);
@@ -1508,7 +1532,14 @@ define timber_open_folder(name) {
     if (insert_file(fname)) {
         bob();
         insert(timber_headerline);
-	timber_enbuf();
+	!if (timber_enbuf()) {
+	    setbuf_info(getbuf_info & ~1);
+			       % clear modified bit to make delbuf silent
+	    delbuf(whatbuf());
+	    timber_is_only = 0;  % don't auto-exit once we've had an error
+	    timber_buffers_fewer();
+	    return 0;
+	}
     } else {
 	timber_blankfolder();
 	message(Sprintf("Inventing empty folder `%s'.", name, 1));
@@ -1521,6 +1552,8 @@ define timber_open_folder(name) {
     bob();
 
     timber_ro(); % make buffer read-only
+
+    return 1;
 }
 
 %}}}
@@ -1743,7 +1776,10 @@ define timber_goto() {
     file = timber_readfolder("Open new folder:");
     !if (strlen (extract_filename(file))) return;
     if (timber_acquire_lock(file)) {
-        timber_open_folder(file);
+        !if (timber_open_folder(file)) {
+	    timber_release_lock(file);
+	    error("Error when loading mail folder");
+	}
     } else {
 	error(file + " is locked by another Timber!");
     }
@@ -1760,11 +1796,15 @@ define timber_moveto() {
     !if (strlen (extract_filename(file))) return;
     if (timber_acquire_lock(file)) {
         oldbuf = whatbuf();
-        timber_open_folder(file);
-        newbuf = whatbuf();
-        setbuf(oldbuf);
-        timber_qlose();
-        setbuf(newbuf);
+        !if (timber_open_folder(file)) {
+	    timber_release_lock(file);
+	    error("Error when loading mail folder");
+	} else {
+	    newbuf = whatbuf();
+	    setbuf(oldbuf);
+	    timber_qlose();
+	    setbuf(newbuf);
+	}
     } else {
 	error(file + " is locked by another Timber!");
     }
@@ -2543,7 +2583,10 @@ define timber_open_mbox() {
     runhooks("timber_hook");
     if (timber_acquire_lock(timber_inbox)) {
         timber_fetchmail();
-        timber_open_folder(timber_inbox);
+	!if (timber_open_folder(timber_inbox)) {
+	    timber_release_lock(timber_inbox);
+	    error("Error when loading inbox");
+	}
     } else {
 	error(timber_inbox + " is locked by another Timber!");
     }
@@ -2578,7 +2621,10 @@ define timber_set_only() {
 % This causes timber_goto with a provided argument.
 define timber_goto_given(folder) {
     if (timber_acquire_lock(folder)) {
-        timber_open_folder(folder);
+        !if (timber_open_folder(folder)) {
+	    timber_release_lock(folder);
+	    error("Error when loading mail folder");
+	}
     } else {
 	error(folder + " is locked by another Timber!");
     }
