@@ -404,6 +404,8 @@ class RevTweaker:
 	for lump in contents2:
 	    if not lump.extant:
 		continue
+	    if string.find(lump.hdrdict["Node-path"], "CVSROOT") >= 0:
+		continue
 	    path = self.trans(lump.hdrdict["Node-path"])
 	    if path == None:
 		lump.extant = 0
