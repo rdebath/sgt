@@ -34,6 +34,12 @@ char const *winurl_appname = "WinURL";
 
 static HMENU systray_menu;
 
+static int CALLBACK AboutProc(HWND hwnd, UINT msg,
+			      WPARAM wParam, LPARAM lParam);
+static int CALLBACK LicenceProc(HWND hwnd, UINT msg,
+				WPARAM wParam, LPARAM lParam);
+HWND aboutbox = NULL;
+
 extern int systray_init(void) {
     BOOL res;
     NOTIFYICONDATA tnid;
@@ -78,28 +84,60 @@ extern void systray_shutdown(void) {
     DestroyMenu(systray_menu);
 }
 
-char *read_clip(int *is_err)
+static int CALLBACK AboutProc(HWND hwnd, UINT msg,
+			      WPARAM wParam, LPARAM lParam)
 {
-    HGLOBAL clipdata;
-    char *s;
+    switch (msg) {
+      case WM_INITDIALOG:
+	/*
+	 * May wish to SetDlgItemText() items 100, 101 and 102 to
+	 * some version-number text.
+	 */
+	return 1;
+      case WM_COMMAND:
+	switch (LOWORD(wParam)) {
+	  case IDOK:
+	    aboutbox = NULL;
+	    DestroyWindow(hwnd);
+	    return 0;
+	  case 112:
+	    EnableWindow(hwnd, 0);
+	    DialogBox(winurl_instance, MAKEINTRESOURCE(301),
+		      NULL, LicenceProc);
+	    EnableWindow(hwnd, 1);
+	    SetActiveWindow(hwnd);
+	    return 0;
+	}
+	return 0;
+      case WM_CLOSE:
+	aboutbox = NULL;
+	DestroyWindow(hwnd);
+	return 0;
+    }
+    return 0;
+}
 
-    if (!OpenClipboard(NULL)) {
-        *is_err = 1;
-        return "-unable to read clipboard\r\n";
+/*
+ * Dialog-box function for the Licence box.
+ */
+static int CALLBACK LicenceProc(HWND hwnd, UINT msg,
+				WPARAM wParam, LPARAM lParam)
+{
+    switch (msg) {
+      case WM_INITDIALOG:
+	return 1;
+      case WM_COMMAND:
+	switch (LOWORD(wParam)) {
+	  case IDOK:
+	    EndDialog(hwnd, 1);
+	    return 0;
+	}
+	return 0;
+      case WM_CLOSE:
+	EndDialog(hwnd, 1);
+	return 0;
     }
-    clipdata = GetClipboardData(CF_TEXT);
-    CloseClipboard();
-    if (!clipdata) {
-        *is_err = 1;
-        return "-clipboard contains no text\r\n";
-    }
-    s = GlobalLock(clipdata);
-    if (!s) {
-        *is_err = 1;
-        return "-unable to lock clipboard memory\r\n";
-    }
-    *is_err = 0;
-    return s;
+    return 0;
 }
 
 static LRESULT CALLBACK WndProc (HWND hwnd, UINT message,
@@ -129,20 +167,20 @@ static LRESULT CALLBACK WndProc (HWND hwnd, UINT message,
       case WM_COMMAND:
 	if ((wParam & ~0xF) == IDM_CLOSE) {
 	    SendMessage(hwnd, WM_CLOSE, 0, 0);
-//	} else if ((wParam & ~0xF) == IDM_ABOUT) {
-//	    if (!aboutbox) {
-//		aboutbox = CreateDialog(winurl_instance,
-//					MAKEINTRESOURCE(300),
-//					NULL, AboutProc);
-//		ShowWindow(aboutbox, SW_SHOWNORMAL);
-//		/*
-//		 * Sometimes the window comes up minimised / hidden
-//		 * for no obvious reason. Prevent this.
-//		 */
-//		SetForegroundWindow(aboutbox);
-//		SetWindowPos(aboutbox, HWND_TOP, 0, 0, 0, 0,
-//			     SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
-//	    }
+	} else if ((wParam & ~0xF) == IDM_ABOUT) {
+	    if (!aboutbox) {
+		aboutbox = CreateDialog(winurl_instance,
+					MAKEINTRESOURCE(300),
+					NULL, AboutProc);
+		ShowWindow(aboutbox, SW_SHOWNORMAL);
+		/*
+		 * Sometimes the window comes up minimised / hidden
+		 * for no obvious reason. Prevent this.
+		 */
+		SetForegroundWindow(aboutbox);
+		SetWindowPos(aboutbox, HWND_TOP, 0, 0, 0, 0,
+			     SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+	    }
 	}
 	break;
       case WM_DESTROY:
