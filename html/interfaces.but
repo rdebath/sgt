@@ -838,28 +838,67 @@ it. Any old proxy dealing with newer versions of a protocol is going
 to encounter commands and responses which it doesn't understand the
 exact meaning of; but it should at least be able to know how to pass
 them through unchanged without losing track of the rest of the
-protocol.
+session.
 
 \# FIXME: perhaps mention PNG as a shining example here? Would need
 \# to excuse it not being a protocol or interface as such :-)
 
 \C{threading} Multithreading and thread-safety
 
-\#    + in function call interfaces, which interface functions are
-\#      re-entrant?
-\#      * at all?
-\#      * when called on the same interface-level object (if the
-\#        interface defines independent objects within its definition)
-\#    + in network-style interfaces, how easy is it to write a
-\#      multithreaded client (or server) multiplexing down the same
-\#      connection?
-\#      * for example, numbering all requests and responses so the
-\#        responses can arrive out of order makes it easier to write a
-\#        multithreaded server
-\#    + how much protocol state is implicit?
-\#      * implicit state can inhibit multiple threads making
-\#        independent uses of the interface. cf strtok. See also FTP
-\#        versus SFTP, in the protocol state section.
+Interfaces usually become more complex once you introduce the
+possibility that multiple threads of control might try to use the
+same interface at the same time.
+
+In function-call interfaces, the obvious question when you have
+multiple threads is: under what circumstances are two threads
+allowed to use the interface at the same time? Does it make a
+difference if the two threads are calling different functions in the
+same interface, or the same function? If the interface defines some
+sort of object (such as the \q{contexts} in the example in
+\k{what-ordering}), then does it make a difference if the two
+threads are calling interface functions for the same object or
+different ones?
+
+In network protocols, this sort of difficulty is much less likely to
+lead to program crashes, since whether or not one party is
+multithreaded is usually independent of whether the other one is.
+However, there are still things a network protocol can do to make
+life easier for a multithreaded program trying to deal with it.
+
+If the client side of a protocol is multithreaded, then more than
+one thread is likely to want to send requests and receive responses.
+It would be difficult to have all those threads receiving data
+directly from the network connection, so what would probably happen
+is that each thread would send its requests to a central thread
+responsible for talking to the network. That would transmit the
+requests down the actual connection, and when it received a response
+it would send the response back to the thread that had sent the
+corresponding request. Now if the server is capable of \e{delaying}
+before sending a response, and if responses must be sent in the same
+order as requests, then this might cause client threads to be
+blocked for longer than necessary. In this situation it might well
+be better to number requests and responses in some way, so that
+responses can arrive in a different order from requests. That way,
+each client thread only delays for as long as it has to.
+
+Another thing that makes multithreaded use of an interface harder is
+implicit state information. FTP, \#{FIXME: RFC 959} for example, has
+a concept of the server's current directory: if you want to issue a
+command that deals with a particular directory, you usually have to
+send a CWD command first to set the server's current directory. This
+means that if two client threads are trying to share the same FTP
+connection while working in different directories, they are likely
+to need to send a CWD command in between every pair of requests.
+SFTP, by contrast, deliberately avoids having a \q{current
+directory} concept; instead, enough information is made available to
+the client that it can simulate one if it needs it. Every request
+sent to an SFTP server is processed in exactly the same way no
+matter where in the connection it is sent. So two threads sharing an
+SFTP connection can easily work in two different directories,
+without causing each other inconvenience.
+
+(Of course, SFTP pays for its thread-friendliness by requiring more
+data transfer to do the same amount of work.)
 
 \# is the protocol-level state section plausible? Will it hang
 \# together as a whole or should I scatter bits of it throughout
@@ -878,9 +917,18 @@ protocol.
 \# Cater For Each Individually. I'm sure there must be a fantastic
 \# example of this somewhere, but right now I can't think of one.
 
-\# it's tempting to extol PNG's chunk system as an excellent example
-\# of a proxyable interface despite not being any of the main types
-\# of interface I've covered in this!
+\# review questions:
+\#  - FFS give me a better title! I want to call it Interface Design
+\#    Guidelines while making it clear it isn't about _user_
+\#    interfaces. How hard can that be?
+\#  - Have I aimed it at the right level of reader? Does the level
+\#    I've aimed it at fluctuate wildly within the article?
+\#  - Use of 1st, 2nd person: helpfully personalising, or confusing
+\#    and inconsistent?
+\#  - Excessively flowery and idiomatic English? Will foreign
+\#    readers have trouble? (Probably.) Do I care? (Don't know.)
+\#  - Are there far too many lengthy examples, or do they help make
+\#    my points?
 
 \# ------------------------------------------------------------
 
