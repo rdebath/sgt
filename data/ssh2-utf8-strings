@@ -1,6 +1,7 @@
 Summary: SSH2 message strings etc should be in UTF-8
 Class: bug
 Difficulty: tricky
+Priority: medium
 Present-in: 2005-01-19
 Content-type: text/plain
 
