@@ -1,0 +1,38 @@
+var fh
+
+function initialise {
+  "l" =username
+
+  "l.passwd" "r" fileopen =fh
+  fh filegood if
+    fh fileread =password
+    fh fileclose
+  endif
+}
+
+initialise
+
+'Read "ML*" 'Keypath "dump/junk.dump" 'Filename addtask
+'Setname "Performing animal" 'Nameline addtask
+'Messages "dump/messages.l.dump" 'Filename addtask
+'Menu "MLN" 'Keypath addtask      # Menu with no title
+'Menu "RGR" 'Keypath addtask      # Menu with a title
+'Menu "MLNLLAMA" 'Keypath addtask # Menu with double letter bug
+'Menu "ML*" 'Keypath addtask      # Menu which is a file
+
+# Main menu lots of times to test with lots of different titles, some animated.
+'Menu "" 'Keypath addtask
+'Menu "" 'Keypath addtask
+'Menu "" 'Keypath addtask
+'Menu "" 'Keypath addtask
+'Menu "" 'Keypath addtask
+'Menu "" 'Keypath addtask
+'Menu "" 'Keypath addtask
+'Menu "" 'Keypath addtask
+'Menu "" 'Keypath addtask
+'Menu "" 'Keypath addtask
+'Menu "" 'Keypath addtask
+'Menu "" 'Keypath addtask
+'Menu "" 'Keypath addtask
+'Menu "" 'Keypath addtask
+'Setname "Confused. And worried.  Maybe automated." 'Nameline addtask
