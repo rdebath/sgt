@@ -119,7 +119,7 @@ class Rational:
         return "Rational(" + repr(self.n) + "," + repr(self.d) + ")"
 
     def decrep(self, ndigits = 40):
-	"Return a string showing the number as a decimal, to arbitrary" + \
+	"Return a string showing the number as a decimal, to arbitrary " + \
 	"precision. Rounds to nearest/even."
 	digits = self.n * (10L**ndigits) / self.d
 
@@ -145,6 +145,179 @@ class Rational:
 		string = "0." + ("0"*ndigits+string)[-ndigits:]
 
 	return sign + string
+
+    def fltrep(self, ndigits = 40):
+        "Return a string showing the number in scientific notation, to " + \
+        "arbitrary precision. Rounds to nearest/even."
+        if self.n == 0:
+            return "0"
+        def numdigits(n):
+            s = str(abs(n))
+            if s[-1:] == "L": s = s[:-1]
+            return len(s)
+        nlen = numdigits(self.n)
+        dlen = numdigits(self.d)
+        if self.n < 0:
+            sign = "-"
+        else:
+            sign = ""
+        # So self.n is in the range [10^(nlen-1), 10^nlen), and
+        # self.d is in the range [10^(dlen-1), 10^dlen). This means
+        # that the value of the rational is in the range
+        # (10^(nlen-dlen-1), 10^(nlen-dlen+1)). At the top of that
+        # range, that could just about round up to exactly
+        # 10^(nlen-dlen+1); hence there are three possible powers
+        # of ten we can try.
+        #
+        # Our eventual aim is to multiply by a power of ten to get
+        # a number in the range [1,10); so we must try dividing by
+        # three powers of ten ranging from 10^(nlen-dlen-1) to
+        # 10^(nlen-dlen+1). We try dividing by smaller powers of
+        # ten first, because some numbers may reach the required
+        # length at two different exponents due to rounding (99999,
+        # for example, may be represented in 5-digit precision as
+        # 9.9999 * 10^4, but if we had tried 10^5 first then we
+        # would have found 0.99999 * 10^5 rounded up to 1.0000 *
+        # 10^5 and ended up with less accuracy).
+        for e in range(nlen-dlen-1, nlen-dlen+2):
+            # Compute the value of the rational times
+            # 10^(ndigits-1-e).
+            exp = ndigits-1-e
+            if exp >= 0:
+                nexp = 10L ** exp
+                dexp = 1L
+            else:
+                dexp = 10L ** -exp
+                nexp = 1L
+
+            nn = abs(self.n) * nexp
+            dd = self.d * dexp
+
+            digits = nn / dd
+
+            # round appropriately
+            remainder = nn % dd
+            if remainder > dd / 2:
+                digits = digits + 1
+            elif remainder == dd / 2:
+                # round to even
+                digits = digits + (digits & 1)
+
+            string = fmtint(digits)
+            if len(string) == ndigits:
+                break
+
+        assert len(string) == ndigits
+        return sign + string[0] + "." + string[1:] + "E" + ("%+d" % e)
+
+    def ieeerep(self, floattype='d'):
+        "Return the number in an IEEE format. Rounds to nearest/even."
+
+        if floattype == 's' or floattype == 'f':
+            expadj = 0x7f
+            maxexp = 0xff
+            mantbits = 23
+            sign = 0x80000000L
+        else:
+            expadj = 0x3ff
+            maxexp = 0x7ff
+            mantbits = 52
+            sign = 0x8000000000000000L
+
+        def numbits(n):
+            # first get an upper bound
+            if n == 0:
+                return 0
+            u = 1
+            while n >= (1L << u):
+                u = u * 2
+            # then binary-search within that
+            ret = 1
+            for k in range(u-1, -1, -1):
+                if n >= (1L << k):
+                    n = n >> k
+                    ret = ret + k
+            return ret
+
+        nlen = numbits(abs(self.n))
+        dlen = numbits(self.d)
+        if self.n >= 0:
+            sign = 0
+        # So self.n is in the range [2^(nlen-1), 2^nlen), and
+        # self.d is in the range [2^(dlen-1), 2^dlen). This means
+        # that the value of the rational is in the range
+        # (2^(nlen-dlen-1), 2^(nlen-dlen+1)). At the top of that
+        # range, that could just about round up to exactly
+        # 2^(nlen-dlen+1); hence there are three possible powers of
+        # two we can try.
+        #
+        # Our eventual aim is to multiply by a power of two to get
+        # a number in the range [1,2); so we must try dividing by
+        # three powers of two ranging from 2^(nlen-dlen-1) to
+        # 2^(nlen-dlen+1). We try dividing by smaller powers of two
+        # first, because some numbers may reach the required length
+        # at two different exponents due to rounding (31, for
+        # example, may be represented in 5-digit binary precision
+        # as 1.1111 * 2^4, but if we had tried 2^5 first then we
+        # would have found 0.11111 * 2^5 rounded up to 1.0000 * 2^5
+        # and ended up with less accuracy).
+        for e in range(nlen-dlen-1, nlen-dlen+2):
+            # Compute the value of the rational times
+            # 2^(ndigits-1-e).
+            exp = mantbits-e
+            if exp >= 0:
+                nexp = 2L ** exp
+                dexp = 1L
+            else:
+                dexp = 2L ** -exp
+                nexp = 1L
+
+            nn = abs(self.n) * nexp
+            dd = self.d * dexp
+            digits = nn / dd
+
+            # round appropriately
+            remainder = nn % dd
+            if remainder > dd / 2:
+                digits = digits + 1
+            elif remainder == dd / 2:
+                # round to even
+                digits = digits + (digits & 1)
+
+            if numbits(digits) == mantbits+1:
+                break
+
+        assert numbits(digits) == mantbits+1
+
+        exp = e + expadj
+        if exp >= maxexp:
+            # Overflow.
+            return sign | (long(maxexp) << mantbits)
+        if exp < 1:
+            # Underflow. Try again, with a fixed denominator.
+            nexp = 2L ** (expadj + mantbits - 1)
+            dexp = 1L
+            
+            nn = abs(self.n) * nexp
+            dd = self.d * dexp
+            print nn, dd
+            digits = nn / dd
+
+            # round appropriately
+            remainder = nn % dd
+            if remainder > dd / 2:
+                digits = digits + 1
+            elif remainder == dd / 2:
+                # round to even
+                digits = digits + (digits & 1)
+
+            assert numbits(digits) <= mantbits+1
+            if numbits(digits) <= mantbits:
+                exp = 0
+            else:
+                exp = 1
+
+        return (digits & ((1L << mantbits)-1)) | (long(exp) << mantbits) | sign
 
 def sqrt(r, maxerr=2L**128, maxsteps=None):
     if r < 0:
