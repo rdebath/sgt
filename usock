@@ -12,18 +12,33 @@
 # Since the designed simple usage of this program is to create a
 # socket in a shared area such as /tmp, the socket is created by
 # default with a umask of 0 (ie permissions 0777, rwxrwxrwx). An
-# alternative umask such as 077 can be specified (in octal) as a
-# second command line option.
+# alternative umask such as 077 can be specified (in octal) using
+# the command-line parameter `-u077' (or similar).
+#
+# For greater reliability, to prevent the tiny race condition if
+# the second process tries to connect() between the first process
+# doing bind() and listen(), the command line parameter `-lfilename'
+# will cause the program to acquire a read lock on a file before
+# attempting either a bind/listen or a connect.
 #
 # Whichever side is doing the listening will unlink the socket filename
 # immediately after accepting a connection, so it can be reused.
 
 use Socket;
 use FileHandle;
+use POSIX;
+use Fcntl ':flock';
+
+$umask = 0;
+$lockfile = undef;
+while ($ARGV[0] =~ /^-/) {
+  $umask = $1 if $ARGV[0] =~ /^-u(.*)$/;
+  $lockfile = $1 if $ARGV[0] =~ /^-l(.*)$/;
+  shift @ARGV;
+}
 
 $fname = shift @ARGV;
 $sun = sockaddr_un($fname);
-$umask = 0;
 $umask = oct shift @ARGV if defined ($ARGV[0]);
 umask $umask;
 
@@ -32,8 +47,16 @@ $proto = 0;
 # and unlink it. If not, connect to it.
 $sock = new FileHandle;
 socket($sock, PF_UNIX, SOCK_STREAM, $proto) or die "socket: $!\n";
-if (bind($sock,$sun)) {
+if (defined $lockfile) {
+  # Try to obtain a file lock before making the connection.
+  open LOCK, $lockfile;
+  flock LOCK, LOCK_SH;
+}
+$ret = bind($sock,$sun); $binderr = $!;
+if ($ret) {
   listen($sock,1) or die "listen: $!\n";
+  flock LOCK, LOCK_UN;
+  close LOCK;
   $newsock = new FileHandle;
   accept($newsock, $sock) or die "accept: $!\n";
   close($sock);
@@ -42,6 +65,8 @@ if (bind($sock,$sun)) {
 } else {
   $binderr = $!;
   connect($sock,$sun) or die "bind: $binderr\nconnect: $!\n";
+  flock LOCK, LOCK_UN;
+  close LOCK;
 }
 
 $sockbuf = $stdbuf = '';
