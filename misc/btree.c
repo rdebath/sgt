@@ -51,6 +51,8 @@
  *  - split() on sorted elements (but it should be fine).
  *  - bt_replace, at all (it won't be useful until we get user read
  *    properties).
+ *  - bt_index_w (won't make much sense until we start using
+ *    user-supplied copy fn).
  */
 
 /* ---- btree.h --------------------------------------------------------- */
@@ -849,7 +851,11 @@ int bt_count(btree *bt)
  */
 
 /*
- * Find an element by numeric index.
+ * Find an element by numeric index. bt_index_w is the same, but
+ * works with write locks instead of read locks, so it guarantees
+ * to return an element with only one reference to it. (You'd use
+ * this if you were using tree cloning, and wanted to modify the
+ * element once you'd found it.)
  */
 bt_element_t bt_index(btree *bt, int index)
 {
@@ -875,6 +881,41 @@ bt_element_t bt_index(btree *bt, int index)
 	n = n2;
 	assert(n != NULL);
     }
+}
+
+bt_element_t bt_index_w(btree *bt, int index)
+{
+    nodeptr n, n2;
+    int nnodes, child, ends;
+    nodeptr *nodes;
+    bt_element_t ret;
+
+    nodes = inewn(nodeptr, bt->depth+1);
+    nnodes = 0;
+
+    n = bt_write_lock_root(bt);
+
+    if (index < 0 || index >= bt_node_count(bt, n)) {
+	bt_write_unlock(bt, n);
+	return NULL;
+    }
+
+    while (1) {
+	nodes[nnodes++] = n;
+	child = bt_lookup_pos(bt, n, &index, &ends);
+	if (ends & ENDS_RIGHT) {
+	    ret = bt_element(bt, n, child);
+	    break;
+	}
+	n2 = bt_write_lock_child(bt, n, child);
+	n = n2;
+	assert(n != NULL);
+    }
+
+    while (nnodes-- > 0)
+	bt_write_unlock(bt, nodes[nnodes]);
+
+    return ret;
 }
 
 /*
