@@ -1403,67 +1403,121 @@ define halibut_mode_hook() {
 }
 
 %}}}
-%{{{ M-x cvs-*
-define cvs_log() {
-    variable file, dir, name;
+%{{{ M-x cvs-* and svn-*
+
+define cvssvn_which(dir) {
+    if (file_status(dir + ".svn") == 2)
+	return "svn";
+    if (file_status(dir + "CVS") == 2)
+	return "cvs";
+    return 0;
+}
+
+define cvssvn_log() {
+    variable file, dir, name, which;
     (file, dir, name, ) = getbuf_info();
-    if (strcmp(substr(name, 1, 10), "*cvs-log*:") == 0) {
-        message("This is already a CVS log buffer\n");
+    if (strcmp(substr(name, 1, 10), "*cvs-log*:") == 0 or
+	strcmp(substr(name, 1, 10), "*svn-log*:") == 0) {
+        message("This is already a log buffer\n");
         return;
     }
-    if (strcmp(substr(name, 1, 15), "*cvs-annotate*:") == 0) {
+    if (strcmp(substr(name, 1, 15), "*cvs-annotate*:") == 0 or
+        strcmp(substr(name, 1, 15), "*svn-annotate*:") == 0) {
         name = substr(name, 16, -1);
     }
     if (strcmp(file, "") == 0) {
         ERROR_BLOCK { error("Unable to determine base file name"); }
-        file = get_blocal_var("cvs-file");
+        file = get_blocal_var("cvssvn-file");
     }
-    name = "*cvs-log*:" + name;
+    if (blocal_var_exists("cvssvn-which")) {
+	which = get_blocal_var("cvssvn-which");
+    } else {
+	which = cvssvn_which(dir);
+	jedrc_create_blocal_var("cvssvn-which", 's');
+	set_blocal_var(which, "cvssvn-which");
+    }
+    if (which == "") {
+	error("Unable to find an applicable version control tool");
+    }
+    name = "*" + which + "-log*:" + name;
     change_default_dir(dir);
     sw2buf(name);
     erase_buffer();
     text_mode();
-    run_shell_cmd("cvs log " + file);
+    if (which == "cvs") {
+	run_shell_cmd("cvs log " + file);
+    } else { % svn
+	run_shell_cmd("svn log -v " + file);
+    }
     setbuf_info((getbuf_info & ~1) | 8); % clear modified bit, set readonly
     bob();
-    bol_fsearch("-----");
+    if (which == "cvs") {
+	bol_fsearch("-----");
+    }
     recenter(1);
-    jedrc_create_blocal_var("cvs-file", 's');
-    set_blocal_var(file, "cvs-file");
+    jedrc_create_blocal_var("cvssvn-file", 's');
+    set_blocal_var(file, "cvssvn-file");
 }
-define cvs_annotate() {
-    variable file, dir, name, line, ret;
+define cvssvn_annotate() {
+    variable file, dir, name, line, ret, which;
     (file, dir, name, ) = getbuf_info();
     line = what_line();
-    if (strcmp(substr(name, 1, 15), "*cvs-annotate*:") == 0) {
-        message("This is already a CVS annotation buffer\n");
+    if (strcmp(substr(name, 1, 15), "*cvs-annotate*:") == 0 or
+	strcmp(substr(name, 1, 15), "*svn-annotate*:") == 0) {
+        message("This is already an annotation buffer\n");
         return;
     }
-    if (strcmp(substr(name, 1, 10), "*cvs-log*:") == 0) {
+    if (strcmp(substr(name, 1, 10), "*cvs-log*:") == 0 or
+	strcmp(substr(name, 1, 10), "*svn-log*:") == 0) {
         name = substr(name, 11, -1);
     }
     if (strcmp(file, "") == 0) {
         ERROR_BLOCK { error("Unable to determine base file name"); }
-        file = get_blocal_var("cvs-file");
+        file = get_blocal_var("cvssvn-file");
     }
-    name = "*cvs-annotate*:" + name;
+    if (blocal_var_exists("cvssvn-which")) {
+	which = get_blocal_var("cvssvn-which");
+    } else {
+	which = cvssvn_which(dir);
+	jedrc_create_blocal_var("cvssvn-which", 's');
+	set_blocal_var(which, "cvssvn-which");
+    }
+    if (which == "") {
+	error("Unable to find an applicable version control tool");
+    }
+    name = "*" + which + "-annotate*:" + name;
     change_default_dir(dir);
     sw2buf(name);
     text_mode();
     erase_buffer();
-    ret = run_shell_cmd("cvs-annotate 2>/dev/null " + file);
-    if (ret > 0) {
-	erase_buffer();
-	ret = run_shell_cmd("cvs annotate " + file);
+    if (which == "cvs") {
+	ret = run_shell_cmd("cvs-annotate 2>/dev/null " + file);
+	if (ret > 0) {
+	    erase_buffer();
+	    ret = run_shell_cmd("cvs annotate " + file);
+	}
+    } else {
+	ret = run_shell_cmd("svn annotate " + file);
     }
     setbuf_info((getbuf_info & ~1) | 8); % clear modified bit, set readonly
     goto_line(line);
     recenter(0);
-    jedrc_create_blocal_var("cvs-file", 's');
-    set_blocal_var(file, "cvs-file");
+    jedrc_create_blocal_var("cvssvn-file", 's');
+    set_blocal_var(file, "cvssvn-file");
 }
+
+define cvs_log() { cvssvn_log(); }
+define cvs_annotate() { cvssvn_annotate(); }
+define svn_log() { cvssvn_log(); }
+define svn_annotate() { cvssvn_annotate(); }
+define svn_blame() { cvssvn_annotate(); }
+define svn_praise() { cvssvn_annotate(); }
+
 add_completion("cvs_log");
 add_completion("cvs_annotate");
+add_completion("svn_log");
+add_completion("svn_blame");
+
 %}}}
 %{{{ M-x rot13
 
