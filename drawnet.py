@@ -52,6 +52,18 @@ from crosspoint import crosspoint
 
 args = sys.argv[1:]
 
+firstface = None
+while len(args) > 0 and args[0][:1] == "-":
+    a = args[0]
+    args = args[1:]
+
+    if a == "--":
+	break
+    elif a[:2] == "-s":
+	firstface = a[2:]
+    else:
+	sys.stderr.write("ignoring unknown option \"%s\"\n", a)
+
 if len(args) > 0:
     infile = open(args[0], "r")
     args = args[1:]
@@ -234,7 +246,11 @@ edgepos = {}
 
 # Pick an arbitrary face to start off with. Rotate so that its
 # normal vector points upwards, and position it at the origin.
-firstface = faces.keys()[0]
+if firstface != None and not faces.has_key(firstface):
+    sys.stderr.write("supplied initial face name does not exist\n");
+    firstface = None
+if firstface == None:
+    firstface = faces.keys()[0]
 nx, ny, nz = normals[firstface]
 facepos[firstface] = struct()
 facepos[firstface].matrix = rotatetotop(nx, ny, nz)
