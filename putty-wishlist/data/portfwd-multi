@@ -1,0 +1,22 @@
+Summary: Port forwarding should cope better with already-used ports
+Difficulty: mayhem
+Priority: medium
+Class: semi-bug
+Content-type: text/x-html/body
+
+<p>
+When attempting to open a forwarded port that's already bound (e.g.
+running multiple sessions with the same port forwarding settings),
+PuTTY should warn that it was unable to open the port (perhaps a line
+in the Event Log). (Currently it just acts as though both instances
+successfully opened the port.)
+
+<p>
+Worryingly, this doesn't look like a PuTTY problem; it seems that
+Windows is happy to let the second PuTTY process open the port for
+listening, and report success, and never thinks to tell it that the
+port is already in use by the first PuTTY. Running the Windows 2000
+`netstat' utility even lists the same port twice.
+
+<p>
+Therefore, there's probably nothing we can do about this.
