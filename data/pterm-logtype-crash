@@ -11,6 +11,7 @@ an assertion failure:
 
 pterm: ../dialog.c:476: dlg_stdradiobutton_handler: Assertion `button < ctrl->radio.nbuttons' failed.
 
-This is because pterm doesn't have an SSH packet logging mode, so it can't
-represent the saved setting in its dialogue box.  I expect that the same
-problem affects PuTTYtel, and similar problems may exist for other settings.
+This is because pterm doesn't have an SSH packet logging mode, so it
+can't represent the saved setting in its dialogue box.  The same
+problem affects PuTTYtel, and similar problems may exist for other
+settings.
