@@ -181,12 +181,13 @@ sub multipart {
     $contenc = "";
     $contdesc = "";
     $contname = "";
+    $contfname = "";
     $innersep = "";
     $_ = $data[0];
     last if $_ eq $end;
     while (defined $_ and /./) {
       $attach .= "+" . $_ . "\n";
-      /Content-type: ([^\/; ]+\/[^\/; ]+)/i and do {
+      /^Content-type: ([^\/; ]+\/[^\/; ]+)/i and do {
         $conttype = $1;
         while ($data[1] =~ /^\s/) {
           shift @data;
@@ -202,8 +203,11 @@ sub multipart {
           $innersep = "";
         }
       };
-      /Content-description: (.*)$/i and $contdesc = $1;
-      /Content-transfer-encoding: (.*)$/i and $contenc = $1;
+      /^Content-disposition: /i and do {
+        /filename="?([^"]*)/i and $contfname = $1;
+      };
+      /^Content-description: (.*)$/i and $contdesc = $1;
+      /^Content-transfer-encoding: (.*)$/i and $contenc = $1;
       shift @data;
       $_ = $data[0];
     }
@@ -218,6 +222,7 @@ sub multipart {
     $ret .= "! " . ("  " x $level) . lc $conttype;
     $ret .= sprintf " (%s)", lc $contenc if $contenc ne "";
     $ret .= " name=`$contname'" if $contname ne "";
+    $ret .= " filename=`$contfname'" if $contname eq "" and $contfname ne "";
     $ret .= " desc=`$contdesc'" if $contdesc ne "";
     # Possibly recurse. We may have to:
     #  - recurse directly if this is a multipart (done)
