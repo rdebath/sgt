@@ -54,3 +54,8 @@ more obviously broken. I regret the effect on CJK users who had
 found the previous behaviour worked just about well enough, but I
 don't think a hurried fix is in the general interest.
 </blockquote>
+
+<p>
+UTF-8 mode should work reasonably well. A workaround is to use UTF-8
+if possible (perhaps via something such as
+<a href="http://www.pps.jussieu.fr/~jch/software/luit/">luit</a>).
