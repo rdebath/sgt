@@ -280,12 +280,13 @@ intended for use as a standalone mirror, at
 So you could set up a mirror by running a <code>cron</code> job which
 issued a command something like this every day:
 
-<pre><code>rsync -r rsync://rsync.chiark.greenend.org.uk/ftp/users/sgtatham/putty-website-mirror/ .</code></pre>
+<pre><code>rsync -auH rsync://rsync.chiark.greenend.org.uk/ftp/users/sgtatham/putty-website-mirror/ .</code></pre>
 
 <p>
 You should run this command <em>inside</em> the directory where you
 plan to put the mirror; when that command is run, it will fill the
-current directory with HTML files and subdirectories.
+current directory with HTML files and subdirectories. Alternatively,
+you can replace <code>.</code> with the name of the target directory.
 
 <p>
 If you use the above command to fetch our pre-packaged mirror site,
