@@ -45,3 +45,14 @@ which doesn't try so hard. Patch:
 <code>yehhebmmpfq.fsf@ocean.cs.brown.edu</code>. Dependent on Windows
 version, so need to ensure the functionality still works across at
 least the Win95-series and WinNT-series.
+
+<p>
+In detail, we should use <code>PRINTER_INFO_4</code> where possible,
+rather than <code>PRINTER_INFO_1</code> which apparently calls
+<code>OpenPrinter()</code> for every printer. However, <code>_4</code>
+is only available on NT-class systems; the suggestion is that we
+detect the Windows version and use <code>_5</code> on 95-class systems -
+<a href="http://groups.google.com/groups?selm=a8uted%24vc87k%241%40ID-106075.news.dfncis.de">Usenet</a>
+corroborates this approach. (We're <em>already</em> avoiding
+<code>_5</code> on NT because we had problems enumerating network
+printers.) Yuk.
