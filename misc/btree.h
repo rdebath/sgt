@@ -30,59 +30,32 @@
 #ifndef BTREE_H
 #define BTREE_H
 
+#include <stddef.h> /* for offsetof */
+
+#ifndef alignof
+#define alignof(typ) ( offsetof(struct { char c; typ t; }, t) )
+#endif
+
 typedef struct btree btree;
 typedef void *bt_element_t;
-
-typedef union nodecomponent nodecomponent;
-typedef nodecomponent *nodeptr;
 
 typedef int (*cmpfn_t)(void *state, bt_element_t, bt_element_t);
 typedef bt_element_t (*copyfn_t)(void *state, bt_element_t);
 typedef void (*freefn_t)(void *state, bt_element_t);
-typedef void (*propmakefn_t)(void *state, bt_element_t, nodecomponent *dest);
+typedef void (*propmakefn_t)(void *state, bt_element_t, void *dest);
 /* s1 may be NULL (indicating copy s2 into dest). s2 is never NULL. */
-typedef void (*propmergefn_t)(void *state, nodecomponent *s1,
-			      nodecomponent *s2, nodecomponent *dest);
+typedef void (*propmergefn_t)(void *state, void *s1, void *s2, void *dest);
 typedef int (*searchfn_t)(void *tstate, void *sstate, int ntrees,
-			  nodecomponent **props, int *counts,
+			  void **props, int *counts,
 			  bt_element_t *elts, int *is_elt);
 
 enum {
     BT_REL_EQ, BT_REL_LT, BT_REL_LE, BT_REL_GT, BT_REL_GE
 };
 
-/*
- * For type-checking purposes, and to ensure I don't accidentally
- * confuse node_addr with node_ptr during implementation, I'll
- * define node_addr for the in-memory case as being a struct
- * containing only a nodeptr.
- * 
- * This unfortunately needs to go in btree.h so that clients
- * writing user properties can know about the nodecomponent
- * structure.
- */
-typedef struct {
-    nodeptr p;
-} node_addr;
-
-/*
- * A B-tree node is a horrible thing when you're trying to be
- * flexible. It is of variable size, and it contains a variety of
- * distinct types of thing: nodes, elements, some counters, some
- * user-defined properties ... it's a horrible thing. So we define
- * it as an array of unions, each union being either an `int' or a
- * `bt_element_t' or a `node_addr'...
- */
-
-union nodecomponent {
-    int i;
-    node_addr na;
-    bt_element_t ep;
-};
-
 btree *bt_new(cmpfn_t cmp, copyfn_t copy, freefn_t freeelt,
-	      int nprops, propmakefn_t propmake, propmergefn_t propmerge,
-	      void *state, int mindegree);
+	      int propsize, int propalign, propmakefn_t propmake,
+	      propmergefn_t propmerge, void *state, int mindegree);
 void bt_free(btree *bt);
 btree *bt_clone(btree *bt);
 int bt_count(btree *bt);

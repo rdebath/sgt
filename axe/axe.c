@@ -7,10 +7,8 @@
  * 
  * TODO possibly after that:
  * 
- *  - Need to handle >2Gb files! A major limiting factor here is
- *    the B-tree property size limit :-( Either malloc a long long
- *    for each tree node, or stitch together two ints in some
- *    ghastly fashion.
+ *  - Need to handle >2Gb files! Up the `filesize' type to long
+ *    long and use it everywhere.
  *
  *  - Multiple buffers, multiple on-screen windows.
  *     + ^X^F to open new file
