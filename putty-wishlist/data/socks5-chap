@@ -1,0 +1,9 @@
+Summary: CHAP authentication support for SOCKS5
+Class: wish
+Difficulty: tricky
+Priority: low
+Fixed-in: 2004-08-31
+
+When PuTTY connects to a SOCKS5 server with a username/password, it now
+offers CHAP authentication before plain username/password.
+(Not in PuTTYtel.) Thanks to Malcolm Smith.
