@@ -32,6 +32,29 @@ static void do_error(int code, va_list ap) {
 	sprintf(error, "unrecognised option `-%.200s'", sp);
 	flags = PREFIX;
 	break;
+      case err_nodb:
+        sprintf(error,
+                "database `%.200s' does not exist; try `timber init-db'",
+                dbpath);
+        flags = PREFIX;
+        break;
+      case err_dbexists:
+        sprintf(error, "database `%.200s' already exists;"
+                " remove it before trying again", dbpath);
+        flags = PREFIX;
+        break;
+      case err_noopendb:
+        sp = va_arg(ap, char *);
+        sprintf(error,
+                "unable to open database `%.200s': %.200s",
+                dbpath, sp);
+        flags = PREFIX;
+        break;
+      case err_dberror:
+        sp = va_arg(ap, char *);
+        sprintf(error, "database error: %.200s", sp);
+        flags = PREFIX;
+        break;
     }
 
     if (flags & PREFIX)
@@ -45,6 +68,7 @@ void fatal(int code, ...) {
     va_start(ap, code);
     do_error(code, ap);
     va_end(ap);
+    db_close();
     exit(EXIT_FAILURE);
 }
 

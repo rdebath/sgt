@@ -1,0 +1,7 @@
+Loose ends from coding
+----------------------
+
+ - Creation of .timber directory during initialisation. This should
+   be done if it doesn't already exist, and in particular it must be
+   created with mode 700.
+  

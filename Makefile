@@ -11,6 +11,10 @@ endif
 all:
 	@test -d $(BUILDDIR) || mkdir $(BUILDDIR)
 	@make -C $(BUILDDIR) -f ../Makefile REALBUILD=yes
+clean:
+	@test -d $(BUILDDIR) && make -C $(BUILDDIR) -f ../Makefile REALBUILD=yes clean
+spotless:
+	rm -rf $(BUILDDIR)
 else
 
 # The `real' makefile part.
@@ -23,9 +27,6 @@ else
 CFLAGS += -g
 endif
 
-
-
-
 ifndef VER
 ifdef VERSION
 VER := $(VERSION)
@@ -37,10 +38,12 @@ endif
 
 SRC := ../
 
-MODULES := main malloc error help licence version
+MODULES := main malloc error help licence version sqlite
 
 OBJECTS := $(addsuffix .o,$(MODULES))
 DEPS := $(addsuffix .d,$(MODULES))
+LIBS := -lsqlite
+CFLAGS += -Wall
 
 timber: $(OBJECTS)
 	$(CC) $(LFLAGS) -o timber $(OBJECTS) $(LIBS)
@@ -52,6 +55,9 @@ version.o: FORCE
 	$(CC) $(VDEF) -MD -c $(SRC)version.c
 
 FORCE: # phony target to force version.o to be rebuilt every time
+
+clean:
+	rm -f *.o timber
 
 -include $(DEPS)
 
