@@ -10,6 +10,6 @@ server is OpenSSH. The <tt>ssh.com</tt> server uses a different agent
 protocol which we have not yet got round to supporting.
 
 <p>
-<b>SGT, 2003-02-11</b>: The initial IETF draft of the ssh.com agent
+<b>SGT</b>: The initial IETF draft of the ssh.com agent
 protocol is available here:
-<a href="http://www.ietf.org/internet-drafts/draft-ietf-secsh-agent-01.txt">draft-ietf-secsh-agent-01.txt</a>
+<a href="http://www.ietf.org/internet-drafts/draft-ietf-secsh-agent-02.txt">draft-ietf-secsh-agent-02.txt</a>
