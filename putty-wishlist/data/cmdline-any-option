@@ -1,0 +1,13 @@
+Summary: Command-line general `-o Name=Value' type option
+Class: wish
+Priority: medium
+Difficulty: tricky
+Content-type: text/x-html-body
+Depends: config-locations
+
+<p>
+Ability to tweak any option via something like OpenSSH's `-o
+Name=Value' option. Need to think about how to deal with complex
+options like colour selection. Also, some of the existing names for
+options in the Registry are inappropriate - e.g., `LinuxFunctionKeys'.
+Seems dependent on wishlist item `config-locations'.
