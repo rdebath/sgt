@@ -40,8 +40,16 @@ int main(int argc, char **argv) {
 		gs = init_game(l);
 		gs->levnum = action;
 		saveslot = 0;
-	    } else if (action < -10) {
+	    } else if (action == -100) {
 		break;		       /* direct quit from main menu */
+	    } else if (action <= -10) {
+		/* delete a saved position */
+		n = -action-10;
+		if (saves[n])
+		    gamestate_free(saves[n]);
+		saves[n] = NULL;
+		savepos_del(set, user, n);
+		gs = NULL;
 	    } else {
 		/* load a saved position */
 		gs = gamestate_copy(saves[-action]);
@@ -53,7 +61,7 @@ int main(int argc, char **argv) {
 		while (gs->status == PLAYING) {
 		    gamestate *newgs;
 		    int k;
-		    screen_level_display(gs, "");
+		    screen_level_display(gs, NULL);
 		    k = screen_level_getmove();
 		    if (k == 'h' || k == 'j' || k == 'l' || k == 'k') {
 			newgs = make_move(gs, k);
@@ -92,6 +100,9 @@ int main(int argc, char **argv) {
 		    }
 		    screen_level_display(gs, msg);
 		    screen_level_finish();
+		    if (gs->status == COMPLETED && p.levnum == set->nlevels) {
+			screen_completed_game();
+		    }
 		}
 	    }
 	}

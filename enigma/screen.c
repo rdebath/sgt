@@ -168,7 +168,14 @@ void screen_level_display(gamestate *s, char *message) {
     /*
      * Display title.
      */
-    screen_prints((sw-9)/2, dy-1, T_TITLE, " Enigma ");
+    i = 8;
+    if (message) i += 3 + strlen(message);
+    screen_prints((sw-i)/2, dy-1, T_TITLE, " Enigma ");
+    if (message) {
+	screen_prints((sw-i)/2+8, dy-1, T_TITLE, "- ");
+	screen_prints((sw-i)/2+10, dy-1, T_TITLE, message);
+	screen_prints((sw-i)/2+i-1, dy-1, T_TITLE, " ");
+    }
 
     /*
      * Display status line.
@@ -219,7 +226,8 @@ void saveslot_fmt(char *buf, int slotnum, gamestate *gs) {
 
 /*
  * Display the levels-or-saves main menu. Returns a level number (1
- * or greater), a save number (0 to -9), or a `quit' signal (-100).
+ * or greater), a save number (0 to -9), a save number to delete
+ * (-10 to -19), or a `quit' signal (-100).
  */
 int screen_main_menu(levelset *set, gamestate **saves,
 		     int maxlev, int startlev) {
@@ -227,7 +235,7 @@ int screen_main_menu(levelset *set, gamestate **saves,
     const int height = 21, llines = height-5;
     int sx, sy, dx, dy, dx2;
     int save = 0;
-    int level = startlev;
+    int level;
     int levtop = 0;
     int i, k;
     int unseen = 0;
@@ -235,6 +243,15 @@ int screen_main_menu(levelset *set, gamestate **saves,
     getmaxyx(stdscr, sy, sx);
 
     werase(stdscr);
+
+    if (maxlev > set->nlevels) {
+	/*
+	 * User has completed game. Different defaults.
+	 */
+	maxlev = set->nlevels;
+	startlev = 0;
+    }
+    level = startlev;
 
     dx = (sx - 2*colwidth - colgap) / 2;
     dy = (sy - height) / 2;
@@ -336,6 +353,8 @@ int screen_main_menu(levelset *set, gamestate **saves,
 	    return level+1;
 	if (k == 'r')
 	    return -save;
+	if (k == '\010' || k == '\177' || k == KEY_BACKSPACE)
+	    return -save-10;	       /* delete a save */
     }
 }
 
@@ -390,4 +409,25 @@ int screen_saveslot_ask(char action, gamestate **saves, int defslot) {
 	if (k == 'n' || k == 'q')
 	    return -1;
     }
+}
+
+void screen_completed_game(void) {
+    int sx, sy;
+
+    getmaxyx(stdscr, sy, sx);
+
+    werase(stdscr);
+    screen_prints((sx-51)/2, sy/2-2, T_INSTRUCTIONS,
+		  "Congratulations! You have completed this level set.");
+    screen_prints((sx-49)/2, sy/2, T_INSTRUCTIONS,
+		  "Now why not become an Enigma developer, and write");
+    screen_prints((sx-48)/2, sy/2+1, T_INSTRUCTIONS,
+		  "some levels of your own, or perhaps even help me");
+    screen_prints((sx-32)/2, sy/2+2, T_INSTRUCTIONS,
+		  "write a better finishing screen?");
+    screen_prints((sx-15)/2, sy-1, T_INSTRUCTIONS,
+		  "(Press any key)");
+    move(0,0);
+    refresh();
+    getch();
 }
