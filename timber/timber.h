@@ -17,6 +17,34 @@
 #define lenof(x) ( sizeof((x)) / sizeof(*(x)) )
 
 /*
+ * Explanation of one slightly odd piece of terminology below:
+ * `ego' is the name for an internal identifier used to uniquely
+ * refer to a message stored in a Timber mail store.
+ * 
+ * I had initially intended to index internally by Message-ID, but
+ * on closer inspection this idea is clearly barmy for many
+ * reasons:
+ *  - multiple distinguishable copies of the same message can be
+ *    present in the mail store with the same Message-ID. In
+ *    particular, the Fcc of an outgoing message to a mailing list
+ *    and the version received back from the mailing list will be a
+ *    common pair of this type (and you'd quite _like_ to keep both
+ *    copies, if only so you can spot any differences).
+ *  - some messages in imported mail archives don't have a
+ *    Message-ID at all because they were Fcced before it was put
+ *    on, which is stupid but sadly not unheard of.
+ *  - if a malicious attacker knew that deliberately reusing a
+ *    Message-ID in a mail to me would splatter important parts of
+ *    my mail archive, they would do it!
+ * 
+ * Thus, I invent my own internal identifiers, which are only
+ * unique within the mail store and index database, but which I can
+ * be _sure_ are unique in that context. I call them `ego', short
+ * for `Message-Ego', which was Gareth Taylor's suggestion for a
+ * snappy name that wasn't `Message-Id'. :-)
+ */
+
+/*
  * error.c
  */
 void fatal(int code, ...) NORETURN;
@@ -28,6 +56,7 @@ enum {
     err_direxists,		       /* dir exists, so can't init it */
     err_noopendb,                      /* unable to open db */
     err_dberror,                       /* generic db error */
+    err_dbfull,			       /* more than 2^53 messages! */
     err_perror,			       /* generic errno error (%s: %s) */
 };
 
@@ -64,6 +93,8 @@ int cfg_get_int(char *key);
 char *cfg_get_str(char *key);
 void cfg_set_str(char *key, char *str);
 void cfg_set_int(char *key, int val);
+void parse_for_db(const char *ego, const char *location,
+		  const char *message, int msglen);
 
 /*
  * main.c
@@ -88,8 +119,8 @@ const struct storage mbox_store;
 /*
  * config.c
  */
-int cfg_default_int(char *key);
-char *cfg_default_str(char *key);
+int cfg_default_int(const char *key);
+const char *cfg_default_str(const char *key);
 
 /*
  * mboxread.c
@@ -205,8 +236,6 @@ void parse_message(const char *message, int msglen,
 		   parser_output_fn_t output, void *outctx,
 		   parser_info_fn_t info, void *infoctx);
 
-void parse_for_db(const char *message, int msglen);
-
 /*
  * rfc2047.c
  */
@@ -217,5 +246,14 @@ void rfc2047(const char *text, int length, parser_output_fn_t output,
  * date.c
  */
 time_t mktimegm(struct tm *tm);
+#define DATEBUF_MAX 64
+void fmt_date(time_t t, char *buf);
+time_t unfmt_date(const char *buf);
+
+/*
+ * misc.c
+ */
+const char *header_name(int header_id);
+const char *encoding_name(int encoding);
 
 #endif

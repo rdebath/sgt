@@ -11,7 +11,9 @@
 #include <string.h>
 #include <assert.h>
 #include "sqlite.h"
+
 #include "timber.h"
+#include "charset.h"
 
 static char *dbpath;
 
@@ -38,7 +40,85 @@ void db_init(void)
     sqlite_exec(db,
 		"CREATE TABLE config ("
 		"  key TEXT UNIQUE ON CONFLICT REPLACE,"
-		"  value TEXT);",
+		"  value TEXT,"
+		"  PRIMARY KEY (key));",
+		sqlite_null_callback, NULL, &err);
+    if (err) fatal(err_dberror, err);
+
+    sqlite_exec(db,
+		"CREATE TABLE addresses ("
+		"  ego TEXT,"
+		"  header TEXT,"
+		"  idx INTEGER,"
+		"  displayname TEXT,"
+		"  address TEXT,"
+		"  PRIMARY KEY (ego, header, idx));",
+		sqlite_null_callback, NULL, &err);
+    if (err) fatal(err_dberror, err);
+    sqlite_exec(db,
+		"CREATE INDEX idx_addresses_displayname"
+		"  ON addresses (displayname);",
+		sqlite_null_callback, NULL, &err);
+    if (err) fatal(err_dberror, err);
+    sqlite_exec(db,
+		"CREATE INDEX idx_addresses_address"
+		"  ON addresses (address);",
+		sqlite_null_callback, NULL, &err);
+    if (err) fatal(err_dberror, err);
+
+    sqlite_exec(db,
+		"CREATE TABLE messageids ("
+		"  ego TEXT,"
+		"  header TEXT,"
+		"  idx INTEGER,"
+		"  messageid TEXT,"
+		"  PRIMARY KEY (ego, header, idx));",
+		sqlite_null_callback, NULL, &err);
+    if (err) fatal(err_dberror, err);
+    sqlite_exec(db,
+		"CREATE INDEX idx_messageids_messageid"
+		"  ON messageids (messageid, header);",
+		sqlite_null_callback, NULL, &err);
+    if (err) fatal(err_dberror, err);
+
+    sqlite_exec(db,
+		"CREATE TABLE subjects ("
+		"  ego TEXT,"
+		"  subject TEXT,"
+		"  PRIMARY KEY (ego));",
+		sqlite_null_callback, NULL, &err);
+    if (err) fatal(err_dberror, err);
+
+    sqlite_exec(db,
+		"CREATE TABLE dates ("
+		"  ego TEXT,"
+		"  date TEXT,"
+		"  PRIMARY KEY (ego));",
+		sqlite_null_callback, NULL, &err);
+    if (err) fatal(err_dberror, err);
+
+    sqlite_exec(db,
+		"CREATE TABLE mimeparts ("
+		"  ego TEXT,"
+		"  idx INTEGER,"
+		"  major TEXT,"
+		"  minor TEXT,"
+		"  charset TEXT,"
+		"  encoding TEXT,"
+		"  disposition TEXT,"
+		"  filename TEXT,"
+		"  description TEXT,"
+		"  offset INTEGER,"
+		"  length INTEGER,"
+		"  PRIMARY KEY (ego, idx));",
+		sqlite_null_callback, NULL, &err);
+    if (err) fatal(err_dberror, err);
+
+    sqlite_exec(db,
+		"CREATE TABLE messages ("
+		"  ego TEXT,"
+		"  location TEXT,"
+		"  PRIMARY KEY (ego));",
 		sqlite_null_callback, NULL, &err);
     if (err) fatal(err_dberror, err);
 
@@ -141,7 +221,7 @@ char *cfg_get_str(char *key)
 {
     char *val = cfg_get_internal(key);
     if (!val) {
-	char *def = cfg_default_str(key);
+	const char *def = cfg_default_str(key);
 	val = smalloc(1+strlen(def));
 	strcpy(val, def);
 	return val;
@@ -155,7 +235,7 @@ void cfg_set_str(char *key, char *str)
 
     db_open();
 
-    sqlite_exec_printf(db, "INSERT INTO config VALUES ( '%q', '%q' );",
+    sqlite_exec_printf(db, "INSERT OR REPLACE INTO config VALUES ('%q','%q');",
 		       sqlite_null_callback, NULL, &err,
 		       key, str);
     if (err) fatal(err_dberror, err);
@@ -167,4 +247,134 @@ void cfg_set_int(char *key, int val)
 
     sprintf(str, "%d", val);
     cfg_set_str(key, str);
+}
+
+/* ----------------------------------------------------------------------
+ * Manufacture a message ego string from a number.
+ */
+char *invent_ego(double count)
+{
+    /*
+     * FIXME: I would like to make these strings more cryptic and
+     * more variable; I'd like the user to have a very low chance
+     * of seeing two almost-identical-looking egos. Some sort of
+     * hash or cipher might be the answer, although cryptographic
+     * security is not required, only mild visual scrambling.
+     */
+    char buf[40], *ego;
+    sprintf(buf, "E%.0f", count);
+    ego = smalloc(1+strlen(buf));
+    strcpy(ego, buf);
+    return ego;
+}
+
+/* ----------------------------------------------------------------------
+ * This code is a client of rfc822.c; it parses a message, collects
+ * information about it to file in the database, and files it.
+ */
+struct db_info_ctx {
+    const char *ego;
+    int addr_index;
+    int mime_index;
+};
+void db_info_fn(void *vctx, struct message_parse_info *info)
+{
+    struct db_info_ctx *ctx = (struct db_info_ctx *)vctx;
+    char datebuf[DATEBUF_MAX];
+    char *err;
+
+    switch (info->type) {
+      case PARSE_ADDRESS:
+	sqlite_exec_printf(db, "INSERT INTO addresses VALUES ("
+			   "'%q', '%q', %d, '%q', '%q' );",
+			   sqlite_null_callback, NULL, &err,
+			   ctx->ego,
+			   header_name(info->header),
+			   ctx->addr_index++,
+			   info->u.addr.display_name,
+			   info->u.addr.address);
+	if (err) fatal(err_dberror, err);
+	break;
+      case PARSE_MESSAGE_ID:
+	sqlite_exec_printf(db, "INSERT INTO messageids VALUES ("
+			   "'%q', '%q', %d, '%q' );",
+			   sqlite_null_callback, NULL, &err,
+			   ctx->ego,
+			   header_name(info->header),
+			   info->u.mid.index,
+			   info->u.mid.mid);
+	if (err) fatal(err_dberror, err);
+	break;
+      case PARSE_SUBJECT:
+	sqlite_exec_printf(db, "INSERT INTO subjects VALUES ("
+			   "'%q', '%q' );",
+			   sqlite_null_callback, NULL, &err,
+			   ctx->ego,
+			   info->u.string);
+	if (err) fatal(err_dberror, err);
+	break;
+      case PARSE_DATE:
+	fmt_date(info->u.date, datebuf);
+	sqlite_exec_printf(db, "INSERT INTO dates VALUES ("
+			   "'%q', '%q' );",
+			   sqlite_null_callback, NULL, &err,
+			   ctx->ego,
+			   datebuf);
+	if (err) fatal(err_dberror, err);
+	break;
+      case PARSE_MIME_PART:
+	sqlite_exec_printf(db, "INSERT INTO mimeparts VALUES ("
+			   "'%q', %d, '%q', '%q', '%q', '%q',"
+			   "'%q', '%q', '%q', %d, %d);",
+			   sqlite_null_callback, NULL, &err,
+			   ctx->ego,
+			   ctx->mime_index++,
+			   info->u.md.major, info->u.md.minor,
+			   charset_to_localenc(info->u.md.charset),
+			   encoding_name(info->u.md.transfer_encoding),
+			   info->u.md.cd_inline ? "inline" : "attachment",
+			   info->u.md.filename ? info->u.md.filename : "",
+			   info->u.md.description ? info->u.md.description:"",
+			   info->u.md.offset, info->u.md.length);
+	if (err) fatal(err_dberror, err);
+	break;
+    }
+}
+void parse_for_db(const char *ego, const char *location,
+		  const char *message, int msglen)
+{
+    char *err;
+    char *myego = NULL;
+    struct db_info_ctx ctx;
+
+    db_open();
+    db_begin();
+
+    if (!ego) {
+	char *countstr = cfg_get_str("num-messages");
+	double count = atof(countstr), count2;
+	sfree(countstr);
+	myego = invent_ego(count);
+	count2 = count + 1;
+	if (count2 == count)
+	    fatal(err_dbfull);
+	cfg_set_int("num-messages", count2);
+	ego = myego;
+    }
+
+    ctx.ego = ego;
+    ctx.addr_index = 0;
+
+    parse_message(message, msglen, null_output_fn, NULL, db_info_fn, &ctx);
+
+    sqlite_exec_printf(db, "INSERT INTO messages VALUES ("
+		       "'%q', '%q' );",
+		       sqlite_null_callback, NULL, &err,
+		       ego, location);
+    if (err) fatal(err_dberror, err);
+
+    db_commit();
+
+    if (myego)
+	sfree(myego);
 }

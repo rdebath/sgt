@@ -2,6 +2,7 @@
  * date.c: date handling code for Timber.
  */
 
+#include <stdio.h>
 #include <time.h>
 
 #include "timber.h"
@@ -15,7 +16,7 @@
  * Well, it can just about be done. Here's how.
  */
 
-/* ----------------------------------------------------------------------
+/*
  * This completely ANSI-compliant function determines the timezone shift
  * in seconds. (E.g. if local time were 1 hour ahead of GMT, this routine
  * would return 3600.) This timezone shift is to normal local time, not to
@@ -39,7 +40,7 @@ static long tzshift(void) {
     return (long)difftime(t1,t2);
 }
 
-/* ----------------------------------------------------------------------
+/*
  * This completely ANSI-compliant function adjusts a `struct tm' by
  * a given number of seconds.
  */
@@ -53,7 +54,7 @@ static void adjust_tm(struct tm *tm, long seconds) {
     mktime(tm);			       /* normalise the tm structure again */
 }
 
-/* ----------------------------------------------------------------------
+/*
  * With the aid of the above two functions, _this_ completely ANSI-
  * compliant function is the equivalent of mktime() using GMT. In
  * other words, it's the inverse of gmtime().
@@ -68,4 +69,34 @@ time_t mktimegm(struct tm *tm) {
      */
     adjust_tm(tm, tzshift());
     return mktime(tm);
+}
+
+/* ----------------------------------------------------------------------
+ * Now here's a pair of functions to format and read a date in UTC,
+ * as a storage format which is independent of the internal time_t.
+ */
+void fmt_date(time_t t, char *buf)
+{
+    struct tm tm = *gmtime(&t);
+
+    sprintf(buf, "%04d-%02d-%02d %02d:%02d:%02d",
+	    1900 + tm.tm_year, 1 + tm.tm_mon, tm.tm_mday,
+	    tm.tm_hour, tm.tm_min, tm.tm_sec);
+}
+
+time_t unfmt_date(const char *buf)
+{
+    struct tm tm;
+
+    if (6 == sscanf(buf, "%d-%d-%d %d:%d:%d",
+		    &tm.tm_year, &tm.tm_mon, &tm.tm_mday,
+		    &tm.tm_hour, &tm.tm_min, &tm.tm_sec)) {
+	tm.tm_year -= 1900;
+	tm.tm_mon--;
+    } else {
+	tm.tm_year = 1970;
+	tm.tm_mon = tm.tm_mday = tm.tm_hour = tm.tm_min = tm.tm_sec = 0;
+    }
+
+    return mktimegm(&tm);
 }

@@ -6,7 +6,7 @@
 #include <string.h>
 #include "timber.h"
 
-int cfg_default_int(char *key)
+int cfg_default_int(const char *key)
 {
     static const struct {
 	const char *key;
@@ -34,8 +34,29 @@ int cfg_default_int(char *key)
     return -1;
 }
 
-char *cfg_default_str(char *key)
+const char *cfg_default_str(const char *key)
 {
+    static const struct {
+	const char *key;
+	const char *value;
+    } defaults[] = {
+	{"num-messages", "0"},
+    };
+    int i, j, k, c;
+
+    i = -1;
+    k = lenof(defaults);
+    while (k - i > 1) {
+	j = (i + k) / 2;
+	c = strcmp(key, defaults[j].key);
+	if (c > 0)
+	    i = j;
+	else if (c < 0)
+	    k = j;
+	else
+	    return defaults[j].value;
+    }
+
     assert(!"We shouldn't have got here");
     return NULL;
 }
