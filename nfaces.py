@@ -75,7 +75,7 @@ def psdiag():
     # visualisation aid, so it didn't really help.
 
     psprint("%!PS-Adobe-1.0")
-    psprint("288 500 translate 200 dup scale 0.005 setlinewidth")
+    psprint("288 400 translate 200 dup scale 0.005 setlinewidth")
     psprint("newpath 0 0 1 0 360 arc stroke")
     psprint("0.0025 setlinewidth")
 
@@ -131,7 +131,7 @@ def drawfaces():
     for i in range(len(points)):
 	psprint("%%Page:", i+1)
 	psprint("gsave")
-	psprint("288 500 translate 150 dup scale 0.0025 setlinewidth")
+	psprint("288 400 translate 150 dup scale 0.0025 setlinewidth")
 	psprint("/Helvetica findfont 0.1 scalefont setfont")
 
 	x, y, z = points[i]
