@@ -152,9 +152,10 @@ $1 = "Timber";
     definekey("timber_undefined", "^W", $1);
     definekey("timber_undefined", "^Y", $1);
 
-    % Return unfolds a message.
-    definekey("timber_unfold", "^J", $1);
-    definekey("timber_unfold", "^M", $1);
+    % Return unfolds a message, _or_ moves to and unfolds the first
+    % unread message if it's pressed at the top of the buffer.
+    definekey("timber_press_ret", "^J", $1);
+    definekey("timber_press_ret", "^M", $1);
 
     % Space pages down; Minus and B page up.
     definekey("page_down", " ", $1);
@@ -268,22 +269,12 @@ define_highlight_rule(".*$", "normal", $1);
 build_highlight_table($1);
 #endif
 
-% The highlighting mode for Timber composers: should highlight correct
-% sig separators and quoted text. And "^From ", just to make it unlikely
-% that I'll accidentally write a message that does it.
-$1 = "TimberC";
-create_syntax_table ($1);
-set_syntax_flags ($1, 0);
-#ifdef HAS_DFA_SYNTAX
-enable_highlight_cache("timberc.dfa", $1);
-define_highlight_rule("^-- $", "keyword", $1);
-define_highlight_rule("^From ", "Qkeyword", $1);
-define_highlight_rule("^> *> *>.*$", "preprocess", $1);
-define_highlight_rule("^> *>.*$", "comment", $1);
-define_highlight_rule("^>.*$", "string", $1);
-define_highlight_rule(".*", "normal", $1);
-build_highlight_table($1);
+% The highlighting mode for Timber composers.
+#ifndef TIMBER_TIMBERC_LOADED
+() = evalfile("timberc.sl");
 #endif
+
+$1 = "TimberC";
 
 % The keymap for a Timber composer buffer.
 !if (keymap_p($1)) {
@@ -819,6 +810,34 @@ define timber_unfold() {
 	pop_spot();
 	bol();
     }
+}
+
+% RETURN was pressed. If at top, move to the first unread message; then
+% call timber_unfold.
+define timber_press_ret() {
+    variable c;
+
+    if (what_line() == 1) {
+        go_down_1();
+        bol();
+        c = 'x';                       % error indicator
+        while (what_char() == '*') {
+            go_right(2);
+            c = what_char();
+            if (c == 'N' or c == 'U')
+                break;
+            do {
+                go_down_1();
+            } while (is_line_hidden() and not eobp());
+        }
+        !if (c == 'N' or c == 'U') {
+            message("No unread messages in folder.");
+            bob();
+            return;
+        }
+        bol();
+    }
+    timber_unfold();
 }
 
 % Move to the top of the current message.
