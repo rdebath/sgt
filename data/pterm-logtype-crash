@@ -1,0 +1,15 @@
+Summary: pterm aborts if Default Settings has SSH packet logging enabled
+Present-in: 2005-02-04
+Priority: medium
+Difficulty: tricky
+Content-type: text/plain
+
+Setting the logging type to SSH packet logging in Unix PuTTY, then
+invoking pterm and attempting to open the "Change Settings" box gives
+an assertion failure:
+
+pterm: ../dialog.c:476: dlg_stdradiobutton_handler: Assertion `button < ctrl->radio.nbuttons' failed.
+
+This is because pterm doesn't have an SSH packet logging mode, so it can't
+represent the saved setting in its dialogue box.  I expect that the same
+problem affects PuTTYtel, and similar problems may exist for other settings.
