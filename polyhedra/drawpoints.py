@@ -56,7 +56,7 @@ psprint("%%Pages: 1")
 psprint("%%EndComments")
 psprint("%%Page: 1")
 psprint("gsave")
-psprint("288 500 translate 150 dup scale 0.0025 setlinewidth")
+psprint("288 400 translate 150 dup scale 0.0025 setlinewidth")
 psprint("newpath 0 0 1 0 360 arc stroke")
 
 s = 0.02

@@ -72,7 +72,7 @@ psprint("%%Pages: 1")
 psprint("%%EndComments")
 psprint("%%Page: 1")
 psprint("gsave")
-psprint("288 500 translate 150 dup scale 1 setlinejoin")
+psprint("288 400 translate 150 dup scale 1 setlinejoin")
 
 # Scale the solid so that it fits within a fixed-size sphere (so
 # that every picture output from this code will be roughly the same

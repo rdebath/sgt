@@ -982,7 +982,7 @@ if xscale < yscale:
     scale = xscale
 else:
     scale = yscale
-psprint("288 500 translate")
+psprint("288 400 translate")
 psprint(scale, "dup scale")
 # Now centre the bounding box at the origin.
 psprint(-(xmax+xmin)/2, -(ymax+ymin)/2, "translate")
