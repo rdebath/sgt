@@ -31,6 +31,7 @@ char const *winurl_appname = "WinURL";
 
 #define IDM_CLOSE    0x0010
 #define IDM_ABOUT    0x0020
+#define IDM_LAUNCH   0x0030
 
 static HMENU systray_menu;
 
@@ -64,6 +65,8 @@ extern int systray_init(void) {
         DestroyIcon(hicon); 
 
     systray_menu = CreatePopupMenu();
+    AppendMenu (systray_menu, MF_ENABLED, IDM_LAUNCH, "Launch URL");
+    AppendMenu(systray_menu, MF_SEPARATOR, 0, 0);
     AppendMenu (systray_menu, MF_ENABLED, IDM_ABOUT, "About");
     AppendMenu(systray_menu, MF_SEPARATOR, 0, 0);
     AppendMenu (systray_menu, MF_ENABLED, IDM_CLOSE, "Close WinURL");
@@ -82,6 +85,62 @@ extern void systray_shutdown(void) {
     res = Shell_NotifyIcon(NIM_DELETE, &tnid); 
 
     DestroyMenu(systray_menu);
+}
+
+void do_launch_url(void)
+{
+    HGLOBAL clipdata;
+    char *s = NULL, *t = NULL, *p, *q;
+    int len, ret;
+
+    if (!OpenClipboard(NULL)) {
+	goto error; /* unable to read clipboard */
+    }
+    clipdata = GetClipboardData(CF_TEXT);
+    CloseClipboard();
+    if (!clipdata) {
+	goto error; /* clipboard contains no text */
+    }
+    s = GlobalLock(clipdata);
+    if (!s) {
+        goto error; /* unable to lock clipboard memory */
+    }
+
+    /*
+     * Now strip each \n and any following spaces from the URL
+     * text. In a future version this might be made configurable.
+     */
+    len = strlen(s);
+    t = malloc(len+1);
+    if (!t) {
+	GlobalUnlock(s);
+	goto error;		       /* out of memory */
+    }
+
+    for (p = s, q = t; *p; p++) {
+	if (*p != '\n')
+	    *q++ = *p;
+	else {
+	    while (p[1] && isspace((unsigned char)(p[1])))
+		p++;
+	}
+    }
+
+    *q = '\0';
+    ret = (int)ShellExecute(winurl_hwnd, "open", t, NULL, NULL, SW_SHOWNORMAL);
+
+    free(t);
+
+    GlobalUnlock(s);
+
+    error:
+    /*
+     * Not entirely sure what we should do in case of error here.
+     * Perhaps a simple beep might be suitable. Then again, `out of
+     * memory' is a bit scarier. FIXME: should probably do
+     * different error handling depending on context.
+     */
+    ;
 }
 
 static int CALLBACK AboutProc(HWND hwnd, UINT msg,
@@ -151,6 +210,8 @@ static LRESULT CALLBACK WndProc (HWND hwnd, UINT message,
 	if (lParam == WM_RBUTTONUP) {
 	    GetCursorPos(&cursorpos);
 	    PostMessage(hwnd, WM_SYSTRAY2, cursorpos.x, cursorpos.y);
+	} else if (lParam == WM_LBUTTONUP) {
+	    do_launch_url();
 	}
 	break;
       case WM_SYSTRAY2:
@@ -167,6 +228,8 @@ static LRESULT CALLBACK WndProc (HWND hwnd, UINT message,
       case WM_COMMAND:
 	if ((wParam & ~0xF) == IDM_CLOSE) {
 	    SendMessage(hwnd, WM_CLOSE, 0, 0);
+	} else if ((wParam & ~0xF) == IDM_LAUNCH) {
+	    do_launch_url();
 	} else if ((wParam & ~0xF) == IDM_ABOUT) {
 	    if (!aboutbox) {
 		aboutbox = CreateDialog(winurl_instance,
