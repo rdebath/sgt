@@ -46,6 +46,11 @@ def debug(s):
 	debugfile.write("%5d " % os.getpid() + lf(s))
 	debugfile.flush()
 
+def set_debugfile(f):
+    global debugfile
+    debugfile = f
+    sys.stderr = f  # to catch Python exception tracebacks as well
+
 def server():
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP)
     s.bind(("", port)) # bind to NNTP port.
@@ -229,6 +234,7 @@ class ConnectionProxy:
 			self.to_server(line)
 		    self.to_server(".\r\n")
 		    self.lastdir = 1
+		    self.own_post = 0
 		    forward = 0
 		else:
 		    self.posting = 1
@@ -241,7 +247,6 @@ class ConnectionProxy:
 		# Otherwise, we just pass the 480 through, to prod
 		# the client into providing us some authinfo we can
 		# use.
-		debug("ooh\n")
 		if len(self.authdata) == 2:
 		    authret = self.authenticate()
 		    self.to_server(self.last_cmd)
@@ -366,7 +371,7 @@ def connection(client):
     # create log files in it).
 
     # debugstamp = time.strftime("%Y%m%d.%H%M%S", time.localtime(time.time()))
-    # debugfile = open("/var/log/newsproxy/" + debugstamp + ".%d" % os.getpid(), "w")
+    # set_debugfile(open("/var/log/newsproxy/" + debugstamp + ".%d" % os.getpid(), "w"))
 
     # Now we have two connections, client and server. Wait until
     # one becomes readable, then read a line from it and send to
@@ -419,14 +424,15 @@ def connection(client):
         server.close()
         client.close()
     finally:
-	debugfile.close()
+	if debugfile != None:
+	    debugfile.flush()
 
 debugfile = None
 inetd = 1
 port = 119
 for arg in sys.argv[1:]:
     if arg == "-d":
-	debugfile = sys.stdout
+	set_debugfile(sys.stdout)
     elif arg[:2] == "-p":
 	port = string.atoi(arg[2:])
     elif arg == "-daemon":
