@@ -1,0 +1,72 @@
+{t Sample Half-Title}: Things On Springs
+
+This is a simple paragraph full of text. It should be wrapped
+correctly on mono, and should appear without line breaks in HTML. It
+goes on for a while, so it should be possible to work out whether
+this was in fact the case, which always helps. In it we have {q
+quoted text}, and {e emphasis}, and {b boldness}. All of these
+things should be rendered appropriately in both formats. Oh, and
+there's a footnote{1} as well.
+
+{ljcut LJ cut}
+
+Here's a paragraph enclosed in an LJ cut tag. While I'm in here I'll
+just mention that I can type braces if I really need to: {{ and }}.
+So there.
+
+{/ljcut}
+
+{Q}
+This paragraph is quoted. This means that on mono, it should be
+yellow and have angle bracket characters to its left. Other than
+that, it should wrap in the same way as usual. In HTML, it should
+show up as a blockquote element with a style giving it a left
+margin bar, so it's obviously a quotation.
+{/Q}
+
+{q}
+This paragraph is weakly quoted; on Mono it's yellow but has no
+angle brackets, and in HTML it will be a blockquote element but not
+have the left-bar style.
+{/q}
+
+{pre}
+Here's some preformatted text.
+Line breaks are honoured in here, and spaces  are    significant.
+We can still do {e emphasis} and so forth.
+
+{mbreak (continued)}
+
+{Q}
+{pre}
+This is    preformatted
+{e and} quoted
+and so it's kinda fun.
+
+{/Q}
+
+This paragraph isn't preformatted{br}
+but it does have line breaks{br}
+inserted explicitly.{br}
+Note that the one at the end is optional but harmless.{br}
+
+Nearly there now. I need to mention bulletted lists:
+
+{b} Bullet point.
+
+{b} Bullet point again. This one has a bunch of text in it, to check
+that wrapping and all that sort of thing works correctly in
+bulletted paragraphs. I shall be annoyed if it wraps three spaces
+further over than the unbulletted text does!
+
+Also I need to be able to quote URLs. Here's one inline (though
+it'll be displayed on Mono). Note how the following period shows up
+in the HTML, but not after the display on Mono: {url
+http://www.tartarus.org/foo-bar.html . }There, that wasn't hard was
+it?
+
+{b} This URL is quoted in a bulletted paragraph, to check that that
+sort of paragraph is resumed correctly. {url
+http://www.tartarus.org/foo-bar.html . }And here's the continuation.
+
+{1} Here's the text of the footnote.
