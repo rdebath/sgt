@@ -1,11 +1,11 @@
 #!/usr/bin/perl
 
-# Take a Timber RFC822ish message on stdin, and output a proper RFC822
-# MIME-compliant message on stdout.
+# Take a Timber RFC822ish message on stdin, and send it.
 #
 # Timber RFC822ish messages consist of:
 #  - A header section, which may contain Attach and Attach-Enclosed
-#    headers. Terminated by a blank line just like proper RFC822.
+#    headers. Terminated by a blank line just like proper RFC822. May
+#    also contain Queue: headers.
 #  - A body section. Terminated by EOF or a line beginning with a ^F.
 #  - Attachment sections. Each new one is begun by a ^F line.
 #
@@ -36,11 +36,17 @@
 # character is literal; double quotes are stripped from around their
 # content; double-quoted spaces are literal but unquoted (and unbackslashed)
 # spaces separate words.
+#
+# A Queue: header contains a date and time. Dates are 8-digit with optional
+# - / or . separators; times are 4-digit 24-hour with optional colon.
+# The message will be queued until the specified time instead of being sent
+# immediately.
 
 $headers = "";
 $body = "";
 @attachments = ();
 @aheaders = ();
+$queue = 0;
 
 # Read headers
 while (<>) {
@@ -55,6 +61,17 @@ while (<>) {
     }
     $a = [$htype, @hwords];
     push @aheaders, $a;
+  } elsif (/^Queue:/) {
+    $_ .= "!"; # ensure there's spacing around everything
+    exit 1 unless /^(.*\D)(\d\d\d\d)[\-\/]?(\d\d)[\-\/]?(\d\d)(\D.*)$/;
+    ($year, $month, $day) = ($2, $3, $4);
+    $_ = $1 . $5;
+    $mon = ('Jan','Feb','Mar','Apr','May','Jun',
+            'Jul','Aug','Sep','Oct','Nov','Dec')[$month-1];
+    exit 1 unless /\D(\d\d):?(\d\d)\D/;
+    ($hour, $min) = ($1, $2);
+    $qtime = sprintf "%02d:%02d %s %02d, %04d", $hour, $min, $mon, $day, $year;
+    $queue = 1;
   } else {
     $headers .= $_ . "\n";
   }
@@ -82,7 +99,7 @@ while ($gotattach) {
 # If there are no attachment headers at all, we should just spew the
 # unchanged message (headers, \n, body) on stdout and leave.
 if ($#aheaders < 0) {
-  print $headers, "\n", $body;
+  &mail($headers . "\n" . $body);
   exit 0;
 }
 
@@ -169,16 +186,18 @@ while (&present($sep, @parts)) {
 $exthdrs = "MIME-Version: 1.0\n" .
            "Content-Type: multipart/mixed; boundary=\"$sep\"\n";
 
-print $headers, $exthdrs, "\n";
-print "  This message is in MIME format. If your mailer does not\n";
-print "  support MIME, you may have trouble reading the attachments.\n";
+$mail = $headers . $exthdrs . "\n";
+$mail .= "  This message is in MIME format. If your mailer does not\n";
+$mail .= "  support MIME, you may have trouble reading the attachments.\n";
 foreach $i (@parts) {
-  print "\n--$sep\n";
-  print $i->[0];
-  print "\n";
-  print $i->[1];
+  $mail .= "\n--$sep\n";
+  $mail .= $i->[0];
+  $mail .= "\n";
+  $mail .= $i->[1];
 }
-print "\n--$sep--\n";
+$mail .= "\n--$sep--\n";
+
+&mail($mail);
 
 # and done!
 exit 0;
@@ -231,4 +250,20 @@ sub canonlf {
   my ($data) = @_;
   $data =~ s/\n/\r\n/gs;
   $data;
+}
+
+sub mail {
+  my ($msg) = @_;
+  if ($queue) {
+    $sep = 'AAAAAAAAA';
+    while (&present($sep, ["", $msg])) { $sep++; }
+    open OUTPUT, "|at $qtime";
+    print OUTPUT "/usr/lib/sendmail -oem -t -oi << --$sep\n";
+    print OUTPUT "$msg\n--$sep\n";
+    close OUTPUT;
+  } else {
+    open OUTPUT, "|/usr/lib/sendmail -oem -t -oi";
+    print OUTPUT "$msg\n";
+    close OUTPUT;
+  }
 }
