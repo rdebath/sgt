@@ -33,15 +33,19 @@
 typedef struct btree btree;
 typedef void *bt_element_t;
 
+typedef union nodecomponent nodecomponent;
+typedef nodecomponent *nodeptr;
+
 typedef int (*cmpfn_t)(void *state, const bt_element_t, const bt_element_t);
 typedef bt_element_t (*copyfn_t)(void *state, const bt_element_t);
+typedef int (*propmakefn_t)(void *state, bt_element_t, nodecomponent *dest);
+/* s1 may be NULL (indicating copy s2 into dest). s2 is never NULL. */
+typedef int (*propmergefn_t)(void *state, nodecomponent *s1, nodecomponent *s2,
+			     nodecomponent *dest);
 
 enum {
     BT_REL_EQ, BT_REL_LT, BT_REL_LE, BT_REL_GT, BT_REL_GE
 };
-
-typedef union nodecomponent nodecomponent;
-typedef nodecomponent *nodeptr;
 
 /*
  * For type-checking purposes, and to ensure I don't accidentally
@@ -72,7 +76,8 @@ union nodecomponent {
     bt_element_t ep;
 };
 
-btree *bt_new(cmpfn_t cmp, copyfn_t copy, void *state, int mindegree);
+btree *bt_new(cmpfn_t cmp, copyfn_t copy, int nprops, propmakefn_t propmake,
+	      propmergefn_t propmerge, void *state, int mindegree);
 void bt_free(btree *bt);
 btree *bt_clone(btree *bt);
 int bt_count(btree *bt);
