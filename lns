@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 
 # lns -- create a symbolic link. Alternative to "ln -s".
 # This program works more like "cp", in that the source path name is not
