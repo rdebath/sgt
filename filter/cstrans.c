@@ -31,7 +31,7 @@ tstate *tstate_init(void)
 	exit(1);
     }
 
-    state->incset = CS_ASCII;
+    state->incset = charset_from_locale();
     state->outcset = CS_UTF8;
 
     state->instate1 = state->outstate1 = charset_init_state;
