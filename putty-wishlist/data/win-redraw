@@ -13,7 +13,7 @@ again. Two of us have managed to reproduce this ourselves with
 vigorous window-waving.
 
 <p>
-Currently this looks like a Windows bug. I (JTN) can reproduce it with
+Currently this looks like a Windows bug. We (JTN and OSD) can reproduce it with
 apps other than PuTTY (for instance, in WordPad's menu bar). We're
 assured that this probably isn't a function of the video card driver
 (which isn't responsible for calculating what to redraw, just for
