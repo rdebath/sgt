@@ -1,6 +1,6 @@
 # -*- mode: sh; mode: fold -*-
 # Simon Tatham's standardised chunk of .bashrc
-# $Revision: 1.7 $
+# $Revision: 1.8 $
 
 #{{{ I don't like .bash_history files. They wet their nests.
 unset HISTFILE
@@ -80,8 +80,13 @@ ls -d --color=auto . >&/dev/null && alias ls='ls --color=auto'
 
 #}}}
 #{{{ keybindings to run Timber
-bind '"\C-xM": "\001\013timber\n"'
-bind '"\C-xm": "\001\013timber '\'\''\n"'
+
+# bash-1.14.5 doesn't like escape sequences, so we have to be icky:
+# bind '"\C-xM": "\001\013timber\n"'
+# bind '"\C-xm": "\001\013timber '\'\''\n"'
+bind "`printf '"\\C-xM": "\001\013timber\n"'`"
+bind "`printf '"\\C-xm": "\001\013timber '\'\''\n"'`"
+
 #}}}
 #{{{ prompt configuration
 
