@@ -99,7 +99,7 @@ void db_list_entries(Date start, Date end, list_callback_fn_t fn, void *ctx)
 
     sqlite_exec_printf(db,
 		       "SELECT date, time, description FROM entries"
-		       " WHERE date >= %ld AND date <= %ld"
+		       " WHERE date >= %ld AND date < %ld"
 		       " ORDER BY date;",
 		       sqlite_list_callback, &str, &err,
 		       start, end);

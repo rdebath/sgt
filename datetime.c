@@ -142,17 +142,17 @@ char *format_date_core(Date d, int full)
 
     s = smalloc(32);
 
-    if (full) {
-	t = s + sprintf(s, "%3s ", weekdays[weekday(d)]);
-    } else
-	t = s;
-
     if (d == INVALID_DATE)
-	sprintf(t, "*INVALID!*");
+	sprintf(s, full ? "*INVALID DATE*" : "*INVALID!*");
     else if (d == NO_DATE)
-	sprintf(t, "          ");
-    else
+	sprintf(s, "%*s", full ? 14 : 10, "");
+    else {
+	if (full) {
+	    t = s + sprintf(s, "%3s ", weekdays[weekday(d)]);
+	} else
+	    t = s;
 	sprintf(t, "%4d-%02d-%02d", yy, mm, dd);
+    }
 
     return s;
 }
