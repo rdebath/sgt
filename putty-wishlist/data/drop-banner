@@ -2,6 +2,7 @@ Summary: PuTTY drops USERAUTH_BANNER when awaiting username input
 Class: bug
 Difficulty: tricky
 Content-type: text/x-html-body
+Present-in: 0.53b
 
 <p>
 Someone on comp.security.ssh <a href="http://groups.google.com/groups?selm=9b67156e.0311171247.2b0bf982%40posting.google.com">said</a> their login banner did not appear
