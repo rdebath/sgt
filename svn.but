@@ -599,7 +599,7 @@ work:
 
 \c hostname:~/src$ svn commit foo/foo.txt bar/bar/txt
 \e                 bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
-z\c [commit succeeds]
+\c [commit succeeds]
 \e iiiiiiiiiiiiiiiii
 
 I don't fully understand why this works and none of the other
