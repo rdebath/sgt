@@ -4,6 +4,17 @@
 
 # Usage:    multi mv 's/$/.old/' *.c
 #           multi cp 's:/tmp/(.*):$1:' *
+#
+# Options:  -n    don't actually do anything, just print what it would do
+#           -r    reverse the arguments to each command
+#           -q    don't print the commands as they are executed
+
+# Note that all variables in this script begin with a double
+# underscore. This is because the <action> parameter is a piece of
+# user-supplied Perl, which might perfectly legitimately want to
+# define and use its own variables in the course of doing a complex
+# transformation on file names. Thus, I arrange that all _my_
+# variables stay as far out of its likely namespace as they can.
 
 $__quiet = $__donothing = $__reverse = 0;
 
