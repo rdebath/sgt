@@ -1,12 +1,12 @@
 # -*- mode: sh; mode: fold -*-
 # Simon Tatham's standardised chunk of .bashrc
-# $Revision: 1.33 $
+# $Revision: 1.34 $
 
 #{{{ I don't like .bash_history files. They wet their nests.
 unset HISTFILE
 rm -f ~/.bash_history
 #}}}
-#{{{ addpath and addpathback, for idempotent path management
+#{{{ addpath, addpathback and rmpath, for idempotent path management
 
 addpath() {
   local a b c
@@ -17,7 +17,7 @@ addpath() {
   # Otherwise, default to a colon.
   c=${3:-:}
   # Retrieve the value of the variable whose name is given in $a.
-  eval "b=\$$a"
+  eval "b=\"\$$a\""
   case "$b" in
     '') export $a="$1" ;;
     *"$c$1$c"* | "$1$c"* | *"$c$1" | "$1") ;;
@@ -34,12 +34,40 @@ addpathback() {
   # Otherwise, default to a colon.
   c=${3:-:}
   # Retrieve the value of the variable whose name is given in $a.
-  eval "b=\$$a"
+  eval "b=\"\$$a\""
   case $b in
     '') export $a="$1" ;;
     *"$c$1$c"* | "$1$c"* | *"$c$1" | "$1") ;;
     *) export $a="$b$c$1" ;;
   esac
+}
+
+rmpath() {
+  # Use IFS to separate the path into its components.
+  local IFS i useit colon removed varname oldpath newpath
+
+  # By default we manage $PATH and it's separated by colons. These
+  # can change.
+  varname=${2:-PATH}
+  IFS=${3:-:}
+  eval "oldpath=\"\$$varname\""
+
+  # Construct a new path from all the components except the one we
+  # wish to remove.
+  newpath=""
+  colon=""
+  removed=no
+  for i in $oldpath; do
+    useit=yes
+    if [ "x$i" = "x$1" ]; then useit=no; removed=yes; fi
+    if [ "$useit" = "yes" ]; then newpath="$newpath$colon$i"; colon="$IFS"; fi
+  done
+  if [ "$removed" = "no" ]; then
+    echo rmpath: element "$1" not found in "\$$varname" >&2
+    return 1
+  fi
+  eval "$varname=\"\$newpath\""
+  return 0
 }
 
 #}}}
