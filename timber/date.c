@@ -2,6 +2,10 @@
  * date.c: date handling code for Timber.
  */
 
+#include <time.h>
+
+#include "timber.h"
+
 /*
  * Routines to get around the fact that C's time handling is awful.
  * With no direct inverse to gmtime(), and no standards-compliant

@@ -75,8 +75,10 @@ static int spot_encoded_word(const char *text, int length)
  * encoded-word is output using the provided default charset.
  */
 void rfc2047(const char *text, int length, parser_output_fn_t output,
-	     void *outctx, int structured, int default_charset)
+	     void *outctx, int structured, int dequote, int default_charset)
 {
+    int quoting;
+
     while (length > 0) {
 	const char *startpoint = text;
 	int elen;
@@ -153,9 +155,15 @@ void rfc2047(const char *text, int length, parser_output_fn_t output,
 	 * encoded-words to represent contiguous pieces of text.)
 	 */
 	startpoint = text;
+	quoting = 0;
 	while (length > 0 &&
-	       (*text != ' ' && *text != '\t' && *text != '\n'))
+	       (quoting || (*text != ' ' && *text != '\t' && *text != '\n'))) {
+	    if (*text == '"')
+		quoting = !quoting;
+	    else if (*text == '\\' && length > 1)
+		text++, length--;
 	    text++, length--;
+	}
 	while (length > 0 &&
 	       (*text == ' ' || *text == '\t' || *text == '\n'))
 	    text++, length--;
@@ -166,14 +174,29 @@ void rfc2047(const char *text, int length, parser_output_fn_t output,
 	      startpoint[1] == ' ')) &&
 	    spot_encoded_word(text, length))
 	    /* do not output anything */;
-	else if (text - startpoint > 0)
-	    /*
-	     * FIXME: What I could really do with here would be
-	     * code that (optionally) destroyed double quotes and
-	     * backslashed characters.
-	     */
-	    output(outctx, startpoint, text-startpoint, TYPE_HEADER_TEXT,
-		   default_charset);
+	else if (text - startpoint > 0) {
+	    if (!dequote) {
+		output(outctx, startpoint, text-startpoint, TYPE_HEADER_TEXT,
+		       default_charset);
+	    } else {
+		const char *p = startpoint;
+		while (p < text) {
+		    if (*p == '"' ||
+			(*p == '\\' && p+1 < text)) {
+			if (p > startpoint)
+			    output(outctx, startpoint, p-startpoint,
+				   TYPE_HEADER_TEXT, default_charset);
+			startpoint = p+1;
+			if (*p == '\\')
+			    p++;
+		    }
+		    p++;
+		}
+		if (p > startpoint)
+		    output(outctx, startpoint, p-startpoint,
+			   TYPE_HEADER_TEXT, default_charset);
+	    }
+	}
     }
 }
 
