@@ -1,5 +1,6 @@
 Summary: pterm aborts if Default Settings has SSH packet logging enabled
 Present-in: 2005-02-04
+Fixed-in: 2005-03-16
 Priority: medium
 Difficulty: tricky
 Class: bug
