@@ -1,0 +1,79 @@
+# -*- mode: sh; mode: fold -*-
+# Simon Tatham's standardised chunk of .bashrc
+# $Revision: 1.1 $
+
+#{{{ I don't like .bash_history files. They wet their nests.
+unset HISTFILE
+rm -f ~/.bash_history
+#}}}
+#{{{ addpath and addpathback, for idempotent $PATH management
+
+addpath() {
+  case $PATH in
+    '') PATH=$1 ;;
+    *:$1:* | $1:* | *:$1 | $1) ;;
+    *) export PATH=$1:$PATH ;;
+  esac
+}
+
+addpathback() {
+  case $PATH in
+    '') PATH=$1 ;;
+    *:$1:* | $1:* | *:$1 | $1) ;;
+    *) export PATH=$PATH:$1 ;;
+  esac
+}
+
+#}}}
+#{{{ ~/bin should be on $PATH if it exists; also run bashrc_dopath
+if test -d ~/bin; then
+  addpath ~/bin
+fi
+if test x`type -t bashrc_dopath` = xfunction; then bashrc_dopath; fi
+#}}}
+#{{{ various global variables
+
+bashrc_dovars() {
+  local foo
+  foo=`type -p less`
+  if [ -n "$foo" ]; then export PAGER=$foo; export LESS=-M; fi
+  foo=`type -p jed`
+  if [ -n "$foo" ]; then export VISUAL=$foo; fi
+  export FAST_PNEWS=y
+  export TRNINIT="-F>\  -h +hFrom +hNewsgroups +hDate +hFollowup-To -Os -q"
+  export ATTRIBUTION="%)f <%>f> wrote:"
+  export HOST_DEFAULTS=-R
+  export CVS_RSH=ssh
+}
+bashrc_dovars
+unset bashrc_dovars
+
+#}}}
+#{{{ shell settings and aliases
+
+set +o ignoreeof
+
+alias ed='ed -p "* "'
+alias dir='ls -l'
+ls -d --color=auto . >&/dev/null && alias ls='ls --color=auto'
+
+#}}}
+#{{{ prompt configuration
+
+doPSn() {
+  local hostname=`hostname`
+  local spaces=`echo -n $hostname | sed 's/./ /g'`
+  local bold=`tput bold | sed 's/\[1m/\[1;32m/'`
+  local sgr0=`tput sgr0`
+  PS1='\['$bold'\]: '$hostname';\['$sgr0'\] '
+  PS2='    '"$spaces"
+}
+doPSn
+unset doPSn
+
+#}}}
+#{{{ the `i' command
+i() {
+  echo Session is `whoami` on `tty | sed s/.dev.//` of `hostname`
+}
+#}}}
