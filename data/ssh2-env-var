@@ -1,0 +1,17 @@
+Summary: Support setting environment variables in SSH-2
+Class: wish
+Difficulty: fun
+Priority: low
+Content-type: text/x-html-body
+
+<p>
+SSH-2 has a mechanism for the client to set random environment
+variables on the server (the <code>env</code> channel request).
+Currently we don't support this.
+
+<p>
+Last time we looked, we weren't aware of any SSH servers that bothered
+to support this, but that was a some time ago now.
+
+<p>
+(The SSH-1 protocol doesn't support this at all.)
