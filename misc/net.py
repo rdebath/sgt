@@ -130,7 +130,8 @@ class NetGame:
             self.arena[sx][sy] = self.arena[sx][sy] | sd
             self.arena[dx][dy] = self.arena[dx][dy] | dd
 
-        # Put in barriers between squares, as clues.
+        # Compute the list of possible locations for barriers
+        # between squares, as clues.
         barrierlist = []
         for x in range(NSQUARES_X):
             for y in range(NSQUARES_Y-wrapoffset):
@@ -142,17 +143,28 @@ class NetGame:
                 x1 = (x+1) % NSQUARES_X
                 if not (self.arena[x][y] & R):
                     barrierlist.append((x,y,x1,y))
+
+        # Now we've got the network, scramble it.
+        for x in range(NSQUARES_X):
+            for y in range(NSQUARES_Y):
+                self.arena[x][y] = rotate(self.arena[x][y], rng.getint(4))
+
+        # Select actual barriers to go in the squares. Doing this
+        # _after_ scrambling (though we had to work out the list of
+        # potential barrier locations before) ensures that puzzles
+        # of the same seed and parameters but with different
+        # barrier rates are otherwise identical. Also, the method
+        # of selection here ensures that raising the barrier rate
+        # creates barrier sets which are supersets of those at
+        # lower rates - so you can't, for example, try rates 2,3,4
+        # and expect to get _different_ non-overlapping sets of
+        # barriers.
         self.barriers = {}
         nbarriers = len(barrierlist) * BARRIER_RATE / 100
         for i in range(nbarriers):
             index = rng.getint(len(barrierlist))
             self.barriers[barrierlist[index]] = 1
             del barrierlist[index]
-
-        # Now we've got the network, scramble it.
-        for x in range(NSQUARES_X):
-            for y in range(NSQUARES_Y):
-                self.arena[x][y] = rotate(self.arena[x][y], rng.getint(4))
 
         # Compute the ACTIVE bits.
         self.compute_active()
