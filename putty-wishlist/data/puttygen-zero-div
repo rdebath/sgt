@@ -1,0 +1,34 @@
+Summary: Occasional PuTTYgen division-by-zero errors
+Class: bug
+Difficulty: taxing
+Priority: medium
+Present-in: 0.53 0.53b
+Content-type: text/x-html-body
+
+<p>
+We are getting <em>very</em> occasional reports of integer division by
+zero errors in PuTTYgen.
+
+<ul>
+
+<li><code>15345.43775.42454.321823@chiark.greenend.org.uk</code>
+<br>2001-11-13? (maybe already resolved)
+
+<li><code>3CA268CA.7258.2CA7836@localhost</code>
+<br>SSH-1 1024, Win95, version 0.52 (assuming that, as we were told,
+`Teilungsfehler' is a division error)
+
+<li><code>000001c2bb51$77afcbf0$6401a8c0@lynn</code>
+<br>SSH-2 RSA 2048, version ???
+
+<li><code>1645070571.20030227150247@inbox.ru</code>
+<br>SSH-2 RSA 1024, version 0.53b
+<br>At last, we have a stack trace:
+<br><pre>PUTTYGEN! 00408160()  sshbn.obj:_internal_mod
+PUTTYGEN! 004086fa()  sshbn.obj:_bigdivmod
+PUTTYGEN! 00408ecd()  sshbn.obj:_modinv
+PUTTYGEN! 0041040f()  sshrsag.obj:_rsa_generate
+PUTTYGEN! 004051c2()  puttygen.obj:_generate_rsa_key_thread@4
+KERNEL32! 77e887dd()</pre>
+
+</ul>
