@@ -2,6 +2,7 @@ Summary: Arbitrary restriction on number of forwarded ports
 Class: semi-bug
 Difficulty: tricky
 Priority: medium
+Depends: config-struct
 Content-type: text/x-html-body
 
 <p>

@@ -1,0 +1,43 @@
+Summary: Remove fixed-length buffers in configuration structure
+Class: wish
+Difficulty: tricky
+Priority: medium
+Depends: config-locations
+Content-type: text/x-html-body
+
+<p>
+Currently PuTTY uses a single <code>struct</code>
+(<code>Config</code>) containing a bunch of fixed-length buffers to
+store its configuration. This leads to problems such as
+<a href="portfwd-space.html">limited space for port forwardings</a>.
+It should clearly be replaced with a structure containing references
+to allocated storage.
+
+<p>
+This isn't entirely trivial, which is probably the main reason we
+haven't done it yet:
+
+<ul>
+
+<li><em>Object housekeeping.</em> Currently, when a
+<code>Config</code> needs to be duplicated intra-process, a structure
+copy is usually by and large adequate, with occasional grotty
+fixing-up of pointers. Similar issues apply to construction and
+destruction. We'd need to replace this with proper suite of object
+housekeeping functions.
+
+<li><em>Serialisation.</em> Currently `Duplicate Session' is
+implemented by squirting the <code>struct</code> over to another
+process and crossing our fingers. This is obviously icky, and clearly
+won't be sufficient when there are more pointers around.
+<br>Any textual format we invent to
+<a href="config-locations.html">store configuration in a file</a>
+would probably be suitable for this too; so this should probably wait
+until we've done that (which we already have to some extent for the
+Unix port).
+
+<li><em>Opaque objects.</em> Some platforms may use opaque objects to
+represent things like filenames. These need to be copyable,
+serialisable etc.
+
+</ul>
