@@ -535,15 +535,27 @@ static int check_lines(struct ntris_instance *inst)
     return count;
 }
 
-int drop(struct ntris_instance *inst)
+static void postdrop(struct ntris_instance *inst)
 {
-    if (try_move_down(inst))
-	return FALSE;
     write_shape(inst, inst->currshape, inst->shape_x, inst->shape_y);
     draw_shape(inst, inst->nextshape, inst->play_width+3, 1, -1);
     check_lines(inst);
     inst->currshape = inst->nextshape;
     inst->shapecolour = inst->ss->colours[inst->currshape];
     inst->nextshape = rand_shape(inst);
+}
+
+int softdrop(struct ntris_instance *inst)
+{
+    if (try_move_down(inst))
+	return FALSE;
+    postdrop(inst);
     return TRUE;
+}
+
+void harddrop(struct ntris_instance *inst)
+{
+    while (try_move_down(inst))
+	continue;
+    postdrop(inst);
 }
