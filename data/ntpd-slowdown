@@ -1,0 +1,35 @@
+Summary: PuTTY causes ntpd to lose time
+Class: semi-bug
+Priority: medium
+Difficulty: taxing
+Present-in: 0.53b
+Content-type: text/x-html-body
+
+<p>
+It's been reported that running an SSH2 session through PuTTY causes ntpd
+to lose time in 10ms steps, as if 100Hz interrupts are being lost.  The
+same problem doesn't affect Telnet connections, though.  Ref
+&lt;C5EA7C1F01A7D311A44700508B95196C0730D8AB@004-h00028.wugo.intranet.wegener.nl&gt;
+<i>et seq.</i>, which mentions the platform as
+
+<blockquote>
+PC DELL Latitude 610 with w2k pro Dutch with SP3 on AC Power.
+</blockquote>
+
+<p>As far as I can tell, <code>noise_ultralight()</code> and
+<code>noise_regular()</code> are called even during a Telnet
+session (they're stubs in PuTTYtel, but in PuTTY they go out
+and hunt for noise even if no-one's ever going to consume it).
+<code>noise_get_heavy()</code> is only called at the start of an SSH
+session, so it shouldn't cause continuing problems, especially not ones
+that go away when the session ends.
+
+I think this narrows us down to <code>noise_get_light()</code>,
+which is called every time the random pool is used, which
+looks like being most packets in an SSH session, but never
+in a Telnet session.  <code>noise_get_light()</code> calls
+<code>GetSystemTime()</code>, <code>GetSystemTimeAdjustment()</code>
+and <code>GetSystemPowerStatus()</code>.  I'd suspect that either
+<code>GetSystemTimeAdjustment()</code> is mangling said adjustment in
+the process or (more likely) <code>GetSystemPowerStatus()</code> is
+calling the APM BIOS, which ISTR has to be done with interrupts disabled.
