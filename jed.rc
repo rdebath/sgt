@@ -1,5 +1,5 @@
 % -*- mode: slang; mode: fold -*-
-% Simon Tatham: version $Revision: 1.8 $
+% Simon Tatham: version $Revision: 1.9 $
 
 %{{{ load Emacs keybindings to start with
 
@@ -663,7 +663,7 @@ define text_format_paragraph() {
     while (1) {
         !if (down(1))
             break;
-        if (text_item1st() or not text_parsep()) {
+        if (text_item1st() or text_parsep()) {
             up(1);
             break;
         }
