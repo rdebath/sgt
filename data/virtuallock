@@ -4,8 +4,7 @@ Priority: low
 Content-type: text/x-html-body
 
 <p>
-The
-<a href="http://www.chiark.greenend.org.uk/~sgtatham/putty/faq.html#QA.8.4">FAQ</a>
+The <a href="../faq.html#faq-virtuallock">FAQ</a>
 gives our reasoning behind not trying to use
 <code>VirtualLock()</code> on Windows to prevent sensitive material
 such as private keys being written to disk.
