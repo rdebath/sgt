@@ -43,7 +43,11 @@ timber:
 
 SRC := ../
 
+ifeq ($(shell test -d $(SRC)charset && echo yes),yes)
 LIBCHARSET_SRCDIR = $(SRC)charset/
+else
+LIBCHARSET_SRCDIR = $(SRC)../charset/
+endif
 LIBCHARSET_OBJDIR =#
 LIBCHARSET_OBJPFX = cs-#
 LIBCHARSET_GENPFX = charset-#
@@ -56,7 +60,7 @@ MODULES += display boringhdr send
 OBJECTS := $(addsuffix .o,$(MODULES)) $(LIBCHARSET_OBJS)
 DEPS := $(addsuffix .d,$(MODULES))
 LIBS := -lsqlite
-CFLAGS += $(CFL) -Wall -I$(SRC)charset -I.
+CFLAGS += $(CFL) -Wall -I$(LIBCHARSET_SRCDIR) -I.
 
 TESTS := main date
 TEST_MODULES := $(addsuffix -tests,$(TESTS))
