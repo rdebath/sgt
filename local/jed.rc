@@ -1,5 +1,5 @@
 % -*- mode: slang; mode: fold -*-
-% Simon Tatham: version $Revision: 1.29 $
+% Simon Tatham: version $Revision: 1.30 $
 
 %{{{ load Emacs keybindings to start with
 
@@ -934,6 +934,10 @@ if (jedrc_is_in_lib("timberc.sl")) { %{{{
 %}}}
 if (jedrc_is_in_lib("bcmode.sl")) { %{{{
     autoload("bc_mode", "bcmode");
+}
+if (jedrc_is_in_lib("buttress.sl")) { %{{{
+    add_mode_for_extension("buttress","but");
+    autoload("buttress_mode", "buttress");
 }
 %}}}
 
