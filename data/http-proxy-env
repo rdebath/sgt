@@ -1,6 +1,7 @@
 Summary: Honour the http_proxy et al environment variables
 Class: wish
 Difficulty: fun
+Priority: low
 Content-type: text/x-html-body
 
 <p>
