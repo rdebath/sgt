@@ -3,7 +3,7 @@ Class: semi-bug
 Difficulty: tricky
 Priority: low
 Content-type: text/x-html-body
-Present-in: 0.53
+Present-in: 0.53 0.53b
 Absent-in: 0.52
 
 <p>
