@@ -9,9 +9,13 @@ import rgtpclient
 import term
 
 # Read .grungerc
-rcpath = os.path.normpath(os.path.join(os.environ["HOME"], ".grungerc"))
-secretpath = os.path.normpath(os.path.join(os.environ["HOME"], ".groggsecret"))
-indexpath = os.path.normpath(os.path.join(os.environ["HOME"], ".grungeindex"))
+if os.environ.has_key("GRUNGEDIR"):
+    rcdir = os.environ["GRUNGEDIR"]
+else:
+    rcdir = os.environ["HOME"]
+rcpath = os.path.normpath(os.path.join(rcdir, ".grungerc"))
+secretpath = os.path.normpath(os.path.join(rcdir, ".groggsecret"))
+indexpath = os.path.normpath(os.path.join(rcdir, ".grungeindex"))
 rc = open(rcpath, "r")
 rcfile = {}
 while 1:
@@ -778,6 +782,15 @@ def editor(title, inittext, width=79, height=24):
 	    if content[i] != newcontent[i]:
 		term.goto(0, yoff + i)
 		sys.stdout.write(newcontent[i])
+    def wordbegin(s, x, wordchars=string.letters+"-"):
+	"Determine whether s has a word-beginning at point x"
+	if x == 0:
+	    return 1
+	if not (s[x] in wordchars):
+	    return 0
+	if s[x-1] in wordchars:
+	    return 0
+	return 1
     lwidth = 75
     insert = 1 # FIXME: permament insert-mode setting
     try:
@@ -798,6 +811,7 @@ def editor(title, inittext, width=79, height=24):
 	initoutput = ""
 	content = [" " * lwidth] * ynum
 	newcontent = [" " * lwidth] * ynum
+	linecutbuf = ""
 	ret = inittext
 	if len(ret) == 0:
 	    ret = [""]
@@ -819,7 +833,6 @@ def editor(title, inittext, width=79, height=24):
 		    c = c + cc
 		    if string.find(string.digits+"[;", cc) < 0:
 			break
-	    # FIXME: ^W, ^T move by words.
 	    # FIXME: ^V, ^Z move by screenfuls.
 	    #
 	    # FIXME: ^K, ^Y c'n'p.
@@ -872,6 +885,34 @@ def editor(title, inittext, width=79, height=24):
 		    x = 0
 		    y = y + 1
 		    if ytop < y-ynum+1: ytop = y-ynum+1
+	    elif c == "\024": # word right
+		if x < len(ret[y]):
+		    x = x + 1
+		    while x < len(ret[y]) and not wordbegin(ret[y],x):
+			x = x + 1
+		elif y < len(ret)-1:
+		    x = 0
+		    y = y + 1
+		    if ytop < y-ynum+1: ytop = y-ynum+1
+	    elif c == "\027": # word left
+		if x > 0:
+		    x = x - 1
+		elif y > 0:
+		    y = y - 1
+		    if ytop > y: ytop = y
+		    x = len(ret[y])
+		while x < len(ret[y]) and not wordbegin(ret[y],x):
+		    x = x - 1
+	    elif c == "\013": # cut to eol
+		if x < len(ret[y]):
+		    linecutbuf = ret[y][x:]
+		    ret[y] = ret[y][:x]
+		elif y+1 < len(ret) and len(ret[y]) + len(ret[y+1]) <= lwidth:
+		    ret[y:y+2] = [ret[y] + ret[y+1]]
+	    elif c == "\031": # paste the line cut buffer
+		if len(ret[y]) + len(linecutbuf) <= lwidth:
+		    ret[y] = ret[y][:x] + linecutbuf + ret[y][x:]
+		    x = x + len(linecutbuf)
 	    elif c == "\016" or c == "\033[B": # Down
 		if y < len(ret)-1:
 		    y = y + 1
@@ -886,7 +927,7 @@ def editor(title, inittext, width=79, height=24):
 		    y = y - 1
 		    if ytop > y: ytop = y
 		    x = len(ret[y])
-	    elif ord(c) >= 32 and ord(c) <= 126:
+	    elif len(c) == 1 and ord(c) >= 32 and ord(c) <= 126:
 		ret[y] = ret[y][:x] + c + ret[y][x+1-insert:]
 		x = x + 1
 		py = y
@@ -974,7 +1015,7 @@ def addpage(pagetype, grogname, itemid):
 	print "    can add your contribution anyway."
 	print
 	y=y+3
-    if pagetype == 2:
+    if pagetype == 1:
 	print "    [\033[1mSPACE\033[m] - Add your comment as a continuation."
 	spaceaction = "cont"
     else:
@@ -993,19 +1034,27 @@ def addpage(pagetype, grogname, itemid):
 	    print "        [\033[1mN\033[m] - Grogname \""+grogname+"\""
 	    term.goto(0, 23)
 	    print centre(["======== Please select an option ========"], 79),
+	    sys.stdout.flush()
 	    c = string.lower(sys.stdin.read(1))
 	    if c == " ":
 		if spaceaction == "cont":
-		    subj = getinput("Enter subject line:", "", 24, 80)
+		    subj = getinput("Enter subject line:", "", 80, 24)
 		return spaceaction, grogname, subj
 	    elif c == "a":
 		return "edit", grogname, subj
 	    elif c == "q":
 		return "quit", grogname, subj
 	    elif c == "n":
-		grogname = getinput("Enter name: ", grogname, 24, 80)
+		grogname = getinput("Enter name: ", grogname, 80, 24)
     finally:
 	term.charmodeoff()
+
+server = "rgtp-serv.groggs.group.cam.ac.uk"
+port = 1431
+if rcfile.has_key("server"):
+    server = rcfile["server"]
+if rcfile.has_key("port"):
+    port = string.atoi(rcfile["port"])
 
 args = sys.argv[1:]
 logfile = None
@@ -1021,14 +1070,26 @@ while len(args) > 0 and args[0][:1] == "-":
 	sys.exit(0)
     if args[0] == "-dump":
 	dump = 1
-	c = rgtpclient.RGTPConnection(plogfile=logfile)
+	c = rgtpclient.RGTPConnection(host=server, port=port, plogfile=logfile)
 	c.setsecret(os.path.normpath(os.path.join(os.environ["HOME"], ".groggsecret")))
 	c.login(rcfile["userid"])
-	item = c.item(args[1])
+	itm = c.item(args[1])
 	c.close()
-	for i in formatitem(item):
+	for i in formatitem(itm):
 	    print i
 	sys.exit(0)
+    if args[0] == "-c":
+	# Check for new GROGGS but don't start the reader.
+	c = rgtpclient.RGTPConnection(host=server, port=port, plogfile=logfile)
+	c.setsecret(os.path.normpath(os.path.join(os.environ["HOME"], ".groggsecret")))
+	c.login(rcfile["userid"])
+	items, lastseq = loadindex(indexpath)
+	index = c.index(sequence=lastseq+1)
+	c.close()
+	if index != []:
+	    print "You have new GROGGS!"
+	    sys.exit(0)
+	sys.exit(1)
     args[:1] = []
 
 def indexupdate(c, items, lastseq):
@@ -1060,7 +1121,7 @@ def indexupdate(c, items, lastseq):
 # - View MOTD.
 # - View Edit Log.
 
-c = rgtpclient.RGTPConnection(plogfile=logfile)
+c = rgtpclient.RGTPConnection(host=server, port=port, plogfile=logfile)
 c.setsecret(secretpath)
 c.login(rcfile["userid"])
 
@@ -1077,8 +1138,8 @@ while 1:
 	override = 0
 	while len(aux) > 1:
 	    itemid = aux
-	    item = c.item(aux)
-	    aux, override = pageitem(items[aux], item, override)
+	    itm = c.item(aux)
+	    aux, override = pageitem(items[aux], itm, override)
 	if aux == "a":
 	    text = []
 	    grogname = rcfile["grogname"]
@@ -1097,12 +1158,11 @@ while 1:
 		    if err != "":
 			FIXME() # let's have an error page
 		    status = c.reply(itemid)
-		elif action[4] == "cont":
+		elif action[:4] == "cont":
 		    err = c.senddata([grogname] + text)
 		    if err != "":
 			FIXME() # let's have an error page
 		    status = c.cont(itemid, subj)
-
 		if status == "ok":
 		    # Re-update index.
 		    items, lastseq = indexupdate(c, items, lastseq)
