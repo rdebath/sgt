@@ -483,7 +483,7 @@ void showversion(void)
     char *v;
     extern char doitlib_revision[];
 
-    v = makeversion(versionbuf, "$Revision: 1.22 $");
+    v = makeversion(versionbuf, "$Revision: 1.23 $");
     if (v)
 	printf("doitclient revision %s", v);
     else
@@ -587,6 +587,7 @@ int main(int argc, char **argv)
     int nogo = 0, errs = 0;
     int errcode;
     int verbose = 0;
+    int doing_opts = 1;
 
     typedef enum { TRI_MAYBE, TRI_NO, TRI_YES } troolean;
 
@@ -639,7 +640,7 @@ int main(int argc, char **argv)
      */
     while (--argc) {
 	char *p = *++argv;
-	if (*p == '-') {
+	if (*p == '-' && doing_opts) {
 	    /*
 	     * An option.
 	     */
@@ -650,6 +651,13 @@ int main(int argc, char **argv)
 		    /*
 		     * Long option.
 		     */
+                    if (!p[1]) {
+                        /*
+                         * "--" terminates option processing.
+                         */
+                        doing_opts = 0;
+                        break;
+                    }
 		    {
 			char *opt, *val;
 			opt = p++;     /* opt will have _one_ leading - */
@@ -808,6 +816,7 @@ int main(int argc, char **argv)
 		    arg2 = dupcat(arg2, " ", p, NULL);
 		    free(tmp);
 		}
+                doing_opts = 0;
             }
 	}
     }
