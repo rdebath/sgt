@@ -264,9 +264,7 @@ function print_entry (Page p, Entry e, Color bgcolor, Color fgcolor, bool hide_t
     #    + $e.time->time_format() + "</b>";
     $datetime = $e.time->date_format("%%da%% %%yyyy%%-%%mm%%-%%dd%% %%HH%%:%%min%%");
 
-    if (($p.view == "friends" or
-         $p.journal_type == "C" or
-         $e.poster.username != $e.journal.username) and defined $e.userpic)
+    if (defined $e.userpic)
     {
         """
 <tr valign="top"><td align="right">
