@@ -2008,7 +2008,7 @@ define timber_reply_common(all) {
 		to = timber_getheader(1);
 	    } else if (timber_ila("|Reply-To:")) {
 		go_right(10);
-		replyto = orig_replyto = timber_getheader(1);
+		replyto = timber_getheader(1);
 	    } else if (timber_ila("|Cc:")) {
 		go_right(4);
 		cc = timber_getheader(1);
