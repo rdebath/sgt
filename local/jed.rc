@@ -1,5 +1,5 @@
 % -*- mode: slang; mode: fold -*-
-% Simon Tatham: version $Revision: 1.41 $
+% Simon Tatham: version $Revision: 1.42 $
 
 %{{{ load Emacs keybindings to start with
 
@@ -311,6 +311,37 @@ define c_mode_hook() %{{{
     unset_buffer_hook("par_sep");
 }
 %}}}
+
+%}}}
+%{{{ redefine bits of Perl mode
+
+define perl_mode_hook()
+{
+    variable keymap;
+    keymap = what_keymap();
+    % Currently Perl mode doesn't have its own keymap. If that ever
+    % changes, we don't want to have to fix this bit of jedrc!
+    if (keymap == "global") {
+        keymap = "perl";
+        !if (keymap_p ($1)) make_keymap ($1);
+        use_keymap(keymap);
+    }
+    definekey("jedrc_perl_format_paragraph", "^[Q", keymap);
+    definekey("jedrc_perl_format_paragraph", "^[q", keymap);
+    unset_buffer_hook("par_sep");
+}
+
+%}}}
+%{{{ redefine bits of armasm mode
+
+define armasm_mode_hook() %{{{
+{
+    variable keymap;
+    keymap = what_keymap();
+    definekey("jedrc_armasm_format_paragraph", "^[Q", keymap);
+    definekey("jedrc_armasm_format_paragraph", "^[q", keymap);
+    unset_buffer_hook("par_sep");
+}
 
 %}}}
 %{{{ ensure bash scripts are edited in sh mode, and fiddle with sh mode
@@ -989,7 +1020,7 @@ if (jedrc_is_in_lib("buttress.sl")) { %{{{
 %{{{ ESC 0 inserts `0', so we can type eight zeros using ALT-8 ALT-0
 setkey(". 48 insert_char", "^[0");
 %}}}
-%{{{ Somewhat different text and C mode format-paragraph functions
+%{{{ Somewhat different format-paragraph functions
 
 define jedrc_on_white() {
     variable i = what_char();
@@ -1137,7 +1168,18 @@ define jedrc_format_paragraph(prefix) {
     pop_spot();
 }
 
+% To allow paragraph formatting in SLang mode to work properly, we
+% need cmode_is_slang_mode listed as an autoload if it isn't
+% already defined.
+#ifexists cmode_is_slang_mode
+% it's defined, we're safe
+#else
+autoload("cmode_is_slang_mode", "cmode");
+#endif
+
 define jedrc_c_get_prefix() {
+    if (cmode_is_slang_mode())
+        return "% ";
     push_spot();
     EXIT_BLOCK { pop_spot(); }
     bol();
@@ -1153,6 +1195,12 @@ define jedrc_text_format_paragraph() {
 }
 define jedrc_c_format_paragraph() {
     jedrc_format_paragraph(jedrc_c_get_prefix());
+}
+define jedrc_armasm_format_paragraph() {
+    jedrc_format_paragraph("; ");
+}
+define jedrc_perl_format_paragraph() {
+    jedrc_format_paragraph("# ");
 }
 
 define jedrc_text_parsep() {
