@@ -1,3 +1,23 @@
+\# TODO:
+\#
+\#  - Check over sentence length and grammatical complexity. `style'
+\#    and `diction' might help here.
+\#
+\# Pending:
+\#
+\#  - Can we find a good example of a protocol which mistakenly
+\#    divides users up into categories? I want to write that section
+\#    but I can't immediately think of a good illustration.
+\#
+\#  - Is there a better example of proxy-friendliness than PNG?
+\#    Something that's actually a network protocol?
+\#
+\#  - References in general should be present. If the SSH RFCs come
+\#    out, that would be handy. OTOH I suppose I can always change
+\#    the links when they do; if I go this way I should put a note
+\#    at the bottom mentioning that people copying the article
+\#    should take care about this themselves.
+
 \cfg{xhtml-leaf-level}{0}
 \cfg{chapter}{Section}
 \cfg{text-title-align}{left}
@@ -40,11 +60,11 @@ another using well-defined network protocols.
 Interface and protocol design is a fundamental programming technique
 for making the complexity of a large project manageable, and also
 for allowing diverse programs from widely differing backgrounds to
-communicate usefully. They can help in debugging, help in management
-of teams of programmers, help flexibility of software by making
-parts interchangeable, and much more. So with all these advantages,
-it's no wonder there are a lot of interfaces about: within
-individual programs, between programs and their supporting
+communicate usefully. Interfaces can help in debugging, help in
+management of teams of programmers, help flexibility of software by
+making parts interchangeable, and much more. So with all these
+advantages, it's no wonder there are a lot of interfaces about:
+within individual programs, between programs and their supporting
 libraries, between cooperating programs, on the same computer or
 across a network. Interfaces are everywhere.
 
@@ -104,41 +124,41 @@ a network utility, you might have a set of functions which deal with
 gradually collecting data and accumulating it into a string. This
 might be a good piece of code to define a clear interface to,
 because that would make it easier to copy the whole set of functions
-out of that program and re-use it in another one. (You could see
-this as the interchangeability criterion in reverse: instead of
-leaving the main program fixed and switching around small sections
-of code, you're leaving a small section of code fixed and switching
-the rest of the program!)
+out of that program and re-use it in another one. (You could think
+of this as the reverse of the interchangeability criterion: instead
+of leaving the main program fixed and switching around small
+sections of code, you're leaving a small section of code fixed and
+switching the rest of the program.)
 
 Apart from these clear practical advantages of defining an
 interface, the main benefit of splitting code into small sections
 and defining interfaces between them is in debugging and testing.
-Many bugs can be localised into a particular section simply by
-examining the data flowing over the interfaces between sections, and
-checking whether that data is legal according to the interface
-definitions. When you find a section taking in valid data and giving
-out invalid data, there's the bug. Better still, you can write a
-test suite for each section based on the interface to it, and test
-each statement made in the interface design. If the design says
-passing a null pointer to a function is valid, for example, you can
-write a test which does pass it a null pointer, and make sure it
-doesn't crash. That way you can do a lot of your testing on a small
-part of the program at a time, and cut down the number of bugs you
-have to hunt for in the program as a whole.
+You can often find out which section a bug is in simply by examining
+the data flowing over the interfaces between sections, and checking
+whether it is legal according to the interface definitions. When you
+find a section taking in valid data and giving out invalid data,
+there's the bug. Better still, you can write a test suite for each
+section based on the interface to it, and test each statement made
+in the interface design. If the design says passing a null pointer
+to a function is valid, for example, you can write a test which does
+pass it a null pointer, and make sure it doesn't crash. That way you
+can do a lot of your testing on a small part of the program at a
+time, and cut down the number of bugs you have to hunt for in the
+program as a whole.
 
 Ultimately, though, the decision about whether to define an
 interface is one of cost versus benefit. Carefully specifying an
 interface takes time and effort (particularly if you carefully
-consider all the guidelines in this article!), and it might be that
-the time you'll spend doing this is more than the time you'd save in
-debugging and testing.
+consider all the guidelines in this article!). It might turn out
+that the time you'll spend doing this is more than the time you'd
+save in debugging and testing.
 
 \C{where} Where should I put my interface?
 
 Once you've decided you need an interface, the next big question is
 exactly where it goes. Given a piece of functionality that could
-plausibly be placed on either side of the interface, how do you
-decide which side you put it on?
+plausibly go on either side of the interface, how do you decide
+which side you put it on?
 
 There are a variety of criteria you might use to decide this
 question. In this section I examine some of them.
@@ -201,7 +221,8 @@ in terms of minimising data flow over the network (see
 \k{where-dataflow}). After all, if there are ten thousand files in a
 directory and only three of them match the wildcard, the SFTP client
 will have to retrieve all ten thousand file names before it can
-start transferring files!
+start transferring files; but the SCP client will be sent the names
+of only the three files that matched.
 
 However, SCP has a fatal flaw: because the wildcard matching is
 performed by the server's local wildcard matching rules, the client
@@ -237,6 +258,63 @@ even less configurability - not only can the server not choose an
 appropriate set of wildcard rules, but now the \e{client} can't
 choose a rule set either. Everybody everywhere must use the One True
 Ruleset defined in the protocol standard.
+
+\S{where-trust-privacy} Preserve each side's privacy
+
+Another thing to consider, when designing an interface or protocol
+between programs that have limited trust in each other, is to make
+sure neither side is required to give its private data to the other
+side for storage.
+
+This may sound obvious, but at least one reasonably modern protocol
+didn't think so. Version 1 of the SSH protocol implements remote
+port forwarding in a way that violates this principle.
+
+In remote port forwarding, the SSH server listens for connections on
+a particular network port. When a connection comes in, it tells the
+SSH client, which then makes a connection to a local server of some
+kind, and data is exchanged between the process which connected to
+the SSH server and the process the SSH client has connected to.
+
+In SSH v1, the SSH client sets this up by sending a message to the
+server saying \q{Please listen on port 2345. When a connection comes
+in, I will send it to \cw{myserver.example.com} port 3456.} The SSH
+server listens to the requested port, and when it receives a
+connection it sends back a message saying \q{Please connect to
+\cw{myserver.example.com} port 3456}.
+
+This approach has two problems:
+
+\b It's an invitation for client implementations to do the wrong
+thing. The obvious naive client implementation will simply listen
+for any \q{please connect} messages and connect to the address they
+specify. If a client like this connects from inside a firewalled
+zone to a server outside it, it has just given the system
+administrator of the server machine the ability to connect to
+\e{any} service provided behind the firewall. So clients \e{must}
+maintain a list of addresses they have asked the server to send
+\q{please connect} messages for, and must verify that any real
+\q{please connect} message has an address in this list.
+
+\b Even if the client doesn't make that mistake, it's an invasion of
+privacy; the location of services in the client's network might be
+no business of the server administrator, so the client might not
+want to tell the server what they are. In this situation, the client
+might be well advised to tell lies - to make up fictitious service
+addresses to send to the server, and to translate them into the real
+ones when they come back.
+
+SSH version 2 does this the right way. The client isn't even
+\e{asked} to send its local service address to the server. Instead,
+it simply tells the server \q{Please listen on port 2345}, and when
+the server receives a connection it sends back \q{Here's a
+connection on port 2345 as you requested}. Then the list of which
+ports are forwarded to which local services is kept at the client
+end, and the client looks up the port number in that list to decide
+where to connect to. Now the only way the server can cheat is by
+sending a port number that the client never requested - in which
+case the client will fail to find it in its list, and either
+complain or ignore it.
 
 \H{where-dataflow} The orange-segment model: minimum data flow
 
@@ -322,7 +400,7 @@ It's an acceptable design choice to rule that certain parameter
 values are simply \e{illegal}: not in the sense that the function is
 required to return an error if you pass them, but in the sense that
 you must not pass them in the first place and the function is not
-required to handle them correctly. An example in the C library
+required to handle them usefully at all. An example in the C library
 standard is passing a null pointer to \cw{strlen()}. However, note
 that any interface between programs that don't trust each other must
 ensure that this type of undefined behaviour doesn't lead to a
@@ -331,17 +409,17 @@ interface to an OS kernel.)
 
 \H{what-ordering} Ordering constraints
 
-Another important thing to document is the \e{ordering} constraints
-(if any) between requests. Often the implementation of a module
-introduces ordering constraints, which don't even occur to the
-programmer because they hadn't imagined that anyone might ever try
-to violate them. Unfortunately, it's almost always worth assuming
-that if enough people use your implementation of an interface,
-\e{someone} will try to violate any unwritten requirement in it - so
-even if you don't write your code to deal with strange orders of
-function calls, at least write the interface specification to make
-it clear that you haven't. Then anyone who does that has only
-themselves to blame.
+It is also important to document what constraints (if any) exist on
+the order in which clients may make requests. Often the
+implementation of a module introduces ordering constraints, which
+don't even occur to the programmer because they hadn't imagined that
+anyone might ever try to violate them. Unfortunately, it's almost
+always worth assuming that if enough people use your implementation
+of an interface, \e{someone} will try to violate any unwritten
+requirement in it - so even if you don't write your code to deal
+with strange orders of function calls, at least write the interface
+specification to make it clear that you haven't. Then anyone who
+does that has only themselves to blame.
 
 Here's a simple example. Suppose you are writing in C or another
 non-garbage-collected language, and you have created an interface
@@ -362,10 +440,10 @@ The intended order of calls is basically as shown above. Clients are
 expected to call \cw{NewContext()} and then \cw{InitContext()} to
 set things up, call \cw{ProcessContext()} once or more during
 processing, and eventually clean up by calling \cw{FreeContext()}.
-It should be intuitively obvious to any reader that you must not
-call \cw{InitContext()} or \cw{ProcessContext()} on a context you've
-already called \cw{FreeContext()} on, and that you must not call
-\cw{ProcessContext()} on a context before you've called
+When I look at this interface design, it is intuitively obvious to
+me that I must not call \cw{InitContext()} or \cw{ProcessContext()}
+on a context I've already called \cw{FreeContext()} on, and that I
+must not call \cw{ProcessContext()} on a context before I've called
 \cw{InitContext()} on it. This much is simple.
 
 Now, can I call \cw{InitContext()} \e{twice} on the same context? It
@@ -377,11 +455,10 @@ allocating memory, this means that \cw{InitContext()} must check
 each of the fields it initialises, and if they contain
 already-allocated data then it must free it before overwriting it
 with new data. Otherwise, calling \cw{InitContext()} twice will
-cause a memory leak. So whether or not I'm allowed to re-initialise
-a context I've already initialised needs to be documented in the
-interface specification. (It's perfectly allowable to decide not to
-bother handling this case, as long as the interface design \e{says
-so}.)
+cause a memory leak. So the interface specification should document
+whether or not I'm allowed to re-initialise a context I've already
+initialised. (It's perfectly allowable to decide not to bother
+handling this case, as long as the interface design \e{says so}.)
 
 Also, what if I've called \cw{NewContext()}, but in the process of
 gathering data to pass to \cw{InitContext()} I encounter a fatal
@@ -436,30 +513,30 @@ function in an invalid state.)
 \H{what-ownership} Ownership of data
 
 Suppose you have provided an interface that writes out a PNG image
-file. As well as the image data, PNG images may contain textual data
-such as a title and a copyright notice. So your interface might well
-contain a function such as \cw{PNGSetTitle()}, to which I can pass a
-string containing the title I want my image to have.
+file. As well as the image data, PNG images may contain a colour
+palette; so your interface might well contain a function such as
+\cw{PNGSetPalette()}, to which I can pass an array of colour
+definitions.
 
-I might very well call \cw{PNGSetTitle()} right at the start of my
+I might very well call \cw{PNGSetPalette()} right at the start of my
 client routine, and then spend some time putting together the actual
 bitmap data to go in the image. Eventually I call
 \cw{PNGWriteFile()}, and the file is actually created, written to
 disk, and closed. The question is: what happens if I overwrote my
-copy of the title string in between the two calls?
+copy of the palette array in between the two calls?
 
-\cw{PNGSetTitle()} might perfectly reasonably just store its
-argument as a pointer to a string, and expect that pointer still to
+\cw{PNGSetPalette()} might perfectly reasonably just store its
+argument as a pointer to an array, and expect that pointer still to
 point to something reasonable when \cw{PNGWriteFile()} is called. In
 this case I need to be careful not to destroy my own copy of the
-title string between calling \cw{PNGSetTitle()} and
-\cw{PNGWriteFile()}, because my copy of the title string is the only
-copy. On the other hand, \cw{PNGSetTitle()} might be expecting this
-sort of behaviour, and might take a copy of the title string when
-it's called - in which case I can do what I like with my own copy as
-soon as \cw{PNGSetTitle()} returns. A good interface design would
+palette array between calling \cw{PNGSetPalette()} and
+\cw{PNGWriteFile()}, because my copy of the palette is the only
+copy. On the other hand, \cw{PNGSetPalette()} might be expecting
+this sort of behaviour, and might take a copy of the array when it's
+called - in which case I can do what I like with my own copy as soon
+as \cw{PNGSetPalette()} returns. A good interface design would
 specify this one way or the other, so I would know whether I could
-safely modify the title string.
+safely modify the palette array.
 
 This is an example of a data ownership issue. Data ownership issues
 are most common in non-garbage-collected languages, because it's
@@ -469,21 +546,20 @@ can still occur in GC languages: the above example would still be
 valid in (say) Java.
 
 In a non-garbage-collected language, there would be a third option
-in the above situation: \cw{PNGSetTitle()} could pass ownership of
-the title string to the PNG module, in the sense that the PNG module
-was then responsible for freeing it. This would mean that it was not
-only invalid for me to free the title string before calling
+in the above situation: \cw{PNGSetPalette()} could pass ownership of
+the palette array to the PNG module, in the sense that the PNG
+module was then responsible for freeing it. This would mean that it
+was not only invalid for me to free the array before calling
 \cw{PNGWriteFile()}: it would be invalid for me to free it even
 \e{after} that, because the PNG module would have freed it and I
 would cause a crash by freeing it a second time. Also, it would be
-forbidden for me to pass a title string that was \e{not} dynamically
-allocated, or the PNG module would cause a crash by trying to free
-it.
+forbidden for me to pass a palette array that was \e{not}
+dynamically allocated, or the PNG module would cause a crash by
+trying to free it. So this approach would usually cause more
+problems than it solved.
 
-For these reasons, this would be an inconvenient way to define an
-interface, and designers would probably not do it. But ownership
-issues in the opposite direction, dealing with pieces of data
-returned \e{from} interface functions, are much more common.
+Ownership issues in the opposite direction, dealing with pieces of
+data returned \e{from} interface functions, are at least as common.
 Consider \cw{asctime()} in the C library, which returns a pointer to
 a string, but even after that pointer has been given to the user, it
 is still owned by the library, and the user is given constraints on
@@ -504,6 +580,104 @@ easily be overwritten by another call to \cw{asctime()} in another
 thread before the first thread has even had a chance to read the
 data out of it. (See \k{threading} for more on thread-safety.)
 
+\# MHF's example of sub-handles. I have a general handle for a
+\# Conversation, and in working with this I receive a handle for a
+\# specific Message passed to me during that Conversation. Now I
+\# close the Conversation handle. What happens to the Message
+\# handle? Can I still use it? Should I close it? _Can_ I close it?
+
+\C{errors} Error handling
+
+Very few interfaces will be able to satisfy every request they
+receive. Most will sometimes need to report various error
+conditions. These error conditions need to be carefully documented,
+along with everything else in the interface definition.
+
+For a start, of course, you should document all the error conditions
+which can be returned, and which requests can return which errors.
+
+\H{errors-format} Format of error reports
+
+The format in which your interface reports errors is likely to
+depend on what the error reports will be used for by the client.
+
+If the error requires complex corrective action by a human being to
+resolve it, then the client will probably want to display it to a
+human, so providing a textual error message might be helpful. Even
+if you don't provide an actual piece of text, it is likely to be
+worth providing as much detail as possible so that the client can
+give the user all the information they need to correct the problem.
+
+On the other hand, if the client program can usefully make its own
+attempt to resolve the error, or if it might need to make decisions
+about what to do next based on the type of error, then providing a
+simple machine-readable error code is likely to be more useful.
+
+Of course, you can always do both: many IETF network protocols such
+as FTP, HTTP, SMTP and NNTP provide their errors as both a
+three-digit code (which the client software can conveniently use to
+make decisions) \e{and} a string of text which can be displayed to a
+user.
+
+\H{error-classes} Classes of error
+
+If the list of possible error messages is likely to need to change
+in the future, you should consider how a client program can sensibly
+deal with an error code it does not understand.
+
+One common way to deal with this problem is to define \e{classes} of
+errors, so that errors in the same class are likely to be treated
+similarly if not identically by the client.
+
+A good example is the error codes returned by SMTP \#{FIXME ref}
+during message delivery. There are a lot of actual error codes
+describing reasons why the server might be unable or unwilling to
+deliver a message, but SMTP clients do not need to deal separately
+with every error code. Instead they are divided into two major
+classes: temporary failures (4xx response codes) and permanent
+failures (5xx). A client receiving a 4xx error knows that the
+message has not been delivered, but also knows that if it tries
+again later it might have better luck. By contrast, a client
+receiving a 5xx error knows that the message has not been delivered
+and will not be delivered, that trying again will not help, and its
+only option is to try to inform the sender that the message was
+undeliverable.
+
+(See \k{compatibility} for more on backwards and forwards
+compatibility in general.)
+
+\H{error-recovery} Recovering from errors
+
+If any client of your interface needs to continue processing after
+receiving an error response, you will probably need to document what
+state the error has left things in.
+
+As an example, consider a function which outputs data to a file:
+something like \c{Write(file,data,length)}. Suppose that I call this
+function to write a large amount of data to a file, and it returns
+an error condition of some sort. In order to recover from this
+state, things I might reasonably want to know include:
+
+\b What has happened to the file handle? Has it been closed for me?
+If not, do I need to close it myself, or can I safely continue using
+it for further operations on the file?
+
+\b What has happened to the file itself? Presumably my data has not
+been written to the file in full, or there would have been no need
+to return an error. Has it been \e{partially} written? If not, then
+I might be able to free up some disk space (say) and try the same
+write again, and the file might end up in the state I wanted it in.
+On the other hand, if some of my data has been written, then I might
+need to know how much, so I can write the rest of it once I've
+solved the problem.
+
+It is useful if the interface can guarantee that things are left in
+a reasonable state after an error, but if this can't be done, then
+at the very least the interface's error report should provide enough
+information for the client to \e{know} what state things are in, so
+that it can attempt to clean up from there. The worst way to handle
+an error is to leave the client uncertain of the state of the world.
+
 \C{bidi} Bidirectional interfaces
 
 A lot of interfaces have a clear client side and a clear server
@@ -511,19 +685,13 @@ side. Many function-call interfaces are like this: one module
 provides a collection of functions, and another module calls them
 when it wants things done. Most network protocols work this way too:
 things like POP-3, NNTP, HTTP and so on all contain one party which
-makes requests, and another party which responds to them. The server
-never makes requests back to the client; occasionally it will return
-response codes (such as NNTP's 480 Authentication Required) which
-suggest to the client that it might like to try giving some
-information to the server before attempting a request again, but
-these are more like error returns from a request than requests in
-themselves.
+makes requests, and another party which responds to them.
 
 There are more complex interfaces in which \e{both} sides need to
 make requests of the other side. In this section I describe some
 points to watch out for when designing a bidirectional interface.
 
-\H{bidi-callbacks} Preventing uncontrolled recursion
+\H{bidi-callbacks} Bidirectional function call interfaces
 
 In function-call interfaces, bidirectionality means that each side
 of the interface provides some functions which the other side can
@@ -574,7 +742,22 @@ events back to the first object; or that, if they do, the
 third-level events are not of a type which will cause the recursion
 to continue.
 
-\H{bidi-deadlock} Preventing deadlock
+Another thing to consider when designing callbacks in a protocol is
+to avoid depending on static data. To return to the example of
+\cw{qsort()}: suppose I want to sort an array of sentences by their
+Nth word, where N is selected \e{at run time}. So the callback
+function I supply to compare two sentences must have access to the
+value of N I want. Unfortunately, since the only arguments passed to
+the function are the two sentences to be compared, this is not very
+convenient to achieve. A better way to specify \cw{qsort()} would
+have been to define the compare function to take an additional
+\c{void *} parameter. A single \c{void *} value would then be passed
+to \cw{qsort()}, which would pass it on in each call to the compare
+function. Then I could give the compare function a pointer to
+whatever value of N I wanted, without having to store it in a global
+variable (and hence lose multithreading capability).
+
+\H{bidi-deadlock} Bidirectional network protocols
 
 In a network protocol, bidirectionality means that each side will be
 sending requests to the other. This means that both sides have to be
@@ -588,14 +771,14 @@ response to its own request.
 Similarly to the function-call case described in \k{bidi-callbacks},
 each side of the interface must be careful about making a request of
 the other side in the process of constructing a response to a
-request it has received. If each side has sent a request to the
-other, and each side is unwilling to respond to the other side's
-request until its own has been answered, then the protocol will
-deadlock. Worse than that, if each side sends a fresh request in the
+request it has received. If each side sends a fresh request in the
 process of trying to answer the previous one, an endless sequence of
 requests will fly back and forth, and both sides will run out of
 memory in a manner very similar to an infinite recursion between the
-two sides of a function-call interface.
+two sides of a function-call interface. Alternatively, if each side
+has sent a request to the other, and each side then waits for the
+response to their own request before answering the other one, then
+the protocol will simply deadlock.
 
 (If the protocol does not number requests and responses, instead
 relying on responses being sent in the same order as the requests
@@ -607,7 +790,25 @@ disaster: side A cannot possibly receive response A2 before it has
 received response A1, yet this is exactly what needs to happen to
 unblock the protocol.)
 
-\H{bidi-racecond} Preventing race conditions
+If the server only ever makes requests in response to a request from
+the client (for example, to ask for more data), one solution to this
+sort of problem is to make the server's requests behave more like
+error responses. In other words, the client would send a request,
+and the server could send a response saying \q{You need to supply
+some more data before this request can be answered}. Then the client
+would supply more data, and submit the request again. The important
+difference is that the \q{need more data} response \e{ends} the
+processing of the client's original request. The server does not
+still have that request queued so that it can send an answer when
+the client's extra data appears; instead, the server has completely
+forgotten about the client's request, and the client must submit the
+same request again once it has supplied the required extra data. (An
+additional advantage of this is that if the client does not \e{have}
+the extra data available, it can easily abandon the request and do
+something else instead.) An example of this approach is the \q{480
+Authentication required} response in NNTP. \#{FIXME: reference}.
+
+\H{bidi-sharedstate} Managing shared state in the protocol
 
 Another difficulty arises if a network protocol is written in terms
 of objects which both sides can manipulate. I'll illustrate this
@@ -677,8 +878,8 @@ number of channels which can be allocated by a particular side to
 half of the total number of possible channels. SSH's method allows
 one side to allocate \e{all} the available channels if it happens to
 want to. (In SSH this is academic, since no known application would
-ever need 2^32 channels! But if the channel numbers were shorter,
-this might be a practical concern.)
+even come close to needing 2^32 channels. But if the channel numbers
+were shorter, this might be a practical concern.)
 
 \C{compatibility} Compatibility
 
@@ -786,14 +987,14 @@ straight through from the client to the server, and passes most
 responses straight back in the same way. This would be very easy if
 I wanted to pass \e{all} requests and responses through unchanged;
 but I wouldn't be writing the proxy if I didn't want to alter some
-of them. Now If I want to intercept particular NNTP commands and
+of them. Now if I want to intercept particular NNTP commands and
 deal with them myself rather than passing them on to the server, I
 need to know which of the lines sent by the client \e{are} commands
 - if I respond to any line that says \c{GROUP foo.bar}, for example,
 then things will go horribly wrong if the user attempts to post a
 news article through my proxy which contains that line (which I'm
-likely to do almost immediately when I post an article talking about
-my new news proxy!).
+likely to do almost immediately when I post to Usenet to tell people
+about my new news proxy!).
 
 So I have to be able to distinguish between a line sent by the
 client which is a command, and a line sent which is part of an
@@ -949,62 +1150,6 @@ amount of data in small blocks, but you stop and wait for a reply
 from the other end between each pair of blocks, then you will use
 only a fraction of the available bandwidth in the connection.
 
-\H{misc-privacy} Keep each side's state on that side
-
-In an interface where each side has limited trust in the other side,
-it's almost never a good idea to ask one side to store the other
-side's private state for it.
-
-This may sound obvious, but at least one reasonably modern protocol
-didn't think so. Version 1 of the SSH protocol implements remote
-port forwarding in a way that violates this principle.
-
-In remote port forwarding, the SSH server listens for connections on
-a particular network port. When a connection comes in, it tells the
-SSH client, which then makes a connection to a local server of some
-kind, and data is exchanged between the process which connected to
-the SSH server and the process the SSH client has connected to.
-
-In SSH v1, the SSH client sets this up by sending a message to the
-server saying \q{Please listen on port 2345. When a connection comes
-in, I will send it to \cw{myserver.example.com} port 3456.} The SSH
-server listens to the requested port, and when it receives a
-connection it sends back a message saying \q{Please connect to
-\cw{myserver.example.com} port 3456}.
-
-This approach has two problems:
-
-\b It's an invitation for client implementations to do the wrong
-thing. The obvious naive client implementation will simply listen
-for any \q{please connect} messages and connect to the address they
-specify. If a client like this connects from inside a firewalled
-zone to a server outside it, it has just given the system
-administrator of the server machine the ability to connect to
-\e{any} service provided behind the firewall. So clients \e{must}
-maintain a list of addresses they have asked the server to send
-\q{please connect} messages for, and must verify that any real
-\q{please connect} message has an address in this list.
-
-\b Even if the client doesn't make that mistake, it's an invasion of
-privacy; the location of services in the client's network might be
-no business of the server administrator, so the client might not
-want to tell the server what they are. In this situation, the client
-might be well advised to tell lies - to make up fictitious service
-addresses to send to the server, and to translate them into the real
-ones when they come back.
-
-SSH version 2 does this the right way. The client isn't even
-\e{asked} to send its local service address to the server. Instead,
-it simply tells the server \q{Please listen on port 2345}, and when
-the server receives a connection it sends back \q{Here's a
-connection on port 2345 as you requested}. Then the list of which
-ports are forwarded to which local services is kept at the client
-end, and the client looks up the port number in that list to decide
-where to connect to. Now the only way the server can cheat is by
-sending a port number that the client never requested - in which
-case the client will fail to find it in its list, and either
-complain or ignore it.
-
 \# \H{misc-secondguess} Don't second-guess
 \# a real biggie: Thou Shalt Not Enumerate Possible User Types And
 \# Cater For Each Individually. I'm sure there must be a fantastic
@@ -1015,7 +1160,7 @@ complain or ignore it.
 This article has presented a wide range of issues that might be
 worth considering when designing an interface between two pieces of
 software, whether that interface is in the form of function calls, a
-network protocol, or even other forms such as a file format.
+network protocol, or even a file format.
 
 I don't claim that everybody must always design interfaces which
 satisfy all these criteria, but I do think it's generally better to
@@ -1034,9 +1179,9 @@ the rest of the program, that's a strong condition for deciding on
 which side of the interface to put a particular piece of code.
 
 \b When there is limited trust between the sides of an interface,
-position the interface \e{at} the trust boundary. Don't put code on
-one side of the interface which the other side can't trust it to run
-correctly.
+position the interface \e{at} the trust boundary, and don't
+recommend that either side of the interface gives its private data
+to the other for storage.
 
 \b If all other conditions are equal, it's probably a good guideline
 to place your interface so as to minimise data flow across it (the
@@ -1069,7 +1214,7 @@ function-call interfaces) or deadlock (in network protocols).
 \b If the two sides of the interface can be upgraded independently,
 ensure each side can cope with talking to an older or newer version
 of the interface/protocol. You may wish to do this by stating the
-protocol version number explicitly, or by negotiating individiual
+protocol version number explicitly, or by negotiating individual
 protocol extensions.
 
 \b In a network protocol, ensure proxy authors have enough
@@ -1087,10 +1232,6 @@ to be handled by passing one byte at a time across the interface.
 \b When considering speed in a network protocol, consider both the
 amount of data transferred \e{and} the number of network round trips
 required.
-
-\b When there is limited trust between the sides of an interface,
-don't recommend that either side of the interface gives its private
-data to the other for storage.
 
 \# -------------- end ---------------
 
@@ -1265,3 +1406,4 @@ data to the other for storage.
 \#    + in a function-call interface: this is why we have fread() as
 \#      well as fgetc(). Avoiding _too_ many function-call overheads
 \#      is generally helpful.
+
