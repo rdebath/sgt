@@ -1749,9 +1749,9 @@ define timber_count() {
 		if (prefix[4] == 'D')
 		    deleted++;
 	    }
-	    if (what_line() == line)
-		current = count;
 	}
+        if (what_line() == line)
+            current = count;
     }
     msg = sprintf("You are on message %d of %d", current, count);
     if (deleted > 0) {
