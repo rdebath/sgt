@@ -43,8 +43,13 @@ files:
   doitsmall.ico
   listener.c
 
-You need to compile together doit.c, doitlib.c, listener.c and
-doit.rc under Windows to produce the server program `doit.exe'. How
+If you've received the DoIt standard distribution, you should also
+have the Windows server program:
+
+  doit.exe
+
+If you do not have doit.exe, you need to compile together doit.c,
+doitlib.c, listener.c and doit.rc under Windows to produce it. How
 to do this will depend on your Windows C compiler. You also need to
 link against the WinSock library wsock32.dll (or ws2_32.dll; I think
 either should work).
@@ -53,6 +58,10 @@ The Unix client program, `doitclient', is built from doitclient.c
 and doitlib.c. On Solaris or other systems without native socket
 support, you might need to link with `-lsocket -lnsl' or similar. On
 Linux, you should need no special libraries to build the client.
+Sample compiler command lines might be:
+
+  gcc -o doitclient doitclient.c doitlib.c                 # Linux
+  cc -o doitclient doitclient.c doitlib.c -lsocket -lnsl   # Solaris
 
 If the Unix compilation fails because the function `realpath' is not
 found, try compiling with -DHAVE_NO_REALPATH.
