@@ -66,7 +66,11 @@ variable timber_custom_headers = "";
 % (3) Not produce anything on stdout/stderr that might be
 % important, because we can't get it back. `sendmail -oem' makes
 % Sendmail mail-bounce instead of printing errors.
-variable timber_sendmail = "/usr/lib/sendmail -oem -t -oi";
+% (4) Filter through the Timber attachment processing script
+% before doing anything else. (This converts Attach: headers and
+% Attach-Enclosed: headers into proper MIME encapsulation.)
+variable timber_sendmail = "perl " + dircat(JED_ROOT,"bin/timbera.pl") +
+                          " | /usr/lib/sendmail -oem -t -oi";
 
 % This variable may be reassigned in `.timberrc'. It gives
 % the full pathname of the program which fetches the user's new mail
@@ -1058,9 +1062,10 @@ define timber_fullmime() {
 % decoded variant if `use_decoded' is TRUE, otherwise will always go
 % for the original transfer encoding.
 %
-% Returns (markattop, markatbottom, encoding).
+% Returns (markattop, markatbottom, type, encoding).
 define timber_get_mimepart(use_decoded) {
     variable encoding = "7BIT";	       % default
+    variable type = "text/plain";      % default
     variable headerchr, leadchr;
     variable mark, top, bottom;
 
@@ -1093,6 +1098,12 @@ define timber_get_mimepart(use_decoded) {
 	    push_mark();
 	    eol();
 	    encoding = strup(bufsubstr());
+	}
+	if (timber_ila("Content-Type: ")) {
+	    go_right(14);
+	    push_mark();
+	    skip_chars("^; \n");
+	    type = strlow(bufsubstr());
 	}
 	eol();
 	go_right_1();
@@ -1136,7 +1147,10 @@ define timber_get_mimepart(use_decoded) {
 
     bottom = create_user_mark();
 
-    return (top, bottom, encoding);
+    !if (strncmp(type, "text", 4) and strncmp(type, "message", 7))
+        encoding += "+";
+
+    return (top, bottom, type, encoding);
 }
 
 %}}}
@@ -1150,7 +1164,7 @@ define timber_saveattach() {
     file = read_file_from_mini("File to save attachment to:");
     !if (strlen (extract_filename(file))) return;
     mark = create_user_mark();
-    (top, bot, encoding) = timber_get_mimepart(0);
+    (top, bot, , encoding) = timber_get_mimepart(0);
     !if (top == NULL) {
         goto_user_mark(top);
         push_mark();
@@ -1169,7 +1183,7 @@ define timber_selattach() {
     variable mark, top, bot;
 
     mark = create_user_mark();
-    (top, bot, ) = timber_get_mimepart(1);
+    (top, bot, , ) = timber_get_mimepart(1);
     if (top == NULL) {
         goto_user_mark(mark);
     } else {
@@ -1259,10 +1273,10 @@ define timber_fold() {
 %{{{ timber_mimedec(): decode a MIME part
 
 define timber_mimedec() {
-    variable mark, top, bottom, encoding, tmp;
+    variable mark, top, bottom, type, encoding, tmp;
 
     mark = create_user_mark();
-    (top, bottom, encoding) = timber_get_mimepart(1);
+    (top, bottom, type, encoding) = timber_get_mimepart(1);
     if (top == NULL) {
         goto_user_mark(mark);
     } else {
@@ -1296,7 +1310,11 @@ define timber_mimedec() {
             bol();
             insert("\240\n");
             % Read the file back in as a decoded part
-            run_shell_cmd(timber_prefix_prog + " 160 " + tmp);            
+            run_shell_cmd(timber_prefix_prog + " 160 " + tmp);
+            % This is for display/reply purposes, so we should insert a
+            % newline here in case there wasn't one on the end of the
+            % decoded data
+            !if (eolp()) insert("\n");
             timber_ro();
 
             % Get the new folding correct
@@ -1315,7 +1333,7 @@ define timber_mimerev() {
     variable mark, top;
 
     mark = create_user_mark();
-    (top,,) = timber_get_mimepart(1);
+    (top,,,) = timber_get_mimepart(1);
     if (top == NULL) {
         goto_user_mark(mark);
     } else {
