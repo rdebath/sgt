@@ -1,0 +1,12 @@
+Summary: Win98 focuses taskbar after PuTTY window closed
+Class: semi-bug
+Priority: medium
+Present-in: 0.53b
+Content-type: text/plain
+
+On Win98, closing a PuTTY window returns focus to the taskbar rather
+than to the second-most recently focused window.  This could well be
+related to window-placement and PuTTY's guess window.
+
+The problem doesn't seem to occur on Win2K and NT.
+
