@@ -204,9 +204,9 @@ int main(int argc, char **argv) {
 			p.levnum = gs->levnum;
 			p.date = time(NULL);
 			progress_save(set, user, p);
-		    }
-		    if (p.levnum == set->nlevels) {
-			screen_completed_game();
+			if (p.levnum == set->nlevels) {
+			    screen_completed_game();
+			}
 		    }
 		}
 		screen_level_finish();
