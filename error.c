@@ -17,6 +17,7 @@
 static void do_error(int code, va_list ap) {
     char error[1024];
     char *sp;
+    int i;
     int flags;
 
     switch(code) {
@@ -64,6 +65,10 @@ static void do_error(int code, va_list ap) {
 	sprintf(error, "`load' command expects at most one argument");
 	flags = PREFIX;
 	break;
+      case err_infoargno:
+	sprintf(error, "`info' command expects exactly one argument");
+	flags = PREFIX;
+	break;
       case err_loadfmt:
 	sprintf(error, "unable to parse dump file when reloading");
 	flags = PREFIX;
@@ -108,6 +113,11 @@ static void do_error(int code, va_list ap) {
 	break;
       case err_cronpipe:
 	sprintf(error, "error opening pipe: %.200s", strerror(errno));
+	flags = PREFIX;
+	break;
+      case err_idnotfound:
+	i = va_arg(ap, int);
+	sprintf(error, "no entry with id %d exists in database", i);
 	flags = PREFIX;
 	break;
     }

@@ -225,6 +225,40 @@ void db_list_entries(Date sd, Time st, Date ed, Time et,
     sfree(edt);
 }
 
+static void db_fetch_callback(void *ctx, struct entry *ent)
+{
+    struct entry *ret = (struct entry *)ctx;
+
+    *ret = *ent;		       /* structure copy */
+    ret->description = smalloc(1 + strlen(ent->description));
+    strcpy(ret->description, ent->description);
+    assert(ret->id != -1);
+}
+
+void db_fetch(int id, struct entry *ent)
+{
+    char *err;
+    struct sqlite_list_callback_struct str;
+
+    db_open();
+
+    str.fn = db_fetch_callback;
+    str.ctx = ent;
+
+    ent->id = -1;
+
+    sqlite_exec_printf(db,
+		       "SELECT id, start, end, length, period,"
+		       " type, description FROM entries"
+		       " WHERE id = %d;",
+		       sqlite_list_callback, &str, &err, id);
+    if (err)
+	fatal(err_dberror, err);
+
+    if (ent->id == -1)
+	fatal(err_idnotfound, id);
+}
+
 void db_dump_entries(list_callback_fn_t fn, void *ctx)
 {
     char *err;

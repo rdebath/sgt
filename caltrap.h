@@ -30,6 +30,7 @@ enum {
     err_cronargno,		       /* `cron' requires 2 args */
     err_dumpargno,		       /* `dump' requires no args */
     err_loadargno,		       /* `load' requires 0-1 args */
+    err_infoargno,		       /* `info' requires 1 arg */
     err_loadfmt,		       /* error parsing dump file */
     err_date,		               /* unable to parse date `%s' */
     err_time,		               /* unable to parse time `%s' */
@@ -41,6 +42,7 @@ enum {
     err_dbconsist,		       /* db consistency error */
     err_dbfull,			       /* db out of entry IDs */
     err_cronpipe,		       /* error opening pipe for -C */
+    err_idnotfound,		       /* no entry with id %d exists in db */
 };
 
 typedef long Date;
@@ -140,6 +142,11 @@ void caltrap_dump(int nargs, char **args, int nphysargs);
 void caltrap_load(int nargs, char **args, int nphysargs);
 
 /*
+ * info.c
+ */
+void caltrap_info(int nargs, char **args, int nphysargs);
+
+/*
  * main.c
  */
 char *dbpath;
@@ -162,6 +169,7 @@ typedef void (*list_callback_fn_t)(void *, struct entry *);
 void db_list_entries(Date sd, Time st, Date ed, Time et,
                      list_callback_fn_t fn, void *ctx);
 void db_dump_entries(list_callback_fn_t fn, void *ctx);
+void db_fetch(int id, struct entry *ent);   /* smallocs ent->description */
 void db_close(void);
 
 #endif
