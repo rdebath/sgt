@@ -1,4 +1,4 @@
-Summary: Problems with various keyboard layouts.
+Summary: Problems with various keyboard layouts / IMEs.
 Class: bug
 Priority: medium
 Difficulty: taxing
@@ -7,7 +7,13 @@ Content-type: text/x-html-body
 <p>Problems with various keyboard layouts. It would be hard for me to
 debug these myself because I'd have to be able to work in the same
 keymap as I was testing PuTTY in! If anybody can debug these
-problems it would be greatly appreciated.
+problems it would be greatly appreciated. (Although to get any fixes
+rolled in, you'll probably need to convince us that it won't break for
+anyone <em>else's</em> keyboard layout, and that it works across all
+the Windows versions we support.)
+
+<p>(Some of the items below have been on this list for a very long
+time, and may in fact have been fixed.)
 <ul>
 <li>
 The
@@ -26,3 +32,7 @@ input doesn't work.
 A German user has reported that Caps Lock is more like Shift Lock -
 it affects a lot of keys other than alphabetics.
 </ul>
+
+<p>
+There's a <a href="win-dead-keys.html">fix for dead keys</a> that
+might make some of this stuff go away.

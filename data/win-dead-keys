@@ -1,0 +1,27 @@
+Summary: Trouble with dead keys on Windows
+Class: bug
+Difficulty: tricky
+Priority: medium
+Fixed-in: 2004-03-25
+Content-type: text/x-html-body
+
+<p>
+When using a keyboard layout that uses dead keys (such as German, or
+US International), entering a non-composing sequence (such as a pair
+of circumflexes), such that the second keypress resulted in two
+characters, gave the wrong result (the second character was wrong).
+
+<p>
+Changing the <code>lpChar</code> argument of 
+<a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/winui/WinUI/WindowsUserInterface/UserInput/KeyboardInput/KeyboardInputReference/KeyboardInputFunctions/ToAsciiEx.asp"><code>ToAsciiEx</code></a>
+from <code>WORD[]</code> to <code>BYTE[]</code>, and using a pointer
+cast, makes it work properly. The documentation isn't clear what type
+the storage behind the pointer should be, but Googling indicates that
+this usage is not uncommon.
+
+<p>
+Fix tested on Win2K (and by a third party on WinXP).
+
+<p>
+This may sort out some other keyboard problems people have been
+having, too, if we're lucky.
