@@ -1,5 +1,5 @@
 /*
- * Enigma config.h.
+ * Enigma settings.h.
  * 
  * Copyright 2000 Simon Tatham. All rights reserved.
  * 
