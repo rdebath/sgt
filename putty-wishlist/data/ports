@@ -18,6 +18,8 @@ a pseudo-terminal), making it an alternative to xterm.
 <li>
 MacOS. We had a port half-finished at one point, but it isn't clear
 how applicable that code would be to the current state of PuTTY.
+It would probably benefit from removal of global storage (see
+wish <a href="remove-statics.html">remove-statics</a>).
 
 <li>
 Windows CE (aka PocketPC), and/or EPOC or other PDA operating systems.
