@@ -250,6 +250,15 @@ void rfc2047_decode(const char *text, int length, parser_output_fn_t output,
     }
 }
 
+/*
+ * RFC2047 sets the maximum length of an encoded-word at 75
+ * characters, and specifies a line length limit of 76 characters
+ * for any header containing an encoded-word.
+ * 
+ * Therefore, I drop the maximum word length to 74, to leave room
+ * for one character of punctuation in addition to the initial
+ * post-fold space.
+ */
 char *rfc2047_encode(const char *text, int length, int input_charset,
 		     const int *output_charsets, int ncharsets,
 		     int structured, int firstlen)
@@ -302,7 +311,7 @@ char *rfc2047_encode(const char *text, int length, int input_charset,
      * _multiple_ strings in the output charset, each one
      * self-contained (started from an initial conversion state and
      * cleaned up at the end), each one encoding to an RFC2047 word
-     * at most 75 characters long. Or even shorter, if `firstlen'
+     * at most 74 characters long. Or even shorter, if `firstlen'
      * is set and it's the first word.
      */
 
@@ -427,10 +436,10 @@ char *rfc2047_encode(const char *text, int length, int input_charset,
 		 * encoded-word.
 		 */
 		if (!*prefix) {	       /* this is the first word */
-		    assert(firstlen <= 75);
+		    assert(firstlen <= 74);
 		    max_enc_len = firstlen;
 		} else {
-		    max_enc_len = 75;
+		    max_enc_len = 74;
 		}
 		max_enc_len -= 7 + csnamelen;   /* =?charset?Q?...?= */
 
