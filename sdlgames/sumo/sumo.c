@@ -49,11 +49,6 @@ static int sine[45] = {
     0,695,1368,2000,2571,3064,3464,3759,3939
 };
 
-static int arena[16] = {
-    0x0FF0,0x3FFC,0x7FFE,0x7FFE,0xFFFF,0xFFFF,0xFFFF,0xFFFF,
-    0xFFFF,0xFFFF,0xFFFF,0xFFFF,0x7FFE,0x7FFE,0x3FFC,0x0FF0
-};
-
 static int sx1 = 40, sy1 = 80, sx2 = 140, sy2 = 100;
 
 #define MAX_BULLETS 3
@@ -83,15 +78,108 @@ static void make_text(void);
 FILE *debugfp;
 #endif
 
-static int safe(int x, int y)
+/* ----------------------------------------------------------------------
+ * Arena handling code. To add a new arena, we need to add a new
+ * case to the following functions, and that should be all that's
+ * required. (Of course, adding a new case to setup_arena() may
+ * very well also necessitate writing some more graphics generation
+ * routines.)
+ */
+
+static int lava_platform_shape[16] = {
+    0x0FF0,0x3FFC,0x7FFE,0x7FFE,0xFFFF,0xFFFF,0xFFFF,0xFFFF,
+    0xFFFF,0xFFFF,0xFFFF,0xFFFF,0x7FFE,0x7FFE,0x3FFC,0x0FF0
+};
+#define LP_SAFE(x,y) ((x) >= 2 && (x) <= 17 && (y) >= 2 && (y) <= 17 && \
+			  lava_platform_shape[(y)-2] & (1 << (17-(x))))
+
+/*
+ * Test whether a circle overlaps any of the tiles on the lava
+ * platform.
+ */
+static int lava_platform_check(int x, int y, int radius)
 {
-    if (y < 2 || y>17 || x<2 || x>17)
-	return 0;
-    else
-	return arena[y-2] & (1 << (17-x));
+    int xt, yt, xu, yu;
+    int i, j, r2;
+
+    /*
+     * First determine which square the centre of the circle is
+     * over. If this square is safe, return true.
+     */
+    xt = x / (10<<16);
+    yt = y / (10<<16);
+    if (LP_SAFE(xt, yt))
+	return 1;
+
+    /*
+     * Failing that: check the horizontal and vertical radii of the
+     * circle to see if they overlap on to other squares.
+     */
+    for (i = xt; i * (10<<16) > x - radius; i--)
+	if (LP_SAFE(i-1, yt)) return 1;
+    for (i = xt+1; i * (10<<16) < x + radius; i++)
+	if (LP_SAFE(i, yt)) return 1;
+    for (i = yt; i * (10<<16) > y - radius; i--)
+	if (LP_SAFE(xt, i-1)) return 1;
+    for (i = yt+1; i * (10<<16) < y + radius; i++)
+	if (LP_SAFE(xt, i)) return 1;
+
+    /*
+     * Lastly, we must look for _all_ lattice points underneath the
+     * circle.
+     */
+    xt = ((x - radius) + (10<<16) - 1) / (10<<16);
+    yt = ((y - radius) + (10<<16) - 1) / (10<<16);
+    xu = ((x + radius)                 / (10<<16));
+    yu = ((y + radius)                 / (10<<16));
+    r2 = (radius >> 8) * (radius >> 8);
+    for (i = xt; i <= xu; i++)
+	for (j = yt; j <= yu; j++) {
+	    int dx, dy;
+	    /*
+	     * We do the Pythagoras equation in 8-bit fixed point;
+	     * it's more accurate than in integer pixel coords, but
+	     * our usual 16-bit will overflow when we square it.
+	     */
+
+	    dx = (x >> 8) - i * (10<<8);
+	    dy = (y >> 8) - j * (10<<8);
+	    if (dx*dx + dy*dy < r2 &&
+		(LP_SAFE(i-1, j-1) || LP_SAFE(i-1, j) ||
+		 LP_SAFE(i, j-1) || LP_SAFE(i, j)))
+		return 1;
+	}
+
+    return 0;
 }
 
-static int game_screen(void)
+static int player_can_steer(int x, int y)
+{
+    /*
+     * Just check that the very centre of the player is on the
+     * arena floor. Note we use (19 << 15) == (9.5 << 16) as the
+     * offset from the player coordinates to their centre point,
+     * because the player sprite size is even so the centre point
+     * is half way between pixels.
+     */
+    return lava_platform_check(x+(19<<15), y+(19<<15), 1<<16);
+}
+
+static int player_is_alive(int x, int y)
+{
+    /*
+     * Check that at least one part of the player is on the arena
+     * floor.
+     */
+    return lava_platform_check(x+(10<<16), y+(10<<16), (10<<16));
+}
+
+static int bullet_can_exist(int x, int y)
+{
+    return lava_platform_check(x+(19<<15), y+(19<<15), 0);
+}
+
+static int setup_arena(void)
 {
     int i, j;
 
@@ -99,9 +187,18 @@ static int game_screen(void)
     drawimage(fire,0,0,-1);
     for (i = 2; i <= 17; i++)
 	for (j = 2; j <= 17; j++)
-	    if (safe(i, j)) {
+	    if (lava_platform_shape[j-2] & (1 << (17-i)))
 		drawimage(tile,10*i,10*j,-1);
-	    }
+    scr_done();
+}
+
+/* ----------------------------------------------------------------------
+ * End of arena support functions.
+ */
+
+static int game_screen(void)
+{
+    scr_prep();
     drawimage(title,200,0,-1);
     drawimage(spr[0][9],224,113,0);
     drawimage(spr[1][9],277,113,0);
@@ -231,7 +328,7 @@ static int play_game(void)
 	    if (ba[i][j]) {
 		bx[i][j] = bx[i][j]+bvx[i][j];
 		by[i][j] = by[i][j]+bvy[i][j];
-		if (safe((bx[i][j] >> 16) / 10,(by[i][j] >> 16) / 10))
+		if (bullet_can_exist(bx[i][j], by[i][j]))
 		    putsprite(bs[i][j],bullets[i],
 			      bx[i][j] >> 16,by[i][j] >> 16);
 		else
@@ -251,17 +348,12 @@ static int play_game(void)
 		if (dying[i]<dead) dying[i]++;
 	    } else {
 
-		x1 = ((x[i] >> 16)+9) / 10; x2 = ((x[i] >> 16)+10) / 10;
-		y1 = ((y[i] >> 16)+9) / 10; y2 = ((y[i] >> 16)+10) / 10;
-
 		/*
 		 * If the player's centre point is on solid ground,
-		 * they can steer. (Centre points are fiddly
-		 * because the sprite size is even...)
+		 * they can steer.
 		 */
 
-		if (safe(x1,y1) || safe(x2,y1) ||
-		    safe(x1,y2) || safe(x2,y2)) {
+		if (player_can_steer(x[i], y[i])) {
 		    int axis, accel, brake, fire;
 		    axis = SDL_JoystickGetAxis(joys[i], 0) / JOY_THRESHOLD;
 		    accel = SDL_JoystickGetButton(joys[i], 1);   /* X */
@@ -299,12 +391,7 @@ static int play_game(void)
 		    x[i] = x[i]+vx[i];
 		    y[i] = y[i]+vy[i];
 		} else {
-		    x1 = ((x[i] >> 16)+1) / 10; y1 = ((y[i] >> 16)+1) / 10;
-		    x15 = ((x[i] >> 16)+9) / 10; y15 = ((y[i] >> 16)+9) / 10;
-		    x2 = ((x[i] >> 16)+18) / 10; y2 = ((y[i] >> 16)+18) / 10;
-		    if (safe(x1,y1) || safe(x1,y15) || safe(x1,y2)
-			|| safe(x15,y1) || safe(x15,y15) || safe(x15,y2)
-			|| safe(x2,y1) || safe(x2,y15) || safe(x2,y2)) {
+		    if (player_is_alive(x[i], y[i])) {
 			x[i] = x[i]+vx[i];
 			y[i] = y[i]+vy[i];
 		    } else {
@@ -673,6 +760,7 @@ setbuf(debugfp, NULL);
     make_text();
     do_palette();
     game_screen();
+    setup_arena();
     sc1 = sc2 = 0;
     show_scores();
 
