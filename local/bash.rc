@@ -1,6 +1,6 @@
 # -*- mode: sh; mode: fold -*-
 # Simon Tatham's standardised chunk of .bashrc
-# $Revision: 1.3 $
+# $Revision: 1.4 $
 
 #{{{ I don't like .bash_history files. They wet their nests.
 unset HISTFILE
@@ -44,6 +44,22 @@ bashrc_dovars() {
   export ATTRIBUTION="%)f <%>f> wrote:"
   export HOST_DEFAULTS=-R
   export CVS_RSH=ssh
+  # LS_COLORS: file types
+  LS_COLORS='no=00:fi=00:di=01;34:ln=01;36:pi=40;33:so=01;35:bd=40;33;01'
+  LS_COLORS=$LS_COLORS':cd=40;33;01:or=40;31;01:ex=01;32'
+  # LS_COLORS: archive extensions
+  LS_COLORS=$LS_COLORS':*.tar=01;31'
+  LS_COLORS=$LS_COLORS':*.tgz=01;31:*.arj=01;31:*.taz=01;31:*.lzh=01;31'
+  LS_COLORS=$LS_COLORS':*.zip=01;31:*.z=01;31:*.Z=01;31:*.gz=01;31:*.deb=01;31'
+  # LS_COLORS: image files
+  LS_COLORS=$LS_COLORS':*.jpg=01;35:*.gif=01;35:*.bmp=01;35:*.ppm=01;35'
+  LS_COLORS=$LS_COLORS':*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35'
+  # LS_COLORS: animations
+  LS_COLORS=$LS_COLORS':*.mpg=01;37:*.avi=01;37:*.gl=01;37:*.dl=01;37'
+  # LS_COLORS: header files
+  LS_COLORS=$LS_COLORS':*.h=00;33:*_h.s=00;33:*.pm=00;33'
+  # LS_COLORS: source files
+  LS_COLORS=$LS_COLORS':*.c=01;33:*.s=01;33:*.pl=01;33:*.html=01;33'
 }
 bashrc_dovars
 unset bashrc_dovars
@@ -53,6 +69,9 @@ unset bashrc_dovars
 
 set +o ignoreeof
 
+for i in net v vdir d; do
+  if [ x`type -t $i` = xalias ]; then unalias $i; fi
+done
 alias ed='ed -p "* "'
 alias dir='ls -l'
 ls -d --color=auto . >&/dev/null && alias ls='ls --color=auto'
@@ -84,4 +103,14 @@ promptprefix() {
 i() {
   echo Session is `whoami` on `tty | sed s/.dev.//` of `hostname`
 }
+#}}}
+#{{{ the `x' command (hex/decimal printout)
+x() {
+  perl -e 'foreach $x (@ARGV) { printf "%11d = 0x%08x\n", $x, $x }' -- "$@"
+}
+#}}}
+#{{{ screen has a bug about shells beginning with -. Work around it
+case $SHELL in
+  -*) export SHELL=`echo $SHELL | sed s/^-//` ;;
+esac
 #}}}
