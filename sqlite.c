@@ -60,9 +60,42 @@ void db_init(void)
 }
 
 static sqlite *db = NULL;
+int transaction_open = FALSE;
+
+void db_begin(void)
+{
+    char *err;
+    assert(db != NULL);
+    assert(!transaction_open);
+    sqlite_exec(db, "BEGIN;", sqlite_null_callback, NULL, &err);
+    if (err) fatal(err_dberror, err);
+    transaction_open = TRUE;
+}
+
+void db_rollback(void)
+{
+    char *err;
+    assert(db != NULL);
+    assert(transaction_open);
+    sqlite_exec(db, "ROLLBACK;", sqlite_null_callback, NULL, &err);
+    if (err) fatal(err_dberror, err);
+    transaction_open = FALSE;
+}
+
+void db_commit(void)
+{
+    char *err;
+    assert(db != NULL);
+    assert(transaction_open);
+    sqlite_exec(db, "COMMIT;", sqlite_null_callback, NULL, &err);
+    if (err) fatal(err_dberror, err);
+    transaction_open = FALSE;
+}
 
 void db_close(void)
 {
+    if (transaction_open)
+	db_rollback();
     if (db)
 	sqlite_close(db);
 }
@@ -94,8 +127,7 @@ void db_add_entry(struct entry *ent)
     len = format_duration(ent->length);
     per = format_duration(ent->period);
 
-    sqlite_exec(db, "BEGIN;", sqlite_null_callback, NULL, &err);
-    if (err) fatal(err_dberror, err);
+    db_begin();
 
     if (ent->id < 0) {
 	/*
@@ -156,8 +188,7 @@ void db_add_entry(struct entry *ent)
 		       ent->description);
     if (err) fatal(err_dberror, err);
 
-    sqlite_exec(db, "COMMIT;", sqlite_null_callback, NULL, &err);
-    if (err) fatal(err_dberror, err);
+    db_commit();
 
     sfree(sdt);
     sfree(edt);
@@ -267,8 +298,7 @@ void db_del(int id)
 
     db_open();
 
-    sqlite_exec(db, "BEGIN;", sqlite_null_callback, NULL, &err);
-    if (err) fatal(err_dberror, err);
+    db_begin();
 
     /*
      * First verify that the entry we want to delete does actually
@@ -279,11 +309,8 @@ void db_del(int id)
 			    &table, &rows, &cols, &err, id);
     if (err) fatal(err_dberror, err);
     sqlite_free_table(table);
-    if (rows < 1) {
-	sqlite_exec(db, "ROLLBACK;", sqlite_null_callback, NULL, &err);
-	if (err) fatal(err_dberror, err);
+    if (rows < 1)
 	fatal(err_idnotfound, id);
-    }
 
     /*
      * Mark the ID as free in the free IDs table. This search will
@@ -374,8 +401,7 @@ void db_del(int id)
 		       sqlite_null_callback, NULL, &err, id);
     if (err) fatal(err_dberror, err);
 
-    sqlite_exec(db, "COMMIT;", sqlite_null_callback, NULL, &err);
-    if (err) fatal(err_dberror, err);
+    db_commit();
 }
 
 void db_dump_entries(list_callback_fn_t fn, void *ctx)
