@@ -33,6 +33,23 @@ not updating, which happens sometimes):
 For features planned for the next release (and already available in
 the development snapshots), see the <a href="wishlist/">wishlist page</a>.
 
+<p>These features are new in beta 0.57 (released 2005-02-20):
+
+<ul>
+<li>
+Security fix: a vulnerability discovered by iDEFENSE, potentially
+allowing arbitrary code execution on an SFTP client by a malicious
+SFTP server (but only after host key verification), has been fixed.
+<li>
+Fixed small bug with X forwarding to local displays.
+<li>
+Fixed crashing bug with remote port forwarding.
+<li>
+Fixed handling of SSH2 debug messages (embarrassingly, a bug
+introduced when fixing the previous vulnerability - it was more
+secure but didn't work any more!).
+</ul>
+
 <p>These features are new in beta 0.56 (released 2004-10-26):
 
 <ul>
