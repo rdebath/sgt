@@ -1,0 +1,52 @@
+Summary: Escape sequence to execute command on the client side
+Class: wish
+Difficulty: fun
+Priority: never
+Content-type: text/x-html-body
+
+<p>
+People occasionally ask for an escape sequence which will execute an
+arbitrary local command, &agrave; la ECMA-48 OSC (Operating system
+command).
+
+<p>
+This feature is horrendously insecure, and PuTTY will not be
+implementing unless someone comes up with some plausible way of
+dealing with the security issues outlined below.
+
+<p>
+If your terminal is willing to receive an escape sequence which
+directs it to run a local program, and will uncomplainingly do it,
+then for a start you've just put your client machine completely at the
+mercy of your server - so I do hope you <em>never</em> make a
+connection to a machine whose sysadmin is less than a close and
+trusted friend of yours! What would stop the server sending a
+remote-command escape such as <code>del *.*</code>, or (perhaps even
+worse) one which read sensitive files on your disk and sent them out
+to somewhere the malicious server admin could recover them? And even
+if your server admin is trustworthy, his machine could be cracked, and
+then your client box is at the mercy of the cracker.
+
+<p>
+Furthermore, applications such as Unix `write' often don't filter
+escape sequences out of their output, so if you <em>ever</em> have
+messages enabled then you've handed control of your local machine to
+any user of the same server who might want it.
+
+<p>
+In general, your terminal stream should be considered untrusted for
+these purposes. Users don't normally feel nervous about running `cat'
+on unknown files just to see what's in them; they tend to feel that
+the worst that can happen as a result is that they screw up their
+terminal state and have to reset it - and many users don't even expect
+<em>that</em>, and come and complain to us when it happens (see the
+FAQ). If your terminal is willing to run arbitrary local commands when
+told to by an escape sequence, then you have to adopt a whole new
+level of paranoia, where (for example) any file not trusted by you is
+viewed using `cat -v' rather than `cat', and only when you're certain
+that it's clean of malicious escape sequences do you progress to
+`cat'.
+
+<p>
+An alternative remote-execution solution with authentication is
+<a href="http://www.chiark.greenend.org.uk/~sgtatham/doit/">DoIt</a>.
