@@ -28,7 +28,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define VERSION "$Revision: 1.2 $"
+#define VERSION "$Revision: 1.3 $"
 
 #define TRUE 1
 #define FALSE 0
@@ -359,9 +359,9 @@ static struct Colours *colread(char const *string) {
     nc = csize = 0;
     clist = NULL;
 
-    /* If there's an `integer!' prefix, set xmod. */
+    /* If there's an `integer+' prefix, set xmod. */
     i = strspn(string, "0123456789");
-    if (string[i] == '!') {
+    if (string[i] == '+') {
 	ret->xmod = atoi(string);
 	string += i + 1;
     }
@@ -546,7 +546,7 @@ int main(int ac, char **av) {
 	"   be computed so as to preserve the aspect ratio",
 	" - if only one of -x and -y specified, will compute the other so",
 	"   as to preserve the aspect ratio",
-	" - colours can be prefixed with N! to get two-dimensional colour",
+	" - colours can be prefixed with `N+' to get two-dimensional colour",
 	"   selection (this needs to be better explained :-)"
     };
 
@@ -758,24 +758,38 @@ int main(int ac, char **av) {
 	par.fading = fade;
 
 	/*
-	 * If precisely one aspect-ratio-providing size specified,
-	 * save the aspect ratio from it, and use it to fill in
-	 * blanks in other sizes.
+	 * If precisely one explicit aspect ratio specified, use it
+	 * to fill in blanks in other sizes.
 	 */
-	if ((imagex&&imagey) + (basex&&basey) + (gotxrange&&gotyrange) == 1) {
-	    if (imagex && imagey) aspect = (double)imagex / imagey;
-	    if (basex && basey) aspect = (double)basex / basey;
-	    if (gotxrange && gotyrange) aspect = gotxrange / gotyrange;
+        aspect = 0;
+        if (imagex && imagey) {
+            aspect = (double)imagex / imagey;
+        }
+        if (basex && basey) {
+            double newaspect = (double)basex / basey;
+            if (newaspect != aspect)
+                aspect = -1;
+            else
+                aspect = newaspect;
+        }
+        if (gotxrange && gotyrange) {
+            double newaspect = xrange / yrange;
+            if (newaspect != aspect)
+                aspect = -1;
+            else
+                aspect = newaspect;
+        }
 
-	    if (imagex && !imagey) imagey = imagex / aspect;
-	    if (!imagex && imagey) imagex = imagey * aspect;
-	    if (basex && !basey) basey = basex / aspect;
-	    if (!basex && basey) basex = basey * aspect;
-	    if (gotxrange && !gotyrange)
-		yrange = xrange / aspect, gotyrange = TRUE;
-	    if (!gotxrange && gotyrange)
-		xrange = yrange * aspect, gotxrange = TRUE;
-	}
+        if (aspect > 0) {
+            if (imagex && !imagey) imagey = imagex / aspect;
+            if (!imagex && imagey) imagex = imagey * aspect;
+            if (basex && !basey) basey = basex / aspect;
+            if (!basex && basey) basex = basey * aspect;
+            if (gotxrange && !gotyrange)
+                yrange = xrange / aspect, gotyrange = TRUE;
+            if (!gotxrange && gotyrange)
+                xrange = yrange * aspect, gotxrange = TRUE;
+        }
 
 	/*
 	 * Now complain if no output image size was specified.
