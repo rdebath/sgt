@@ -3,6 +3,7 @@ Class: bug
 Priority: low
 Difficulty: fun
 Present-in: 2003-02-11
+Fixed-in: 2003-10-09
 Content-type: text/x-html-body
 
 <p>According to
@@ -11,3 +12,6 @@ draft-ietf-secsh-assignednumbers-04.txt</a>, "des-cbc" is one of the
 assigned cipher names for SSH2.  PuTTY currently describes it (in the
 configuration box, the documentation, and comments in sshdes.c) as
 non-standard.
+
+<p>
+OSD: toned down "non-standard" to "legacy", which I claim fixes this.
