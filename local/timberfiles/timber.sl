@@ -1103,6 +1103,26 @@ define timber_get_mimepart(use_decoded) {
 }
 
 %}}}
+%{{{ timber_yesno (): standardised yes-or-no minibuffer input
+
+% Get a yes/no response from the user. The one in site.sl is ugly.
+define timber_yesno (prompt)
+{
+    variable c;
+
+    flush (prompt);
+    EXIT_BLOCK {
+        clear_message();
+    }
+    while (1) {
+	c = tolower(getkey());
+	if (c == 'y') return 1;
+	if (c == 'n') return 0;
+	if (c != '\r' and c != '\n') beep();
+    }
+}
+
+%}}}
 %{{{ timber_saveattach(): save a MIME attachment to a file
 
 % Save the current MIME part (or whole message, if non-multipart) to a file.
@@ -1112,6 +1132,10 @@ define timber_saveattach() {
 
     file = read_file_from_mini("File to save attachment to:");
     !if (strlen (extract_filename(file))) return;
+    if (file_status(file) != 0) {
+	!if (timber_yesno("Really overwrite " + file + "? [yn] "))
+	    return;
+    }
     mark = create_user_mark();
     (top, bot, , encoding) = timber_get_mimepart(0);
     !if (top == NULL) {
@@ -1216,26 +1240,6 @@ define timber_fold() {
 	go_right_1();
     }
     pop_spot();
-}
-
-%}}}
-%{{{ timber_yesno (): standardised yes-or-no minibuffer input
-
-% Get a yes/no response from the user. The one in site.sl is ugly.
-define timber_yesno (prompt)
-{
-    variable c;
-
-    flush (prompt);
-    EXIT_BLOCK {
-        clear_message();
-    }
-    while (1) {
-	c = tolower(getkey());
-	if (c == 'y') return 1;
-	if (c == 'n') return 0;
-	if (c != '\r' and c != '\n') beep();
-    }
 }
 
 %}}}
