@@ -1,12 +1,17 @@
-Summary: Opening X11 connections with SOCK5 proxying turns on causes crash
+Summary: Opening X11 connections with proxying turns on causes crash
 Class: bug
 Priority: high
 Content-type: text/x-html-body
 Present-in: 0.53 2002-09-29
 
 <p>Opening a forwarded X11 connection over an SSH connection that's using a
-SOCKS proxy causes PuTTY to crash.  Observered with SSHv2 against
-F-SECURE 2.3.1, and against OpenSSH 2.9.9p2 (unspecified protocol).
-
-<p>Ref: <code>&lt;3D9B9963.3000006@metaprogramming.org&gt;</code>
-<br>Ref: <code>&lt;OF9A6AB8C9.8F040CB9-ON85256C4B.00750701@boulder.ibm.com&gt;</code>
+proxy causes PuTTY to crash.  Reports so far:
+<ul>
+<li>Ref: <code>&lt;3D9B9963.3000006@metaprogramming.org&gt;</code>
+<br>Against OpenSSH 2.9.9p2 (unspecified protocol), SOCKS5 proxy
+<li>Ref: <code>&lt;OF9A6AB8C9.8F040CB9-ON85256C4B.00750701@boulder.ibm.com&gt;</code>
+<br>With SSHv2 against F-SECURE 2.3.1, SOCKS5 proxy
+<li>Ref: <code>&lt;20021010114830.53187.qmail@web20909.mail.yahoo.com&gt;</code>
+<br>With SSHv2 against OpenSSH 3.1p1, HTTP proxy
+<br>Report has SSH packet log and Dr Watson log.
+</ul>
