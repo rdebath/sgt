@@ -1,0 +1,9 @@
+Summary: Option to start up in full screen mode
+Class: wish
+Priority: medium
+Difficulty: fun
+Content-type: text/x-html-body
+
+<p>
+While you can start a PuTTY window maximised by Windows mechanisms,
+currently there's no way to start it full-screen. There should be.
