@@ -22,7 +22,14 @@ def charname(x):
 	    value = db[key]
 	    return string.split(value, ";")[1]
 	except KeyError:
-	    return "<no name available>"
+	    if han_translations:
+		try:
+		    value = handb[key]
+		    return "<han> " + value
+		except KeyError:
+		    return "<no name available>"
+	    else:
+		return "<no name available>"
     else:
 	return ""
 
@@ -163,6 +170,7 @@ def do(args):
 
 args = sys.argv[1:]
 output_analysis = 1
+han_translations = 0
 
 if args == []:
     print "Usage: cvt-utf8 [-o] <hex UTF-8 bytes or U+codepoints>"
@@ -170,14 +178,17 @@ if args == []:
     print "    or cvt-utf8 U+20ac"
     print "    or cvt-utf8 U-10ffff"
     print ""
-    print "Flag:  -o or --output     just output well-formed UTF-8 instead of"
+    print "Flags: -o or --output     just output well-formed UTF-8 instead of"
     print "                          an analysis of the input data"
+    print "       -h                 also give Han definitions from unihan db"
     print ""
     print "Also:  cvt-utf8 --test    run Markus Kuhn's decoder stress tests" #'
     print "       cvt-utf8 --input (or -i)"
     print "                          read, analyse and decode UTF-8 from stdin"
     print "       cvt-utf8 --build <infile> <outfile>"
     print "                          convert UnicodeData.txt to unicode db"
+    print "       cvt-utf8 --build-unihan <infile> <outfile>"
+    print "                          convert Unihan.txt to unihan db"
     print "       cvt-utf8 --fetch-build <outfile>"
     print "                          "+\
     "build unicode db by download from unicode.org"
@@ -185,6 +196,10 @@ if args == []:
 
 if args[0] == "-o" or args[0] == "--output":
     output_analysis = 0
+    args = args[1:]
+
+if args[0] == "-h" or args[0] == "--han":
+    han_translations = 1
     args = args[1:]
 
 if args[0] == "--build" or args[0] == "--fetch-build":
@@ -214,6 +229,22 @@ if args[0] == "--build" or args[0] == "--fetch-build":
     db.close()
     sys.exit(0)
 
+if args[0] == "--build-unihan":
+    if len(args) != 3:
+	print "cvt-utf8: --build expects two filename arguments"
+	sys.exit(1)
+    infile = open(args[1], "r")
+    outfile = args[2]
+    db = anydbm.open(outfile, "n")
+    while 1:
+	s = infile.readline()
+	if s == "": break
+	sa = string.split(s, "\t")
+	if len(sa) == 3 and sa[1] == "kDefinition" and sa[0][:2] == "U+":
+	    db[sa[0][2:]] = sa[2]
+    db.close()
+    sys.exit(0)
+
 locations = []
 locations.append("/usr/share/unicode/unicode")
 locations.append("/usr/lib/unicode/unicode")
@@ -231,6 +262,12 @@ for loc in locations:
 	db = None
     if db != None:
 	break
+if han_translations:
+    i = string.rfind(loc, "/")
+    assert i >= 0
+    hanloc = loc[:i+1] + "unihan"
+    handb = anydbm.open(hanloc, "r")
+    # this has been explicitly required, so we don't squelch exceptions
 
 if args[0] == "--test":
     do(["CE","BA","E1","BD","B9","CF","83","CE","BC","CE","B5"])
