@@ -187,7 +187,8 @@ static int sqlite_list_callback(void *ctx, int argc,
 	fatal(err_dbconsist, "invalid-length");
     if ((ent.period = parse_duration(argv[4])) == INVALID_DURATION)
 	fatal(err_dbconsist, "invalid-period");
-    ent.type = name_to_type(argv[5]);
+    if ((ent.type = name_to_type(argv[5])) == INVALID_TYPE)
+	fatal(err_dbconsist, "invalid-type");
     ent.description = argv[6];
 
     s->fn(s->ctx, &ent);

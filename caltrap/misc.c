@@ -21,7 +21,7 @@ int name_to_type(const char *name)
     for (i = 0; i < lenof(typenames); i++)
 	if (!strcmp(typenames[i], name))
 	    return i;
-    fatal(err_dbconsist, "invalid-type-name");
+    return INVALID_TYPE;
 }
 
 const char *type_to_name(int type)

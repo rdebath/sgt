@@ -144,6 +144,8 @@ void caltrap_load(int nargs, char **args, int nphysargs)
 	q = p; while (*q && !isspace(*q)) q++; if (*q) *q++ = '\0';
 	/* p now points to the type */
 	ent.type = name_to_type(p);
+	if (ent.type == INVALID_TYPE)
+	    fatal(err_loadfmt);
 	p = q;
 
 	/*
