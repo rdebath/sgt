@@ -1,0 +1,15 @@
+Summary: Logging for Pageant
+Class: wish
+Priority: medium
+Difficulty: tricky
+Depends: pageant-key-mgmt
+Content-type: text/x-html-body
+
+<p>
+It would be good if Pageant could provide a log of requests that have
+been made of it (who, what, when) - particularly useful if agent
+forwarding is in use. Perhaps something in the style of PuTTY's Event
+Log?
+
+<p>
+Probably depends on better key management.
