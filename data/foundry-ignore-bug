@@ -1,0 +1,11 @@
+Summary: Foundry Networks 1.2.27 port has SSH_MSG_IGNORE bug
+Priority: medium
+Difficulty: fun
+Content-type: text/plain
+
+Some Foundry Networks devices apparently include an F-Secure-derived SSH
+server which reports itself as "1.2.27", but has the SSH_MSG_IGNORE bug,
+which both PuTTY and OpenSSH think stock 1.2.27 doesn't have.
+
+PuTTY could deal with this by assuming that all things claiming to be 1.2.27
+have this bug, though that might be considered ugly.
