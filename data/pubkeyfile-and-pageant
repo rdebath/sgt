@@ -1,4 +1,4 @@
-Summary: Pageant + explicit keyfile gives  non-optimal behaviour
+Summary: Pageant + explicit keyfile gives non-optimal behaviour
 Class: bug
 Difficulty: fun
 Priority: medium
@@ -13,14 +13,14 @@ isn't ideal.
 <p>
 This is particularly obvious when several keys are valid for a given
 connection (e.g., if one is trying to use a particular key to run
-a particular forced command).  It can also cause problem if Pageant
+a particular forced command).  It can also cause problems if Pageant
 has lots of keys and the server (e.g. OpenSSH) is configured to only
 allow a certain number of authentication attempts.  See
-errors-toomanyauth in the manual.
+<a href="http://www.tartarus.org/~simon/puttydoc/Chapter10.html#10.5">section 10.5</a>
+in the manual.
 
 <p>
-Here is my (JTN) suggested algorithm for fixing the immediate problem
-(assuming that all the primitives mentioned are always available):
+Here is my (JTN) suggested algorithm for fixing the immediate problem:
 
 <p><pre>array_t pageant_ids[];
 
@@ -31,15 +31,13 @@ Here is my (JTN) suggested algorithm for fixing the immediate problem
   }
 
   if (key k configured in PuTTY exists) {
-    if (server would accept k.id) {
-      bool success
-      if (k.id in pageant_ids[]) {
-        success = do_pageant_auth (k.id)
-      } else {
-        success = do_putty_auth (k)
-      }
-      if (success) goto auth_success
+    bool success
+    if (k.id in pageant_ids[]) {
+      success = do_pageant_auth (k.id)
+    } else {
+      success = do_putty_auth (k)
     }
+    if (success) goto auth_success
   } else {
     foreach id in pageant_ids[] {
       if (server would accept id) {
@@ -50,9 +48,13 @@ Here is my (JTN) suggested algorithm for fixing the immediate problem
   /* give up on public key auth */</pre>
 
 <p>
+(In SSH-1, you can't test whether a server would accept a key without
+actually trying it, but that's not terribly important.)
+
+<p>
 An alternative and perhaps cleaner solution is to separate `public key
 auth with specified file' and `public key auth with Pageant' and allow
-them to be individual disabled; this ties nicely into
+them to be individually disabled; this ties nicely into
 <a href="auth-pref.html">auth-pref</a>.
 
-<em>FIXME: characterise any problems other than this one</em>
+<p><em>FIXME: characterise any problems other than this one</em>
