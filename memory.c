@@ -51,6 +51,21 @@ gamestate *gamestate_new(int width, int height) {
     return p;
 }
 
+gamestate *gamestate_copy(gamestate *state) {
+    gamestate *ret;
+
+    ret = gamestate_new(state->width, state->height);
+    ret->status = state->status;
+    memcpy(ret->leveldata, state->leveldata, ret->width * ret->height);
+    ret->player_x = state->player_x;
+    ret->player_y = state->player_y;
+    ret->gold_got = state->gold_got;
+    ret->gold_total = state->gold_total;
+    ret->movenum = state->movenum;
+
+    return ret;
+}
+
 void gamestate_free(gamestate *p) {
     if (p) {
 	if (p->leveldata) free(p->leveldata);

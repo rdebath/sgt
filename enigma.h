@@ -2,6 +2,7 @@
 #define ENIGMA_ENIGMA_H
 
 #include <setjmp.h>
+#include <time.h>
 #include "config.h"
 
 /* ----------------------------------------------------------------------
@@ -33,7 +34,7 @@ typedef struct {
     int width, height;
     int player_x, player_y;
     int gold_got, gold_total;
-    int movenum;
+    int levnum, movenum;
 } gamestate;
 
 /*
@@ -50,9 +51,18 @@ typedef struct {
  */
 typedef struct {
     char *title;
+    char *name;
     int nlevels;
     level **levels;
 } levelset;
+
+/*
+ * A small structure describing a user's progress.
+ */
+typedef struct {
+    int levnum;
+    time_t date;
+} progress;
 
 /* ----------------------------------------------------------------------
  * Function prototypes.
@@ -99,6 +109,23 @@ gamestate *init_game (level *lev);
  * return a levelset structure.
  */
 levelset *levelset_load(char *);
+
+/*
+ * From savefile.c, routines to load and save a user's progress and
+ * saved positions.
+ */
+gamestate *savepos_load(levelset *set, char *user, int savenum);
+void savepos_save(levelset *set, char *user, int savenum, gamestate *state);
+progress progress_load(levelset *set, char *user);
+void progress_save(levelset *set, char *user, progress p);
+
+/*
+ * From misc.c, miscellaneous things.
+ */
+int ishdr(char *line, char *header);
+void get_user(char *buf, int buflen);
+time_t parse_date(char *buf);
+void fmt_date(char *buf, time_t);
 
 /* ----------------------------------------------------------------------
  * Global data.

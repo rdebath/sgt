@@ -202,7 +202,8 @@ int screen_level_getmove(void) {
  * Display the levels-or-saves main menu. Returns a level number (1
  * or greater), a save number (0 to -9), or a `quit' signal (-100).
  */
-int screen_main_menu(levelset *set, int maxlev, int startlev) {
+int screen_main_menu(levelset *set, gamestate *saves,
+		     int maxlev, int startlev) {
     const int colwidth = 26, colgap = 8;
     const int height = 21, llines = height-5;
     int sx, sy, dx, dy, dx2;
