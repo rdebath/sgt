@@ -2,7 +2,8 @@
 
 use Fcntl;
 
-$inbox = "/var/spool/mail/" . ((getpwuid($<))[0]);
+$inbox = $ENV{"MAIL"};
+$inbox = "/var/spool/mail/" . ((getpwuid($<))[0]) unless $inbox;
 
 open(INBOX,$inbox) or exit 1;
 open(MBOX,">>$ARGV[0]");
