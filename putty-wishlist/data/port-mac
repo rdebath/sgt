@@ -2,10 +2,11 @@ Summary: Port to the Mac OS
 Class: wish
 Priority: medium
 Difficulty: tricky
+Depends: remove-statics
 Content-type: text/x-html-body
 
 <p>
 There is a port to the Mac OS in progress.  It's just about usable, but has
 an awful lot of gaps and rough edges that will need cleaning up before
-release.  See <a href="http://cvs.tartarus.org/putty/mac/README.mac?rev=HEAD&content-type=text/vnd.viewcvs-markup">
+release.  See <a href="http://www.tartarus.org/~simon-anonsvn/viewcvs.cgi/putty/mac/README.mac?view=markup">
 README.mac</a> in the sources for the current state of the world.
