@@ -10,16 +10,20 @@
 SCREEN=
 MACH=
 TERMSTUFF=
+EXEC=
+FILTER=
 CONNECT='exec telnet -l mono'
 unset CEND
 stty quit ^^
+if test -f $HOME/.mfilter; then FILTER=$HOME/.mfilter; fi
 while [ $# -gt 0 ]; do
   case "$1" in
     -screen) SCREEN='screen -ln';;
-    -ssh) CONNECT='exec ssh -C -x -e none -l mono';;
-    -nopty) CONNECT='stty -isig -icanon -echo; cat | ssh -C -x -e none -l mono';
+    -ssh) EXEC=exec; CONNECT='ssh -C -x -e none -l mono';;
+    -nopty) EXEC=; CONNECT='stty -isig -icanon -echo; cat | ssh -C -x -e none -l mono';
             CEND='; stty isig icanon echo'; unset exec ;;
-    -telnet) CONNECT='exec telnet -l mono';;
+    -nofilter) FILTER= ;;
+    -telnet) EXEC=exec; CONNECT='telnet -l mono';;
     -term) TERMSTUFF=$2; shift;;
     -*) echo "Unknown option $1" ;;
     *) MACH=$1;;
@@ -64,7 +68,8 @@ if [ "a$MACHINE" != "aNOLOGIN" ]
 then
   rm -f $tmpfile
   echo "Connecting to $MACHINE."
-  $SCREEN sh -c "echo -ne '\033[?7l'; TERM=$NEWTERM $CONNECT $MACHINE $CEND"
+  $SCREEN sh -c \
+    "echo -ne '\033[?7l'; TERM=$NEWTERM $EXEC $FILTER $CONNECT $MACHINE $CEND"
   echo -ne '\033[?7h'
 else
   echo "Cannot currently get a machine name. This may be due to downtime,"
