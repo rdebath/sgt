@@ -33,6 +33,49 @@ not updating, which happens sometimes):
 For features planned for the next release (and already available in
 the development snapshots), see the <a href="wishlist/">wishlist page</a>.
 
+<p>These features are new in beta 0.56 (released 2004-10-26):
+
+<ul>
+<li>Security fix: a vulnerability discovered by iDEFENSE,
+potentially allowing arbitrary code execution on the client by a
+malicious SSH2 server <em>before host key verification</em>, has been
+fixed.
+<li>Ability to restart a session within an inactive window, via a new
+menu option.
+<li>Minimal support for not running a shell or command at all in SSH
+protocol 2 (equivalent to OpenSSH's "-N" option). PuTTY/Plink still
+provide a normal window for interaction, and have to be explicitly
+killed.
+<li>Transparent support for CHAP cryptographic authentication in the
+SOCKS 5 proxy protocol. (Not in PuTTYtel.)
+<li>More diagnostics in the Event Log, particularly of SSH port
+forwarding.
+<li>Ability to request setting of environment variables in SSH (protocol
+2 only). (However, we don't know of any <em>servers</em> that support
+this.)
+<li>Ability to send POSIX signals in SSH (protocol 2 only) via the
+"Special Commands" menu. (Again, we don't know of any servers
+supporting this.)
+<li>Bug fix: The PuTTY tools now more consistently support usernames
+containing "@" signs.
+<li>Support for the Polish character set "Mazovia".
+<li>When logging is enabled, the log file is flushed more frequently, so
+that its contents can be viewed before it is closed.
+<li>More flexibility in SSH packet logging: known passwords and session
+data can be omitted from the log file. Passwords are omitted by
+default. (This option isn't perfect for removing sensitive details;
+you should still review log files before letting them out of your
+sight.)
+<li>Unix-specific changes:
+<ul>
+<li>Ability to set environment variables in pterm.
+<li>PuTTY and pterm attempt to use a UTF-8 line character set by
+default if this is indicated by the locale; however, this can be
+overridden.
+</ul>
+</li>
+</ul>
+
 <p>These features are new in beta 0.55 (released 2004-08-03):
 
 <ul>
