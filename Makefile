@@ -13,6 +13,8 @@ all:
 	@make -C $(BUILDDIR) -f ../Makefile REALBUILD=yes
 clean:
 	@test -d $(BUILDDIR) && make -C $(BUILDDIR) -f ../Makefile REALBUILD=yes clean
+spotless:
+	rm -rf $(BUILDDIR)
 else
 
 # The `real' makefile part.
