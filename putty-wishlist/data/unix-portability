@@ -16,3 +16,6 @@ People occasionally send us patches to make the Unix port more portable.
    * FreeBSD-5.2-RELEASE
      1075418510.724.16.camel@localhost
      20040213160319.GA565@scimitar.noc.nl.demon.net (with commentary)
+
+   * Solaris
+     20040217181156.GM17353@granzeau.com
