@@ -119,3 +119,5 @@ diff -ubBw putty-orig/WINDOW.C putty-mod/WINDOW.C
  		}
  		show_mouseptr(0);
 </pre>
+
+<p>Another patch (unreviewed): <code>3EC11D82.60306@isometry.net</code>
