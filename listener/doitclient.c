@@ -459,7 +459,7 @@ void showversion(void)
     char *v;
     extern char doitlib_revision[];
 
-    v = makeversion(versionbuf, "$Revision: 1.12 $");
+    v = makeversion(versionbuf, "$Revision: 1.13 $");
     if (v)
 	printf("doitclient revision %s", v);
     else
@@ -480,7 +480,7 @@ char *do_path_translate(char *arg, int verbose)
     char *dir, *path, *path2;
 
     if (verbose) {
-	fprintf(stderr, "doit: path translation: \"%s\"", arg);
+	fprintf(stderr, "doit: need to translate path \"%s\"\n", arg);
     }
 
 #ifndef HAVE_NO_REALPATH
@@ -501,12 +501,16 @@ char *do_path_translate(char *arg, int verbose)
 #ifndef HAVE_NO_REALPATH
     }
 #endif
-	
+
+    if (verbose) {
+	fprintf(stderr, "doit: canonification gives \"%s\"\n", path);
+    }
+
     path2 = path_translate(path);
     free(path);
 
     if (verbose) {
-	fprintf(stderr, " to \"%s\"\n", path2);
+	fprintf(stderr, "doit: path translation gives \"%s\"\n", path2);
     }
 
     return path2;
@@ -521,12 +525,12 @@ void set_dir(int sock, doit_ctx *ctx, int verbose)
 
     dir = get_pwd();
     if (verbose) {
-        fprintf(stderr, "doit: path translation on cwd: \"%s\"", dir);
+        fprintf(stderr, "doit: current dir is \"%s\"\n", dir);
     }
     path = path_translate(dir);
     free(dir);
     if (verbose) {
-        fprintf(stderr, " to \"%s\"\n", path);
+        fprintf(stderr, "doit: path translation gives \"%s\"\n", path);
     }
     do_doit_send_str(sock, ctx, "SetDirectory\n");
     do_doit_send_str(sock, ctx, path);
