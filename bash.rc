@@ -514,3 +514,50 @@ bashrc_less_wrapper() {
 alias less=bashrc_less_wrapper
 
 #}}}
+#{{{ shell function wrapper on `tr' which allows optional filename args
+
+tr() {
+  local i j a d s
+  i=$#
+  j=2
+  d=0
+  s=0
+  while test "$i" -gt 0 -a "$j" -gt 0; do
+    case "$1" in
+      # Spot options: -d means we expect only one input char set,
+      # but -s means we expect two; -s overrides -d if both appear.
+      -*s*d* | -*d*s*) d=1; s=1; j=$[1 + ($s || !$d)];;
+      -*d*) d=1; j=$[1 + ($s || !$d)];;
+      -*s*) s=1; j=$[1 + ($s || !$d)];;
+      # Spot and ignore other option strings.
+      -*[a-z]*) ;; # some options or other
+      # Spot char sets.
+      *) j=$[$j-1] ;; # a char set argument
+    esac
+    a="$1"
+    shift
+    set -- "$@" "$a"
+    i=$[$i-1]
+  done
+  # Now one of two things has happened. Either i has hit zero,
+  # which means there was nothing on the command line except proper
+  # tr arguments; or j has hit zero, which means there's some
+  # command line stuff remaining
+  if test "$i" -gt 0; then
+    # The following loop depends on a subtle shell semantics issue:
+    # the pipe character causes a fork _before_ the while loop is
+    # run, thus $i and "$@" start off with the same values on each
+    # side of the pipe.
+    while test "$i" -gt 0; do
+      command cat "$1"
+      shift
+      i=$[$i-1]
+    done | { shift "$i"; tr "$@"; }
+  else
+    # Just run tr; the arguments should all have been rotated back
+    # into the right order.
+    command tr "$@"
+  fi
+}
+
+#}}}
