@@ -209,8 +209,9 @@ static void list_callback(void *vctx, struct entry *ent)
     struct entry *dupent;
 
     /*
-     * If this is a repeating event which started before our list
-     * period, we must begin by bringing it up to date.
+     * If this is a repeating event, or a holiday event, which
+     * started before our list period, we must begin by bringing it
+     * up to date.
      */
     if (datetime_cmp(ent->sd, ent->st, ctx->cd, ctx->ct) < 0) {
 	if (ent->period > 0) {
@@ -218,12 +219,17 @@ static void list_callback(void *vctx, struct entry *ent)
 	    d = ((d + ent->period - 1) / ent->period) * ent->period;
 	    add_to_datetime(&ent->sd, &ent->st, d);
 	    assert(datetime_cmp(ent->sd, ent->st, ctx->cd, ctx->ct) >= 0);
-	} else
+	} else if (is_hol(ent->type)) {
+	    ent->sd = ctx->cd;
+	    ent->st = ctx->ct;
+	    ent->description = "";   /* prevent recurring text entry */
+	} else {
 	    /*
 	     * This is an ordinary event which started before our
 	     * search begins. Ignore it.
 	     */
 	    return;
+	}
     }
 
     /*
