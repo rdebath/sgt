@@ -120,14 +120,14 @@ void do_launch_url(void)
 
     p = s;
     while (p[0] && (isspace((unsigned char)(p[0])) || p[0] == '\xA0'))
-       p++;
+	p++;
     q = t;
 
     for (; *p; p++) {
 	if (*p != '\n')
 	    *q++ = *p;
 	else {
-           while (p[1] && (isspace((unsigned char)(p[1])) || p[1] == '\xA0'))
+	    while (p[1] && (isspace((unsigned char)(p[1])) || p[1] == '\xA0'))
 		p++;
 	}
     }
