@@ -36,5 +36,4 @@ Services - see <a href="http://groups.google.com/groups?selm=99ab3348.0405241707
 that Windows XP SP2 breaks this. (Apparently RC2 worked, but "RTM" - the
 release - doesn't.)
 There is a fix available from Microsoft if you ask nicely - see
-<a href="http://support.microsoft.com/default.aspx?scid=kb;en-us;884020">MS KB 884020</a>
-- and it looks like it'll be in the next service pack.
+<a href="http://www.chiark.greenend.org.uk/~sgtatham/putty/faq.html#QA.7.20">the PuTTY FAQ</a>.
