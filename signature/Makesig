@@ -1,0 +1,36 @@
+#!/usr/bin/perl
+
+$debug = 0;
+$debug = 1, shift @ARGV if $ARGV[0] eq "-d";
+
+$sigdir = $ENV{"HOME"} . "/.sigs";
+srand(time);
+if (defined $ARGV[0] and -f $sigdir."/".$ARGV[0]) {
+  $file = $sigdir."/".$ARGV[0];
+} else {
+  opendir DIR, $sigdir;
+  @files = grep { /^[^A-Z.]/ } readdir(DIR);
+  print STDERR "files are ",join(',',@files),"\n" if $debug;
+  closedir DIR;
+  $i = int ( (1+$#files) * rand );
+  $file = $sigdir."/".$files[$i];
+}
+
+print STDERR "file is $file\n" if $debug;
+
+$mail = "anakin\@pobox.com"; # default
+open MAIL, $sigdir."/Email" and do { chomp($mail = <MAIL>); close MAIL; };
+
+open QUOTE, $file;
+chomp($line1 = <QUOTE>);
+chomp($line2 = <QUOTE>);
+close QUOTE;
+
+open TEMPLATE, $sigdir."/Template";
+while (<TEMPLATE>) {
+  s/~Q1~/$line1/;
+  s/~Q2~/$line2/;
+  s/(~EMAIL\.*~)/substr("<$mail>".(" " x length $1), 0, length $1)/e;
+  print;
+}
+close TEMPLATE;
