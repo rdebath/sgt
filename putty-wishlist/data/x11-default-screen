@@ -4,6 +4,7 @@ Priority: medium
 Difficulty: fun
 Present-in: 2002-12-31
 Content-type: text/x-html-body
+Fixed-in: 2003-01-03
 
 <p>
 When requesting X11 forwarding from an SSH server, PuTTY currently always
@@ -11,3 +12,6 @@ requests a default screen number of 0.  This is less than optimal for users
 of multiple-screen X servers, who might prefer a different default.
 PuTTY should probably pull the screen number off the end of cfg.x11_display
 and use that.
+
+<p>
+SGT, 2003-01-02: I think I've fixed this now.
