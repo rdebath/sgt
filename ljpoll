@@ -66,7 +66,11 @@ except IOError:
 dict = {"mode":"checkfriends", "lastupdate":lastupdate}
 if verbose:
     print "Input:", dict
-ret = ljproto.ljcall(dict)
+try:
+    ret = ljproto.ljcall(dict)
+except IOError, e:
+    print "checkfriends:", e
+    sys.exit(1)
 if verbose:
     print "Output:", ret
 
@@ -102,19 +106,23 @@ if ljproto.ljok(ret):
 		    urllib._urlopener.addheader(cookie[:index], cookie[index+2:])
 	    except IOError, e:
 		pass # if we couldn't find it, then fair enough
-	    f = urllib._urlopener.open(url)
-	    date = ""
-	    while 1:
-		s = f.readline()
-		if s == "": break
-		a1 = string.find(s, date_start)
-		if a1 >= 0:
-		    a1 = a1 + len(date_start)
-		    a2 = string.find(s, date_stop, a1)
-		    if a2 > a1:
-			date = s[a1:a2]
-			break
-	    f.close()
+	    try:
+		f = urllib._urlopener.open(url)
+		date = ""
+		while 1:
+		    s = f.readline()
+		    if s == "": break
+		    a1 = string.find(s, date_start)
+		    if a1 >= 0:
+			a1 = a1 + len(date_start)
+			a2 = string.find(s, date_stop, a1)
+			if a2 > a1:
+			    date = s[a1:a2]
+			    break
+		f.close()
+	    except IOError, e:
+		print "friends page:", e
+		sys.exit(1)
 	    if date != "":
 		if date == lastrealdate:
 		    print nonemsg
