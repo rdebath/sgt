@@ -15,4 +15,5 @@ arkady mormegil
 EOF
 `
 ME='anakin narg'
-mfinger $FRIENDS $ME
+if test "$1" = "-f"; then f=-f; else f=; fi
+mfinger $f $FRIENDS $ME
