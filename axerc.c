@@ -128,6 +128,10 @@ static char *default_rc[] = {
     "bind save-file ^X^S",
     "# unbound by default: exit-and-save",
     "",
+#ifdef TEST_BUFFER
+    "bind diagnostics ^X^D",
+    "",
+#endif
     "# End of default "RCNAME,
     NULL
 };
