@@ -1,0 +1,125 @@
+#!/usr/bin/perl
+
+# lns -- create a symbolic link. Alternative to "ln -s".
+# This program works more like "cp", in that the source path name is not
+# taken literally.
+#    ln -s filename /tmp
+# creates a link
+#    /tmp/filename -> filename
+# whereas we would prefer
+#    /tmp/filename -> /home/me/filename
+# or wherever the file *really* was.
+#
+# Usage: lns [-afF] file1 file2
+#     or lns [-af] file1 [file2...] dir
+#
+# Where:
+#   -a means absolute - "symlink /usr/bin/argh /usr/local/bin/argh" produces
+#      a relative link "/usr/bin/argh -> ../local/bin/argh", but using the
+#      -a option will give a real absolute link.
+#   -f means forceful - overwrite the target filename if it exists *and* is
+#      a link. You can't accidentally overwrite real files like this.
+#   -q means quiet - don't complain if we fail to do the job.
+#   -v means verbose - say what we're doing.
+#   -F means FILE - forces interpretation to be the "file1 file2" syntax,
+#      even if file2 is a link to a directory. This option implies -f.
+
+$abs=$force=$quiet=$verbose=$FILE=0;
+while ($_=shift @ARGV) {
+  last if /^--$/;
+  unshift (@ARGV, $_), last unless /^-/;
+  $abs=1 if /a/;
+  $force=1 if /f/;
+  $quiet=1 if /q/;
+  $verbose=1 if /v/;
+  $force=$FILE=1 if /F/;
+  die "$0: unrecognised option character $1\n" if /^-[afqvF]*([^afqvF])/;
+}
+
+(warn "usage: $0 [-afqvF] file1 file2\n" .
+      "   or: $0 [-afqv] file1 [file2...] dir\n"),
+  exit 0 if $#ARGV < 1;
+
+die "$0: multiple source files specified with -F option\n"
+  if $#ARGV > 1 && $FILE;
+die "$0: -q (quiet) and -v (verbose) options both specified\n"
+  if $quiet && $verbose;
+
+$target = pop @ARGV;
+die "$0: multiple source files specified, $target not a directory\n"
+  if $#ARGV > 0 && !-d $target;
+
+$multiple = (-d $target && !$FILE);
+chomp ($whereami = `pwd`);
+
+$target =~ s/// if $target =~ /\/$/;    # strip trailing slash if present
+
+if ($multiple) {
+  foreach $source (@ARGV) {
+    $source =~ /^(.*\/)?([^\/]*)$/;     # find final file name component
+    &makelink($source, "$target/$2");   # actually make a link
+  }
+} else {
+  $source = $ARGV[0];                   # only one source file
+  &makelink($source, $target);          # make the link
+}
+
+sub makelink {
+  local ($source, $target) = @_;
+
+  # If the target exists...
+  if (-e $target || readlink $target) {
+    # If it's a symlink and we're in Force mode, remove it and carry on.
+    if ($force && readlink $target) {
+      unlink $target || die "$0: unable to remove link $target\n";
+      # Report that if in Verbose mode.
+      warn "$0: removing existing target link $target\n" if $verbose;
+    } else {
+      # Otherwise, fail. Report that fact if not in Quiet mode.
+      warn "$0: failed to link $source to $target: target exists\n"
+        if !$quiet;
+      return;
+    }
+  }
+
+  # OK, now we're ready to do the link. Calculate the absolute path names
+  # of both source and target.
+  $source = &absolute($source);
+  $target = &absolute($target);
+
+  # If we're in Relative mode (the default), calculate the relative path
+  # name we will reference the source by.
+  $sourcename = $abs ? $source : &relname($source, $target);
+
+  warn "$0: linking $source: $target -> $sourcename\n" if $verbose;
+
+  # Make the link
+  symlink($sourcename, $target) || die "$0: unable to make link to $target\n";
+}
+
+sub absolute {
+  local ($_) = @_;
+  $_ = "$whereami/$_" if !/^\//;
+  s//$whereami/ if /^\./;
+  1 while s/\/\.\//\//;
+  1 while s/\/\//\//;
+  1 while s/\/[^\/]+\/\.\.//;
+  1 while s/^\/\.\.\//\//;
+  $_;
+}
+
+sub relname {
+  local ($source, $target) = @_;
+  local $result;
+
+  # strip the last word off the target - the actual file name
+  $target =~ s/\/[^\/]*$//;
+
+  # keep doing ".." until initial path names agree
+  $result = "";
+  $result .= "../", $target =~ s/\/[^\/]*$//
+    until $source =~ /^$target\/(.*)$/;
+
+  # now produce the real result
+  $result . $1;
+}
