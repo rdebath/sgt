@@ -4,6 +4,9 @@
 
 # TODO:
 #
+#  - Make locking interact sensibly with undo.
+#     * Undoing a move that touches a locked square must unlock it.
+#     * Alternatively, disable undo completely?
 #  - Game parameters. Wrapping borders, controllable grid size.
 #    Probably also controllable on-screen size while we're at it.
 #  - The original occasionally has barriers between squares within
@@ -414,12 +417,12 @@ def button_event(win, event):
     if x < 0 or x >= NSQUARES_X or y < 0 or y >= NSQUARES_Y:
         return # out of bounds
 
-    if event.button == 1:
-        action = -1 # anticlockwise
-    elif event.button == 3:
-        action = +1 # clockwise
-    else:
+    if (event.state & 1) or event.button == 2:
 	action = 0 # toggle lock
+    elif event.button == 1:
+        action = -1 # anticlockwise
+    else:
+        action = +1 # clockwise
 
     if game.moveinprogress:
         game.finish_move()
