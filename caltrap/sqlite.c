@@ -259,6 +259,125 @@ void db_fetch(int id, struct entry *ent)
 	fatal(err_idnotfound, id);
 }
 
+void db_del(int id)
+{
+    char *err;
+    char **table;
+    int rows, cols, i, irows[2][2];
+
+    db_open();
+
+    sqlite_exec(db, "BEGIN;", sqlite_null_callback, NULL, &err);
+    if (err) fatal(err_dberror, err);
+
+    /*
+     * First verify that the entry we want to delete does actually
+     * exist. If not, abandon our transaction and be on our way.
+     */
+    sqlite_get_table_printf(db,
+			    "SELECT id FROM entries WHERE id = %d;",
+			    &table, &rows, &cols, &err, id);
+    if (err) fatal(err_dberror, err);
+    sqlite_free_table(table);
+    if (rows < 1) {
+	sqlite_exec(db, "ROLLBACK;", sqlite_null_callback, NULL, &err);
+	if (err) fatal(err_dberror, err);
+	fatal(err_idnotfound, id);
+    }
+
+    /*
+     * Mark the ID as free in the free IDs table. This search will
+     * find any free-IDs entry which either contains the ID or is
+     * right next to it.
+     */
+    sqlite_get_table_printf(db,
+			    "SELECT first, last FROM freeids"
+			    " WHERE first <= %d AND last >= %d"
+			    " ORDER BY first;",
+			    &table, &rows, &cols, &err, id+1, id-1);
+    if (err) fatal(err_dberror, err);
+    assert(rows == 0 || cols == 2);
+    if (rows > 2) fatal(err_dbconsist, "freeids-too-many");
+    /*
+     * Parse the returned rows back into integers. While we're at
+     * it, check that no returned free ID range _already_ contains
+     * our ID, because that's a sign of db inconsistency.
+     */
+    for (i = 0; i < rows; i++) {
+	irows[i][0] = atoi(table[2*i+2]);
+	irows[i][1] = atoi(table[2*i+3]);
+	if (id >= irows[i][0] && id <= irows[i][1])
+	    fatal(err_dbconsist, "deleted-id-already-free");
+    }
+
+    /*
+     * Now we can free the table.
+     */
+    sqlite_free_table(table);
+
+    if (rows < 1) {
+	/*
+	 * No rows were returned. This means that the ID was in the
+	 * middle of a block of used IDs, so we must add a new row
+	 * exclusively for it.
+	 */
+	sqlite_exec_printf(db,
+			   "INSERT INTO freeids VALUES ( %d, %d );",
+			   sqlite_null_callback, NULL, &err, id, id);
+	if (err) fatal(err_dberror, err);
+    } else if (rows == 2) {
+	/*
+	 * Two rows were returned. This must mean that the ID was
+	 * the only thing separating two free blocks; so we merge
+	 * them into a single block.
+	 */
+	assert(irows[0][1] == id - 1);
+	assert(irows[1][0] == id + 1);
+	sqlite_exec_printf(db,
+			   "DELETE FROM freeids WHERE first = %d;",
+			   sqlite_null_callback, NULL, &err, irows[1][0]);
+	if (err) fatal(err_dberror, err);
+	sqlite_exec_printf(db,
+			   "UPDATE freeids SET last = %d WHERE first = %d;",
+			   sqlite_null_callback, NULL, &err,
+			   irows[1][1], irows[0][0]);
+	if (err) fatal(err_dberror, err);
+    } else {
+	/*
+	 * One row was returned. This means the ID is either just
+	 * after the end of a block or just before the start of
+	 * one; so we add it into the block, after determining
+	 * which.
+	 */
+	if (irows[0][1] == id - 1) {
+	    sqlite_exec_printf(db,
+			       "UPDATE freeids SET last=%d WHERE first = %d;",
+			       sqlite_null_callback, NULL, &err,
+			       id, irows[0][0]);
+	    if (err) fatal(err_dberror, err);
+	} else if (irows[0][0] == id + 1) {
+	    sqlite_exec_printf(db,
+			       "UPDATE freeids SET first=%d WHERE last = %d;",
+			       sqlite_null_callback, NULL, &err,
+			       id, irows[0][1]);
+	    if (err) fatal(err_dberror, err);
+	} else
+	    assert(!"This should never happen");
+    }
+
+    /*
+     * Whew! Compared to that load of aggro, actually deleting the
+     * entry itself will be child's play.
+     */
+    sqlite_exec_printf(db,
+		       "DELETE FROM entries WHERE id = %d;",
+		       sqlite_null_callback, NULL, &err, id);
+    if (err) fatal(err_dberror, err);
+
+    sqlite_exec(db, "COMMIT;", sqlite_null_callback, NULL, &err);
+    if (err) fatal(err_dberror, err);
+}
+
 void db_dump_entries(list_callback_fn_t fn, void *ctx)
 {
     char *err;

@@ -14,7 +14,7 @@ int main(int argc, char **argv) {
     int errs;
     int verbose;
     struct entry e;
-    enum { NONE, INIT, ADD, LIST, CRON, DUMP, LOAD, INFO } command;
+    enum { NONE, INIT, ADD, LIST, CRON, DUMP, LOAD, INFO, DEL } command;
     char *args[4];
     int nargs = 0;
     char *homedir;
@@ -67,6 +67,8 @@ int main(int argc, char **argv) {
 			    command = INIT;
 			} else if (!strcmp(opt, "-info")) {
 			    command = INFO;
+			} else if (!strcmp(opt, "-delete")) {
+			    command = DEL;
 			} else if (!strcmp(opt, "-dump")) {
 			    command = DUMP;
 			} else if (!strcmp(opt, "-load")) {
@@ -236,6 +238,9 @@ int main(int argc, char **argv) {
 	break;
       case INFO:
 	caltrap_info(nargs, args, lenof(args));
+	break;
+      case DEL:
+	caltrap_del(nargs, args, lenof(args));
 	break;
     }
 

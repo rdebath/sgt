@@ -31,6 +31,7 @@ enum {
     err_dumpargno,		       /* `dump' requires no args */
     err_loadargno,		       /* `load' requires 0-1 args */
     err_infoargno,		       /* `info' requires 1 arg */
+    err_delargno,		       /* `delete' requires 1 arg */
     err_loadfmt,		       /* error parsing dump file */
     err_date,		               /* unable to parse date `%s' */
     err_time,		               /* unable to parse time `%s' */
@@ -147,6 +148,11 @@ void caltrap_load(int nargs, char **args, int nphysargs);
 void caltrap_info(int nargs, char **args, int nphysargs);
 
 /*
+ * del.c
+ */
+void caltrap_del(int nargs, char **args, int nphysargs);
+
+/*
  * main.c
  */
 char *dbpath;
@@ -170,6 +176,7 @@ void db_list_entries(Date sd, Time st, Date ed, Time et,
                      list_callback_fn_t fn, void *ctx);
 void db_dump_entries(list_callback_fn_t fn, void *ctx);
 void db_fetch(int id, struct entry *ent);   /* smallocs ent->description */
+void db_del(int id);
 void db_close(void);
 
 #endif

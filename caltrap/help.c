@@ -12,6 +12,7 @@ static char *helptext[] = {
     "       caltrap -C <time> <cmd>       list entries in the next <time>",
     "                                         and pipe them into <cmd>",
     "       caltrap --info <id>           display details of a specific entry",
+    "       caltrap --delete <id>         delete an entry",
     "       caltrap --init                set up an empty database",
     "       caltrap --dump                dump database contents as text",
     "       caltrap --load [<file>]       reload a database dump",
