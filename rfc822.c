@@ -27,6 +27,12 @@
 #define FWS(c) ( WSP(c) || (c)=='\n' )
 
 /*
+ * A convenient way to generate a constant (string,length) pair to
+ * pass to functions such as istrlencmp.
+ */
+#define SL(s) (s) , (sizeof((s))-1)
+
+/*
  * Type definitions and forward references.
  */
 struct header_type {
@@ -35,19 +41,19 @@ struct header_type {
     const char *header_name;
     enum {
 	NO_ENCODED,
-	    ENCODED_COMMENTS,
-	    ENCODED_CPHRASES,
-	    ENCODED_ANYWHERE
+	ENCODED_COMMENTS,
+	ENCODED_CPHRASES,
+	ENCODED_ANYWHERE
     } rfc2047_location;
     enum {
 	DO_NOTHING,
-	    EXTRACT_ADDRESSES,
-	    EXTRACT_MESSAGE_IDS,
-	    EXTRACT_DATE,
-	    EXTRACT_SUBJECT,
-	    CONTENT_TYPE,
-	    CONTENT_TRANSFER_ENCODING,
-	    CONTENT_DESCRIPTION,
+	EXTRACT_ADDRESSES,
+	EXTRACT_MESSAGE_IDS,
+	EXTRACT_DATE,
+	EXTRACT_SUBJECT,
+	CONTENT_TYPE,
+	CONTENT_TRANSFER_ENCODING,
+	CONTENT_DESCRIPTION,
     } action;
 };
 struct lexed_header {
@@ -69,14 +75,21 @@ struct mime_details {
      */
     char const *major, *minor;	       /* the two parts of the MIME type */
     int majorlen, minorlen;	       /* and the length fields */
-    enum { NONE, QP, BASE64 } transfer_encoding;
+    enum { NONE, QP, BASE64, UUENCODE } transfer_encoding;
     int charset;
 };
 
 struct lexed_header *lex_header(char const *header, int length, int type);
 void init_mime_details(struct mime_details *md);
 void parse_content_type(struct lexed_header *lh, struct mime_details *md);
+void parse_content_transfer(struct lexed_header *lh, struct mime_details *md);
 int unquote(const char *in, int inlen, int dblquot, char *out);
+void info_addr(parser_info_fn_t info, void *infoctx,
+	       const char *addr, int addrlen,
+	       const char *name, int namelen,
+	       int default_charset);
+char *rfc2047_to_utf8_string(const char *text, int len,
+			     int structured, int default_charset);
 
 int istrlencmp(const char *s1, int l1, const char *s2, int l2);
 
@@ -281,7 +294,7 @@ void parse_message(const char *msg, int len,
 		const char *name, *ourname;
 		int namelen, ourlen, prefix, cmp;
 		const struct header_type *hdr;
-		struct lexed_header *lh;
+		struct lexed_header *lh, *lhbase;
 
 		bot = -1;
 		top = lenof(headers);
@@ -344,7 +357,7 @@ void parse_message(const char *msg, int len,
 		/*
 		 * Perform semantic parsing.
 		 */
-		lh = lex_header(r, message - r, hdr->action);
+		lh = lhbase = lex_header(r, message - r, hdr->action);
 #ifdef DIAGNOSTICS
 		{
 		    int i;
@@ -357,19 +370,145 @@ void parse_message(const char *msg, int len,
 		}
 #endif
 		switch (hdr->action) {
+		  case EXTRACT_ADDRESSES:
+		    /*
+		     * Every address appears before a comma, a
+		     * semicolon, or end-of-string. So the simplest
+		     * way is if first we scan forward to find one
+		     * of those, and _then_ we look back from there
+		     * to deal with what we've found.
+		     */
+		    while (lh->token) {
+			struct lexed_header *lh2 = lh;
+
+			/*
+			 * Scan forwards for a terminating
+			 * character.
+			 */
+			while (lh2->token &&
+			       (!lh2->is_punct ||
+				(lh2->token[0] != ';' &&
+				 lh2->token[0] != ',')))
+			    lh2++;
+			/*
+			 * Now look backwards. If we see a >, then
+			 * we expect to find it preceded by an
+			 * address, a <, and then a display phrase.
+			 * If instead we see a word, that _is_ the
+			 * address, and its following comment (if
+			 * any) is the display name.
+			 */
+			if (lh2 >= lh+3 &&
+			    lh2[-1].is_punct && lh2[-1].token[0] == '>' &&
+			    lh2[-3].is_punct && lh2[-3].token[0] == '<') {
+			    struct lexed_header *lh3;
+			    int displen;
+			    char *dispdata;
+
+			    lh3 = lh2-3;
+
+			    displen = 0;
+			    while (lh3 > lh &&
+				   !lh3[-1].is_punct) {
+				lh3--;
+				displen += (displen > 0) + lh3->length;
+			    }
+			    if (displen > 0) {
+				int i;
+				dispdata = smalloc(displen);
+				i = 0;
+				while (lh3 < lh2-3) {
+				    memcpy(dispdata+i, lh3->token,
+					   lh3->length);
+				    i += lh3->length;
+				    if (lh3+1 < lh2-3)
+					dispdata[i++] = ' ';
+				    lh3++;
+				}
+				assert(i == displen);
+			    } else
+				dispdata = NULL;
+			    info_addr(info, infoctx,
+				      lh2[-2].token, lh2[-2].length,
+				      dispdata, displen,
+				      default_charset);
+			    sfree(dispdata);
+			} else if (lh2 > lh && !lh2[-1].is_punct) {
+			    info_addr(info, infoctx,
+				      lh2[-1].token, lh2[-1].length,
+				      lh2[-1].comment, lh2[-1].clength,
+				      default_charset);
+			}
+			lh = lh2;
+		    }
+		    break;
+		  case EXTRACT_MESSAGE_IDS:
+		    /*
+		     * Any single word between a pair of <> and
+		     * containing an @ is a Message-ID.
+		     */
+		    while (lh->token) {
+			if (lh[0].token && lh[1].token && lh[2].token &&
+			    lh[0].is_punct && lh[0].token[0]=='<' &&
+			    !lh[1].is_punct &&
+			    lh[2].is_punct && lh[2].token[0]=='>') {
+			    info(infoctx, 1 /* FIXME: TYPE_MESSAGE_ID */,
+				 lh[1].token, lh[1].length);
+			}
+			lh++;
+		    }
+		    break;
+		  case EXTRACT_DATE:
+		    /*
+		     * FIXME: Deal with this once we've decided how
+		     * to do it.
+		     */
+		    break;
+		  case EXTRACT_SUBJECT:
+		    {
+			char *utf8subj =
+			    rfc2047_to_utf8_string(r, message - r,
+						   FALSE, default_charset);
+			info(infoctx, 4 /* FIXME: TYPE_SUBJECT */,
+			     utf8subj, strlen(utf8subj));
+			sfree(utf8subj);
+		    }
+		    break;
 		  case CONTENT_TYPE:
 		    parse_content_type(lh, &toplevel_part);
 		    break;
-		  default:
+		  case CONTENT_TRANSFER_ENCODING:
+		    parse_content_transfer(lh, &toplevel_part);
 		    break;
+		  case CONTENT_DESCRIPTION:
+		    /*
+		     * FIXME: This one requires storing a
+		     * dynamically allocated string in the
+		     * mime_details structure. We will have to do
+		     * this, but just for the moment I'll wait.
+		     * 
+		     * parse_content_description(r, message-r, &toplevel_part);
+		     */
+		    break;
+		  case DO_NOTHING:
+		    break;
+		    /*
+		     * FIXME: We also need to parse
+		     * Content-Disposition, since it contains the
+		     * "filename" parameter which it would be a
+		     * regression over Timber v0 to ignore. Also,
+		     * better still, the basic Content-Disposition
+		     * provides a hint about whether additional
+		     * textual attachments should be displayed by
+		     * default or left for the user to ask for.
+		     * 
+		     * See RFC 2183 for full details.
+		     */
 		}
-		sfree(lh);
+		sfree(lhbase);
 
 		/*
-		 * Parse the header for output. The _semantic_
-		 * header parsing is pretty much orthogonal to this
-		 * display-prettification, and so we will do that
-		 * separately.
+		 * Parse the header for output (pass 1 only).
 		 */
 		if (pass == 0)
 		    continue;
@@ -764,8 +903,35 @@ void parse_content_type(struct lexed_header *lh, struct mime_details *md)
 
 		md->charset = charset_upgrade(charset_from_mimeenc(cset));
 	    }
-
+	    /*
+	     * FIXME: Look into other parameters. In particular, I
+	     * believe "name" is already a useful thing to be
+	     * using. Also "boundary" is vital for multiparts.
+	     * 
+	     * Both of these require dynamically allocated data in
+	     * the mime_details structure. Be ready.
+	     */
 	    lh += 4;
+	}
+    }
+}
+
+void parse_content_transfer(struct lexed_header *lh, struct mime_details *md)
+{
+    /*
+     * Content-Transfer-Encoding is incredibly simple.
+     */
+    if (!lh[0].is_punct && lh[0].length > 0) {
+	if (!istrlencmp(lh[0].token, lh[0].length, SL("quoted-printable"))) {
+	    md->transfer_encoding = QP;
+	} else if (!istrlencmp(lh[0].token, lh[0].length, SL("base64"))) {
+	    md->transfer_encoding = BASE64;
+	} else if (!istrlencmp(lh[0].token, lh[0].length, SL("x-uuencode"))) {
+	    md->transfer_encoding = UUENCODE;
+	} else if (!istrlencmp(lh[0].token, lh[0].length, SL("7bit")) ||
+		   !istrlencmp(lh[0].token, lh[0].length, SL("8bit")) ||
+		   !istrlencmp(lh[0].token, lh[0].length, SL("binary"))) {
+	    md->transfer_encoding = NONE;
 	}
     }
 }
@@ -821,6 +987,75 @@ int istrlencmp(const char *s1, int l1, const char *s2, int l2)
 	return -1;		       /* s2 is longer */
     else
 	return 0;
+}
+
+struct utf8_string_output_ctx {
+    char *text;
+    int textlen, textsize;
+};
+void utf8_string_output(void *vctx, const char *text, int len,
+			int type, int charset)
+{
+    struct utf8_string_output_ctx *ctx = (struct utf8_string_output_ctx *)vctx;
+    charset_state instate = CHARSET_INIT_STATE;
+    charset_state outstate = CHARSET_INIT_STATE;
+    wchar_t midbuf[256];
+    wchar_t const *midptr;
+    char outbuf[256];
+    int inret, midret, midlen;
+
+    if (charset == CS_NONE)
+	charset = CS_ASCII;
+
+    while ( (inret = charset_to_unicode(&text, &len, midbuf,
+					lenof(midbuf), charset,
+					&instate, NULL, 0)) > 0) {
+	midlen = inret;
+	midptr = midbuf;
+	while ( (midret = charset_from_unicode(&midptr, &midlen, outbuf,
+					       lenof(outbuf), CS_UTF8,
+					       &outstate, NULL, 0)) > 0) {
+	    if (ctx->textlen + midret >= ctx->textsize) {
+		ctx->textsize = ctx->textlen + midret + 256;
+		ctx->text = srealloc(ctx->text, ctx->textsize);
+	    }
+	    memcpy(ctx->text + ctx->textlen, outbuf, midret);
+	    ctx->textlen += midret;
+	}
+    }
+}
+char *rfc2047_to_utf8_string(const char *text, int len,
+			     int structured, int default_charset)
+{
+    struct utf8_string_output_ctx ctx;
+
+    ctx.text = NULL;
+    ctx.textlen = ctx.textsize = 0;
+    rfc2047(text, len, utf8_string_output, &ctx, structured, default_charset);
+    utf8_string_output(&ctx, "\0", 1, TYPE_HEADER_TEXT, CS_UTF8);
+    return ctx.text;
+}
+
+void info_addr(parser_info_fn_t info, void *infoctx,
+	       const char *addr, int addrlen,
+	       const char *name, int namelen,
+	       int default_charset)
+{
+    /*
+     * `name' must be fed through RFC2047 parsing.
+     */
+    char *utf8name = rfc2047_to_utf8_string(name, namelen,
+					    TRUE, default_charset);
+
+    /*
+     * FIXME: Need to increase the info function's parameter list
+     * so that we can pass name and address _together_. Also we
+     * need to have passed the header type into this function.
+     */
+    info(infoctx, 2 /* FIXME */, utf8name, strlen(utf8name));
+    info(infoctx, 3 /* FIXME */, addr, addrlen);
+
+    sfree(utf8name);
 }
 
 void null_output_fn(void *ctx, const char *text, int len,
