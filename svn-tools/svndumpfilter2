@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
 import sys
+import os
+import re
 import string
 import types
 import md5
@@ -22,6 +24,20 @@ def joinpath(list, prefix=""):
 
 def catpath(path1, path2, prefix=""):
     return joinpath(splitpath(path1) + splitpath(path2), prefix)
+
+# Decide whether a pathname is interesting or not.
+class InterestingPaths:
+    def __init__(self, args):
+	self.res = []
+	for a in args:
+	    self.res.append(re.compile(a))
+    def interesting(self, path):
+	a = splitpath(path)
+	assert len(a) > 0
+	for r in self.res:
+	    if r.match(a[0]):
+		return 1
+	return 0
 
 # Now here's a class that tracks a directory tree, storing a
 # user-provided value at each node.
@@ -78,6 +94,11 @@ class DirTree:
 	assert d.has_key(s)
 	return d[s][0]
 
+    def change(self, path, data=None):
+	d, s = self._searchto(path)
+	assert d.has_key(s)
+	d[s] = (data,) + d[s][1:]
+
     def filetype(self, path):
 	d, s = self._searchto(path)
 	assert d.has_key(s)
@@ -105,11 +126,10 @@ class Lump:
     def __init__(self):
 	self.hdrlist = []
 	self.hdrdict = {}
-	self.props = ""
+	self.prop = ""
 	self.text = ""
 	self.extant = 1
-	self.proplist = []
-	self.propdict = {}
+	self.props = [[], {}]
     def sethdr(self, key, val):
 	if not self.hdrdict.has_key(key):
 	    self.hdrlist.append(key)
@@ -120,38 +140,38 @@ class Lump:
 	    self.hdrlist.remove(key)
     def propparse(self):
 	index = 0
-	while self.props[index:index+2] == "K ":
-	    nlpos = string.find(self.props, "\n", index)
+	while self.prop[index:index+2] == "K ":
+	    nlpos = string.find(self.prop, "\n", index)
 	    assert nlpos > 0
-	    namelen = string.atoi(self.props[index+2:nlpos])
-	    assert self.props[nlpos+1+namelen] == "\n"
-	    name = self.props[nlpos+1:nlpos+1+namelen]
+	    namelen = string.atoi(self.prop[index+2:nlpos])
+	    assert self.prop[nlpos+1+namelen] == "\n"
+	    name = self.prop[nlpos+1:nlpos+1+namelen]
 	    index = nlpos+2+namelen
-	    assert self.props[index:index+2] == "V "
-	    nlpos = string.find(self.props, "\n", index)
+	    assert self.prop[index:index+2] == "V "
+	    nlpos = string.find(self.prop, "\n", index)
 	    assert nlpos > 0
-	    proplen = string.atoi(self.props[index+2:nlpos])
-	    assert self.props[nlpos+1+proplen] == "\n"
-	    prop = self.props[nlpos+1:nlpos+1+proplen]
+	    proplen = string.atoi(self.prop[index+2:nlpos])
+	    assert self.prop[nlpos+1+proplen] == "\n"
+	    prop = self.prop[nlpos+1:nlpos+1+proplen]
 	    index = nlpos+2+proplen
-	    self.proplist.append(name)
-	    self.propdict[name] = prop
+	    self.props[0].append(name)
+	    self.props[1][name] = prop
     def setprop(self, key, val):
-	if not self.propdict.has_key(key):
-	    self.proplist.append(key)
-	self.propdict[key] = val
+	if not self.props[1].has_key(key):
+	    self.props[0].append(key)
+	self.props[1][key] = val
     def correct_headers(self):
 	# First reconstitute the properties block.
-	self.props = ""
-	if len(self.proplist) > 0:
-	    for key in self.proplist:
-		self.props = self.props + "K %d" % len(key) + "\n" + key + "\n"
-		val = self.propdict[key]
-		self.props = self.props + "V %d" % len(val) + "\n" + val + "\n"
-	    self.props = self.props + "PROPS-END\n"
+	self.prop = ""
+	if len(self.props[0]) > 0:
+	    for key in self.props[0]:
+		self.prop = self.prop + "K %d" % len(key) + "\n" + key + "\n"
+		val = self.props[1][key]
+		self.prop = self.prop + "V %d" % len(val) + "\n" + val + "\n"
+	    self.prop = self.prop + "PROPS-END\n"
 	# Now fix up the content length headers.
-	if len(self.props) > 0:
-	    self.sethdr("Prop-content-length", str(len(self.props)))
+	if len(self.prop) > 0:
+	    self.sethdr("Prop-content-length", str(len(self.prop)))
 	else:
 	    self.delhdr("Prop-content-length")
 	if len(self.text) > 0:
@@ -162,8 +182,8 @@ class Lump:
 	else:
 	    self.delhdr("Text-content-length")
 	    self.delhdr("Text-content-md5")
-	if len(self.props) > 0 or len(self.text) > 0:
-	    self.sethdr("Content-length", str(len(self.props)+len(self.text)))
+	if len(self.prop) > 0 or len(self.text) > 0:
+	    self.sethdr("Content-length", str(len(self.prop)+len(self.text)))
 	else:
 	    self.delhdr("Content-length")
 
@@ -194,7 +214,7 @@ def read_lump(f):
     pcl = string.atoi(lump.hdrdict.get("Prop-content-length", "0"))
     tcl = string.atoi(lump.hdrdict.get("Text-content-length", "0"))
     if pcl > 0:
-	lump.props = f.read(pcl)
+	lump.prop = f.read(pcl)
 	lump.propparse()
     if tcl > 0:
 	lump.text = f.read(tcl)
@@ -208,7 +228,7 @@ def write_lump(f, lump):
 	val = lump.hdrdict[key]
 	f.write(key + ": " + val + "\n")
     f.write("\n")
-    f.write(lump.props)
+    f.write(lump.prop)
     f.write(lump.text)
     if lump.hdrdict.has_key("Prop-content-length") or \
     lump.hdrdict.has_key("Text-content-length") or \
@@ -219,22 +239,66 @@ def write_lump(f, lump):
 # file fragments a whole revision at a time.
 
 class Filter:
-    def __init__(self):
+    def __init__(self, paths):
 	self.dirtree = DirTree()
 	self.revisions = {}
+	self.paths = paths
 
-    def docopy(self, stree, spath, dtree, dpath):
+    def docopy(self, stree, srev, spath, dtree, dpath, contents=None):
+	# If the destination directory is uninteresting, we don't
+	# need to write anything to `contents' ever.
+	if contents != None and not self.paths.interesting(dpath):
+	    sys.stderr.write("%s->%s: copy to uninteresting location\n" % (spath, dpath));
+	    contents = None
+
+	# Simple case: a copy from an interesting directory is done
+	# in the normal way, and then we stop writing to `contents'
+	# because there's no need to log the subsidiary copies
+	# explicitly.
+	if contents != None and self.paths.interesting(spath):
+	    sys.stderr.write("%s->%s: copy between interesting locations\n" % (spath, dpath));
+	    lump = Lump()
+	    lump.sethdr("Node-path", dpath)
+	    lump.sethdr("Node-action", "add")
+	    lump.sethdr("Node-copyfrom-rev", str(srev))
+	    lump.sethdr("Node-copyfrom-path", spath)
+	    contents.append(lump)
+	    contents = None
+
 	typ = stree.filetype(spath)
 	if typ == "f":
 	    dtree.mkfile(dpath)
+	    # Difficult case: we must copy this file explicitly.
+	    if contents != None:
+		sys.stderr.write("%s->%s: file copy needing full data\n" % (spath, dpath));
+		lump = Lump()
+		lump.sethdr("Node-path", dpath)
+		lump.sethdr("Node-kind", "file")
+		lump.sethdr("Node-action", "add")
+		lump.props = stree.find(spath)
+		f = os.popen("svnlook cat -r" + str(srev) + \
+		" " + repos + " " + spath, "r")
+		lump.text = f.read()
+		f.close()
+		contents.append(lump)
 	else:
 	    dtree.mkdir(dpath)
+	    # Difficult case: we must create this directory explicitly.
+	    if contents != None:
+		sys.stderr.write("%s->%s: dir copy needing explicit mkdir\n" % (spath, dpath));
+		lump = Lump()
+		lump.sethdr("Node-path", dpath)
+		lump.sethdr("Node-kind", "dir")
+		lump.sethdr("Node-action", "add")
+		lump.props = stree.find(spath)
+		contents.append(lump)
 	    files = stree.filenames(spath)
 	    for file in files:
-		self.docopy(stree, catpath(spath, file), \
-		dtree, catpath(dpath, file))
+		self.docopy(stree, srev, catpath(spath, file), \
+		dtree, catpath(dpath, file), contents)
 
-    def track(self, revhdr, contents):
+    def tweak(self, revhdr, contents):
+	contents2 = []
 	for lump in contents:
 	    action = lump.hdrdict["Node-action"]
 	    path = lump.hdrdict["Node-path"]
@@ -247,24 +311,39 @@ class Filter:
 		    # existed in the given revision_, and copy it
 		    # in full.
 		    srctree = self.revisions[srcrev]
-		    self.docopy(srctree, srcpath, self.dirtree, path)
+		    self.docopy(srctree, srcrev, srcpath, \
+		    self.dirtree, path, contents2)
 		elif lump.hdrdict["Node-kind"] == "dir":
-		    self.dirtree.mkdir(path)
+		    self.dirtree.mkdir(path, lump.props)
+		    if self.paths.interesting(path):
+			contents2.append(lump)
 		else:
-		    self.dirtree.mkfile(path)
+		    self.dirtree.mkfile(path, lump.props)
+		    if self.paths.interesting(path):
+			contents2.append(lump)
 	    elif action == "change":
-		self.dirtree.find(path) # verify it exists
+		self.dirtree.change(path, lump.props)
+		if self.paths.interesting(path):
+		    contents2.append(lump)
 	    elif action == "delete":
 		self.dirtree.delete(path)
-	
+		if self.paths.interesting(path):
+		    contents2.append(lump)
+
 	# Must now clone the entire dir tree and store it in a
 	# revisions array, in case a future copy needs to access
 	# this version of the tree.
 	revnum = string.atoi(revhdr.hdrdict["Revision-number"])
 	self.revisions[revnum] = self.dirtree.copy()
 
+	# Change the contents array.
+	contents[:] = contents2
+
 fr = sys.stdin
 fw = sys.stdout
+
+repos = sys.argv[1]
+paths = InterestingPaths(sys.argv[2:])
 
 # Pass the dump-file header through unchanged.
 lump = read_lump(fr)
@@ -274,7 +353,7 @@ while not lump.hdrdict.has_key("Revision-number"):
 
 revhdr = lump
 
-filt = Filter()
+filt = Filter(paths)
 
 while revhdr != None:
     # Read revision header.
