@@ -1161,6 +1161,9 @@ if (jedrc_is_in_lib("sokoban.sl")) { %{{{
 }
 %}}}
 
+% Also, .m is Objective-C, for Mac OS X work.
+add_mode_for_extension("c", "m");
+
 %}}}
 %{{{ ESC 0 inserts `0', so we can type eight zeros using ALT-8 ALT-0
 setkey(". 48 insert_char", "^[0");
