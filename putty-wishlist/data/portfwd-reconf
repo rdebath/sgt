@@ -2,10 +2,20 @@ Summary: Reconfigurable port forwarding
 Class: semi-bug
 Priority: medium
 Difficulty: tricky
-Content-type: text/plain
+Fixed-in: 2004-12-29
+Content-type: text/x-html-body
 
+<p>
 It would be nice to be able to reconfigure the port forwarding setup
 using the Change Settings box, and have PuTTY at least attempt to
 shift to the new configuration. This would involve cancelling remote
 forwardings and starting new ones, closing local listening sockets
 and starting new ones, so it isn't a trivial piece of work.
+
+<p>
+<b>SGT, 2004-12-28</b>: Should now be done. Turned out to be made a
+lot easier by the packet-handler restructuring I did in r4901 to fix
+<a href="ssh2-kex-data.html">ssh2-kex-data</a>,
+<a href="ext-data-at-start.html">ext-data-at-start</a>
+and
+<a href="portfwd-at-start.html">portfwd-at-start</a>.
