@@ -113,6 +113,82 @@ int qp_decode(const char *input, int length, char *output, int rfc2047);
 /*
  * rfc822.c
  */
+struct mime_details {
+    /*
+     * This structure describes details of a single MIME part.
+     */
+    char *major, *minor;	       /* dynamically allocated */
+    enum { NO_ENCODING, QP, BASE64, UUENCODE } transfer_encoding;
+    int charset;
+    int cd_inline;
+    /*
+     * A file name can come from a `name' parameter in
+     * Content-Type, or a `filename' parameter in
+     * Content-Disposition. The former is deprecated in favour of
+     * the latter (as stated in RFC 2046), so the latter takes
+     * priority. Hence, we track at all times where our current
+     * filename has come from.
+     */
+    enum { NO_FNAME, CT_NAME, CD_FILENAME } filename_location;
+    char *filename;		       /* dynamically allocated */
+    char *boundary;		       /* dynamically allocated */
+    char *description;		       /* dynamically allocated */
+    /*
+     * These two define the substring of the message itself which
+     * contains the actual data of the MIME part.
+     */
+    int offset;
+    int length;
+};
+struct message_id {
+    char *mid;
+    int index;			       /* which of the References */
+};
+struct address {
+    char *display_name;
+    char *address;
+};
+struct message_parse_info {
+    enum {
+	PARSE_ADDRESS,
+	PARSE_MESSAGE_ID,
+	PARSE_SUBJECT,
+	PARSE_DATE,
+	PARSE_MIME_PART
+    } type;
+    enum {
+	H_BCC,
+	H_CC,
+	H_CONTENT_DESCRIPTION,
+	H_CONTENT_DISPOSITION,
+	H_CONTENT_TRANSFER_ENCODING,
+	H_CONTENT_TYPE,
+	H_DATE,
+	H_FROM,
+	H_IN_REPLY_TO,
+	H_MESSAGE_ID,
+	H_REFERENCES,
+	H_REPLY_TO,
+	H_RESENT_BCC,
+	H_RESENT_CC,
+	H_RESENT_FROM,
+	H_RESENT_REPLY_TO,
+	H_RESENT_SENDER,
+	H_RESENT_TO,
+	H_RETURN_PATH,
+	H_SENDER,
+	H_SUBJECT,
+	H_TO
+    } header;
+    union {
+	struct address addr;
+	struct message_id mid;
+	char *string;
+	time_t date;
+	struct mime_details md;
+    } u;
+};
+
 typedef void (*parser_output_fn_t)(void *ctx, const char *text, int len,
 				   int type, int charset);
 enum {				       /* values for above `type' argument */
@@ -120,16 +196,11 @@ enum {				       /* values for above `type' argument */
     TYPE_HEADER_TEXT,
     TYPE_BODY_TEXT
 };
-typedef void (*parser_info_fn_t)(void *ctx, int type,
-				 const char *text, int len);
-enum {				       /* values for above `type' argument */
-    TYPE_SUBJECT,
-    TYPE_FROM_ADDR,
-    /* FIXME: fill in the rest of these... */
-};
+typedef void (*parser_info_fn_t)(void *ctx, struct message_parse_info *info);
+
 void null_output_fn(void *ctx, const char *text, int len,
 		    int type, int charset);
-void null_info_fn(void *ctx, int type, const char *text, int len);
+void null_info_fn(void *ctx, struct message_parse_info *info);
 void parse_message(const char *message, int msglen,
 		   parser_output_fn_t output, void *outctx,
 		   parser_info_fn_t info, void *infoctx);

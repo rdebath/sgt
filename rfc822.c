@@ -39,6 +39,7 @@ struct header_type {
     /* Special case: header_name might begin with `*'
      * to indicate it's a prefix. */
     const char *header_name;
+    int header_id;
     enum {
 	NO_ENCODED,
 	ENCODED_COMMENTS,
@@ -70,38 +71,9 @@ struct lexed_header {
     char const *comment;
     int clength;
 };
-struct mime_details {
-    /*
-     * This structure describes details of a single MIME part.
-     */
-    char const *major, *minor;	       /* the two parts of the MIME type */
-    int majorlen, minorlen;	       /* and the length fields */
-    enum { NO_ENCODING, QP, BASE64, UUENCODE } transfer_encoding;
-    int charset;
-    int cd_inline;
-    /*
-     * A file name can come from a `name' parameter in
-     * Content-Type, or a `filename' parameter in
-     * Content-Disposition. The former is deprecated in favour of
-     * the latter (as stated in RFC 2046), so the latter takes
-     * priority. Hence, we track at all times where our current
-     * filename has come from.
-     */
-    enum { NO_FNAME, CT_NAME, CD_FILENAME } filename_location;
-    char *filename;		       /* dynamically allocated */
-    char *boundary;		       /* dynamically allocated */
-    char *description;		       /* dynamically allocated */
-    /*
-     * These two denote the substring of the message itself which
-     * contains the actual data of the MIME part. This char * is
-     * _not_ dynamically allocated.
-     */
-    char const *startpoint;
-    int length;
-};
 
-void parse_headers(char const *message, int msglen, int full_message,
-		   int pass, int default_charset,
+void parse_headers(char const *base, char const *message, int msglen,
+		   int full_message, int pass, int default_charset,
 		   parser_output_fn_t output, void *outctx,
 		   parser_info_fn_t info, void *infoctx,
 		   struct mime_details *md);
@@ -118,12 +90,13 @@ int unquote(const char *in, int inlen, int dblquot, char *out);
 void info_addr(parser_info_fn_t info, void *infoctx,
 	       const char *addr, int addrlen,
 	       const char *name, int namelen,
-	       int default_charset);
+	       int header_id, int default_charset);
 char *rfc2047_to_utf8_string(const char *text, int len,
 			     int structured, int default_charset);
 int latoi(const char *text, int len);
 
 int istrlencmp(const char *s1, int l1, const char *s2, int l2);
+int istrcmp(const char *s1, const char *s2);
 
 /*
  * This is the main message-parsing function. It produces two
@@ -194,7 +167,7 @@ void parse_message(const char *message, int msglen,
 		default_charset = toplevel_part.charset;
 	}
 
-	parse_headers(message, msglen, TRUE, pass, default_charset,
+	parse_headers(message, message, msglen, TRUE, pass, default_charset,
 		      output, outctx, info, infoctx, &toplevel_part);
     }
 
@@ -206,18 +179,28 @@ void recurse_mime_part(const char *base, struct mime_details *md,
 		       int default_charset,
 		       parser_info_fn_t info, void *infoctx)
 {
+    md->charset = charset_upgrade(md->charset);
+
 #ifdef DIAGNOSTICS
-    printf("Got MIME part: %.*s/%.*s (%d, cs=%d) at (%d,%d)\n"
+    printf("Got MIME part: %s/%s (%d, cs=%d) at (%d,%d)\n"
 	   "  (%s, fn=\"%s\", b=\"%s\", desc=\"%s\")\n",
-	   md->majorlen, md->major,
-	   md->minorlen, md->minor,
+	   md->major, md->minor,
 	   md->transfer_encoding, md->charset,
-	   md->startpoint - base, md->length,
+	   md->offset, md->length,
 	   md->cd_inline ? "inline" : "attachment",
 	   md->filename, md->boundary, md->description);
 #endif
 
-    if (!istrlencmp(md->major, md->majorlen, SL("multipart")) &&
+    {
+	struct message_parse_info inf;
+
+	inf.type = PARSE_MIME_PART;
+	inf.header = 0;
+	inf.u.md = *md;		       /* structure copy */
+	info(infoctx, &inf);
+    }
+
+    if (!istrcmp(md->major, "multipart") &&
 	md->transfer_encoding == NO_ENCODING && md->boundary != NULL) {
 
 	/*
@@ -226,7 +209,7 @@ void recurse_mime_part(const char *base, struct mime_details *md,
 	 */
 
 	const char *partstart = NULL, *partend = NULL;
-	const char *here = md->startpoint, *end = md->startpoint + md->length;
+	const char *here = base + md->offset, *end = here + md->length;
 	int blen = strlen(md->boundary);
 	int done = FALSE;
 
@@ -253,7 +236,7 @@ void recurse_mime_part(const char *base, struct mime_details *md,
 			struct mime_details this_part;
 			init_mime_details(&this_part);
 			this_part.charset = default_charset;
-			parse_headers(partstart, partend - partstart,
+			parse_headers(base, partstart, partend - partstart,
 				      FALSE, 1, default_charset,
 				      null_output_fn, NULL,
 				      null_info_fn, NULL, &this_part);
@@ -270,8 +253,8 @@ void recurse_mime_part(const char *base, struct mime_details *md,
 		    here++;	       /* eat the newline */
 	    }
 	}
-    } else if (!istrlencmp(md->major, md->majorlen, SL("message")) &&
-	       !istrlencmp(md->minor, md->minorlen, SL("rfc822")) &&
+    } else if (!istrcmp(md->major, "message") &&
+	       !istrcmp(md->minor, "rfc822") &&
 	       md->transfer_encoding == NO_ENCODING) {
 	/*
 	 * We recurse into message/rfc822 to find the type of the
@@ -284,7 +267,7 @@ void recurse_mime_part(const char *base, struct mime_details *md,
 	struct mime_details this_part;
 	init_mime_details(&this_part);
 	this_part.charset = default_charset;
-	parse_headers(md->startpoint, md->length,
+	parse_headers(base, base + md->offset, md->length,
 		      FALSE, 1, default_charset,
 		      null_output_fn, NULL,
 		      null_info_fn, NULL, &this_part);
@@ -294,8 +277,8 @@ void recurse_mime_part(const char *base, struct mime_details *md,
     }
 }
 
-void parse_headers(char const *message, int msglen, int full_message,
-		   int pass, int default_charset,
+void parse_headers(char const *base, char const *message, int msglen,
+		   int full_message, int pass, int default_charset,
 		   parser_output_fn_t output, void *outctx,
 		   parser_info_fn_t info, void *infoctx,
 		   struct mime_details *md)
@@ -398,37 +381,48 @@ void parse_headers(char const *message, int msglen, int full_message,
 	do {
 	    static const struct header_type headers[] = {
 		/* These are sorted in (case-insensitive) order. */
-		{"Bcc", ENCODED_CPHRASES, EXTRACT_ADDRESSES},
-		{"Cc", ENCODED_CPHRASES, EXTRACT_ADDRESSES},
-		{"Comments", ENCODED_ANYWHERE, DO_NOTHING},
-		{"Content-Description", ENCODED_ANYWHERE,
-			CONTENT_DESCRIPTION},
-		{"Content-Disposition", ENCODED_COMMENTS,
-			CONTENT_DISPOSITION},
-		{"Content-ID", ENCODED_COMMENTS, DO_NOTHING},
-		{"Content-Transfer-Encoding", ENCODED_COMMENTS,
-			CONTENT_TRANSFER_ENCODING},
-		{"Content-Type", ENCODED_COMMENTS, CONTENT_TYPE},
-		{"Date", ENCODED_COMMENTS, EXTRACT_DATE},
-		{"From", ENCODED_CPHRASES, EXTRACT_ADDRESSES},
-		{"In-Reply-To", ENCODED_COMMENTS, EXTRACT_MESSAGE_IDS},
-		{"Message-ID", ENCODED_COMMENTS, EXTRACT_MESSAGE_IDS},
-		{"Received", ENCODED_COMMENTS, DO_NOTHING},
-		{"References", ENCODED_COMMENTS, EXTRACT_MESSAGE_IDS},
-		{"Reply-To", ENCODED_CPHRASES, EXTRACT_ADDRESSES},
-		{"Resent-Bcc", ENCODED_CPHRASES, EXTRACT_ADDRESSES},
-		{"Resent-Cc", ENCODED_CPHRASES, EXTRACT_ADDRESSES},
-		{"Resent-Date", ENCODED_COMMENTS, DO_NOTHING},
-		{"Resent-From", ENCODED_CPHRASES, EXTRACT_ADDRESSES},
-		{"Resent-Message-ID", ENCODED_COMMENTS, DO_NOTHING},
-		{"Resent-Reply-To", ENCODED_CPHRASES, EXTRACT_ADDRESSES},
-		{"Resent-Sender", ENCODED_CPHRASES, EXTRACT_ADDRESSES},
-		{"Resent-To", ENCODED_CPHRASES, EXTRACT_ADDRESSES},
-		{"Return-Path", ENCODED_CPHRASES, EXTRACT_ADDRESSES},
-		{"Sender", ENCODED_CPHRASES, EXTRACT_ADDRESSES},
-		{"Subject", ENCODED_ANYWHERE, EXTRACT_SUBJECT},
-		{"To", ENCODED_CPHRASES, EXTRACT_ADDRESSES},
-		{"*X-", ENCODED_ANYWHERE, DO_NOTHING},
+		{"Bcc", H_BCC, ENCODED_CPHRASES, EXTRACT_ADDRESSES},
+		{"Cc", H_CC, ENCODED_CPHRASES, EXTRACT_ADDRESSES},
+		{"Comments", 0, ENCODED_ANYWHERE, DO_NOTHING},
+		{"Content-Description", H_CONTENT_DESCRIPTION,
+			ENCODED_ANYWHERE, CONTENT_DESCRIPTION},
+		{"Content-Disposition", H_CONTENT_DISPOSITION,
+			ENCODED_COMMENTS, CONTENT_DISPOSITION},
+		{"Content-ID", 0, ENCODED_COMMENTS, DO_NOTHING},
+		{"Content-Transfer-Encoding", H_CONTENT_TRANSFER_ENCODING,
+			ENCODED_COMMENTS, CONTENT_TRANSFER_ENCODING},
+		{"Content-Type", H_CONTENT_TYPE, ENCODED_COMMENTS,
+			CONTENT_TYPE},
+		{"Date", H_DATE, ENCODED_COMMENTS, EXTRACT_DATE},
+		{"From", H_FROM, ENCODED_CPHRASES, EXTRACT_ADDRESSES},
+		{"In-Reply-To", H_IN_REPLY_TO, ENCODED_COMMENTS,
+			EXTRACT_MESSAGE_IDS},
+		{"Message-ID", H_MESSAGE_ID, ENCODED_COMMENTS,
+			EXTRACT_MESSAGE_IDS},
+		{"Received", 0, ENCODED_COMMENTS, DO_NOTHING},
+		{"References", H_REFERENCES, ENCODED_COMMENTS,
+			EXTRACT_MESSAGE_IDS},
+		{"Reply-To", H_REPLY_TO, ENCODED_CPHRASES, EXTRACT_ADDRESSES},
+		{"Resent-Bcc", H_RESENT_BCC, ENCODED_CPHRASES,
+			EXTRACT_ADDRESSES},
+		{"Resent-Cc", H_RESENT_CC, ENCODED_CPHRASES,
+			EXTRACT_ADDRESSES},
+		{"Resent-Date", 0, ENCODED_COMMENTS, DO_NOTHING},
+		{"Resent-From", H_RESENT_FROM, ENCODED_CPHRASES,
+			EXTRACT_ADDRESSES},
+		{"Resent-Message-ID", 0, ENCODED_COMMENTS, DO_NOTHING},
+		{"Resent-Reply-To", H_RESENT_REPLY_TO, ENCODED_CPHRASES,
+			EXTRACT_ADDRESSES},
+		{"Resent-Sender", H_RESENT_SENDER, ENCODED_CPHRASES,
+			EXTRACT_ADDRESSES},
+		{"Resent-To", H_RESENT_TO, ENCODED_CPHRASES,
+			EXTRACT_ADDRESSES},
+		{"Return-Path", H_RETURN_PATH, ENCODED_CPHRASES,
+			EXTRACT_ADDRESSES},
+		{"Sender", H_SENDER, ENCODED_CPHRASES, EXTRACT_ADDRESSES},
+		{"Subject", H_SUBJECT, ENCODED_ANYWHERE, EXTRACT_SUBJECT},
+		{"To", H_TO, ENCODED_CPHRASES, EXTRACT_ADDRESSES},
+		{"*X-", 0, ENCODED_ANYWHERE, DO_NOTHING},
 	    };
 	    static const struct header_type null_header = {
 		"<other>", NO_ENCODED, DO_NOTHING
@@ -582,31 +576,42 @@ void parse_headers(char const *message, int msglen, int full_message,
 			info_addr(info, infoctx,
 				  lh2[-2].token, lh2[-2].length,
 				  dispdata, displen,
-				  default_charset);
+				  hdr->header_id, default_charset);
 			sfree(dispdata);
 		    } else if (lh2 > lh && !lh2[-1].is_punct) {
 			info_addr(info, infoctx,
 				  lh2[-1].token, lh2[-1].length,
 				  lh2[-1].comment, lh2[-1].clength,
-				  default_charset);
+				  hdr->header_id, default_charset);
 		    }
 		    lh = lh2;
 		}
 		break;
 	      case EXTRACT_MESSAGE_IDS:
-		/*
-		 * Any single word between a pair of <> and
-		 * containing an @ is a Message-ID.
-		 */
-		while (lh->token) {
-		    if (lh[0].token && lh[1].token && lh[2].token &&
-			lh[0].is_punct && lh[0].token[0]=='<' &&
-			!lh[1].is_punct &&
-			lh[2].is_punct && lh[2].token[0]=='>') {
-			info(infoctx, 1 /* FIXME: TYPE_MESSAGE_ID */,
-			     lh[1].token, lh[1].length);
+		{
+		    int index = 0;
+		    /*
+		     * Any single word between a pair of <> and
+		     * containing an @ is a Message-ID.
+		     */
+		    while (lh->token) {
+			if (lh[0].token && lh[1].token && lh[2].token &&
+			    lh[0].is_punct && lh[0].token[0]=='<' &&
+			    !lh[1].is_punct &&
+			    lh[2].is_punct && lh[2].token[0]=='>') {
+			    struct message_parse_info inf;
+			    inf.type = PARSE_MESSAGE_ID;
+			    inf.header = hdr->header_id;
+			    inf.u.mid.mid = smalloc(1+lh[1].length);
+			    memcpy(inf.u.mid.mid, lh[1].token, lh[1].length);
+			    inf.u.mid.mid[lh[1].length] = '\0';
+			    inf.u.mid.index = index++;
+			    if (index == 0 || inf.header == H_REFERENCES)
+				info(infoctx, &inf);
+			    sfree(inf.u.mid.mid);
+			}
+			lh++;
 		    }
-		    lh++;
 		}
 		break;
 	      case EXTRACT_DATE:
@@ -754,20 +759,24 @@ void parse_headers(char const *message, int msglen, int full_message,
 		    t = mktime(&tm);
 
 		    {
-			char *FIXME = ctime(&t);
-			info(infoctx, 5 /* FIXME: TYPE_DATE */,
-			     FIXME, strlen(FIXME)-1);
+			struct message_parse_info inf;
+			inf.type = PARSE_DATE;
+			inf.header = hdr->header_id;
+			inf.u.date = t;
+			info(infoctx, &inf);
 		    }
 		}
 		break;
 	      case EXTRACT_SUBJECT:
 		{
-		    char *utf8subj =
+		    struct message_parse_info inf;
+		    inf.type = PARSE_SUBJECT;
+		    inf.header = hdr->header_id;
+		    inf.u.string =
 			rfc2047_to_utf8_string(r, message - r,
 					       FALSE, default_charset);
-		    info(infoctx, 4 /* FIXME: TYPE_SUBJECT */,
-			 utf8subj, strlen(utf8subj));
-		    sfree(utf8subj);
+		    info(infoctx, &inf);
+		    sfree(inf.u.string);
 		}
 		break;
 	      case CONTENT_TYPE:
@@ -1009,7 +1018,7 @@ void parse_headers(char const *message, int msglen, int full_message,
 	}
     }
 
-    md->startpoint = message;
+    md->offset = message - base;
     md->length = msglen;
 }
 
@@ -1136,10 +1145,8 @@ struct lexed_header *lex_header(char const *header, int length, int type)
 
 void init_mime_details(struct mime_details *md)
 {
-    md->major = "text";
-    md->minor = "plain";
-    md->majorlen = 4;
-    md->minorlen = 5;
+    md->major = smalloc(5); strcpy(md->major, "text");
+    md->minor = smalloc(6); strcpy(md->minor, "plain");
     md->transfer_encoding = NO_ENCODING;
     md->charset = CS_ASCII;
     md->cd_inline = FALSE;
@@ -1147,12 +1154,14 @@ void init_mime_details(struct mime_details *md)
     md->filename = NULL;
     md->boundary = NULL;
     md->description = NULL;
-    md->startpoint = NULL;
+    md->offset = 0;
     md->length = 0;
 }
 
 void free_mime_details(struct mime_details *md)
 {
+    sfree(md->major);
+    sfree(md->minor);
     sfree(md->filename);
     sfree(md->boundary);
     sfree(md->description);
@@ -1167,10 +1176,15 @@ void parse_content_type(struct lexed_header *lh, struct mime_details *md)
     if ((!lh[0].is_punct && lh[0].length > 0) &&
 	( lh[1].is_punct && lh[1].length > 0 && *lh[1].token == '/') &&
 	(!lh[2].is_punct && lh[2].length > 0)) {
-	md->major = lh[0].token;
-	md->majorlen = lh[0].length;
-	md->minor = lh[2].token;
-	md->minorlen = lh[2].length;
+	int i;
+	md->major = smalloc(1+lh[0].length);
+	for (i = 0; i < lh[0].length; i++)
+	    md->major[i] = tolower(lh[0].token[i]);
+	md->major[lh[0].length] = '\0';
+	md->minor = smalloc(1+lh[2].length);
+	for (i = 0; i < lh[2].length; i++)
+	    md->minor[i] = tolower(lh[2].token[i]);
+	md->minor[lh[2].length] = '\0';
 	lh += 3;
     }
 
@@ -1360,6 +1374,11 @@ int istrlencmp(const char *s1, int l1, const char *s2, int l2)
 	return 0;
 }
 
+int istrcmp(const char *s1, const char *s2)
+{
+    return istrlencmp(s1, strlen(s1), s2, strlen(s2));
+}
+
 struct utf8_string_output_ctx {
     char *text;
     int textlen, textsize;
@@ -1411,23 +1430,28 @@ char *rfc2047_to_utf8_string(const char *text, int len,
 void info_addr(parser_info_fn_t info, void *infoctx,
 	       const char *addr, int addrlen,
 	       const char *name, int namelen,
-	       int default_charset)
+	       int header_id, int default_charset)
 {
+    struct message_parse_info inf;
+
+    inf.type = PARSE_ADDRESS;
+    inf.header = header_id;
     /*
      * `name' must be fed through RFC2047 parsing.
      */
-    char *utf8name = rfc2047_to_utf8_string(name, namelen,
-					    TRUE, default_charset);
-
+    inf.u.addr.display_name = rfc2047_to_utf8_string(name, namelen,
+						     TRUE, default_charset);
     /*
-     * FIXME: Need to increase the info function's parameter list
-     * so that we can pass name and address _together_. Also we
-     * need to have passed the header type into this function.
+     * `addr' must not.
      */
-    info(infoctx, 2 /* FIXME */, utf8name, strlen(utf8name));
-    info(infoctx, 3 /* FIXME */, addr, addrlen);
+    inf.u.addr.address = smalloc(1+addrlen);
+    memcpy(inf.u.addr.address, addr, addrlen);
+    inf.u.addr.address[addrlen] = '\0';
 
-    sfree(utf8name);
+    info(infoctx, &inf);
+
+    sfree(inf.u.addr.address);
+    sfree(inf.u.addr.display_name);
 }
 
 int latoi(const char *text, int len)
@@ -1450,13 +1474,13 @@ void null_output_fn(void *ctx, const char *text, int len,
 {
 }
 
-void null_info_fn(void *ctx, int type, const char *text, int len)
+void null_info_fn(void *ctx, struct message_parse_info *info)
 {
 }
 
 /* FIXME: should this really be in here, or should it go in another module?
  * It is, after all, a _client_ of the parser code. */
-void db_info_fn(void *ctx, int type, const char *text, int len)
+void db_info_fn(void *ctx, struct message_parse_info *info)
 {
     /* FIXME */
 }
@@ -1508,9 +1532,78 @@ void test_output_fn(void *outctx, const char *text, int len,
 	printf("\033[39;0m");
 }
 
-void test_info_fn(void *infoctx, int type, const char *text, int len)
+const char *header_name(int header_id)
 {
-    printf("%d: <%.*s>\n", type, len, text);
+    if (header_id == H_BCC) return "Bcc";
+    if (header_id == H_CC) return "Cc";
+    if (header_id == H_CONTENT_DESCRIPTION) return "Content-Description";
+    if (header_id == H_CONTENT_DISPOSITION) return "Content-Disposition";
+    if (header_id == H_CONTENT_TRANSFER_ENCODING)
+	return "Content-Transfer-Encoding";
+    if (header_id == H_CONTENT_TYPE) return "Content-Type";
+    if (header_id == H_DATE) return "Date";
+    if (header_id == H_FROM) return "From";
+    if (header_id == H_IN_REPLY_TO) return "In-Reply-To";
+    if (header_id == H_MESSAGE_ID) return "Message-ID";
+    if (header_id == H_REFERENCES) return "References";
+    if (header_id == H_REPLY_TO) return "Reply-To";
+    if (header_id == H_RESENT_BCC) return "Resent-Bcc";
+    if (header_id == H_RESENT_CC) return "Resent-Cc";
+    if (header_id == H_RESENT_FROM) return "Resent-From";
+    if (header_id == H_RESENT_REPLY_TO) return "Resent-Reply-To";
+    if (header_id == H_RESENT_SENDER) return "Resent-Sender";
+    if (header_id == H_RESENT_TO) return "Resent-To";
+    if (header_id == H_RETURN_PATH) return "Return-Path";
+    if (header_id == H_SENDER) return "Sender";
+    if (header_id == H_SUBJECT) return "Subject";
+    if (header_id == H_TO) return "To";
+    return "[no-header]";
+}
+
+const char *encoding_name(int encoding)
+{
+    if (encoding == QP) return "qp";
+    if (encoding == BASE64) return "base64";
+    if (encoding == UUENCODE) return "uuencoded";
+    return "not encoded";
+}
+
+void test_info_fn(void *ctx, struct message_parse_info *info)
+{
+    char *ct;
+
+    switch (info->type) {
+      case PARSE_ADDRESS:
+	printf("Address [%s]: %s <%s>\n", header_name(info->header),
+	       info->u.addr.display_name, info->u.addr.address);
+	break;
+      case PARSE_MESSAGE_ID:
+	printf("Message-ID [%s]: <%s>\n", header_name(info->header),
+	       info->u.mid.mid);
+	break;
+      case PARSE_SUBJECT:
+	printf("Subject: %s\n",
+	       info->u.string);
+	break;
+      case PARSE_DATE:
+	ct = ctime(&info->u.date);
+	printf("Date: %.*s\n",
+	       (int)(strlen(ct)-1), ct);
+	break;
+      case PARSE_MIME_PART:
+	printf("MIME part: %s/%s (%s, %s, %s)\n",
+	       info->u.md.major, info->u.md.minor,
+	       charset_to_localenc(info->u.md.charset),
+	       encoding_name(info->u.md.transfer_encoding),
+	       info->u.md.cd_inline ? "inline" : "attachment");
+	if (info->u.md.filename)
+	    printf("           filename=%s\n", info->u.md.filename);
+	if (info->u.md.description)
+	    printf("           description=%s\n", info->u.md.description);
+	printf("           located at (%d,%d)\n",
+	       info->u.md.offset, info->u.md.length);
+	break;
+    }
 }
 
 int main(void)
