@@ -33,3 +33,15 @@ we have to have a means for working out precisely when it does and
 does not make sense to have an automatic
 save-to-where-we-loaded-from button available.
 </ul>
+
+<p>
+<b>SGT, 2004-12-28</b>: Someone - I've sadly forgotten who -
+suggested that the simplest possible solution is <em>not</em> to
+automatically highlight the session you loaded, or enter its name in
+the session name box. Just provide the list and the Load/Save
+buttons, so that you can save over an explicitly named session. Then
+anyone who modifies the hostname and saves over the original slot
+has to do so explicitly and deliberately, ensuring that it's
+probably what they meant to do.
+<p>
+Therefore, I've now done this.
