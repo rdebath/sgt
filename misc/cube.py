@@ -241,6 +241,7 @@ class CubeGame:
         if self.completed:
             self.cubex, self.cubey = self.completex, self.completey
             self.completed = FALSE
+            self.fullredraw = TRUE
         dx, dy = self.moves.pop()
         self.move(-dx, -dy, undo=TRUE)
 
