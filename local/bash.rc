@@ -1,6 +1,6 @@
 # -*- mode: sh; mode: fold -*-
 # Simon Tatham's standardised chunk of .bashrc
-# $Revision: 1.28 $
+# $Revision: 1.29 $
 
 #{{{ I don't like .bash_history files. They wet their nests.
 unset HISTFILE
@@ -68,7 +68,7 @@ bashrc_dovars() {
   # disappear and also causing spaces to be trimmed from the ends of
   # the full name part
   export ATTRIBUTION="%(%)f=^ *\(.*[^ ]\) *?%1:%)f) <%>f> wrote:"
-  export HOST_DEFAULTS=-R
+  export HOST_DEFAULTS="-R -T"
   export CVS_RSH=ssh
   # LS_COLORS: file types
   LS_COLORS='no=00:fi=00:di=01;34:ln=01;36:pi=40;33:so=01;35:bd=40;33;01'
