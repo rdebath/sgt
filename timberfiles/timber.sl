@@ -12,7 +12,6 @@
 % fix: hitting backspace on last (blank) line of mime message will never
 %   fold message however often you do it
 % some form of address book
-% MIME todo: nested multiparts (_hard_)
 % Give forwarding some serious testing, interoperating it with all
 %   mailers I can find (mutt; pine; vm; Eudora; netscrapemail; others?)
 % get the message size counting right (exclude From line? CRLF?)
@@ -26,6 +25,116 @@
 % better mailbox locking: option to open a locked box readonly
 % better mailbox locking: research atomicity under NFS
 % better mailbox locking: let user specify something about how it's done
+
+%}}}
+%{{{ MIME nested multiparts: design thoughts
+
+% We need:
+%  - a mailbuffer syntax for nesting multiparts
+%    (this is easy; M lines and ! lines must just carry a depth indicator)
+%  - everything to support it! Particular items follow.
+%  - timber_enbuf() wants to create nested M and ! lines
+%    (wait until it's redone in Perl probably)
+%    (!! timber_enbuf() may also want to decode QP/base64'ed message/rfc822
+%    parts so as to be able to create nested M! lines for the interiors)
+%  - timber_unfold() wants to be useful about unfolding a fold containing
+%    other folds
+%  - timber_fold() wants to be sensible about how to find the `next level up'
+%    to fold
+%  - timber_mimedestroy() is going to have one HELL of a time working on
+%    attachments to a forwarded message/rfc822, although it should be OK on
+%    simple nested multiparts
+%  - timber_expunge() wants to be sane about which bits of the world to keep
+%    when it saves back out. (Redo this in Perl and we can ensure it continues
+%    to be inverse to enbuf()...)
+
+% Pre-nested-multipart mailbuffer syntax was:
+%
+% buffer:
+%  - Buffer begins with an F line
+%  - Each message begins with a * line
+%  - Buffer ends with a * [end] line.
+%
+% non-multipart-message:
+%  - After the * line come the headers, on | lines
+%  - Then an optional decoded message body on nbsp lines
+%  - Then the original message body on space lines
+%
+% multipart-message:
+%  - After the * line come the headers, on | lines
+%  - Then a blank space line
+%  - Then an M line (well, an M0 line) followed by some + lines of
+%    intro crud
+%  - Each attachment begins with a ! line (well, a !0 line)
+%  - Finally, a ! [end] line (well, !0 [end]) followed by some + lines
+%    of outro crud
+%  - Then a blank space line
+%
+% attachment:
+%  - After the ! line come the MIME headers on + lines
+%  - Then an optional decoded attachment body on nbsp lines
+%  - Then the original attachment body on space lines
+%
+% This has the pleasant property that the unprocessed form of the mail
+% buffer is easily recovered by taking all {|,+,space} lines and stripping
+% the first character. All other lines are Timber markers {F,*,M,!} and
+% decoded attachments (nbsp).
+
+% A nested-multipart mailbuffer syntax clearly cannot have such a pleasant
+% property if we wish to be able to use space lines for un-decoded bodies
+% of attachments to a decoded message/rfc822 attachment, and _certainly_
+% can't if we want to be able to do mimedestroy on attachments to
+% attachments. So we must resign ourselves to having a much less pleasant
+% syntax.
+
+% So let's look at the possibilities.
+%
+% The `buffer' and `non-multipart-message' syntaxes are fine as they are.
+% The `multipart-message' syntax is fine as well provided we incorporate
+% level-zero indicators in the M line and the ! and ! [end] lines.
+%
+% The `attachment' bit is the fun bit. The syntax above is fine for a
+% leaf-attachment, but multipart-attachments must now come in two much
+% more entertaining forms: multipart-attachment and
+% rfc822-multipart-attachment.
+%
+% After the initial ![n] line must still come the MIME headers. Then an
+% optional text section (on space or nbsp lines; I'm not sure it matters)
+% containing the header section of an rfc822 message (empty in a simple
+% nested multipart). Then an M[n+1] line and some attachments, ending up
+% with an ![n+1][end] and its potential + lines.
+%
+% This is the `obvious' layout. What does it imply for enbuf and expunge?
+%
+% For nested multiparts which are not specially encoded, all this is very
+% easy: enbuf must recurse a bit but that's not too bad, and expunge must
+% still do the simple thing of keeping {|,+,space} lines and throwing out
+% the rest.
+%
+% The tricky bit happens when we have an encoded nested multipart. (I haven't
+% seen this happen in simple nested multiparts, only in message/rfc822
+% multiparts, but that's no excuse not to allow for both cases.) In this case,
+% enbuf must decode the multipart and then do its normal recursion, having
+% left an `encode this again when you clean up' marker for expunge. expunge
+% must do the normal clearup and then re-encode the multipart. So the big
+% question is, what should the magic marker be?
+%
+% Answer: it should be nothing we've yet encountered. It must be within
+% the attachment space, so that mimedestroy on the whole attachment can
+% correctly trash the whole thing and not leave the marker around. It must
+% have a _new_ LHS character. Something like `[', perhaps.
+%
+%   ![1] message/rfc822
+%   [ base64 decoded automatically ]
+%   +Content-Type: ...
+%
+% Then the requirements for getting all of this right are fairly simple.
+% We need to introduce utility functions which will not only spot M and !
+% lines but also tell us their level; we need to update routines like
+% fold and unfold so that they ignore lines of level lower than the level
+% they're actually dealing with. We need to ensure mimedestroy works on
+% both inner and outer attachments. (We need to look out for Content-Length
+% headers when we re-encode!)
 
 %}}}
 %{{{ User-configurable variables
@@ -83,6 +192,10 @@ variable timber_sendmail = "perl " + dircat(JED_ROOT,"bin/timbera.pl");
 variable timber_fetch_prog = "perl " + dircat(JED_ROOT,"bin/timber.pl");
 
 % This variable may be reassigned in `.timberrc'. It gives
+% the full pathname of the program which sets up Timber buffers.
+variable timber_enbuf_prog = "perl " + dircat(JED_ROOT,"bin/timberb.pl");
+
+% This variable may be reassigned in `.timberrc'. It gives
 % the full pathname of the program which decodes MIME encodings.
 variable timber_mime_prog = "perl " + dircat(JED_ROOT,"bin/timberm.pl");
 
@@ -93,6 +206,11 @@ variable timber_prefix_prog = "perl " + dircat(JED_ROOT,"bin/timbere.pl");
 % This variable may be reassigned in `.timberrc'. It gives
 % the full pathname of the program which looks up MIME types.
 variable timber_mimetype_prog = "perl " + dircat(JED_ROOT,"bin/timbert.pl");
+
+% The directory containing Timber scripts.
+#ifexists putenv
+putenv("TIMBER_SCRIPTS=" + dircat(JED_ROOT, "bin"));
+#endif
 
 % This variable may, and almost certainly should, be reassigned
 % in `.timberrc'. It gives a comma-separated list of e-mail
@@ -124,7 +242,7 @@ variable timber_boringhdrs =
 ":X-Automatically-Sent-By:X-MIME-Autoconverted:X-MimeOLE:X-Envelope-To:" +
 ":X-Originating-IP:X-VM-VHeader:X-VM-Last-Modified:X-VM-IMAP-Retrieved:" +
 ":X-VM-POP-Retrieved:X-VM-Bookmark:X-VM-v5-Data:X-VM-Labels:" +
-":X-VM-Summary-Format:";
+":X-VM-Summary-Format:X-Lotus-FromDomain:Content-Disposition:";
 
 %}}}
 %{{{ Non-user-configurable variables
@@ -311,8 +429,8 @@ create_syntax_table ($1);
 set_syntax_flags ($1, 0);
 #ifdef HAS_DFA_SYNTAX
 enable_highlight_cache("timber.dfa", $1);
-define_highlight_rule("^[FM].*$", "comment", $1);
-define_highlight_rule("^\\|[^: ]*[: ]", "Qkeyword", $1);
+define_highlight_rule("^[F:].*$", "comment", $1);
+define_highlight_rule("^\\|[^: \t]*[: ]", "Qkeyword", $1);
 define_highlight_rule("^\\+.*$", "preprocess", $1);
 define_highlight_rule("^[ \240]-- $", "keyword", $1);
 define_highlight_rule("^[ \240]> *> *>.*$", "preprocess", $1);
@@ -320,9 +438,9 @@ define_highlight_rule("^[ \240]> *>.*$", "comment", $1);
 define_highlight_rule("^[ \240]>.*$", "string", $1);
 define_highlight_rule("^[ \240].*$", "normal", $1);
 define_highlight_rule("^\\* ..D.*$", "dollar", $1);
-define_highlight_rule("^\\! [^\\[].*$", "delimiter", $1);
+define_highlight_rule("^\\! +[^\\[ ].*$", "delimiter", $1);
 define_highlight_rule("^\\* [^\\[].*$", "string", $1);
-define_highlight_rule("^[\\*\\!] \\[end\\]$", "comment", $1);
+define_highlight_rule("^[\\*\\!] +\\[end\\]$", "comment", $1);
 define_highlight_rule(".*$", "normal", $1);
 build_highlight_table($1);
 #endif
@@ -606,261 +724,16 @@ define timber_issep() { %{{{
 % This function does not take care of moving to the start of the buffer and
 % inserting the header line: that is assumed to be done by other code.
 define timber_enbuf() {
-    variable sizel, sizec, mmark, amark;
-    variable fromfield, datefield, subjfield, flagchr, status, str;
-    variable mimesep, mimeend, mimeoverall, mimetext;
-    variable mimetype, mimename, mimeenc, mimedesc;
-    variable i, j;
+    variable file;
 
-    % Loop over each message, inserting message summary lines and header
-    % characters.
-    while (1) {
-	!if (timber_issep()) {
-	    insert("* [end]\n");
-	    !if (eobp()) {
-		while (not eobp()) {
-		    insert_char('X');
-		    eol();
-		    go_right_1();
-		}
-		message("There was guff at the end of the mail folder!");
-	    }
-	    break;
-	}
-
-	% Initialise the size counters
-	sizel = 0;
-	sizec = 0;
-
-	% Found a message start, right where we expected one. So insert
-	% a summary line and make a mark on it. We'll go back and fill
-	% it in when we're done with the headers.
-	insert("* ");
-	mmark = create_user_mark();
-	insert("\n|");
-	push_mark();
-	eol();
-	str = bufsubstr();
-	sizec += what_column() - 1;
-	go_right_1();
-	sizel++;
-
-	% Initialise the summary stuff
-	fromfield = "*unspecified*";
-	subjfield = "*unspecified*";
-	datefield = "      ";
-	mimesep = "";
-	flagchr = 'n';
-	if (string_match(str, "\\(...\\) \\(..\\) ..:..:.. ....$", 1)) {
-	    (i,j) = string_match_nth(2);
-	    datefield = substr(str, i+1, j);
-	    datefield = strcat(datefield, "-");
-	    (i,j) = string_match_nth(1);	
-	    datefield = strcat(datefield, substr(str, i+1, j));
-	}
-
-	% Loop over each message header line, accumulating information
-	% for the message summary line. Terminate if we see a blank line
-	% (start of message body) or a `From ' message separator line.
-	while (not timber_issep() and not eolp()) {
-	    insert("|");
-	    if (timber_ila("From:")) {
-		go_right(5);
-		skip_white();
-		push_mark();
-		eol();
-		str = bufsubstr();
-		% FIXME: quoting and stuff is probably wrong here
-		if (string_match(str, "^\\(.+\\) <.*>", 1)) {
-		    (i,j) = string_match_nth(1);
-		    fromfield = substr(str, i+1, j);
-		} else if (string_match(str, "(\\(.+\\))", 1)) {
-		    (i,j) = string_match_nth(1);
-		    fromfield = substr(str, i+1, j);
-		} else
-		    fromfield = str;
-	    } else if (timber_ila("Subject:")) {
-		go_right(8);
-		skip_white();
-		push_mark();
-		eol();
-		subjfield = bufsubstr();
-	    } else if (timber_ila("Content-type:")) {
-		go_right(13);
-		skip_white();
-		!if (timber_ila("multipart")) {
-		    eol();
-		    sizec += what_column() - 1;
-		    go_right_1();
-		    sizel++;
-		    continue;
-		}
-		push_spot();
-		mimesep = timber_getheader(0);
-		pop_spot();
-		eol();
-                mimeoverall = extract_element(mimesep, 0, ';');
-		if (string_match(mimesep, "[Bb][Oo][Uu][Nn][Dd][Aa][Rr][Yy]=\"\\(.*\\)\"", 1)) {
-		    (i, j) = string_match_nth(1);
-		    mimesep = "--" + substr(mimesep, i+1, j);
-		    mimeend = mimesep + "--\n";
-		    mimesep += "\n";
-		} else if (string_match(mimesep,
-					"[Bb][Oo][Uu][Nn][Dd][Aa][Rr][Yy]=\\([^ \t;]*\\)", 1)) {
-		    (i, j) = string_match_nth(1);
-		    mimesep = "--" + substr(mimesep, i+1, j);
-		    mimeend = mimesep + "--\n";
-		    mimesep += "\n";
-		} else
-		    mimesep = "";
-	    } else if (timber_ila("Status:")) {
-		go_right(7);
-		skip_white();
-		push_mark();
-		eol();
-		str = bufsubstr();
-	        if (not strcmp(str, "O")) {
-		    flagchr = 'U';
-		} else if (not strcmp(str, "RO") or not strcmp(str, "OR")) {
-		    flagchr = ' ';
-		}
-		if (flagchr == 'n') {
-		    flagchr = 'N';
-		    bol(); push_mark(); eol(); del_region();
-		    insert("|Status: O");
-		}
-	    }
-	    eol();
-	    sizec += what_column() - 1;
-	    go_right_1();
-	    sizel++;
-	}
-
-	% If no `Status:' header was found, put one in.
-	if (flagchr == 'n') {
-	    insert("|Status: O\n");
-	    flagchr = 'N';
-	}
-
-	% We should have a blank line; that, at least, gets a nice
-	% simple leading space, whether we're MIME or not.
-	if (eolp()) {
-	    insert(" ");
-	    go_right_1();
-	    sizec++;
-	    sizel++;
-	}
-
-	if (strlen(mimesep)) {
-	    % If there was a MIME separator given, start inserting MIME
-	    % separator lines now. First the M line, and skip over the
-	    % subsequent `This is MIME' warning until we hit the separator.
-	    insert("MIME: " + strlow(mimeoverall) + "\n");
-	    while (not eobp() and not timber_la(mimesep)
-		   and not timber_la(mimeend)) {
-		insert("+");
-		eol();
-		sizec += what_column() - 1;
-		go_right_1();
-		sizel++;
-	    }
-	    % Now process each attachment. Terminate on `From ' separator
-	    % line or end of file.
-	    while (1) {
-		% We're sitting on a separator line. So insert a summary,
-		% make a mark on it for future update, and then scan
-		% the rest.
-		insert("! ");
-		amark = create_user_mark();
-		insert("\n");
-		% Do the headers.
-                mimetype = "";
-                mimename = "";
-                mimedesc = "";
-                mimeenc = "";
-		while (not eobp() and not timber_issep()
-		       and not eolp()) {
-		    insert("+");
-                    if (timber_ila("Content-type:")) {
-                        go_right(13);
-                        skip_white();
-                        push_spot();
-                        mimetext = timber_getheader(0);
-                        pop_spot();
-                        mimetype = extract_element(mimetext, 0, ';');
-                        if (string_match(mimetext, "[Nn][Aa][Mm][Ee]=\"?\\([^\"]*\\)", 1)) {
-                            (i, j) = string_match_nth(1);
-                            mimename = substr(mimetext, i+1, j);
-                        }
-                    } else if (timber_ila("Content-description:")) {
-                        go_right(20);
-                        skip_white();
-                        push_spot();
-                        mimedesc = timber_getheader(0);
-                        pop_spot();
-                    } else if (timber_ila("Content-transfer-encoding:")) {
-                        go_right(26);
-                        skip_white();
-                        push_spot();
-                        mimeenc = timber_getheader(0);
-                        pop_spot();
-                    }
-		    eol();
-		    sizec += what_column() - 1;
-		    go_right_1();
-		    sizel++;
-		    if (timber_la(mimesep) or timber_la(mimeend))
-			break;
-		}
-		% Do the body.
-		while (not eobp() and not timber_issep()
-		       and not timber_la(mimesep)
-		       and not timber_la(mimeend)) {
-		    insert(" ");
-		    eol();
-		    sizec += what_column() - 1;
-		    go_right_1();
-		    sizel++;
-		}
-		% See if this `attachment' is in fact the trailer.
-		i = timber_la(mimesep) or timber_la(mimeend);
-
-		% Now update the summary line.
-		push_spot();
-		goto_user_mark(amark);
-		if (i) {
-		    insert(strlow(mimetype));
-                    if (mimeenc != "") insert(" (" + strlow(mimeenc) + ")");
-                    if (mimename != "") insert(" name=`" + mimename + "'");
-                    if (mimedesc != "") insert(" desc=`" + mimedesc + "'");
-		    pop_spot();
-		} else {
-		    insert("[end]");
-		    pop_spot();
-		    break;
-		}
-	    }
-	} else {
-	    % Loop over message body lines, inserting a leading space as
-	    % a header character. Terminate on `From ' separator line or
-	    % end of file.
-	    while (not eobp() and not timber_issep()) {
-		insert(" ");
-		eol();
-		sizec += what_column() - 1;
-		go_right_1();
-		sizel++;
-	    }
-	}
-
-	% We should now have hit the start of the next message, or the
-	% end of the buffer. Go back and fill in the summary line.
-	push_spot();
-	goto_user_mark(mmark);
-	insert(Sprintf("%c   %3d %5d %-6.6s %-20.20s %-32s", flagchr, sizel,
-		       sizec, datefield, fromfield, subjfield, 6));
-	pop_spot();
-    }
+    push_mark();
+    push_mark();
+    eob();
+    file = timber_tmpnam();
+    pipe_region(timber_enbuf_prog + " " + file);
+    del_region();
+    insert_file(file);
+    remove(file);
 }
 %}}}
 %{{{ timber_blankfolder(): make an empty folder buffer
@@ -988,7 +861,7 @@ define timber_unfold() {
 		!if (is_substr(strlow(timber_boringhdrs),
 			       strlow(":"+header+":")))
 		    set_line_hidden(0);
-	    } else if (c == '!' or c == 'M') {
+	    } else if (c == '!' or c == ':') {
 		if (c == '!' and firstpart) {
 		    firstpart = 0;
 		    showing = 1;
@@ -998,6 +871,8 @@ define timber_unfold() {
                     leadchr = '\0';
 		} else
 		    showing = 0;
+                if (c == ':')
+                    firstpart = 1;
 		set_line_hidden(0);
 	    } else if (c != '+' and showing) {
                 if (leadchr == '\0' and (c == '\240' or c == ' ')) {
@@ -1125,7 +1000,7 @@ define timber_fullmime() {
 
     mark = create_user_mark();
     bol();
-    while (what_char() != '!' and what_char() != 'M'
+    while (what_char() != '!' and what_char() != ':'
 	   and what_char() != '*' and not bobp()) {
 	go_up_1();
 	bol();
@@ -1139,7 +1014,7 @@ define timber_fullmime() {
     push_spot();
     eol();
     go_right_1();
-    while (what_char != '!' and what_char != 'M'
+    while (what_char != '!' and what_char != ':'
 	   and what_char != '*' and not eolp()) {
 	set_line_hidden(0);
 	eol();
@@ -1165,13 +1040,13 @@ define timber_get_mimepart(use_decoded) {
     mark = create_user_mark();
 
     bol();
-    while (what_char() != '!' and what_char() != 'M'
+    while (what_char() != '!' and what_char() != ':'
 	   and what_char() != '*' and not bobp()) {
 	go_up_1();
 	bol();
     }
 
-    if (what_char() == 'M' or bobp()) {
+    if (what_char() == ':' or bobp()) {
 	goto_user_mark(mark);
 	error("Not in a MIME attachment.");
 	return (NULL, NULL, "");
@@ -1386,7 +1261,7 @@ define timber_yesno (prompt)
 %{{{ timber_mimedec(): decode a MIME part
 
 define timber_mimedec() {
-    variable mark, top, bottom, type, encoding, tmp;
+    variable mark, top, bottom, type, encoding, tmp, decode_cmd;
 
     mark = create_user_mark();
     (top, bottom, type, encoding) = timber_get_mimepart(1);
@@ -1394,48 +1269,49 @@ define timber_mimedec() {
         goto_user_mark(mark);
     } else {
         goto_user_mark(top);
+        tmp = timber_tmpnam();
         if (timber_la(" ")) {
             % Decode from content transfer encoding
-
-            % Perform the decode to a temporary file
-            tmp = timber_tmpnam();
-            goto_user_mark(top);
-            push_mark();
-            goto_user_mark(bottom);
-            pipe_region(timber_mime_prog + " - " + encoding + " " + tmp);
-
-            % Remove any existing decoded part
-            goto_user_mark(top);
-            if (timber_la("\240")) {
-                push_mark();
-                while (timber_la("\240")) {
-                    go_down_1();
-                    bol();
-                }
-                timber_rw();
-                del_region();
-                timber_ro();
-            }
-
-            timber_rw();
-            % Put on an initial blank \240 line
-            go_up_1();
-            bol();
-            insert("\240\n");
-            % Read the file back in as a decoded part
-            run_shell_cmd(timber_prefix_prog + " 160 " + tmp);
-            % This is for display/reply purposes, so we should insert a
-            % newline here in case there wasn't one on the end of the
-            % decoded data
-            !if (bolp()) insert("\n");
-            timber_ro();
-
-            % Get the new folding correct
-            timber_fold();
-            timber_unfold();
+            decode_cmd = timber_mime_prog + " - " + encoding + " " + tmp;
         } else {
             % Decode from content type
+            decode_cmd = timber_mime_prog + " - " + strup(type) + " " + tmp;
         }
+        % Perform the decode to a temporary file
+        goto_user_mark(top);
+        push_mark();
+        goto_user_mark(bottom);
+        pipe_region(decode_cmd);
+
+        % Remove any existing decoded part
+        goto_user_mark(top);
+        if (timber_la("\240")) {
+            push_mark();
+            while (timber_la("\240")) {
+                go_down_1();
+                bol();
+            }
+            timber_rw();
+            del_region();
+            timber_ro();
+        }
+
+        timber_rw();
+        % Put on an initial blank \240 line
+        go_up_1();
+        bol();
+        insert("\240\n");
+        % Read the file back in as a decoded part
+        run_shell_cmd(timber_prefix_prog + " 160 " + tmp);
+        % This is for display/reply purposes, so we should insert a
+        % newline here in case there wasn't one on the end of the
+        % decoded data
+        !if (bolp()) insert("\n");
+        timber_ro();
+
+        % Get the new folding correct
+        timber_fold();
+        timber_unfold();
     }
 }
 
@@ -1480,7 +1356,7 @@ define timber_mimedestroy() {
     mark = create_user_mark();
 
     bol();
-    while (what_char() != '!' and what_char() != 'M'
+    while (what_char() != '!' and what_char() != ':'
 	   and what_char() != '*' and not bobp()) {
 	go_up_1();
 	bol();

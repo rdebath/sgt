@@ -11,7 +11,7 @@ open F,$ARGV[0] or die "Unable to open $ARGV[0]\n";
 
 $type = $ARGV[1];
 
-(open FOO,">".$ARGV[2]), select FOO if defined $ARGV[2];
+open STDOUT,">".$ARGV[2] if defined $ARGV[2];
 
 if ($type =~ /[A-Z]/) {
   $stripspace = 1;
@@ -23,6 +23,18 @@ if ($type =~ /\+$/) {
   $type =~ s/\+$//;
 }
 
+# MIME types
+if ($type eq "text/html") {
+  open PIPE, "|perl " . $ENV{'TIMBER_SCRIPTS'} . "/timberh.pl -w 78 -i 0 -b -e";
+  while (<F>) {
+    s/^[ \240]// if $stripspace;
+    print PIPE $_;
+  }
+  close PIPE;
+  exit 0;
+}
+
+# MIME transfer encodings
 if ($type eq "quoted-printable") {
   while (<F>) {
     s/^ // if $stripspace;
