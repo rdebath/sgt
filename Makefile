@@ -38,16 +38,24 @@ endif
 
 SRC := ../
 
-MODULES := main malloc error help licence version sqlite mboxstore store
-MODULES += config mboxread
+CHARSET := big5enc big5set cp949 euc fromucs gb2312 hz iso2022s
+CHARSET += jisx0208 jisx0212 ksx1001 localenc macenc mimeenc sbcs
+CHARSET += sbcsdat shiftjis slookup toucs utf16 utf7 utf8 xenc
 
-OBJECTS := $(addsuffix .o,$(MODULES))
+MODULES := main malloc error help licence version sqlite mboxstore store
+MODULES += config mboxread rfc822 rfc2047 base64 qp
+
+CSMODULES := $(addprefix cs-,$(CHARSET))
+OBJECTS := $(addsuffix .o,$(MODULES) $(CSMODULES))
 DEPS := $(addsuffix .d,$(MODULES))
 LIBS := -lsqlite
-CFLAGS += -Wall
+CFLAGS += -Wall -I$(SRC)charset
 
 timber: $(OBJECTS)
 	$(CC) $(LFLAGS) -o timber $(OBJECTS) $(LIBS)
+
+cs-%.o: $(SRC)charset/%.c
+	$(CC) $(CFLAGS) -MD -o $@ -c $<
 
 %.o: $(SRC)%.c
 	$(CC) $(CFLAGS) -MD -c $<
