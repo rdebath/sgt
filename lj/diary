@@ -10,14 +10,6 @@ import ljproto
 
 # Here's the TODO list for potential future enhancements.
 #
-#  - Configurably pass the Mono text to xcopy instead of shoving it
-#    in diary.data, for ease of diarying at home.
-#     * could have a config file specifying what to do with the
-#       text
-#     * alternatively, the hideous but easy hardwired option: shove
-#       it in diary.data, then call xcopy < diary.data, and ignore
-#       any error. Works everywhere.
-#
 #  - Ability to post to only one medium (posting to LJ only is
 #    easily done by not bothering to paste into Mono; really all I
 #    need is the ability to paste to Mono only).
@@ -25,6 +17,10 @@ import ljproto
 #  - Support for friends-only, specific-friend-group, and private
 #    entries (uncertain when if ever the first two will be useful,
 #    but the latter will be handy for testing purposes)
+#
+#  - IWBNI we could do something _configurable_ with the Mono text
+#    instead of the current double-play of shoving it in diary.data
+#    and throwing it through xcopy.
 #
 #  - Completely silly feature: editor brackets [Like this. --Ed]
 #    which would look better in italics where that's available.
@@ -739,11 +735,15 @@ while 1:
 	f.close()
     elif s == "p\n":
 	f = open(os.environ["HOME"] + "/src/lj/diary.data", "w")
-	for i in out.mono:
+	g = os.popen("xcopy 2>/dev/null", "w")
+	data = out.mono + [\
+	"Message: 7fffffff","From: (dummy edit)", "Please ignore this."]
+	for i in data:
 	    f.write(i + "\n")
-	f.write("Message: 7fffffff\nFrom: (dummy edit)\nPlease ignore this.\n")
+	    g.write(i + "\n")
 	f.close()
-	print "Mono text written to diary.data file for pasting."
+	g.close()
+	print "Mono text written to diary.data file and piped through xcopy."
 	print "Don't forget to have your nameline in the ^Y paste buffer!"
 	dict = {"mode":"postevent", "lineendings":"unix"}
 	dict["event"] = out.html
