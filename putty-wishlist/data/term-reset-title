@@ -8,7 +8,7 @@ Content-type: text/x-html-body
 It might be nice if terminal resets (such as <tt>ESC c</tt>) caused
 the window and icon titles to revert to some default (whatever was
 configured in the session?). This might be generous to people who
-<a href="http://www.chiark.greenend.org.uk/~sgtatham/putty/faq.html#A.7.13">trash
+<a href="http://www.chiark.greenend.org.uk/~sgtatham/putty/faq.html#QA.7.13">trash
 their terminal</a>.
 
 <p>

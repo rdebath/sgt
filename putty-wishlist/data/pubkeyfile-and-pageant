@@ -16,7 +16,7 @@ connection (e.g., if one is trying to use a particular key to run
 a particular forced command).  It can also cause problems if Pageant
 has lots of keys and the server (e.g. OpenSSH) is configured to only
 allow a certain number of authentication attempts.  See
-<a href="http://www.tartarus.org/~simon/puttydoc/Chapter10.html#10.5">section 10.5</a>
+<a href="http://www.tartarus.org/~simon/puttydoc/Chapter10.html#S10.5">section 10.5</a>
 in the manual.
 
 <p>
