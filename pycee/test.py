@@ -1,11 +1,15 @@
 import c_lex
 import c_parse
+import c_semantics
 import sys
 
-action = "parse"
+action = "sem"
 
 args = sys.argv[1:]
 while 1:
+    if args[0] == "-s":
+        action = "sem"
+        args = args[1:]
     if args[0] == "-p":
         action = "parse"
         args = args[1:]
@@ -28,6 +32,12 @@ if action == "lex":
         if token == None:
             break
         print token.type, "`" + token.text + "'"
+    sys.exit(0)
 else:
     tree = c_parse.parse(l)
+
+if action == "parse":
     tree.display(0)
+else:
+    sem = c_semantics.semantics(tree)
+    sem.display()
