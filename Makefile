@@ -56,7 +56,7 @@ DEPS := $(addsuffix .d,$(MODULES))
 LIBS := -lsqlite
 CFLAGS += $(CFL) -Wall -I$(SRC)charset -I.
 
-TESTS := main
+TESTS := main date
 TEST_OBJECTS := $(addsuffix -tests.o,$(TESTS))
 TEST_LIBS := -lcheck
 
@@ -87,7 +87,7 @@ unit-tests: $(TEST_OBJECTS)
 	$(CC) $(LFLAGS) -o unit-tests $(TEST_OBJECTS) $(TEST_LIBS)
 
 %-tests.o: $(SRC)tests/%.c
-	$(CC) $(CFLAGS) -MD -o $@ -c $<
+	$(CC) $(CFLAGS) -I.. -I- -MD -o $@ -c $<
 
 clean:
 	rm -f *.o timber
@@ -95,3 +95,4 @@ clean:
 -include $(DEPS)
 
 endif
+
