@@ -7,6 +7,8 @@
 #include <assert.h>
 #include <sys/ioctl.h>
 #include <termios.h>
+#include <curses.h>
+#include <term.h>
 #include "caltrap.h"
 
 static const char *const typenames[] = {
@@ -52,4 +54,24 @@ int get_line_width(void)
      * If all else fails, assume 80.
      */
     return 80;
+}
+
+/*
+ * Determine whether we have an ECMA-48 compatible terminal.
+ */
+int is_ecma_term(void)
+{
+    static int cached_result = -1;
+    int setupterm_err;
+    char *p;
+
+    if (cached_result >= 0)
+	return cached_result;
+
+    if (setupterm(NULL, 1, &setupterm_err) == OK) {
+	p = tigetstr("bold");
+	cached_result = p && !strcmp(p, "\033[1m");
+    } else
+	cached_result = 0;
+    return cached_result;
 }

@@ -44,7 +44,7 @@ MODULES += cron dump tree234 misc
 OBJECTS := $(addsuffix .o,$(MODULES))
 DEPS := $(addsuffix .d,$(MODULES))
 
-LIBS := -lsqlite
+LIBS := -lsqlite -lcurses
 
 caltrap: $(OBJECTS)
 	$(CC) $(LFLAGS) -o caltrap $(OBJECTS) $(LIBS)

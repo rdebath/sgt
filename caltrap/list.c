@@ -130,10 +130,15 @@ static void list_upto(struct list_ctx *ctx, Date ed, Time et)
 	     */
 	    if (nd != prevdate) {
 		prevdate = nd;
-		if (is_hol(ent->type) && isatty(fileno(stdout))) {
+		if (is_hol(ent->type) && isatty(fileno(stdout)) &&
+		    is_ecma_term()) {
 		    /*
-		     * FIXME viciously! This ECMA-48 dependence
-		     * simply won't do.
+		     * terminfo appears to be a pest to fly
+		     * properly, so I'm going to cheat a little and
+		     * deal only with ECMA-48 terminals. However, I
+		     * make the one concession of checking whether
+		     * the terminal is something weird and
+		     * abandoning all use of colour if so.
 		     */
 		    ctx->end_str = "\033[K\033[39;49;0m";
 		    switch (ent->type) {
