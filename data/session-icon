@@ -1,0 +1,24 @@
+Summary: Per-session configurable icon
+Class: wish
+Difficulty: tricky
+Priority: low
+Content-type: text/x-html-body
+
+<p>
+Yet another means of distinguishing multiple PuTTY sessions: replacing
+the normal PuTTY icon with a different one, on a per-session basis.
+
+<p>
+Technically, the hardest bit of this I see is implementing an icon
+chooser. As far as I know there's no convenient icon chooser in Common
+Controls or Common Dialogs that we could use. Implementing one
+ourselves seems like a lot of work and would also bloat PuTTY.
+
+<p>
+An alternative would be to only allow a file to be picked, and take
+the first icon in the file, but that's a bit naff.
+
+<p>
+Also, we already have various means of distinguishing sessions, and we
+keep getting asked for more. If we added them all, PuTTY would
+balloon.
