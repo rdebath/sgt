@@ -10,6 +10,8 @@ import ljproto
 
 # Here's the TODO list for potential future enhancements.
 #
+#  - For the talker stuff: be able to do a {name} inside the {tl}.
+#
 #  - It'd be quite nice to be able to specify {t stuff} inside the
 #    explicit {mbreak} text, in case the simple (part N) suffix
 #    isn't sufficient.
@@ -27,12 +29,6 @@ import ljproto
 #     * Uncertain whether this should be a specialist feature {ed
 #       Oi!} or a generic weak-italics feature {wi [Oi! --Ed]}. Or
 #       both, I suppose.
-#
-#  - Talker-style formatting?
-#     * anakin and golem will make no sense whatsoever in LJ!
-#     * but talker format has historically been my way of reporting
-#       silly conversations from real life.
-#     * need to think about what the HTML equivalent would look like.
 #
 #  - Handling of people's names?
 #     * can use <lj user="simont"> in HTML.
@@ -67,12 +63,14 @@ def isint(s):
 #  - PTITLE is a title paragraph.
 #  - PTITLEQUIET is a quiet title paragraph (appears in the title
 #    on LJ, but is formatted normally on Mono).
+#  - PTALKER is a talker-formatted paragraph.
 PNORMAL = 1
 PPRE = 2
 PBULLET = 3
 PMBREAK = 4
 PTITLE = 5
 PTITLEQUIET = 6
+PTALKER = 7
 def is_title(typ): return typ == PTITLE or typ == PTITLEQUIET
 # Mono attribute definitions.
 mono_colours = "AAAAAAAAKRGYBMCW" # 0-7 normal, 8-15 coloured
@@ -100,7 +98,8 @@ class output:
 	self.mono_last_edit_start = -1
 	self.mono_edit_count = 0
         self.mono_new_edit()
-        self.mono_bullet = 0
+        self.mono_bullet_wid = 0
+	self.mono_bullet_txt = ""
 	self.firstpara = 1
 	self.warnings = []
 	self.mono_title = []
@@ -209,11 +208,12 @@ class output:
 
     def mono_show_para(self, blankable=0):
         quot = self.monoquote
-        if self.mono_bullet == 1:
-            i1 = (quot[0] + " - ", quot[1], quot[2])
-            i2 = (quot[0] + "   ", quot[1], quot[2])
-        elif self.mono_bullet == 2:
-            i1 = i2 = (quot[0] + "   ", quot[1], quot[2])
+        if self.mono_bullet_wid:
+	    if self.mono_bullet_txt != "":
+		i1 = (quot[0] + self.mono_bullet_txt, quot[1], quot[2])
+		i2 = (quot[0] + " " * self.mono_bullet_wid, quot[1], quot[2])
+	    else:
+		i1 = i2 = (quot[0] + " " * self.mono_bullet_wid, quot[1], quot[2])
         else:
             i1 = i2 = quot
         list = self.mono_wrap_optimal(self.mono_words, i1, i2)
@@ -270,13 +270,16 @@ class output:
 	self.mono_ok = 1
 	self.html_title = 0
         self.mono_attr = self.monoquote[1]
-        self.mono_bullet = 0
+        self.mono_bullet_wid = 0
+	self.mono_bullet_txt = ""
+	self.para_type = typ
 
 	if typ == PBULLET:
 	    if not self.in_ul: self.html = self.html + "<ul>"
 	    self.html = self.html + "<li>"
 	    self.in_ul = 1
-            self.mono_bullet = 1
+            self.mono_bullet_wid = 3
+	    self.mono_bullet_txt = " - "
 	else:
 	    if self.in_ul: self.html = self.html + "</ul>"
 	    self.in_ul = 0
@@ -293,6 +296,10 @@ class output:
 		self.mono_attr = self.mono_attr | ATTR_UNDER
 	if typ == PNORMAL and not self.firstpara:
 	    self.html = self.html + "<p>"
+	if typ == PTALKER:
+	    self.html = self.html + "<table cellspacing=\"0\" cellpadding="
+	    self.html = self.html + "\"0\" border=\"0\">"
+	    self.talker = 0 # no <tr> open, no <td> open
 
 	# self.firstpara is only used by the HTML back end to avoid
 	# prepending <p> to the first paragraph in the HTML; so a
@@ -314,8 +321,48 @@ class output:
 	    self.html = self.html + "</li>"
 	if typ == PTITLE:
 	    self.mono_title = self.mono_words
+	if typ == PTALKER:
+	    if (self.talker & 2):
+		self.html = self.html + "</td>"
+	    if (self.talker & 1):
+		self.html = self.html + "</tr>"
+	    self.html = self.html + "</table>"
         self.mono_show_para()
         self.mono_blankline()
+
+    def tl(self, text):
+	l = len(text)
+	left = 9 - l
+	if left < 0:
+	    left = 0
+	if self.html_ok:
+	    if (self.talker & 2):
+		self.html = self.html + "</td>"
+	    if (self.talker & 1):
+		self.html = self.html + "</tr>"
+	    self.html = self.html + "<tr valign=\"top\"><td align=\"right\">"
+	    self.html = self.html + "&nbsp;"*left + "<b>" + self.htmlsafe(text)
+	    self.html = self.html + "&nbsp;</b></td><td>"
+	    self.talker |= 3
+	if self.mono_ok:
+	    if len(self.mono_words) > 0:
+		self.mono_show_para()
+		self.mono_words = []
+	    self.mono_bullet_txt = " " * left + "\007B" + text + "\007b" + " "
+	    self.mono_bullet_wid = left + len(text) + 1
+
+    def tb(self):
+	if self.html_ok:
+	    if (self.talker & 2):
+		self.html = self.html + "</td>"
+	    if (self.talker & 1):
+		self.html = self.html + "</tr>"
+	    self.html = self.html + "<tr><td>&nbsp;</td></tr>"
+	    self.talker &= ~3
+	if self.mono_ok:
+	    if len(self.mono_words) > 0:
+		self.mono_show_para()
+		self.mono_words = []
 
     def footnote(self, text):
 	if self.html_ok:
@@ -335,7 +382,12 @@ class output:
 	    self.html = self.html + ["&#8217;","&#8216;"][opening != 0]
 	elif self.html_title:
 	    self.subj = self.subj + ["&#8217;","&#8216;"][opening != 0]
-        self.mono_add_word(["'","`"][opening != 0], self.mono_attr, 0)
+	# Special case: in talker paragraphs, all quotes are '.
+	if self.para_type == PTALKER:
+	    quotes = ["'","'"]
+	else:
+	    quotes = ["'","`"]
+        self.mono_add_word(quotes[opening != 0], self.mono_attr, 0)
         # '
 
     def emph(self, on):
@@ -372,8 +424,8 @@ class output:
 	elif self.html_title:
 	    self.subj = self.subj + "<a href=\"" + text + "\">" + self.htmlsafe(text) + "</a>"
         self.mono_show_para()
-        if self.mono_bullet == 1:
-            self.mono_bullet = 2
+        if self.mono_bullet_wid:
+            self.mono_bullet_txt = ""
         self.mono_blankline()
         monotext = "\007B\007U\007CB" + text
         spaces = (79 - len(text)) / 2
@@ -514,7 +566,7 @@ class tokeniser:
 	    return (NL,)
 	if c == "}}":
 	    c = self.nextchar()
-	    if c in string.whitespace:
+	    if c != None and len(c) == 1 and c in string.whitespace:
 		self.white_maybe_ignore = 1
 	    return (TCLOSE,)
 	if c == "{{":
@@ -629,6 +681,9 @@ def rdinput(file):
 	    elif tok == (TSIMPLE, "pre"):
 		t.next()
 		para_type = PPRE
+	    elif tok == (TSIMPLE, "talker"):
+		t.next()
+		para_type = PTALKER
 	    elif tok == (TSIMPLE, "b"):
 		tok2 = t.next()
 		para_type = PBULLET
@@ -694,6 +749,16 @@ def rdinput(file):
 		    # Eat a real line break immediately following a {br}.
 		    if tok2[0] == NL:
 			t.next()
+		elif tok[1] == "tl":
+		    if para_type != PTALKER:
+			sys.stderr.write("{tl} tag not in {talker} para\n")
+		    else:
+			o.tl("")
+		elif tok[1] == "tb":
+		    if para_type != PTALKER:
+			sys.stderr.write("{tb} tag not in {talker} para\n")
+		    else:
+			o.tb()
 		else:
 		    sys.stderr.write("unknown tag `" + tok[1] + "'\n")
 	    elif tok[0] == TOPEN:
@@ -730,6 +795,21 @@ def rdinput(file):
 			    # normally.
 			    stack = stack + ["name"]
 			    break
+		elif tok[1] == "tl":
+		    if para_type != PTALKER:
+			sys.stderr.write("{tl} tag not in {talker} para\n")
+		    else:
+			tok = t.next()
+			name = ""
+			while tok != (EOF,) and tok != (TCLOSE,):
+			    if tok[0] == WORD:
+				name = name + tok[1]
+				tok = t.next()
+			o.tl(name)
+			if tok == (TCLOSE,):
+			    t.next()
+			if tok[0] == WHITE or tok[0] == NL:
+			    t.next()
 		else:
 		    stack = stack + [tok[1]]
 		    t.next()
