@@ -1,0 +1,49 @@
+#!/usr/bin/env python
+
+import ljproto
+import sys
+import string
+import os
+import time
+
+verbose = 0
+if sys.argv[1:] == ["-v"]:
+    verbose = 1
+
+def chomp(s):
+    while s[-1:] == "\n" or s[-1:] == "\r":
+	s = s[:-1]
+    return s
+
+cfg = os.environ["HOME"] + "/.ljscan/ljpoll"
+try:
+    f = open(cfg, "r")
+    s = chomp(f.readline())
+    s2 = chomp(f.readline())
+    f.close()
+    lastupdate = s
+    now = time.time()
+    then = float(s2)
+    if now < then:
+	sys.stderr.write("Please do not press this button again for " +
+	"%d seconds.\n" % int(then-now))
+	sys.exit(0)
+except IOError:
+    lastupdate = ""
+
+dict = {"mode":"checkfriends", "lastupdate":lastupdate}
+if verbose:
+    print "Input:", dict
+ret = ljproto.ljcall(dict)
+if verbose:
+    print "Output:", ret
+
+if ljproto.ljok(ret):
+    if ret["new"] == "1":
+	print "You have new LJ content!" 
+    f = open(cfg, "w")
+    f.write(ret["lastupdate"] + "\n")
+    f.write(str(time.time() + string.atoi(ret["interval"])) + "\n")
+    f.close()
+else:
+    sys.stderr.write(ljproto.ljerror(ret) + "\n")
