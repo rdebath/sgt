@@ -6,7 +6,8 @@ Content-type: text/x-html-body
 
 <p>
 SSH (both v1 and v2) allows the client to specify the mode it wants
-server-side pseudo-terminals to be opened in.
+server-side pseudo-terminals to be opened in. PuTTY does not currently
+specify any such information for either protocol.
 
 <p>
 I've always thought it would be nice to be able to configure this
@@ -14,6 +15,11 @@ sort of thing locally, so that (for example) users connecting to the
 <a href="http://www.mono.org">mono.org</a>
 BBS could stop a single press of Ctrl-\ from sending a SIGQUIT and
 unexpectedly terminating their session.
+
+<p>
+We've had one report that in the absence of information from PuTTY,
+someone's HP-UX server assumed a terminal speed of 300 baud (!),
+which seems to cause its <code>vi</code> to use a 5 line display.
 
 <p>
 Recently it was suggested to me that if the user has configured
