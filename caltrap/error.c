@@ -129,7 +129,8 @@ static void do_error(int code, va_list ap) {
 }
 
 void fatal(int code, ...) {
-    va_list ap;
+    va_list ap; 
+    db_close();
     va_start(ap, code);
     do_error(code, ap);
     va_end(ap);
