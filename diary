@@ -345,6 +345,16 @@ class output:
 	    self.subj = self.subj + ["</em>","<em>"][on != 0]
         self.mono_add_word("_", self.mono_attr, 0)
 
+    def code(self, on):
+	if self.html_ok:
+	    self.html = self.html + ["</code>","<code>"][on != 0]
+	elif self.html_title:
+	    self.subj = self.subj + ["</code>","<code>"][on != 0]
+	if on:
+            self.mono_attr = self.mono_attr | ATTR_QUOTED
+	else:
+            self.mono_attr = self.mono_attr & ~ATTR_FG
+
     def bold(self, on):
 	if self.html_ok:
 	    self.html = self.html + ["</b>","<b>"][on != 0]
@@ -458,26 +468,29 @@ class tokeniser:
     def __init__(self, file):
 	self.file = file
 	self.currchar = ""
-	self.pushback = ""
+	self.pushback = []
 	self.token = None
+	self.white_maybe_ignore = 0
 
     def char(self):
 	if self.currchar == "":
-	    if self.pushback != "":
-		self.currchar = self.pushback
-		self.pushback = ""
+	    if len(self.pushback) > 0:
+		self.currchar = self.pushback[-1]
+		self.pushback = self.pushback[:-1]
 	    else:
 		self.currchar = self.file.read(1)
-		if self.currchar == "{":
-		    c = self.file.read(1)
-		    if c != "{":
-			self.pushback = c
-			self.currchar = "{{"
-		elif self.currchar == "}":
-		    c = self.file.read(1)
-		    if c != "}":
-			self.pushback = c
-			self.currchar = "}}"
+	    if self.currchar == "{":
+		c = self.file.read(1)
+		if c == "}":
+		    self.currchar = None
+		elif c != "{":
+		    self.pushback.append(c)
+		    self.currchar = "{{"
+	    elif self.currchar == "}":
+		c = self.file.read(1)
+		if c != "}":
+		    self.pushback.append(c)
+		    self.currchar = "}}"
 	return self.currchar
 
     def nextchar(self):
@@ -485,7 +498,13 @@ class tokeniser:
 	return self.char()
 
     def readtoken(self):
-	c = self.char()
+	c = None
+	white_maybe_ignore = self.white_maybe_ignore
+	self.white_maybe_ignore = 0
+	while c == None:
+	    c = self.char()
+	    if c == None:
+		self.nextchar()
 	if c == "":
 	    return (EOF,)
 	if c == "\n":
@@ -494,13 +513,15 @@ class tokeniser:
 		return (PARA,)
 	    return (NL,)
 	if c == "}}":
-	    self.nextchar()
+	    c = self.nextchar()
+	    if c in string.whitespace:
+		self.white_maybe_ignore = 1
 	    return (TCLOSE,)
 	if c == "{{":
 	    ret = ""
 	    while 1:
 		c = self.nextchar()
-		if len(c) == 1 and not (c in string.whitespace):
+		if c != None and len(c) == 1 and not (c in string.whitespace):
 		    ret = ret + c
 		else:
 		    break
@@ -508,16 +529,21 @@ class tokeniser:
 		self.nextchar()
 		return (TSIMPLE, ret)
 	    else:
-		if (len(c) == 1 and c in string.whitespace):
+		if c == None or (len(c) == 1 and c in string.whitespace):
 		    self.nextchar()
 		return (TOPEN, ret)
 	if c in string.whitespace:
 	    ret = c
 	    while 1:
 		c = self.nextchar()
+		if c == None:
+		    continue
 		if len(c) != 1 or not (c in string.whitespace):
 		    break
 		ret = ret + c
+	    if c == "}}" and white_maybe_ignore:
+		self.nextchar()
+		return (TCLOSE,)
 	    return (WHITE, ret)
 	# Anything remaining is WORD.
 	ret = c
@@ -526,6 +552,8 @@ class tokeniser:
 	    if neednext:
 		c = self.nextchar()
 	    neednext = 1
+	    if c == None:
+		break
 	    if len(c) == 1 and not (c in string.whitespace):
 		ret = ret + c
 	    else:
@@ -709,6 +737,8 @@ def rdinput(file):
 			o.quote(1)
 		    elif tok[1] == "e":
 			o.emph(1)
+		    elif tok[1] == "c":
+			o.code(1)
 		    elif tok[1] == "b":
 			o.bold(1)
 		    else:
@@ -724,6 +754,8 @@ def rdinput(file):
 			o.quote(0)
 		    elif s == "e":
 			o.emph(0)
+		    elif s == "c":
+			o.code(0)
 		    elif s == "b":
 			o.bold(0)
 		    elif s == "url":
