@@ -5,8 +5,14 @@ use strict;
 # files with old versions.
 
 # These paths will need to be changed, most likely.
-my $username = "l";	# Needs to match that in retrieve.loew
 my $dataroot = "/home/richard/Data/monofiles/";  # This needs to match too.
+
+my $username;	# Needs to match that used in retrieve.loew
+open(USERNAME, "<$dataroot.username");
+$username = <USERNAME>;
+close(USERNAME);
+$username =~ s/\n$//;
+
 my $script_path = "./";
 my $golem_path = "../src/golem";
 

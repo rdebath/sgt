@@ -594,6 +594,33 @@ static char *loewlib_rawtime(Thread *t) {
 }
 
 
+/* `system' runs a system command, and waits for completion.
+ * Expects one parameter, the command to be executed by /bin/sh -c <command>
+ * I recommend you use full pathnames.
+ * Return value is pushed onto stack.
+ * Any other return information will have to be passed via a temporary file.
+ */
+static char *loewlib_system(Thread *t) {
+    char *command;
+    int result;
+
+    if (t->sp < 1)
+	return "Parameter stack underflow (system expected 1 item on stack)";
+    if (t->stack[t->sp-1]->type != DATA_STR)
+	return "Type mismatch on stack in `system' (expected string)";
+
+    command = t->stack[t->sp - 1]->string.data;
+
+    fprintf(dfp, "Running system call `%s'\n", command);
+
+    result = system(command);
+
+    t->stack[t->sp - 1]->type = DATA_INT;
+    t->stack[t->sp - 1]->integer.value = result;
+    return NULL;
+}
+
+
 /*
  * `search' runs a search
  * Pops index name and search string from stack.
@@ -784,6 +811,9 @@ void loewlib_setup(void) {
     loew_define ("fileclose", DEFN_PRIM, (void *)fileclose, NULL, PRIV_ROOT);
     loew_define ("fileeof", DEFN_PRIM, (void *)fileeof, NULL, PRIV_ROOT);
     loew_define ("filegood", DEFN_PRIM, (void *)filegood, NULL, PRIV_ROOT);
+
+    /* Access to UNIX system running loew */
+    loew_define ("system", DEFN_PRIM, (void *)loewlib_system, NULL, PRIV_ROOT);
 
     /* Username and password data */
     loew_define ("username", DEFN_DATA, golem_user, NULL, PRIV_ROOT);
