@@ -78,13 +78,24 @@ PuTTY attempts to conform to many specifications.  These include:
 <h3>SSH-2 specifications</h3>
 <ul>
 <li><a href="http://www.ietf.org/html.charters/secsh-charter.html">
-  IETF Secure Shell working group</a>
+  IETF Secure Shell working group</a> - we claim to implement the following:
+  <ul>
+  <li>Core: architecture, transport, userauth, connect, assignednumbers
+  <li>dh-group-exchange
+  <li>auth-kbdinteract
+  <li>break
+  <li>fingerprint <em>(expired)</em>
+  <li>publickeyfile
+  <li>filexfer <em>(expired)</em>
+  </ul>
 </ul>
 
 <h3>SSH-1 specification</h3>
 <ul>
 <li><a href="http://www.snailbook.com/docs/protocol-1.5.txt">
   The SSH (Secure Shell) Remote Login Protocol</a>
+<li>We don't know of a reference for the SCP protocol (which is
+  basically BSD rcp).
 </ul>
 
 <h3>Telnet specifications</h3>
