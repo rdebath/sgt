@@ -178,6 +178,10 @@ findcmd traceroute
 findcmd route
 unset findcmd
 
+if [ -z "`type -path axe`" -a -n "`type -path tweak`" ]; then
+  eval 'axe() { tweak "$@"; }'
+fi
+
 # mcd, to make a directory and immediately change into it.
 mcd() {
   mkdir -p "$1" && cd "$1"
