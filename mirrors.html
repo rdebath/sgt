@@ -270,7 +270,7 @@ in the UK.
 <h2><a name="guidelines">Mirroring guidelines</a></h2>
 
 <p>
-The simplest way to mirror the PuTTY website is to use
+The preferred (and simplest) way to mirror the PuTTY website is to use
 <a href="http://samba.anu.edu.au/rsync/"><code>rsync</code></a>.
 We provide a version of the website content
 intended for use as a standalone mirror, at
@@ -297,10 +297,11 @@ behaviour in some other way suitable for your own web server.
 <p>
 Alternatively, you can mirror our web site using
 <a href="http://www.gnu.org/software/wget/wget.html">GNU wget</a>.
-This is more difficult, because our binary downloads are hosted on a
-different server for bandwidth reasons, so a conventional
-"<code>wget -r</code>" will not fetch them at all. Instead, you will
-need at least two invocations of <code>wget</code>. Also, as
+This is less bandwidth-efficient, as unlike <code>rsync</code>
+it's not incremental. It's also more difficult, because our binary
+downloads are hosted on a different server for bandwidth reasons, so a
+conventional "<code>wget -r</code>" will not fetch them at all. Instead,
+you will need at least two invocations of <code>wget</code>. Also, as
 mentioned above, the release binaries appear to be stored in a
 virtual directory called "<code>latest</code>", but this actually
 returns an HTTP temporary redirect to a numbered directory such as
@@ -322,10 +323,10 @@ the PuTTY web site files inside that subdirectory.
 </li></ul>
 
 <p>
-We normally suggest that mirrors are updated around once a week, and
-no less often than once a month. You can also subscribe to our
-<a href="maillist.html">mailing list</a> to receive notification of
-new releases.
+We normally suggest that <code>wget</code> mirrors are updated around
+once a week, and no less often than once a month. You can also subscribe
+to our <a href="maillist.html">mailing list</a> to receive notification
+of new releases.
 
 <p>
 Before notifying us of your mirror, please test that it works:
