@@ -66,7 +66,7 @@ while (1) {
   while ($_ and /./ and !issep($_)) {
     $read = 0;
     $phdr = "|$_";
-    if (/^From: (.*)$/i) {
+    if (/^From:\s+(.*)$/i) {
       # FIXME: quoting and stuff is probably wrong here
       $a = $1;
       if ($a =~ /^(.+) <.*>/) {
@@ -76,7 +76,7 @@ while (1) {
       } else {
         $fromfield = $a;
       }
-    } elsif (/^Subject: (.*)$/i) {
+    } elsif (/^Subject:\s+(.*)$/i) {
       $subjfield = $1;
     } elsif (/^Content-type:\s+(([^\/; ]+)\/[^\/; ]+)/i) {
       $conttype = $1;
