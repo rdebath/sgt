@@ -1,3 +1,5 @@
+-*- diary -*-
+
 {t Sample Half-Title}: Things On Springs
 
 This is a simple paragraph full of text. It should be wrapped
@@ -7,6 +9,14 @@ this was in fact the case, which always helps. In it we have {q
 quoted text}, and {e emphasis}, and {b boldness}. All of these
 things should be rendered appropriately in both formats. Oh, and
 there's a footnote{1} as well.
+
+{talker}
+{tl}Users in faff: none
+{tb}
+{tl golem}{q Hello.}
+{tl anakin}{q Ooh, hi there.}
+{tl longline}{q This is a talker-formatted paragraph. Ain't that
+cool? Now let's see if this line will wrap.}
 
 {ljcut LJ cut}
 
