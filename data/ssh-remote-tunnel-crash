@@ -1,4 +1,4 @@
-Summary: SSH-2 remote tunneling may cause crash
+Summary: SSH remote tunneling may cause crash
 Class: bug
 Difficulty: fun
 Priority: high
@@ -8,10 +8,11 @@ Fixed-in: 2004-11-02
 Content-type: text/x-html-body
 
 <p>
-When any SSH-2 remote tunnels are configured, there is a chance that
-PuTTY will crash (or do something else bad), mostly likely after user
+When any remote tunnels are configured, there is a chance that PuTTY
+will crash (or do something else bad), mostly likely after user
 authentication (when tunnels are first set up). Increasing numbers of
-remote tunnels is likely to increase the likelihood of a crash.
+remote tunnels is likely to increase the likelihood of a crash. This
+affects both SSH-1 and SSH-2.
 
 <p>
 (This is due to <code>free()</code>-ing of an uninitialised pointer in
