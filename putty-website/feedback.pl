@@ -15,7 +15,8 @@ print << 'EOF';
 <a href="faq.html">FAQ</a> |
 <a href="docs.html">Docs</a> |
 <a href="download.html">Download</a> |
-<a href="keys.html">Keys</a><br>
+<a href="keys.html">Keys</a> |
+<a href="links.html">Links</a><br>
 <a href="mirrors.html">Mirrors</a> |
 <a href="maillist.html">Updates</a> |
 <b>Feedback</b> |
