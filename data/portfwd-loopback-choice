@@ -19,3 +19,6 @@ The user interface for this would probably just involve specifying
 the IP address alongside the port number in the Tunnels panel:
 instead of asking to forward port 3456, you'd ask for
 127.0.0.2:3456.
+
+(Apparently this is also useful for forwarding Windows Terminal
+Services -- see <99ab3348.0405241707.74fa3d6b@posting.google.com>.)
