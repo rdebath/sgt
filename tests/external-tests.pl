@@ -39,6 +39,13 @@ sub a_cmd ($@) {
     return \%ret;
 }
 
+sub stream_errors ($$$) {
+    my ($stream, $actual, $desired) = @_;
+    $actual =~ s/\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d/<DATETIME>/g;
+    return if $actual eq $desired;
+    return ("$stream was:\n$actual", "$stream should have been:\n$desired");
+}
+
 sub run_cmd {
     my ($name, $cmd) = @_;
     my ($ret, $stdout, $stderr) = run_timber ($name,
@@ -47,14 +54,8 @@ sub run_cmd {
     my @wrong;
     push @wrong, "Return code was $ret, should have been $cmd->{ret}"
 	unless $cmd->{ret} == $ret;
-    unless ($cmd->{stdout} eq $stdout) {
-	push @wrong, ("STDOUT was:\n$stdout",
-		      "STDOUT should have been:\n$cmd->{stdout}");
-    }
-    unless ($cmd->{stderr} eq $stderr) {
-	push @wrong, ("STDERR was:\n$stderr",
-		      "STDERR should have been:\n$cmd->{stderr}");
-    }
+    push @wrong, stream_errors "STDOUT", $stdout, $cmd->{stdout};
+    push @wrong, stream_errors "STDERR", $stderr, $cmd->{stderr};
     return @wrong;
 }
 
@@ -71,7 +72,7 @@ sub run_test {
     my $test = shift;
     my $line;
     for (@{$test->{cmd}}) {
-	++$line;
+	$line++ and sleep 1;
 	my @wrong = run_cmd $test->{name}, $_;
 	return join ("",
 		     SEP ("Failed $test->{name} at line $line: '$_->{line}'"),
@@ -109,3 +110,9 @@ test set_name => (["init"],
 		  ["contact name 0", stdout => "0:Eric\n"],
 		  ["set-contact name 0"],
 		  ["contact name 0", stdout => "0\n"]);
+test get_history => (["init"],
+		     ["set-contact name 0 Dave"],
+		     ["set-contact name 0 Eric"],
+		     ["contact-history name 0",
+		      stdout => ("0:<DATETIME>::Eric\n"
+				 . "0:<DATETIME>:<DATETIME>:Dave\n")]);
