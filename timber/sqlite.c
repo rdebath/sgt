@@ -240,22 +240,15 @@ static const char *db_schema[] = {
 
 static const char *const ab_schema[] = {
     "CREATE TABLE contacts ("
-    "  contact_id INTEGER PRIMARY KEY"
+    "  contact_id INTEGER PRIMARY KEY,"
+    "  name VARCHAR"
     ");",
-    "INSERT INTO contacts VALUES (0);",
-
-    "CREATE TABLE attributes ("
-    "  contact_id INTEGER,"
-    "  value VARCHAR"
-    ");",
+    "INSERT INTO contacts VALUES (0, NULL);",
 };
 
 
-static struct database db[] = {
-    DATABASE ("db", db_schema),
-    DATABASE ("ab", ab_schema)
-};
-static struct database *const ab = &db[1];
+static struct database db[1] = { DATABASE ("db", db_schema) };
+static struct database ab[1] = { DATABASE ("ab", ab_schema) };
 
 
 void sql_init_all(void)
@@ -521,4 +514,44 @@ struct mime_details *find_mime_parts(const char *ego, int *nparts)
     sqlite_free_table(table);
 
     return ret;
+}
+
+
+
+/*
+ *  Address book database.
+ */
+
+static char *ab_get_name (int contact_id)
+{
+    char **table;
+    int rows, cols;
+    char *ans = NULL;
+
+    sql_open(ab);
+    sql_get_table_printf (ab,
+			  "SELECT name FROM contacts WHERE contact_id = %d",
+			  &table, &rows, &cols, contact_id);
+    if (0 < rows) {
+	assert (1 == cols);
+	assert (1 == rows);
+	if (table[1]) ans = dupstr(table[1]);
+    }
+    sqlite_free_table(table);
+    return ans;
+}
+
+void ab_set_name (int contact_id,
+		  const char *new_name)
+{
+    sql_open(ab);
+    sql_exec_printf (ab, "UPDATE contacts SET name = '%q' WHERE contact_id = %i",
+		     new_name, contact_id);
+}
+
+void ab_display_name (int contact_id)
+{
+    char *name = ab_get_name (contact_id);
+    printf (name ? "%d:%s\n" : "%d\n", contact_id, name);
+    sfree(name);
 }
