@@ -47,13 +47,17 @@ var dataroot # Root that data gets stored beneath.
 function initialise {
   # Initialise some variables...
 
-  # Username to run as.  (=foo assigns item on top of stack to variable foo)
-  "l" =username # Needs to match that in retrieve.pl, if you're going to use
-                # that.
-
   # Location of top of directory structure to keep files in (as previously
   # specified.)
   "/home/richard/Data/monofiles/" =dataroot  # This needs to match retrieve.pl.
+
+  # Get Username to run as.  (=foo assigns item on top of stack to variable foo)
+  # Needs to match that used in retrieve.pl, if you're going to use that.
+  dataroot ".username" . "r" fileopen =fh
+  fh filegood if
+    fh fileread =username
+    fh fileclose
+  endif
 
   # Reads the password file if it's there.
   dataroot "." . username . ".passwd" . "r" fileopen =fh
@@ -65,6 +69,11 @@ function initialise {
 
 function readmessages {
   # Read our messages, into the file messages/allmessages.new.<username>
+  # Should probably then be merged with the old version by running tomono on
+  # them, or something similar, after the file has been retrieved.
+
+  # Might want to do this using a system command.
+  
   'Messages
   dataroot "messages/allmessages.new." . username .
   'Filename
@@ -84,6 +93,8 @@ function readmessages {
   # specified in the parameter Filename.
 }
 
+# Get the file from the keypath specified in the variable monopath,
+# And put it into the file <dataroot>files/<filepath>.new.cm
 function getfile {
   monopath "#" cmp if
     'Read monopath
@@ -104,7 +115,7 @@ function parseline {
 }
 
 function getfiles {
-  dataroot "files.cf" . "r" fileopen =cffh
+  dataroot "files." . username . ".cf" . "r" fileopen =cffh
   loop
     cffh fileeof if-break
     cffh fileread parseline
