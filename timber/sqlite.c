@@ -57,12 +57,12 @@ void db_init(void)
     if (err) fatal(err_dberror, err);
     sqlite_exec(db,
 		"CREATE INDEX idx_addresses_displayname"
-		"  ON addresses (displayname);",
+		"  ON addresses (displayname, address);",
 		sqlite_null_callback, NULL, &err);
     if (err) fatal(err_dberror, err);
     sqlite_exec(db,
 		"CREATE INDEX idx_addresses_address"
-		"  ON addresses (address);",
+		"  ON addresses (address, displayname);",
 		sqlite_null_callback, NULL, &err);
     if (err) fatal(err_dberror, err);
 
