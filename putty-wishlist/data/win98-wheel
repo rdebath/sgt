@@ -2,7 +2,7 @@ Summary: Wheel mouse support broken under Win98
 Class: bug
 Priority: high
 Present-in: 0.52
-Fixed-in: 2002-01-19
+Fixed-in: 2002-01-19 0.53
 Content-type: text/x-html-body
 
 <p>The mouse wheel support was broken under Windows 98 in the 0.52

@@ -1,7 +1,7 @@
 Summary: PSCP ballooning on large files
 Class: bug
 Present-in: 0.52
-Fixed-in: 2002-03-02
+Fixed-in: 2002-03-02 0.53
 Content-type: text/x-html-body
 
 <p>

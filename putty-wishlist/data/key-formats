@@ -2,7 +2,7 @@ Summary: Support for OpenSSH and ssh.com SSH2 private key formats
 Class: wish
 Difficulty: fun
 Priority: medium
-Fixed-in: 2002-06-15
+Fixed-in: 2002-06-15 0.53
 Content-type: text/x-html-body
 
 <p>

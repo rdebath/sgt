@@ -2,7 +2,7 @@ Summary: Increase space allocated to auto-login username
 Class: semi-bug
 Difficulty: fun
 Content-type: text/x-html-body
-Fixed-in: 2002-09-13
+Fixed-in: 2002-09-13 0.53
 
 <p>
 Trivial fix: PuTTY truncates the `auto-login username' field to about

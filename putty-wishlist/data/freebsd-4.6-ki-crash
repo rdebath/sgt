@@ -3,7 +3,7 @@ Class: bug
 Content-type: text/x-html-body
 Present-in: 0.52 2002-07-31 2002-08-01
 Absent-in: 0.51
-Fixed-in: 2002-08-04
+Fixed-in: 2002-08-04 0.53
 
 <p>
 Various people have reported PuTTY crashing when connecting to recent

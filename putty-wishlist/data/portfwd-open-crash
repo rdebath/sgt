@@ -2,7 +2,7 @@ Summary: Crashes with heavy open/close activity in port-forwarding
 Content-type: text/x-html-body
 Class: bug
 Present-in: 0.52 2002-06-05 2002-06-06
-Fixed-in: 2002-06-16
+Fixed-in: 2002-06-16 0.53
 Priority: high
 
 <p>
