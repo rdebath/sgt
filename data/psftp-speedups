@@ -1,0 +1,9 @@
+Summary: Further speedups for PSFTP
+Class: semi-bug
+Difficulty: tricky
+
+We've had some suggestions (and patches) that are claimed to significantly
+improve PSFTP's throughput, by frobbing Nagle and trying to be clever
+about how the SSH protocol is broken up into TCP packets.
+
+<20040311202215.GA12409@nortelnetworks.com> et seq.
