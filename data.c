@@ -27,6 +27,8 @@ static column digit9[] = { 0xe0, 0x110, 0x110, 0x110, 0x11f, 0xff };
 static column openparen[] = { 0xfe, 0x101 };
 static column closeparen[] = { 0x101, 0xfe };
 static column colon[] = { 0x28 };
+static column equals[] = { 0x28, 0x28, 0x28 };
+static column minus[] = { 0x10, 0x10, 0x10 };
 
 static column letterA[] = { 0x1f, 0xff, 0x110, 0x110, 0xf0, 0x1f };
 static column letterB[] = { 0xfe, 0x11f, 0x111, 0x111, 0xf1, 0x0e };
@@ -72,7 +74,7 @@ static struct { column *data; int width; } data_font[] = {
     CNONE, 			       /* asterisk */
     CNONE, 			       /* plus */
     CNONE, 			       /* comma */
-    CNONE, 			       /* hyphen */
+    C(minus), 			       /* hyphen */
     CNONE, 			       /* period */
     CNONE, 			       /* slash */
     C(digit0),			       /* zero */
@@ -88,7 +90,7 @@ static struct { column *data; int width; } data_font[] = {
     C(colon),			       /* colon */
     CNONE, 			       /* semicolon */
     CNONE, 			       /* less */
-    CNONE, 			       /* equal */
+    C(equals), 			       /* equal */
     CNONE, 			       /* greater */
     CNONE, 			       /* question */
     CNONE, 			       /* at */
