@@ -277,7 +277,7 @@ static void play_game(void)
     int i, j;
 
     scr_prep();
-    memset(scrdata, 0, 640*240);
+    memset(scrdata, 0, SCR_WIDTH*SCR_HEIGHT*XMULT*YMULT);
     ti = ntris_init(NULL, opts.width, PLAY_HEIGHT, opts.shapeset);
     left_edge = ((SCR_WIDTH - SQUARE_SIDE * opts.width) / 2);
     if (left_edge < 110)
@@ -522,9 +522,8 @@ static int main_menu(void)
      */
 
     scr_prep();
-    for (x = 0; x < 320; x++)
-	for (y = 0; y < 240; y++)
-	    plot(x, y, 0);
+
+    memset(scrdata, 0, SCR_WIDTH*SCR_HEIGHT*XMULT*YMULT);
 
     menumin = 0;
 
@@ -582,6 +581,20 @@ static int main_menu(void)
 	  case SDL_KEYDOWN:
 	    if (event.key.keysym.sym == SDLK_ESCAPE)
 		exit(1);
+	    if (event.key.keysym.sym == SDLK_UP) {
+		if (--index < menumin)
+		    index = menulen-1;
+		redraw = 1;
+	    }
+	    if (event.key.keysym.sym == SDLK_DOWN) {
+		if (++index >= menulen)
+		    index = menumin;
+		redraw = 1;
+	    }
+	    if (event.key.keysym.sym == SDLK_RETURN) {
+		flags = 3;
+		action = menu[index].action;
+	    }
 	    break;
 	}
 
@@ -648,7 +661,7 @@ static void setup_game(int joy)
 	 * seems simpler to do it that way.
 	 */
 	scr_prep();
-	memset(scrdata, 0, 640*240);
+	memset(scrdata, 0, SCR_WIDTH*SCR_HEIGHT*XMULT*YMULT);
 
 	/*
 	 * Draw selection crosshairs.
