@@ -5,8 +5,10 @@ Difficulty: tricky
 Content-Type: text/x-html-body
 
 <p>
-Users from countries (is it <em>only</em> the US?) that don't need
-the AltGr key might like to have an option that makes it work the
+Most PC keyboards use the key to the right of the space bar as AltGr,
+an extra shift key for generating interesting graphic characters,
+but some keyboard layouts (apparently the US one, at least) don't, and users
+of such layouts might like to have an option that makes it work the
 same way as the left Alt key.
 
 <p>
