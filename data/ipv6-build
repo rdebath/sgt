@@ -9,7 +9,8 @@ PuTTY has IPv6 support in the codebase, but it's not compiled in to
 the binaries we release. We don't currently have the headers and
 libraries needed to compile with IPv6 support, and haven't yet got
 round to getting hold of them. (Therefore, we don't test the IPv6
-support, either.)
+support, either.)  It's suggested that we could get them
+<a href="http://research.microsoft.com/msripv6/msripv6.htm">here</a>.
 
 <p>
 In the meantime,
