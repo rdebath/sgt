@@ -241,6 +241,8 @@ class output:
 	    for i in text:
 		if i[0] == WORD or i[0] == WHITE:
 		    strtext = strtext + i[1]
+		elif i[0] == NL:
+		    strtext = strtext + " "
 	    self.html = self.html + "<lj-cut text=\"" + self.htmlsafe(strtext) + "\">"
 
     def finish(self):
