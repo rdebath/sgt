@@ -2,6 +2,7 @@ Summary: Support for Mazovia character set
 Class: wish
 Difficulty: taxing
 Priority: low
+Fixed-in: 2004-08-06
 Content-type: text/x-html-body
 
 <p>
@@ -13,22 +14,22 @@ It's also known as CP620, but Polish versions of Windows don't appear
 to recognise this, so we'll have to add native support to PuTTY.
 
 <p>
-In order to do this we need a translation table from Mazovia code
-points to Unicode. We're almost in a position to do this now based on
-the <code>mazovia</code> translation table in
+Most of the translation table from Mazovia to Unicode is based on
+the <code>mazovia</code> translation table that was available in
 <a href="http://mikolajj.republika.pl/files/ConvertCharset/Full_ConvertCharset.zip">this ZIP file</a>, but
-there are a couple of questions still to be answered:
+there were a couple of questionable code points:
 
 <ul>
 
 <li>Code point <code>0x9B</code>: corresponds to Polish currency
 zloty, symbol "z&#x0142;", for which a single code point does not
-exist in Unicode. Plan to map this to U+FFFD REPLACEMENT CHARACTER
+exist in Unicode. Mapped this to U+FFFD REPLACEMENT CHARACTER
 (we're assured it's not very important).
 
 <li>Code point <code>0xA8</code>: the character table above indicates
 it's U+00BF INVERTED QUESTION MARK, but another table we've seen shows
-a glyph like U+00A7 SECTION SIGN. Which is correct?
+a glyph like U+00A7 SECTION SIGN. Someone from <tt>.pl</tt>tells us the
+former is correct.
 
 </ul>
 
