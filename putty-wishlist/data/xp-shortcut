@@ -16,14 +16,13 @@ could characterise the problem, and publish a workaround in the FAQ
 (possibly by extending PuTTY's command-line syntax).
 
 <p>
-Examples of reports received so far:
-<ul>
-<li><tt>NDBBKAOEAFAMLKEAFJIOOEHNGDAA.guy@SiliconStrat.com</tt>
-<li><tt>5.1.0.14.0.20020615214407.023a33a0@amusive.com</tt>
-<li><tt>000501c2263d$190195b0$0200a8c0@quadzone.net</tt>
-</ul>
-
-<p>
 As of 0.53, the <code>@session</code> syntax is deprecated in favour
 of <code>-load session</code>. There should be no reason to use an @
 sign in a shortcut any more.
+
+<p>
+<em>Update:</em> for anyone interested in the original problem, it's been
+<a href="http://groups.google.com/groups?selm=f77d8eda.0310200521.242ab7fc%40posting.google.com">claimed</a>
+that putting two spaces between command and argument works (i.e.,
+<pre>putty  @mysession</pre>). We still recommend using
+<code>-load</code>.
