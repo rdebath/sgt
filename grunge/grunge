@@ -37,7 +37,8 @@ import rgtpclient
 try:
     foo = curses.init_pair
     curses_has_colour = 1
-    colour_pairs = {(curses.COLOR_WHITE,curses.COLOR_BLACK): 0}
+    # colour_pairs = {(curses.COLOR_WHITE,curses.COLOR_BLACK): 0}
+    colour_pairs = {}
     colourmap = {
     "k": curses.COLOR_BLACK,
     "b": curses.COLOR_BLUE,
@@ -99,8 +100,25 @@ def endcurses():
     scr.refresh()
     curses.endwin()
 
-def aprint(scr, y, x, str):
+def colourpair(fg,bg):
     global nextpair
+    if curses_has_colour:
+	pair = colour_pairs.get((fg,bg), None)
+	if pair == None:
+	    curses.init_pair(nextpair, fg, bg)
+	    colour_pairs[(fg,bg)] = nextpair
+	    pair = nextpair
+	    nextpair = nextpair + 1
+	return curses.color_pair(pair)
+    else:
+	return 0
+
+def cls():
+    scr.erase()
+    for i in range(height):
+	aprint(scr, i, 0, " " * width)
+
+def aprint(scr, y, x, str):
     attr = 0
     if curses_has_colour:
 	fg = curses.COLOR_WHITE
@@ -109,16 +127,9 @@ def aprint(scr, y, x, str):
 	i = string.find(str, "\a")
 	if i == -1: i = len(str)
 	if (i > 0):
+	    realattr = attr
 	    if curses_has_colour:
-		pair = colour_pairs.get((fg,bg), None)
-		if pair == None:
-		    curses.init_pair(nextpair, fg, bg)
-		    colour_pairs[(fg,bg)] = nextpair
-		    pair = nextpair
-		    nextpair = nextpair + 1
-		realattr = attr | curses.color_pair(pair)
-	    else:
-		realattr = attr
+		realattr = realattr | colourpair(fg, bg)
 	    scr.addstr(y, x, str[:i], realattr)
 	    str = str[i:]
 	    x = x + i
@@ -219,8 +230,8 @@ def getinput(prompt, inittext):
     maxlen = width - len(prompt)
     ret = ""
     while 1:
-	scr.addstr(height-1, 0, " " * width)
-	scr.addstr(height-1, 0, prompt + ret)
+	aprint(scr, height-1, 0, " " * width)
+	aprint(scr, height-1, 0, prompt + ret)
 	scr.move(height-1, len(prompt) + len(ret))
 	scr.refresh()
 	c = scr.getch()
@@ -273,11 +284,11 @@ def pageitem(indexentry, item, override):
 	bll = bll + len(blp)
 	left = (width-bll)/2
 	if left < 0: left = 0
-	scr.addstr(height-1, 0, " "*width)
+	aprint(scr, height-1, 0, " "*width)
 	aprint(scr, height-1, 0, " "*left + bl)
 	scr.refresh()
     def erasebl():
-	scr.addstr(height-1, 0, " "*width)
+	aprint(scr, height-1, 0, " "*width)
 	scr.refresh()
     try:
 	data = formatitem(item)
@@ -301,7 +312,7 @@ def pageitem(indexentry, item, override):
 	while 1:
 	    # Redraw if necessary
 	    if redraw:
-		scr.erase()
+		cls()
 		for i in range(h.y, h.y+height-1):
 		    if i < len(data):
 			aprint(scr, i - h.y, 0, data[i])
@@ -402,7 +413,7 @@ def pageitem(indexentry, item, override):
 		if h.addable:
 		    return "a", 0
     finally:
-	scr.erase()
+	cls()
     return "", 0
 
 class item:
@@ -628,12 +639,12 @@ class menu:
 	    bll = bll + 1
 	    left = (width-bll)/2
 	    if left < 0: left = 0
-	    scr.addstr(height-1, 0, " "*width)
+	    aprint(scr, height-1, 0, " "*width)
 	    aprint(scr, height-1, 0, " "*left + bl)
 	    scr.refresh()
 
 	hdr = formatheader(self.title)
-	scr.erase()
+	cls()
 	sy = 0
 	for i in hdr:
 	    aprint(scr, sy, 0, i)
@@ -821,7 +832,7 @@ def showmenus(mainmenu, escmenu, startmenu):
 		    prompt = ["Select key from list, [",
 		    "\aB", "=", "\ab", "]:All, [",
 		    "\aB", "Q", "\ab", "]:Quit"]		
-		    scr.addstr(height-1, 0, " "*width)
+		    aprint(scr, height-1, 0, " "*width)
 		    aprint(scr, height-1, 0, centre(prompt, width))
 		    scr.refresh()
 		    k = mylc(scr.getch())
@@ -847,7 +858,7 @@ def showmenus(mainmenu, escmenu, startmenu):
 				"]:" + ("Don't skip", "Skip scan 1",
 				"Skip both scans")[i] + "  ", ""]
 			b = b + ["[", "\aB", "Q", "\ab", "]"]
-			scr.addstr(height-1, 0, " "*width)
+			aprint(scr, height-1, 0, " "*width)
 			aprint(scr, height-1, 0, centre(b, width))
 			scr.refresh()
 			s = mylc(scr.getch())
@@ -868,7 +879,7 @@ def showmenus(mainmenu, escmenu, startmenu):
 		    elif result[1] == "s":
 			return ("s", result[2], mret)
     finally:
-	scr.erase()
+	cls()
 
 def editor(title, inittext):
     def redraw(content, yoff):
@@ -886,7 +897,7 @@ def editor(title, inittext):
     lwidth = 75
     insert = 1 # FIXME: permament insert-mode setting
     try:
-	scr.erase()
+	cls()
 	hdr = formatheader(title)
 	sy = 0
 	for i in hdr:
@@ -1054,7 +1065,7 @@ def editor(title, inittext):
 		else:
 		    content[i] = " "*lwidth
     finally:
-	scr.erase()
+	cls()
     # Trim trailing blank lines
     while len(ret) > 0 and ret[-1] == "":
 	ret = ret[:-1]
@@ -1067,7 +1078,7 @@ def addpage(pagetype, grogname, itemid, subj=""):
     "but not continued. pagetype=4 means a brand new item.\n"\
     "Returns an action, the maybe-modified grogname, and the subject for\n"\
     "a new continuation."
-    scr.erase()
+    cls()
     y = 0
     if pagetype == 0:
 	title = ["Add contribution to item " + itemid]
