@@ -89,6 +89,16 @@ class myparser(htmllib.HTMLParser):
 	#print "font tag ended"
 	self.formatter.setstate(1)
 
+    def start_blockquote(self, attrs):
+	# Blockquote elements are sometimes used to show poll
+	# results, so we need to filter them out. Crude, but I
+	# doubt it'll severely impact anything else which will
+	# actually cause a problem.
+	self.formatter.setstate(0)
+
+    def end_blockquote(self):
+	self.formatter.setstate(1)
+
     # To avoid sending those footnotes ([1] [2] etc) to the
     # formatter for hrefs, we reimplement start_a and end_a
     # ourselves. Currently they do nothing. In future I might add a
