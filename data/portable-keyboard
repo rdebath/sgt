@@ -12,44 +12,40 @@ abstraction is trickier than you might think.
 I (BJH) can think of the following kinds of keypress that PuTTY has to be able
 to handle.  Further suggestions welcome.
 
-* Typewriter keys, possibly affected by Caps Lock, Shift, Alt Gr, or Option.
+1a: Typewriter keys, possibly affected by Caps Lock, Shift, Alt Gr, or Option.
   These emit graphic characters in the current character set.  The graphic
   character in question should be whatever the user expects, which is usually
   determined by the OS.
 
-* Typewriter keys with Control held down.  For keys which would usually
+1b: Typewriter keys with Control held down.  For keys which would usually
   generate ASCII characters without Control, it's usually clear which
   control character they should generate.  What about non-ASCII characters
   (or non-ASCII keyboards)?  In the Mac OS, Command-key shortcuts are
   always based on a Roman keyboard layout.  Should we do the same with
   Control?
 
-* Typewriter keys handled through the "compose" mechanism.  These have to be
+1c: Typewriter keys handled through the "compose" mechanism.  These have to be
   converted to characters as if Compose were not held down, and then composed
   through a fixed table.
 
-* Typewriter keys in "Cyrillic-Lock" mode.  Here, if Caps Lock is on, those
-  keys that would usually generate certain ASCII characters generate Cyrillic
-  ones instead.
-
-* Function keys, including Tab, Esc, Backspace, F1-F12 and editing keys, but
+2: Function keys, including Tab, Esc, Backspace, F1-F12 and editing keys, but
   not the numeric keypad.  These emit escape sequences (sequences of _bytes_,
   not characters), with the precise sequence depending on terminal modes,
   configuration, keys held down etc.  While complex, I think this is all
   entirely platform- and keyboard-layout independent, and hence not scary.
 
-* The numeric keypad in application mode.  In this mode, the keypad, including
+3a: The numeric keypad in application mode.  In this mode, the keypad, including
   Num Lock, behaves as a set of function keys.
 
-* The numeric keypad in normal mode, with Num Lock off.  In this mode, those
+3b: The numeric keypad in normal mode, with Num Lock off.  In this mode, those
   keypad keys which can also be editing keys generate the same sequences as
   the editing keys themselves.  Other keys are, I think, processed as with
   Num Lock on below.
 
-* The numeric keypad in normal mode, with Num Lock on.  In this mode, the
+3c: The numeric keypad in normal mode, with Num Lock on.  In this mode, the
   keypad behaves as typewriter keys.
 
-* The numeric keypad with Alt held down.  This accumulates a numeric character
+3d: The numeric keypad with Alt held down.  This accumulates a numeric character
   code (line charset) in decimal which is sent when Alt goes up.
 
 * All the above, with Meta held down.  This should send the same sequence as
@@ -62,3 +58,73 @@ to handle.  Further suggestions welcome.
 
 * Keys which should be handled by the OS.  I don't think the platform-
   independent keyboard handler should see these at all.
+
+Now for some proposals:
+
+We define a list of modifiers, provisionally including:
+PKM_SHIFT
+PKM_CONTROL
+PKM_META
+PKM_ALT
+PKM_CAPSLOCK
+PKM_NUMLOCK
+
+Note that the Alt key (used for Alt+keypad) and the Meta key (used for
+Meta+typewriter) may or may not have distinct physical keys.  The PI code
+should ignore Meta on the keypad and Alt everywhere else.
+
+[ But what if I want to type Meta+Alt+123 on a system with separate Alt and
+  Meta keys?  Is that so wrong? ]
+
+We define a list of keysyms for function keys, with a null keysym:
+PK_NULL
+PK_F1
+PK_RETURN
+PK_UP
+PK_PF1
+...
+
+We define a function to be called by the platform keyboard handler when
+something happens:
+
+process_key(keysym, chars, modifiers)
+
+keysym can be PK_NULL if there's no keysym for the current key.
+chars (a UCS-2 string) can be empty if the platform doesn't have a translation
+for the current key.
+If both keysym is PK_NULL and chars is empty, the platform is just reporting
+a change of modifier state (for Alt+keypad).
+
+In the examples that follow, assume that what look like C strings are really
+UCS-2.
+
+Now for the specifics:
+Case 1a is easy:
+    process_key(PK_NULL, "A", PKM_SHIFT);
+  NB that all modifiers are reported, but SHIFT and CAPSLOCK are assumed to
+  have been dealt with already.
+Case 1b is interesting.  On some platforms, the native keyboard handler
+  understands Control, so we can do:
+    process_key(PK_NULL, "\001", PKM_CONTROL);
+  On the other hand, we might find that we need some extra ones, so
+  process_key would have to handle:
+    process_key(PK_NULL, "`", PKM_CONTROL);
+  I can't see any obvious problem with allowing both.
+Case 1c is a combination of 2 and 1a:
+    process_key(PK_COMPOSE, "", 0);
+    process_key(PK_NULL, "e", 0);
+    process_key(PK_NULL, "'", 0);
+  Composition can then be handled in the PI code.
+Case 2 is trivial:
+    process_key(PK_F1, "", 0);
+    process_key(PK_TAB, "", PK_SHIFT);
+Case 3a-3d are mostly identical in the platform code:
+    process_key(PK_PF2, "/", 0);
+    process_key(PK_KPDECIMAL, ",", PKM_NUMLOCK); /* German kbd */
+But Num Lock is a pain -- I think I'd habe the platform code check the
+  application-keypad state and damn the layering violation:
+    process_key(PK_NULL, "", PKM_NUMLOCK);
+    process_key(PK_PF1, "", 0);
+If the Meta key is down, the platform code is expected to subtract it out of
+  the characters sent if it did anything:
+    process_key(PK_NULL, "a", PKM_META);
