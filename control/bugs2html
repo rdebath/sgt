@@ -1,5 +1,5 @@
 #! /usr/bin/perl
-# $Id: bugs2html,v 1.20 2003/02/07 16:19:48 simon Exp $
+# $Id: bugs2html,v 1.21 2003/02/15 18:46:35 jacob Exp $
 
 use FileHandle;
 use POSIX;
@@ -87,19 +87,24 @@ nest(<<EOF);
 
 <p>
 This is the list of bugs that need fixing, and features that want
-adding, to PuTTY. This list represents things that have not been
-done to the current <em>development</em> code. If you do not see a
-feature here, it's worth checking the
+adding, to PuTTY. The <a href="#pending">`pending'</a> list represents
+things that have not been done to the current <em>development</em>
+code; items marked as `fixed' may not yet be in the latest release.
+
+<p>
+If you do not see a feature here, it's also worth checking the
 <a href="$baseurl/changes.html">Changes page</a>
-before mailing us to ask for the feature; we might have already
-added it since the last release.
+before mailing us to ask for the feature; it might already have
+been added.
+
 EOF
 
 nest(<<EOF);
-<h2><a name="fixed">Fixed things</a></h2>
+<h2><a name="fixed">Recently fixed</a></h2>
 
 <p>
-These are items we believe we have already addressed.
+These are items we believe we have already addressed. See also the
+<a href="$baseurl/changes.html">Changes page</a>.
 
 EOF
 
@@ -152,7 +157,16 @@ EOF
 unnest("");
 
 nest(<<EOF);
-<h2><a name="bugs">Bugs</a></h2>
+<h2><a name="pending">Pending</a></h2>
+
+<p>
+These are bugs still be be fixed and features remaining to be
+implemented.
+
+EOF
+
+nest(<<EOF);
+<h3><a name="bugs">Bugs</a></h3>
 
 <p>
 These items are clearly actual problems and I want them fixed.
@@ -170,7 +184,7 @@ printbugs(\@buglist);
 unnest("</ul>\n");
 
 nest(<<EOF);
-<h2>Semi-bugs</h2>
+<h3>Semi-bugs</h3>
 
 <p>
 These are things which might be bugs or might not, depending on your
@@ -185,7 +199,7 @@ subtractbugs(\@fullbuglist, printbugs(\@tmp));
 unnest("</ul>\n");
 
 nest(<<EOF);
-<h2>Wishlist</h2>
+<h3>Wishlist</h3>
 
 <p>
 These are things that have been requested by users or which seem to me like
@@ -254,7 +268,7 @@ EOF
 unnest("</ul>\n");
 
 nest(<<EOF);
-<h3>Non-wish list</h3>
+<h4>Non-wish list</h4>
 
 <p>
 These are features we are actively opposed to seeing in PuTTY. Don't
@@ -269,6 +283,8 @@ my @tmp = grep(($bugs{$_}->{priority} eq 'never'),@wishlist);
 subtractbugs(\@fullbuglist, printbugs(\@tmp));
 
 unnest("</ul>\n");
+
+unnest("");
 
 unnest("");
 
