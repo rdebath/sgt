@@ -1,0 +1,19 @@
+Summary: screen(1) front-end
+Class: wish
+Difficulty: tricky
+Depends: scripting
+Priority: low
+Content-type: text/x-html-body
+
+<p>
+We occasionally get requests to make PuTTY usable as a front-end to
+the
+<a href="http://www.gnu.org/software/screen/">screen</a>
+terminal multiplexer, providing out-of-band control so that key
+sequences like C-a are freed up for use.
+
+<p>
+While this is clearly desirable, we want to avoid encoding knowledge
+of server-side applications into the core of PuTTY. This is a clear
+application of <a href="scripting.html">scripting</a> and is unlikely
+to happen before that is implemented.
