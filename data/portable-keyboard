@@ -1,0 +1,43 @@
+Summary: Shared keyboard handler across platforms
+Class: wish
+Priority: medium
+Difficulty: tricky
+Content-type: text/plain
+
+At present, each port of PuTTY has a separate keyboard handler, which takes
+keyboard events and converts them into bytes to be fed to the line discipline.
+This is clearly silly, since much of the code is shared, but a sensible
+abstraction is trickier than you might think.
+
+I (BJH) can think of the following kinds of keypress that PuTTY has to be able
+to handle.  Further suggestions welcome.
+
+* Typewriter keys, possibly affected by Caps Lock, Shift, Alt Gr, or Option.
+  These emit graphic characters in the current character set.  The graphic
+  character in question should be whatever the user expects, which is usually
+  determined by the OS.
+
+* Typewriter keys with Control held down.  For keys which would usually
+  generate ASCII characters without Control, it's usually clear which
+  control character they should generate.  What about non-ASCII characters
+  (or non-ASCII keyboards)?  In the Mac OS, Command-key shortcuts are
+  always based on a Roman keyboard layout.  Should we do the same with
+  Control?
+
+* Typewriter keys handled through the "compose" mechanism.  These have to be
+  converted to characters as if Compose were not held down, and then composed
+  through a fixed table.
+
+* Function keys, including Tab, Esc, Backspace, F1-F12 and editing keys, but
+  not the numeric keypad.  These emit escape sequences (sequences of _bytes_,
+  not characters), with the precise sequence depending on terminal modes,
+  configuration, keys held down etc.  While complex, I think this is all
+  entirely platform- and keyboard-layout independent, and hence not scary.
+
+* The numeric keypad.  I haven't worked this out yet.
+
+* All the above, with Meta held down.  This should send the same sequence as
+  without Meta down, but preceded by ESC.
+
+* Keys which should be handled by the OS.  I don't think the platform-
+  independent keyboard handler should see these at all.
