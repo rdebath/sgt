@@ -554,7 +554,12 @@ define timber_undefined() {
 %{{{ timber_tmpnam() (neither Jed nor S-Lang provides tmpnam :-( )
 variable timber_tmpnam_counter = 0;
 variable timber_tmpdir = NULL;
-define timber_tmpnam() {
+define timber_tmpnam_core(dir) {
+    timber_tmpnam_counter += 1;
+    return dircat(dir, sprintf("%dtimber.%d", getpid(),
+                               timber_tmpnam_counter));
+}
+define timber_set_tmpdir() {
     if (timber_tmpdir == NULL) {
         timber_tmpdir = getenv("TEMP");
         if (timber_tmpdir == NULL) {
@@ -567,10 +572,19 @@ define timber_tmpnam() {
             }
         }
     }
-    timber_tmpnam_counter += 1;
-    return dircat(timber_tmpdir, sprintf("%dtimber.%d", getpid(),
-                                         timber_tmpnam_counter));
 }
+define timber_tmpnam() {
+    timber_set_tmpdir();
+    return timber_tmpnam_core(timber_tmpdir);
+}
+define timber_tmpnam_dir(dir) {
+    if (dir == NULL) {
+        timber_set_tmpdir();
+        dir = timber_tmpdir;
+    }
+    return timber_tmpnam_core(dir);
+}
+
 %}}}
 %{{{ timber_ro() and timber_rw()
 
@@ -1237,23 +1251,24 @@ define timber_saveattach() {
 %{{{ timber_viewattach(): save a MIME attachment to a file
 
 % User-overrideable function. If a MIME type can be viewed, return
-% the desired extension for a temporary file (including the dot -
-% ".jpeg" for example) and then an sprintf template for the command
-% to be run on the file.
+% a non-standard temp directory to save the file into, then the
+% desired extension for a temporary file (including the dot -
+% ".jpeg" for example), and then an sprintf template for the
+% command to be run on the file.
 define timber_can_view(type) {
-    return (NULL, NULL);
+    return (NULL, NULL, NULL);
 }
 
 % View the current MIME part (or whole message, if non-multipart).
 define timber_viewattach() {
     variable mark, top, bot;
-    variable ext, cmd, file, type, encoding;
+    variable dir, ext, cmd, file, type, encoding;
     variable fp, buf, array;
 
     mark = create_user_mark();
     (top, bot, type, encoding) = timber_get_mimepart(0);
     !if (top == NULL) {
-        (ext, cmd) = timber_can_view(type);
+        (dir, ext, cmd) = timber_can_view(type);
         !if (cmd == NULL) {
             % If the file extension is null, try looking it up in
             % the MIME types file.
@@ -1270,7 +1285,7 @@ define timber_viewattach() {
                     () = fclose(fp);
                 }
             }
-            file = timber_tmpnam() + ext;
+            file = timber_tmpnam_dir(dir) + ext;
             goto_user_mark(top);
             push_mark();
             goto_user_mark(bot);
