@@ -136,6 +136,8 @@ char *store_retrieve(const char *location, int *msglen, char **separator);
 /*
  * mboxstore.c
  */
+/* This utility function is exported so that it can be used in export.c too. */
+int write_mbox(int fd, char *data, int length);
 const struct storage mbox_store;
 
 /*
@@ -286,6 +288,7 @@ int istrcmp(const char *s1, const char *s2);
  * export.c
  */
 void export_message(char *ego);
+void export_as_mbox(char *ego);
 
 /*
  * display.c

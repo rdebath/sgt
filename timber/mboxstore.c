@@ -65,7 +65,7 @@ static void mbox_release_lock(void)
     mbox_lockfd = -1;
 }
 
-static int write_mbox(int fd, char *data, int length)
+int write_mbox(int fd, char *data, int length)
 {
     char *queue;
     int qlen;
