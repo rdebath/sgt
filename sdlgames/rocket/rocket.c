@@ -82,6 +82,50 @@ int firstfreepixel;
 Image bk_after;
 int space, planet, balls;
 
+static void show_scores(void)
+{
+    const int digits[56] = {
+      0xFE,0x101,0x101,0x101,0x1F1,0xFE,0x1F,0x1FF,0x8E,0x11F,0x111,0x111,0x111,0xE1,
+      0x82,0x111,0x111,0x111,0x11F,0xFE,0x1F8,0x4,0x4,0x7,0x1F,0x4,
+      0xE2,0x111,0x111,0x111,0x11F,0x10E,0xFE,0x111,0x111,0x111,0x11F,0x8E,
+      0x100,0x100,0x100,0x100,0x11F,0xFF,0xFE,0x1F1,0x111,0x111,0x111,0xFE,
+      0xE0,0x110,0x110,0x110,0x11F,0xFF
+    };
+    const int start[11] = {0,6,8,14,20,26,32,38,44,50,56};
+
+    int w[70];
+    char s[20];
+    int p, q, r, i, wp;
+
+    for (p = 0; p < 2; p++) {
+	struct player *pl = &players[p];
+
+	for (q = 0; q < 70; q++)
+	    w[q] = 0;
+	wp = 34;
+	sprintf(s, "%d", pl->score);
+	for (q = 0; s[q]; q++) {
+	    r = s[q] - '0';
+	    for (i = start[r]; i < start[r+1]; i++) {
+		wp++;
+		w[wp] = digits[i];
+	    }
+	    wp++;
+	    w[wp] = 0;
+	}
+	q = (p == 0 ? 0 : 284);
+	wp = (p == 0 ? 34 : wp-35);
+	for (r = 0; r <= 35; r++)
+	    for (i = 0; i < 9; i++) {
+		if (w[r+wp] & (256 >> i))
+		    plot(r+q, 190+i, 1);
+		else
+		    plot(r+q, 190+i,
+			 getimagepixel(rocket_bkgnd_image, r+q, 190+i));
+	    }
+    }
+}
+
 static void init_game(void)
 {
     int p, q;
@@ -124,7 +168,7 @@ static void init_game(void)
     bar(37,190,36+MAXAFTER,198,1);
     bar(282,190,283-MAXAFTER,198,1);
     // drawimage(rocket_titletext_image,160,10,0); perhaps not
-    // ShowScores; FIXME
+    show_scores();
     scr_done();
 }
 
@@ -132,12 +176,14 @@ static void invsqgrav(int x, int y, int *dx, int *dy)
 {
     int r, rr;
     
-    x = abs(x-160) >> 16;
-    y = abs(y-95) >> 16;
+    x -= 160 << 16;
+    y -= 95 << 16;
+    x = sign(x) * (abs(x) >> 16);
+    y = sign(y) * (abs(y) >> 16);
     rr = x*x+y*y;
     r = sqrt(rr) + 0.5;
-    *dx -= (x >> 22) / (r*rr);
-    *dy -= (y >> 22) / (r*rr);
+    *dx -= (x << 22) / (r*rr);
+    *dy -= (y << 22) / (r*rr);
 }
 
 static void newpix(int x, int y, int dx, int dy, int alife, int col, int rnd)
@@ -278,40 +324,13 @@ static void play_game(void)
 	    for (q = MAXBUL; q-- ;)
 		erasesprite(bullets[p][q].spr);
 
-#if 0   /* FIXME: weird afterburner bar drawing from hell */
-      with Players[1] do if ADraw>0 then case ADraw of
-        1,2: begin
-          if After>1 then
-            Bar(35+After,190,36+After,198,1)
-          else
-            Bar(36+After,190,36+After,198,1);
-          DrawImage(BkAfter,37+After,190,-1);
-          Dec(ADraw);
-        end;
-        3,4: begin
-          Bar(37,190,36+After,198,1);
-          DrawImage(BkAfter,37+After,190,-1);
-          Dec(ADraw);
-          if ADraw=2 then ADraw:=0;
-        end;
-      end;
-      with Players[2] do if ADraw>0 then case ADraw of
-        1,2: begin
-          if After>1 then
-            Bar(284-After,190,283-After,198,1)
-          else
-            Bar(283-After,190,283-After,198,1);
-          DrawImage(BkAfter,281-After,190,-1);
-          Dec(ADraw);
-        end;
-        3,4: begin
-          Bar(282,190,283-After,198,1);
-          DrawImage(BkAfter,281-After,190,-1);
-          Dec(ADraw);
-          if ADraw=2 then ADraw:=0;
-        end;
-      end;
-#endif
+	/*
+	 * Draw the afterburner bars.
+	 */
+	bar(37, 190, 36 + players[0].after, 198, 1);
+	drawimage(bk_after, 37 + players[0].after, 190, -1);
+	bar(282, 190, 283 - players[1].after, 198, 1);
+	drawimage(bk_after, 281 - players[1].after, 190, -1);
 
 	/*
 	 * Erase and move pixels.
@@ -608,7 +627,7 @@ static void play_game(void)
 		pl->death = 0;
 	    if (pl->death == DEATHTIME) {
 		players[1-p].score++;
-		scnew = 2;
+		scnew = 1;
 		for (q = -8; q <= 8; q++)
 		    for (r = -8; r <= 8; r++) {
 			c=getimagepixel(rocket_player_images[p][pl->aa],q,r);
@@ -629,7 +648,7 @@ static void play_game(void)
 
 	if (scnew > 0) {
 	    scnew--;
-	    // ShowScores;
+	    show_scores();
 	}
 
 	scr_done();
@@ -658,6 +677,8 @@ setbuf(debugfp, NULL);
     joys[1] = SDL_JoystickOpen(1);
 
     space = planet = balls = 0;	       /* FIXME: menu system */
+    space = 1;
+    planet = 1;
 
     rocket_do_palette(space);
     rocket_make_background(space, planet);
