@@ -1,6 +1,6 @@
 # -*- mode: sh; mode: fold -*-
 # Simon Tatham's standardised chunk of .bashrc
-# $Revision: 1.26 $
+# $Revision: 1.27 $
 
 #{{{ I don't like .bash_history files. They wet their nests.
 unset HISTFILE
@@ -89,6 +89,11 @@ bashrc_dovars() {
   LS_COLORS=$LS_COLORS':*.c=01;33:*.cpp=01;33:*.py=01;33:*.s=01;33:*.pl=01;33:*.html=01;33'
   # LS_COLORS: all over bar the shouting
   export LS_COLORS
+  # trn4 doesn't know screen can do xterm mouse reporting, although
+  # it will notice in xterms. We give it a hint here.
+  case "$TERM" in
+    xterm* | screen*) export XTERMMOUSE=yes ;;
+  esac
 }
 bashrc_dovars
 unset bashrc_dovars
