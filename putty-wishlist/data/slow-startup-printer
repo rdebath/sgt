@@ -5,6 +5,7 @@ Priority: high
 Content-type: text/x-html-body
 Present-in: 0.53 0.53b
 Absent-in: 0.52
+Fixed-in: 2003-08-22
 
 <p>
 There's been a suggestion (ref:
@@ -62,3 +63,7 @@ printers.) Yuk.
 on Win2K SP2 and <code>PRINTER_INFO_5</code> on Win98 work as least as
 well for me as what we do currently (<code>PRINTER_INFO_1</code>). All
 that remains is the tedious mucking around with version detection.
+
+<p>
+<em>Update 2003-08-22:</em> finally got round to implementing this, and
+got a report that it works.
