@@ -20,3 +20,7 @@ specific size.
 Update: it's been suggested that AdjustWindowRect(Ex) is useful. We
 still need a device context for font metrics; we could get one from
 the desktop but that might break in the presence of multiple monitors.
+
+Further update: it's been suggested that GetWindowDC(NULL) should be
+fine in 99% of cases.
+<12250972734.20040408170548@kanargh.force9.co.uk>
