@@ -291,6 +291,12 @@ void recurse_mime_part(const char *base, struct mime_record *mr,
 		}
 
 		if (got) {
+		    /*
+		     * Remove a trailing newline.
+		     */
+		    if (partend > partstart && partend[-1] == '\n')
+			partend--;
+
 		    if (partstart) {
 			struct mime_record *this_part;
 			this_part = smalloc(sizeof(struct mime_record));
