@@ -38,3 +38,7 @@ Reports:
 <li><code>EJEBKMGDPLHDFAOHCFBBEEFDCNAA.han@prolink.com.tr</code></li>
 <li><code>001701c32ed0$95efc5a0$9501a8c0@adcom</code></li>
 </ul>
+
+<p>
+We've had one report that this applies to Netscreen 4.x and previous,
+but that it works fine in newer versions (as well as SSH-2).
