@@ -1486,8 +1486,9 @@ define timber_prevmsg() {
 %{{{ timber_count(): count messages in a Timber buffer
 
 define timber_count() {
-    variable count = 0;
+    variable count = 0, deleted = 0;
     variable current = 0;
+    variable prefix, msg;
     variable line = what_line();
 
     push_spot();
@@ -1496,13 +1497,26 @@ define timber_count() {
     while (not eobp()) {
 	go_down_1();
 	if (what_char() == '*') {
-	    !if (timber_la("* [end]"))
+	    !if (timber_la("* [end]")) {
 		count++;
+		push_spot();
+		push_mark();
+		go_right(5);
+		prefix = bufsubstr();
+		pop_spot();
+		if (prefix[4] == 'D')
+		    deleted++;
+	    }
 	    if (what_line() == line)
 		current = count;
 	}
     }
-    message(sprintf("You are on message %d of %d", current, count));
+    msg = sprintf("You are on message %d of %d", current, count);
+    if (deleted > 0) {
+	msg = msg + sprintf(" (%d deleted, %d not deleted)",
+			    deleted, count-deleted);
+    }
+    message(msg);
 }
 
 %}}}
