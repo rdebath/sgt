@@ -382,8 +382,8 @@ define timber_issep() {
     !if (string_match(substr(s, 1, 12),
                       "[A-Z][a-z][a-z] [A-Z][a-z][a-z] [0-9 ][0-9] [0-9 ]", 1)
          or
-         string_match(substr(s, 13, 12),
-                      "[0-9]:[0-9][0-9]:[0-9][0-9] [0-9][0-9][0-9][0-9]", 1))
+         string_match(substr(s, 13, 8),
+                      "[0-9]:[0-9][0-9]:[0-9][0-9] ", 1))
         return 0;
     return 1;
 }
@@ -406,16 +406,14 @@ define timber_issep() {
 %
 % Summary lines with nothing but ` [end]' after the initial character
 % denote the end of the things they summarise.
+%
+% This function does not take care of moving to the start of the buffer and
+% inserting the header line: that is assumed to be done by other code.
 define timber_enbuf() {
     variable sizel, sizec, mmark, amark;
     variable fromfield, datefield, subjfield, flagchr, status, str;
     variable mimesep, mimeend;
     variable i, j;
-
-    bob();
-
-    % Insert the initial header line.
-    insert(timber_headerline);
 
     % Loop over each message, inserting message summary lines and header
     % characters.
@@ -660,6 +658,49 @@ define timber_foldall() {
 	go_right_1();
     }
     bob();
+}
+
+% Update a mail folder (ought to be `mbox') with extra data.
+define timber_updatemail() {
+    variable mb, fullinbox;
+
+    push_spot();
+    eob();
+    push_mark();
+    go_up_1();
+    bol();
+    !if (looking_at("* [end]")) {
+        error("Mail folder is in wrong format!");
+        pop_mark();
+        pop_spot();
+        return;
+    }
+    mb = get_blocal_var("foldername");
+    fullinbox = dircat(timber_folders, timber_inbox);
+    if (strcmp(mb, timber_inbox) and strcmp(mb, fullinbox)) {
+        error("This is not your inbox!");
+        pop_mark();
+        pop_spot();
+        return;
+    }
+    timber_rw();
+
+    del_region();
+    push_spot();
+    push_spot();
+    run_shell_cmd(Sprintf("%s %s -c",
+                          timber_fetch_prog,
+                          dircat(timber_folders, timber_inbox), 2));
+    pop_spot();
+    timber_enbuf();
+    pop_spot();
+    if (looking_at("* [end]"))
+        message("No new mail in " + timber_inbox);
+
+    timber_foldall(); % fold up everything
+    bob();
+
+    timber_ro(); % make buffer read-only
 }
 
 % Return the header field present on the line.
@@ -1032,6 +1073,8 @@ define timber_open_folder(name) {
 	fname = dircat(timber_folders, name);
 
     if (insert_file(fname)) {
+        bob();
+        insert(timber_headerline);
 	timber_enbuf();
     } else {
 	timber_blankfolder();
@@ -1693,9 +1736,8 @@ define timber_compose() {
     setbuf_info( (getbuf_info() & ~0x303) | 0x20 );
 }
 
-% The starting command: `M-x timber' creates the first Timber buffer,
-% pointing at `mbox'.
-define timber() {
+% Create the first Timber buffer, pointing at `mbox'.
+define timber_open_mbox() {
     runhooks("timber_hook");
     if (timber_acquire_lock(timber_inbox)) {
         timber_fetchmail();
@@ -1703,6 +1745,18 @@ define timber() {
     } else {
 	error(timber_inbox + " is locked by another Timber!");
     }
+}
+
+% The starting command: `M-x timber' either calls timber_open_mbox, if
+% mbox is not already open in a buffer, or moves to the mbox folder and
+% updates the mail in it.
+define timber() {
+    variable b = Sprintf("[T] %s", timber_inbox, 1);
+    if (bufferp(b)) {
+        sw2buf(b);
+        timber_updatemail();
+    } else
+        timber_open_mbox();
 }
 
 % An alternative starting command, `timber_only', designed to be
