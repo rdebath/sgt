@@ -1,0 +1,41 @@
+Summary: Reported X forwarding breakage due to IPv6
+Class: bug
+Priority: medium
+Difficulty: taxing
+Present-in: 2005-02-10
+Content-type: text/x-html-body
+
+<p>
+We've had one report that X forwarding in PuTTY broke after we
+integrated the IPv6 code. Presumably the IPv6 changes have had some
+sort of side effect on the local network connection between PuTTY
+and the X server, but it isn't clear what since we haven't been able
+to reproduce it.
+
+<p>
+We received this report by email
+(<code>&lt;41E6F012.2040105@ressukka.net&gt;</code>). Details
+include:
+
+<ul>
+<li>
+The symptom at the remote end is that X applications report "X
+connection to localhost:10.0 broken (explicit kill or server
+shutdown)".
+<li>
+The X display in the PuTTY configuration is the PuTTY default
+(equivalent to <code>localhost:0</code>). The reporter found that
+requesting <code>127.0.0.1:0</code> instead worked, although not
+consistently. (This leads me to wonder whether
+"<code>localhost</code>" might have been resolving to an IPv6
+address on the system in question.)
+<li>
+The X server was xorg 6.8.1 from Cygwin.
+<li>
+Windows version was XP SP2.
+</ul>
+
+<p>
+If anyone is able to reproduce this or shed some light on possible
+causes, we'd be grateful.
+
