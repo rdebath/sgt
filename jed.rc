@@ -1,5 +1,5 @@
 % -*- mode: slang; mode: fold -*-
-% Simon Tatham: version $Revision: 1.51 $
+% Simon Tatham: version $Revision: 1.52 $
 
 %{{{ load Emacs keybindings to start with
 
@@ -712,6 +712,13 @@ define makefile_mode() {
     sh_mode();
 }
 
+% For some horrifying reason which I have yet to explain, Debian
+% jed 0.99.15 on ixion appears to call .jedrc twice, which causes
+% the code below to end up in an infinite loop of
+% jedrc_default_mode calling itself. Wrapping it in #ifnexists
+% solves the immediate problem.
+#ifnexists jedrc_old_defmode
+
 variable jedrc_old_defmode = Default_Mode;
 
 define jedrc_default_mode() {
@@ -731,6 +738,8 @@ define jedrc_default_mode() {
 }
 
 Default_Mode = &jedrc_default_mode;
+
+#endif
 
 %}}}
 %{{{ M-x q, Q, rq/sq/qq and sig
