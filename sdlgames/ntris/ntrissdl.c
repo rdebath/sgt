@@ -15,9 +15,6 @@
 #define SQUARE_SIDE 8
 #define HIGHLIGHT 2
 #define PLAY_HEIGHT (SCR_HEIGHT / SQUARE_SIDE - 1)
-#define PLAY_WIDTH 10
-#define LEFT_EDGE ((SCR_WIDTH - SQUARE_SIDE * PLAY_WIDTH) / 2)
-#define RIGHT_EDGE (LEFT_EDGE + SQUARE_SIDE * PLAY_WIDTH)
 #define BOTTOM_EDGE (PLAY_HEIGHT * SQUARE_SIDE)
 
 static int no_quit_option = 0;
@@ -46,11 +43,17 @@ static int centretext(int y, int c, char const *text)
 
 static SDL_Joystick *joys[2];
 static int maxheight;
+static int left_edge, right_edge;
 
 static void lineplotsimple(void *ctx, int x, int y)
 {
     int colour = (int)ctx;
     plotc(x, y, colour);
+}
+
+static int drawline(int x1, int y1, int x2, int y2, int c)
+{
+    line(x1, y1, x2, y2, lineplotsimple, (void *)c);
 }
 
 /*
@@ -120,6 +123,14 @@ void init_blockpixels(void)
     }
 }
 
+enum { TETRIS_SHAPES, PENTRIS_SHAPES, NSHAPESETS };
+static struct options {
+    int shapeset;
+    int width;
+    int hold;
+    int queue;
+} opts;
+
 void block(struct frontend_instance *inst, int area,
 	   int x, int y, int col, int type)
 {
@@ -130,15 +141,17 @@ void block(struct frontend_instance *inst, int area,
     int topx, topy, size;
 
     if (area == AREA_MAIN) {
-	topx = LEFT_EDGE;
+	topx = left_edge;
 	topy = 0;
 	size = SQUARE_SIDE;
     } else if (area == AREA_HOLD) {
-	topx = LEFT_EDGE - 6*SQUARE_SIDE;
+	topx = left_edge - 6*SQUARE_SIDE;
 	topy = 0;
 	size = SQUARE_SIDE;
     } else if (area >= AREA_NEXT) {
-	topx = RIGHT_EDGE + SQUARE_SIDE;
+	if (area - AREA_NEXT >= opts.queue)
+	    return;		       /* limit length of queue */
+	topx = right_edge + SQUARE_SIDE;
 	topy = 0;
 	size = SQUARE_SIDE;
 	while (area > AREA_NEXT && size > 0) {
@@ -265,14 +278,22 @@ static void play_game(void)
     int i, j;
 
     scr_prep();
-    ti = init_game(NULL, PLAY_WIDTH, PLAY_HEIGHT, NULL);
+    memset(scrdata, 0, 640*240);
+    ti = init_game(NULL, opts.width, PLAY_HEIGHT,
+		   (opts.shapeset == TETRIS_SHAPES ? tetris_shapes :
+		    opts.shapeset == PENTRIS_SHAPES ? pentris_shapes :
+		    NULL));
+    left_edge = ((SCR_WIDTH - SQUARE_SIDE * opts.width) / 2);
+    if (left_edge < 110)
+	left_edge = 110;
+    right_edge = (left_edge + SQUARE_SIDE * opts.width);
     maxheight = shape_maxsize(ti);
     init_shape(ti);
-    line(LEFT_EDGE-2, 0, LEFT_EDGE-2, BOTTOM_EDGE+1,
+    line(left_edge-2, 0, left_edge-2, BOTTOM_EDGE+1,
 	 lineplotsimple, (void *)255);
-    line(LEFT_EDGE-2, BOTTOM_EDGE+1, RIGHT_EDGE+1, BOTTOM_EDGE+1,
+    line(left_edge-2, BOTTOM_EDGE+1, right_edge+1, BOTTOM_EDGE+1,
 	 lineplotsimple, (void *)255);
-    line(RIGHT_EDGE+1, BOTTOM_EDGE+1, RIGHT_EDGE+1, 0,
+    line(right_edge+1, BOTTOM_EDGE+1, right_edge+1, 0,
 	 lineplotsimple, (void *)255);
     do_scores(ti);
     scr_done();
@@ -418,7 +439,7 @@ static void play_game(void)
 	    try_anticlock(ti);
 	if (reflect)
 	    try_reflect(ti);
-	if (hold)
+	if (hold && opts.hold)
 	    try_hold(ti);
 	if (dropsoft || drophard) {
 	    int ret;
@@ -464,6 +485,212 @@ static void play_game(void)
     }
 
     /* FIXME: free ti */
+}
+
+static void setup_game(int joy)
+{
+    struct {
+	/* Coordinates of item for each player. */
+	int x, y;
+	/* Width of item (for showing selection box). */
+	int w;
+	/* Where to move (relative position in array indices) if the user
+	 * moves the controller. */
+	int up, down, left, right;
+    } items[] = {
+	{160, 40, 14, 1, -1, 0, 0},
+	{160, 50, 15, 1, -1, 0, 0},
+	{160, 60, 7, 1, -1, 0, 0},
+	{160, 74, 7, 1, -1, 0, 0},
+	{160, 86, 1, 2, -1, 0, +1},
+	{200, 86, 1, 1, -2, -1, 0},
+	{160, 98, 8, 1, -2, 0, 0},
+	{160, 110, 1, 2, -1, 0, +1},
+	{200, 110, 1, 1, -2, -1, 0},
+	{104, 224, 14, 1, -2, 0, 0},
+    };
+    SDL_Event event;
+    char speedstr[20];
+
+    int i, p;
+    int index;
+    int prevjoy[2];
+    int game_setup_done = 0;
+
+    index = 0;
+    for (i = 0; i < 2; i++)
+	prevjoy[i] = 0;
+
+    while (!game_setup_done) {
+	/*
+	 * Every time we redisplay, we'll redraw the whole menu. It
+	 * seems simpler to do it that way.
+	 */
+	scr_prep();
+	memset(scrdata, 0, 640*240);
+
+	/*
+	 * Draw selection crosshairs.
+	 */
+	{
+	    int x = items[index].x, y = items[index].y, w = items[index].w*8;
+
+	    drawline(x-8, y-2, x-4, y-2, 255);
+	    drawline(x-8, y-2, x-8, y+2, 255);
+	    drawline(x-8, y+8, x-4, y+8, 255);
+	    drawline(x-8, y+8, x-8, y+4, 255);
+	    drawline(x+w+8, y-2, x+w+4, y-2, 255);
+	    drawline(x+w+8, y-2, x+w+8, y+2, 255);
+	    drawline(x+w+8, y+8, x+w+4, y+8, 255);
+	    drawline(x+w+8, y+8, x+w+8, y+4, 255);
+	}
+
+	puttext(96, 20, 255, "Ntris Game Setup");
+	drawline(96, 29, 223, 29, 255);
+
+	puttext(30, 40, 255, "Presets:");
+	puttext(160, 40, 255, "Tetris Classic");
+	puttext(160, 50, 255, "Tetris Enhanced");
+	puttext(160, 60, 255, "Pentris");
+
+	puttext(30, 74, 255, "Shape set:");
+	puttext(160, 74, 255,
+		opts.shapeset == TETRIS_SHAPES ? "Tetris" :
+		opts.shapeset == PENTRIS_SHAPES ? "Pentris" :
+		"INTERNAL ERROR");
+
+	puttext(30, 86, 255, "Arena width:");
+	puttext(160, 86, 255, "-");
+	{
+	    char buf[20];
+	    sprintf(buf, "%2d", opts.width);
+	    puttext(176, 86, 255, buf);
+	}
+	puttext(200, 86, 255, "+");
+
+	puttext(30, 98, 255, "Hold function:");
+	puttext(160, 98, 255, opts.hold ? "Enabled" : "Disabled");
+
+	puttext(30, 110, 255, "Queue length:");
+	puttext(160, 110, 255, "-");
+	{
+	    char buf[20];
+	    sprintf(buf, "%2d", opts.queue);
+	    puttext(176, 110, 255, buf);
+	}
+	puttext(200, 110, 255, "+");
+
+	puttext(104, 224, 255, "Finished Setup");
+
+	scr_done();
+
+	while (SDL_WaitEvent(&event)) {
+	    int move, axis, val;
+	    int press, button;
+
+	    move = press = 0;
+
+	    switch(event.type) {
+	      case SDL_JOYAXISMOTION:
+		if (event.jaxis.which == joy) {
+		    axis = event.jaxis.axis;
+		    val = event.jaxis.value / JOY_THRESHOLD;
+		    if (val != 0 && sign(val) != sign(prevjoy[axis]))
+			move = 1;
+		    prevjoy[axis] = val;
+		}
+		break;
+	      case SDL_JOYBUTTONDOWN:
+		if (event.jbutton.which == joy) {
+		    button = event.jbutton.button;
+		    press = 1;
+		}
+		break;
+	      case SDL_KEYDOWN:
+		switch (event.key.keysym.sym) {
+		  case SDLK_ESCAPE:
+		    exit(1);
+		    break;
+		  case SDLK_UP:    axis = 1; val = -1; move = 1; break;
+		  case SDLK_DOWN:  axis = 1; val = +1; move = 1; break;
+		  case SDLK_LEFT:  axis = 0; val = -1; move = 1; break;
+		  case SDLK_RIGHT: axis = 0; val = +1; move = 1; break;
+		  case SDLK_RETURN: button = -1; press = 1; break;
+		}
+		break;
+	    }
+
+	    /*
+	     * Process menu movement.
+	     */
+	    if (move) {
+		int displace = 0;
+		if (val < 0) {
+		    displace = (axis ?
+				items[index].down :
+				items[index].left);
+		} else if (val > 0) {
+		    displace = (axis ?
+				items[index].up :
+				items[index].right);
+		}
+		index = (index + displace + lenof(items)) % lenof(items);
+		if (displace) break;
+	    }
+
+	    /*
+	     * Process menu button presses.
+	     */
+	    if (press) {
+		switch (index) {
+		  case 0:	       /* Tetris Classic preset */
+		    opts.shapeset = TETRIS_SHAPES;
+		    opts.queue = 1;
+		    opts.hold = 0;
+		    opts.width = 10;
+		    break;
+		  case 1:	       /* Tetris Enhanced preset */
+		    opts.shapeset = TETRIS_SHAPES;
+		    opts.queue = 8;
+		    opts.hold = 1;
+		    opts.width = 10;
+		    break;
+		  case 2:	       /* Pentris preset */
+		    opts.shapeset = PENTRIS_SHAPES;
+		    opts.queue = 8;
+		    opts.hold = 1;
+		    opts.width = 10;
+		    break;
+		  case 3:
+		    opts.shapeset = (opts.shapeset + 1) % NSHAPESETS;
+		    break;
+		  case 4:
+		    if (opts.width > 5)
+			opts.width--;
+		    break;
+		  case 5:
+		    if (opts.width < 20)
+			opts.width++;
+		    break;
+		  case 6:
+		    opts.hold = !opts.hold;
+		    break;
+		  case 7:
+		    if (opts.queue > 0)
+			opts.queue--;
+		    break;
+		  case 8:
+		    if (opts.queue < 8)
+			opts.queue++;
+		    break;
+		  case 9:
+		    game_setup_done = 1;
+		    break;
+		}
+		break;		       /* cause a screen redraw */
+	    }
+	}
+    }
 }
 
 int main(int argc, char **argv)
@@ -541,6 +768,16 @@ int main(int argc, char **argv)
      * highlights on the pieces.
      */
     init_blockpixels();
+
+    /*
+     * Option defaults.
+     */
+    opts.shapeset = TETRIS_SHAPES;
+    opts.width = 10;
+    opts.hold = 1;
+    opts.queue = 8;
+
+    setup_game(0);
 
     play_game();
 
