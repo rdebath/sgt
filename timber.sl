@@ -310,6 +310,9 @@ $1 = "TimberC";
     make_keymap($1);
     definekey("timber_sendmsg", "^X^S", $1);
     definekey("timber_killmsg", "^Xk", $1);
+    definekey("timber_killmsg", "^XK", $1);
+    definekey("timber_attach", "^Xa", $1);
+    definekey("timber_attach", "^XA", $1);
     definekey("timber_bcc_self", "^Os", $1);
     definekey("timber_bcc_self", "^OS", $1);
     definekey("timber_dontexit", "^X^C", $1);
@@ -1314,7 +1317,7 @@ define timber_mimedec() {
             % This is for display/reply purposes, so we should insert a
             % newline here in case there wasn't one on the end of the
             % decoded data
-            !if (eolp()) insert("\n");
+            !if (bolp()) insert("\n");
             timber_ro();
 
             % Get the new folding correct
@@ -1922,6 +1925,39 @@ define timber_bcc_self() {
 }
 
 %}}}
+%{{{ timber_attach(): FIXME
+
+% Add an Attach: header line in a composition.
+define timber_attach() {
+    variable fname, ext, i, j;
+    variable type;
+
+    fname = read_file_from_mini ("File to attach:");
+    type = "application/octet-stream";
+    % FIXME. This wants to be loads better.
+    if (string_match(fname, "\\.\\([^\\.]*\\)$", 1)) {
+	(i,j) = string_match_nth(1);
+	ext = substr(fname, i+1, j);
+        if (ext == "doc") type = "application/msword";
+        if (ext == "txt") type = "text/plain";
+        if (ext == "png") type = "image/png";
+        if (ext == "gif") type = "image/gif";
+        if (ext == "jpg") type = "image/jpeg";
+        if (ext == "jpeg") type = "image/jpeg";
+    }
+    type = read_mini("MIME type:", "", type);
+
+    push_spot();
+    bob();
+    while (not eolp()) {
+	eol();
+	go_right_1();
+    }
+    insert("Attach: " + fname + " " + type + "\n");
+    pop_spot();
+}
+
+%}}}
 %{{{ timber_reply_common(): FIXME
 
 % Begin composition of a reply message. `all' is 1 if reply-to-all
@@ -2112,6 +2148,112 @@ define timber_reply_common(all) {
 
 define timber_reply() { timber_reply_common(0); }
 define timber_reply_all() { timber_reply_common(1); }
+
+%}}}
+%{{{ timber_forward(): FIXME
+
+% Begin composition of a forward message.
+define timber_forward() {
+    variable subj;
+    variable i, j, addr, raddr;
+    variable got_quote = 0;
+    variable fbuf, tbuf;
+
+    push_spot();
+
+    timber_bom();
+
+    subj = "message with no subject";
+    push_mark();
+    eol();
+    go_right_1();
+    while (1) {
+	if (bolp() and not timber_la("*")) {
+	    if (timber_ila("|Subject:")) {
+		go_right(9);
+		subj = timber_getheader(1);
+	    } else {
+		eol();
+		go_right_1();
+	    }
+	} else
+	    break;
+    }
+
+    fbuf = whatbuf();
+    tbuf = "*timbertmp*";
+    setbuf(tbuf);
+    erase_buffer();
+    setbuf(fbuf);
+    copy_region(tbuf);
+    setbuf(tbuf);
+    bob();
+    % we expect two lines of crud: the Timber header and the "|From " line
+    push_mark(); go_down(2); bol(); del_region();
+    % now debuf it
+    while (what_char != '*' and not eobp()) {
+	i = what_char();
+	if (i == '|' or i == ' ' or i == '+') {
+            deln(1);
+            eol();
+            go_right_1();
+        } else {
+            push_mark();
+            eol();
+            go_right_1();
+            del_region();
+        }
+    }
+    % remove trailing blank line
+    eob();
+    go_left_1();
+    if (bolp()) deln(1);
+    % message is now ready to be forwarded
+    setbuf(fbuf);
+
+    % Fabricate the subject line.
+    if (string_match(subj, "^\\(.*\\) (fwd)$", 1)) {
+	(i,j) = string_match_nth(1);
+	subj = substr(subj, i+1, j);
+    }
+    subj = subj + " (fwd)";
+
+    % So now open a composer window.
+    timber_open_composer();
+
+    set_blocal_var(0, "is_reply");
+
+    insert("To: ");
+    push_spot();
+    insert("\nSubject: " + subj);
+    insert("\nAttach-Enclosed: message/rfc822 \"forwarded message\"");
+    insert("\n\n");
+
+    if (file_status(expand_filename(timber_sig)) == 1) {
+	insert("\n-- \n");
+	insert_file(expand_filename(timber_sig));
+	!if (bolp()) insert("\n");
+    }
+
+    insert("\006orwarded Message --------------------------------\n");
+
+    insbuf(tbuf);
+    fbuf = whatbuf();
+    setbuf(tbuf);
+    setbuf_info(getbuf_info & ~1); % clear mod bit to make delbuf silent
+    delbuf(tbuf);
+    setbuf(fbuf);
+    !if (bolp())
+        insert("\n");
+
+    runhooks("timber_compose_hook");
+
+    bob();
+    recenter(1);
+    pop_spot();
+
+    setbuf_info( (getbuf_info() & ~0x303) | 0x20 );
+}
 
 %}}}
 %{{{ timber_compose(): FIXME
