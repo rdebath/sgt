@@ -1,0 +1,23 @@
+Summary: StickyKeys inverts sense of capslock on WinXP and Win2k3
+Class: bug
+Priority: medium
+Present-in: 0.53b, 0.54
+Content-type: text/plain
+
+On Windows XP and Windows Server 2003, if the PuTTY window has focus
+and StickyKeys is activated (e.g. by holding down a modifier key or
+tapping Shift five times) and then disabled, the case of characters
+typed in the PuTTY window is inverted.
+
+To reproduce:
+
+* Log in to a system. Keep focus on the PuTTY window.
+* Press shift repeatedly until the 'StickyKeys' dialogue box comes up.
+* Click 'Cancel' to turn off StickyKeys.
+* Now type in the PuTTY window. Letters appear in the opposite case
+  they should be (capital without shift, lower case with shift, and
+  reversed if caps lock is on).
+* Do the 'StickyKeys' thing again to get back to normal.
+
+Ref: <Pine.LNX.4.21.0404231432350.7898-100000@chiark.greenend.org.uk>
+
