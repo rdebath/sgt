@@ -2,6 +2,7 @@ Summary: Keepalives not yet implemented on Unix
 Class: semi-bug
 Content-type: text/x-html-body
 Present-in: 0.54 2004-02-21
+Fixed-in: 2004-11-28
 
 <p>
 The Keepalive period appears in the Unix PuTTY dialog box, but doesn't

@@ -1,5 +1,6 @@
 Summary: Keepalives don't work in Plink
 Class: semi-bug
 Present-in: 0.50 0.51 0.52 0.53 0.53b 0.54 0.55
+Fixed-in: 2004-11-28
 
 Keepalives don't work in Windows Plink, and never have. Perhaps they should.
