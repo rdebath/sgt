@@ -39,7 +39,7 @@ struct player {
     int a, aa;
     int score;
     int death, firedelay;
-    int after, adraw, agrow;
+    int after, agrow;
     int invuln;
     int landed;
     Sprite spr;
@@ -167,7 +167,6 @@ static void init_game(void)
 
     bar(37,190,36+MAXAFTER,198,1);
     bar(282,190,283-MAXAFTER,198,1);
-    // drawimage(rocket_titletext_image,160,10,0); perhaps not
     show_scores();
     scr_done();
 }
@@ -271,7 +270,6 @@ static int init_player(int p)
     players[p].aa = players[p].a >> 1;
     players[p].dx = players[p].dy = 0;
     players[p].after = MAXAFTER;
-    players[p].adraw = 0;
     players[p].agrow = 0;
     players[p].firedelay = 0;
     players[p].death = 0;
@@ -456,7 +454,7 @@ static void play_game(void)
 	    if (pl->death)
 		continue;
 
-	    kfire = SDL_JoystickGetButton(joys[p], 2);   /* Circle */
+	    kfire = SDL_JoystickGetButton(joys[p], 3);   /* Circle */
 	    axis = SDL_JoystickGetAxis(joys[p], 0) / JOY_THRESHOLD;
 	    kthrust = SDL_JoystickGetButton(joys[p], 1);   /* X */
 	    kburner = SDL_JoystickGetButton(joys[p], 4);   /* L1 */
@@ -479,14 +477,12 @@ static void play_game(void)
 		if (pl->after > 1) {
 		    thrust = 2;
 		    pl->after--;
-		    // FIXME: bugger about with pl->adraw
 		} else
 		    thrust = 1;
 	    } else {
 		pl->agrow++;
 		if (pl->agrow >= 4 && pl->after < MAXAFTER) {
 		    pl->after++;
-		    // FIXME: bugger about with pl->adraw
 		    pl->agrow = 0;
 		}
 	    }
