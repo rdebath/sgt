@@ -1,0 +1,26 @@
+Summary: Occasional `Access denied' / `RSA_verify failed'
+Class: bug
+Difficulty: tricky
+Content-type: text/x-html-body
+
+<p>
+With SSH2, OpenSSH (various versions), RSA public key, key
+authentication has been reported to occasionally and randomly fail
+with an `Access denied' message. A message like the following is
+written in the server's log:
+
+<pre>error: ssh_rsa_verify: RSA_verify failed:
+    error:04077077:lib(4):func(119):reason(119)</pre>
+
+<p>
+A report of this problem can be found
+<a href="http://groups.google.com/groups?selm=3C96431D.7030504%40nospam.icon-labs.com">here</a>.
+
+<p>
+We occasionally see this. We think there's some sort of latent
+intermittent problem in the PuTTY bignum library, and we do plan to
+fix it at some point; what we really need to do is to prepare a trick
+PuTTY with a tweaked random number generator so that once we see the
+bug occur once we can then fix the random seed and replicate it
+consistently for debugging. This is more work than we've had time to
+do as yet.
