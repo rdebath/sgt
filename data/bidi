@@ -40,3 +40,8 @@ terminals should support bi-directional text, while
 nicely encapsulates all the bidi-specific bits in a (more)
 understandable format, gives examples, etc. Of course, we don't know
 whether anyone <em>really</em> implements it this way.
+
+<p>
+<a href="http://www.arabeyes.org/">ArabEyes</a> currently has a 
+<a href="http://www.arabeyes.org/project.php?proj=PuTTY">project</a>
+to add bidi support and Arabic shaping to PuTTY.
