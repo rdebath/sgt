@@ -1,5 +1,5 @@
 % -*- mode: slang; mode: fold -*-
-% Simon Tatham: version $Revision: 1.53 $
+% Simon Tatham: version $Revision: 1.54 $
 
 %{{{ load Emacs keybindings to start with
 
@@ -295,6 +295,25 @@ setkey("search_backward", "^R");
 %}}}
 %{{{ redefine bits of C and SLang mode
 
+% Not entirely sure about this, but we might be required to set the
+% cmode variables _after_ cmode is loaded, so I'll put them in a
+% function here and we can set them both at .jedrc run time and in
+% our C mode hook.
+define jedrc_set_cmode_vars() %{{{
+{
+    % C-mode variables
+    C_INDENT        = 4;	       % indent within block  
+    C_BRACE         = 0;	       % indent for brace  
+    C_BRA_NEWLINE   = 0;	       % don't insert a newline before '{'  
+    C_Colon_Offset  = 2;	       % indent case statements by two  
+    C_CONTINUED_OFFSET = 4;	       % indent for unbraced then-clauses  
+    C_Preprocess_Indent = 0;	       % indent for nested #if/#endifs  
+#ifexists C_Class_Offset
+    C_Class_Offset  = 4;	       % still indent by 4 in a C++ class
+#endif
+}
+%}}}
+
 define jedrc_simple_par_sep() %{{{
 {
     bol_skip_white();
@@ -349,6 +368,7 @@ define c_mode_hook() %{{{
 #ifexists set_buffer_hook
     set_buffer_hook ("par_sep", "jedrc_simple_par_sep");
 #endif
+    jedrc_set_cmode_vars();
 }
 %}}}
 define slang_mode_hook() %{{{
@@ -477,16 +497,7 @@ OUTPUT_RATE    = 0;
 #endif
 Fold_Mode_Ok = 1;
 
-% C-mode variables
-C_INDENT        = 4;                   % indent within block
-C_BRACE         = 0;                   % indent for brace
-C_BRA_NEWLINE   = 0;                   % don't insert a newline before '{'
-C_Colon_Offset  = 2;                   % indent case statements by two
-C_CONTINUED_OFFSET = 4;                % indent for unbraced then-clauses
-C_Preprocess_Indent = 0;               % indent for nested #if/#endifs
-#ifexists C_Class_Offset
-C_Class_Offset  = 4;                   % still indent by 4 in a C++ class
-#endif
+jedrc_set_cmode_vars();
 
 #ifdef UNIX
 variable UCB_Mailer; UCB_Mailer = "/usr/ucb/mail";
