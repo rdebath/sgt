@@ -446,7 +446,7 @@ sub html_to_text {
       $text = $`;
       if ($tail =~ /^!--/) {		# SGML comment is terminated with -->
         last if ($line !~ /-->/);
-        $line =~ s/<!--.*-->//;
+        $line =~ s/<!--.*?-->//;
       } else {				# normal tag is terminated with >
         last if ($line !~ />/);
         $line =~ s/^[^<]*<([^> ]*)( [^>]*)??>//;
