@@ -32,5 +32,8 @@ define diary_mode() {
     % use_keymap (mode);
     set_mode (mode, 0x1 | 0x20);
     use_syntax_table (mode);
+#ifexists use_dfa_syntax
+    use_dfa_syntax(1);
+#endif
     runhooks ("diary_mode_hook");
 }
