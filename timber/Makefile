@@ -11,7 +11,7 @@ endif
 all:
 	@test -d $(BUILDDIR) || mkdir $(BUILDDIR)
 	@make -C $(BUILDDIR) -f ../Makefile REALBUILD=yes
-test:
+test: clean
 	@test -d $(BUILDDIR) || mkdir $(BUILDDIR)
 	@make -C $(BUILDDIR) -f ../Makefile REALBUILD=yes test
 clean:
