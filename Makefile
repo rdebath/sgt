@@ -50,7 +50,7 @@ CSMODULES := $(addprefix cs-,$(CHARSET))
 OBJECTS := $(addsuffix .o,$(MODULES) $(CSMODULES))
 DEPS := $(addsuffix .d,$(MODULES))
 LIBS := -lsqlite
-CFLAGS += -Wall -I$(SRC)charset
+CFLAGS += $(CFL) -Wall -I$(SRC)charset
 
 timber: $(OBJECTS)
 	$(CC) $(LFLAGS) -o timber $(OBJECTS) $(LIBS)
