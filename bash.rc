@@ -555,3 +555,13 @@ tr() {
 }
 
 #}}}
+#{{{ shell function which combines cat and zcat
+
+zzcat() {
+   local i
+   for i in "$@"; do
+       zcat "$i" 2>/dev/null || cat "$i"
+   done
+}
+
+#}}}
