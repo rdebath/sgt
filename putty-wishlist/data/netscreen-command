@@ -1,0 +1,40 @@
+Summary: Trouble with netscreen firewalls and remote command
+Difficulty: taxing
+Present-in: 0.53b 2003-04-02
+Content-type: text/x-html-body
+
+<p>
+Apparently when plink or PuTTY connects to a netscreen firewall with
+a remote command such as "save", the session hangs after "Started
+session".
+
+<p>
+Interactive connections with no command (with both plink and PuTTY)
+work fine.
+
+<p>
+Some other clients (e.g. SecureCRT) are fine, but OpenSSH also has
+trouble:
+
+<p><pre>bash-2.05a# ssh 256.256.256.256 -l netscreen -v -v -v save
+OpenSSH_2.9 FreeBSD localisations 20011202, SSH protocols 1.5/2.0, OpenSSL 0x0090601f
+...
+netscreen@257.257.257.257's password:
+debug3: clear hostkey 0
+debug3: clear hostkey 1
+debug1: Sending command: save
+debug1: Entering interactive session.
+Disconnecting: protocol error: rcvd type 15
+debug1: Calling cleanup 0x8059d60(0x0)</pre>
+
+<p>
+(These firewalls claim a version string of
+<tt>SSH-1.5-SSH Protocol Compatible Server SCS 2.0</tt>. All
+connections are therefore SSH-1.)
+
+<p>
+Reports:
+<ul>
+<li><code>EJEBKMGDPLHDFAOHCFBBEEFDCNAA.han@prolink.com.tr</code></li>
+<li><code>001701c32ed0$95efc5a0$9501a8c0@adcom</code></li>
+</ul>
