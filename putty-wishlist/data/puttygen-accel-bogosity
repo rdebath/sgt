@@ -1,0 +1,30 @@
+Summary: Bogosity with PuTTYgen keyboard accelerators and menu bar
+Class: bug
+Difficulty: fun
+Priority: medium
+Content-type: text/x-html-body
+Present-in: 2003-01-30
+
+<p>
+There appears to be some bogosity in the way keyboard accelerators
+work in PuTTYgen. (Unless otherwise specified, the below is with Win2K
+SP3.)
+
+<p>
+First, there's an outright clash between the accelerators for the
+`<b>C</b>onversions' menu and the `Key <b>c</b>omment' edit box. (The
+latter isn't visible unless a key is loaded.) Bizarrely, typing Alt+C
+when no key is loaded causes a key to be generated (perhaps the
+`<b>G</b>enerate' button is the next available control?).
+
+<p>
+Keyboard accelerators don't appear to work as expected during <em>and
+after</em> key generation. (During keygen, all controls are disabled,
+but menus can be accessed with the mouse.) I need to switch away and
+back before they work again. (Possibly related: during key generation,
+frobbing Alt appears to count as randomness.)
+
+<p>
+I've heard that under Wine, the menu bar doesn't appear <em>at
+all</em> until you type an appropriate accelerator key. (not sure
+which versions)
