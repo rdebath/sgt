@@ -1160,14 +1160,16 @@ tree234 *join234r(tree234 *t1, tree234 *t2) {
  * in t.
  */
 static node234 *split234_internal(tree234 *t, int index) {
-    node234 *halves[2], *n, *sub;
-    int ki, half;
+    node234 *halves[2], *n, *sib, *sub;
+    node234 *lparent, *rparent;
+    int ki, pki, i, half, lcount, rcount;
 
     n = t->root;
     LOG(("splitting tree %p at point %d\n", t, index));
 
     /*
-     * Easy special cases.
+     * Easy special cases. After this we have also dealt completely
+     * with the empty-tree case and we can assume the root exists.
      */
     if (index == 0)		       /* return nothing */
 	return NULL;
@@ -1180,6 +1182,7 @@ static node234 *split234_internal(tree234 *t, int index) {
     /*
      * Search down the tree to find the split point.
      */
+    lparent = rparent = NULL;
     while (n) {
 	LOG(("  node %p: %p/%d \"%s\" %p/%d \"%s\" %p/%d \"%s\" %p/%d index=%d\n",
 	     n,
@@ -1188,6 +1191,8 @@ static node234 *split234_internal(tree234 *t, int index) {
 	     n->kids[2], n->counts[2], n->elems[2],
 	     n->kids[3], n->counts[3],
 	     index));
+	lcount = index;
+	rcount = countnode234(n) - lcount;
 	if (index <= n->counts[0]) {
 	    ki = 0;
 	} else if (index -= n->counts[0]+1, index <= n->counts[1]) {
@@ -1198,31 +1203,10 @@ static node234 *split234_internal(tree234 *t, int index) {
 	    index -= n->counts[2]+1;
 	    ki = 3;
 	}
-	/*
-	 * Recurse down to subtree ki.
-	 */
-	LOG(("  moving to subtree %d\n", ki));
-	if (!n->kids[ki])
-	    break;
-	n = n->kids[ki];
-    }
 
-    /*
-     * Now we see the node where we want to perform the split. So
-     * we're going to insert two pointers in place of the one at
-     * ki. To begin with, at the leaf, these pointers are NULL.
-     */
-    halves[0] = halves[1] = NULL;
-    do {
-	node234 *sib;
-	int i;
+	LOG(("  splitting at subtree %d\n", ki));
+	sub = n->kids[ki];
 
-	LOG(("  split node %p: %p/%d \"%s\" %p/%d \"%s\" %p/%d \"%s\" %p/%d\n",
-	     n,
-	     n->kids[0], n->counts[0], n->elems[0],
-	     n->kids[1], n->counts[1], n->elems[1],
-	     n->kids[2], n->counts[2], n->elems[2],
-	     n->kids[3], n->counts[3]));
 	LOG(("  splitting at child index %d\n", ki));
 
 	/*
@@ -1247,14 +1231,22 @@ static node234 *split234_internal(tree234 *t, int index) {
 		sib->counts[i+1] = 0;
 	    }
 	}
-	n->kids[ki] = halves[0];
-	if (halves[0]) halves[0]->parent = n;
-	n->counts[ki] = countnode234(halves[0]);
-	sib->kids[0] = halves[1];
-	if (halves[1]) halves[1]->parent = sib;
-	sib->counts[0] = countnode234(halves[1]);
-	halves[0] = n;
-	halves[1] = sib;
+	if (lparent) {
+	    lparent->kids[pki] = n;
+	    lparent->counts[pki] = lcount;
+	    n->parent = lparent;
+	    rparent->kids[0] = sib;
+	    rparent->counts[0] = rcount;
+	    sib->parent = rparent;
+	} else {
+	    halves[0] = n;
+	    n->parent = NULL;
+	    halves[1] = sib;
+	    sib->parent = NULL;
+	}
+	lparent = n;
+	rparent = sib;
+	pki = ki;
 	LOG(("  left node %p: %p/%d \"%s\" %p/%d \"%s\" %p/%d \"%s\" %p/%d\n",
 	     n,
 	     n->kids[0], n->counts[0], n->elems[0],
@@ -1267,24 +1259,21 @@ static node234 *split234_internal(tree234 *t, int index) {
 	     sib->kids[1], sib->counts[1], sib->elems[1],
 	     sib->kids[2], sib->counts[2], sib->elems[2],
 	     sib->kids[3], sib->counts[3]));
-	n = halves[0]->parent;
-	if (n) {
-	    ki = (n->kids[0] == halves[0] ? 0 :
-		  n->kids[1] == halves[0] ? 1 :
-		  n->kids[2] == halves[0] ? 2 : 3);
-	}
-    } while (n);
+
+	n = sub;
+    }
 
     /*
-     * We've come off the root here, so we've successfully split
+     * We've come off the bottom here, so we've successfully split
      * the tree into two equally high subtrees. The only problem is
      * that some of the nodes down the fault line will be smaller
      * than the minimum permitted size. (Since this is a 2-3-4
      * tree, that means they'll be zero-element one-child nodes.)
      */
-    LOG(("  fell off top, lroot is %p, rroot is %p\n",
+    LOG(("  fell off bottom, lroot is %p, rroot is %p\n",
 	 halves[0], halves[1]));
-    halves[0]->parent = halves[1]->parent = NULL;
+    lparent->counts[pki] = rparent->counts[0] = 0;
+    lparent->kids[pki] = rparent->kids[0] = NULL;
 
     /*
      * So now we go back down the tree from each of the two roots,
