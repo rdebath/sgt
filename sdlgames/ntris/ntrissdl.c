@@ -73,43 +73,51 @@ static void lineplotsimple(void *ctx, int x, int y)
  * actual colours need to be allocated to each of these indices,
  * and then plots straight from this array.
  */
-static int blockpixels[SQUARE_SIDE*SQUARE_SIDE];
+static int *blockpixels[SQUARE_SIDE+1];
 
 void init_blockpixels(void)
 {
     int ix, iy;
-    int *p = blockpixels;
+    int *p;
 
-    for (ix = 0; ix < SQUARE_SIDE; ix++)
-	for (iy = 0; iy < SQUARE_SIDE; iy++) {
-	    int left, right, top, bottom;
-	    left = (ix < HIGHLIGHT);
-	    right = (ix >= SQUARE_SIDE - HIGHLIGHT);
-	    top = (iy < HIGHLIGHT);
-	    bottom = (iy >= SQUARE_SIDE - HIGHLIGHT);
-	    if (left && top) {
-		*p = 0;
-	    } else if (right && bottom) {
-		*p = 0xC;
-	    } else if (left && bottom) {
-		int ty = SQUARE_SIDE-1 - iy;
-		*p = (ix < ty ? 8 : ix > ty ? 0xA : 9);
-	    } else if (right && top) {
-		int tx = SQUARE_SIDE-1 - ix;
-		*p = (tx < iy ? 4 : tx > iy ? 2 : 3);
-	    } else if (left) {
-		*p = 5;
-	    } else if (bottom) {
-		*p = 0xB;
-	    } else if (right) {
-		*p = 7;
-	    } else if (top) {
-		*p = 1;
-	    } else {
-		*p = 6;
+    int j, highlight;
+
+    for (j = 1; j <= SQUARE_SIDE; j++) {
+	highlight = HIGHLIGHT * j / SQUARE_SIDE;
+	blockpixels[j] = malloc(j*j*sizeof(int));
+	p = blockpixels[j];
+
+	for (ix = 0; ix < j; ix++)
+	    for (iy = 0; iy < j; iy++) {
+		int left, right, top, bottom;
+		left = (ix < highlight);
+		right = (ix >= j - highlight);
+		top = (iy < highlight);
+		bottom = (iy >= j - highlight);
+		if (left && top) {
+		    *p = 0;
+		} else if (right && bottom) {
+		    *p = 0xC;
+		} else if (left && bottom) {
+		    int ty = j-1 - iy;
+		    *p = (ix < ty ? 8 : ix > ty ? 0xA : 9);
+		} else if (right && top) {
+		    int tx = j-1 - ix;
+		    *p = (tx < iy ? 4 : tx > iy ? 2 : 3);
+		} else if (left) {
+		    *p = 5;
+		} else if (bottom) {
+		    *p = 0xB;
+		} else if (right) {
+		    *p = 7;
+		} else if (top) {
+		    *p = 1;
+		} else {
+		    *p = 6;
+		}
+		p++;
 	    }
-	    p++;
-	}
+    }
 }
 
 void block(struct frontend_instance *inst, int area,
@@ -119,25 +127,34 @@ void block(struct frontend_instance *inst, int area,
     int colours[0xD];
     int light, medium, dark;
     int *p;
+    int topx, topy, size;
 
-    y *= SQUARE_SIDE;
-    x *= SQUARE_SIDE;
     if (area == AREA_MAIN) {
-	x += LEFT_EDGE;
+	topx = LEFT_EDGE;
+	topy = 0;
+	size = SQUARE_SIDE;
     } else if (area == AREA_HOLD) {
-	x += LEFT_EDGE - 6*SQUARE_SIDE;
+	topx = LEFT_EDGE - 6*SQUARE_SIDE;
+	topy = 0;
+	size = SQUARE_SIDE;
     } else if (area >= AREA_NEXT) {
-	int topy;
-	x += RIGHT_EDGE + SQUARE_SIDE;
-	topy = (maxheight+1) * (area - AREA_NEXT) * SQUARE_SIDE;
-	if (topy + maxheight*SQUARE_SIDE > SCR_HEIGHT)
+	topx = RIGHT_EDGE + SQUARE_SIDE;
+	topy = 0;
+	size = SQUARE_SIDE;
+	while (area > AREA_NEXT && size > 0) {
+	    area--;
+	    topy += size * (maxheight+1);
+	    size--;
+	}
+	if (size <= 0 || topy + maxheight*size > SCR_HEIGHT)
 	    return;		       /* this next-display doesn't fit */
-	y += topy;
     }
+    y = y * size + topy;
+    x = x * size + topx;
 
     if (col == -1) {
-	for (ix = 0; ix < SQUARE_SIDE; ix++)
-	    for (iy = 0; iy < SQUARE_SIDE; iy++)
+	for (ix = 0; ix < size; ix++)
+	    for (iy = 0; iy < size; iy++)
 		plotc(x+ix, y+iy, 0);
 	return;
     }
@@ -169,9 +186,9 @@ void block(struct frontend_instance *inst, int area,
     colours[9] = (colours[8] == colours[0xA] ? colours[8] : medium);
     colours[6] = medium;
 
-    p = blockpixels;
-    for (ix = 0; ix < SQUARE_SIDE; ix++)
-	for (iy = 0; iy < SQUARE_SIDE; iy++)
+    p = blockpixels[size];
+    for (ix = 0; ix < size; ix++)
+	for (iy = 0; iy < size; iy++)
 	    plotc(x+ix, y+iy, colours[*p++]);
 }
 
