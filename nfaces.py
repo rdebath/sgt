@@ -310,13 +310,13 @@ def drawfaces():
 		break
 
 	# Draw round the polygon in thicker pen.
-	psprint("0.01 setlinewidth")
-	psprint("newpath")
-	cmd = "moveto"
-	for p in poly:
-	    psprint("   ", p[0], p[1], cmd)
-	    cmd = "lineto"
-	psprint("closepath stroke")
+	#psprint("0.01 setlinewidth")
+	#psprint("newpath")
+	#cmd = "moveto"
+	#for p in poly:
+	#    psprint("   ", p[0], p[1], cmd)
+	#    cmd = "lineto"
+	#psprint("closepath stroke")
 	psprint("showpage grestore")
 
 	# Save everything we need to write out a 3D model later on.
