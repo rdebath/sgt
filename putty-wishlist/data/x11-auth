@@ -11,8 +11,10 @@ know where to look for authentication data. It would be nice if this
 were to happen.
 
 <p>
-It isn't obvious that this is even necessary; we've had X forwarding
-in PuTTY for some months now, including in a major release, and
-nobody has ever complained at the lack of this feature. It may
-simply be that Windows X servers can't be bothered with local
-authentication at all.
+A simple approach might be for PuTTY just to pass on authentication
+data supplied by the X11 client if it has no better ideas.  The X
+Protocol Manual suggests that servers should ignore any authentication
+they aren't expecting, so this shouldn't break anything that currently
+works, and it would allow the user to copy back PuTTY's cookie to their
+real X server.
+<br>Ref: <code>&lt;web-71356@meredevice.com&gt;</code>
