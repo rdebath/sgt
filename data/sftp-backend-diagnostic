@@ -1,0 +1,11 @@
+Summary: Better diagnostics from file transfer backends
+Class: wish
+Difficulty: fun
+Priority: medium
+Content-type: text/x-html-body
+
+<p>
+There should be better diagnostics surrounding the choice between the
+SCP and SFTP backends in the file transfer utilities (PSCP, PSFTP). In
+particular, it should be possible to tell easily which of the backends
+was used from the `-v' output.
