@@ -15,6 +15,12 @@ IDATA = -m 0644  # flags for installing data
 all:
 	for i in $(SUBDIRS); do make -C $$i; done
 
+progs:
+	for i in $(SUBDIRS); do make -C $$i progs; done
+
+man:
+	for i in $(SUBDIRS); do make -C $$i man; done
+
 clean:
 	rm -f *.html *.tar.gz
 	for i in $(SUBDIRS); do make -C $$i clean; done
@@ -26,6 +32,10 @@ release:
 	for i in $(SUBDIRS); do make -C $$i release DESTDIR=../$(DESTDIR); done
 
 install:
-	for i in $(SUBDIRS); do \
-	    make -C $$i install; \
-	done
+	for i in $(SUBDIRS); do make -C $$i install; done
+
+install-progs:
+	for i in $(SUBDIRS); do make -C $$i install-progs; done
+
+install-man:
+	for i in $(SUBDIRS); do make -C $$i install-man; done

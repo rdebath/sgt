@@ -11,6 +11,8 @@ IPROG =#   flags for installing programs (default none)
 IDATA = -m 0644  # flags for installing data
 
 all: lns.1
+man: lns.1
+progs:;
 
 %.1: %.but
 	halibut --man=$@ $<
@@ -30,8 +32,10 @@ release: lns.1
 	tar -C reltmp -chzf $(DESTDIR)/lns.tar.gz lns
 	rm -rf reltmp
 
-install: lns.1
+install: install-progs install-man
+install-progs:
 	mkdir -p $(SCRIPTDIR)
 	$(INSTALL) $(IPROG) lns $(SCRIPTDIR)/lns
+install-man: lns.1
 	mkdir -p $(MANDIR)
 	$(INSTALL) $(IDATA) lns.1 $(MANDIR)/lns.1
