@@ -89,6 +89,12 @@ void run_command(int argc, char **argv)
 	    ab_change_attr (argv[2], argv[1], (3 < argc) ? argv[3] : NULL);
 	}
     }
+
+    if (!strcmp (argv[0], "find-contact")) {
+	if (2 < argc) {
+	    ab_display_contacts_for_attr_value (argv[1], argv[2]);
+	}
+    }
 }
 
 int main(int argc, char **argv) {

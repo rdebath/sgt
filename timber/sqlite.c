@@ -290,15 +290,21 @@ static const char *const ab_schema[] = {
     "  attribute_id INTEGER,"
     "  since DATETIME NOT NULL,"  /* inclusive */
     "  until DATETIME,"  /* exclusive */
-    "  value VARCHAR NOT NULL"
+    "  value VARCHAR NOT NULL,"
+    "  value_aux VARCHAR NOT NULL"
     ");",
 
     "CREATE TABLE attr_types ("
     "  type VARCHAR PRIMARY KEY,"
-    "  presentation VARCHAR"
+    "  presentation VARCHAR,"
+    "  equivalence VARCHAR"
     ");",
-    "INSERT INTO attr_types VALUES ('name', 'identity');",
-    "INSERT INTO attr_types VALUES ('Monochrome', 'lower-case');"
+    "INSERT INTO attr_types VALUES"
+    "  ('name', 'identity', 'identity');"
+    "INSERT INTO attr_types VALUES"
+    "  ('phone', 'identity', 'pstn');"
+    "INSERT INTO attr_types VALUES"
+    "  ('Monochrome', 'lower-case', 'identity');"
 };
 
 
@@ -593,6 +599,16 @@ static void ab_lower_case_fn (char *value)
     for (; *p; ++p) *p = tolower(*p);
 }
 
+static void ab_pstn_fn (char *value)
+{
+    char *new = value;
+    char c;
+    do {
+	c = *(value++);
+	if ((isascii(c) && isdigit(c)) || '+' == c || '\0' == c) *(new++) = c;
+    } while(c);
+}
+
 
 struct transform {
     const char *name;
@@ -602,6 +618,11 @@ struct transform {
 static const struct transform presentation[] = {
     { "identity", ab_identity_fn },
     { "lower-case", ab_lower_case_fn }
+};
+
+static const struct transform equivalence[] = {
+    { "identity", ab_identity_fn },
+    { "pstn", ab_pstn_fn }
 };
 
 
@@ -625,6 +646,47 @@ static char *ab_transform (const char *in,
 }
 
 
+static void ab_multitransform (const char *attr_type,
+			       const char *value,
+			       char **for_presentation,
+			       char **for_comparison)
+{
+    char *pres_val;
+    char *comp_val;
+    char **table;
+    int rows, cols;
+
+    assert(attr_type);
+
+    if (!value) {
+	*for_presentation = NULL;
+	*for_comparison = NULL;
+	return;
+    }
+
+    sql_get_table_printf (ab,
+			  "SELECT presentation, equivalence FROM attr_types "
+			  "WHERE type = '%q'",
+			  &table, &rows, &cols,
+			  attr_type);
+    if (1 != rows || 2 != cols) {
+	fatal (err_internal,
+	       "No such attribute in address book database");
+    }
+    pres_val = ab_transform (value, table[2],
+			     presentation, lenof(presentation));
+    comp_val = ab_transform (pres_val, table[3],
+			     equivalence, lenof(equivalence));
+
+    if (for_presentation) *for_presentation = pres_val;
+    else sfree(pres_val);
+    if (for_comparison) *for_comparison = comp_val;
+    else sfree(comp_val);
+
+    sqlite_free_table(table);
+}
+
+
 static char *ab_get_attr (int contact_id,
 			  const char *attr_type)
 {
@@ -645,7 +707,7 @@ static void ab_set_attr (int contact_id,
 			 const char *new_value)
 {
     char *attribute_id;
-    char *pres, *for_pres = NULL;
+    char *pres_value, *comp_value;
     char now[DATEBUF_MAX];
     char *cid_check;
 
@@ -659,17 +721,7 @@ static void ab_set_attr (int contact_id,
     if (!cid_check) fatal (err_dberror, "contact not found");
     sfree(cid_check);
 
-    pres = sql_get_value_printf (ab,
-				 "SELECT presentation FROM attr_types "
-				 "WHERE type = '%q'",
-				 attr_type);
-    if (!pres) {
-	fatal (err_internal,
-	       "No such attribute in address book database");
-    }
-    for_pres = ab_transform (new_value, pres,
-			     presentation, lenof(presentation));
-    sfree(pres);
+    ab_multitransform (attr_type, new_value, &pres_value, &comp_value);
 
     sql_transact (ab, begin_transaction);
     fmt_date (time(NULL), now);
@@ -695,13 +747,15 @@ static void ab_set_attr (int contact_id,
 	    sprintf (attribute_id, "%d", sqlite_last_insert_rowid(ab->handle));
 	}
 	sql_exec_printf (ab,
-			 "INSERT INTO attr_values (attribute_id, value, since)"
-			 " VALUES ('%q', '%q', '%q')",
-			 attribute_id, for_pres, now);
+			 "INSERT INTO attr_values "
+			 "(attribute_id, value, value_aux, since) "
+			 "VALUES ('%q', '%q', '%q', '%q')",
+			 attribute_id, pres_value, comp_value, now);
     }
     sql_transact (ab, commit_transaction);
     sfree(attribute_id);
-    sfree(for_pres);
+    sfree(pres_value);
+    sfree(comp_value);
 }
 
 
@@ -726,15 +780,55 @@ void ab_display_attr_history (const char *contact_id,
 			  "ORDER BY until",
 			  &table, &rows, &cols,
 			  cid, attr_type);
-    assert (3 == cols);
-
-    for (row = 1; row <= rows; ++row) {
-	printf ("%d;", cid);
-	printf ("%s;", table[row * cols]);
-	printf (table[1 + row * cols] ? "%s;" : ";", table[1 + row * cols]);
-	printf ("%s\n", table[2 + row * cols]);
+    if (rows) {
+	assert (3 == cols);
+	for (row = 1; row <= rows; ++row) {
+	    printf ("%d;", cid);
+	    printf ("%s;", table[row * cols]);
+	    printf (table[1 + row * cols] ? "%s;" : ";",
+		    table[1 + row * cols]);
+	    printf ("%s\n", table[2 + row * cols]);
+	}
     }
     sqlite_free_table(table);
+}
+
+
+void ab_display_contacts_for_attr_value (const char *attr_type,
+					 const char *value)
+     /*  See caveats for ab_display_attr_history().
+      */
+{
+    char **table;
+    int rows, cols;
+    int row;
+    char *comp_value;
+
+    assert(attr_type);
+    assert(value);
+
+    sql_open(ab);
+    ab_multitransform (attr_type, value, NULL, &comp_value);
+    sql_get_table_printf (ab,
+			  "SELECT contact_id, since, until, value "
+			  "FROM attributes, attr_values "
+			  "WHERE type = '%q' AND value_aux = '%q' AND "
+			  "attributes.attribute_id = attr_values.attribute_id "
+			  "ORDER BY until",
+			  &table, &rows, &cols,
+			  attr_type, comp_value);
+    sfree(comp_value);  comp_value = NULL;
+    if (rows) {
+	assert (4 == cols);
+	for (row = 1; row <= rows; ++row) {
+	    printf ("%s;", table[row * cols]);
+	    printf ("%s;", table[1 + row * cols]);
+	    printf (table[2 + row * cols] ? "%s;" : ";",
+		    table[2 + row * cols]);
+	    printf ("%s\n", table[3 + row * cols]);
+	}
+	sqlite_free_table(table);
+    }
 }
 
 
