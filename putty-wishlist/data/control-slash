@@ -9,3 +9,5 @@ Difficulty: fun
 On some terminals, you can type C-_ by typing / while holding down CONTROL.
 </blockquote>
 It would be good if PuTTY supported this.
+<p>
+OSD: Done in window.c but not for any of the other ports.
