@@ -1,23 +1,27 @@
 Summary: Unix: "expected key exchange reply packet from server" and crash
 Class: bug
 Present-in: 0.54
-Content-type: text/plain
+Content-type: text/x-html-body
 
+<p>
 We've had a couple of reports of the Unix version putting up the
 "new host key" dialog, but then immediately putting up a
 "PuTTY Fatal Error: expected key exchange reply packet from server"
 error box over it and then crashing. I've reproduced this by
 connecting to one of our correspondents' servers.
 
+<p>
 If the host key is already in the database, the connection goes
 through fine. The fault doesn't appear to happen with the Windows
 version, nor with Unix plink (so could be a GUI concurrency problem
 due to the blocking caused by the host key verification dialog?).
 
+<p>
 Workaround: add the host key to the database first. (Apparently
 this can be done by setting "close window on exit" to "never" in
 the first session, or use contrib/kh2reg.py in PuTTY CVS.)
 
+<p>
 In PuTTY's SSH packet log, what appears to distinguish failing from
 successful connections is that in the latter, PuTTY logs sending a
 NEWKEYS before logging receiving one, whereas in the former, it
@@ -25,33 +29,39 @@ doesn't log sending one at all. So in Windows and Unix-plink
 connections with and without the host key prompt, and Unix PuTTY
 without the prompt, we get something like
 
-  Incoming packet type 31 / 0x1f (SSH2_MSG_KEXDH_REPLY)
-  [...]
-  Event Log: Host key fingerprint is:
-  Event Log: ssh-dss 1024 xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx
-  Outgoing packet type 21 / 0x15 (SSH2_MSG_NEWKEYS)
-  Incoming packet type 21 / 0x15 (SSH2_MSG_NEWKEYS)
+<p><pre>Incoming packet type 31 / 0x1f (SSH2_MSG_KEXDH_REPLY)
+[...]
+Event Log: Host key fingerprint is:
+Event Log: ssh-dss 1024 xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx:xx
+Outgoing packet type 21 / 0x15 (SSH2_MSG_NEWKEYS)
+Incoming packet type 21 / 0x15 (SSH2_MSG_NEWKEYS)</pre>
 
+<p>
 whereas in Unix PuTTY with the prompt, we have
 
-  Incoming packet type 31 / 0x1f (SSH2_MSG_KEXDH_REPLY)
-  [...]
-  Incoming packet type 21 / 0x15 (SSH2_MSG_NEWKEYS)
-  Event Log: expected key exchange reply packet from server
+<p><pre>Incoming packet type 31 / 0x1f (SSH2_MSG_KEXDH_REPLY)
+[...]
+Incoming packet type 21 / 0x15 (SSH2_MSG_NEWKEYS)
+Event Log: expected key exchange reply packet from server</pre>
 
+<p>
 while waiting for the user to respond to the prompt.
 
+<p>
 Reports:
-  000701c3fd23$4a4626e0$0400a8c0@capricho
-    followup: 000b01c3fd2a$4822cd80$0400a8c0@capricho
-    putty-0.54-0.20040216.3mdk.i586.rpm
-  40379F51.3030603@glendown.de
-    server appears to be SSH-2.0-3.1.0 SSH Secure Shell (non-commercial)
-    associated with diffie-hellman-group1-sha1 (as opposed to gex)?
-    log: ixion:~jacob/putty-wishlist/data-mine/unix-kex-packet.d/putty.log
-    protocol looks fine
-  1090364295.14285.12.camel@scrat.iceage
-    server is SSH-2.0-3.2.5 SSH Secure Shell
-    using diffie-hellman-group1-sha1
-    SSH packet log attached - protocol looks fine (although it has extra
+
+<ul>
+<li><tt>000701c3fd23$4a4626e0$0400a8c0@capricho</tt>
+    <br>followup: <tt>000b01c3fd2a$4822cd80$0400a8c0@capricho</tt>
+    <br><tt>putty-0.54-0.20040216.3mdk.i586.rpm</tt>
+<li><tt>40379F51.3030603@glendown.de</tt>
+    <br>server appears to be <tt>SSH-2.0-3.1.0 SSH Secure Shell (non-commercial)</tt>
+    <br>associated with diffie-hellman-group1-sha1 (as opposed to gex)?
+    <br>log: <tt>ixion:~jacob/putty-wishlist/data-mine/unix-kex-packet.d/putty.log</tt>
+    <br>protocol looks fine
+<li><tt>1090364295.14285.12.camel@scrat.iceage</tt>
+    <br>server is <tt>SSH-2.0-3.2.5 SSH Secure Shell</tt>
+    <br>using diffie-hellman-group1-sha1
+    <br>SSH packet log attached - protocol looks fine (although it has extra
     IGNORE messages interspersed, unlike previous)
+</ul>
