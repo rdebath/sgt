@@ -1,6 +1,7 @@
 Summary: Hangs on paste with middle button (Intellipoint implicated)
 Class: semi-bug
 Present-in: 0.53b
+Content-type: text/x-html-body
 
 <p>
 I've observed the following behaviour on a colleague's machine. I
