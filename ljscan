@@ -1,0 +1,250 @@
+#!/usr/bin/python 
+
+import urllib
+import string
+import os
+import sha
+import time
+import htmllib
+import formatter
+import sys
+
+def makedict(attrs):
+    attrdict = {}
+    for attr in attrs:
+	attrdict[string.lower(attr[0])] = attr[1]
+    return attrdict				    
+
+class mysha:
+    def __init__(self):
+	self.sha = sha.new()
+	self.hdata = ""
+	
+    def update(self, data):
+	self.sha.update(data)
+	self.hdata = self.hdata + data
+    
+    def hexdigest(self):
+	return self.sha.hexdigest()
+
+    def data(self):
+	return self.hdata
+
+    def datalen(self):
+	return len(self.hdata)
+
+class myfmt(formatter.NullFormatter):
+    def __init__(self, sha):
+	formatter.NullFormatter.__init__(self)
+	self.sha = sha
+	self.accepting = 1
+	self.queuedata = ""
+
+    def add(self, data):
+	#print "data length", len(data), "state = ", self.accepting
+	if self.accepting == 1:
+	    self.sha.update(data)
+	elif self.accepting == 2:
+	    self.queuedata = self.queuedata + data
+	    if len(self.queuedata) > 10:
+		#print "flushing queue"
+		self.sha.update(self.queuedata)
+		self.queuedata = ""
+		self.accepting = 1
+
+    def setstate(self, state):
+	if self.accepting == 2 and state == 1:
+	    #print "manually flushing queue"
+	    self.sha.update(self.queuedata)
+	self.accepting = state
+	self.queuedata = ""
+
+    def add_flowing_data(self, data):
+	self.add(data)
+
+    def add_literal_data(self, data):
+	self.add(data)
+
+class myparser(htmllib.HTMLParser):
+    def __init__(self, sha):
+	htmllib.HTMLParser.__init__(self, myfmt(sha))
+	self.dodgy_href = 0
+	self.clean = 0
+
+    def start_font(self, attrs):
+	a = makedict(attrs)
+	size = a.get("size", "0")
+	# Any negative size indicates text that's smaller than the
+	# text around it, which may include comment sections. Also
+	# size="1" means the smallest conveniently available
+	# absolute size and may also include comment sections.
+	if size[:1] == "-" or size == "1":
+	    #print "font tag started"
+	    self.formatter.setstate(0)
+
+    def end_font(self):
+	#print "font tag ended"
+	self.formatter.setstate(1)
+
+    # To avoid sending those footnotes ([1] [2] etc) to the
+    # formatter for hrefs, we reimplement start_a and end_a
+    # ourselves. Currently they do nothing. In future I might add a
+    # feature where they track hrefs to the talkread/talkpost CGIs
+    # in order to more intelligently filter out the `n comments'
+    # stuff.
+
+    def start_a(self, attrs):
+	a = makedict(attrs)
+	target = a.get("href", "")
+	#print target
+	if target[:31] == "http://www.livejournal.com/talk":
+	    self.formatter.setstate(0)
+	    self.dodgy_href = 1
+	    #print "dodgy href started"
+    
+    def end_a(self):
+	if self.dodgy_href:
+	    self.formatter.setstate(2)
+	    self.dodgy_href = 0
+	    #print "dodgy href ended"
+
+    def end_html(self):
+	self.clean = 1
+
+# Read config file to get list of users.
+ljusers = []
+ljdir = os.environ["HOME"] + "/.ljscan/"
+f = open(ljdir + "config", "r")
+while 1:
+    s = f.readline()
+    if s == "":
+	break
+    while s[-1:] == "\r" or s[-1:] == "\n":
+	s = s[:-1]
+    ss = string.split(s)
+    if len(ss) == 0:
+	continue
+    ljusers.append((ss[0], s))
+
+# Filter list of users by command-line arguments.
+if len(sys.argv) > 1:
+    args = sys.argv[1:]
+    ljusers2 = []
+    for i in ljusers:
+	if i[0] in args:
+	    ljusers2.append(i)
+	    args.remove(i[0])
+    for i in args:
+	print "ignoring argument \""+i+"\": not in "+ljdir+"config"
+    ljusers = ljusers2
+
+template = "http://www.livejournal.com/users/%s/"
+
+now = time.time()
+nowstr = str(now)
+
+newlist = []
+changelist = []
+samelist = []
+faillist = []
+
+for t in ljusers:
+    username, description = t
+    url = template % username
+    f = urllib.urlopen(url)
+    data = f.read()
+    f.close()
+    p = myparser(mysha())
+    p.feed(data)
+    p.close()
+    h = p.formatter.sha.hexdigest()
+    hdata = p.formatter.sha.data()
+
+    # So username t has journal hash h. Compare this with the last
+    # update and see if it's changed.
+    try:
+	f = open(ljdir + "hash." + username, "r")
+	oldhash = f.readline()
+	f.close()
+	oa = string.split(oldhash)
+	if len(oa) == 2:
+	    oldhash = oa[0]
+	    oldtime = oa[1]
+	else:
+	    oldhash = ""
+	    oldtime = None
+    except IOError:
+	oldhash = ""
+	oldtime = None
+
+    if p.formatter.sha.datalen() < 256 or not p.clean:
+	# Basic error handling: in case of failure to retrieve the
+	# page, or in case the page was pathetically small (meaning
+	# that it probably says `Timeout retrieving page' or
+	# `Sorry, we're having problems'), or in case the transfer
+	# was interrupted half-way through and we never saw
+	# </html>, just add to the `failed retrieval' list.
+	faillist.append((None, description))
+	writeout = 0
+    elif oldhash == "":
+	# The entry didn't previously exist. Add to the `new' list.
+	newlist.append((now, description))
+	writeout = 1
+    elif oldhash != h:
+	# The entry has been modified. Add to the `changed' list.
+	changelist.append((now, description))
+	writeout = 1
+    else:
+	# The entry is unchanged. Add to the `unchanged' list.
+	samelist.append((float(oldtime), description))
+	writeout = 0
+
+    if writeout:
+	try:
+	    os.unlink(ljdir + "old." + username)
+	except OSError:
+	    pass
+	try:
+	    os.rename(ljdir + "hash." + username, ljdir + "old." + username)
+	except OSError:
+	    pass
+	f = open(ljdir + "hash." + username, "w")
+	f.write(h + " " + nowstr + "\n")
+	f.write(hdata)
+	f.close()
+
+# Right. Now sort the lists.
+def alphabetical(a,b):
+    if a[1] < b[1]: return -1
+    if a[1] > b[1]: return +1
+    return 0
+def timealpha(a,b):
+    if a[0] > b[0]: return -1
+    if a[0] < b[0]: return +1
+    if a[1] < b[1]: return -1
+    if a[1] > b[1]: return +1
+    return 0
+newlist.sort(alphabetical)
+changelist.sort(alphabetical)
+samelist.sort(timealpha)
+faillist.sort(alphabetical)
+
+# And finally output everything.
+def printout(a):
+    if a[0] == None:
+	ts = "                   "
+    else:
+	ts = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(a[0]))
+    print ts, a[1]
+if len(newlist):
+    print "Journals not previously known to ljscan:"
+    for i in newlist: printout(i)
+if len(changelist):
+    print "Journals which have changed since the last scan:"
+    for i in changelist: printout(i)
+if len(samelist):
+    print "Journals which are unchanged since the last scan:"
+    for i in samelist: printout(i)
+if len(faillist):
+    print "Journals which were not retrievable in this scan:"
+    for i in faillist: printout(i)
