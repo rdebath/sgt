@@ -10,8 +10,6 @@ import ljproto
 
 # Here's the TODO list for potential future enhancements.
 #
-#  - For the talker stuff: be able to do a {name} inside the {tl}.
-#
 #  - It'd be quite nice to be able to specify {t stuff} inside the
 #    explicit {mbreak} text, in case the simple (part N) suffix
 #    isn't sufficient.
@@ -330,26 +328,42 @@ class output:
         self.mono_show_para()
         self.mono_blankline()
 
-    def tl(self, text):
-	l = len(text)
-	left = 9 - l
-	if left < 0:
-	    left = 0
+    def tlbegin(self):
+	self.htmlsave = self.html
+	self.html = ""
+	if len(self.mono_words) > 0:
+	    self.mono_show_para()
+	    self.mono_words = []
+	pass
+
+    def tlend(self):
 	if self.html_ok:
+	    text = self.html
+	    self.html = self.htmlsave
 	    if (self.talker & 2):
 		self.html = self.html + "</td>"
 	    if (self.talker & 1):
 		self.html = self.html + "</tr>"
-	    self.html = self.html + "<tr valign=\"top\"><td align=\"right\">"
-	    self.html = self.html + "&nbsp;"*left + "<b>" + self.htmlsafe(text)
-	    self.html = self.html + "&nbsp;</b></td><td>"
+	    self.html = self.html + "<tr valign=\"top\">"
+	    self.html = self.html + "<td width=\"100\" align=\"right\">"
+	    self.html = self.html + "<b>" + text + "</b>&nbsp;</td><td>"
 	    self.talker |= 3
 	if self.mono_ok:
-	    if len(self.mono_words) > 0:
-		self.mono_show_para()
-		self.mono_words = []
-	    self.mono_bullet_txt = " " * left + "\007B" + text + "\007b" + " "
-	    self.mono_bullet_wid = left + len(text) + 1
+	    text = ""
+	    attr = sw = 0
+	    for word in self.mono_words:
+		w2 = (word[0], word[1] | ATTR_BOLD) + word[2:]
+                attr, rwi, swi, extratext = self.mono_append(attr, 0, w2)
+		sw = sw + swi
+                text = text + extratext
+	    attr, rwi, swi, extratext = self.mono_append(attr, 0, (" ",0,0))
+	    sw = sw + swi
+	    text = text + extratext
+	    left = 10 - sw
+	    if left < 0: left = 0
+	    self.mono_words = []
+	    self.mono_bullet_txt = " " * left + text
+	    self.mono_bullet_wid = left + sw
 
     def tb(self):
 	if self.html_ok:
@@ -648,6 +662,8 @@ class tokeniser:
 # Now actually read the markup.
 
 def rdinput(file):
+    global nocomments
+
     t = tokeniser(file)
     o = output()
 
@@ -669,6 +685,9 @@ def rdinput(file):
 	    if tok == (EOF,):
 		o.finish()
 		return o
+	    elif tok == (TSIMPLE, "nocomments"):
+		t.next()
+		nocomments = 1
 	    elif tok == (TSIMPLE, "Q"):
 		t.next()
 		o.quote_state(2)
@@ -753,7 +772,8 @@ def rdinput(file):
 		    if para_type != PTALKER:
 			sys.stderr.write("{tl} tag not in {talker} para\n")
 		    else:
-			o.tl("")
+			o.tlbegin()
+			o.tlend()
 		elif tok[1] == "tb":
 		    if para_type != PTALKER:
 			sys.stderr.write("{tb} tag not in {talker} para\n")
@@ -801,15 +821,10 @@ def rdinput(file):
 		    else:
 			tok = t.next()
 			name = ""
-			while tok != (EOF,) and tok != (TCLOSE,):
-			    if tok[0] == WORD:
-				name = name + tok[1]
-				tok = t.next()
-			o.tl(name)
-			if tok == (TCLOSE,):
-			    t.next()
+			o.tlbegin()
 			if tok[0] == WHITE or tok[0] == NL:
 			    t.next()
+			stack = stack + ["tl"]
 		else:
 		    stack = stack + [tok[1]]
 		    t.next()
@@ -842,6 +857,8 @@ def rdinput(file):
 			o.posturlmode(0)
 		    elif s == "name":
 			o.postnamemode(0)
+		    elif s == "tl":
+			o.tlend()
 		    elif s == "t":
 			o.end_title()
 		    elif s == "tq":
@@ -884,6 +901,7 @@ def readfile(fname):
 
 need_edit = 1
 need_unlink = 0
+nocomments = 0
 security = None
 fname = None
 if len(sys.argv) > 1:
@@ -1004,6 +1022,8 @@ while 1:
 	    dict["min"] = time.strftime("%M", nowlocal)
 	    if security:
 		dict["security"] = security
+	    if nocomments:
+		dict["prop_opt_nocomments"] = "1"
 	    ret = ljproto.ljcall(dict)
 	    if not ljproto.ljok(ret):
 		print "Unable to post to LJ: " + ljproto.ljerror(ret)

@@ -17,6 +17,7 @@ there's a footnote{1} as well.
 {tl anakin}{q Ooh, hi there.}
 {tl longline}{q This is a talker-formatted paragraph. Ain't that
 cool? Now let's see if this line will wrap.}
+{tl {name simont anakin} }wonders whether {{name}} in {{tl}} will work
 
 {ljcut LJ cut}
 
