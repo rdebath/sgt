@@ -1,0 +1,18 @@
+Summary: Support for an "ssh" URL scheme
+Class: wish
+Priority: low
+Difficulty: taxing
+Content-type: text/x-html-body
+
+<p>
+  Some people would like PuTTY to be able to accept "ssh" (and "raw") URLs
+  on the command-line, in the same way as it accepts "telnet" ones.
+<p>
+  At present, though, there is no
+  <a href="http://www.iana.org/assignments/uri-schemes">URL scheme</a>
+  for SSH registered with <a href="http://www.iana.org/">IANA</a>, and
+  the PuTTY developers don't have the time to go through the
+  <a href="http://www.ietf.org/rfc/rfc2717.txt">regsistration procedure</a>
+  for a new one.  If someone specifies and registers such a URL scheme,
+  support for it will almost certainly be added to PuTTY.
+
