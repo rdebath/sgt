@@ -23,6 +23,9 @@ Going in the other direction, several people have asked if it could
 be possible to start PuTTY <em>without</em> starting a terminal
 window and a shell - just have PuTTY sit in the background and do
 port forwarding only. This would also be possible in theory.
+<ul>
+<li>Patch (unreviewed): <code>3E9DBAE6.6030703@acero.com</code></li>
+</ul>
 
 <p>
 Similarly, perhaps we should also support running (e.g.) psftp
