@@ -1,0 +1,9 @@
+Summary: Allow port ranges in tunnel UI
+Priority: low
+Class: wish
+Content-type: text/x-html-body
+
+<p>
+We've had a couple of requests for the port forwarding UI to allow
+ranges of ports (e.g., source port 5000-5030, destination
+192.168.0.10:5000-5030).
