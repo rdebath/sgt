@@ -6,7 +6,10 @@ Content-type: text/x-html-body
 
 <p>
 Ability to select a preference order of authentications, like we can
-already do for ciphers.
+already do for ciphers.  This would be particularly useful for servers
+(like OpenSSH) which limit the number of authentication attempts allowed,
+since it saves us wasting attempts on methods that the user knows will
+fail.  See errors-toomanyauth in the manual.
 
 <p>
 It would be nice to have some way for the user to say "skip to next

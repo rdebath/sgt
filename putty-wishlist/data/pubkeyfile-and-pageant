@@ -13,8 +13,10 @@ isn't ideal.
 <p>
 This is particularly obvious when several keys are valid for a given
 connection (e.g., if one is trying to use a particular key to run
-a particular forced command). However, I suspect the issues aren't
-limited to this case.
+a particular forced command).  It can also cause problem if Pageant
+has lots of keys and the server (e.g. OpenSSH) is configured to only
+allow a certain number of authentication attempts.  See
+errors-toomanyauth in the manual.
 
 <p>
 Here is my (JTN) suggested algorithm for fixing the immediate problem
