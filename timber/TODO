@@ -4,8 +4,6 @@ Mail sending plan of action
 So. I now have code which parses the input message and RFC2047s the
 headers. Things left to do:
 
- - Invent Message-ID header if not already present.
-
  - Figure out how to extract and parse pseudo-headers.
     + One option is to have rfc822.c pass a set of lexed_header
       structures out to yet another hook.
