@@ -245,7 +245,10 @@ while 1:
     xrefoff = string.atoi(prevstr)
 
 if offset == None:
-    sys.stderr.write("unable to find object number %d\n" % number)
+    objstr = "%d" % number
+    if gen >= 0:
+        objstr = objstr + " %d" % gen
+    sys.stderr.write("unable to find object number %s\n" % objstr)
     sys.exit(1)
 
 # Now we know the object offset. Read and display the object.
