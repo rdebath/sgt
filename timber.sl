@@ -44,6 +44,10 @@ variable timber_folders = "~/mail";
 variable timber_sig = "~/.signature";
 
 % This variable may be reassigned in `.timberrc'. It gives
+% the pathname of a mime.types file.
+variable timber_mimetypes = "/etc/mime.types";
+
+% This variable may be reassigned in `.timberrc'. It gives
 % the text to be prepended to quoted messages in replies.
 variable timber_quote_str = "> ";
 
@@ -85,6 +89,10 @@ variable timber_mime_prog = "perl " + dircat(JED_ROOT,"bin/timberm.pl");
 % This variable may be reassigned in `.timberrc'. It gives
 % the full pathname of the program which adds line prefixes.
 variable timber_prefix_prog = "perl " + dircat(JED_ROOT,"bin/timbere.pl");
+
+% This variable may be reassigned in `.timberrc'. It gives
+% the full pathname of the program which looks up MIME types.
+variable timber_mimetype_prog = "perl " + dircat(JED_ROOT,"bin/timbert.pl");
 
 % This variable may, and almost certainly should, be reassigned
 % in `.timberrc'. It gives a comma-separated list of e-mail
@@ -1930,22 +1938,18 @@ define timber_bcc_self() {
 
 % Add an Attach: header line in a composition.
 define timber_attach() {
-    variable fname, ext, i, j;
-    variable type;
+    variable fname, type, fbuf, tbuf;
 
     fname = read_file_from_mini ("File to attach:");
-    type = "application/octet-stream";
-    % FIXME. This wants to be loads better.
-    if (string_match(fname, "\\.\\([^\\.]*\\)$", 1)) {
-	(i,j) = string_match_nth(1);
-	ext = substr(fname, i+1, j);
-        if (ext == "doc") type = "application/msword";
-        if (ext == "txt") type = "text/plain";
-        if (ext == "png") type = "image/png";
-        if (ext == "gif") type = "image/gif";
-        if (ext == "jpg") type = "image/jpeg";
-        if (ext == "jpeg") type = "image/jpeg";
-    }
+    % Try to determine MIME type.
+    push_mark();
+    push_mark();
+    run_shell_cmd(timber_mimetype_prog + " " +
+                  expand_filename(timber_mimetypes) + " " + fname);
+    type = bufsubstr();
+    del_region();
+    if (type == "")
+        type = "application/octet-stream"; % sensible default MIME type
     type = read_mini("MIME type:", "", type);
 
     push_spot();
