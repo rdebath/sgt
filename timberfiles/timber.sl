@@ -16,6 +16,7 @@
 % Give forwarding some serious testing, interoperating it with all
 %   mailers I can find (mutt; pine; vm; Eudora; netscrapemail; others?)
 % get the message size counting right (exclude From line? CRLF?)
+%   message size counting is also not corrected after mimedestroy
 % ESC-UP and ESC-DOWN should move a message around within the folder
 % maybe postpone a composed message
 % maybe fcc
@@ -275,6 +276,16 @@ $1 = "Timber";
     definekey("timber_mimerev", "mR", $1);
     definekey("timber_mimerev", "mr", $1);
 
+    % M^D (mime-destroy) replaces a MIME part with a text/x-rcpt-removed
+    % part giving the previous set of MIME headers, so that you can save
+    % a message without its attachment. This is VERY DANGEROUS, so we also
+    % define a Timber undo function on ^Xu and ^_.
+    definekey("timber_mimedestroy", "M^D", $1);
+    definekey("timber_mimedestroy", "m^D", $1);
+    definekey("timber_undo", "^Xu", $1);
+    definekey("timber_undo", "^XU", $1);
+    definekey("timber_undo", "^_", $1);
+
     % A (attachment) saves a MIME part to a file, decoding if required.
     definekey("timber_saveattach", "A", $1);
     definekey("timber_saveattach", "a", $1);
@@ -429,8 +440,13 @@ define timber_tmpnam() {
 %{{{ timber_ro() and timber_rw()
 
 % Utility routines: toggle the buffer's read-only status (and other flags)
-define timber_ro() { setbuf_info((getbuf_info() | 0x109) & ~0x22); }
-define timber_rw() { setbuf_info(getbuf_info() & ~8); }
+define timber_ro() { setbuf_info((getbuf_info() | 0x129) & ~0x2); }
+define timber_rw() { setbuf_info((getbuf_info() | 0x20) & ~8); }
+
+%}}}
+%{{{ timber_undo()
+
+define timber_undo() { timber_rw(); call("undo"); timber_ro(); }
 
 %}}}
 %{{{ timber_fetchmail(): the fetch-mail interface
@@ -1341,6 +1357,26 @@ define timber_fold() {
 }
 
 %}}}
+%{{{ timber_yesno (): standardised yes-or-no minibuffer input
+
+% Get a yes/no response from the user. The one in site.sl is ugly.
+define timber_yesno (prompt)
+{
+    variable c;
+
+    flush (prompt);
+    EXIT_BLOCK {
+        clear_message();
+    }
+    while (1) {
+	c = tolower(getkey());
+	if (c == 'y') return 1;
+	if (c == 'n') return 0;
+	if (c != '\r' and c != '\n') beep();
+    }
+}
+
+%}}}
 %{{{ timber_mimedec(): decode a MIME part
 
 define timber_mimedec() {
@@ -1426,6 +1462,72 @@ define timber_mimerev() {
             timber_fold();
             timber_unfold();
         }
+    }
+}
+
+%}}}
+%{{{ timber_mimedestroy(): destroy a MIME part
+
+define timber_mimedestroy() {
+    variable mark, type;
+
+    mark = create_user_mark();
+
+    bol();
+    while (what_char() != '!' and what_char() != 'M'
+	   and what_char() != '*' and not bobp()) {
+	go_up_1();
+	bol();
+    }
+
+    if (what_char() != '!' or bobp()) {
+	goto_user_mark(mark);
+	error("Not in a MIME attachment.");
+	return;
+    }
+
+    (,,type,) = timber_get_mimepart(1);
+    goto_user_mark(mark);
+    !if (timber_yesno("Really destroy attachment of type "+type+"? [yn] ")) {
+        return;
+    }
+
+    timber_rw();
+
+    push_mark();
+    eol();
+    del_region();
+    insert("! text/x-rcpt-removed"); % replace the Timber marker line
+    go_right_1(); % now we're on the separator line
+    eol();
+    go_right_1(); % and now we're at the start of the attachment headers
+
+    insert("+Content-Type: text/x-rcpt-removed; charset=\"us-ascii\"\n \n");
+    insert(" This attachment was removed by the recipient after delivery.\n");
+    insert(" The MIME headers for the original attachment follow.\n \n");
+
+    while (what_char() == '+' and not eolp()) {
+        deln(1);
+        insert_char(' ');
+        eol();
+        go_right_1(); % next header
+    }
+    insert(" \n");
+    push_mark();
+    while (what_char() != '!' and not eolp()) {
+        eol();
+        go_right_1();
+    }
+    del_region();
+
+    timber_ro();
+    go_up_1();
+    bol();
+
+    while (what_char() != '!') {
+        set_line_hidden(1);
+        go_up_1();
+        bol();
     }
 }
 
@@ -1812,26 +1914,6 @@ define timber_export() {
     pop_spot();
 
     message(Sprintf("Exported message to file %s.", file, 1));
-}
-
-%}}}
-%{{{ timber_yesno (): standardised yes-or-no minibuffer input
-
-% Get a yes/no response from the user. The one in site.sl is ugly.
-define timber_yesno (prompt)
-{
-    variable c;
-
-    flush (prompt);
-    EXIT_BLOCK {
-        clear_message();
-    }
-    while (1) {
-	c = tolower(getkey());
-	if (c == 'y') return 1;
-	if (c == 'n') return 0;
-	if (c != '\r' and c != '\n') beep();
-    }
 }
 
 %}}}
