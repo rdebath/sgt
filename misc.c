@@ -4,6 +4,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 #include <unistd.h>
 #include <pwd.h>
@@ -39,7 +40,7 @@ void get_user(char *buf, int buflen) {
 	p = getpwnam(user);
     else
 	p = NULL;
-    if (p && p->pw_uid == getuid()) {
+    if (p && p->pw_uid == uid) {
 	/*
 	 * The result of getlogin() really does correspond to our
 	 * uid. Fine.
@@ -52,7 +53,7 @@ void get_user(char *buf, int buflen) {
 	 * simpler version: look up our uid in the password file
 	 * and map it straight to a name.
 	 */
-	p = getpwuid(getuid());
+	p = getpwuid(uid);
 	strncpy(buf, p->pw_name, buflen);
 	buf[buflen-1] = '\0';
     }
@@ -146,8 +147,6 @@ time_t parse_date(char *buf) {
  */
 void fmt_date(char *buf, time_t t) {
     struct tm tm;
-    time_t epoch;
-    double d;
 
     tm = *gmtime(&t);
 

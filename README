@@ -1,0 +1,13 @@
+This archive contains Enigma, a puzzle game.
+
+This Enigma implementation was written by me, Simon Tatham. I can't
+claim credit for inventing the game itself; the game rules and the
+twelve original levels were devised by a friend, who wishes to
+remain anonymous. He has waived copyright on his levels, and granted
+them to the public domain.
+
+Enigma is licensed under the MIT licence. See the file LICENCE for
+details.
+
+Designs for further levels are welcomed; please send them to
+<anakin@pobox.com>.

@@ -6,6 +6,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "enigma.h"
 
@@ -56,7 +57,7 @@ static level *level_load(char *filename) {
 		fatal_error_string = "Map before size in level file";
 		return NULL;
 	    }
-	    if (strlen(buf + 5) != level->width) {
+	    if ((int)strlen(buf + 5) != level->width) {
 		fatal_error_string = "Wrong length map line in level file";
 		return NULL;
 	    }
