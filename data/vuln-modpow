@@ -43,7 +43,7 @@ does, thus preserving the mathematical correctness of the function
 implements this fix, and is believed not to be vulnerable.
 
 <p>
-This bug is <b>EXTREMELY SEVERE</b> in SSH2. SSH2 uses
+This bug is <b>EXTREMELY SEVERE</b> in SSH-2. SSH-2 uses
 Diffie-Hellman key exchange, in which each of client and server
 sends a large number to the other, and each one performs a
 <code>modpow</code> operation using that large number as the base.
@@ -56,23 +56,23 @@ if you trust the server you <em>think</em> you are connecting to,
 you are not safe.
 
 <p>
-The bug is of more limited impact in SSH1. In SSH1, all the
+The bug is of more limited impact in SSH-1. In SSH-1, all the
 <code>modpow</code> operations performed during key exchange involve
 the <em>client</em> inventing <code>base</code>, while the server
 provides <code>exp</code> and <code>mod</code>. Therefore, a
-malicious server cannot exploit this bug during SSH1 key exchange.
+malicious server cannot exploit this bug during SSH-1 key exchange.
 They can only exploit it during public key authentication, in which
 the server sends an RSA-encrypted value and the client performs a
 <code>modpow</code> to decrypt it. This means that the only servers
 which can attack you through this bug are servers you trust, since
 by the time the server can mount this attack it must already have
-proved that it holds an acceptable host key. Also, if you use SSH1
+proved that it holds an acceptable host key. Also, if you use SSH-1
 but do <em>not</em> use public-key authentication, there is no
 longer any opening for the server to exploit this bug.
 
 <p>
 However, see <a href="vuln-ssh1-kex.html">vuln-ssh1-kex</a> for
-another potential problem in SSH1 key exchange. Even SSH1 users who
+another potential problem in SSH-1 key exchange. Even SSH-1 users who
 do not use public-key authentication should upgrade.
 
 <p>

@@ -8,7 +8,7 @@ Content-type: text/plain
 
 Within ssh.c, PuTTY uses a server channel number of (unsigned)(-1) to
 represent a channel that doesn't have a server channel number assigned
-yet.  Neither SSH1 nor SSH2, though, places any restriction on the use
+yet.  Neither SSH-1 nor SSH-2, though, places any restriction on the use
 of 0xffffffff as a channel number, which is what (unsigned)(-1) will
 be on a 32-bit system.  If a server using 0xffffffff as a channel
 number, PuTTY will not believe that the channel is properly open, and

@@ -7,7 +7,7 @@ Fixed-in: 2002-10-14
 
 <p>
 Version 2 of the SSH protocol has various security and other
-enhancements over SSH1. We should encourage its use.
+enhancements over SSH-1. We should encourage its use.
 
 <p>
 One way of doing this is to make SSH-2 the default protocol (currently

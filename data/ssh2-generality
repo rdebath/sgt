@@ -1,11 +1,11 @@
-Summary: Support for SSH2: zero, or more than one, terminal per session
+Summary: Support for SSH-2: zero, or more than one, terminal per session
 Class: wish
 Priority: medium
 Difficulty: tricky
 Content-type: text/x-html-body
 
 <p>
-SSH 2 is a much more flexible protocol than SSH 1. It doesn't
+SSH-2 is a much more flexible protocol than SSH-1. It doesn't
 require exactly one terminal session per SSH connection; you can
 have more than one, or indeed none at all.
 

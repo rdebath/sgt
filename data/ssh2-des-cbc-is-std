@@ -9,7 +9,7 @@ Content-type: text/x-html-body
 <p>According to
 <a href="http://www.ietf.org/internet-drafts/draft-ietf-secsh-assignednumbers-04.txt">
 draft-ietf-secsh-assignednumbers-04.txt</a>, "des-cbc" is one of the
-assigned cipher names for SSH2.  PuTTY currently describes it (in the
+assigned cipher names for SSH-2.  PuTTY currently describes it (in the
 configuration box, the documentation, and comments in sshdes.c) as
 non-standard.
 

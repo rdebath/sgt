@@ -12,7 +12,7 @@ signature supplied'. We reproduced this with a 2500-bit RSA host key.
 SGT: This _appears_ to be due to me computing the byte count of the
 key by dividing the bit count by 8 and rounding _down_ rather than up.
 Therefore, I can't see how this code could ever have worked on any
-SSH2 RSA key whose length was not a multiple of 8 bits; and therefore
+SSH-2 RSA key whose length was not a multiple of 8 bits; and therefore
 I'm staggered that we haven't noticed it before! OpenSSH's keygen
 appears to be scrupulous about ensuring the returned key length is
 exactly what you asked for rather than one bit less, but even so I'm

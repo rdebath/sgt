@@ -1,11 +1,11 @@
-Summary: SSH2 message strings etc should be in UTF-8
+Summary: SSH-2 message strings etc should be in UTF-8
 Class: bug
 Difficulty: tricky
 Priority: medium
 Present-in: 2005-01-19
 Content-type: text/plain
 
-All of the human-readable and human-supplied strings in SSH2,
+All of the human-readable and human-supplied strings in SSH-2,
 including user names, passwords, banners, and error messages, are
 specified to be encoded in UTF-8.  PuTTY currently ignores this and
 uses whatever character-set the terminal happens to be configured to

@@ -1,4 +1,4 @@
-Summary: Vulnerability: buffer management bug in SSH1 key exchange
+Summary: Vulnerability: buffer management bug in SSH-1 key exchange
 Class: vulnerability
 Difficulty: fun
 Priority: high
@@ -8,14 +8,14 @@ Content-type: text/x-html-body
 
 <p>
 All versions of the PuTTY suite prior to 0.55 have a memory
-corruption bug in SSH1 key exchange, which might lead to a security
+corruption bug in SSH-1 key exchange, which might lead to a security
 vulnerability.
 
 <p>
 The bug lies in the <code>rsaencrypt()</code> function, which
 performs RSA encryption with
 <a href="ftp://ftp.rsasecurity.com/pub/pkcs/ascii/pkcs-1.asc">PKCS#1 v1.5</a>
-padding, as used in the SSH1 key exchange. This function assumes
+padding, as used in the SSH-1 key exchange. This function assumes
 that the data to be encrypted is smaller than the modulus of the
 public key. If this is not the case, the <code>memmove()</code>
 operation at the start of the function will overwrite memory before
@@ -42,7 +42,7 @@ long enough to allow the encryption of the supplied data.
 Although PuTTY verifies the server's host key against its Registry
 cache before performing the vulnerable encryption operation, this
 does not protect you from a spoofed server or man-in-the-middle
-attack. SSH1 involves two public keys: a server key (changed every
+attack. SSH-1 involves two public keys: a server key (changed every
 hour, for forward security) and a host key (never changed, for
 server authentication). Some data is encrypted using both keys, and
 then the server proves its identity by decrypting it. So a MITM can
