@@ -2,14 +2,25 @@ Summary: Requests to Pageant should be asynchronous
 Class: wish
 Priority: medium
 Difficulty: tricky
-Content-type: text/plain
-Fixed-in: 2003-04-29
+Content-type: text/x-html-body
 
+<p>
 Currently, when PuTTY makes a request to Pageant, it waits in a
 tight loop for the answer. Really it should be able to answer
 Windows messages and do other housekeeping tasks while it's waiting
 for the answer. This would enable Pageant to do a variety of
 time-consuming things in the course of answering a request.
 
+<p>
 <b>SGT, 2003-04-28</b>: This was indeed tricky, but should now be
 done.
+
+<p>
+<b>Update, 2004-01-24</b>:
+Bah! Nicolas Barry correctly points out that my async agent code
+simply doesn't work - if multiple concurrent agent requests are
+attempted, some of them will fail for no apparent reason. I assume
+concurrent SendMessage() calls don't work in the Windows API, or
+some such. So I'm commenting out the async code for the moment
+(there wasn't a Windows Pageant that made helpful use of it anyway
+yet) and returning to the drawing board.
