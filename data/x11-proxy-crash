@@ -1,34 +1,21 @@
-Summary: Opening X11 connections with proxying turns on causes crash
+Summary: Proxy + SSH + X11 forwarding fails and/or crashes
 Class: bug
 Priority: high
 Content-type: text/x-html-body
-Present-in: 0.53 2002-09-29 2002-03-25
+Present-in: 0.53 0.53b 2002-09-29 2002-03-25 2002-12-11
 
 <p>Opening a forwarded X11 connection over an SSH connection that's using a
-proxy causes PuTTY to crash.  Reports so far:
-<ul>
-<li>Ref: <code>&lt;3D9B9963.3000006@metaprogramming.org&gt;</code>
-<br>Against OpenSSH 2.9.9p2 (unspecified protocol), SOCKS5 proxy
-<li>Ref: <code>&lt;OF9A6AB8C9.8F040CB9-ON85256C4B.00750701@boulder.ibm.com&gt;</code>
-<br>With SSHv2 against F-SECURE 2.3.1, SOCKS5 proxy
-<li>Ref: <code>&lt;20021010114830.53187.qmail@web20909.mail.yahoo.com&gt;</code>
-<br>With SSHv2 against OpenSSH 3.1p1, HTTP proxy
-<br>Report has SSH packet log and Dr Watson log.
-<li>I (JTN) can reproduce this with 0.53 SSH-1 (OpenSSH 1.2.3) and SSH-2
-(3.4p1), with HTTP proxying.
-</ul>
-<p>This bug has been present more or less since proxy support was added.
+proxy fails to work. (Versions of PuTTY before 2002-10-11 may also crash.)
 
-<p>Appears intermittent. If PuTTY doesn't crash, I get the following reported
-in my terminal session:
-<p><pre>X connection to chiark:27.0 broken (explicit kill or server shutdown)</pre>
-<p>If it does crash, I get something like:
-<p><pre>XIO:  fatal IO Error 104 (Connect reset by peer) on X server "chiark:27.0"
-      after 0 requests (0 known processed) with 0 events remaining.</pre>
+<p>I (JTN) can reproduce this with HTTP proxying.
 
 <p>Appears to be occur regardless of whether there's an X server to connect to.
 When I do have an X server running, it doesn't appear to see any traffic
 when attempting X forwarding through a proxy.
+
+<p>
+Symptom is something like the following:
+<p><pre>X connection to chiark:27.0 broken (explicit kill or server shutdown)</pre>
 
 <p>PuTTY behaves as though the X connection is being opened then slammed shut:
 <p><pre>2002-10-17 18:07:24     Received X11 connect request
@@ -37,10 +24,6 @@ when attempting X forwarding through a proxy.
 2002-10-17 18:07:24     Forwarded X11 connection terminated</pre>
 
 <p>
-It looks like an unrelated checkin I made to the proxy code on 2002-10-11
-may have cured the crashing, but the X forwarding still doesn't work.
-
-<p>
-One hypothesis we have is that proxying is too general and is being
-applied to the X connection. If so, adding `localhost' to the proxy
-exclusions should fix this.
+A workaround is to add `localhost,127.0.0.1' to the proxy exclusions.
+This implies that our proxying code is being over-enthusiastic and needs
+reining in.
