@@ -1,6 +1,6 @@
 # -*- mode: sh; mode: fold -*-
 # Simon Tatham's standardised chunk of .bashrc
-# $Revision: 1.35 $
+# $Revision: 1.36 $
 
 #{{{ I don't like .bash_history files. They wet their nests.
 unset HISTFILE
@@ -226,14 +226,12 @@ export TERM
 doPSn() {
   local hostname=`hostname | sed 's/\..*$//' | tr A-Z a-z`
   local spaces=`echo -n $hostname | sed 's/./ /g'`
-  # I used to pipe the result of _bashrc_tput straight through sed.
-  # This turned out to work badly on CUS, where tput stops doing
-  # anything useful if its output is a pipe to sed. (Though oddly
-  # enough, it worked fine when its output was a pipe to _cat_; I
-  # have no idea what sed was doing differently to cause that!)
-  #
-  # Hence I now save the output of tput immediately, and then
-  # re-echo it before piping through sed.
+  # Some seds ignore a partial line at the end of their input -
+  # they won't process it, or even bother to output it unchanged.
+  # Hence instead of writing `tput bold | sed', I save the output
+  # of tput and then use `echo' to feed it to sed, because echo
+  # will append a newline. Of course the backticks will remove the
+  # newline afterwards (as they did in the original `tput bold`).
   local bold=`_bashrc_tput bold`
   local colour=`echo "$bold" | sed 's/\[1m/\[0;3${promptcolour}m/'`
   local sgr0=`_bashrc_tput sgr0`
