@@ -1,5 +1,6 @@
 Summary: Failed assertion: count234(term->scrollback) <= newsavelines
 Class: bug
+Priority: medium
 Present-in: 0.55
 Content-type: text/x-html-body
 

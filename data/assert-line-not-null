@@ -1,5 +1,6 @@
 Summary: Assertion failed in terminal.c:lineptr(): line != NULL
 Class: bug
+Priority: medium
 Present-in: 0.56
 Content-type: text/x-html-body
 
