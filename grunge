@@ -27,6 +27,24 @@ import socket
 
 import rgtpclient
 
+try:
+    foo = curses.init_pair
+    curses_has_colour = 1
+    colour_pairs = {(curses.COLOR_WHITE,curses.COLOR_BLACK): 0}
+    colourmap = {
+    "k": curses.COLOR_BLACK,
+    "b": curses.COLOR_BLUE,
+    "g": curses.COLOR_GREEN,
+    "c": curses.COLOR_CYAN,
+    "r": curses.COLOR_RED,
+    "m": curses.COLOR_MAGENTA,
+    "y": curses.COLOR_YELLOW,
+    "w": curses.COLOR_WHITE
+    }
+    nextpair = 1
+except AttributeError:
+    curses_has_colour = 0
+
 # Read .grungerc
 if os.environ.has_key("GRUNGEDIR"):
     rcdir = os.environ["GRUNGEDIR"]
@@ -61,6 +79,8 @@ def centre(texts):
 def initcurses():
     global scr, height, width, scrheight, scrwidth
     scr = curses.initscr()
+    if curses_has_colour:
+	curses.start_color()
     scr.keypad(1)
     scr.scrollok(1)
     curses.noecho()
@@ -73,13 +93,23 @@ def endcurses():
     curses.endwin()
 
 def aprint(scr, y, x, str):
+    global nextpair
     attr = 0
+    fg = curses.COLOR_WHITE
+    bg = curses.COLOR_BLACK
     while str != "":
 	i = string.find(str, "\a")
 	if i == -1: i = len(str)
-	scr.addstr(y, x, str[:i], attr)
-	str = str[i:]
-	x = x + i
+	if (i > 0):
+	    pair = colour_pairs.get((fg,bg), None)
+	    if pair == None:
+		curses.init_pair(nextpair, fg, bg)
+		colour_pairs[(fg,bg)] = nextpair
+		pair = nextpair
+		nextpair = nextpair + 1
+	    scr.addstr(y, x, str[:i], attr | curses.color_pair(pair))
+	    str = str[i:]
+	    x = x + i
 	if str == "": break
 	elen = 2
 	if str[1] == "B": attr = attr | curses.A_BOLD
@@ -87,7 +117,20 @@ def aprint(scr, y, x, str):
 	if str[1] == "R": attr = attr | curses.A_REVERSE
 	if str[1] == "r": attr = attr &~ curses.A_REVERSE
 	if str[1] == "a": attr = 0
-	if str[1] == "C": elen = 3
+	if str[1] == "C":
+	    cchar = str[2]
+	    lchar = string.lower(cchar)
+	    if cchar == 'A':
+		colour = curses.COLOR_WHITE
+	    elif cchar == 'a':
+		colour = curses.COLOR_BLACK
+	    else:
+		colour = colourmap[lchar]
+	    if cchar >= 'A' and cchar <= 'Z':
+		fg = colour
+	    else:
+		bg = colour
+	    elen = 3
 	str = str[elen:]
 
 def mylc(i):
@@ -463,7 +506,7 @@ class menu:
 	if type == "t":
 	    return centre([aux])
 	elif type == "i":
-	    s = "\aCB" + aux.itemid + "\aCA  ("
+	    s = "\aCC" + aux.itemid + "\aCA  ("
 	    lt = time.localtime(aux.timestamp)
 	    ltnow = time.localtime(time.time())
 	    if lt[0] < ltnow[0]-1 or (lt[0] == ltnow[0]-1 and lt[1] <= ltnow[1]):
@@ -839,7 +882,7 @@ def editor(title, inittext):
 	aprint(scr, sy, 0, centre(["[", "\aB", "^O", "\ab", "] for options ([",
 	"\aB", "CTRL", "\ab", "] + [", "\aB", "O","\ab","])"]))
 	sy = sy + 1
-	aprint(scr, sy, 0, "\aR\aCB\aCc" + "-"*(lwidth-1) + "|" +
+	aprint(scr, sy, 0, "\aR\aCC\aCk" + "-"*(lwidth-1) + "|" +
 	"-"*(width-lwidth) + "\aa\aCA\aCa")
 	yoff = 5
 	ynum = height - yoff
