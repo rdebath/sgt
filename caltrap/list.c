@@ -6,10 +6,13 @@
 #include <stdio.h>
 #include "caltrap.h"
 
-static void list_callback(void *ctx, Date d, Time t, char *msg)
+struct list_ctx {
+    Date last;
+};
+
+static void list_print(Date d, Time t, char *msg)
 {
     char *dfmt, *tfmt;
-
     dfmt = format_date_full(d);
     tfmt = format_time(t);
     printf("%s %s %s\n", dfmt, tfmt, msg);
@@ -17,10 +20,28 @@ static void list_callback(void *ctx, Date d, Time t, char *msg)
     sfree(tfmt);
 }
 
+static void list_upto(struct list_ctx *ctx, Date d)
+{
+    Date dd;
+    for (dd = ctx->last + 1; dd < d; dd++)
+	list_print(dd, NO_TIME, "");
+}
+
+static void list_callback(void *vctx, Date d, Time t, char *msg)
+{
+    struct list_ctx *ctx = (struct list_ctx *)vctx;
+
+    list_upto(ctx, d);
+    list_print(ctx->last == d ? NO_DATE : d, t, msg);
+
+    ctx->last = d;
+}
+
 int caltrap_list(int nargs, char **args, int nphysargs)
 {
     Date sd, ed;
     Time t;
+    struct list_ctx ctx;
 
     if (nargs > 2)
 	fatal(err_addargno);
@@ -46,5 +67,7 @@ int caltrap_list(int nargs, char **args, int nphysargs)
 	}
     }
 
-    db_list_entries(sd, ed, list_callback, NULL);
+    ctx.last = sd - 1;
+    db_list_entries(sd, ed, list_callback, &ctx);
+    list_upto(&ctx, ed);
 }
