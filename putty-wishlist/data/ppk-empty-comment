@@ -1,7 +1,7 @@
 Summary: Trouble with empty PPK key comments
 Class: bug
 Difficulty: fun
-Priority: medium
+Priority: high
 Absent-in: 0.52
 Present-in: 0.53b 2002-10-07 2003-01-04 2003-06-29
 Content-type: text/x-html-body
@@ -37,3 +37,8 @@ The obvious workaround is to return from <code>ssh.c:c_write()</code>
 if called with <code>len==0</code>, but why do
 <code>from_backend()</code> and friends complain about zero-length
 writes in the first place?
+
+<p>
+JTN: After discussion, we can't remember why that assertion is there.
+My vote's on removing it and making from_backend() cope with zero-length
+writes.
