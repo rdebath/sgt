@@ -15,3 +15,7 @@ global configuration.
 We should have a checkbox in the Colours panel which allows you to
 specify that PuTTY's foreground and background colours should follow
 the Windows default settings.
+
+<p>
+<a href="http://www.chiark.greenend.org.uk/~bjharris/junk/putty-syscolour.diff">
+This</a> is a patch to implement this (looks sane -- needs documentation).
