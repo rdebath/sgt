@@ -1,7 +1,7 @@
 Summary: Ability to backend onto a Windows command interpreter
 Class: wish
 Difficulty: taxing
-Priority: medium
+Priority: low
 Content-type: text/x-html-body
 
 <p>
@@ -14,19 +14,19 @@ I haven't investigated this very closely, but it's not clear to me
 that this would be useful for anything except Cygwin. I've used
 Windows telnetds, and they look to me as if they're working in a
 fundamentally different way from a Unix telnetd. When you issue a
-command that scrolls the screen a lot, it seems to get _redrawn_
-from the server end rather than scrolled - as if the server had its
-own image of what the console screen ought to look like and was
-running something like <code>libcurses</code> to reproduce that
-image on the client side.
+command that scrolls the screen a lot, it seems to get
+<em>redrawn</em> from the server end rather than scrolled - as if
+the server had its own image of what the console screen ought to
+look like and was running something like <code>libcurses</code> to
+reproduce that image on the client side.
 
 <p>
 This leads me to conjecture that Windows's equivalent of a pty works
-more like /dev/vcs than /dev/pty* - Windows will still do the
-terminal emulation itself, and all you can do is read the results
-off a rectangular screen buffer and transfer them to an output
-device. So there would be no scope, in this model, for PuTTY to
-supply superior terminal emulation.
+more like <code>/dev/vcs</code> than <code>/dev/pty*</code> -
+Windows will still do the terminal emulation itself, and all you can
+do is read the results off a rectangular screen buffer and transfer
+them to an output device. So there would be no scope, in this model,
+for PuTTY to supply superior terminal emulation.
 
 <p>
 The alternative to that, of course, would be to ignore Windows's pty
