@@ -655,9 +655,7 @@ def showmenus(mainmenu, escmenu, startmenu, height=24, width=79):
 		mret = m
 	    else:
 		mret = mainmenu
-	    # FIXME: pretty prompt at bottom of screen
 	    c = string.lower(sys.stdin.read(1))
-	    # FIXME: add scan, sub and unsub
 	    if c == "\033":
 		m = escmenu
 		my = 0
@@ -787,23 +785,28 @@ def editor(title, width=79, height=24):
 		    c = c + cc
 		    if string.find(string.digits+"[;", cc) < 0:
 			break
-	    # FIXME: ^D.
-	    # FIXME: ^K, ^Y c'n'p.
 	    # FIXME: ^W, ^T move by words.
 	    # FIXME: ^V, ^Z move by screenfuls.
+	    #
+	    # FIXME: ^K, ^Y c'n'p.
 	    # FIXME: ^O M/B for block motion.
+	    #
 	    # FIXME: ^O F for search (*shrug*).
 	    # FIXME: ^O J to justify paragraph.
-	    # FIXME: ^O Space to terminate.
-	    # FIXME: '.' on line alone to terminate.
-	    # FIXME: '.quit' on line alone to quit.
 	    if c == "\n" or c == "\r":
+		if ret[y] == ".quit":
+		    return None # quit editor
+		if ret[y] == ".":
+		    ret[y:y+1] = [] # erase the line with a dot
+		    break
 		ret[y:y+1] = [ret[y][:x], ret[y][x:]]
 		x = 0
 		y = y + 1
 		if ytop < y-ynum+1: ytop = y-ynum+1
 	    elif c == "\017q":
-		break # ^O q quits
+		return None # ^O q quits
+	    elif c == "\017 ":
+		break # ^O space terminates
 	    elif c == "\001":
 		x = 0
 	    elif c == "\005":
@@ -816,6 +819,11 @@ def editor(title, width=79, height=24):
 		    x = len(ret[y-1])
 		    ret[y-1:y+1] = [ret[y-1] + ret[y]]
 		    y = y - 1
+	    elif c == "\004":
+		if x < len(ret[y]):
+		    ret[y] = ret[y][:x] + ret[y][x+1:]
+		elif y+1 < len(ret) and len(ret[y]) + len(ret[y+1]) <= lwidth:
+		    ret[y:y+2] = [ret[y] + ret[y+1]]
 	    elif c == "\020" or c == "\033[A": # Up
 		if y > 0:
 		    y = y - 1
@@ -848,27 +856,29 @@ def editor(title, width=79, height=24):
 		ret[y] = ret[y][:x] + c + ret[y][x+1-insert:]
 		x = x + 1
 		py = y
-		# FIXME. Special case: pressing a space at line end.
 		while len(ret[py]) > lwidth:
 		    # We have wrapped. Trim a space if that's all we need
 		    # to do, otherwise find a whole word and wrap it.
 		    while len(ret[py]) > lwidth and ret[py][-1:] == " ":
 			ret[py] = ret[py][:-1]
-		    if x >= lwidth:
-			x = lwidth
-		    sp = string.rfind(ret[py], " ", 0, lwidth)
-		    if sp == -1:
-			wrap = ret[py][lwidth:]
-			ret[py] = ret[py][:lwidth]
-			if y == py and x > lwidth:
-			    y = y + 1
-			    x = x - lwidth
+		    if x > len(ret[py]): # special case: Space pressed at EOL
+			x = 0
+			y = y + 1
+			wrap = ""
 		    else:
-			wrap = ret[py][sp+1:]
-			ret[py] = ret[py][:sp]
-			if y == py and x > sp:
-			    y = y + 1
-			    x = x - (sp+1)
+			sp = string.rfind(ret[py], " ", 0, lwidth)
+			if sp == -1:
+			    wrap = ret[py][lwidth:]
+			    ret[py] = ret[py][:lwidth]
+			    if y == py and x > lwidth:
+				y = y + 1
+				x = x - lwidth
+			else:
+			    wrap = ret[py][sp+1:]
+			    ret[py] = ret[py][:sp]
+			    if y == py and x > sp:
+				y = y + 1
+				x = x - (sp+1)
 		    py = py + 1
 		    if len(ret) == py or ret[py] == "":
 			ret[py:py] = [wrap]
@@ -885,6 +895,9 @@ def editor(title, width=79, height=24):
     finally:
 	term.charmodeoff()
 	term.cls()
+    # Trim trailing blank lines
+    while len(ret) > 0 and ret[-1] == "":
+	ret = ret[:-1]
     return ret
 
 args = sys.argv[1:]
