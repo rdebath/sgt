@@ -1,14 +1,8 @@
 /*
- * TODO before releasable quality:
- * 
- *  - Thorough testing.
- * 
- *  - Half decent build system.
- * 
  * TODO possibly after that:
  * 
  *  - Need to handle >2Gb files! Up the `filesize' type to long
- *    long and use it everywhere.
+ *    long, and use it everywhere (not just in buffer.c).
  *
  *  - Multiple buffers, multiple on-screen windows.
  *     + ^X^F to open new file
@@ -25,7 +19,16 @@
  * 	 rather than the current rather crap one; in particular
  * 	 this enables pasting into the search string.
  *     + er, how exactly do we deal with the problem of saving over
- * 	 a file which we're maintaining references to?
+ * 	 a file which we're maintaining references to in another
+ * 	 buffer? The _current_ buffer can at least be sorted out by
+ * 	 replacing it with a fresh tree containing a single
+ * 	 file-data block, but other buffers are in trouble.
+ * 	  * if we can rely on Unix fd semantics, this isn't too
+ * 	    bad; we can just keep the fd open on the original file,
+ * 	    and then the data stays around even after we rename(2)
+ * 	    our new version over the top. Disk space usage gets
+ * 	    silly after a few iterations, but it's better than
+ * 	    nothing.
  * 
  *  - Undo!
  *     + this actually doesn't seem _too_ horrid. For a start, one
@@ -38,6 +41,10 @@
  * 	 buf_delete_data (both must be cloned for an overwrite),
  * 	 but I'm not convinced that simply cloning the entire thing
  * 	 isn't a superior option.
+ *     + this really starts to show up the distinction between a
+ * 	 `buffer' and a bare tree. A buffer is something which has
+ * 	 an undo chain attached; so, in particular, the cut buffer
+ * 	 shouldn't be one. Sort that out.
  * 
  *  - Reverse search.
  *     + need to construct a reverse DFA.
@@ -52,7 +59,9 @@
  * 	 one, we simply seek within the original file and write out
  * 	 all the pieces that have changed.
  *     + Primarily useful for editing disk devices directly
- * 	 (yikes!).
+ * 	 (yikes!), or other situations where you actually cannot
+ * 	 create a fresh copy of the file and rename(2) it into
+ * 	 place.
  *     + I had intended to suggest that in Fix mode this would be
  * 	 nice and easy, since every element of the buffer tree is
  * 	 either a literal block (needs writing) or a from-file
