@@ -46,6 +46,14 @@ as a newsgroup name, and the second as an article number.
 \dd Verbose mode. In this mode, \cw{nntpid} will log its entire
 conversation with the news server on standard error.
 
+\U AUTHENTICATION
+
+Currently, the only form of authentication supported by \cw{nntpid}
+is \cw{AUTHINFO GENERIC}, using the environment variable
+\cw{NNTPAUTH}. It will only attempt this if it receives a 480
+response from the news server; if your news server never sends 480
+then \cw{nntpid} will never even look at \cw{NNTPAUTH}.
+
 \U LICENCE
 
 \cw{nntpid} is free software, distributed under the MIT licence.
