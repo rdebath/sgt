@@ -1466,7 +1466,11 @@ int doit_incoming_data(doit_ctx *ctx, void *buf, int len) /*{{{*/
         }
         if (ctx->incoming_pos == 4) {
             ctx->their_nonce_len = 4+GET_32BIT_MSB_FIRST(ctx->incoming);
+            if (ctx->their_nonce_len > PACKET_MAX)
+                return -1;
             ctx->their_nonce = malloc(ctx->their_nonce_len);
+            if (!ctx->their_nonce)
+                return -1;
             PUT_32BIT_MSB_FIRST(ctx->their_nonce, ctx->their_nonce_len-4);
             ctx->their_nonce_got = 4;
         }

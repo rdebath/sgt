@@ -223,6 +223,8 @@ char *do_fetch(SOCKET sock, doit_ctx *ctx, int line_terminate, int *length)
      * Start with any existing buffered data.
      */
     len = doit_incoming_data(ctx, NULL, 0);
+    if (len < 0)
+        return NULL;
     cmdline = malloc(256);
     cmdlen = 0;
     cmdsize = 256;
@@ -252,6 +254,8 @@ char *do_fetch(SOCKET sock, doit_ctx *ctx, int line_terminate, int *length)
             return line_terminate ? NULL : cmdline;
         }
         len = doit_incoming_data(ctx, buf, len);
+        if (len < 0)
+            return NULL;
     }
 }
 char *do_fetch_line(SOCKET sock, doit_ctx *ctx)
