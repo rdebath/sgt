@@ -14,7 +14,7 @@ In SSH2, Kerberos is supported through
 <a href="http://www.faqs.org/faqs/kerberos-faq/general/section-84.html">
 GSSAPI</a>.  It appears that Globus <a href="http://www.globus.org/security/">
 GSI</a> authentication also uses GSSAPI, though for some reason needs
-a different client imeplentation (and yet a third if you want to support
+a different client implementation (and yet a third if you want to support
 both).
 
 <P><a href="http://www.certifiedsecuritysolutions.com/">Certified Security
