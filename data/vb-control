@@ -1,0 +1,19 @@
+Summary: SSH client packaged as a Visual Basic component
+Class: wish
+Difficulty: taxing
+Priority: low
+Depends: dll-frontend
+Content-type: text/plain
+
+A lot of people ask for a Visual Basic component that implements an
+SSH client, so that they can include it in their VB programs and
+automatically get securely in touch with other systems and issue
+commands.
+
+I think the simplest way to do this would be to implement it as a
+thin veneer on top of the DLL front end (once we've done _that_).
+
+The major direct difficulty in this work is that I know nothing
+about VB components and how to create one, and so I can't even think
+about beginning this without some outside help. But also, it can't
+be done unless the DLL work is done first.
