@@ -245,8 +245,13 @@ static const char *const ab_schema[] = {
     "INSERT INTO contacts VALUES (0);",
 
     "CREATE TABLE attributes ("
+    "  attribute_id INTEGER PRIMARY KEY,"
     "  contact_id INTEGER,"
-    "  type VARCHAR NOT NULL,"
+    "  type VARCHAR NOT NULL"
+    ");",
+
+    "CREATE TABLE attr_values ("
+    "  attribute_id INTEGER,"
     "  value VARCHAR NOT NULL"
     ");"
 };
@@ -538,8 +543,9 @@ static char *ab_get_attr (int contact_id,
 
     sql_open(ab);
     sql_get_table_printf (ab,
-			  "SELECT value FROM attributes "
-			  "WHERE contact_id = %d AND type = '%q'",
+			  "SELECT value FROM attributes, attr_values "
+			  "WHERE contact_id = %d AND type = '%q' AND "
+			  "attributes.attribute_id = attr_values.attribute_id",
 			  &table, &rows, &cols, contact_id, attr_type);
     if (0 < rows) {
 	assert (1 == cols);
@@ -559,14 +565,24 @@ static void ab_set_attr (int contact_id,
     sql_open(ab);
     sql_transact (ab, begin_transaction);
     sql_exec_printf (ab,
+		     "DELETE FROM attr_values "
+		     "WHERE attribute_id = "
+		     "(SELECT attribute_id FROM attributes "
+		     "WHERE contact_id = %i AND type = '%q')",
+		     contact_id, attr_type);
+    sql_exec_printf (ab,
 		     "DELETE FROM attributes "
 		     "WHERE contact_id = %i AND type = '%q'",
 		     contact_id, attr_type);
     if (new_value) {
 	sql_exec_printf (ab,
-			 "INSERT INTO attributes (contact_id, type, value) "
-			 "VALUES (%i, '%q', '%q')",
-			 contact_id, attr_type, new_value);
+			 "INSERT INTO attributes (contact_id, type) "
+			 "VALUES (%i, '%q')",
+			 contact_id, attr_type);
+	sql_exec_printf (ab,
+			 "INSERT INTO attr_values (attribute_id, value) "
+			 "VALUES (%i, '%q')",
+			 sqlite_last_insert_rowid(ab->handle), new_value);
     }
     sql_transact (ab, commit_transaction);
 }
