@@ -2,8 +2,9 @@ Summary: pterm should set WINDOWID environment variable
 Class: bug
 Priority: medium
 Difficulty: fun
-Content-type: text/plain
+Content-type: text/x-html-body
 
+<pre>
 xterm sets the WINDOWID environment variable to the Window ID.  Since
 some programs (Ian's xterm-titler program and w3m-img) use the
 WINDOWID, pterm should set it too.
@@ -14,3 +15,7 @@ windowid = GDK_WINDOW_XWINDOW(inst->window);
 
 ...and then something in pty.c can stuff that into the environment
 variable.
+</pre>
+<p>Richard Boulton has a
+<a href="http://www.tartarus.org/~richard/putty-patches/#patch_pterm_windowid">
+patch</a> for this.
