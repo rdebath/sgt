@@ -11,3 +11,6 @@ CSI ? 1 ; 2 c -- a VT100 with AVO.  Since PuTTY supports quite a few VT400
 options, I suspect it would be more sensible for it to return something
 in the 6x range, perhaps based on the current compatibility level set
 by DECSCL.  Maybe it should even be configurable -- it is on a VT420.
+
+We've had a report of this causing problems with entry of greek text, and
+a suggested replacement: <000801c3a54f$1cc29720$befba8c0@semantix.private.gr>.
