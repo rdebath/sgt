@@ -6,10 +6,11 @@ Content-type: text/x-html-body
 
 <p>If there is data being transferred through PuTTY while the SSH2
 repeat key exchange is taking place, it can confuse some servers.
-As far as I'm aware nobody has properly standardised this aspect of
-the SSH2 protocol (what happens to the connection layer while the
-transport layer is in a key exchange phase?) so it isn't clear what
-PuTTY <em>should</em> do in this situation, but a good
+
+<p>In the current SSH-2 protocol drafts, it's not entirely clear to
+all readers what happens to the connection layer while the transport
+layer is in a key exchange phase, so it isn't clear from there what
+PuTTY <em>should</em> do in this situation. A good
 conservative/liberal option would be to accept incoming
 connection-layer packets provided we can decrypt them, and to queue
 outgoing connection-layer packets until the key exchange is
@@ -23,16 +24,27 @@ There has been (repeated) discussion of this issue on
   <li>Thread 'Key Re-Exchange' starting 4 Apr 2001
   <li>Thread 'Some questions about "SSH Transport Layer Encryption Modes"' starting 16 Oct 2003
   <li>Thread 'data during rekey?' starting 1 Dec 2003
+  <li>Thread 'Data transfer during key re-exchange' starting 25 Jun 2004
 </ul>
 
 <p>
-The consensus seems to be drifting towards "suspending transport of
-user data while rekey negotiation is in progress", and having any
-nonblocking rekey as a protocol extension; but as of version -17 of
-the transport draft there's no sign of this appearing in the actual
-documents. People have also muttered about the receiving end
-continuing to accept data encrypted using the "old" keys; presumably
-some limit would want to be placed on that.
+The consensus seems have settled on the proposal above, and having
+any nonblocking rekey as a protocol extension (see for instance message
+<code>&lt;200310192351.h9JNpxAx004282@thunk.east.sun.com&gt;</code>),
+so we don't now have much excuse for not implementing that;
+but as of version -18 of the transport draft no change has been made 
+to the actual documents. (See 
+<a href="http://www.chiark.greenend.org.uk/ucgi/~jacobn/cvsweb/ssh2-kex-data.d/draft-iet f-secsh-transport-18-plus-kex-data.txt.diff?r1=1.1&r2=1.4&f=H">the current version</a>
+of a proposed change to the language to make this clearer.)
+
+<p>
+People have also muttered about the receiving end continuing to accept
+data encrypted using the "old" context; perhaps we'd want to keep an
+eye on how much data the other end tried to encrypt with a given
+context and close the connection if in our opinion it was too much.
+(Although this would be rather rude if we didn't
+<a href="ssh2-kex-repeat.html">request a rekey</a> first in plenty
+of time.)
 
 <p>
 Symptoms of this:
