@@ -157,12 +157,15 @@ void init_X(void) {
 
 void run_X(void) {
     XEvent ev ;
+    int keysym;
 
     do {
 	XNextEvent (disp, &ev) ;
 	switch (ev.type) {
 	  case KeyPress:
-	    printf("state=%08x key=%08x\n", ev.xkey.state, ev.xkey.keycode);
+	    keysym = XKeycodeToKeysym(disp, ev.xkey.keycode, 0);
+	    printf("state=%08x key=%08x keycode=%04x\n",
+		   ev.xkey.state, ev.xkey.keycode, keysym);
 	    break;
 	}
     } while (ev.type != ButtonPress) ;
