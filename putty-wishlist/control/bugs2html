@@ -1,5 +1,5 @@
 #! /usr/bin/perl
-# $Id: bugs2html,v 1.12 2002/11/17 18:21:39 jacob Exp $
+# $Id: bugs2html,v 1.13 2002/12/12 16:01:57 ben Exp $
 
 use FileHandle;
 use POSIX;
@@ -52,10 +52,11 @@ my @fullbuglist = keys %bugs;
 open(INDEX, "> $htmldir/index.html") or die "$htmldir/index.html: $!";
 
 nest(<<EOF);
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <HTML><HEAD>
 <TITLE>PuTTY Known Bugs and Wish List</TITLE>
+<link rel="stylesheet" type="text/css" href="$baseurl/sitestyle.css" title="PuTTY Home Page Style">
 </HEAD>
-<link rel="stylesheet" type="text/css" href="$baseurl/sitestyle.css" name="PuTTY Home Page Style">
 <BODY>
 <h1 align=center>PuTTY Known Bugs and Wish List</h1>
 
@@ -83,7 +84,7 @@ added it since the last release.
 EOF
 
 nest(<<EOF);
-<a name="fixed"><h2>Fixed things</h2></a>
+<h2><a name="fixed">Fixed things</a></h2>
 
 <p>
 These are items we believe we have already addressed.
@@ -139,7 +140,7 @@ EOF
 unnest("");
 
 nest(<<EOF);
-<a name="bugs"><h2>Bugs</h2></a>
+<h2><a name="bugs">Bugs</a></h2>
 
 <p>
 These items are clearly actual problems and I want them fixed.
@@ -312,10 +313,11 @@ sub bug2html {
 
     open(HTML, "> $htmldir/$bugname.html") or die "$htmldir/$bugname.html: $!";
     print HTML <<EOH;
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <HTML><HEAD>
 <TITLE>PuTTY @{[$hdrs->{class}]} $bugname</TITLE>
+<link rel="stylesheet" type="text/css" href="$baseurl/sitestyle.css" title="PuTTY Home Page Style">
 </HEAD>
-<link rel="stylesheet" type="text/css" href="$baseurl/sitestyle.css" name="PuTTY Home Page Style">
 <BODY>
 <h1 align=center>PuTTY @{[$hdrs->{class}]} $bugname</h1>
 
