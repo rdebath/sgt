@@ -18,10 +18,6 @@ import ljproto
 #       it in diary.data, then call xcopy < diary.data, and ignore
 #       any error. Works everywhere.
 #
-#  - Remove the temporary file when finished (a good criterion for
-#    this is to remove it if it's got a made-up name; if I supply a
-#    real name I probably want to keep it).
-#
 #  - Ability to post to only one medium (posting to LJ only is
 #    easily done by not bothering to paste into Mono; really all I
 #    need is the ability to paste to Mono only).
@@ -666,6 +662,7 @@ def readfile(fname):
 #  - Prompt for action: preview Mono, preview HTML, or post.
 
 need_edit = 1
+need_unlink = 0
 if len(sys.argv) > 1:
     fname = sys.argv[1]
     try:
@@ -675,8 +672,10 @@ if len(sys.argv) > 1:
     except OSError:
 	pass
 else:
+    tempfile.template = "diary-"
     fname = tempfile.mktemp()
     need_edit = 1
+    need_unlink = 1
 
 if need_edit:
     f = open(fname, "w")
@@ -759,3 +758,6 @@ while 1:
 	else:
 	    print "Posted to LJ; itemid =", ret["itemid"]
 	break
+
+if need_unlink:
+    os.unlink(fname)
