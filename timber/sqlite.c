@@ -380,7 +380,7 @@ void parse_for_db(const char *ego, const char *location,
     }
 
     ctx.ego = ego;
-    ctx.addr_index = 0;
+    ctx.addr_index = ctx.mid_index = ctx.mime_index = 0;
 
     parse_message(message, msglen, null_output_fn, NULL, db_info_fn, &ctx);
 

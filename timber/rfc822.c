@@ -820,7 +820,7 @@ void parse_headers(char const *base, char const *message, int msglen,
 		break;
 	      case ENCODED_ANYWHERE:
 		rfc2047(r, message - r, output, outctx,
-			FALSE, FALSE, default_charset);
+			FALSE, TRUE, default_charset);
 		break;
 	      case ENCODED_COMMENTS:
 		/*
@@ -855,7 +855,7 @@ void parse_headers(char const *base, char const *message, int msglen,
 			    r++;
 			}
 			rfc2047(p, r-p, output, outctx,
-				TRUE, FALSE, default_charset);
+				TRUE, TRUE, default_charset);
 			p = r;
 		    } else if (*r == '"') {
 			r++;
@@ -985,7 +985,7 @@ void parse_headers(char const *base, char const *message, int msglen,
 			    int end;
 			    if (rfc2047able)
 				rfc2047(p, q-p, output, outctx,
-					TRUE, FALSE, default_charset);
+					TRUE, TRUE, default_charset);
 			    else
 				output(outctx, p, q-p,
 				       TYPE_HEADER_TEXT,
@@ -1002,7 +1002,7 @@ void parse_headers(char const *base, char const *message, int msglen,
 				q++;
 			    }
 			    rfc2047(p, q-p, output, outctx,
-				    TRUE, FALSE, default_charset);
+				    TRUE, TRUE, default_charset);
 			    if (q == r)
 				break;
 			    output(outctx, q, 1,
@@ -1143,7 +1143,8 @@ struct lexed_header *lex_header(char const *header, int length, int type)
 		if (*p)
 		    break;
 	    }
-	    header++, length--;
+	    if (length > 0)
+		header++, length--;
 	}
 	tok->length = header - tok->token;
     }
@@ -1430,7 +1431,7 @@ char *rfc2047_to_utf8_string(const char *text, int len,
     ctx.text = NULL;
     ctx.textlen = ctx.textsize = 0;
     rfc2047(text, len, utf8_string_output, &ctx, structured,
-	    structured, default_charset);
+	    FALSE, default_charset);
     utf8_string_output(&ctx, "\0", 1, TYPE_HEADER_TEXT, CS_UTF8);
     return ctx.text;
 }
