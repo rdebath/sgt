@@ -15,4 +15,21 @@ Unix will be fine (we can use
 as will the Mac OS (where almost everything can be asynchronous),
 and any thread-capable OS won't
 have a problem. Everything else will just have to degrade gracefully
-to synchronous DNS, which will be fun. :-(
+to synchronous DNS.
+
+<p><b>SGT, 2003-02-07</b>: I now think I have some idea of
+<em>how</em> to design a DNS abstraction which can cope equally well
+with being implemented synchronously or asynchronously. It's rather
+simple, actually: <code>sk_namelookup</code> acquires a couple of
+extra parameters, in the form of a function pointer and a context
+handle to be passed to that function. The code which calls
+<code>sk_namelookup</code> should expect that function to be called
+in turn on completion of the DNS lookup. Then a synchronous DNS
+implementation could actually call the function straight from
+<code>sk_namelookup</code> itself, whereas an asynchronous one could
+call it from whatever callback ends up getting hold of the results
+of the lookup. Client code, of course, will have to be written in
+such a way that it doesn't mind which happens; in practice that will
+probably mean the function which called <code>sk_namelookup</code>
+should terminate immediately after doing so, rather than doing
+anything which might need to be done before or after the DNS lookup.
