@@ -1,6 +1,6 @@
 # -*- mode: sh; mode: fold -*-
 # Simon Tatham's standardised chunk of .bashrc
-# $Revision: 1.15 $
+# $Revision: 1.16 $
 
 #{{{ I don't like .bash_history files. They wet their nests.
 unset HISTFILE
@@ -9,16 +9,19 @@ rm -f ~/.bash_history
 #{{{ addpath and addpathback, for idempotent path management
 
 addpath() {
-  local a b
+  local a b c
   # Be able to accept a second argument which is an envvar name.
   # Otherwise, default to managing PATH.
   a=${2:-PATH}
+  # Be able to accept a third argument which is a separator char.
+  # Otherwise, default to a colon.
+  c=${3:-:}
   # Retrieve the value of the variable whose name is given in $a.
   b=${!a}
   case "$b" in
-    '') export $a=$1 ;;
-    *:$1:* | $1:* | *:$1 | $1) ;;
-    *) export $a=$1:$b ;;
+    '') export $a="$1" ;;
+    *"$c$1$c"* | "$1$c"* | *"$c$1" | "$1") ;;
+    *) export $a="$1$c$b" ;;
   esac
 }
 
@@ -27,12 +30,15 @@ addpathback() {
   # Be able to accept a second argument which is an envvar name
   # Otherwise, default to managing PATH.
   a=${2:-PATH}
+  # Be able to accept a third argument which is a separator char.
+  # Otherwise, default to a colon.
+  c=${3:-:}
   # Retrieve the value of the variable whose name is given in $a.
   b=${!a}
   case $b in
-    '') export $a=$1 ;;
-    *:$1:* | $1:* | *:$1 | $1) ;;
-    *) export $a=$b:$1 ;;
+    '') export $a="$1" ;;
+    *"$c$1$c"* | "$1$c"* | *"$c$1" | "$1") ;;
+    *) export $a="$b$c$1" ;;
   esac
 }
 
