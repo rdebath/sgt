@@ -132,6 +132,8 @@ while 1:
     s = f.readline()
     if s == "":
 	break
+    if s[:1] == "#":
+	continue # skip commented lines
     while s[-1:] == "\r" or s[-1:] == "\n":
 	s = s[:-1]
     ss = string.split(s)
@@ -141,11 +143,14 @@ while 1:
 
 # Get command-line options.
 scan = 1
+verbose = 0
 args = []
 for i in sys.argv[1:]:
     if i[0] == "-":
 	if i == "-n":
 	    scan = 0
+	elif i == "-v":
+	    verbose = 1
 	else:
 	    print "ignoring unrecognised command-line argument:", i
     else:
@@ -277,12 +282,15 @@ if scan:
     if len(changelist):
 	print "Journals which have changed since the last scan:"
 	for i in changelist: printout(i)
-    if len(samelist):
-	print "Journals which are unchanged since the last scan:"
-	for i in samelist: printout(i)
-    if len(faillist):
-	print "Journals which were not retrievable in this scan:"
-	for i in faillist: printout(i)
+    if verbose:
+	if len(samelist):
+	    print "Journals which are unchanged since the last scan:"
+	    for i in samelist: printout(i)
+	if len(faillist):
+	    print "Journals which were not retrievable in this scan:"
+	    for i in faillist: printout(i)
+    elif len(newlist) == 0 and len(changelist) == 0:
+	print "No new or changed journals found in this scan."
 else:
     if len(reportlist):
 	print "Journals which have been scanned before:"
@@ -290,4 +298,3 @@ else:
     if len(newlist):
 	print "Journals which have not been scanned before:"
 	for i in newlist: printout(i)
-    
