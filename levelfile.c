@@ -24,6 +24,13 @@ static level *level_load(char *filename) {
     level *level;
     int nlines;
 
+    /*
+     * Sanity-check level name.
+     */
+    if (filename[strcspn(filename, SETNAME_INVALID)] != '\0') {
+	fatal("Invalid character in level name");
+    }
+
     fname[sizeof(fname)-1] = '\0';
     strncpy(fname, LEVELDIR, sizeof(fname));
     strncpy(fname + strlen(fname), filename, sizeof(fname)-strlen(fname));
@@ -88,6 +95,13 @@ levelset *levelset_load(char *filename) {
     char buf[FILENAME_MAX+10];
     char fname[FILENAME_MAX];
     levelset *set;
+
+    /*
+     * Sanity-check level set name.
+     */
+    if (filename[strcspn(filename, SETNAME_INVALID)] != '\0') {
+	fatal("Invalid character in level set name");
+    }
 
     fname[sizeof(fname)-1] = '\0';
     strncpy(fname, LEVELDIR, sizeof(fname));

@@ -29,3 +29,12 @@
  * startup if none is provided on the command line.
  */
 #define DEFAULTSET "original"
+
+/*
+ * Characters not permitted in level set names. (To prevent people
+ * using ../<stuff> as a level set name to try to make Enigma
+ * subvert other programs.) Just to be safe, we'll also put '.' in
+ * here so that there's absolutely no chance of things in SAVEDIR
+ * overwriting each other, by accident or design.
+ */
+#define SETNAME_INVALID "/."
