@@ -19,6 +19,15 @@ ourselves seems like a lot of work and would also bloat PuTTY.
 An alternative would be to only allow a file to be picked, and take
 the first icon in the file, but that's a bit naff.
 
+<ul>
+<li><em>Update:</em> There is an undocumented interface to get at
+Windows' icon chooser from <code>SHELL32.DLL</code>, called
+<a href="http://www.codeproject.com/shell/selecticon.asp"><code>PickIconDlg</code></a>;
+there's some faff involved but it does appear to be
+<a href="http://www.partware.com/ebooks/api/ref/p/pickicondlg.html">available
+across a wide range of Windows versions</a>. (Not sure about Win32s.)
+</ul>
+
 <p>
 Also, we already have various means of distinguishing sessions, and we
 keep getting asked for more. If we added them all, PuTTY would
