@@ -384,6 +384,10 @@ $1 = "Timber";
     definekey("timber_saveattach", "A", $1);
     definekey("timber_saveattach", "a", $1);
 
+    % M-a (attachment) decodes and runs a viewer on a MIME part.
+    definekey("timber_viewattach", "^[A", $1);
+    definekey("timber_viewattach", "^[a", $1);
+
     % M-r (for replying) selects the current MIME part.
     definekey("timber_selattach", "^[R", $1);
     definekey("timber_selattach", "^[r", $1);
@@ -1223,6 +1227,59 @@ define timber_saveattach() {
         goto_user_mark(bot);
         % We have an attachment in the marked region. Save it.
         pipe_region(timber_mime_prog + " - " + encoding + " " + file);
+    }
+    goto_user_mark(mark);
+}
+
+%}}}
+%{{{ timber_viewattach(): save a MIME attachment to a file
+
+% User-overrideable function. If a MIME type can be viewed, return
+% the desired extension for a temporary file (including the dot -
+% ".jpeg" for example) and then an sprintf template for the command
+% to be run on the file.
+define timber_can_view(type) {
+    return (NULL, NULL);
+}
+
+% View the current MIME part (or whole message, if non-multipart).
+define timber_viewattach() {
+    variable mark, top, bot;
+    variable ext, cmd, file, type, encoding;
+    variable fp, buf, array;
+
+    mark = create_user_mark();
+    (top, bot, type, encoding) = timber_get_mimepart(0);
+    !if (top == NULL) {
+        (ext, cmd) = timber_can_view(type);
+        !if (cmd == NULL) {
+            % If the file extension is null, try looking it up in
+            % the MIME types file.
+            if (ext == NULL) {
+                ext = "";              % default
+                fp = fopen(timber_mimetypes, "r");
+                if (fp != NULL) {
+                    while (-1 != fgets(&buf, fp)) {
+                        buf = strcompress(buf, " \t\n");
+                        array = strchop(buf, " \t\n");
+                        if (length(array) > 1 and array[0] == type)
+                            ext = "." + array[1];
+                    }
+                    () = fclose(fp);
+                }
+            }
+            file = timber_tmpnam() + ext;
+            goto_user_mark(top);
+            push_mark();
+            goto_user_mark(bot);
+            % We have an attachment in the marked region. Save it.
+            pipe_region(timber_mime_prog + " - " + encoding + " " + file);
+            system("(" + sprintf(cmd, file) + "; rm -f " + file + ") &");
+        } else {
+            error("Unable to view files of type " + type + ".");
+        }
+    } else {
+        error("Not on an attachment.");
     }
     goto_user_mark(mark);
 }
