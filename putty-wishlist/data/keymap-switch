@@ -10,3 +10,9 @@ up remains in force throughout.
 
 This probably doesn't take much actual code to fix, but I don't know
 what causes it or how to fix it, so someone else will have to help out.
+
+OSD: I can't reproduce this on this Windows XP system, and the code
+for recognising keymap switching (WM_INPUTLANGCHANGE) seems to have
+been there since at least r1427 if not since RDB's Unicode patch in
+r1110.  Unless anyone can reproduce this anywhere, I'm tempted to mark
+it as done.
