@@ -163,7 +163,6 @@ def pageitem(indexentry, item):
 		    ret = ret + c
 		    sys.stdout.write(c)
 		    sys.stdout.flush()
-	    # FIXME: command recall here would be cool
     try:
 	term.charmodeon()
 	h.width, h.height = term.getsize()
@@ -324,6 +323,7 @@ def parseindex(index, items):
 		conttime = e.timestamp
 		contitem = i
 	    i.uptodate = 0
+	    i.newtext = 1
 	elif e.type == "C": # new continuation
 	    i.timestamp = e.timestamp
 	    if contitem != None and contseq == e.sequence and conttime == e.timestamp:
@@ -335,13 +335,16 @@ def parseindex(index, items):
 		contseq = e.sequence
 		conttime = e.timestamp
 		contin = i
+	    i.newtext = 1
 	elif e.type == "R" or e.type == "E": # reply or edit
 	    i.timestamp = e.timestamp
 	    i.uptodate = 0
+	    i.newtext = 1
 	    if e.type == "E":
 		i.fileptr = 0 # effectively new
 	elif e.type == "I": # new item
 	    i.timestamp = e.timestamp
+	    i.newtext = 1
     return items
 
 def saveindex(filename, items, lastseq):
@@ -390,6 +393,7 @@ def loadindex(filename):
 	i.contin = words[6]
 	if i.contin == "-": i.contin = None
 	i.subject = s[subjpos+2:]
+	i.newtext = 0
 	items[i.itemid] = i
     return items, lastseq
 
@@ -404,7 +408,12 @@ class menu:
 	    return centre([aux])
 	elif type == "i":
 	    s = "\033[34m" + aux.itemid + "\033[m  ("
-	    s = s + time.strftime("%b %d %H:%M", time.localtime(aux.timestamp))
+	    lt = time.localtime(aux.timestamp)
+	    ltnow = time.localtime(time.time())
+	    if lt[0] < ltnow[0]-1 or (lt[0] == ltnow[0]-1 and lt[1] >= ltnow[1]):
+		s = s + time.strftime("%b %d  %Y", lt)
+	    else:
+		s = s + time.strftime("%b %d %H:%M", lt)
 	    s = s + ") "
 	    if aux.subscription == 3: # both scans
 		s = s + " "
@@ -436,7 +445,11 @@ class menu:
 	    else:
 		s = s + "Action"
 	    s = s + "   [\033[1m"
-	    s = s + string.upper(key) + "\033[m] - "
+	    s = s + string.upper(key) + "\033[m] "
+	    if type == "m":
+		s = s + "= "
+	    else:
+		s = s + "- "
 	    s = s + text
 	    return s
 	# FIXME: need  "Menu  [ESC]= Utilities & EXIT"
@@ -495,7 +508,8 @@ def mkmenus(items):
     oneyear = now - 365*24*60*60
 
     Mmain = menu(["Grunge Main Menu"])
-    Mnew = menu(["New Items <", "\033[1m", "N", "\033[;36m", ">"])
+    Mnew = menu(["Newly Updated Items <", "\033[1m", "N", "\033[;36m", ">"])
+    Msub = menu(["Subscribed Items <", "\033[1m", "S", "\033[;36m", ">"])
     Moneweek = menu(["One Week <", "\033[1m", "W", "\033[;36m", ">"])
     Monemonth = menu(["One Month <", "\033[1m", "M", "\033[;36m", ">"])
     Msixmonths = menu(["Six Months <", "\033[1m", "6", "\033[;36m", ">"])
@@ -509,12 +523,14 @@ def mkmenus(items):
     Mexit = menu(["Exit Grunge? [", "\033[1m", "ESC", "\033[;36m", "][",\
     "\033[1m", "X", "\033[;36m", "]"])
 
-    Mmain.addchild(Mnew, "n", "Items with &new text")
+    Mmain.addchild(Mnew, "n", "Items with &new text this session")
     Mmain.addblank()
     Mmain.addchild(Moneweek, "w", "Items modified up to a &week ago")
     Mmain.addchild(Monemonth, "m", "Items modified up to a &month ago")
     Mmain.addchild(Msixmonths, "6", "Items modified up to &6 months ago")
     Mmain.addchild(Moneyear, "y", "Items modified up to a &year ago")
+    Mmain.addblank()
+    Mmain.addchild(Msub, "s", "&Subscribed items")
     Mmain.addblank()
     Mmain.addchild(Mallitems, "a", "&All items")
 
@@ -559,11 +575,12 @@ def mkmenus(items):
 	return 0
     itemlist.sort(itemcompare)
     for id, item in itemlist:
-	if item.subscription != 0 and not item.uptodate: Mnew.additem(item)
+	if item.newtext: Mnew.additem(item)
 	if item.timestamp > oneweek: Moneweek.additem(item)
 	if item.timestamp > onemonth: Monemonth.additem(item)
 	if item.timestamp > sixmonths: Msixmonths.additem(item)
 	if item.timestamp > oneyear: Moneyear.additem(item)
+	if item.subscription != 0: Msub.additem(item)
 	Mallitems.additem(item)
 
     Mmain.parent = None # special case
@@ -784,8 +801,20 @@ while len(args) > 0 and args[0][:1] == "-":
 	sys.exit(0)
     args[:1] = []
 
-# FIXME: move the editor from -e to the [a] option when viewing, so we
+# Todo list:
+#
+# Move the editor from -e to the [a] option when viewing, so we
 # can add stuff.
+#
+# Line editing and recall in bottom-line input.
+#
+# Accumulated FIXMEs from elsewhere in the code:
+# - Pretty prompt at bottom of screen for menus
+# - In menu loop, = to (un)sub and SPACE to scan
+# - Check session has write access when deciding whether to print [A]:Add
+# - "Menu  [ESC]= Utilities and Exit"
+# - Many editor fixen and upgrades.
+# - Would be nice to have a count of items in item-containing menus.
 
 c = rgtpclient.RGTPConnection(plogfile=logfile)
 c.setsecret(secretpath)
