@@ -51,16 +51,17 @@ def savefont(f, file):
     file.write("charset " + "%d"%f.charset + "\n\n")
     for i in range(256):
 	file.write("char " + "%d"%i + "\nwidth " + "%d"%f.chars[i].width+"\n")
-	for j in range(f.height):
-	    v = f.chars[i].data[j]
-	    m = 1L << (f.chars[i].width-1)
-	    for k in range(f.chars[i].width):
-		if v & m:
-		    file.write("1")
-		else:
-		    file.write("0")
-		v = v << 1
-	    file.write("\n")
+	if f.chars[i].width != 0:
+	    for j in range(f.height):
+		v = f.chars[i].data[j]
+		m = 1L << (f.chars[i].width-1)
+		for k in range(f.chars[i].width):
+		    if v & m:
+			file.write("1")
+		    else:
+			file.write("0")
+		    v = v << 1
+		file.write("\n")
 	file.write("\n")
 
 def dofnt(fnt):
@@ -102,24 +103,21 @@ def dofnt(fnt):
 	ctsize = 6
     maxwidth = 0
     for i in range(256):
-	entry = ctstart + ctsize * i
+	f.chars[i] = char()
+	f.chars[i].width = 0
+	f.chars[i].data = [0L] * f.height
+    firstchar = frombyte(fnt[0x5F:])
+    lastchar = frombyte(fnt[0x60:])
+    for i in range(firstchar,lastchar+1):
+	entry = ctstart + ctsize * (i-firstchar)
 	w = fromword(fnt[entry:])
-	if maxwidth < w:
-	    maxwidth = w
-    widthbytes = fromword(fnt[0x63:])
-    if widthbytes > (maxwidth+7)/8:
-	widthbytes = (maxwidth+7)/8
-    for i in range(256):
-	entry = ctstart + ctsize * i
-	w = fromword(fnt[entry:])
+	f.chars[i].width = w
 	if ctsize == 4:
 	    off = fromword(fnt[entry+2:])
 	else:
 	    off = fromdword(fnt[entry+2:])
 	#print "Char", i, "width", w, "offset", off, "filelen", len(fnt)
-	f.chars[i] = char()
-	f.chars[i].width = w
-	f.chars[i].data = [0L] * f.height
+	widthbytes = (w + 7) / 8
 	for j in range(f.height):
 	    for k in range(widthbytes):
 		bytepos = off + k * f.height + j
@@ -161,6 +159,7 @@ def dofon(fon):
 		sys.stderr.write("Resource overruns file boundaries\n")
 		return None
 	    if rtype == 0x8008: # this is an actual font
+		#print "Font at", start, "size", size
 		font = dofnt(fon[start:start+size])
 		if font == None:
 		    sys.stderr.write("Failed to read font resource at %x" \
