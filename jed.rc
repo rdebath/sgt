@@ -1,5 +1,5 @@
 % -*- mode: slang; mode: fold -*-
-% Simon Tatham: version $Revision: 1.4 $
+% Simon Tatham: version $Revision: 1.5 $
 
 %{{{ load Emacs keybindings to start with
 
@@ -581,6 +581,94 @@ if (jedrc_is_in_lib("bcmode.sl")) { %{{{
 %}}}
 %{{{ ESC 0 inserts `0', so we can type eight zeros using ALT-8 ALT-0
 setkey(". 48 insert_char", "^[0");
+%}}}
+%{{{ Somewhat different text-mode format-paragraph function
+
+define text_item1st() {
+    push_spot();
+    EXIT_BLOCK { pop_spot(); }
+    bol();
+    if (looking_at(" ") or looking_at("\t")) {
+        skip_white();
+        if (looking_at("-") or looking_at("*") or looking_at("("))
+            return 1;
+    }
+    return 0;
+}
+
+define text_parsep() {
+    push_spot();
+    bol_skip_white();
+    eolp();
+    pop_spot();
+}
+
+define text_format_paragraph() {
+    variable mkbot, mktop, item, i, j;
+    if (text_parsep())
+        return;
+    push_spot();
+    while (down(1) and not text_item1st() and not text_parsep());
+    bol();
+    insert("\n");
+    mkbot = create_user_mark();
+    pop_spot();
+    push_spot();
+    while (1) {
+        if (text_item1st())
+            break;
+        !if (up(1))
+            break;
+        if (text_parsep()) {
+            go_down(1);
+            break;
+        }
+    }
+    bol();
+    insert("\n");
+    mktop = create_user_mark();
+    item = text_item1st();
+    if (item) {
+        skip_white();
+        skip_chars("^ \t");
+        push_spot();
+        i = what_column();
+        skip_white();
+        i = what_column() - i - 1;
+        pop_spot();
+        j = i;
+        while (i > 0) {
+            insert(".");
+            i = i - 1;
+        }
+        push_spot();
+        call("trim_whitespace");
+        what_column();
+        insert("\n");
+        whitespace(());
+    }
+    call("format_paragraph");
+    if (item) {
+        pop_spot();
+        deln(left(j));
+        whitespace(j);
+    }
+    goto_user_mark(mkbot);
+    deln(left(1));
+    goto_user_mark(mktop);
+    deln(left(1));
+    pop_spot();
+}
+
+$1 = "text";
+!if (keymap_p($1)) make_keymap($1);
+definekey("text_format_paragraph", "\eQ", $1);
+define text_mode_hook() {
+    use_keymap("text");
+    set_buffer_hook("par_sep", "text_parsep");
+    runhooks("jedrc_text_mode_hook");
+}
+
 %}}}
 %{{{ Include local hacks if possible
 $1 = expand_filename("~/.jedrc2");
