@@ -395,8 +395,6 @@ int main(int argc, char **argv)
 
             if (!strcmp(cmd, "secret"))
                 secret = dupstr(arg);
-            else if (!strcmp(cmd, "browser"))
-                browser = dupstr(arg);
             else if (!strcmp(cmd, "host"))
                 new_hostcfg(arg);
             else if (!strcmp(cmd, "map")) {
@@ -670,9 +668,7 @@ int main(int argc, char **argv)
             fprintf(stderr, "doit: \"www\" requires an argument\n");
             exit(EXIT_FAILURE);
         }
-        do_doit_send_str(sock, ctx, "CreateProcessNoWait\n");
-        do_doit_send_str(sock, ctx, browser);
-        do_doit_send_str(sock, ctx, " ");
+        do_doit_send_str(sock, ctx, "ShellExecute\n");
         do_doit_send_str(sock, ctx, arg);
         do_doit_send_str(sock, ctx, "\n");
         break;
