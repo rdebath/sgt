@@ -107,7 +107,7 @@ void rfc2047_decode(const char *text, int length, parser_output_fn_t output,
 	    char *wbuf1, *wbuf2, *cset, *enc, *data, *p;
 	    int dlen, tlen, charset;
 
-	    wbuf1 = smalloc(elen);
+	    wbuf1 = snewn(elen, char);
 
 	    memcpy(wbuf1, text, elen);
 
@@ -128,10 +128,10 @@ void rfc2047_decode(const char *text, int length, parser_output_fn_t output,
 	    charset = charset_from_mimeenc(cset);
 
 	    if (!strcmp(enc, "B") || !strcmp(enc, "b")) {
-		wbuf2 = smalloc(base64_decode_length(dlen));
+		wbuf2 = snewn(base64_decode_length(dlen), char);
 		tlen = base64_decode(data, dlen, wbuf2);
 	    } else if (!strcmp(enc, "Q") || !strcmp(enc, "q")) {
-		wbuf2 = smalloc(dlen);
+		wbuf2 = snewn(dlen, char);
 		tlen = qp_decode(data, dlen, wbuf2, TRUE);
 	    } else {
 		wbuf2 = NULL;
@@ -276,7 +276,7 @@ char *rfc2047_encode(const char *text, int length, int input_charset,
 
 	    if (wlen >= wsize) {
 		wsize = wlen + 512;
-		wtext = srealloc(wtext, wsize * sizeof(wchar_t));
+		wtext = sresize(wtext, wsize, wchar_t);
 	    }
 
 	    ret = charset_to_unicode(&tptr, &tlen, wtext+wlen, wsize-wlen-1,
@@ -347,7 +347,7 @@ char *rfc2047_encode(const char *text, int length, int input_charset,
 
 		if (alen >= asize) {
 		    asize = alen + 512;
-		    atext = srealloc(atext, asize);
+		    atext = sresize(atext, asize, char);
 		}
 
 		ret = charset_from_unicode(&wp, &wl, atext+alen, asize-alen-1,
@@ -389,7 +389,7 @@ char *rfc2047_encode(const char *text, int length, int input_charset,
 		 * Leave enough room to backslash every character,
 		 * plus the two enclosing quotes and the NUL.
 		 */
-		atext2 = smalloc(strlen(atext) * 2 + 3);
+		atext2 = snewn(strlen(atext) * 2 + 3, char);
 		p = atext;
 		q = atext2;
 		*q++ = '"';
@@ -522,7 +522,7 @@ char *rfc2047_encode(const char *text, int length, int input_charset,
 		    assert(enclen == qlen);
 		}
 		assert(enclen <= max_enc_len);
-		atext = srealloc(atext, alen + 100);
+		atext = sresize(atext, alen + 100, char);
 		alen += sprintf(atext+alen, "%s=?%s?%c?%.*s?=",
 				prefix, csname, enc, enclen, encbuf);
 		prefix = "\n ";

@@ -100,7 +100,7 @@ void import_mbox_folder(char *folder)
 
     msgsize = 1024;
     msglen = 0;
-    message = smalloc(msgsize);
+    message = snewn(msgsize, char);
 
     while (fgets(message + msglen, msgsize - msglen, fp)) {
 	/*
@@ -151,7 +151,7 @@ void import_mbox_folder(char *folder)
 
 	if (msgsize - msglen < 512 || msgsize - msglen < msgsize/4) {
 	    msgsize = msgsize * 3 / 2;
-	    message = srealloc(message, msgsize);
+	    message = sresize(message, msgsize, char);
 	}
     }
 
