@@ -1,5 +1,5 @@
 % -*- mode: slang; mode: fold -*-
-% Simon Tatham: version $Revision: 1.36 $
+% Simon Tatham: version $Revision: 1.37 $
 
 %{{{ load Emacs keybindings to start with
 
@@ -1122,7 +1122,7 @@ define cvs_log() {
     set_blocal_var(file, "cvs-file");
 }
 define cvs_annotate() {
-    variable file, dir, name, line;
+    variable file, dir, name, line, ret;
     (file, dir, name, ) = getbuf_info();
     line = what_line();
     if (strcmp(substr(name, 1, 15), "*cvs-annotate*:") == 0) {
@@ -1139,9 +1139,13 @@ define cvs_annotate() {
     name = "*cvs-annotate*:" + name;
     change_default_dir(dir);
     sw2buf(name);
-    erase_buffer();
     text_mode();
-    run_shell_cmd("cvs annotate " + file);
+    erase_buffer();
+    ret = run_shell_cmd("cvs-annotate 2>/dev/null " + file);
+    if (ret > 0) {
+	erase_buffer();
+	ret = run_shell_cmd("cvs annotate " + file);
+    }
     setbuf_info((getbuf_info & ~1) | 8); % clear modified bit, set readonly
     goto_line(line);
     recenter(0);
