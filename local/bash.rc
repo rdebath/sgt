@@ -1,6 +1,6 @@
 # -*- mode: sh; mode: fold -*-
 # Simon Tatham's standardised chunk of .bashrc
-# $Revision: 1.37 $
+# $Revision: 1.38 $
 
 #{{{ I don't like .bash_history files. They wet their nests.
 unset HISTFILE
@@ -418,7 +418,8 @@ rfc() {
     shift
   done
 
-  wget -q -O - "http://$host/rfc/$filename" | less
+  wget -q -O - "http://$host/rfc/$filename" | \
+    env LESSOPEN="|cat" less $filename
 }
 
 #}}}
