@@ -1,0 +1,301 @@
+#!/usr/bin/python 
+
+# Trivial IRC client which connects, retrieves a users-on list for
+# one or more channels, and then disconnects again immediately.
+
+import socket
+import string
+import sys
+import os
+import pwd
+import select
+
+data = []
+done = 0
+pung = 0
+sendable = 1
+ourdata = ""
+
+def received(newdata):
+    global ourdata
+    global skt
+    global pung
+    ourdata = ourdata + newdata
+    lineend = string.find(ourdata, "\n")
+    while lineend >= 0:
+	line = ourdata[:lineend+1]
+	ourdata = ourdata[lineend+1:]
+	if verbose:
+	    print "<<<", line[:-2]
+	if line[:5] == "PING ":
+	    if sendable:
+		if verbose:
+		    print ">>> PONG " + line[5:-2]
+		skt.send("PONG " + line[5:])
+		pung = 1
+	else:
+	    data.append(line)
+	lineend = string.find(ourdata, "\n")
+
+def send(data):
+    global skt
+    global done
+    line = data[:-2]
+    while 1:
+	if data != "":
+	    sendlist = [skt]
+	else:
+	    sendlist = []
+	if done == 0:
+	    recvlist = [skt]
+	else:
+	    recvlist = []
+	if recvlist == [] and sendlist == []:
+	    break
+	tuple = select.select(recvlist, sendlist, [])
+	if len(tuple[0]) > 0:
+	    rcvdata = skt.recv(256)
+	    if rcvdata == "":
+		done = 1
+	    received(rcvdata)
+	elif len(tuple[1]) > 0:
+	    sent = skt.send(data)
+	    data = data[sent:]
+	    if data == "":
+		if verbose:
+		    print ">>>", line
+		break
+	if data == "":
+	    break
+
+def words(n, s):
+    ret = []
+    while n > 0:
+	i = string.find(s, " ")
+	if i < 0:
+	    ret.append(s)
+	    s = ""
+	else:
+	    ret.append(s[:i])
+	    s = s[i+1:]
+	n = n - 1
+    ret.append(s)
+    return tuple(ret)
+
+def breakup(s):
+    assert s[-2:] == "\r\n"
+    s = s[:-2]
+    serv, code, nick, rest = words(3, s)
+    return (code, rest)
+
+def fmttime(seconds):
+    # Must return exactly 8 chars.
+    # Formats are:
+    #    MM.SS      for up to 1 hour
+    # HH:MM.SS      for up to 100 hours
+    # DDD days      for up to 1000 days
+    # forever!      beyond that.
+    if seconds >= 86400 * 1000:
+	return "forever!"
+    if seconds >= 3600 * 100:
+	days = seconds / 86400
+	return "%3d days" % (days,)
+    hours = seconds / 3600
+    minutes = (seconds / 60) % 60
+    seconds = seconds % 60
+    if hours > 0:
+	return "%2d:%02d.%02d" % (hours, minutes, seconds)
+    else:
+	return "   %2d.%02d" % (minutes, seconds)
+
+def fmtnick(nick, list):
+    user, host, name, idle, connect = list
+    # Pad nick to exactly nine chars
+    nick = nick + " " * 9
+    nick = nick[:9]
+    # Pad user@host to at most 28
+    uh = user + "@" + host
+    uh = uh[:28]
+    # Pad name to exactly twenty
+    name = name + " " * 20
+    name = name[:20]
+    # Format idle time
+    if idle != -1:
+	idle = fmttime(idle)
+    else:
+	idle = "    ----"
+    # Format connect time
+    if connect != -1 and now != -1:
+	connect = fmttime(now - connect)
+    else:
+	connect = "    ----"
+    return "  " + nick + " " + name + " " + idle + " " + connect + " " + uh
+
+def strcompare(a,b):
+    al = string.lower(a)
+    bl = string.lower(b)
+    if al < bl:
+	return -1
+    if al > bl:
+	return +1
+    if a < b:
+	return -1
+    if a > b:
+	return +1
+    return 0
+
+verbose = 0
+config = os.environ["HOME"] + "/.iwho"
+server = None
+channels = []
+i = 1
+while i < len(sys.argv):
+    arg = sys.argv[i]
+    i = i + 1
+    if arg[0] == "-":
+	if arg == "-v":
+	    verbose = 1
+	elif arg == "-s":
+	    if i < len(sys.argv):
+		server = sys.argv[i]
+		i = i + 1
+	    else:
+		print "iwho: option \"-s\" requires an argument"
+	elif arg == "-f":
+	    if i < len(sys.argv):
+		config = sys.argv[i]
+		i = i + 1
+	    else:
+		print "iwho: option \"-f\" requires an argument"
+	else:
+	    print "iwho: unknown option \"" + i + "\""
+    else:
+	if arg[0] != "#":
+	    arg = "#" + arg
+	channels.append(arg)
+
+f = open(config, "r")
+cfg = {}
+if not f:
+    print "iwho: unable to open configuration file \"" + config + "\""
+else:
+    while 1:
+	s = f.readline()
+	if s == "":
+	    break
+	assert s[-1:] == "\n"
+	s = s[:-1]
+	key, value = words(1, s)
+	cfg[key] = value
+    f.close()
+
+if server == None and cfg.has_key("server"):
+    server = cfg["server"]
+
+if server == None:
+    print "iwho: no server specified; use \"-s servername:port\""
+
+if len(channels) == 0:
+    print "usage: iwho [-v] channel [channel...]"
+    print "       (channels need not have a leading #)"
+    sys.exit(0)
+
+i = string.find(server, ":")
+if i < 0:
+    port = 6667
+else:
+    port = string.atoi(server[i+1:])
+    server = server[:i]
+
+skt = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+skt.connect(server, port)
+
+myname = pwd.getpwuid(os.getuid()) [0]
+
+send("USER " + myname + " " + socket.gethostname() + " " + server + " :Ephemeral Client\r\n")
+
+# Loop to find a nick not already in use.
+nickid = 1
+datapos = 0
+while not pung:
+    nick = "ephem%04d" % nickid
+    send("NICK " + nick + "\r\n")
+    redo = 0
+    while pung == 0 and redo == 0:
+	send("")
+	while datapos < len(data):
+	    d = data[datapos]
+	    datapos = datapos + 1
+	    code, params = breakup(d)
+	    if code == "433":
+		nickid = nickid+1
+		redo = 1
+
+whosent = 0
+users = {}
+nicks = {}
+whois = {}
+send("TIME\r\n")
+for chan in channels:
+    send("WHO " + chan + "\r\n")
+    users[chan] = []
+    whosent = whosent + 1
+
+whogot = 0
+now = -1
+while 1:
+    while datapos < len(data):
+	d = data[datapos]
+	datapos = datapos + 1
+	code, params = breakup(d)
+	if code == "315":
+	    whogot = whogot + 1
+	elif code == "391":
+	    server, time, rest = words(2, params)
+	    if time[0] in string.digits:
+		now = string.atoi(time)
+	elif code == "352":
+	    chan, user, host, serv, nick, type, hops, name = words(7, params)
+	    users[chan].append(nick)
+	    nicks[nick] = [user, host, name, -1, -1]
+	    whois[nick] = 1
+    if whogot < whosent and not done:
+	send("")
+    else:
+	break
+
+whoissent = 0
+for i in whois.keys():
+    send("WHOIS :" + i + "\r\n")
+    whoissent = whoissent + 1
+
+whoisgot = 0
+while 1:
+    while datapos < len(data):
+	d = data[datapos]
+	datapos = datapos + 1
+	code, params = breakup(d)
+	if code == "318":
+	    whoisgot = whoisgot + 1
+	elif code == "317":
+	    nick, idle, connect, rest = words(3, params)
+	    nicks[nick][3] = string.atoi(idle)
+	    if connect[0] in string.digits:
+		nicks[nick][4] = string.atoi(connect)
+    if whoisgot < whoissent and not done:
+	send("")
+    else:
+	break
+
+send("QUIT :all done\r\n")
+
+while done == 0:
+    send("")
+
+for chan in channels:
+    u = users[chan]
+    u.sort(strcompare)
+    print chan + ":"
+    for nick in u:
+	n = nicks[nick]
+	print fmtnick(nick, n)
