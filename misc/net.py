@@ -8,8 +8,6 @@
 #    squares ought to end up unlocked? Or is it simply that the
 #    squares still locked at the end of a maximal undo run were
 #    those the player locked because they were already correct?)
-#  - `New Game' submenu containing a decent spread of game
-#    definitions, to prevent needless use of the `Specific' box.
 #  - The original occasionally has barriers between squares within
 #    the grid. Makes the game easier, of course.
 #  - Alternative forms of control? Left/right clicks are OKish, but
@@ -583,6 +581,22 @@ def input_game(menuitem=None):
         setup_globals()
         new_game(seed=cont.game)
 
+def typed_game(size, wrapping):
+    global NSQUARES_X, NSQUARES_Y, WRAPPING
+    NSQUARES_X = NSQUARES_Y = size
+    WRAPPING = wrapping
+    setup_globals()
+    new_game()
+
+def n5_game(menuitem=None): typed_game(5, FALSE)
+def w5_game(menuitem=None): typed_game(5, TRUE)
+def n7_game(menuitem=None): typed_game(7, FALSE)
+def w7_game(menuitem=None): typed_game(7, TRUE)
+def n9_game(menuitem=None): typed_game(9, FALSE)
+def w9_game(menuitem=None): typed_game(9, TRUE)
+def n11_game(menuitem=None): typed_game(11, FALSE)
+def w11_game(menuitem=None): typed_game(11, TRUE)
+
 def expose(darea, event):
     gc = darea.get_style().white_gc
     x, y, w, h = event.area
@@ -616,6 +630,9 @@ gameitem.show()
 newitem = GtkMenuItem("New")
 gamemenu.append(newitem)
 newitem.show()
+typeitem = GtkMenuItem("Type")
+gamemenu.append(typeitem)
+typeitem.show()
 restitem = GtkMenuItem("Restart")
 gamemenu.append(restitem)
 restitem.show()
@@ -634,6 +651,33 @@ separator.show()
 quititem = GtkMenuItem("Exit")
 gamemenu.append(quititem)
 quititem.show()
+typemenu = GtkMenu()
+typeitem.set_submenu(typemenu)
+n5item = GtkMenuItem("5x5")
+typemenu.append(n5item)
+n5item.show()
+w5item = GtkMenuItem("5x5 wrapping")
+typemenu.append(w5item)
+w5item.show()
+n7item = GtkMenuItem("7x7")
+typemenu.append(n7item)
+n7item.show()
+w7item = GtkMenuItem("7x7 wrapping")
+typemenu.append(w7item)
+w7item.show()
+n9item = GtkMenuItem("9x9")
+typemenu.append(n9item)
+n9item.show()
+w9item = GtkMenuItem("9x9 wrapping")
+typemenu.append(w9item)
+w9item.show()
+n11item = GtkMenuItem("11x11")
+typemenu.append(n11item)
+n11item.show()
+w11item = GtkMenuItem("11x11 wrapping")
+typemenu.append(w11item)
+w11item.show()
+
 darea = GtkDrawingArea()
 darea.set_usize(TOTALSIZE_X, TOTALSIZE_Y)
 pix = create_pixmap(win, TOTALSIZE_X, TOTALSIZE_Y)
@@ -655,6 +699,14 @@ restitem.connect("activate", restart_game)
 specitem.connect("activate", input_game)
 undoitem.connect("activate", undo_move)
 quititem.connect("activate", delete_event)
+n5item.connect("activate", n5_game)
+w5item.connect("activate", w5_game)
+n7item.connect("activate", n7_game)
+w7item.connect("activate", w7_game)
+n9item.connect("activate", n9_game)
+w9item.connect("activate", w9_game)
+n11item.connect("activate", n11_game)
+w11item.connect("activate", w11_game)
 darea.connect("expose_event", expose)
 darea.add_events(GDK.BUTTON_PRESS_MASK)
 darea.connect("button_press_event", button_event)
