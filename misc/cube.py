@@ -337,6 +337,31 @@ def key_event(win, event=None):
         timeout_remove(timer_inst)
     timer_inst = timeout_add(20, timer, win)
 
+def sign(x):
+    if x < 0: return -1
+    if x > 0: return +1
+    return 0
+
+def button_event(win, event):
+    global timer_inst
+    if event.button != 1 or event.type != GDK.BUTTON_PRESS:
+        return # we only care about left clicks
+    x = int((event.x + SQUARESIZE - ORIGIN) / SQUARESIZE) - 1
+    y = int((event.y + SQUARESIZE - ORIGIN) / SQUARESIZE) - 1
+    if x < 0 or x >= NSQUARES or y < 0 or y >= NSQUARES:
+        return # out of bounds
+    dx = x - game.cubex
+    dy = y - game.cubey
+    if (dx == 0 or dy == 0) and (dx != 0 or dy != 0):
+        if game.moveinprogress:
+            game.finish_move()
+            small_redraw()
+        game.move(sign(dx), sign(dy))
+        game.status(statusbar)
+        if timer_inst != None:
+            timeout_remove(timer_inst)
+        timer_inst = timeout_add(20, timer, win)
+
 def timer(win):
     if not game.moveinprogress:
         # move has been finished for us already
@@ -480,6 +505,8 @@ specitem.connect("activate", input_game)
 undoitem.connect("activate", undo_move)
 quititem.connect("activate", delete_event)
 darea.connect("expose_event", expose)
+darea.add_events(GDK.BUTTON_PRESS_MASK)
+darea.connect("button_press_event", button_event)
 win.connect("key_press_event", key_event)
 win.connect("delete_event", delete_event)
 win.connect("destroy", destroy_event)
