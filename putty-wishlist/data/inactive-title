@@ -1,0 +1,10 @@
+Summary: Minimising / restoring inactive windows loses (Inactive) in title
+Class: bug
+Difficulty: fun
+Priority: low
+Content-type: text/plain
+
+If a PuTTY session ends and the window sticks around, the titlebar is
+changed to PuTTY (Inactive).  When the window is minimised and
+restored, the titlebar is changed back to the title the window had
+before the session ended.
