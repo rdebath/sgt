@@ -54,6 +54,85 @@ int drop(struct ntris_instance *inst);
  */
 void block(struct frontend_instance *inst, int x, int y, int col, int type);
 
+/*
+ * These flags indicate the highlighting required on each block
+ * that forms part of a shape or the playing area.
+ * 
+ * The way these flags are actually computed is by checking whether
+ * the block in question has a neighbour in each of the eight
+ * surrounding spaces. So FLAG_TRCORNER, for example, is present in
+ * any block whose upper-left neighbour is not part of the same
+ * shape; and FLAG_TEDGE is present in any block whose _upper_
+ * neighbour is not part of the same shape.
+ * 
+ * The recommended actual highlights that should appear on the
+ * blocks as a result are:
+ *
+ *  - each corner flag causes a nick in the appropriate corner. At
+ *    TL, that's a light square; at BR a dark square. In the other
+ *    two corners it's a half-light half-dark square (possibly with
+ *    a diagonal of medium pixels to prevent asymmetry, although
+ *    this may work badly if the highlight is only one pixel wide).
+ *
+ *  - the effect of an edge flag is dependent on whether the
+ *    _adjacent_ edges exist too. FLAG_LEDGE, in the absence of
+ *    FLAG_TEDGE or FLAG_BEDGE, should be a full light rectangle
+ *    along the whole of the left edge. But if FLAG_BEDGE is
+ *    present as well, it changes - in this case it must be
+ *    bevelled at the bottom so as not to overwrite the shadow
+ *    below it.
+ *     + Of course each edge only actually needs to watch out for
+ *       _one_ adjacent edge, namely the one in the other colour.
+ *       LEDGE and TEDGE can cheerfully ignore each other, since
+ *       either one causes the whole top-left corner to be light
+ *       and it doesn't matter if they overwrite each other.
+ *
+ *  - edge flags override corner flags. If the block has
+ *    FLAG_LEDGE, we _do not care_ whether it has FLAG_TLCORNER,
+ *    FLAG_BLCORNER, both or neither. Ever.
+ *
+ * In other words, we can diagram the block as follows:
+ *
+ * aaattttdde
+ * aaattttdef
+ * aaatttteff
+ * lllxxxxrrr
+ * lllxxxxrrr
+ * lllxxxxrrr
+ * lllxxxxrrr
+ * gghbbbbccc
+ * ghibbbbccc
+ * hiibbbbccc
+ *
+ * and then we can allocate colours to the various letters as follows:
+ *
+ *  - a is light if any of LEDGE, TEDGE or TLCORNER, and medium
+ *    otherwise.
+ *  - c is dark if any of REDGE, BEDGE or BRCORNER, and medium
+ *    otherwise.
+ *  - l is light if LEDGE, medium otherwise.
+ *  - t is light if TEDGE, medium otherwise.
+ *  - b is dark if BEDGE, medium otherwise.
+ *  - r is dark if REDGE, medium otherwise.
+ *  - d is light if TEDGE, otherwise dark if REDGE or TRCORNER,
+ *    otherwise medium.
+ *  - f is dark if REDGE, otherwise light if TEDGE or TRCORNER,
+ *    otherwise medium.
+ *  - g is light if LEDGE, otherwise dark if BEDGE or BLCORNER,
+ *    otherwise medium.
+ *  - i is dark if BEDGE, otherwise light if LEDGE or BLCORNER,
+ *    otherwise medium.
+ *  - e is equal to d and f if d and f are themselves equal to each
+ *    other (i.e. if exactly one of TEDGE and REDGE). Failing that,
+ *    it's medium, _unless_ we're doing asymmetric highlighting, in
+ *    which case it's chosen to be one of d and f. Unsure which.
+ *    Perhaps top-left-priority so that e=d; or perhaps light wins,
+ *    so that e is light in this case.
+ *  - h, similarly, is equal to g and i if they are themselves
+ *    equal (exactly one of LEDGE and BEDGE), else it's medium or
+ *    chosen from g and i as above.
+ *  - x is always medium.
+ */
 #define FLAG_REDGE    0x01	       /* block border at right edge */
 #define FLAG_LEDGE    0x02	       /* block border at left edge */
 #define FLAG_TEDGE    0x04	       /* block border at top edge */
