@@ -1,0 +1,51 @@
+Summary: Vulnerability: crafted SFTP FXP_READDIR reply may allow remote code execution
+Class: vulnerability
+Difficulty: fun
+Priority: high
+Present-in: 0.56
+Fixed-in: 0.57
+Content-type: text/x-html-body
+
+<p>
+Many versions of PSFTP and PSCP prior to 0.57 have a heap corruption
+vulnerability in their treatment of the response to the FXP_READDIR
+command (enumerate entries in a directory) in the SSH File Transfer
+Protocol (SFTP).
+
+<p>
+In order for this vulnerability to be exploited, the user connect to a
+malicious server and issue a <code>ls<code> or <code>dir</code>
+command to PSFTP, or supply the <code>-ls</code> command-line option
+to PSCP.
+
+<p>
+(Note however that the vulnerability kicks in <em>after</em> host key
+verification, so the host key of the server has to have been
+accepted to get this far.)
+
+<p>
+SFTP is always used by PSFTP; it is also used by PSCP if available
+(depending on server behaviour). It can be used in both SSH-2 and
+SSH-1 (again, depending on server behaviour). Thus, a malicious server
+can exploit this in all invocations of PSFTP and PSCP, unless the
+<code>-scp</code> option is supplied to PSCP.
+
+<p>
+This bug was discovered by an anonymous contributor to
+<a href="http://www.idefense.com/">iDEFENSE</a>'s
+<a href="http://www.idefense.com/poi/teams/vcp.jsp">Vulnerability
+Contributor Program</a>. It will be documented in a forthcoming
+iDEFENSE advisory.
+
+<p>
+<em>Vulnerability details:</em>
+In response to an <code>FXP_READDIR</code> request, the server returns
+a count of directory entries, followed by the entries themselves. In
+<code>sftp.c:fxp_readdir_recv()</code>, this count was passed to
+<code>snewn()</code> to allocate memory, where it was used as a
+multiplier for an internal structure size. With a sufficiently large
+count, an integer overflow could be provoked in <code>snewn()</code>,
+such that insufficient memory could silently be <code>malloc()</code>'d.
+<code>fxp:readdir_recv()</code> would then read server-supplied data
+into this buffer, leading to a heap corruption with server-controlled
+contents, and hence potentially to execution of arbitrary code.
