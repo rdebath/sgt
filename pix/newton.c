@@ -30,7 +30,7 @@
 #include <stdlib.h>
 #include <math.h>
 
-#define VERSION "$Revision: 1.3 $"
+#define VERSION "$Revision: 1.4 $"
 
 #define TRUE 1
 #define FALSE 0
@@ -587,7 +587,7 @@ int main(int ac, char **av) {
 
     zero_list(&roots);
     gotxcentre = gotycentre = gotxrange =
-	gotyrange = gotscale = FALSE;
+	gotyrange = gotscale = gotminfade = FALSE;
 
     if (ac < 2) {
 	usage = TRUE;
