@@ -29,7 +29,8 @@ practically ubiquitous.
 
 <p>
 Our documentation should probably discuss the security implications of
-using SSH-1, too.
+using SSH-1, too. (For a starting point see
+<a href="http://www.snailbook.com/faq/ssh-1-vs-2.auto.html">the Snail Book FAQ</a>.)
 
 <p>
 <em>Update:</em> Even Debian stable includes SSH-2 support now, so 
