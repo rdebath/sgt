@@ -160,8 +160,9 @@ def pdfgetline(f, chomp=0):
         s = s + "\n"
     return s
 
-def fetchobj(f, xrefoff, number, gen, printout=0):
+def fetchobj(f, xoff, number, gen, printout=0):
     offset = None
+    xrefoff = xoff
     while 1:
         f.seek(xrefoff)
         s = pdfgetline(f, 1)
@@ -229,7 +230,13 @@ def fetchobj(f, xrefoff, number, gen, printout=0):
             parsed = pdfparse(lexed)
             assert parsed[-1] == "stream"
             fassert(type(parsed[-2]) == types.DictType, "expected dictionary before 'stream'")
-            streamlen = string.atoi(parsed[-2]["/Length"])
+            streamlen = parsed[-2]["/Length"]
+            if type(streamlen) == types.TupleType:
+                offset = f.tell()
+                otherparsed = fetchobj(f, xoff, streamlen[0], streamlen[1])
+                streamlen = otherparsed[3]
+                f.seek(offset)
+            streamlen = string.atoi(streamlen)
             streamdata = f.read(streamlen)
             filt = parsed[-2].get("/Filter", "")
             if filt == "/FlateDecode":
