@@ -2,26 +2,36 @@ Summary: Choice of loopback addresses for local port forwardings
 Class: semi-bug
 Priority: low
 Difficulty: fun
-Content-type: text/plain
+Content-type: text/x-html-body
 Fixed-in: 2002-12-19
 
+<p>
 Someone suggested that it might be useful to be able to specify
 which loopback address PuTTY should bind to when listening on local
 ports for local-to-remote port forwardings. Apparently, if you want
 to, you can listen separately on 127.0.0.1, 127.0.0.2, 127.0.0.3 and
 so on.
 
+<p>
 This would be useful because it would enable the use of the normal
 port numbers for forwarded services. Might be particularly handy
 when forwarding SMB.
 
+<p>
 The user interface for this would probably just involve specifying
 the IP address alongside the port number in the Tunnels panel:
 instead of asking to forward port 3456, you'd ask for
 127.0.0.2:3456.
 
-(Apparently this is also useful for forwarding Windows Terminal
-Services -- see <99ab3348.0405241707.74fa3d6b@posting.google.com>.)
+<p>
+This was implemented as of 2002-12-19.
 
-2004-Aug-10: we've had a report that Windows XP SP2 breaks this.
-(Apparently RC2 worked, but "RTM" - the release - doesn't.)
+<p>
+(Apparently this is also useful for forwarding Windows Terminal
+Services - see <a href="http://groups.google.com/groups?selm=99ab3348.0405241707.74fa3d6b%40posting.google.com">this posting</a>.)
+
+<p>
+<em>Update, 2004-Aug-10</em>: we've had a
+<a href="http://groups.google.com/groups?selm=41182cb2%240%24556%24ed2e19e4%40ptn-nntp-reader04.plus.net">report</a>
+that Windows XP SP2 breaks this. (Apparently RC2 worked, but "RTM" - the
+release - doesn't.)
