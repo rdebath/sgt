@@ -38,3 +38,10 @@ I've not been able to reproduce this on Win2K Pro.
 This is to some extent not our problem, but perhaps we could do
 something to mitigate the problem (e.g. enumerate printers less often
 / only if the user requests the ANSI printing functionality).
+
+<p>
+<em>Alternative fix:</em> use a different type of printer enumeration
+which doesn't try so hard. Patch:
+<code>yehhebmmpfq.fsf@ocean.cs.brown.edu</code>. Dependent on Windows
+version, so need to ensure the functionality still works across at
+least the Win95-series and WinNT-series.
