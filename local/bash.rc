@@ -1,6 +1,6 @@
 # -*- mode: sh; mode: fold -*-
 # Simon Tatham's standardised chunk of .bashrc
-# $Revision: 1.41 $
+# $Revision: 1.42 $
 
 #{{{ I don't like .bash_history files. They wet their nests.
 unset HISTFILE
@@ -88,6 +88,8 @@ bashrc_dovars() {
     foo=`type -p emacs`; fi
   if [ ! -e "$foo" ]; then
     foo=`type -p vi`; fi
+  if [ -f $HOME/.hostaliases ]; then
+    export HOSTALIASES=$HOME/.hostaliases; fi
   export VISUAL=$foo
   export EDITOR=$foo
   export FAST_PNEWS=y
