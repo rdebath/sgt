@@ -18,7 +18,7 @@ effort for other ports. If anyone really has a use for it, we'd be
 interested to know why :-)
 
 <p>
-We don't currently have ports of any other PuTTY utilities.
+Ports of <code>psftp</code> and <code>pscp</code> are also now available.
 
 <p>
 See also the
