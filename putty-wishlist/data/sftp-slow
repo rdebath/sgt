@@ -3,6 +3,7 @@ Difficulty: tricky
 Priority: high
 Class: semi-bug
 Content-Type: text/x-html-body
+Fixed-in: 2003-09-30
 
 <p>
 We believe this is because the SFTP and SSH2 protocols are less efficient at
@@ -13,4 +14,5 @@ haven't done the coding.
 
 <p>
 <em>Update:</em> As of the 2003-09-30 snapshot, performance should be
-much improved, although there are tweaks still to be done.
+much improved. I believe there are tweaks that could be done to make
+it better still, but I'm going to declare this closed anyway.
