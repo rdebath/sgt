@@ -130,40 +130,51 @@ int transaction_open = FALSE;
 
 void db_begin(void)
 {
+#ifndef NOSYNC
     char *err;
     assert(db != NULL);
     assert(!transaction_open);
     sqlite_exec(db, "BEGIN;", sqlite_null_callback, NULL, &err);
     if (err) fatal(err_dberror, err);
     transaction_open = TRUE;
+#endif
 }
 
 void db_rollback(void)
 {
+#ifndef NOSYNC
     char *err;
     assert(db != NULL);
     assert(transaction_open);
     sqlite_exec(db, "ROLLBACK;", sqlite_null_callback, NULL, &err);
     if (err) fatal(err_dberror, err);
     transaction_open = FALSE;
+#endif
 }
 
 void db_commit(void)
 {
+#ifndef NOSYNC
     char *err;
     assert(db != NULL);
     assert(transaction_open);
     sqlite_exec(db, "COMMIT;", sqlite_null_callback, NULL, &err);
     if (err) fatal(err_dberror, err);
     transaction_open = FALSE;
+#endif
 }
 
 void db_close(void)
 {
     if (transaction_open)
 	db_rollback();
-    if (db)
+    if (db) {
+#ifdef NOSYNC
+	char *err;
+	sqlite_exec(db, "COMMIT;", sqlite_null_callback, NULL, &err);
+#endif
 	sqlite_close(db);
+    }
 }
 
 void db_open(void)
@@ -183,6 +194,11 @@ void db_open(void)
     db = sqlite_open(dbpath, 0666, &err);
     if (!db)
 	fatal(err_noopendb, dbpath, err);
+
+#ifdef NOSYNC
+    sqlite_exec(db, "BEGIN;", sqlite_null_callback, NULL, &err);
+    if (err) fatal(err_dberror, err);
+#endif
 }
 
 static char *cfg_get_internal(char *key)
