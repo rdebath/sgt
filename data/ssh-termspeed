@@ -14,7 +14,8 @@ Apparently server defaults in the absence of information from PuTTY
 aren't always helpful; in particular, OpenSSH on HP-UX ends up at 300
 baud(!), and this causes <code>vi</code> and <code>emacs</code> to
 invoke various emergency procedures (e.g., <code>vi</code> uses a
-5-line display).
+5-line display, and <code>emacs</code> runs terribly slow to avoid
+overloading the terminal).
 
 <p>
 As of 2004-04-25, PuTTY will send terminal speeds in SSH based on the
