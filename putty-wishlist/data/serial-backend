@@ -17,3 +17,6 @@ and other connections don't have stop bits and guff like that.
 Workaround: for NT-class systems, you could use
 <a href="http://www.greenend.org.uk/steve/software/wconsd.c">wconsd</a>
 to turn the serial connection into a telnet connection.
+(Or someone's suggested a
+<a href="ftp://ftp.h07.org/pub/h07.org/projects/system/wconsd-0.1.zip">patched version</a>
+that's funkier in some way.)
