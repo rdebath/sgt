@@ -289,6 +289,7 @@ def fetchobj(f, xrefoff, number, gen, printout=0):
     return parsed
 
 if page != None:
+    page = page - 1 # PDF pages are traditionally numbered from one
     # Look down the /Pages tree for a particular page number.
     catalog = fetchobj(f, xrefoff, number, gen)
     fassert(type(catalog[3]) == types.DictType, "expected dictionary in Catalog object")
