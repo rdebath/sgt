@@ -733,6 +733,35 @@ function EntryPage::print_comment_partial (Comment c) {
     """</td></tr></table></td></tr></table></td></tr></table></td></tr>""";
 }
 
+function ItemRange::print() {
+    if ($.all_subitems_displayed) { return; }
+"""
+<tr><td></td><td><table width="$*box_width" align="left" cellpadding="0" cellspacing="0">
+<tr><td>
+<table align="center" cellpadding="2" cellspacing="0"
+border="0"
+summary="">
+<tr><td bgcolor="$*outline">
+<table cellpadding="3" cellspacing="0"
+border="0"
+summary="">
+<tr bgcolor="$*stronger_back">
+<td align="center" class="index">""";
+    print lang_page_of_pages($.current, $.total);
+"""</td>
+</tr>
+<tr bgcolor="$*entry_back">
+<td align="center">""";
+    foreach var int i (1..$.total) {
+        if ($i == $.current) { "<b>[$i]</b> "; }
+        else {
+            var string url_of = $this->url_of($i);
+            "<a href='$url_of'><b>[$i]</b></a> ";
+        }
+    }
+    "</td></tr></table></td></tr></table></td></tr></table></td></tr>";
+}
+
 function ReplyPage::print_body () {
     if (not $.entry.comments.enabled) {
         """<tr><td></td><td><table width="$*box_width" cellpadding="2" cellspacing="0" border="0" summary="" class="entrybox">
