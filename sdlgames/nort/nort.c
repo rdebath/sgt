@@ -25,9 +25,9 @@
 #define plotc(x,y,c) ( (x)<0||(x)>319||(y)<0||(y)>239 ? 0 : plot(x,y,c) )
 #define pixelc(x,y) ( (x)<0||(x)>319||(y)<0||(y)>239 ? 0 : pixel(x,y) )
 
-int no_quit_option = 0;
+static int no_quit_option = 0;
 
-int puttext(int x, int y, int c, char const *text)
+static int puttext(int x, int y, int c, char const *text)
 {
     int i, ix, iy;
     int ch;
@@ -44,12 +44,12 @@ int puttext(int x, int y, int c, char const *text)
     }
 }
 
-int centretext(int y, int c, char const *text)
+static int centretext(int y, int c, char const *text)
 {
     puttext(160-4*(strlen(text)), y, c, text);
 }
 
-int drawline(int x1, int y1, int x2, int y2, int c)
+static int drawline(int x1, int y1, int x2, int y2, int c)
 {
     int dx, dy, lx, ly, sx, sy, dl, ds, d, i;
     int dot, dotting;
@@ -113,7 +113,7 @@ int drawline(int x1, int y1, int x2, int y2, int c)
  * Note that this fill-circle routine does a _logical OR_ plot
  * rather than a simple pixel-assignment plot.
  */
-int fillcircle(int x, int y, int r, int c)
+static int fillcircle(int x, int y, int r, int c)
 {
     int dx, dy, d, d2, i;
 
@@ -161,9 +161,9 @@ enum {
     ACT_LAST
 };
 
-SDL_Joystick *joys[2];
+static SDL_Joystick *joys[2];
 
-struct options {
+static struct options {
     int own_fatal;
     int enemy_fatal;
     int auto_accel;
@@ -172,7 +172,7 @@ struct options {
     int max_speed;
 } opts;
 
-struct player {
+static struct player {
     int buttons[8];		       /* sq,x,tr,ci,l1,r1,l2,r2 */
     int colour, cloaked;
     int x, y, dx, dy, fire_dx, fire_dy, speedmod;
@@ -180,13 +180,13 @@ struct player {
     int dead;
 } players[2];
 
-struct scores {
+static struct scores {
     int games;
     int draws;
     int p[2];
 } scores;
 
-int cloak(int players)
+static int cloak(int players)
 {
     SDL_Color colours[3];
     colours[0].r = colours[0].g = colours[0].b = 0;
@@ -204,7 +204,7 @@ int cloak(int players)
  * p1 and its trail. Note that the game logic at present assumes
  * that this function is symmetric.
  */
-int is_lethal_to(int p, int p2) {
+static int is_lethal_to(int p, int p2) {
     if (opts.own_fatal && p == p2)
 	return 1;
     if (opts.enemy_fatal && p != p2)
@@ -212,7 +212,7 @@ int is_lethal_to(int p, int p2) {
     return 0;
 }
 
-int play_game(void)
+static int play_game(void)
 {
     int x, y, c;
     int i, p, gameover;
@@ -695,13 +695,13 @@ int play_game(void)
 	scores.draws++;
 }
 
-int game_setup_done = 0;
+static int game_setup_done = 0;
 
 enum {
     MM_GAME, MM_RESET, MM_SETUP, MM_QUIT, MM_SCR_ADJUST
 };
 
-int main_menu(void)
+static int main_menu(void)
 {
     const struct {
 	int y;
@@ -836,7 +836,7 @@ int main_menu(void)
     return action;
 }
 
-void button_symbol(int x, int y, int button)
+static void button_symbol(int x, int y, int button)
 {
     unsigned char fourbuttons[8*4] = {
 	0x7F, 0x41, 0x41, 0x41, 0x41, 0x41, 0x7F, 0x00,
@@ -858,7 +858,7 @@ void button_symbol(int x, int y, int button)
 	puttext(x, y, WEAPON_COLOUR, otherfour[button-4]);
 }
 
-void setup_game(void)
+static void setup_game(void)
 {
     struct {
 	/* Coordinates of item for each player. */
@@ -1073,13 +1073,13 @@ void setup_game(void)
     }
 }
 
-void reset_scores(void)
+static void reset_scores(void)
 {
     scores.p[0] = scores.p[1] = 0;
     scores.games = scores.draws = 0;
 }
 
-void screen_adjust(void)
+static void screen_adjust(void)
 {
     SDL_Event event;
     int flags = 0;
