@@ -1,0 +1,15 @@
+Summary: Logging settings are not saved with Default Settings
+Present-in: 0.52 0.53 0.53b
+Class: semi-bug
+Difficulty: fun
+Priority: medium
+
+Currently the session logging settings are deliberately excluded when
+saving to "Default Settings".
+
+A workaround is to hack the Registry.
+
+This has been the case ever since proper logging was added. We suspect
+this is by design, and dates from before we had effective mechanisms
+to prevent log file clashes (the prompt-before-overwriting and the
+dynamic log-file name selection).
