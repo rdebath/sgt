@@ -161,7 +161,7 @@ Now let's create some symlinks to \e{directories}. Again, this is
 simple to begin with:
 
 \c $ lns subdir2 subdir3
-\c   bbbbbbbbbbbbbbbbbbb
+\e   bbbbbbbbbbbbbbbbbbb
 
 This creates a symlink called \cw{subdir3} with text \cq{subdir2}.
 
@@ -170,7 +170,7 @@ to be useful. Suppose I now want the link \cw{subdir3} to point at
 \cw{subdir} instead of \cw{subdir2}. If I do this:
 
 \c $ lns -f subdir subdir3
-\c   bbbbbbbbbbbbbbbbbbbbb
+\e   bbbbbbbbbbbbbbbbbbbbb
 
 then \cw{lns} will immediately notice that the second argument
 \cw{subdir3} is (a symlink to) a directory, and will therefore
@@ -183,7 +183,7 @@ In order to overwrite the directory symlink correctly, you need the
 \cw{-F} option:
 
 \c $ lns -F subdir subdir3
-\c   bbbbbbbbbbbbbbbbbbbbb
+\e   bbbbbbbbbbbbbbbbbbbbb
 
 \cw{-F} tells \cw{lns} that you really want the new symlink to be
 \e{called} \cw{subdir3}, not to be \e{in the directory}
