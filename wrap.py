@@ -49,6 +49,7 @@ def dofile(f):
 	if len(k) == 0:
 	    if len(para) > 0:
 		wrap(para)
+	    para = []
 	    sys.stdout.write(s)
 	else:
 	    para = para + k
