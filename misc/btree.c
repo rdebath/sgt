@@ -58,8 +58,8 @@
 typedef struct btree btree;
 typedef void *bt_element_t;	       /* might change when on disk */
 
-typedef int (*cmpfn_t)(const bt_element_t, const bt_element_t);
-typedef bt_element_t (*copyfn_t)(const bt_element_t);
+typedef int (*cmpfn_t)(void *state, const bt_element_t, const bt_element_t);
+typedef bt_element_t (*copyfn_t)(void *state, const bt_element_t);
 
 enum {
     BT_REL_EQ, BT_REL_LT, BT_REL_LE, BT_REL_GT, BT_REL_GE
@@ -137,6 +137,7 @@ struct btree {
     node_addr root;
     cmpfn_t cmp;
     copyfn_t copy;
+    void *userstate;		       /* passed to cmp and copy */
 };
 
 /* ----------------------------------------------------------------------
@@ -349,7 +350,7 @@ static nodeptr bt_clone_node(btree *bt, nodeptr n)
     if (bt->copy) {
 	for (i = 0; i < bt_elements(bt, ret); i++) {
 	    bt_element_t *e = bt_element(bt, ret, i);
-	    bt_set_element(bt, ret, i, bt->copy(e));
+	    bt_set_element(bt, ret, i, bt->copy(bt->userstate, e));
 	}
     }
     ret[bt->maxdegree*2+1].i = 1;      /* clone has reference count 1 */
@@ -561,7 +562,7 @@ static int bt_lookup_cmp(btree *bt, nodeptr n, bt_element_t element,
 
     while (mintree < maxtree) {
 	int elt = (maxtree + mintree) / 2;
-	int c = cmp(element, bt_element(bt, n, elt));
+	int c = cmp(bt->userstate, element, bt_element(bt, n, elt));
 
 	if (c == 0) {
 	    *is_elt = TRUE;
@@ -754,11 +755,13 @@ static void bt_xform(btree *bt, int intype, int inaux,
  * findrelpos. One always returns +1 (a > b), the other always
  * returns -1 (a < b).
  */
-static int bt_cmp_greater(const bt_element_t a, const bt_element_t b)
+static int bt_cmp_greater(void *state,
+			  const bt_element_t a, const bt_element_t b)
 {
     return +1;
 }
-static int bt_cmp_less(const bt_element_t a, const bt_element_t b)
+static int bt_cmp_less(void *state,
+		       const bt_element_t a, const bt_element_t b)
 {
     return -1;
 }
@@ -767,7 +770,7 @@ static int bt_cmp_less(const bt_element_t a, const bt_element_t b)
  * User-visible administration routines.
  */
 
-btree *bt_new(cmpfn_t cmp, copyfn_t copy, int mindegree)
+btree *bt_new(cmpfn_t cmp, copyfn_t copy, void *state, int mindegree)
 {
     btree *ret;
 
@@ -778,6 +781,7 @@ btree *bt_new(cmpfn_t cmp, copyfn_t copy, int mindegree)
     ret->root = NODE_ADDR_NULL;
     ret->cmp = cmp;
     ret->copy = copy;
+    ret->userstate = state;
 
     return ret;
 }
@@ -816,7 +820,7 @@ btree *bt_clone(btree *bt)
 {
     btree *bt2;
 
-    bt2 = bt_new(bt->cmp, bt->copy, bt->mindegree);
+    bt2 = bt_new(bt->cmp, bt->copy, bt->userstate, bt->mindegree);
     bt2->depth = bt->depth;
     bt2->root = bt_ref_node(bt, bt->root);
     return bt2;
@@ -1662,7 +1666,7 @@ static btree *bt_split_internal(btree *bt1, int index)
     nodeptr n1, n2, n;
     int nnodes, child;
 
-    bt2 = bt_new(bt1->cmp, bt1->copy, bt1->mindegree);
+    bt2 = bt_new(bt1->cmp, bt1->copy, bt1->userstate, bt1->mindegree);
     bt2->depth = bt1->depth;
 
     lnodes = inewn(nodeptr, bt1->depth);
@@ -1818,7 +1822,7 @@ static nodeptr bt_copy_node(btree *bt, nodeptr n)
 	if (i < children-1) {
 	    bt_element_t e = bt_element(bt, n, i);
 	    if (bt->copy)
-		e = bt->copy(e);
+		e = bt->copy(bt->userstate, e);
 	    bt_set_element(bt, ret, i, e);
 	}
     }
@@ -1831,7 +1835,7 @@ btree *bt_copy(btree *bt)
     nodeptr n;
     btree *bt2;
 
-    bt2 = bt_new(bt->cmp, bt->copy, bt->mindegree);
+    bt2 = bt_new(bt->cmp, bt->copy, bt->userstate, bt->mindegree);
     bt2->depth = bt->depth;
 
     n = bt_read_lock_root(bt);
@@ -1958,7 +1962,7 @@ void verifytree(btree *bt, bt_element_t *array, int arraylen)
     testlock(-1, 0, NULL);
 }
 
-int mycmp(void *av, void *bv) {
+int mycmp(void *state, void *av, void *bv) {
     char const *a = (char const *)av;
     char const *b = (char const *)bv;
     return strcmp(a, b);
@@ -1987,9 +1991,9 @@ void array_add(bt_element_t *array, int *arraylen, bt_element_t e)
     int len = *arraylen;
 
     for (i = 0; i < len; i++)
-	if (mycmp(array[i], e) >= 0)
+	if (mycmp(NULL, array[i], e) >= 0)
 	    break;
-    assert(i == len || mycmp(array[i], e) != 0);
+    assert(i == len || mycmp(NULL, array[i], e) != 0);
     array_addpos(array, arraylen, e, i);
 }
 
@@ -2011,9 +2015,9 @@ bt_element_t array_del(bt_element_t *array, int *arraylen, bt_element_t e)
     bt_element_t ret;
 
     for (i = 0; i < len; i++)
-	if (mycmp(array[i], e) >= 0)
+	if (mycmp(NULL, array[i], e) >= 0)
 	    break;
-    if (i < len && mycmp(array[i], e) == 0) {
+    if (i < len && mycmp(NULL, array[i], e) == 0) {
 	ret = array[i];
 	array_delpos(array, arraylen, i);
     } else
@@ -2241,7 +2245,7 @@ int main(void) {
     for (i = 0; i < (int)NSTR; i++) in[i] = 0;
     array = newn(bt_element_t, MAXTREESIZE);
     arraylen = 0;
-    tree = bt_new(mycmp, NULL, TEST_DEGREE);
+    tree = bt_new(mycmp, NULL, NULL, TEST_DEGREE);
 
     verifytree(tree, array, arraylen);
     for (i = 0; i < 10000; i++) {
@@ -2290,7 +2294,7 @@ int main(void) {
      * completeness we'll use it to tear down our unsorted tree
      * once we've built it.
      */
-    tree = bt_new(NULL, NULL, TEST_DEGREE);
+    tree = bt_new(NULL, NULL, NULL, TEST_DEGREE);
     verifytree(tree, array, arraylen);
     for (i = 0; i < 1000; i++) {
 	printf("trial: %d\n", i);
@@ -2356,7 +2360,7 @@ int main(void) {
      * Finally, do some testing on split/join on _sorted_ trees. At
      * the same time, we'll be testing split on very small trees.
      */
-    tree = bt_new(mycmp, NULL, TEST_DEGREE);
+    tree = bt_new(mycmp, NULL, NULL, TEST_DEGREE);
     arraylen = 0;
     for (i = 0; i < 16; i++) {
 	array_add(array, &arraylen, strings[i]);
@@ -2378,11 +2382,11 @@ int main(void) {
      * also ensure join correctly spots when sorted trees fail the
      * ordering constraint.
      */
-    tree = bt_new(mycmp, NULL, TEST_DEGREE);
-    tree2 = bt_new(mycmp, NULL, TEST_DEGREE);
-    tree3 = bt_new(mycmp, NULL, TEST_DEGREE);
-    tree4 = bt_new(mycmp, NULL, TEST_DEGREE);
-    assert(mycmp(strings[0], strings[1]) < 0);   /* just in case :-) */
+    tree = bt_new(mycmp, NULL, NULL, TEST_DEGREE);
+    tree2 = bt_new(mycmp, NULL, NULL, TEST_DEGREE);
+    tree3 = bt_new(mycmp, NULL, NULL, TEST_DEGREE);
+    tree4 = bt_new(mycmp, NULL, NULL, TEST_DEGREE);
+    assert(mycmp(NULL, strings[0], strings[1]) < 0);   /* just in case :-) */
     bt_add(tree2, strings[1]);
     testlock(-1, 0, NULL);
     bt_add(tree4, strings[0]);
