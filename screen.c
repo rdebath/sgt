@@ -47,7 +47,7 @@ static struct {
     { COLOR_RED, COLOR_BLACK, 0 },
 #define T_GOLD 6		       /* gold: $ */
     { COLOR_YELLOW, COLOR_BLACK, A_BOLD },
-#define T_EARTH 7		       /* earth: . : */
+#define T_EARTH 7		       /* earth: . : ! = */
     { COLOR_YELLOW, COLOR_BLACK, 0 },
 #define T_SACK 8		       /* sacks: o 8 */
     { COLOR_CYAN, COLOR_BLACK, 0 },
@@ -61,24 +61,26 @@ static struct {
     { COLOR_CYAN, COLOR_BLACK, 0 },
 #define T_STATUS_2 13		       /* level title and gold counters */
     { COLOR_YELLOW, COLOR_BLACK, 0 },
+#define T_TELEPORTER 14		       /* teleporters: # */
+    { COLOR_GREEN, COLOR_BLACK, A_BOLD },
 
     /*
      * Attributes to use when displaying the main game menu.
      */
-#define T_ASCII_ART 14    	       /* the Enigma banner */
+#define T_ASCII_ART 15    	       /* the Enigma banner */
     { COLOR_CYAN, COLOR_BLUE, A_BOLD },
-#define T_LIST_ELEMENT 15	       /* a playable level or saved game */
+#define T_LIST_ELEMENT 16	       /* a playable level or saved game */
     { COLOR_WHITE, COLOR_BLACK, 0 },
-#define T_LIST_SELECTED 16	       /* a selected level or saved game */
+#define T_LIST_SELECTED 17	       /* a selected level or saved game */
     { COLOR_WHITE, COLOR_BLUE, A_BOLD },
-#define T_LIST_ADMIN 17		       /* "...more..." or "...remain unseen" */
+#define T_LIST_ADMIN 18		       /* "...more..." or "...remain unseen" */
     { COLOR_RED, COLOR_BLACK, 0 },
-#define T_LIST_BOX 18		       /* outline of list box */
+#define T_LIST_BOX 19		       /* outline of list box */
     { COLOR_CYAN, COLOR_BLUE, 0 },
-#define T_INSTRUCTIONS 19	       /* instructions on what keys to press */
+#define T_INSTRUCTIONS 20	       /* instructions on what keys to press */
     { COLOR_YELLOW, COLOR_BLACK, 0 },
 
-#define T_INPUT 20		       /* accepting text input from user */
+#define T_INPUT 21		       /* accepting text input from user */
     { COLOR_WHITE, COLOR_BLACK, 0 },
 };
 
@@ -147,6 +149,22 @@ void screen_level_display(gamestate *s, char *message) {
 
     werase(stdscr);
 
+    if (sw < s->width || sh < s->height+2) {
+	char buf[3][40];
+	int i;
+	sprintf(buf[0], "Need terminal at least");
+	sprintf(buf[1], "%dx%d characters to", s->width, s->height+2);
+	sprintf(buf[2], "to display this level!");
+
+	for (i = 0; i < 3; i++)
+	    screen_prints((sw - strlen(buf[i]))/2, sh/2 + i - 1, T_BOMB,
+			   buf[i]);
+
+	move(0,0);
+	refresh();
+	return;
+    }
+
     dx = (sw - s->width) / 2;
     dy = (sh - s->height) / 2;
 
@@ -160,13 +178,17 @@ void screen_level_display(gamestate *s, char *message) {
 	      case '%':                attr = T_WALL_AMORPH; break;
 	      case '&':                attr = T_WALL_KILLER; break;
 	      case 'W': case 'X':
-	      case 'Y': case 'Z':      attr = T_BOMB; break;
+	      case 'Y': case 'Z':
+	      case 'w': case 'x':
+	      case 'y': case 'z':      attr = T_BOMB; break;
 	      case '>': case 'v':
 	      case '<': case '^':      attr = T_ARROW; break;
 	      case '$':                attr = T_GOLD; break;
-	      case '.': case ':':      attr = T_EARTH; break;
+	      case '.': case ':':
+	      case '!': case '=':      attr = T_EARTH; break;
 	      case 'o': case '8':      attr = T_SACK; break;
-	      case '@':                attr = T_PLAYER; break;
+	      case '@': case 'O':      attr = T_PLAYER; break;
+	      case '#':                attr = T_TELEPORTER; break;
 	      case '~':                c = ' '; attr = T_SPACE; break;
 	      default:                 attr = T_SPACE; break;
 	    }
@@ -202,8 +224,9 @@ void screen_level_display(gamestate *s, char *message) {
 }
 
 /*
- * Get a move. Can return 'h','j','k','l', or 'q', or '0'-'9' for
- * saves, or 's', 'm' (enter movie mode) and 'w' (save sequence).
+ * Get a move. Can return 'h','j','k','l','x', or 'q', or '0'-'9'
+ * for saves, or 's', 'm' (enter movie mode) and 'w' (save
+ * sequence).
  */
 int screen_level_getmove(int playing) {
     int i;
@@ -220,8 +243,8 @@ int screen_level_getmove(int playing) {
 	    /* When the playing is over, most keys just quit. */
 	    i = 'q';
 	}
-    } while (i != 'h' && i != 'j' && i != 'k' && i != 'l' && i != 'q' &&
-	     i != 's' && i != 'r' && (i < '0' || i > '9') &&
+    } while (i != 'h' && i != 'j' && i != 'k' && i != 'l' && i != 'x' &&
+	     i != 'q' && i != 's' && i != 'r' && (i < '0' || i > '9') &&
 	     i != 'm' && i != 'w');
     return i;
 }

@@ -44,13 +44,14 @@ char *dupstr(char *str) {
 #define mknewn(type, n) ( (type *)smalloc(sizeof(type) * n) )
 #define renewn(p, type, n) ( (type *)srealloc(p, sizeof(type) * n) )
 
-gamestate *gamestate_new(int width, int height) {
+gamestate *gamestate_new(int width, int height, int flags) {
     gamestate *p;
 
     p = mknew(gamestate);
     p->leveldata = mknewn(char, width * height);
     p->width = width;
     p->height = height;
+    p->flags = flags;
     p->sequence = NULL;
     p->sequence_size = 0;
 
@@ -60,7 +61,7 @@ gamestate *gamestate_new(int width, int height) {
 gamestate *gamestate_copy(gamestate *state) {
     gamestate *ret;
 
-    ret = gamestate_new(state->width, state->height);
+    ret = gamestate_new(state->width, state->height, state->flags);
     ret->status = state->status;
     memcpy(ret->leveldata, state->leveldata, ret->width * ret->height);
     ret->player_x = state->player_x;
