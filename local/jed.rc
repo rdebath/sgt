@@ -1,5 +1,5 @@
 % -*- mode: slang; mode: fold -*-
-% Simon Tatham: version $Revision: 1.42 $
+% Simon Tatham: version $Revision: 1.43 $
 
 %{{{ load Emacs keybindings to start with
 
@@ -332,6 +332,20 @@ define perl_mode_hook()
 }
 
 %}}}
+%{{{ redefine bits of Python mode
+
+define python_mode_hook()
+{
+    variable keymap;
+    keymap = what_keymap();
+    % Python and Perl share a comment syntax, so we can use
+    % perl_format_para for both.
+    definekey("jedrc_perl_format_paragraph", "^[Q", keymap);
+    definekey("jedrc_perl_format_paragraph", "^[q", keymap);
+    unset_buffer_hook("par_sep");
+}
+
+%}}}
 %{{{ redefine bits of armasm mode
 
 define armasm_mode_hook() %{{{
@@ -342,6 +356,8 @@ define armasm_mode_hook() %{{{
     definekey("jedrc_armasm_format_paragraph", "^[q", keymap);
     unset_buffer_hook("par_sep");
 }
+
+%}}}
 
 %}}}
 %{{{ ensure bash scripts are edited in sh mode, and fiddle with sh mode
