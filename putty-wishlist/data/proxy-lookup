@@ -3,6 +3,7 @@ Class: wish
 Priority: medium
 Difficulty: fun
 Content-type: text/x-html-body
+Fixed-in: 2002-12-19
 
 <p>When connecting through a proxy, there should be an option to
 leave looking up the hostname to the proxy, to cope with setups
@@ -17,3 +18,6 @@ lookup locally (for similar reasons).
 <li>Type IP address into hostname box
 <li>Hack the telnet proxy type to send the HTTP commands?
 </ul>
+
+<p>SGT, 2002-12-18: Should now be fixed, although it will want some
+testing. Roll on tomorrow's snapshot.
