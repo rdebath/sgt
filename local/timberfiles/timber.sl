@@ -1117,6 +1117,8 @@ define timber_get_mimepart(use_decoded) {
 
     if (what_char() == '!')
 	nestlevel = timber_pling_nestlevel();
+    else
+	nestlevel = -1;		       % needs to at least be initialised
 
     eol();
     go_right_1();
