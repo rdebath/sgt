@@ -320,7 +320,6 @@ int listener_newthread(SOCKET sock, int port, SOCKADDR_IN remoteaddr) {
 	    goto done;
 
 	if (!strcmp(cmdline, "SetDirectory")) {
-	    int ret;
 	    /*
 	     * Read a second line and store it for use as the
 	     * default directory of a subsequent CreateProcess or
