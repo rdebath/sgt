@@ -1,0 +1,113 @@
+#!/usr/bin/env python
+
+import sys
+import string
+
+args = sys.argv[1:]
+if len(args) == 0:
+    print "usage: pdfread <filename>"
+    print "   or: pdfread <filename> <objnum>"
+    sys.exit(0)
+
+filename = args[0]
+args = args[1:]
+
+if len(args) > 0:
+    number = string.atoi(args[0])
+else:
+    number = -1 # indicates top-level Catalog object
+
+f = open(filename, "rb")
+
+f.seek(0, 2) # go to end of file
+flen = f.tell()
+
+# This is ad-hockery. If it ever lets me down I'll have to do better.
+trailsize = 512
+if trailsize > flen: trailsize = flen
+f.seek(-trailsize, 2)
+trailer = f.read(trailsize)
+
+linelist = []
+
+while len(trailer) > 0:
+    ri = string.find(trailer, "\r")
+    ni = string.find(trailer, "\n")
+    if ri < 0: ri = len(trailer)
+    if ni < 0: ni = len(trailer)
+    mi = min(ri, ni)
+    if ri+ni == mi*2+1:
+        ei = mi+2
+    else:
+        ei = mi+1
+    line = trailer[0:mi]
+    trailer = trailer[ei:]
+    linelist.append(line)
+
+# Parse to find the (first) xref section offset.
+if len(linelist)<=3 or linelist[-3]!="startxref" or linelist[-1]!="%%EOF":
+    sys.stderr.write("unable to find xref section offset\n")
+    sys.exit(1)
+xrefoff = string.atoi(linelist[-2])
+
+if number < 0:
+    raise "parsing trailer for root object NYI"
+    # Now parse to find the trailer section.
+    n = len(linelist) - 1
+    while n >= 0:
+        if linelist[n] == "trailer":
+            break
+        n = n - 1
+
+    if n < 0:
+        sys.stderr.write("unable to find trailer section\n")
+        sys.exit(1)
+
+    # And now interpret the trailer section until we find the root
+    # object.
+
+def chomp(s):
+    while len(s) > 0 and (s[-1] == "\r" or s[-1] == "\n"):
+        s = s[:-1]
+    return s
+
+# Now we have an xref table offset and an object number. Go for it.
+offset = None
+while 1:
+    f.seek(xrefoff)
+    s = chomp(f.readline())
+    assert s == "xref"
+    while 1:
+        s = chomp(f.readline())
+        ss = string.split(s)
+        assert len(ss) == 2
+        start = string.atoi(ss[0])
+        nobjs = string.atoi(ss[1])
+        if number >= start and number < start + nobjs:
+            # Found it.
+            f.seek((number - start) * 20, 1)
+            entry = f.read(20)
+            entryl = string.split(entry)
+            offset = string.atoi(entryl[0])
+            break
+        # Otherwise seek to the end of this bit and try the next
+        # bit.
+        f.seek(nobjs * 20, 1)
+    if offset != None:
+        break
+    # Now look backwards to find the previous xref section.
+    raise "parsing trailer for previous xref section NYI"
+
+if offset == None:
+    sys.stderr.write("unable to find object number %d\n" % number)
+    sys.exit(1)
+
+# Now we know the object offset. Read and print the object.
+f.seek(offset)
+while 1:
+    s = f.readline()
+    if s == "": break
+    sys.stdout.write(s)
+    sl = string.split(s)
+    if len(sl) > 0 and sl[-1] == "endobj":
+        break
