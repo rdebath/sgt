@@ -1,0 +1,35 @@
+#!/usr/bin/env python
+
+import sha
+import sys
+import socket
+import string
+
+server = sys.argv[1]
+secretfile = sys.argv[2]
+cmd = sys.argv[3]
+
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.connect(server, 6666)
+sf = s.makefile("r")
+
+greet = sf.readline()
+
+nonce = greet[1:string.find(greet, "\r")]
+
+shaobj = sha.new()
+shaobj.update(nonce)
+shaobj.update(open(secretfile, "rb").read())
+shaobj.update(cmd)
+auth = shaobj.hexdigest()
+
+ourline = auth + cmd + "\r\n"
+s.send(ourline)
+
+status = sf.readline()
+if status[0] == "-":
+    sys.stderr.write("error: " + status)
+    sys.exit(1)
+
+sys.exit(0)
+
