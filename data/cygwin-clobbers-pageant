@@ -45,3 +45,8 @@ Simon was unable to reproduce this. I'm going to speculate that it
 might involve having an <tt>/etc/passwd</tt> that's been populated
 with SIDs by <tt>make-passwd</tt>, and/or be something to do with
 Cygwin's <tt>ntsec</tt> option.
+
+<p>
+There's a <a href="http://sources.redhat.com/ml/cygwin/2002-05/msg01770.html">
+thread</a> on the cygwin mailing list about this, though it's not very
+enlightening.
