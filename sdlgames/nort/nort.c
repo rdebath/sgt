@@ -12,6 +12,8 @@
 #define ABSOLUTE_MAX_SPEED 25
 #define JOY_THRESHOLD 4096
 
+#define WEAPON_COLOUR 255
+
 #define lenof(x) ( sizeof((x)) / sizeof(*(x)) )
 
 #define sign(x) ( (x) < 0 ? -1 : (x) > 0 ? +1 : 0 )
@@ -154,14 +156,8 @@ enum {
 SDL_Joystick *joys[2];
 
 struct options {
-    /*
-     * FIXME: If and when we support more than two players,
-     * own_fatal will become some amount more complex, because
-     * team play will have at least three options (all trails
-     * fatal, your own trail is OK but teammates' are fatal,
-     * and teammates can freely drive over one another). Scary.
-     */
     int own_fatal;
+    int enemy_fatal;
     int auto_accel;
     int scrfill_v;
     int scrfill_h;
@@ -184,14 +180,28 @@ struct scores {
 
 int cloak(int players)
 {
-    SDL_Color colours[2];
+    SDL_Color colours[3];
     colours[0].r = colours[0].g = colours[0].b = 0;
-    if (!(players & 1))
-	colours[0].r = 255;
     colours[1].r = colours[1].g = colours[1].b = 0;
+    colours[2].r = colours[2].g = colours[2].b = 0;
+    if (!(players & 1))
+	colours[0].r = colours[2].r = 255;
     if (!(players & 2))
-	colours[1].g = 255;
-    SDL_SetColors(screen, colours, 1, 2);
+	colours[1].g = colours[2].g = 255;
+    SDL_SetColors(screen, colours, 1, 3);
+}
+
+/*
+ * Determine if player p2 and its trail should be fatal to player
+ * p1 and its trail. Note that the game logic at present assumes
+ * that this function is symmetric.
+ */
+int is_lethal_to(int p, int p2) {
+    if (opts.own_fatal && p == p2)
+	return 1;
+    if (opts.enemy_fatal && p != p2)
+	return 1;
+    return 0;
 }
 
 int play_game(void)
@@ -210,11 +220,11 @@ int play_game(void)
     for (x = 0; x < 320; x++)
 	for (y = 0; y < 240; y++) {
 	    if (x == 0 || x == 319 || y == 0 || y == 239)
-		plot(x, y, 3);
+		plot(x, y, WEAPON_COLOUR);
 	    else
 		plot(x, y, 0);
 	}
-    puttext(160 - 4*(sizeof(startstring)-1), 100, 3, startstring);
+    puttext(160 - 4*(sizeof(startstring)-1), 100, WEAPON_COLOUR, startstring);
 
     scr_done();
 
@@ -380,7 +390,7 @@ int play_game(void)
 			    int bx, by, ex, ey;
 			    pcoord(bx, by, 20);
 			    pcoord(ex, ey, 96);
-			    drawline(bx, by, ex, ey, 3);
+			    drawline(bx, by, ex, ey, WEAPON_COLOUR);
 			    players[p].button_delay[i] = 3;
 			}
 			break;
@@ -388,7 +398,7 @@ int play_game(void)
 			{
 			    int x, y;
 			    pcoord(x, y, 70);
-			    fillcircle(x, y, 10, 3);
+			    fillcircle(x, y, 10, WEAPON_COLOUR);
 			    players[p].button_delay[i] = 3;
 			}
 			break;
@@ -397,7 +407,7 @@ int play_game(void)
 			    int bx, by, ex, ey;
 			    pcoord(bx, by, 20);
 			    pcoord(ex, ey, 96);
-			    drawline(bx, by, ex, ey, 3 | 256);
+			    drawline(bx, by, ex, ey, WEAPON_COLOUR | 256);
 			    players[p].button_delay[i] = 3;
 			}
 			break;
@@ -405,10 +415,10 @@ int play_game(void)
 			{
 			    int cx, cy;
 			    pcoord(cx, cy, 80);
-			    drawline(cx-20, cy-15, cx-20, cy+15, 3);
-			    drawline(cx+20, cy-15, cx+20, cy+15, 3);
-			    drawline(cx-15, cy-20, cx+15, cy-20, 3);
-			    drawline(cx-15, cy+20, cx+15, cy+20, 3);
+			    drawline(cx-20, cy-15, cx-20, cy+15,WEAPON_COLOUR);
+			    drawline(cx+20, cy-15, cx+20, cy+15,WEAPON_COLOUR);
+			    drawline(cx-15, cy-20, cx+15, cy-20,WEAPON_COLOUR);
+			    drawline(cx-15, cy+20, cx+15, cy+20,WEAPON_COLOUR);
 			    players[p].button_delay[i] = 3;
 			}
 			break;
@@ -419,15 +429,15 @@ int play_game(void)
 			    pcoord(blx, bly, 32);
 			    pcoord(elx, ely, 66);
 			    pcoord(ex, ey, 70);
-			    drawline(blx, bly, elx, ely, 3);
-			    drawline(bx-4, by-4, bx+4, by-4, 3);
-			    drawline(bx+4, by-4, bx+4, by+4, 3);
-			    drawline(bx+4, by+4, bx-4, by+4, 3);
-			    drawline(bx-4, by+4, bx-4, by-4, 3);
-			    drawline(ex-4, ey-4, ex+4, ey-4, 3);
-			    drawline(ex+4, ey-4, ex+4, ey+4, 3);
-			    drawline(ex+4, ey+4, ex-4, ey+4, 3);
-			    drawline(ex-4, ey+4, ex-4, ey-4, 3);
+			    drawline(blx, bly, elx, ely, WEAPON_COLOUR);
+			    drawline(bx-4, by-4, bx+4, by-4, WEAPON_COLOUR);
+			    drawline(bx+4, by-4, bx+4, by+4, WEAPON_COLOUR);
+			    drawline(bx+4, by+4, bx-4, by+4, WEAPON_COLOUR);
+			    drawline(bx-4, by+4, bx-4, by-4, WEAPON_COLOUR);
+			    drawline(ex-4, ey-4, ex+4, ey-4, WEAPON_COLOUR);
+			    drawline(ex+4, ey-4, ex+4, ey+4, WEAPON_COLOUR);
+			    drawline(ex+4, ey+4, ex-4, ey+4, WEAPON_COLOUR);
+			    drawline(ex-4, ey+4, ex-4, ey-4, WEAPON_COLOUR);
 			    players[p].button_delay[i] = 3;
 			}
 			break;
@@ -439,7 +449,7 @@ int play_game(void)
 			    };
 			    for (j = 0; j < lenof(word); j++) {
 				pcoord(bx, by, 32+8*j);
-				puttext(bx-4, by-3, 3, word[j]);
+				puttext(bx-4, by-3, WEAPON_COLOUR, word[j]);
 			    }
 			    players[p].button_delay[i] = 3;
 			}
@@ -503,21 +513,25 @@ int play_game(void)
 			players[p].dead = 1;
 		    } else {
 			int p2;
+			/* Check head-on collisions. */
 			for (p2 = 0; p2 < p; p2++)
 			    if (players[p2].x == players[p].x &&
-				players[p2].y == players[p].y)
-				break;
-			if (p2 < p) {
-			    /* Player has hit another player head-on. */
-			    players[p].dead = 1;
-			    players[p2].dead = 1;
-			} else {
-			    pix = pixelc(players[p].x, players[p].y);
-			    if ((pix &~ players[p].colour) ||
-				(opts.own_fatal && pix != 0)) {
-				/* Player has run into an obstacle. */
-				players[p].dead = 1;
+				players[p2].y == players[p].y) {
+				/* Player has hit another player head-on. */
+				if (is_lethal_to(p, p2)) {
+				    players[p].dead = 1;
+				    players[p2].dead = 1;
+				}
 			    }
+			/* If we survived that, check the pixel under us.  */
+			if (!players[p].dead) {
+			    pix = pixelc(players[p].x, players[p].y);
+			    if (pix == WEAPON_COLOUR)
+				players[p].dead = 1;
+			    for (p2 = 0; p2 < 2; p2++)
+				if ((pix & players[p2].colour) &&
+				    is_lethal_to(p, p2))
+				    players[p].dead = 1;
 			}
 		    }
 		}
@@ -552,8 +566,8 @@ int play_game(void)
 		y = scrfill/2;
 		y2 = 239 - y;
 		for (x = 0; x < 319; x++) {
-		    plot(x, y, 3);
-		    plot(x, y2, 3);
+		    plot(x, y, WEAPON_COLOUR);
+		    plot(x, y2, WEAPON_COLOUR);
 		}
 	    }
 	    if (opts.scrfill_h && scrfill < 320) {
@@ -561,8 +575,8 @@ int play_game(void)
 		x = scrfill/2;
 		x2 = 319 - x;
 		for (y = 0; y < 239; y++) {
-		    plot(x, y, 3);
-		    plot(x2, y, 3);
+		    plot(x, y, WEAPON_COLOUR);
+		    plot(x2, y, WEAPON_COLOUR);
 		}
 	    }
 	}
@@ -664,7 +678,7 @@ int main_menu(void)
     else
 	menumin = 2;		       /* only Setup and Quit allowed */
 
-#define centre(y,text) puttext(160-4*(strlen((text))),y,3,(text))
+#define centre(y,text) puttext(160-4*(strlen((text))),y,WEAPON_COLOUR,(text))
     centre(50, "NORT");
     centre(66, "A SPL@ Production");
 
@@ -684,11 +698,11 @@ int main_menu(void)
 	sprintf(text, "%-4d Player 2", scores.p[1]);
 	puttext(172, 200, 2, text);
 	right = 172 + 8*strlen(text);
-	puttext(156, 200, 3, "-");
+	puttext(156, 200, WEAPON_COLOUR, "-");
 	sprintf(text, "%d game%s", scores.games, scores.games==1?"":"s");
-	puttext(left, 212, 3, text);
+	puttext(left, 212, WEAPON_COLOUR, text);
 	sprintf(text, "%d drawn", scores.draws);
-	puttext(right - 8*strlen(text), 212, 3, text);
+	puttext(right - 8*strlen(text), 212, WEAPON_COLOUR, text);
     }
 
     scr_done();
@@ -775,9 +789,9 @@ void button_symbol(int x, int y, int button)
 	for (ix = 0; ix < 8; ix++)
 	    for (iy = 0; iy < 8; iy++)
 		if (fourbuttons[button*8+iy] & (0x80>>ix))
-		    plotc(x+4+ix, y+iy, button+4);
+		    plotc(x+4+ix, y+iy, button+128);
     } else
-	puttext(x, y, 3, otherfour[button-4]);
+	puttext(x, y, WEAPON_COLOUR, otherfour[button-4]);
 }
 
 void setup_game(void)
@@ -840,7 +854,7 @@ void setup_game(void)
 
 	    /* Special case: check if both crosshairs overlap. */
 	    if (index[1-p] == index[p] && items[idx].x[0] == items[idx].x[1])
-		c = 3;
+		c = WEAPON_COLOUR;
 
 	    drawline(x-8, y-2, x-4, y-2, c);
 	    drawline(x-8, y-2, x-8, y+2, c);
@@ -852,18 +866,18 @@ void setup_game(void)
 	    drawline(x+w+8, y+8, x+w+8, y+4, c);
 	}
 
-	puttext(8, 8, 3, "Assign buttons to weapons and actions:");
-	puttext(16, 24+0*12, 3, "Accelerate");
-	puttext(16, 24+1*12, 3, "Brake");
-	puttext(16, 24+2*12, 3, "Rifle");
-	puttext(16, 24+3*12, 3, "Bomb");
-	puttext(16, 24+4*12, 3, "Machine Gun");
-	puttext(16, 24+5*12, 3, "Cage");
-	puttext(16, 24+6*12, 3, "Bolas");
-	puttext(16, 24+7*12, 3, "FLIB KRONT");
-	puttext(16, 24+8*12, 3, "Teleport");
-	puttext(16, 24+9*12, 3, "Cloaking");
-	puttext(16, 24+10*12, 3, "Extend weapon");
+	puttext(8, 8, WEAPON_COLOUR, "Assign buttons to weapons and actions:");
+	puttext(16, 24+0*12, WEAPON_COLOUR, "Accelerate");
+	puttext(16, 24+1*12, WEAPON_COLOUR, "Brake");
+	puttext(16, 24+2*12, WEAPON_COLOUR, "Rifle");
+	puttext(16, 24+3*12, WEAPON_COLOUR, "Bomb");
+	puttext(16, 24+4*12, WEAPON_COLOUR, "Machine Gun");
+	puttext(16, 24+5*12, WEAPON_COLOUR, "Cage");
+	puttext(16, 24+6*12, WEAPON_COLOUR, "Bolas");
+	puttext(16, 24+7*12, WEAPON_COLOUR, "FLIB KRONT");
+	puttext(16, 24+8*12, WEAPON_COLOUR, "Teleport");
+	puttext(16, 24+9*12, WEAPON_COLOUR, "Cloaking");
+	puttext(16, 24+10*12, WEAPON_COLOUR, "Extend weapon");
 
 	for (p = 0; p < 2; p++) {
 	    for (i = 0; i < 8; i++) {
@@ -874,28 +888,31 @@ void setup_game(void)
 	    }
 	}
 
-	puttext(8, 156, 3, "Select game options:");
+	puttext(8, 156, WEAPON_COLOUR, "Select game options:");
 
-	puttext(16, 172+0*12, 3, "Safe trails:");
-	puttext(160, 172+0*12, 3, opts.own_fatal ? "None" : "Your own");
+	puttext(16, 172+0*12, WEAPON_COLOUR, "Safe trails:");
+	puttext(160, 172+0*12, WEAPON_COLOUR,
+		opts.enemy_fatal ?
+		(opts.own_fatal ? "None" : "Your own") :
+		(opts.own_fatal ? "Enemy" : "All"));
 
-	puttext(16, 172+1*12, 3, "Walls closing in:");
-	puttext(160, 172+1*12, 3,
+	puttext(16, 172+1*12, WEAPON_COLOUR, "Walls closing in:");
+	puttext(160, 172+1*12, WEAPON_COLOUR,
 		(!opts.scrfill_v && !opts.scrfill_h ? "None" :
 		 opts.scrfill_v && !opts.scrfill_h ? "Top and bottom" :
 		 !opts.scrfill_v && opts.scrfill_h ? "Left and right" :
 		 /* opts.scrfill_v && opts.scrfill_h ? */ "All four"));
 
-	puttext(16, 172+2*12, 3, "Auto-accelerate:");
-	puttext(160, 172+2*12, 3, opts.auto_accel ? "On" : "Off");
+	puttext(16, 172+2*12, WEAPON_COLOUR, "Auto-accelerate:");
+	puttext(160, 172+2*12, WEAPON_COLOUR, opts.auto_accel ? "On" : "Off");
 
-	puttext(16, 172+3*12, 3, "Maximum speed:");
+	puttext(16, 172+3*12, WEAPON_COLOUR, "Maximum speed:");
 	sprintf(speedstr, "%d", opts.max_speed);
-	puttext(160, 172+3*12, 3, "-");
-	puttext(200, 172+3*12, 3, speedstr);
-	puttext(240, 172+3*12, 3, "+");
+	puttext(160, 172+3*12, WEAPON_COLOUR, "-");
+	puttext(200, 172+3*12, WEAPON_COLOUR, speedstr);
+	puttext(240, 172+3*12, WEAPON_COLOUR, "+");
 
-	puttext(104, 224, 3, "Finished Setup");
+	puttext(104, 224, WEAPON_COLOUR, "Finished Setup");
 
 	scr_done();
 
@@ -940,6 +957,8 @@ void setup_game(void)
 			 * Cycle the safe-trails option.
 			 */
 			opts.own_fatal = !opts.own_fatal;
+			if (!opts.own_fatal)
+			    opts.enemy_fatal = !opts.enemy_fatal;
 			goto redraw;
 		    } else if (index[p] == 12) {
 			/*
@@ -1007,40 +1026,38 @@ int main(void)
     /*
      * Set up the colour palette.
      */
-    {
-	static SDL_Color colours[] = {
-	    /*
-	     * These colours are for playing the actual game:
-	     *
-	     *  - colour 0 is the black background.
-	     *  - colour 1 is red (player 1's trail).
-	     *  - colour 2 is green (player 2's trail).
-	     *  - colour 3 is white (scenery and weapons, fatal to
-	     *    both players).
-	     */
-	    {0, 0, 0},
-	    {255, 0, 0},
-	    {0, 255, 0},
-	    {255, 255, 255},
+#define setcolour(c,r,g,b) do { \
+    static SDL_Color colour = { r, g, b }; \
+    SDL_SetColors(screen, &colour, c, 1); \
+} while (0)
+    /*
+     * These colours are for playing the actual game:
+     *
+     *  - colour 0 is the black background.
+     *  - colour 1 is red (player 1's trail).
+     *  - colour 2 is green (player 2's trail).
+     *  - colour 3 is yellow (player 1 + player 2 combined trail)
+     *
+     *  - WEAPON_COLOUR is white (scenery plus weapons, fatal
+     *    to everyone)
+     */
+    setcolour(0, 0, 0, 0);
+    setcolour(1, 255, 0, 0);
+    setcolour(2, 0, 255, 0);
+    setcolour(3, 255, 255, 0);
+    setcolour(WEAPON_COLOUR, 255, 255, 255);
 
-	    /*
-	     * Extra colours for the game setup screen: the colours
-	     * for the PS2 button symbols, in order of the way the
-	     * controller numbers them (sq,x,tr,ci).
-	     */
-	    {255, 128, 170},	       /* square is purpley pink */
-	    {170, 255, 255},	       /* x is pale cyan */
-	    {0, 255, 128},	       /* triangle is slightly bluey green */
-	    {255, 128, 128},	       /* circle is pinky red */
+    /*
+     * Extra colours for the game setup screen: the colours
+     * for the PS2 button symbols, in order of the way the
+     * controller numbers them (sq,x,tr,ci).
+     */
+    setcolour(128, 255, 128, 170);     /* square is purpley pink */
+    setcolour(129, 170, 255, 255);     /* x is pale cyan */
+    setcolour(130, 0, 255, 128);       /* triangle is slightly bluey green */
+    setcolour(131, 255, 128, 128);     /* circle is pinky red */
 
-	    /*
-	     * For the game setup screen, we want a grey colour for
-	     * unselected options.
-	     */
-	    {160, 160, 160},
-	};
-	SDL_SetColors(screen, colours, 0, lenof(colours));
-    }
+#undef setcolour
 
     /*
      * Get rid of the initial event queue from opening the
@@ -1065,6 +1082,7 @@ int main(void)
 	players[p].buttons[6] = players[p].buttons[7] = ACT_NOTHING;
 	players[p].colour = p+1;
 	opts.own_fatal = 0;
+	opts.enemy_fatal = 1;
 	opts.auto_accel = 0;
 	opts.scrfill_v = 0;
 	opts.scrfill_h = 0;
