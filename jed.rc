@@ -1,5 +1,5 @@
 % -*- mode: slang; mode: fold -*-
-% Simon Tatham: version $Revision: 1.6 $
+% Simon Tatham: version $Revision: 1.7 $
 
 %{{{ load Emacs keybindings to start with
 
@@ -41,6 +41,12 @@ setkey (".\"beg_of_buffer\" \"0\" jedrc_ro_alternate", "0");
 setkey (".\"end_of_buffer\" \"G\" jedrc_ro_alternate", "G");
 setkey (".\"end_of_buffer\" \"z\" jedrc_ro_alternate", "z");
 setkey (".\"end_of_buffer\" \"Z\" jedrc_ro_alternate", "Z");
+
+% We have to do this to override slang_mode's underhand funtation of
+% the C mode keymap
+define slang_mode_hook() {
+    local_setkey(".\"page_down\" \" \" jedrc_ro_alternate", " ");
+}
 
 %}}}
 %{{{ ^X^D to insert the date
