@@ -1,0 +1,30 @@
+#!/usr/local/bin/python 
+
+import ljproto
+import sys
+import string
+
+verbose = 0
+dict = {"mode":"getfriends", "includegroups":"1"}
+
+for arg in sys.argv[1:]:
+    if arg == "-v":
+	verbose = 1
+    else:
+	sys.stderr.write("Unknown option "+arg+"\n")
+	sys.exit(1)
+
+if verbose:
+    print "Input:", dict
+ret = ljproto.ljcall(dict)
+if verbose:
+    print "Output:", ret
+
+n = string.atoi(ret["friend_count"])
+
+for i in range(1,n+1):
+    username = ret["friend_%d_user" % i]
+    fullname = ret["friend_%d_name" % i]
+    groupmask = ret["friend_%d_groupmask" % i]
+
+    print username, groupmask, fullname
