@@ -18,7 +18,8 @@ effort for other ports. If anyone really has a use for it, we'd be
 interested to know why :-)
 
 <p>
-Ports of <code>psftp</code> and <code>pscp</code> are also now available.
+Ports of <code>psftp</code>, <code>pscp</code>, and <code>puttygen</code>
+are also now available.
 
 <p>
 We do not yet have Unix ports of Puttygen and Pageant.
