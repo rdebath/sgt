@@ -1,6 +1,7 @@
 Summary: Unique codes for modified function keys
 Class: wish
 Difficulty: taxing
+Priority: low
 Content-type: text/x-html-body
 
 <p>
@@ -10,6 +11,8 @@ support (e.g., Fn, Shift+Fn, Ctrl+Fn and Ctrl+Shift+Fn).
 
 <p>
 Sometimes it's even suggested what sequences these should send.
+(<a href="xterm-keyboard.html">`xterm-keyboard'</a> has some
+suggests, but also claims not to be trustworthy.)
 
 <p>
 See also <a href="function-keys.html">`function-keys'</a>.
