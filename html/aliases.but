@@ -15,7 +15,7 @@
 \cfg{xhtml-section-numeric}{1}{yes}
 \cfg{xhtml-section-suffix}{1}{. }
 
-\cfg{xhtml-address-start}{Copyright &copy; 2003 Simon Tatham.
+\cfg{xhtml-address-start}{Copyright &copy; 2003,2004 Simon Tatham.
 <br>This document is
 <a href="http://www.opencontent.org/">OpenContent</a>.
 <br>You may copy and use the text under the terms of the
@@ -202,8 +202,9 @@ tricky special cases to remember for the user, and if a little
 flexibility such as the above rename example is lost in the process,
 that often seems a small price to pay. (In fact, I usually find my
 own bulk renaming needs are more complex than that syntax could
-easily express anyway, so I have a bulk rename utility that uses
-regular expressions! Much more powerful.)
+easily express anyway, so I have a
+\W{http://www.chiark.greenend.org.uk/~sgtatham/utils}{bulk rename
+utility that uses regular expressions}! Much more powerful.)
 
 Even with shell functions, this consistency is not broken. Arguments
 to a shell function are expanded in exactly the same way as
@@ -329,6 +330,48 @@ because alias lookup happens before backslash escapes are processed,
 so the shell actually looks for an alias called \cq{\\find}, which
 doesn't exist.
 
+\U Related Hacks
+
+With \cw{bash} in particular, there is an even worse hack you can do
+which allows you to suppress \e{all} of the normal \cw{bash}
+command-line processing. This time it works by putting a \e{comment}
+character at the end of the alias definition. This completely
+suppresses parsing of the remainder of the command line.
+
+After you do this, you then need to recover the command line from
+somewhere so you can process it in your own way. The best solution
+I'm aware of is to recover it from the command history using
+\cw{bash}'s \c{history} builtin:
+
+\c echo-literally-helper() {
+\c     str="`history 1 | perl -pe 's/^ *[0-9]+ +[^ ]+ //'`"
+\c     echo "$str"
+\c }
+\c alias echo-literally='echo-literally-helper #'
+
+The resulting alias is a command which prints \e{exactly} what was
+passed on the remainder of its command line, whether that contains
+single quotes, double quotes, theoretically insignicant variations
+in whitespace, redirections, wildcards, trailing backslashes or even
+other comment characters:
+
+\c $ echo-literally a; b; c
+\c a; b; c
+\c $ echo-literally    a
+\c    a
+\c $ echo-literally hello, world > thingy
+\c hello, world > thingy
+\c $ echo-literally ooh # this is a comment
+\c ooh # this is a comment
+
+Of course, this hack is even \e{more} unstable than the magic alias
+hack: it won't work if run from a script, or as part of a complex
+command. It only works properly if typed on the interactive shell
+command line. That said, it might conceivably have uses (such as,
+for example, passing a verbatim command line through a
+remote-execution utility such as \cw{ssh}), if you're brave enough
+to keep it lying around your shell configuration...
+
 \U Summary
 
 I've presented a Bourne shell trick I call \q{magic aliases}: a
@@ -337,3 +380,7 @@ the rules under which its own command line is evaluated. I've
 strongly advised extreme caution if this trick is actually used, but
 suggested a range of ways that it might nonetheless be useful to a
 user who knows exactly what they're doing.
+
+I've also mentioned an even less stable (but correspondingly more
+powerful) trick along similar lines which only works with \cw{bash}.
+I'm not sure I advise using that one at all!
