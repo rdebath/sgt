@@ -38,3 +38,9 @@ which is why I didn't fix it before the 0.54 release.
 
 (Quite why anyone's using 256-bit keys _anyway_ is beyond me, but
 these days no weird user behaviour is a surprise to me.)
+
+BJH21: I've added an assert() to the code so that the explosion when trying
+       to use a too-short key is more controlled.
+
+       It occurs to me that PuTTYgen really should warn (and maybe fail)
+       when asked to generate an ssh-rsa key that can't possibly be used.
