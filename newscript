@@ -1,0 +1,13 @@
+#!/bin/sh
+i=$2
+name=`basename $0`
+if test ! -n "$i"; then
+  case $1 in
+    *.sh) i=sh;;
+    *.pl) i=perl;;
+    *) echo >&2 "usage: $n <scriptname> <interpreter>"; exit 1;;
+  esac
+fi
+i=`which $i`
+echo '#!'$i > $1
+chmod +x $1

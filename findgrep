@@ -1,0 +1,67 @@
+#!/bin/sh
+
+# Usage:
+#
+#    findgrep [-N] <grep arguments> <find arguments>
+#
+# works like
+#
+#    find <find arguments> | xargs grep <grep arguments>
+#
+# The script considers the last grep argument to be the first argument not
+# beginning with a dash, _unless_ the -e option is used, in which case the
+# last grep argument is considered to be the one following -e. (In other
+# words, the grep arguments must consist of options and then a pattern,
+# but the pattern can be specified with -e if you want.)
+#
+# grep is passed /dev/null as an extra file in each invocation, to ensure
+# it will print the file names even when xargs only hands it one file.
+#
+# grep is given the -n option, because I consider this to be a more sensible
+# default for the kind of work I do with this script. To inhibit auto-
+# generation of the -n option, pass -N as the first option to findgrep.
+#
+# Example invocations:
+#
+#   findgrep foo          . -name '*.c'   # find args can have wildcards
+#   findgrep 'a phrase'   . -name '*.txt' # and patterns can contain spaces
+#   findgrep -i 'beos'    . -type f       # grep case insensitively
+#   findgrep -N foo       . -name '*.c'   # don't print line numbers
+#   findgrep -e --begin-- . -name '*.txt' # use -e for patterns starting "-"
+#   findgrep -l foo       . -name '*.c'   # just list file names
+
+# ---------------------------------------------------------------------
+
+# Shell function to separate the arguments. Sets `nfirst' to a list of
+# `z's, equal in number to the number of grep arguments (ie the ones at
+# the front). Sets `count' to a decimal representation of the number of
+# find arguments (the ones at the back). It's in a shell function so
+# that it operates on its own private copy of $*.
+do_count() {
+  i=no
+  nfirst=
+  while test $i = no -a $# -gt 0; do
+    case "$1" in
+      -e) i=yes; nfirst="$nfirst z z"; shift; shift;;
+      -*) nfirst="$nfirst z"; shift;;
+      *) nfirst="$nfirst z"; i=yes; shift;;
+    esac
+  done
+  count=$#
+}
+
+# Parse the -N option before we do _anything_ else.
+if test "$1" = "-N"; then n=; shift; else n=-n; fi
+
+# Count the arguments.
+do_count "$@"
+
+# Now do the job. To get the find arguments, we shift once for each
+# `z' in $nfirst. To get the grep arguments, we rotate $1 to the back
+# for each `z' in $nfirst (so we've moved the find args to the front
+# and the grep args to the back), and then shift by $count (losing
+# the find args).
+(for foo in $nfirst; do shift; done;
+ find "$@") |
+(for foo in $nfirst; do set -- "$@" "$1"; shift; done; shift $count;
+ xargs -n 25 grep $n "$@" /dev/null)
