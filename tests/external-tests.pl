@@ -156,3 +156,15 @@ test list_contacts =>
     ["list-contacts", stdout => "0\n"],
     ["add-contact", stdout => "1\n"],
     ["list-contacts", stdout => "0\n1\n"];
+
+test find_attr_value =>
+    ["init"],
+    ["find-contact name Dave"],
+    ["set-contact name 0 Dave"],
+    ["find-contact name Dave", stdout => "0;<DATETIME>;;Dave\n"];
+
+test equivalence_transform =>
+    ["init"],
+    ["set-contact phone 0 '(020) 7222 1234'"],
+    ["find-contact phone 0 '(020) 7811 8181'"],
+    ["find-contact phone 0 '0207-222-1234'"];
