@@ -1,5 +1,5 @@
 % -*- mode: slang; mode: fold -*-
-% Simon Tatham: version $Revision: 1.58 $
+% Simon Tatham: version $Revision: 1.59 $
 
 %{{{ load Emacs keybindings to start with
 
@@ -1361,6 +1361,13 @@ define text_mode_hook() {
     }
     set_buffer_hook("par_sep", "jedrc_text_parsep");
     runhooks("jedrc_text_mode_hook");
+}
+
+define halibut_mode_hook() {
+    variable keymap;
+    keymap = what_keymap();
+    definekey("jedrc_text_format_paragraph", "^[Q", keymap);
+    definekey("jedrc_text_format_paragraph", "^[q", keymap);
 }
 
 %}}}
