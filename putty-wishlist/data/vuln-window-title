@@ -1,0 +1,25 @@
+Summary: Window title reports offer opportunities for mischief
+Class: bug
+Difficulty: fun
+Priority: high
+Present-in: 0.53 0.53b
+Absent-in: 0.52 2001-11-24
+Content-type: text/x-html-body
+
+<p>
+It's been <a href="http://www.digitaldefense.net/labs/papers/Termulation.txt">
+suggested</a> that window-title reports might be a bad idea, since they
+allow anyone who can generate arbitrary output to a terminal to cause
+almost-arbitrary input from it.  The various other terminal reports
+supported by PuTTY are less of a problem because their formats are rather
+more constrained.
+
+<p>
+PuTTY should probably make window-title reporting support optional and have
+it default to off.
+
+<p>
+This vulnerability corresponds to CVE
+<a href="http://cve.mitre.org/cgi-bin/cvename.cgi?name=CAN-2003-0069">
+CAN-2003-0069
+</a>.
