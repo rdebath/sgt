@@ -7,7 +7,7 @@
 #include "caltrap.h"
 
 static const char *const typenames[] = {
-    "EVENT", "HOL1", "HOL2", "HOL3", "HOL4", "TODO"
+    "HOL1", "HOL2", "HOL3", "EVENT", "TODO"
 };
 
 int name_to_type(const char *name)

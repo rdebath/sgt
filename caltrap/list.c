@@ -5,13 +5,18 @@
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdarg.h>
+#include <unistd.h>
 #include "caltrap.h"
 #include "tree234.h"
 
+#define line_width 80 /* GROSS CHEAT, FIXME */
+
 struct list_ctx {
-    Date cd, last_date_printed;
+    Date cd, last_date_printed, colour_date;
     Time ct;
     tree234 *future;
+    char *day_str, *end_str;
 };
 
 static int entry_cmp(void *av, void *bv)
@@ -27,6 +32,10 @@ static int entry_cmp(void *av, void *bv)
 	return -1;
     else if (a->st > b->st)
 	return +1;
+    else if (a->type < b->type)
+	return -1;
+    else if (a->type > b->type)
+	return +1;
     else if (a->id < b->id)
 	return -1;
     else if (a->id > b->id)
@@ -35,12 +44,31 @@ static int entry_cmp(void *av, void *bv)
 	return 0;
 }
 
+static void print_line(struct list_ctx *ctx, char *fmt, ...)
+{
+    va_list ap;
+    int n;
+
+    if (ctx->cd != ctx->colour_date) {
+	ctx->day_str = ctx->end_str = "";
+    }
+
+    printf("%s", ctx->day_str);
+
+    va_start(ap, fmt);
+    n = vprintf(fmt, ap);
+    va_end(ap);
+
+    printf("%*s%s\n", (line_width > n ? line_width - n : 0), "",
+	   ctx->end_str);
+}
+
 static void list_print(struct list_ctx *ctx, struct entry *ent)
 {
     char *dfmt, *tfmt;
 
-    if (ent->type != T_EVENT)
-	return;			       /* currently we ignore all others */
+    if (ent->type == T_TODO || !*ent->description)
+	return;
 
     assert(ctx->last_date_printed == ent->sd ||
 	   ctx->last_date_printed == ent->sd - 1);
@@ -53,8 +81,17 @@ static void list_print(struct list_ctx *ctx, struct entry *ent)
 	strcpy(dfmt, "              ");
     }
 
-    tfmt = format_time(ent->st);
-    printf("%s %s %s\n", dfmt, tfmt, ent->description);
+    /*
+     * Special case in time formatting: an all-day or
+     * all-multiple-days entry gets no time printed.
+     */
+    if (ent->st == 0 && ent->et == 0 && ent->ed > ent->sd) {
+	tfmt = smalloc(20);
+	strcpy(tfmt, "        ");
+    } else {
+	tfmt = format_time(ent->st);
+    }
+    print_line(ctx, "%s %s %s", dfmt, tfmt, ent->description);
     sfree(dfmt);
     sfree(tfmt);
 }
@@ -62,13 +99,14 @@ static void list_print(struct list_ctx *ctx, struct entry *ent)
 static void list_upto(struct list_ctx *ctx, Date ed, Time et)
 {
     struct entry *ent;
+    Date prevdate = NO_DATE;
 
-    while (ctx->cd < ed || (ctx->cd == ed && ctx->ct < et)) {
+    while (datetime_cmp(ctx->cd, ctx->ct, ed, et) < 0) {
 	Date nd = ed;
 	Time nt = et;
 
 	ent = index234(ctx->future, 0);
-	if (ent && (ent->sd < ed || (ent->sd == ed && ent->st < et))) {
+	if (ent && datetime_cmp(ent->sd, ent->st, ed, et) < 0) {
 	    nd = ent->sd;
 	    nt = ent->st;
 	} else
@@ -76,34 +114,88 @@ static void list_upto(struct list_ctx *ctx, Date ed, Time et)
 
 	while (ctx->last_date_printed < nd-1) {
 	    char *dfmt = format_date_full(++ctx->last_date_printed);
-	    printf("%s\n", dfmt);
+	    ctx->cd = ctx->last_date_printed;
+	    ctx->ct = 0;
+	    print_line(ctx, "%s", dfmt);
 	    sfree(dfmt);
-	}
-
-	if (ent) {
-	    del234(ctx->future, ent);
-	    list_print(ctx, ent);
-	    add_to_datetime(&ent->sd, &ent->st, ent->period);
-	    if (ent->period &&
-		(ent->sd < ent->ed ||
-		 (ent->sd == ent->ed && ent->st <= ent->et))) {
-		/*
-		 * This repeating entry has not come to the end of
-		 * its repeat period yet, so re-add it.
-		 */
-		add234(ctx->future, ent);
-	    } else {
-		/*
-		 * This one is finished with; destroy it rather
-		 * than putting it back in the pending tree.
-		 */
-		sfree(ent->description);
-		sfree(ent);
-	    }
 	}
 
 	ctx->cd = nd;
 	ctx->ct = nt;
+
+	if (ent) {
+	    /*
+	     * If this is the first entry we have seen for this
+	     * date, and it's a holiday entry, we use it to
+	     * determine the background colour for this date.
+	     */
+	    if (nd != prevdate) {
+		prevdate = nd;
+		if (is_hol(ent->type) && isatty(fileno(stdout))) {
+		    /*
+		     * FIXME viciously! This ECMA-48 dependence
+		     * simply won't do.
+		     */
+		    ctx->end_str = "\033[K\033[39;49;0m";
+		    switch (ent->type) {
+		      case T_HOL1: ctx->day_str = "\033[44;37m"; break;
+		      case T_HOL2: ctx->day_str = "\033[46;30m"; break;
+		      case T_HOL3: ctx->day_str = "\033[42;30m"; break;
+		    }
+		    ctx->colour_date = nd;
+		}
+	    }
+
+	    del234(ctx->future, ent);
+	    list_print(ctx, ent);
+
+	    if (is_hol(ent->type)) {
+		struct entry *hol;
+
+		/*
+		 * We will need to see holiday events repeatedly
+		 * throughout their run, so that we colour every
+		 * day involved. Mostly we do this by incrementing
+		 * the start date on the original entry and
+		 * re-adding it; but if it's a repeating entry then
+		 * we will also need to process it for its next
+		 * repetition so we'll have to make a copy now.
+		 */
+		if (ent->period) {
+		    hol = smalloc(sizeof(struct entry));
+		    *hol = *ent;    /* structure copy */
+		    /* Also here we must remove its periodicity. */
+		    hol->period = 0;
+		    hol->ed = hol->sd;
+		    hol->et = hol->st;
+		    add_to_datetime(&hol->ed, &hol->et, hol->length);
+		    hol->length = 0;
+		} else
+		    hol = ent;
+
+		hol->description = "";   /* prevent recurring text entry */
+		hol->sd++;
+		if (datetime_cmp(hol->sd, hol->st, hol->ed, hol->et) < 0)
+		    add234(ctx->future, hol);
+	    }
+
+	    if (ent->period) {
+		add_to_datetime(&ent->sd, &ent->st, ent->period);
+		if (datetime_cmp(ent->sd, ent->st, ent->ed, ent->et) <= 0) {
+		    /*
+		     * This repeating entry has not come to the end
+		     * of its repeat period yet, so re-add it.
+		     */
+		    add234(ctx->future, ent);
+		} else {
+		    /*
+		     * This one is finished with; destroy it rather
+		     * than putting it back in the pending tree.
+		     */
+		    sfree(ent);
+		}
+	    }
+	}
     }
 }
 
@@ -133,9 +225,9 @@ static void list_callback(void *vctx, struct entry *ent)
     /*
      * Now add this to the list of future events.
      */
-    dupent = smalloc(sizeof(struct entry));
+    dupent = smalloc(sizeof(struct entry) + 1 + strlen(ent->description));
     *dupent = *ent;		       /* structure copy */
-    dupent->description = smalloc(1+strlen(ent->description));
+    dupent->description = (char *)dupent + sizeof(struct entry);
     strcpy(dupent->description, ent->description);
     add234(ctx->future, dupent);
 }
@@ -148,15 +240,15 @@ void list_entries(Date sd, Time st, Date ed, Time et)
     ctx.cd = sd;
     ctx.ct = st;
     ctx.last_date_printed = sd - 1;
+    ctx.colour_date = NO_DATE;
     ctx.future = newtree234(entry_cmp);
+    ctx.day_str = ctx.end_str = "";
 
     db_list_entries(sd, st, ed, et, list_callback, &ctx);
     list_upto(&ctx, ed, et);
 
-    while ((ent = delpos234(ctx.future, 0)) != NULL) {
-	sfree(ent->description);
+    while ((ent = delpos234(ctx.future, 0)) != NULL)
 	sfree(ent);
-    }
     freetree234(ctx.future);
 }
 
