@@ -1,6 +1,6 @@
 # -*- mode: sh; mode: fold -*-
 # Simon Tatham's standardised chunk of .bashrc
-# $Revision: 1.45 $
+# $Revision: 1.46 $
 
 #{{{ I don't like .bash_history files. They wet their nests.
 unset HISTFILE
@@ -135,6 +135,8 @@ set +o ignoreeof
 set -P # disable bash's daft symlink confusion in pwd
 # Async job notification is great if it works properly.
 set -o notify-sensibly 2>/dev/null && set -b
+
+HISTCONTROL=ignoredups
 
 unalias -a # dammit, if there are any aliases _I_ want to do them!
 alias ed='ed -p "* "'
