@@ -1,5 +1,5 @@
 % -*- mode: slang; mode: fold -*-
-% Simon Tatham: version $Revision: 1.28 $
+% Simon Tatham: version $Revision: 1.29 $
 
 %{{{ load Emacs keybindings to start with
 
@@ -211,6 +211,8 @@ setkey("set_bookmark", "^[[13~");
 setkey("goto_bookmark", "^[[14~");
 setkey("set_bookmark", "^[OR");
 setkey("goto_bookmark", "^[OS");
+setkey("set_bookmark", "^[[[C");
+setkey("goto_bookmark", "^[[[D");
 #endif
 %}}}
 %{{{ shell grep_goto function: F9
