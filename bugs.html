@@ -1,0 +1,439 @@
+<HTML><HEAD>
+<TITLE>How to Report Bugs Effectively</TITLE>
+</HEAD><BODY>
+<h2>How to Report Bugs Effectively</h2>
+
+<p><i>an essay by
+<a href="http://www.chiark.greenend.org.uk/~sgtatham/">Simon
+Tatham</a></i>
+
+<!-- begin essay -->
+
+<p>
+Anybody who has written software for a less capable computer user
+will probably have received at least one bad bug report. Reports
+which say nothing ("It doesn't work!"); reports which make no sense;
+reports which don't give enough information; reports which give
+<em>wrong</em> information. Reports of problems which turn out to
+be user error; reports of problems which turn out to be the fault of
+somebody else's program; reports of problems which turn out to be
+network failures.
+
+<p>
+There's a reason why technical support is seen as a horrible job to
+be in, and bad bug reports like these are it. But not all of them
+are: I maintain free software, when I'm not earning my living, and
+sometimes I receive wonderfully clear, helpful, <em>informative</em>
+bug reports. It can be done; very few people do it.
+
+<p>
+In this essay I'll try to state clearly what makes a good bug
+report. Ideally I would like everybody in the world to read this
+essay before reporting any bugs to anybody. Certainly I would like
+everybody who reports bugs to <em>me</em> to have read it.
+
+<p>
+When you report a bug, you are doing so because <em>you</em> want
+the bug fixed. There is no point in swearing at the programmer or
+being deliberately unhelpful: it may be his fault and your problem,
+and you might be right to be angry with him, but the bug
+<em>will</em> get fixed faster if you supply all the information he
+needs.
+</p>
+
+<h3>"Show me."</h3>
+
+<p>
+One of the very best ways you can report a bug is by showing it to
+the programmer. Stand him in front of your computer, fire up his
+software, and <em>demonstrate</em> the thing that goes wrong. Let
+him watch you start the machine, watch you run the software, watch
+how you interact with the software, and watch what the software does
+in response to your inputs.
+
+<p>
+He <em>knows</em> that software like the back of his hand. He knows
+which parts he trusts, and he knows which parts are likely to have
+faults. He knows intuitively what to watch for. By the time the
+software does something obviously wrong, he might well already have
+noticed something <em>subtly</em> wrong earlier which might give him
+a clue. He gets to observe <em>everything</em> the computer does
+during the test run, and he can pick out the important bits for
+himself.
+
+<p>
+It might not be enough. He might decide he needs more information.
+He might ask you to show him the same thing again. He might ask you
+to talk <em>him</em> through the procedure, so that he can reproduce
+the bug for himself as many times as he wants. He might try varying
+the procedure a few times, to see whether the problem occurs in only
+one case or in a family of related cases. If you're unlucky, he
+might need to sit down for a couple of hours with a set of
+development tools and <em>really</em> start investigating. But the
+most important thing is to get the programmer to be looking at the
+computer when it goes wrong. Once he can <em>see</em> the problem
+happening, he can take it from there and start trying to fix it.
+</p>
+
+<h3>"Show me how to show myself."</h3>
+
+<p>
+This is the era of the Internet. This is the era of worldwide
+communication. This is the era in which I can send my software to
+somebody in Russia at the touch of a button, and he can send me
+comments about it just as easily. If he has a problem with my
+program, he <em>can't</em> have me standing in front of it while it
+fails. "Show me" is good when you can do it, but often you can't.
+
+<p>
+If you have to report a bug to a programmer who can't be present in
+person, the aim of the exercise is to get him to <em>reproduce</em>
+the problem. You want the programmer to run his own copy of the
+program, do the same things to it, and make it fail in the same way.
+Then he can see the problem happening in front of his eyes, and then
+he can deal with it.
+
+<p>
+So tell him <em>exactly what you did</em>. If it's a graphical
+program, tell him which buttons you pressed and what order you
+pressed them in. If it's a program you run by typing a command, show
+him precisely what command you typed.
+
+<p>
+Give him all the input you can think of. If the program reads from
+a file, you will probably need to send him a copy of the file. If
+the program talks to another computer over a network, you probably
+can't send him a copy of that computer, but you can at least tell
+him what kind of computer it is, and (if you can) what software is
+running on it.
+</p>
+
+<h3>"Works for me. So what goes wrong?"</h3>
+
+<p>
+If you give the programmer a long list of inputs and actions, and he
+fires up his own copy of the program and nothing goes wrong, then
+you haven't given him enough information. Possibly the fault doesn't
+show up on every computer; your system and his may differ in some
+way. Possibly you have misunderstood what the program is supposed to
+do, and you and he are looking at exactly the same display but you
+think it's wrong and he knows it's right.
+
+<p>
+So <em>describe</em> what happened. Tell him exactly what you saw.
+Tell him why you think what you saw is wrong; better still, tell him
+exactly what you expected to see. If you say "and then it went
+wrong", you have left out some very important information.
+
+<p>
+Tell the programmer, carefully and precisely, any error messages you
+got. They <em>are</em> important! At this stage, the programmer is
+not trying to <em>fix</em> the problem: he's trying to <em>find</em>
+it. He needs to know what has gone wrong, and those error messages
+are the computer's best effort to <em>say</em> what has gone wrong.
+Write the errors down if you have no other easy way to remember
+them, but don't report that the program generated an error if you're
+not also able to report what the error message was.
+
+<p>
+In particular, if the error message has numbers in it, <em>do</em>
+let the programmer have those numbers. Just because you can't see
+any meaning in them doesn't mean there isn't any. Numbers contain
+all kinds of information that can be read by programmers, and they
+are likely to contain vital clues. Numbers in error messages are
+like a message in a bottle. They are the information the computer
+throws out when everything has gone too wrong for it to recover.
+
+<p>
+At this stage, the programmer is doing <em>detective work</em>. He
+doesn't know what's happened, and he can't get close enough to watch
+it happening for himself, so he is searching for clues that might
+give it away. Error messages, incomprehensible strings of numbers,
+and even unexplained delays are all just as important as
+fingerprints at the scene of a crime. Don't throw them away.
+</p>
+
+<h3>"So then I tried . . ."</h3>
+
+<p>
+There are a lot of things you might do when an error or bug comes
+up. Many of them make the problem worse. A friend of mine at school
+deleted all her Word documents by mistake, and before calling in any
+expert help, the first thing she tried was reinstalling Word, and
+the second thing she tried was running Defrag. Neither of these
+helped recover her files, and between them they scrambled her disk
+to the extent that no Undelete program in the world would have been
+able to recover anything. If she'd only left it alone, she might
+have had a chance.
+
+<p>
+Users like this are like a mongoose backed into a corner: with its
+back to the wall and seeing certain death staring it in the
+face, it attacks rabidly because doing something <em>has</em> to be
+better than doing nothing. This is not well adapted to the type of
+problems computers produce.
+
+<p>
+Instead of being a mongoose, be an antelope. When an antelope is
+confronted with something unexpected or frightening, it
+<em>freezes</em>. It stays absolutely still and tries not to attract
+any attention, while it stops and thinks and works out the best
+thing to do. (If antelopes had a technical support line, it would be
+telephoning it at this point.) Then, once it has decided what the
+safest thing to do is, it does it.
+
+<p>
+When something goes wrong, stop doing <em>anything</em>. Don't touch
+any buttons at all. Look at the screen and notice everything out of
+the ordinary, and remember it or write it down. <em>Then</em>
+perhaps start cautiously pressing "OK" or "Cancel", whichever seems
+safest. Try to make this reflexive: if a computer does anything
+unexpected, your first reaction should be to freeze.
+
+<p>
+If you manage to get out of the problem, whether by closing down the
+affected program or by rebooting the computer, a good thing to do is
+to try to make it happen again. Programmers like problems that they
+can reproduce more than once. Happy programmers fix bugs faster and
+more efficiently.
+</p>
+
+<h3>"I think the tachyon modulation must have been polarised."</h3>
+
+<p>
+It isn't only non-programmers who produce bad bug reports. Some of
+the worst bug reports I've ever seen come from programmers, and even
+from <em>good</em> programmers.
+
+<p>
+I worked with another programmer once, who kept finding bugs in his
+own code and trying to fix them. Every so often he'd hit a bug he
+couldn't solve, and he'd call me over to help. "What's gone wrong?"
+I'd ask. He would reply by telling me his current opinion of what
+had caused the problem.
+
+<p>
+This worked fine when his current opinion was right. It meant he'd
+already done half the work and we were able to finish the job
+together. It was efficient and useful.
+
+<p>
+But quite often he was <em>wrong</em>. We would work for some time
+trying to figure out why some particular part of the program was
+producing incorrect data, and eventually we would discover that it
+wasn't, that we'd been investigating a perfectly good piece of code
+for half an hour, and that the actual problem was somewhere else.
+
+<p>
+I'm sure he wouldn't do that to a doctor. "Doctor, I think I've got
+Perkin's disease." People <em>know</em> not to say that to a doctor:
+you describe the symptoms, the actual discomforts and aches and
+pains and rashes and fevers, and you let the doctor make his own
+diagnosis of what caused the problem. Otherwise the doctor dismisses
+you as a hypochondriac or crackpot, and quite rightly so.
+
+<p>
+It's the same with programmers. Providing your own diagnosis might
+be helpful sometimes, but <em>always</em> state the symptoms. The
+diagnosis is an optional extra, and not an alternative to giving the
+symptoms.
+
+<p>
+If a programmer asks you for extra information, don't make it up!
+Somebody reported a bug to me once, and I asked him to try a command
+which I <em>knew</em> would not work. The reason I asked him to try
+it was that I wanted to know which of two different error messages
+it would give. Knowing which error message came back was a vital
+clue. But he didn't actually try it - he just mailed me back and
+said "No, that won't work". It took me some time to persuade him to
+try it for real.
+
+<p>
+Using your intelligence to help the programmer is fine. Even if your
+deductions are wrong, the programmer should be grateful to you for
+having at least <em>tried</em> to make his life easier. But report
+the symptoms <em>as well</em>, or you run the risk of making his
+life much more difficult.
+</p>
+
+<h3>"That's funny, it did it a moment ago."</h3>
+
+<p>
+Say "intermittent fault" to any programmer and watch his face fall.
+The easy problems are the ones where you can follow a simple set of
+instructions and cause the failure to occur. The programmer can then
+repeat those instructions under closely observed test conditions and
+watch what happens in great detail. Too many problems simply don't
+work that way: there will be programs that fail once a week, or fail
+once in a blue moon, or never fail when you try them in front of the
+programmer but always fail when you have a deadline coming up.
+
+<p>
+Most intermittent faults are not truly intermittent. Most of them
+have some logic somewhere. Some might fail when the machine is
+running out of memory. Some might fail when another program tries to
+modify a critical file at the wrong moment. Some might fail for the
+first half of every hour! (I've actually seen one of these.)
+
+<p>
+Also, if you can reproduce the bug but the programmer can't, it
+could very well be that his computer and your computer are different
+in some way and that that difference is causing the problem. I had a
+program once whose window curled up into a little ball in the top
+left corner of the screen, and sat there and <em>sulked</em>. But it
+only did it on 800x600 screens; it was fine on my 1024x768 monitor.
+
+<p>
+The programmer will want to know anything you can find out about the
+problem. Try it on another machine, perhaps. Try it twice or three
+times and see how often it fails. If it goes wrong when you're doing
+serious work but not when you're trying to demonstrate it, it might
+be long running times or large files that make it fall over. Try to
+remember as much detail as you can about what you were doing to it
+when it <em>did</em> fall over, and if you see any patterns, mention
+them. Anything you can provide has got to be some help. Even if it's
+only probabilistic (such as "it tends to crash more often when Emacs
+is running"), it might not provide direct clues to the cause of the
+problem, but it might help the programmer reproduce it.
+
+<p>
+Mostly, the programmer will want to be sure of whether he's dealing
+with a true intermittent fault or a machine-specific fault. He will
+want to know lots of details about your computer, so he can work out
+how it differs from yours. A lot of these details will depend on the
+particular program, but one thing you should <em>definitely</em> be
+ready to provide is version numbers. The version number of the
+program itself, and the version number of the operating system, and
+probably the version numbers of any other programs that are involved
+in the problem.
+</p>
+
+<h3>"So I loaded the disk on to my Windows . . ."</h3>
+
+<p>
+Writing clearly is essential in a bug report. If the programmer
+can't tell what you meant, you might as well not have said anything.
+
+<p>
+I get bug reports from all around the world. Many of them are from
+non-native English speakers, and a lot of those apologise for their
+poor English. In general, the bug reports which apologise for their
+poor English are actually very clear and useful. All the most
+unclear reports come from <em>native</em> English speakers who
+assume that I will understand them even if they don't make any
+effort to be clear or precise.
+
+<p>
+<em>Be specific</em>. When you describe what you did, if you can do
+the same thing two different ways, state which one you used. "I
+selected Load" might mean "I clicked on Load" or "I pressed Alt-L".
+Say which one you did. Sometimes it matters.
+
+<p>
+<em>Be verbose</em>. Give more information rather than less. If you
+say too much, the programmer has to ignore some of it. If you say
+too little, he has to come back and ask you more questions. One bug
+report I received was a single sentence, and every time I asked for
+more information the reporter would reply with another single
+sentence. It took me several weeks to get a useful amount of
+information, because it turned up one short sentence at a time.
+
+<p>
+<em>Be careful of pronouns</em>. Don't use words like "it", or
+references like "the window", when it's unclear what they mean.
+Consider this: "I started FooApp. It put up a warning window. I
+tried to close it and it crashed." It isn't clear what the user
+tried to close. Did he try to close the warning window, or the whole
+of FooApp? It makes a difference. When it isn't clear, <em>make</em>
+it clear by saying it in full. A bug report that says "the FooApp
+main window" three times in every sentence is often more useful than
+a bug report that says "it" most of the time, because the longer
+version <em>cannot be misunderstood</em>.
+
+<p>
+<em>Read what you wrote</em>. Read the report back to yourself, and
+see if <em>you</em> think it's clear. If you have listed a set of
+instructions on how to produce the failure, try following those
+instructions yourself, to see if you missed a step.
+</p>
+
+<h3>"It doesn't work."</h3>
+
+<p>
+Give the programmer some credit for basic intelligence. If his
+program really didn't work <em>at all</em>, he would probably have
+noticed. Since he hasn't noticed, it must be working for him.
+Therefore, either you are doing something differently to him, or
+your environment is different from his. He needs information.
+
+<p>
+Many programs, particularly free ones, publish their list of known
+bugs. If you can find a list of known bugs, it's worth reading it to
+see if the bug you've just found is already known or not. If it's
+already known, it <em>probably</em> isn't worth reporting again. If
+you think you have more information than the report in the bug list,
+though, you might want to contact the programmer anyway, because if
+you can give him information he didn't already have, he might be
+able to fix the bug more easily.
+</p>
+
+<h3>Summary</h3>
+
+<p>
+The first aim of a bug report is to let the programmer see the
+failure with his own eyes. If you can't make it fail in front of
+him, give him detailed instructions so that he can make it fail for
+himself.
+
+<p>
+If the first aim doesn't succeed: the second aim of a bug report is
+to describe what went wrong, so that the programmer doesn't have to
+see it failing himself. Describe everything in detail. State what
+you saw <em>and</em> what you expected to see. Write down the error
+messages, <em>especially</em> if they have numbers in.
+
+<p>
+When your computer does something unexpected, <em>freeze</em>. Do
+nothing until you're calm, and don't do anything that you think
+might be dangerous.
+
+<p>
+By all means try to diagnose the fault yourself if you think you
+can, but don't use that as an <em>alternative</em> to reporting the
+symptoms.
+
+<p>
+Be ready to provide extra information if the programmer needs it. If
+he didn't need it, he wouldn't be asking you for it. He isn't being
+deliberately awkward.
+
+<p>
+Write clearly. Say what you mean, and make sure it's impossible to
+mistake what you mean.
+
+<p>
+Above all, <em>be precise</em>. Programmers like precision.
+</p>
+
+<!-- end essay -->
+
+<hr>
+<p>
+<em>Disclaimer:</em> The programmer in this essay is male. This is
+because "he" is shorter than "she", shorter than "they", and a lot
+shorter than "he or she". <em>No other reason at all</em>. Also, my
+zoology may be inaccurate.
+
+<p>
+<i>$Id: bugs.html,v 1.1 1999/12/03 11:09:02 simon Exp $</i>
+
+<p>
+Copyright &copy; 1999 Simon Tatham.
+<br>This document is
+<a href="http://www.opencontent.org/">Open Content</a>.
+<br>You may copy and use the text under the terms of the
+<a href="http://www.opencontent.org/opl.shtml">Open Publication
+Licence</a>.
+<br>Please send comments and criticism to
+<a href="mailto:anakin@pobox.com">anakin@pobox.com</a>.
+</BODY></HTML>
