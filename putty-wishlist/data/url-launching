@@ -23,6 +23,7 @@ In the meantime, you might find
 <a href="http://www.chiark.greenend.org.uk/~sgtatham/winurl/">WinURL</a>
 a useful tool. It allows you to select a URL in PuTTY (automatically
 copying it to the clipboard), and then click on the WinURL icon in
-the System Tray, and have the URL automatically launched for you.
+the System Tray (or press Windows-W), and have the URL automatically
+launched for you.
 It's not quite as good as a one-click launch, but it's a lot better
 than pasting into a browser window by hand.
