@@ -14,4 +14,6 @@ proxy causes PuTTY to crash.  Reports so far:
 <li>Ref: <code>&lt;20021010114830.53187.qmail@web20909.mail.yahoo.com&gt;</code>
 <br>With SSHv2 against OpenSSH 3.1p1, HTTP proxy
 <br>Report has SSH packet log and Dr Watson log.
+<li>I (JTN) can reproduce this with 0.53 SSH-1 (OpenSSH 1.2.3) and SSH-2
+(3.4p1), with HTTP proxying.
 </ul>
