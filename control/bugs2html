@@ -1,13 +1,24 @@
 #! /usr/bin/perl
-# $Id: bugs2html,v 1.16 2003/01/11 16:37:02 jacob Exp $
+# $Id: bugs2html,v 1.17 2003/01/14 11:38:25 simon Exp $
 
 use FileHandle;
 use POSIX;
 use English;
 
 $bugdir = "../data";
-$htmldir = "/u2/bjharris/public-html/putty-wishlist";
-$baseurl = "/~sgtatham/putty";
+
+# config.pl should exist in the same directory as this script, and
+# should define $htmldir (the full path to the directory HTML files
+# should be written to) and $baseurl (the relative URL path to be
+# added on the front of wishlist pages' links to main PuTTY pages).
+# It can also redefine $bugdir if you really want to run bugs2html
+# from somewhere other than the directory it's checked out into. A
+# sample config.pl might read
+#
+#   $htmldir = "/home/simon/www/putty/wishlist";
+#   $baseurl = "..";
+#
+require "./config.pl";
 
 %classdesc =
     ('bug'	=> "This is clearly an actual problem we want fixed.",
