@@ -31,10 +31,12 @@ enum {
     err_dumpargno,		       /* `dump' requires no args */
     err_loadargno,		       /* `load' requires 0-1 args */
     err_infoargno,		       /* `info' requires 1 arg */
+    err_editargno,		       /* `edit' requires 1 arg */
     err_delargno,		       /* `delete' requires 1 arg */
     err_loadfmt,		       /* error parsing dump file */
     err_date,		               /* unable to parse date `%s' */
     err_time,		               /* unable to parse time `%s' */
+    err_datetime,		       /* unable to parse date+time `%s' */
     err_duration,		       /* unable to parse duration `%s' */
     err_nodb,		               /* db doesn't exist, try --init */
     err_dbexists,		       /* db _does_ exist, danger for --init */
@@ -153,6 +155,11 @@ void caltrap_info(int nargs, char **args, int nphysargs);
 void caltrap_del(int nargs, char **args, int nphysargs);
 
 /*
+ * edit.c
+ */
+void caltrap_edit(int nargs, char **args, int nphysargs, struct entry *e);
+
+/*
  * main.c
  */
 char *dbpath;
@@ -177,6 +184,7 @@ void db_list_entries(Date sd, Time st, Date ed, Time et,
 void db_dump_entries(list_callback_fn_t fn, void *ctx);
 void db_fetch(int id, struct entry *ent);   /* smallocs ent->description */
 void db_del(int id);
+void db_update(struct entry *e);
 void db_close(void);
 
 #endif

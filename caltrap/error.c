@@ -69,6 +69,10 @@ static void do_error(int code, va_list ap) {
 	sprintf(error, "`info' command expects exactly one argument");
 	flags = PREFIX;
 	break;
+      case err_editargno:
+	sprintf(error, "`edit' command expects exactly one argument");
+	flags = PREFIX;
+	break;
       case err_loadfmt:
 	sprintf(error, "unable to parse dump file when reloading");
 	flags = PREFIX;
@@ -81,6 +85,11 @@ static void do_error(int code, va_list ap) {
       case err_time:
 	sp = va_arg(ap, char *);
 	sprintf(error, "unable to parse time `%.200s'", sp);
+	flags = PREFIX;
+	break;
+      case err_datetime:
+	sp = va_arg(ap, char *);
+	sprintf(error, "unable to parse date and time `%.200s'", sp);
 	flags = PREFIX;
 	break;
       case err_duration:

@@ -404,6 +404,88 @@ void db_del(int id)
     db_commit();
 }
 
+void db_update(struct entry *e)
+{
+    char *err;
+    char **table;
+    int rows, cols;
+
+    db_open();
+
+    db_begin();
+
+    /*
+     * First verify that the entry we want to delete does actually
+     * exist. If not, abandon our transaction and be on our way.
+     */
+    sqlite_get_table_printf(db,
+			    "SELECT id FROM entries WHERE id = %d;",
+			    &table, &rows, &cols, &err, e->id);
+    if (err) fatal(err_dberror, err);
+    sqlite_free_table(table);
+    if (rows < 1)
+	fatal(err_idnotfound, e->id);
+
+    /*
+     * Now do the update. Since there are lots of different pieces
+     * we _might_ want to update, and since we're in a transaction
+     * anyway, the simplest thing is to issue multiple SQL commands
+     * rather than try to construct a single UPDATE.
+     */
+    if (e->sd != INVALID_DATE && e->st != INVALID_TIME) {
+	char *dt = format_datetime(e->sd, e->st);
+	sqlite_exec_printf(db,
+			   "UPDATE entries SET start='%q' WHERE id = %d;",
+			   sqlite_null_callback, NULL, &err,
+			   dt, e->id);
+	if (err) fatal(err_dberror, err);
+	sfree(dt);
+    }
+    if (e->ed != INVALID_DATE && e->et != INVALID_TIME) {
+	char *dt = format_datetime(e->ed, e->et);
+	sqlite_exec_printf(db,
+			   "UPDATE entries SET end='%q' WHERE id = %d;",
+			   sqlite_null_callback, NULL, &err,
+			   dt, e->id);
+	if (err) fatal(err_dberror, err);
+	sfree(dt);
+    }
+    if (e->length != INVALID_DURATION) {
+	char *d = format_duration(e->length);
+	sqlite_exec_printf(db,
+			   "UPDATE entries SET length='%q' WHERE id = %d;",
+			   sqlite_null_callback, NULL, &err,
+			   d, e->id);
+	if (err) fatal(err_dberror, err);
+	sfree(d);
+    }
+    if (e->period != INVALID_DURATION) {
+	char *d = format_duration(e->period);
+	sqlite_exec_printf(db,
+			   "UPDATE entries SET period='%q' WHERE id = %d;",
+			   sqlite_null_callback, NULL, &err,
+			   d, e->id);
+	if (err) fatal(err_dberror, err);
+	sfree(d);
+    }
+    if (e->type != INVALID_TYPE) {
+	sqlite_exec_printf(db,
+			   "UPDATE entries SET type='%q' WHERE id = %d;",
+			   sqlite_null_callback, NULL, &err,
+			   type_to_name(e->type), e->id);
+	if (err) fatal(err_dberror, err);
+    }
+    if (e->description != NULL) {
+	sqlite_exec_printf(db,
+			   "UPDATE entries SET description='%q' WHERE id=%d;",
+			   sqlite_null_callback, NULL, &err,
+			   e->description, e->id);
+	if (err) fatal(err_dberror, err);
+    }
+
+    db_commit();
+}
+
 void db_dump_entries(list_callback_fn_t fn, void *ctx)
 {
     char *err;

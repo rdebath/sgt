@@ -41,7 +41,7 @@ endif
 SRC := ../
 
 MODULES := main malloc error help licence version add list datetime sqlite
-MODULES += cron dump tree234 misc info del
+MODULES += cron dump tree234 misc info del edit
 
 OBJECTS := $(addsuffix .o,$(MODULES))
 DEPS := $(addsuffix .d,$(MODULES))

@@ -154,9 +154,9 @@ void caltrap_add(int nargs, char **args, int nphysargs, struct entry *e)
     ent.st = st;
     ent.ed = ed;
     ent.et = et;
-    ent.length = e->length;
-    ent.period = e->period;
-    ent.type = e->type;
+    ent.length = (e->length != INVALID_DURATION ? e->length : 0);
+    ent.period = (e->period != INVALID_DURATION ? e->period : 0);
+    ent.type = (e->type != INVALID_TYPE ? e->type : T_EVENT);
     ent.description = msg;
     db_add_entry(&ent);
 }
