@@ -39,7 +39,7 @@ char const *listener_appname = "DoIt";
 /*
  * Export the list of ports to listen on.
  */
-static int const port_array[] = { 6666 };
+static int const port_array[] = { 17481 };
 int listener_nports = sizeof(port_array) / sizeof(*port_array);
 int const *listener_ports = port_array;
 

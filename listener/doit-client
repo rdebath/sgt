@@ -10,7 +10,7 @@ secretfile = sys.argv[2]
 cmd = sys.argv[3]
 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.connect(server, 6666)
+s.connect(server, 17481)
 sf = s.makefile("r")
 
 greet = sf.readline()
