@@ -1,24 +1,24 @@
-all: sixtypoints.png \
-     thirteenpoints.png \
+all: points60.png \
+     points13.png \
      facediagram.png \
-     thirteenfaces.png \
-     thirteenvertices.png
-
-sixtypoints.png: ../examples/60.points ../drawpoints.py
-	../drawpoints.py ../examples/60.points tmp.ps
-	gs -sDEVICE=bmpmono -sOutputFile=tmp.bmp -g3000x4200 -r360 \
-		-dBATCH -dNOPAUSE -q tmp.ps
-	convert -crop 1600x1600+640+900 -geometry 300x300 \
-		-antialias tmp.bmp $@
-	rm -f tmp.ps tmp.bmp
-
-thirteenpoints.png: ../examples/13.points ../drawpoints.py
-	../drawpoints.py ../examples/13.points tmp.ps
-	gs -sDEVICE=bmpmono -sOutputFile=tmp.bmp -g3000x4200 -r360 \
-		-dBATCH -dNOPAUSE -q tmp.ps
-	convert -crop 1600x1600+640+900 -geometry 300x300 \
-		-antialias tmp.bmp $@
-	rm -f tmp.ps tmp.bmp
+     faces13.png \
+     vertices13.png \
+     vertices4.png \
+     faces6.png \
+     vertices6.png \
+     faces8.png \
+     vertices8.png \
+     faces12.png \
+     vertices12.png \
+     vertices20.png \
+     vertices60.png \
+     faces7.png \
+     faces8.png \
+     faces9.png \
+     faces9a.png \
+     faces10.png \
+     faces11.png \
+     faces32.png
 
 facediagram.png: ../examples/13.points ../nfaces.py
 	../nfaces.py -ps ../examples/13.points tmp.ps
@@ -28,21 +28,32 @@ facediagram.png: ../examples/13.points ../nfaces.py
 		-antialias tmp2.bmp $@
 	rm -f tmp.ps tmp*.bmp
 
-thirteenfaces.png: ../examples/13.faces ../drawpoly.py
-	../drawpoly.py ../examples/13.faces tmp.ps
+points%.png: ../examples/%.points ../drawpoints.py
+	../drawpoints.py $< tmp.ps
 	gs -sDEVICE=bmpmono -sOutputFile=tmp.bmp -g3000x4200 -r360 \
 		-dBATCH -dNOPAUSE -q tmp.ps
-	convert -crop 1600x1600+640+900 -geometry 300x300 \
-		-antialias tmp.bmp $@
-	rm -f tmp.ps tmp*.bmp
+	convert -geometry 600x840 -antialias tmp.bmp tmp.ppm
+	pnmcrop tmp.ppm > tmp2.ppm
+	convert tmp2.ppm $@
+	rm -f tmp.ps tmp.bmp tmp*.ppm
 
-thirteenvertices.png: ../examples/13.vertices ../drawpoly.py
-	../drawpoly.py ../examples/13.vertices tmp.ps
+faces%.png: ../examples/%.faces ../drawpoly.py
+	../drawpoly.py $< tmp.ps
 	gs -sDEVICE=bmpmono -sOutputFile=tmp.bmp -g3000x4200 -r360 \
 		-dBATCH -dNOPAUSE -q tmp.ps
-	convert -crop 1040x1040+920+1180 -geometry 195x195 \
-		-antialias tmp.bmp $@
-	rm -f tmp.ps tmp*.bmp
+	convert -geometry 600x840 -antialias tmp.bmp tmp.ppm
+	pnmcrop tmp.ppm > tmp2.ppm
+	convert tmp2.ppm $@
+	rm -f tmp.ps tmp.bmp tmp*.ppm
+
+vertices%.png: ../examples/%.vertices ../drawpoly.py
+	../drawpoly.py $< tmp.ps
+	gs -sDEVICE=bmpmono -sOutputFile=tmp.bmp -g3000x4200 -r360 \
+		-dBATCH -dNOPAUSE -q tmp.ps
+	convert -geometry 600x840 -antialias tmp.bmp tmp.ppm
+	pnmcrop tmp.ppm > tmp2.ppm
+	convert tmp2.ppm $@
+	rm -f tmp.ps tmp.bmp tmp*.ppm
 
 clean:
 	rm -f *.png

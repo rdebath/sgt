@@ -74,23 +74,50 @@ psprint("%%Page: 1")
 psprint("gsave")
 psprint("288 500 translate 150 dup scale 1 setlinejoin")
 
+# Scale the solid so that it fits within a fixed-size sphere (so
+# that every picture output from this code will be roughly the same
+# size).
+absmax = 0
+for key, value in vertices.items():
+    x, y, z = value
+    d2 = x**2 + y**2 + z**2
+    if absmax < d2: absmax = d2
+scale = 1.3 / sqrt(absmax)
+
+def ptransform(x, y, z):
+    xp = x*scale / (z*scale + 14) * 10
+    yp = y*scale / (z*scale + 14) * 10
+    return xp, yp
+
 # Compute the perspective coordinates of each point.
 pvertices = {}
 for key, value in vertices.items():
     x, y, z = value
-    xp = x / (z + 14) * 10
-    yp = y / (z + 14) * 10
+    xp, yp = ptransform(x, y, z)
     pvertices[key] = (xp, yp)
 
-# Draw each face, either in a thick or thin line depending on
-# whether it's behind or in front. (Since we haven't rotated the
-# polyhedron at all, this is simply determined by examining the z
-# component of its surface normal.)
+# Figure out which faces are facing forward, and which backward. To
+# do this, we draw the vector from the eye point (0,0,0) to the
+# centre of the face, take the dot product of this vector with the
+# surface normal, and test the sign of that.
+forward = {}
 for key, vlist in faces.items():
-    if normals[key][2] < 0:
-	psprint("0.01 setlinewidth")
+    xt = yt = zt = 0
+    for p in vlist:
+	xt = xt + vertices[p][0]
+	yt = yt + vertices[p][1]
+	zt = zt + vertices[p][2] + 14
+    xt = xt / len(vlist)
+    yt = yt / len(vlist)
+    zt = zt / len(vlist)
+    dp = xt * normals[key][0] + yt * normals[key][1] + zt * normals[key][2]
+    if dp > 0:
+	forward[key] = 0
     else:
-	psprint("0.0025 setlinewidth")
+	forward[key] = 1
+    pass
+
+def drawface(vlist):
     psprint("newpath")
     cmd = "moveto"
     for p in vlist:
@@ -98,6 +125,28 @@ for key, vlist in faces.items():
 	psprint("   ", v[0], v[1], cmd)
 	cmd = "lineto"
     psprint("closepath stroke")
+
+# Draw rear-facing faces in a thin line. (Since we haven't rotated
+# the polyhedron at all, rear-facing-ness is simply determined by
+# examining the z component of its surface normal.)
+for key, vlist in faces.items():
+    if not forward[key]:
+	psprint("0.001 setlinewidth 0 setgray")
+	drawface(vlist)
+
+# Draw forward-facing faces in a very thick _white_ line (so that
+# hidden lines have gaps in to make it clear that the
+# forward-facing lines go in front).
+for key, vlist in faces.items():
+    if forward[key]:
+	psprint("0.03 setlinewidth 1 setgray")
+	drawface(vlist)
+
+# Draw forward-facing faces again, in a medium-thick black line.
+for key, vlist in faces.items():
+    if forward[key]:
+	psprint("0.01 setlinewidth 0 setgray")
+	drawface(vlist)
 
 psprint("showpage grestore")
 psprint("%%EOF")
