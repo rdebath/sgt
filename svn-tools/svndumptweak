@@ -6,16 +6,7 @@ import string
 import types
 
 buttress = 1 # HACK: track the rename of `buttress' to `halibut'
-
-# Other file movements I might want to deal with...
-#
-#  - I apparently moved local/timber* into local/timberfiles by
-#    means of the time-honoured CVS hack of copying the RCS file to
-#    the new location. Thus, the current SVN dump shows the two
-#    versions being maintained in parallel until r416, at which
-#    point local/timber* are deleted. To translate this into proper
-#    SVN I must delete all prior references to local/timberfiles,
-#    and create them at the point of deletion of the old ones.
+timber0 = 1 # HACK: track the move of `local/timber*' to `local/timberfiles'
 
 def copiedfrom(path):
     pairs = {
@@ -71,6 +62,8 @@ def trans(path):
     ('branches', None),
     ('tags', None),
     ('trunk', None),
+    ('trunk/local/timberfiles', None),
+    ('trunk/local/timberfiles/*', None),
     ('trunk/halibut', 'buttress'),
     ('trunk/', ''),
     ('tags/beta-0-*/putty', 'putty-0.*'),
@@ -112,6 +105,9 @@ def trans(path):
     ]
     if not buttress:
 	replacements.remove(('trunk/halibut', 'buttress'))
+    if not timber0:
+	replacements.remove(('trunk/local/timberfiles', None))
+	replacements.remove(('trunk/local/timberfiles/*', None))
     if path[:1] == "/":
 	leadslash = "/"
 	path = path[1:]
@@ -234,6 +230,7 @@ class RevTweaker:
 
     def tweak(self, revhdr, contents):
 	global buttress
+	global timber0
 	print self.name, "revision:", revhdr.hdrdict["Revision-number"]
 	created = {}
 	self.prevrev_tree = copy(self.tree)
@@ -282,6 +279,21 @@ class RevTweaker:
 	    magicchangelist = ["trunk/halibut/halibut.h", "trunk/halibut/misc/halibut.sl"]
 	    # And start calling things `halibut' from then on.
 	    buttress = 0
+	if timber0 and len(contents) > 0 and \
+	string.find(revhdr.data, "Moved Timber into") >= 0:
+	    newlump = Lump()
+	    newlump.sethdr("Node-path", "local/timberfiles")
+	    newlump.sethdr("Node-kind", "dir")
+	    newlump.sethdr("Node-action", "add")
+	    contents2.append(newlump)
+	    for x in ['timber.pl','timberc.sl','timberh.pl','timbere.pl','timberm.pl','timbert.pl','timbera.pl','timber.sl']:
+		newlump = Lump()
+		newlump.sethdr("Node-path", "local/timberfiles/"+x)
+		newlump.sethdr("Node-action", "add")
+		newlump.sethdr("Node-copyfrom-rev", self.prevrev)
+		newlump.sethdr("Node-copyfrom-path", "local/"+x)
+		contents2.append(newlump)
+	    timber0 = 0
 	stack = contents[:]
 	while len(stack) > 0:
 	    lump = stack[0]
