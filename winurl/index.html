@@ -1,0 +1,112 @@
+<html>
+<head>
+<title>WinURL: a Windows URL-launching tool</title>
+</head>
+<link rel="stylesheet" type="text/css" href="../sitestyle.css" name="Simon Tatham's Home Page Style">
+<body>
+<h1 align=center>WinURL</h1>
+
+<p align=center><i>a URL-launching tool for Windows</i>
+
+<h2>Introduction</h2>
+
+<p>
+A lot of Windows programs these days offer the ability to click on a
+URL and automatically have your web browser bring up a window
+showing that URL. However, not nearly all of them do. If an
+application that doesn't support this is showing a URL you want to
+look at, your only option is to use the Windows cut and paste
+facility to copy the URL to the clipboard, then launch your browser,
+and then paste the URL into that.
+
+<p>
+WinURL tries to make this process a little bit easier. Instead of
+having to launch your browser and then paste, you can just click
+once on the WinURL icon in the System tray, and WinURL will read the
+contents of the clipboard and feed them straight to your browser. So
+you need only select a URL in the source application, hit Copy, and
+click on WinURL.
+
+<p>
+In some applications (perhaps an IRC client, or a terminal emulator)
+the URL may be wrapped across several lines, so that copying and
+pasting it into your browser might not even work because of newline
+and space characters in the middle. WinURL will strip those out
+automatically, so that copying a URL out of a terminal emulator can
+be just as easy as copying it out of anything else.
+
+<h2>Installing and using WinURL</h2>
+
+<p>
+To install WinURL, just download one of the archives below, and
+put the executable file <code>winurl.exe</code> somewhere where you
+won't lose it. To start WinURL running, just double-click on the
+executable file (no command-line options are required).
+Alternatively, you might want to put a shortcut to it in the Startup
+section of your Start menu, so that it will always be running
+whenever you use your computer.
+
+<p>
+When WinURL is running, it will put its icon in the System tray. If
+you left-click on this icon, WinURL will read the contents of the
+clipboard, treat it as a URL, and launch that URL. Right-clicking on
+the same icon will produce a small menu which lets you shut down
+WinURL.
+
+<p>
+Currently, WinURL also registers the hot key Windows-W, which you
+can press anywhere and it will have the same effect as left-clicking
+on the WinURL icon.
+
+<p>
+It's that simple.
+
+<h2>Licence</h2>
+
+<p>
+WinURL is distributed under the MIT licence, so it is free to copy,
+redistribute, use and reuse. For more details, see the file called
+LICENCE in the distribution archive.
+
+<h2>Download</h2>
+
+<p>
+WinURL is provided in both source and executable form in the
+archives below (in .ZIP format):
+
+<ul>
+<li>
+<a href="winurl.zip">winurl.zip</a> contains just the executable and
+the README file.
+<li>
+<a href="winurl-src.zip">winurl-src.zip</a> contains the executable, the
+README file, and the source code as well.
+</ul>
+
+<h2>Feedback</h2>
+
+<p>
+Please report bugs to
+<a href="mailto:&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;">&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;</a>.
+Be sure to include all the version numbers of the WinURL source
+files in your bug report (these are provided in the file called
+README in the archive).
+
+<p>
+You might find it helpful to read
+<a href="../bugs.html">this article</a>
+before reporting a bug.
+
+<p>
+Patches are welcome.
+
+<hr>
+(comments to <a href="mailto:&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;">&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;</a>)
+<br>
+(thanks to
+<a href="http://www.chiark.greenend.org.uk/">chiark</a>
+for hosting this page)
+<br>
+(last modified on <!--LASTMOD-->[insert date here]<!--END-->)
+</body>
+</html>

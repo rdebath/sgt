@@ -1,0 +1,228 @@
+<html>
+<head>
+<title>Reversible Linked Lists</title>
+</head>
+<link rel="stylesheet" type="text/css" href="../sitestyle.css" name="Simon Tatham's Home Page Style">
+<body>
+<h1 align=center>Reversible Linked Lists</h1>
+
+<h2><a name="intro">Introduction</a></h2>
+
+<p>
+Linked lists and doubly linked lists are the first data structure
+anybody learns about formally. They let you insert and delete
+arbitrarily long subsections of a list just by fiddling with a few
+links at the very ends, so you can perform large splicing operations
+in constant time.
+
+<p>
+This algorithm describes an unusual form of doubly linked list which
+is reversible. What that means is that, if you're given a list, you
+can turn it backwards <em>in constant time</em>, just by fiddling
+with links at the ends, just like the other linked list operations.
+
+<h2><a name="algorithm">Algorithm Description</a></h2>
+
+<p>
+A node in a reversible list looks very like a node in a doubly
+linked list. You have two pointers to other nodes, and also some
+unspecified payload data stored in the node.
+
+<p>
+The difference is that it's not fixed <em>which</em> of the two
+pointers points which way. You could follow pointer number one to
+get to another node, and then find that in the new node, pointer
+number one pointed back the way you'd come. So if you loop along the
+list following a fixed one of the two pointers, you will end up
+going in smaller circles than you want!
+
+<p>
+To move along a reversible list, you have to keep track of where
+you've just come from. After you follow a link, you examine both
+pointers in the node you arrive in, to find out which of them points
+back to the node you just left. Then you follow the other one.
+
+<p>
+This means that, in order to pass a whole reversible list around
+your program, it isn't sufficient just to supply a pointer to the
+first node in the list - because the recipient will need to know
+which of the two links to follow from that node. To solve this, you
+can <em>either</em> specify a link selection flag alongside the
+pointer, <em>or</em> arrange that the link to follow in the first
+node is always the first of the two. (The structure of a reversible
+list implies that you can swap the two pointers in a node without
+affecting the topology of the list!) Which you do is up to you; the
+latter saves space but might have thread-safety problems...
+
+<p>
+(Knuth suggests a space-saving optimisation for doubly linked lists
+which also naturally causes the list to be reversible: instead of
+storing both pointers separately, store their bitwise XOR. That way
+you can always deduce either pointer given the other one, but they
+only take up one word of space.)
+
+<p>
+In order to reverse a list, then, you must start with a pointer to
+the head of the list and end up with a pointer to the tail. To do
+this in constant time, the list must be circularly linked.
+
+<p>
+If you never need to reverse a whole list given only the head, but
+only ever need to reverse subsections of the list given pointers to
+both ends, you <em>don't</em> need to link the list circularly.
+Instead, you can simply have one of the two pointers in each end
+node be null. This also makes it possible to pass a whole list
+around using only a pointer to the head: it's obvious which of the
+links to follow from the head, because you choose the one that isn't
+null. And once you've followed the list all the way to the tail, you
+can pass a pointer to the tail node and you have the list in reverse
+order!
+
+<p>
+This is all a bit disjointed; I haven't described a coherent set of
+algorithms, but instead a wide range of ideas and approaches.
+Somewhere within this should be a form of reversible list suitable
+for anybody.
+
+<p>
+As a worked example, however, here's a piece of pseudo-code which
+follows a reversible list until it finds a node A and a node B, and
+then reverses the section of list in between them in constant time.
+
+<p><pre><code>function reverse-a-to-b(head, linkref):
+    node = head
+    while not (is-node-A(node)):
+        newnode = node.links[linkref]
+        if newnode.links[0] == node:
+            linkref = 1       # link 0 points the way we came, so use link 1
+        else:
+            linkref = 0       # link 1 points the way we came, so use link 0
+    	end if
+    end while
+    nodeA = node
+    linkrefA = linkref
+    # Now "nodeA" points to node A, and "linkrefA" describes which link
+    # goes "forwards" from there.
+    while not (is-node-B(node)):
+        newnode = node.links[linkref]
+        if newnode.links[0] == node:
+            linkref = 1       # link 0 points the way we came, so use link 1
+        else:
+            linkref = 0       # link 1 points the way we came, so use link 0
+    	end if
+    end while
+    nodeB = node
+    linkrefB = linkref    
+    # Now "nodeB" points to node B, and "linkrefB" describes which
+    # link goes "forwards" from there. So (1-linkrefB) gives the link
+    # that goes backwards, i.e. towards the section of list we want
+    # to reverse.
+    temp = nodeA.links[linkrefA]
+    nodeA.links[linkrefA] = nodeB.links[1-linkrefB]
+    nodeB.links[1-linkrefB] = temp
+    # That's swapped the links _into_ the section. Now we need to
+    # swap the links back out.
+    node = nodeA.links[linkrefA]  # the node at the A end, formerly at B end
+    if node.links[0] == nodeB:
+        node.links[0] = nodeA     # link 0 pointed back at B; point it at A
+    else:
+        node.links[1] = nodeA     # link 1 pointed back at B; point it at A
+    end if
+    node = nodeB.links[1-linkrefB] # the node at the B end, formerly at A end
+    if node.links[0] == nodeA:
+        node.links[0] = nodeB     # link 0 pointed back at A; point it at B
+    else:
+        node.links[1] = nodeB     # link 1 pointed back at A; point it at B
+    end if
+end function</code></pre>
+
+<h2><a name="complexity">Complexity</a></h2>
+
+<p>
+The usual linked list operations (inserting a subsection, deleting a
+subsection, and so on) still complete in constant time.
+
+<p>
+The new operation, of reversing a list or a list segment, also
+completes in constant time.
+
+<h2><a name="applications">Applications</a></h2>
+
+<p>
+I can't remember the application I invented this for. I did have a
+specific problem I was trying to solve, which inspired me to invent
+reversible lists; but the problem turned out to be easily solved by
+more conventional means, and also I've forgotten what it was.
+
+<p>
+The only concrete application I can think of for reversible lists is
+in implementing the extremely old computer game <em>Qix</em>, in
+which you draw an arbitrarily shaped line across the screen and one
+side of the line gets filled in. One algorithm for area filling is
+the <em>winding number rule</em>, which requires you to make a loop
+along the perimeter of the area, and therefore is well suited to
+having the perimeter stored as a linked list of line segments.
+
+<p>
+So you would have the existing screen perimeter as a list, and you
+would have the new line drawn by the player as another list. You
+would divide the perimeter into two parts at the start and end
+points of the user's line. Then you would join the user's line on to
+one part of the original perimeter to obtain the boundary of the
+area to be filled. Once you had filled it, you could then unlink the
+user's line from that list and link it to the <em>other</em> half of
+the original perimeter, to be used as the new perimeter of the
+playable screen. The only trouble is, you need the list to be linked
+in the opposite order for the two uses, so you either have to
+construct a second copy pointing the other way, or use reversible
+lists.
+
+<p>
+In summary: I can't think of any reason this algorithm might be
+seriously useful. But it's very cute.
+
+<h2><a name="references">References</a></h2>
+
+<p>
+On 2004-11-23 I received mail from one Colin Osterman at the
+University of Mississippi, who has also invented a similar but more
+efficient data structure and (in conjunction with C&eacute;sar Rego)
+has actually published papers on it.
+
+<p>
+His version is called a "satellite list", and involves conceptually
+having <em>two</em> linked list nodes per item of real data. Each
+node has a link to its sibling, and a link to one of the nodes in
+the next item along the list. The clever bit is that each node's
+next-item link links to whichever of the nodes in the next item
+<em>doesn't</em> link back to this item; so you can traverse the
+list very efficiently in either direction just by following
+next-item links. To turn round and go back the way you came, you
+simply follow one sibling link, which effectively makes a U-turn.
+The advantage of this representation is that you need no
+<code>if</code> statements to traverse the list, so it's
+significantly faster. The additional storage cost is mostly
+mitigated by keeping the two sibling nodes side by side in a way
+that allows you to get from one to the other by doing bitwise
+operations on the node address, which means you still only need to
+store two actual <em>pointers</em> per data item, not four.
+
+<p>
+Here's a link to
+<a href="http://hces.bus.olemiss.edu/reports/hces0603.pdf">Osterman
+and Rego's paper</a>.
+
+<p>
+(<a href="./">back to algorithms index</a>)
+</p>
+
+<hr>
+(comments to <a href="mailto:&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;">&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;</a>)
+<br>
+(thanks to
+<a href="http://www.chiark.greenend.org.uk/">chiark</a>
+for hosting this page)
+<br>
+(last modified on <!--LASTMOD-->[insert date here]<!--END-->)
+</body>
+</html>

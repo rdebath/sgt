@@ -1,0 +1,237 @@
+<html>
+<head>
+<title>DoIt: Yet Another Remote-Execution Daemon for Windows</title>
+</head>
+<link rel="stylesheet" type="text/css" href="../sitestyle.css" name="Simon Tatham's Home Page Style">
+<body>
+<h1 align=center>DoIt</h1>
+
+<p align=center><i>yet another remote-execution daemon for Windows</i>
+
+<h2>Introduction</h2>
+
+<p>
+It seems to be quite common in large-company environments for
+employees to be given a Windows machine on their desktop, and for
+there to be Unix server machines elsewhere in the building that they
+can connect to (either using Telnet or SSH, or a Windows X server
+such as Exceed). Quite often there is also a dual-protocol file
+server that allows the Windows machines and the Unix machines to
+share at least some of their file systems.
+
+<p>
+If you're predominantly a Unix user and you find yourself in this
+sort of environment, it can be quite inconvenient. Picture the
+scene: at your Unix shell prompt, you've just tab-completed your way
+down a ten-level path name in one of these shared file systems, in
+search of a file that someone told you you needed to read. When you
+find it, it turns out to be a <code>.DOC</code> Word document.
+
+<p>
+Clearly the <em>last</em> thing you want to do at this point is to
+bring up a local Windows Explorer, and click your way right down the
+same ten-level directory path to get back to the same file. What you
+<em>really</em> want is a little utility, perhaps called
+<code>wf</code> (for "Windows File"), which would automatically
+translate the pathname from Unix syntax into Windows, automatically
+contact your Windows machine, and ask it to launch the file with
+whatever viewer program seemed appropriate.
+
+<p>
+This is the main problem that DoIt solves. It has a few other handy
+features too, but the above is mainly what it's for.
+
+<h2>Features</h2>
+
+<p>
+Here is the complete list of features that DoIt provides, so that
+you can tell whether it will be useful to you before downloading.
+
+<ul>
+
+<li>
+Start a GUI program (such as Notepad, or Word, or Excel or whatever)
+on the Windows machine.
+
+<li>
+Start a command-line program (such as a C compiler) on the Windows
+machine, and send all its output back to the Unix client machine to
+be displayed on stdout. (Note that DoIt does not currently support
+two-way communication: the program sends its output back to the Unix
+box, but the Unix box can't send further input to the program.)
+
+<li>
+Open a Windows file using the ShellExecute function. This is
+equivalent to double-clicking on the file in Explorer: it opens the
+file using whatever application Windows has configured for files of
+that type.
+
+<li>
+Perform automatic path-name translation on the above, so that you
+can just type "<code>wf myfile.doc</code>". DoIt will automatically
+turn this into a fully-qualified Unix path name, then feed it
+through a set of user-defined path name translations, and end up
+with a Windows path name that accesses the same file.
+
+<li>
+Ask the Windows system to open its default web browser and visit a
+specified URL. (This is particularly useful if you can't make your X
+server cut and paste effectively to Windows.)
+
+<li>
+Place arbitrary text in the clipboard of the Windows machine, and
+also fetch text out of the Windows clipboard back to the client.
+(Again, this is particularly useful if your cut and paste between X
+and Windows doesn't work properly.)
+
+</ul>
+
+<h2>Licence</h2>
+
+<p>
+DoIt is distributed under the MIT licence, so it is free to copy,
+redistribute, use and reuse. For more details, see the file called
+LICENCE in the distribution archive.
+
+<p>
+DoIt comes with <em>NO WARRANTY</em>. To the best of my knowledge it
+works correctly and provides the level of security it tries to
+provide, but I might be wrong. If you are in doubt, you should
+perform your own security review of the code.
+
+<h2>Architecture</h2>
+
+<p>
+DoIt comes in two parts: a client and a server.
+
+<p>
+The server is a Windows user-level process. You run it in your
+Windows session (perhaps in your Startup group so that it appears as
+soon as you log in), and it sits in your System Tray and listens for
+connections on TCP port 17481. The DoIt server does not run as a
+Windows NT Service, so you do not need to be the administrator to
+install it. Each user of a multi-user NT machine can install and
+configure DoIt independently.
+
+<p>
+The client is a simple Unix program which performs all the necessary
+path translations and then sends commands to the server. Pathname
+translations must be entered manually into a configuration file on
+the client Unix machine(s).
+
+<h2>Security</h2>
+
+<p>
+The protocol spoken between the client and the server is
+cryptographically protected to provide confidentiality, integrity
+and two-way authentication. In other words, eavesdroppers cannot
+tell what commands you're sending to your Unix box or what the
+responses are; active man-in-the-middle attackers cannot modify the
+command you send or the response you receive without you noticing;
+nobody can pretend to be your server in order to intercept the
+commands you send; and crackers elsewhere on the network cannot send
+their own commands to your Windows machine and convince it they're
+genuine.
+
+<p>
+Unlike SSH or similar protocols, however, DoIt does not use a key
+exchange phase. It relies on the client and the server
+<em>already</em> having access to a shared secret key. You need to
+have set this key up by some other means. (This decision is largely
+taken on grounds of performance; some of DoIt's functions need to be
+performed very promptly, and a second or two of cryptographic key
+exchange would seriously impact this.)
+
+<p>
+If you have a shared file system between your Windows and Unix
+machines, one obvious solution is to create your shared secret file
+and store it on this file system. Since most network file system
+protocols are not cryptographically protected, this will now be the
+weak link of the system in terms of security: an attacker able to
+eavesdrop on network packets will now be able to learn your shared
+secret and then instruct DoIt to run any command they like on your
+Windows machine. However, if this is the case then your unencrypted
+network file system is likely to have been the weak link in your
+internal security in any case, so DoIt will most likely not have
+made matters any worse. I use this method myself and I don't think
+it's a problem (but then, my company's network is fully switched, so
+eavesdroppers will have a reasonably hard time anyway).
+
+<p>
+At some point it might be worth adding a standard mechanism for key
+exchange which can be run every few hours independently of the data
+connections. This would require some design work, and there would
+also need to be public keys for the clients and servers. And for
+this security enhancement to be worthwhile, you would suddenly have
+to be careful <em>not</em> to store anything on the unencrypted
+shared file system!
+
+<p><i>LEGAL WARNING</i>: Since DoIt uses strong encryption, it may
+be illegal to download and use it in some jurisdictions. You may find
+<a href="http://rechten.uvt.nl/koops/cryptolaw/">this site</a>
+useful (it's a survey of cryptography laws in many countries) but I
+can't vouch for its correctness. If there is interest, I might
+consider providing a version of DoIt that uses cryptography only for
+authentication and integrity protection, and does not encrypt data
+against eavesdroppers.
+
+<h2>Download</h2>
+
+<p>
+The archive below contains all the DoIt source code, and a
+pre-compiled Windows server executable. You will need to build the
+Unix client program yourself (because it will be different on every
+different Unix system). For this you will need a Unix C compiler.
+Most Unix systems come with one of these, and it is probably
+possible to install <code>gcc</code> on any that do not.
+
+<p>
+The DoIt archive is available as a ZIP file and as a Unix
+<code>.tar.gz</code> archive:
+
+<ul>
+<li>
+<a href="doit.zip">doit.zip</a>
+<li>
+<a href="doit.tar.gz">doit.tar.gz</a>
+</ul>
+
+<p>
+<i>BE AWARE</i>
+that currently the DoIt wire protocol is not finalised. If you
+attempt to use one version of the DoIt server with a non-matching
+version of the client, I cannot guarantee whether things will work
+fully, partially, or not at all, and I also cannot guarantee that
+either client or server will give sensible error messages explaining
+the problem. DoIt is not very mature software yet, and I don't want
+to tie myself down to supporting a broken protocol design for the
+next few years. Always use matching client and server versions.
+
+<h2>Feedback</h2>
+
+<p>
+Please report bugs to
+<a href="mailto:&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;">&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;</a>.
+Be sure to include all the version numbers of the DoIt files in your
+bug report (these are provided in the file called README in the
+archive).
+
+<p>
+You might find it helpful to read
+<a href="../bugs.html">this article</a>
+before reporting a bug.
+
+<p>
+Patches are welcome, especially including improvements to the
+documentation.
+
+<hr>
+(comments to <a href="mailto:&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;">&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;</a>)
+<br>
+(thanks to
+<a href="http://www.chiark.greenend.org.uk/">chiark</a>
+for hosting this page)
+<br>
+(last modified on <!--LASTMOD-->[insert date here]<!--END-->)
+</body>
+</html>

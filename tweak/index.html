@@ -1,0 +1,97 @@
+<HTML><HEAD>
+<TITLE>Tweak: an efficient hex editor</TITLE>
+</HEAD>
+<link rel="stylesheet" type="text/css" href="../sitestyle.css" name="Simon Tatham's Home Page Style">
+<BODY>
+<h1>Tweak: an efficient hex editor</h1>
+
+<p>
+Tweak is a hex editor. It allows you to edit a file at very low
+level, letting you see the full and exact binary contents of the
+file. It can be useful for modifying binary files such as
+executables, editing disk or CD images, debugging programs that
+generate binary file formats incorrectly, and many other things.
+
+<p>
+Tweak currently runs on Unix, using the <code>ncurses</code> library
+to run in a terminal.
+
+<h2>Why yet another hex editor?</h2>
+
+<p>
+Tweak uses a complex data structure based on B-trees, designed to
+make almost all editing operations extremely fast, even when they
+are working on huge amounts of data.
+
+<p>
+The data structure is
+<a href="btree.html">described in detail</a> on a separate page for
+those interested. The bottom line is:
+
+<ul>
+<li>
+Tweak supports insert mode (not particularly useful if you're
+editing an executable file or a filesystem image, but can be
+extremely handy in other file formats such as PNG).
+<li>
+Cutting, copying and pasting within the file you are editing is
+extremely efficient. No matter how big the chunk of data you are
+moving around - even if it's a 200Mb section of a CD image - Tweak
+will always perform the operation effectively instantly.
+<li>
+Tweak supports lazy loading of the input file: rather than sucking
+it all into memory straight away, it simply remembers which parts of
+the editing buffer are copies of which parts of the input file and
+refers to the file on disk when it needs to. Tweak only has to take
+significant time when you genuinely need it to read the entire file.
+The <em>only</em> two operations with this property are searching,
+and saving the modified version of the file to disk. Everything else
+is instant.
+</ul>
+
+<p>
+You might think, from reading this, that the entire purpose of
+publishing Tweak was to show off my shiny data structure. You would
+be right :-)
+
+<h2>What is its current status?</h2>
+
+<p>
+The first public release, Tweak 3.00, is available as a source
+tarball here:
+
+<blockquote>
+<p>
+<code>
+<a href="tweak-3.00.tar.gz">tweak-3.00.tar.gz</a>
+</code>
+</blockquote>
+
+<p>
+If you want to see the latest state of development, you can check
+the development sources out from my Subversion repository.
+
+<p>
+The Subversion URL you need for Tweak is
+<code>svn://ixion.tartarus.org/main/tweak</code>. You will also need
+two source files <code>btree.c</code> and <code>btree.h</code>,
+which are in a different directory called <code>library</code>. So to check
+out all the code necessary to build Tweak, you would need commands
+such as this:
+<pre><code>svn co svn://ixion.tartarus.org/main/tweak
+svn co svn://ixion.tartarus.org/main/library
+ln -s ../library/btree.c tweak
+ln -s ../library/btree.h tweak</code></pre>
+
+<p>
+Alternatively, you can browse the Subversion repository on the WWW,
+<a href="http://www.tartarus.org/~simon-anonsvn/viewcvs.cgi/tweak/">here</a>.
+</p>
+
+<hr>
+Page maintained by
+<a href="mailto:&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;">Simon Tatham</a>.
+<br>
+(last modified on <!--LASTMOD-->[insert date here]<!--END-->)
+
+</BODY></HTML>

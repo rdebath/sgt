@@ -1,0 +1,45 @@
+/cshow {
+  gsave
+  currentpoint translate 0 0 moveto
+  dup true charpath flattenpath pathbbox
+  3 -1 roll add 2 div
+  3 1 roll add 2 div
+  neg exch neg translate
+  0 0 moveto show
+  grestore
+} def
+
+/tlshow {
+  gsave
+  currentpoint translate 0 0 moveto
+  dup true charpath flattenpath pathbbox
+  4 -1 roll neg exch neg translate pop pop
+  0 0 moveto show
+  grestore
+} def
+
+% A bit of border
+{ 0 setgray
+/x 100.0 30.0 div def
+newpath
+200 x moveto
+-50 x lineto
+2 x mul setlinewidth stroke } if
+{ 0 setgray
+/x 100.0 30.0 div def
+newpath
+100 x sub 200 moveto
+100 x sub -50 lineto
+2 x mul setlinewidth stroke } if
+
+% The actual entry
+1 0 0 setrgbcolor
+/Helvetica findfont 35 scalefont setfont
+10 90 moveto tlshow
+
+% The actual entry
+0 setgray
+/Helvetica findfont 50 scalefont setfont
+50 50 moveto cshow
+
+showpage

@@ -1,0 +1,417 @@
+<html>
+<head>
+<title>A Pair Of Dice Which Never Roll 7</title>
+</head>
+<link rel="stylesheet" type="text/css" href="../sitestyle.css" name="Simon Tatham's Home Page Style">
+<body>
+<h1 align=center>A Pair Of Dice Which Never Roll 7</h1>
+
+<p>
+<i>by <a href="../">Simon Tatham</a></i>
+</p>
+
+<h2>Introduction</h2>
+
+<p>
+Some friends of mine play the board game
+<a href="http://www.yoda.arachsys.com/siedler/">Settlers Of Catan</a>.
+In this game, each player rolls two ordinary dice on their turn, and
+the number which comes up determines what resources people get for
+the turn. When a seven is rolled, something special happens: no
+resources are generated, and instead a robber moves on the board.
+
+<p>
+After playing this game for a while, my friends felt that although
+the game would get a bit dull without <em>any</em> sevens, they were
+rather unhelpful in the initial phase of the game: when everybody is
+trying to collect lots of resources to get started with, rolling a
+seven slows everyone down. So we adopted a "house rule" which said
+that during the first two full rounds, if anyone rolled a seven,
+they should immediately re-roll until they got something else. After
+a couple of rounds, once the game had got going, sevens became a
+permitted dice roll again.
+
+<p>
+Although I approve of the aim (to make the game get started more
+quickly), I didn't much like the mechanism; re-rolling a pair of
+dice until you get a result you like seemed ugly. So I set out to
+design a special pair of dice which would produce the numbers 2 to
+12 with the <em>same</em> relative probabilities as the ordinary
+2d6, but which never rolled 7.
+
+<p>
+This sounds pretty unlikely, but it's just about possible. In this
+page I explain how it's done.
+
+<h2>Construction</h2>
+
+<p>
+An ordinary pair of dice can roll any number from 2 to 12, but not
+all with the same probability. The easiest way to see this is to
+label the individual dice to distinguish them (I'm going to call
+them R and C, for "row" and "column"), and draw a table showing the
+possible outcomes:
+
+<div align="center"><p><pre><code style="line-height: 0;"><img src="tblhead.png" alt="R\C"><img src="tblcol1.png" alt="  1"><img src="tblcol2.png" alt="  2"><img src="tblcol3.png" alt="  3"><img src="tblcol4.png" alt="  4"><img src="tblcol5.png" alt="  5"><img src="tblcol6.png" alt="  6">
+<img src="tblrow1.png" alt="1  "><img src="tbl2.png" alt="  2"><img src="tbl3.png" alt="  3"><img src="tbl4.png" alt="  4"><img src="tbl5.png" alt="  5"><img src="tbl6.png" alt="  6"><img src="tbl7.png" alt="  7">
+<img src="tblrow2.png" alt="2  "><img src="tbl3.png" alt="  3"><img src="tbl4.png" alt="  4"><img src="tbl5.png" alt="  5"><img src="tbl6.png" alt="  6"><img src="tbl7.png" alt="  7"><img src="tbl8.png" alt="  8">
+<img src="tblrow3.png" alt="3  "><img src="tbl4.png" alt="  4"><img src="tbl5.png" alt="  5"><img src="tbl6.png" alt="  6"><img src="tbl7.png" alt="  7"><img src="tbl8.png" alt="  8"><img src="tbl9.png" alt="  9">
+<img src="tblrow4.png" alt="4  "><img src="tbl5.png" alt="  5"><img src="tbl6.png" alt="  6"><img src="tbl7.png" alt="  7"><img src="tbl8.png" alt="  8"><img src="tbl9.png" alt="  9"><img src="tbl10.png" alt=" 10">
+<img src="tblrow5.png" alt="5  "><img src="tbl6.png" alt="  6"><img src="tbl7.png" alt="  7"><img src="tbl8.png" alt="  8"><img src="tbl9.png" alt="  9"><img src="tbl10.png" alt=" 10"><img src="tbl11.png" alt=" 11">
+<img src="tblrow6.png" alt="6  "><img src="tbl7.png" alt="  7"><img src="tbl8.png" alt="  8"><img src="tbl9.png" alt="  9"><img src="tbl10.png" alt=" 10"><img src="tbl11.png" alt=" 11"><img src="tbl12.png" alt=" 12">
+</code></pre></div>
+
+<p>
+So out of the 36 possible combinations that can come up, only one
+results in a 2 (both dice have to show 1), only one results in a 12
+(it requires two sixes), but a seven can come up in six different
+ways and is therefore six times more probable.
+
+<p>
+The idea I hit on was to <em>reorganise</em> this grid. With six
+entries reading 7, I thought it might be an interesting experiment
+to put them all in the same column:
+
+<div align="center"><p><pre><code style="line-height: 0;"><img src="tblhead.png" alt="R\C"><img src="tblcol1.png" alt="  1"><img src="tblcol2.png" alt="  2"><img src="tblcol3.png" alt="  3"><img src="tblcol4.png" alt="  4"><img src="tblcol5.png" alt="  5"><img src="tblcol6.png" alt="  6">
+<img src="tblrow1.png" alt="1  "><img src="tbl7d.png" alt="  7"><img src="tblqdr.png" alt="  ?"><img src="tblqdr.png" alt="  ?"><img src="tblqdr.png" alt="  ?"><img src="tblqdr.png" alt="  ?"><img src="tblqd.png" alt="  ?">
+<img src="tblrow2.png" alt="2  "><img src="tbl7d.png" alt="  7"><img src="tblqdr.png" alt="  ?"><img src="tblqdr.png" alt="  ?"><img src="tblqdr.png" alt="  ?"><img src="tblqdr.png" alt="  ?"><img src="tblqd.png" alt="  ?">
+<img src="tblrow3.png" alt="3  "><img src="tbl7d.png" alt="  7"><img src="tblqdr.png" alt="  ?"><img src="tblqdr.png" alt="  ?"><img src="tblqdr.png" alt="  ?"><img src="tblqdr.png" alt="  ?"><img src="tblqd.png" alt="  ?">
+<img src="tblrow4.png" alt="4  "><img src="tbl7d.png" alt="  7"><img src="tblqdr.png" alt="  ?"><img src="tblqdr.png" alt="  ?"><img src="tblqdr.png" alt="  ?"><img src="tblqdr.png" alt="  ?"><img src="tblqd.png" alt="  ?">
+<img src="tblrow5.png" alt="5  "><img src="tbl7d.png" alt="  7"><img src="tblqdr.png" alt="  ?"><img src="tblqdr.png" alt="  ?"><img src="tblqdr.png" alt="  ?"><img src="tblqdr.png" alt="  ?"><img src="tblqd.png" alt="  ?">
+<img src="tblrow6.png" alt="6  "><img src="tbl7.png" alt="  7"><img src="tblqr.png" alt="  ?"><img src="tblqr.png" alt="  ?"><img src="tblqr.png" alt="  ?"><img src="tblqr.png" alt="  ?"><img src="tblq.png" alt="  ?">
+</code></pre></div>
+
+<p>
+That leaves a 5-by-6 square. Interestingly, we have to place 5
+instances of the number 6 in the remaining space, and also 5
+instances of the number 8. I thought those would fit nicely across
+two rows of this 5-by-6 rectangle:
+
+<div align="center"><p><pre><code style="line-height: 0;"><img src="tblhead.png" alt="R\C"><img src="tblcol1.png" alt="  1"><img src="tblcol2.png" alt="  2"><img src="tblcol3.png" alt="  3"><img src="tblcol4.png" alt="  4"><img src="tblcol5.png" alt="  5"><img src="tblcol6.png" alt="  6">
+<img src="tblrow1.png" alt="1  "><img src="tbl7d.png" alt="  7"><img src="tbl6r.png" alt="  6"><img src="tbl6r.png" alt="  6"><img src="tbl6r.png" alt="  6"><img src="tbl6r.png" alt="  6"><img src="tbl6.png" alt="  6">
+<img src="tblrow2.png" alt="2  "><img src="tbl7d.png" alt="  7"><img src="tbl8r.png" alt="  8"><img src="tbl8r.png" alt="  8"><img src="tbl8r.png" alt="  8"><img src="tbl8r.png" alt="  8"><img src="tbl8.png" alt="  8">
+<img src="tblrow3.png" alt="3  "><img src="tbl7d.png" alt="  7"><img src="tblqdr.png" alt="  ?"><img src="tblqdr.png" alt="  ?"><img src="tblqdr.png" alt="  ?"><img src="tblqdr.png" alt="  ?"><img src="tblqd.png" alt="  ?">
+<img src="tblrow4.png" alt="4  "><img src="tbl7d.png" alt="  7"><img src="tblqdr.png" alt="  ?"><img src="tblqdr.png" alt="  ?"><img src="tblqdr.png" alt="  ?"><img src="tblqdr.png" alt="  ?"><img src="tblqd.png" alt="  ?">
+<img src="tblrow5.png" alt="5  "><img src="tbl7d.png" alt="  7"><img src="tblqdr.png" alt="  ?"><img src="tblqdr.png" alt="  ?"><img src="tblqdr.png" alt="  ?"><img src="tblqdr.png" alt="  ?"><img src="tblqd.png" alt="  ?">
+<img src="tblrow6.png" alt="6  "><img src="tbl7.png" alt="  7"><img src="tblqr.png" alt="  ?"><img src="tblqr.png" alt="  ?"><img src="tblqr.png" alt="  ?"><img src="tblqr.png" alt="  ?"><img src="tblq.png" alt="  ?">
+</code></pre></div>
+
+<p>
+This leaves a rectangle four spaces high, and it just happens that I
+have four 9s and four 5s to place, so let's place those in two of
+the columns:
+
+<div align="center"><p><pre><code style="line-height: 0;"><img src="tblhead.png" alt="R\C"><img src="tblcol1.png" alt="  1"><img src="tblcol2.png" alt="  2"><img src="tblcol3.png" alt="  3"><img src="tblcol4.png" alt="  4"><img src="tblcol5.png" alt="  5"><img src="tblcol6.png" alt="  6">
+<img src="tblrow1.png" alt="1  "><img src="tbl7d.png" alt="  7"><img src="tbl6r.png" alt="  6"><img src="tbl6r.png" alt="  6"><img src="tbl6r.png" alt="  6"><img src="tbl6r.png" alt="  6"><img src="tbl6.png" alt="  6">
+<img src="tblrow2.png" alt="2  "><img src="tbl7d.png" alt="  7"><img src="tbl8r.png" alt="  8"><img src="tbl8r.png" alt="  8"><img src="tbl8r.png" alt="  8"><img src="tbl8r.png" alt="  8"><img src="tbl8.png" alt="  8">
+<img src="tblrow3.png" alt="3  "><img src="tbl7d.png" alt="  7"><img src="tbl5d.png" alt="  5"><img src="tbl9d.png" alt="  9"><img src="tblqdr.png" alt="  ?"><img src="tblqdr.png" alt="  ?"><img src="tblqd.png" alt="  ?">
+<img src="tblrow4.png" alt="4  "><img src="tbl7d.png" alt="  7"><img src="tbl5d.png" alt="  5"><img src="tbl9d.png" alt="  9"><img src="tblqdr.png" alt="  ?"><img src="tblqdr.png" alt="  ?"><img src="tblqd.png" alt="  ?">
+<img src="tblrow5.png" alt="5  "><img src="tbl7d.png" alt="  7"><img src="tbl5d.png" alt="  5"><img src="tbl9d.png" alt="  9"><img src="tblqdr.png" alt="  ?"><img src="tblqdr.png" alt="  ?"><img src="tblqd.png" alt="  ?">
+<img src="tblrow6.png" alt="6  "><img src="tbl7.png" alt="  7"><img src="tbl5.png" alt="  5"><img src="tbl9.png" alt="  9"><img src="tblqr.png" alt="  ?"><img src="tblqr.png" alt="  ?"><img src="tblq.png" alt="  ?">
+</code></pre></div>
+
+<p>
+And so it goes on. In two rows of the remaining 3-by-4 space we
+place the three 4s and the three 10s; in two columns of the
+remaining 3-by-2 we place the two 3s and the two 11s; and in the two
+remaining single spaces we place the single 2 and the single 12.
+
+<div align="center"><p><pre><code style="line-height: 0;"><img src="tblhead.png" alt="R\C"><img src="tblcol1.png" alt="  1"><img src="tblcol2.png" alt="  2"><img src="tblcol3.png" alt="  3"><img src="tblcol4.png" alt="  4"><img src="tblcol5.png" alt="  5"><img src="tblcol6.png" alt="  6">
+<img src="tblrow1.png" alt="1  "><img src="tbl7d.png" alt="  7"><img src="tbl6r.png" alt="  6"><img src="tbl6r.png" alt="  6"><img src="tbl6r.png" alt="  6"><img src="tbl6r.png" alt="  6"><img src="tbl6.png" alt="  6">
+<img src="tblrow2.png" alt="2  "><img src="tbl7d.png" alt="  7"><img src="tbl8r.png" alt="  8"><img src="tbl8r.png" alt="  8"><img src="tbl8r.png" alt="  8"><img src="tbl8r.png" alt="  8"><img src="tbl8.png" alt="  8">
+<img src="tblrow3.png" alt="3  "><img src="tbl7d.png" alt="  7"><img src="tbl5d.png" alt="  5"><img src="tbl9d.png" alt="  9"><img src="tbl4r.png" alt="  4"><img src="tbl4r.png" alt="  4"><img src="tbl4.png" alt="  4">
+<img src="tblrow4.png" alt="4  "><img src="tbl7d.png" alt="  7"><img src="tbl5d.png" alt="  5"><img src="tbl9d.png" alt="  9"><img src="tbl10r.png" alt=" 10"><img src="tbl10r.png" alt=" 10"><img src="tbl10.png" alt=" 10">
+<img src="tblrow5.png" alt="5  "><img src="tbl7d.png" alt="  7"><img src="tbl5d.png" alt="  5"><img src="tbl9d.png" alt="  9"><img src="tbl3d.png" alt="  3"><img src="tbl11d.png" alt=" 11"><img src="tbl2.png" alt="  2">
+<img src="tblrow6.png" alt="6  "><img src="tbl7.png" alt="  7"><img src="tbl5.png" alt="  5"><img src="tbl9.png" alt="  9"><img src="tbl3.png" alt="  3"><img src="tbl11.png" alt=" 11"><img src="tbl12.png" alt=" 12">
+</code></pre></div>
+
+<p>
+This reorganised grid contains the same set of numbers as the grid
+we originally started with, and each number appears exactly as many
+times in the new grid as in the original one. So if you roll two
+(distinguishable) ordinary dice, and look up the results in this
+table (for example, if die R rolled 3 and die C rolled 5, you'd look
+up the overall result in row 3 column 5 and find it was 4), then you
+will find that this technique gives you exactly the same
+distribution of numbers which you'd expect from ordinary dice.
+
+<p>
+Of course, having to use a look-up table every time you roll your
+dice is a bit silly. Better to re-label the dice to make the table
+unnecessary. And it turns out this is fairly easy:
+<ul>
+<li>
+The entire first column of the table is full of 7s. So it makes
+sense to label that face of the C die "7", since if it comes up then
+the answer is 7 no matter what the other die does.
+<li>
+The first two faces of the R die should be labelled "6" and "8",
+since that will be the result if one of those faces comes up
+(unless the C die shows 7).
+<li>
+Similarly, the next two faces of the C die should be labelled 5 and
+9, and so on.
+<li>
+The last face of the C die we leave <em>blank</em>. If that face
+comes up, then the result is whatever is shown on the R die.
+</ul>
+
+<p>
+So after we relabel the dice, the outcome grid now looks like this:
+
+<div align="center"><p><pre><code style="line-height: 0;"><img src="tblhead.png" alt="R\C"><img src="tblcol7.png" alt="  7"><img src="tblcol5.png" alt="  5"><img src="tblcol9.png" alt="  9"><img src="tblcol3.png" alt="  3"><img src="tblcol11.png" alt=" 11"><img src="tblcolblank.png" alt=" --">
+<img src="tblrow6.png" alt=" 6 "><img src="tbl7d.png" alt="  7"><img src="tbl6r.png" alt="  6"><img src="tbl6r.png" alt="  6"><img src="tbl6r.png" alt="  6"><img src="tbl6r.png" alt="  6"><img src="tbl6.png" alt="  6">
+<img src="tblrow8.png" alt=" 8 "><img src="tbl7d.png" alt="  7"><img src="tbl8r.png" alt="  8"><img src="tbl8r.png" alt="  8"><img src="tbl8r.png" alt="  8"><img src="tbl8r.png" alt="  8"><img src="tbl8.png" alt="  8">
+<img src="tblrow4.png" alt=" 4 "><img src="tbl7d.png" alt="  7"><img src="tbl5d.png" alt="  5"><img src="tbl9d.png" alt="  9"><img src="tbl4r.png" alt="  4"><img src="tbl4r.png" alt="  4"><img src="tbl4.png" alt="  4">
+<img src="tblrow10.png" alt="10 "><img src="tbl7d.png" alt="  7"><img src="tbl5d.png" alt="  5"><img src="tbl9d.png" alt="  9"><img src="tbl10r.png" alt=" 10"><img src="tbl10r.png" alt=" 10"><img src="tbl10.png" alt=" 10">
+<img src="tblrow2.png" alt=" 2 "><img src="tbl7d.png" alt="  7"><img src="tbl5d.png" alt="  5"><img src="tbl9d.png" alt="  9"><img src="tbl3d.png" alt="  3"><img src="tbl11d.png" alt=" 11"><img src="tbl2.png" alt="  2">
+<img src="tblrow12.png" alt="12 "><img src="tbl7.png" alt="  7"><img src="tbl5.png" alt="  5"><img src="tbl9.png" alt="  9"><img src="tbl3.png" alt="  3"><img src="tbl11.png" alt=" 11"><img src="tbl12.png" alt=" 12">
+</code></pre></div>
+
+<p>
+Now all we need is a way to remember which numbers take priority
+over which other numbers. The rule is: 7 beats 6 and 8, which in
+turn beat 5 and 9, which beat 4 and 10, which beat 3 and 11, which
+beat 2 and 12, and everything beats the blank. So we add
+<em>dots</em> to the faces: six dots on the 7, five on the 6 and the
+8, four on the 5 and the 9, three on the 4 and the 10, two on the 3
+and the 11, one on the 2 and the 12, and nothing on the blank face.
+</ul>
+
+<p>
+So our dice now look like this:
+
+<div align="center"><p><pre><code><img src="rhead.png" valign="center" alt="R:">  <img src="face2a.png" valign="center" alt="2&#183;     ">  <img src="face4a.png" valign="center" alt="4&#183;&#183;&#183;   ">  <img src="face6a.png" valign="center" alt="6&#183;&#183;&#183;&#183;&#183; ">  <img src="face8a.png" valign="center" alt="8&#183;&#183;&#183;&#183;&#183; ">  <img src="face10a.png" valign="center" alt="10&#183;&#183;&#183;   ">  <img src="face12a.png" valign="center" alt="12&#183;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;">
+
+<img src="chead.png" valign="center" alt="C:">  <img src="face3a.png" valign="center" alt="3&#183;&#183;    ">  <img src="face5a.png" valign="center" alt="5&#183;&#183;&#183;&#183;  ">  <img src="face7a.png" valign="center" alt="7&#183;&#183;&#183;&#183;&#183;&#183;">  <img src="face9a.png" valign="center" alt="9&#183;&#183;&#183;&#183;  ">  <img src="face11a.png" valign="center" alt="11&#183;&#183;    ">  <img src="faceblank.png" valign="center" alt="blank&nbsp;&nbsp;&nbsp;&nbsp;">
+</code></pre></div>
+
+<p>
+And the procedure is: roll both dice, and choose whichever of the
+two uppermost faces shows <em>more dots</em>. (No draw is possible,
+since any two faces with the same number of dots appear on the same
+die.)
+
+<p>
+So, after all this work, I've constructed an alternative way of
+labelling a pair of cubical dice, which gives exactly the same
+probability distribution as the normal approach of adding up the two
+numbers rolled. How has this helped me to construct dice which don't
+roll sevens?
+
+<p>
+The answer is that 7 is now a property of <em>one</em> of the dice,
+rather than a property of the combination of the two. All I have to
+do to convert these dice into a non-7-rolling pair is to remove the
+7 face from the C die, turning it into a five-sided die with faces
+3, 5, 9, 11 and blank. This modified pair of dice has the following
+outcome table:
+
+<div align="center"><p><pre><code style="line-height: 0;"><img src="tblhead.png" alt="R\C"><img src="tblcol5.png" alt="  5"><img src="tblcol9.png" alt="  9"><img src="tblcol3.png" alt="  3"><img src="tblcol11.png" alt=" 11"><img src="tblcolblank.png" alt=" --">
+<img src="tblrow6.png" alt=" 6 "><img src="tbl6r.png" alt="  6"><img src="tbl6r.png" alt="  6"><img src="tbl6r.png" alt="  6"><img src="tbl6r.png" alt="  6"><img src="tbl6.png" alt="  6">
+<img src="tblrow8.png" alt=" 8 "><img src="tbl8r.png" alt="  8"><img src="tbl8r.png" alt="  8"><img src="tbl8r.png" alt="  8"><img src="tbl8r.png" alt="  8"><img src="tbl8.png" alt="  8">
+<img src="tblrow4.png" alt=" 4 "><img src="tbl5d.png" alt="  5"><img src="tbl9d.png" alt="  9"><img src="tbl4r.png" alt="  4"><img src="tbl4r.png" alt="  4"><img src="tbl4.png" alt="  4">
+<img src="tblrow10.png" alt="10 "><img src="tbl5d.png" alt="  5"><img src="tbl9d.png" alt="  9"><img src="tbl10r.png" alt=" 10"><img src="tbl10r.png" alt=" 10"><img src="tbl10.png" alt=" 10">
+<img src="tblrow2.png" alt=" 2 "><img src="tbl5d.png" alt="  5"><img src="tbl9d.png" alt="  9"><img src="tbl3d.png" alt="  3"><img src="tbl11d.png" alt=" 11"><img src="tbl2.png" alt="  2">
+<img src="tblrow12.png" alt="12 "><img src="tbl5.png" alt="  5"><img src="tbl9.png" alt="  9"><img src="tbl3.png" alt="  3"><img src="tbl11.png" alt=" 11"><img src="tbl12.png" alt=" 12">
+</code></pre></div>
+
+<p>
+So it will roll everything other than 7 with the correct relative
+probabilities, but it can never roll a 7 itself, because there isn't
+a 7 face anywhere to be seen. Bingo!
+
+<p>
+Actually <em>making</em> a d5 would be difficult. Instead, I bought
+a standard d10 (two five-sided pyramids back to back), and painted
+pairs of faces the same.
+
+<p>
+(A reader familiar with the range of dice available in roleplaying
+and gaming shops might have noticed by now that a 5x6 outcome grid
+contains 30 possibilities in total, and that you can actually buy
+30-sided dice, so taking a d30 and labelling it 2, 3, 3, 4, 4, 4, 5,
+5, 5, 5, 6, 6, 6, 6, 6, 8, 8, 8, 8, 8, 9, 9, 9, 9, 10, 10, 10, 11,
+11, 12 would have been much simpler. However, in practical terms
+it's quite hard to find a d30 large enough to paint replacement
+labels on!)
+
+<h2>Extension</h2>
+
+<p>
+The above construction fulfilled my original goal. I acquired some
+blank dice and labelled them in the way I've described (I couldn't
+find a blank d10 so I had to paint out the numbers on an ordinary
+one), and when I'd finished, I had two "odd" dice (one cubical, with
+a 7, and one shaped like a d10, without a 7) and one "even" die.
+Roll the two cubical dice, and you get an ordinary 2d6 distribution;
+roll the even die with the strangely shaped odd die, and you get the
+same thing but with no 7s.
+
+<p>
+However, there was one remaining problem. Settlers of Catan has an
+extension, called "Cities and Knights". In this game, one of the
+dice is red, and that die has a special function: the <em>total</em>
+of the two dice still determines the resource generation for the
+turn, but the single number shown on the red die has an additional
+effect of deciding who gets special cards. My dice don't provide
+this extra information. And you can't just roll an ordinary die
+alongside my two, because that gives rise to combinations which
+would have been impossible with ordinary dice (there's no way the
+red die can show 6 if both dice total 4, for example). So it appears
+that my dice can't be used for Cities and Knights without changing
+the nature of the game.
+
+<p>
+Or can they?
+
+<p>
+They can certainly work <em>in principle</em>. All you need to do is
+to annotate each entry in the outcome grid with an additional number
+indicating the value on the red die. Going back to the ordinary 2d6,
+the annotated grid looks like this (let's have R be the red die):
+
+<div align="center"><p><pre><code style="line-height: 0;"><img src="tblhead.png" alt="R\C"><img src="tblcol1.png" alt="  1   "><img src="tblcol2.png" alt="  2   "><img src="tblcol3.png" alt="  3   "><img src="tblcol4.png" alt="  4   "><img src="tblcol5.png" alt="  5   "><img src="tblcol6.png" alt="  6&nbsp;&nbsp;&nbsp;">
+<img src="tblrow1.png" alt="1  "><img src="tbl2-1.png" alt="  2(1)"><img src="tbl3-1.png" alt="  3(1)"><img src="tbl4-1.png" alt="  4(1)"><img src="tbl5-1.png" alt="  5(1)"><img src="tbl6-1.png" alt="  6(1)"><img src="tbl7-1.png" alt="  7(1)">
+<img src="tblrow2.png" alt="2  "><img src="tbl3-2.png" alt="  3(2)"><img src="tbl4-2.png" alt="  4(2)"><img src="tbl5-2.png" alt="  5(2)"><img src="tbl6-2.png" alt="  6(2)"><img src="tbl7-2.png" alt="  7(2)"><img src="tbl8-2.png" alt="  8(2)">
+<img src="tblrow3.png" alt="3  "><img src="tbl4-3.png" alt="  4(3)"><img src="tbl5-3.png" alt="  5(3)"><img src="tbl6-3.png" alt="  6(3)"><img src="tbl7-3.png" alt="  7(3)"><img src="tbl8-3.png" alt="  8(3)"><img src="tbl9-3.png" alt="  (3)9">
+<img src="tblrow4.png" alt="4  "><img src="tbl5-4.png" alt="  5(4)"><img src="tbl6-4.png" alt="  6(4)"><img src="tbl7-4.png" alt="  7(4)"><img src="tbl8-4.png" alt="  8(4)"><img src="tbl9-4.png" alt="  9(4)"><img src="tbl10-4.png" alt=" 10(4)">
+<img src="tblrow5.png" alt="5  "><img src="tbl6-5.png" alt="  6(5)"><img src="tbl7-5.png" alt="  7(5)"><img src="tbl8-5.png" alt="  8(5)"><img src="tbl9-5.png" alt="  9(5)"><img src="tbl10-5.png" alt=" 10(5)"><img src="tbl11-5.png" alt=" 11(5)">
+<img src="tblrow6.png" alt="6  "><img src="tbl7-6.png" alt="  7(6)"><img src="tbl8-6.png" alt="  8(6)"><img src="tbl9-6.png" alt="  9(6)"><img src="tbl10-6.png" alt=" 10(6)"><img src="tbl11-6.png" alt=" 11(6)"><img src="tbl12-6.png" alt=" 12(6)">
+</code></pre></div>
+
+<p>
+This grid isn't terribly easy to read, but it at least shows which red
+numbers can go with which total numbers:
+<ul>
+<li>If the total is 2, the red number must be 1.
+<li>If the total is 3, the red number can be 1 or 2.
+<li>If the total is 4, the red number can be 1, 2 or 3.
+<li>If the total is 5, the red number can be 1, 2, 3 or 4.
+<li>If the total is 6, the red number can be 1, 2, 3, 4 or 5.
+<li>If the total is 7, the red number can be 1, 2, 3, 4, 5 or 6.
+<li>If the total is 8, the red number can be 2, 3, 4, 5 or 6.
+<li>If the total is 9, the red number can be 3, 4, 5 or 6.
+<li>If the total is 10, the red number can be 4, 5 or 6.
+<li>If the total is 11, the red number can be 5 or 6.
+<li>If the total is 12, the red number must be 6.
+</ul>
+
+<p>
+So what we <em>could</em> do is to take the outcome grid for my
+modified dice, and arbitrarily put these annotations in some order:
+
+<div align="center"><p><pre><code style="line-height: 0;"><img src="tblhead.png" alt="R\C"><img src="tblcol7.png" alt="  7"><img src="tblcol5.png" alt="  5"><img src="tblcol9.png" alt="  9"><img src="tblcol3.png" alt="  3"><img src="tblcol11.png" alt=" 11"><img src="tblcolblank.png" alt=" --">
+<img src="tblrow6.png" alt=" 6 "><img src="tbl7-1d.png" alt="  7(1)"><img src="tbl6-1r.png" alt="  6(1)"><img src="tbl6-2r.png" alt="  6(2)"><img src="tbl6-3r.png" alt="  6(3)"><img src="tbl6-4r.png" alt="  6(4)"><img src="tbl6-5.png" alt="  6(5)">
+<img src="tblrow8.png" alt=" 8 "><img src="tbl7-2d.png" alt="  7(2)"><img src="tbl8-2r.png" alt="  8(2)"><img src="tbl8-3r.png" alt="  8(3)"><img src="tbl8-4r.png" alt="  8(4)"><img src="tbl8-5r.png" alt="  8(5)"><img src="tbl8-6.png" alt="  8(6)">
+<img src="tblrow4.png" alt=" 4 "><img src="tbl7-3d.png" alt="  7(3)"><img src="tbl5-1d.png" alt="  5(1)"><img src="tbl9-3d.png" alt="  9(3)"><img src="tbl4-1r.png" alt="  4(1)"><img src="tbl4-2r.png" alt="  4(2)"><img src="tbl4-3.png" alt="  4(3)">
+<img src="tblrow10.png" alt="10 "><img src="tbl7-4d.png" alt="  7(4)"><img src="tbl5-2d.png" alt="  5(2)"><img src="tbl9-4d.png" alt="  9(4)"><img src="tbl10-4r.png" alt=" 10(4)"><img src="tbl10-5r.png" alt=" 10(5)"><img src="tbl10-6.png" alt=" 10(6)">
+<img src="tblrow2.png" alt=" 2 "><img src="tbl7-5d.png" alt="  7(5)"><img src="tbl5-3d.png" alt="  5(3)"><img src="tbl9-5d.png" alt="  9(5)"><img src="tbl3-1d.png" alt="  3(1)"><img src="tbl11-5d.png" alt=" 11(5)"><img src="tbl2-1.png" alt="  2(1)">
+<img src="tblrow12.png" alt="12 "><img src="tbl7-6.png" alt="  7(6)"><img src="tbl5-4.png" alt="  5(4)"><img src="tbl9-6.png" alt="  9(6)"><img src="tbl3-2.png" alt="  3(2)"><img src="tbl11-6.png" alt=" 11(6)"><img src="tbl12-6.png" alt=" 12(6)">
+</code></pre></div>
+
+<p>
+This works on paper: it generates both the total and the red number,
+with the same distribution as the original 2d6, and removing the 7
+face on the C die still does the right thing. But it's ugly, because
+there's no particular structure to the arrangement of the red numbers
+in the grid, so we're back to needing a lookup table. It would be much
+nicer if we could find some way to arrange the red numbers which made
+it possible to figure out what was going on <em>without</em> a lookup
+table.
+
+<p>
+After some experimentation, I discovered that it all looks much nicer
+if you sort the faces of the dice into numerical order, counting
+"blank" as zero. This makes the totals grid look a lot less obvious:
+
+<div align="center"><p><pre><code style="line-height: 0;"><img src="tblhead.png" alt="R\C"><img src="tblcolblank.png" alt=" --"><img src="tblcol3.png" alt="  3"><img src="tblcol5.png" alt="  5"><img src="tblcol7.png" alt="  7"><img src="tblcol9.png" alt="  9"><img src="tblcol11.png" alt=" 11">
+<img src="tblrow2.png" alt=" 2 "><img src="tbl2.png" alt="  2"><img src="tbl3.png" alt="  3"><img src="tbl5d.png" alt="  5"><img src="tbl7d.png" alt="  7"><img src="tbl9d.png" alt="  9"><img src="tbl11.png" alt=" 11">
+<img src="tblrow4.png" alt=" 4 "><img src="tbl4r.png" alt="  4"><img src="tbl4.png" alt="  4"><img src="tbl5.png" alt="  5"><img src="tbl7d.png" alt="  7"><img src="tbl9.png" alt="  9"><img src="tbl4.png" alt="  4">
+<img src="tblrow6.png" alt=" 6 "><img src="tbl6r.png" alt="  6"><img src="tbl6r.png" alt="  6"><img src="tbl6.png" alt="  6"><img src="tbl7d.png" alt="  7"><img src="tbl6r.png" alt="  6"><img src="tbl6.png" alt="  6">
+<img src="tblrow8.png" alt=" 8 "><img src="tbl8r.png" alt="  8"><img src="tbl8r.png" alt="  8"><img src="tbl8.png" alt="  8"><img src="tbl7d.png" alt="  7"><img src="tbl8r.png" alt="  8"><img src="tbl8.png" alt="  8">
+<img src="tblrow10.png" alt="10 "><img src="tbl10r.png" alt=" 10"><img src="tbl10.png" alt=" 10"><img src="tbl5d.png" alt="  5"><img src="tbl7d.png" alt="  7"><img src="tbl9d.png" alt="  9"><img src="tbl10.png" alt=" 10">
+<img src="tblrow12.png" alt="12 "><img src="tbl12.png" alt=" 12"><img src="tbl3.png" alt="  3"><img src="tbl5.png" alt="  5"><img src="tbl7.png" alt="  7"><img src="tbl9.png" alt="  9"><img src="tbl11.png" alt=" 11">
+</code></pre></div>
+
+<p>
+But it produces an astonishingly simple way to arrange the red
+numbers. In this grid I'm going to show <em>only</em> the red numbers,
+to make it clearer just how simple this is:
+
+<div align="center"><p><pre><code style="line-height: 0;"><img src="tblhead.png" alt="R\C"><img src="tblcolblank.png" alt=" --"><img src="tblcol3.png" alt="  3"><img src="tblcol5.png" alt="  5"><img src="tblcol7.png" alt="  7"><img src="tblcol9.png" alt="  9"><img src="tblcol11.png" alt=" 11">
+<img src="tblrow2.png" alt=" 2 "><img src="tbl1red.png" alt="  1"><img src="tbl2red.png" alt="  2"><img src="tbl3redd.png" alt="  3"><img src="tbl4redd.png" alt="  4"><img src="tbl5redd.png" alt="  5"><img src="tbl6red.png" alt="  6">
+<img src="tblrow4.png" alt=" 4 "><img src="tbl2redr.png" alt="  2"><img src="tbl3red.png" alt="  3"><img src="tbl4red.png" alt="  4"><img src="tbl5redd.png" alt="  5"><img src="tbl6red.png" alt="  6"><img src="tbl1red.png" alt="  1">
+<img src="tblrow6.png" alt=" 6 "><img src="tbl3redr.png" alt="  3"><img src="tbl4redr.png" alt="  4"><img src="tbl5red.png" alt="  5"><img src="tbl6redd.png" alt="  6"><img src="tbl1redr.png" alt="  1"><img src="tbl2red.png" alt="  2">
+<img src="tblrow8.png" alt=" 8 "><img src="tbl4redr.png" alt="  4"><img src="tbl5redr.png" alt="  5"><img src="tbl6red.png" alt="  6"><img src="tbl1redd.png" alt="  1"><img src="tbl2redr.png" alt="  2"><img src="tbl3red.png" alt="  3">
+<img src="tblrow10.png" alt="10 "><img src="tbl5redr.png" alt="  5"><img src="tbl6red.png" alt="  6"><img src="tbl1redd.png" alt="  1"><img src="tbl2redd.png" alt="  2"><img src="tbl3redd.png" alt="  3"><img src="tbl4red.png" alt="  4">
+<img src="tblrow12.png" alt="12 "><img src="tbl6red.png" alt="  6"><img src="tbl1red.png" alt="  1"><img src="tbl2red.png" alt="  2"><img src="tbl3red.png" alt="  3"><img src="tbl4red.png" alt="  4"><img src="tbl5red.png" alt="  5">
+</code></pre></div>
+
+<p>
+I have honestly no idea whatsoever why this is so beautifully
+symmetric. My dice <em>aren't</em> symmetric; I've removed all the
+symmetry between the dice in the course of making my strange
+mechanism work. Yet, for no obvious underlying reason, this
+completely regular arrangement of red numbers <em>just works</em>,
+producing the right set of possibilities for every possible total.
+This was totally unexpected to me, and I still don't really understand
+it. But there it is.
+
+<p>
+So, given this arrangement, it's not too hard to find some extra
+labels to put on the faces of my dice. The simplest thing is to write
+red numbers on the faces of the even die, so that 2, 4, 6, 8, 10 and
+12 are annotated with the numbers 1, 2, 3, 4, 5 and 6 respectively.
+Then we annotate the odd die as follows:
+
+<ul>
+<li>The blank face remains completely blank, indicating that the red
+number on the even die is the correct red number.
+<li>The 3 face is labelled "+1": you add 1 to the red number shown on
+the even die (6 is considered to "wrap round" and go back to 1.)
+<li>The 5 face is labelled "+2": you add 2 to the red number on the
+even die (5 wraps round to 1, 6 wraps round to 2).
+<li>The 11 face is labelled "-1": you subtract 1 (and 1 wraps round to
+6).
+<li>The 9 face is labelled "-2": you subtract 2 (1 goes to 5, 2 goes
+to 6).
+<li>On this basis, the 7 face could be labelled "+3" or "-3", but
+since the only <em>actual</em> requirement is that every possible red
+number should be able to come up when the total is 7, the simplest
+thing is just not to annotate the 7 face at all. This breaks the
+beautiful symmetry of the table, but it's easier when actually rolling
+the dice.
+</ul>
+
+<p>
+So our completed dice now look like this:
+
+<div align="center"><p><pre><code><img src="rhead.png" valign="center" alt="R:">  <img src="face2b.png" valign="center" alt="2&#183;(1)     ">  <img src="face4b.png" valign="center" alt="4&#183;&#183;&#183;(2)   ">  <img src="face6b.png" valign="center" alt="6&#183;&#183;&#183;&#183;&#183;(3) ">  <img src="face8b.png" valign="center" alt="8&#183;&#183;&#183;&#183;&#183;(4) ">  <img src="face10b.png" valign="center" alt="10&#183;&#183;&#183;(5)   ">  <img src="face12b.png" valign="center" alt="12&#183;(6)     ">
+
+<img src="chead.png" valign="center" alt="C:">  <img src="face3b.png" valign="center" alt="3&#183;&#183;(+1)   ">  <img src="face5b.png" valign="center" alt="5&#183;&#183;&#183;&#183;(+2) ">  <img src="face7b.png" valign="center" alt="7&#183;&#183;&#183;&#183;&#183;&#183;   ">  <img src="face9b.png" valign="center" alt="9&#183;&#183;&#183;&#183;(-2) ">  <img src="face11b.png" valign="center" alt="11&#183;&#183;(-1)   ">  <img src="faceblank.png" valign="center" alt="blank&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;">
+</code></pre></div>
+
+<p>
+Now the procedure is: roll both dice. To find the total, choose
+whichever of the two uppermost faces shows more dots. To find the red
+number, take the red number shown on the even (R) die, and modify it
+by the amount shown on the odd (C) die if any. If an addition takes
+you above 6, subtract 6 from the result; if a subtraction takes you
+below 1, add 6.
+
+<p>
+And, once again, removing the 7 face from the odd die produces a pair
+of dice which never roll 7, and this time they generate both totals and
+red numbers, so these could be used for Cities and Knights.
+
+<hr>
+(comments to <a href="mailto:&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;">&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;</a>)
+<br>
+(thanks to
+<a href="http://www.chiark.greenend.org.uk/">chiark</a>
+for hosting this page)
+<br>
+(last modified on <!--LASTMOD-->[insert date here]<!--END-->)
+</body>
+</html>

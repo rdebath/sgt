@@ -1,0 +1,129 @@
+<html>
+<head>
+<title>String Searching by Block Sorting</title>
+</head>
+<link rel="stylesheet" type="text/css" href="../sitestyle.css" name="Simon Tatham's Home Page Style">
+<body>
+<h1 align=center>String Searching by Block Sorting</h1>
+
+<h2><a name="intro">Introduction</a></h2>
+
+<p>
+The simplest algorithm for searching for one string (the "needle")
+in another larger string (the "haystack") looks like this:
+
+<p><pre><code>    for i = 0 to len(haystack)-len(needle):
+        matched = YES
+        for j = 0 to len(needle)-1:
+            if haystack[i+j] != needle[j]:
+                matched = NO
+                break
+            end if
+        end for
+        if matched = YES:
+            return i
+    end for
+    return "not found"</code></pre>
+
+<p>
+This has time complexity <code>O(H*N)</code> (where <code>H</code>
+is the length of the haystack, and <code>N</code> is the length of
+the needle). Of course, you don't <em>usually</em> need to test all
+the characters of the needle for each value of <code>i</code>, but
+it can happen in the worst case (consider searching for the needle
+"<code>aaaaaaaaaaab</code>" in a haystack made of one million
+repetitions of "<code>a</code>").
+
+<p>
+A well-known optimisation is to start by converting the needle into
+a finite state machine. This reduces the cost of the search to
+<code>O(H)</code>, independent of <code>N</code>, at the expense of
+a setup phase that does depend on <code>N</code>. For a single fixed
+needle and a huge amount of haystack text, this is a worthwhile
+tradeoff.
+
+<p>
+On the other hand, what happens if you have a single fixed
+<em>haystack</em> and a large number of different needles you want
+to find?
+
+<h2><a name="algorithm">Algorithm Description</a></h2>
+
+<p>
+Construct the list of all terminal substrings of the haystack. (A
+terminal substring is one which appears at the end of the haystack.
+In other words, a substring you can get by taking characters off the
+beginning.) For example, with the haystack string
+"<code>foobar</code>", the terminal substrings would be
+
+<p><pre><code>    foobar
+    oobar
+    obar
+    bar
+    ar
+    r</code></pre>
+
+<p>
+Now sort this list into order, so we get:
+
+<p><pre><code>    ar
+    bar
+    foobar
+    obar
+    oobar
+    r</code></pre>
+
+<p>
+This concludes the setup phase. Now, when given a needle, we need
+only perform a binary search through this list!
+
+<h2><a name="complexity">Complexity</a></h2>
+
+<p>
+The storage cost of this algorithm is high. The whole haystack must
+be kept in memory (or somewhere reasonably accessible) during the
+setup phase, and in addition to the haystack text itself we also
+need an array of offsets into the text, which is likely to take up 4
+or 8 times as much space as the haystack itself. (We don't need to
+store all the actual terminal substrings; we need only store the
+position within the haystack where each one starts.)
+
+<p>
+The setup phase consists of a sort. Sorting is well known to be
+possible in <code>O(n log n)</code> comparisons, but when the
+comparisons are between strings, the cost of each comparison is
+non-trivial as well. In the absolute worst case (every character in
+the haystack is identical), a comparison would take
+<code>O(H)</code> time, so the setup phase could take <code>O(H^2
+log H)</code> in the worst case. On the other hand, any reasonably
+normal haystack is likely to take not much more than <code>O(H log
+H)</code> to sort.
+
+<p>
+The searching procedure is similar. A binary search takes
+<code>O(log n)</code> comparisons, so in the worst case the search
+can take <code>O(N log H)</code>. Assuming the needle is reasonably
+small, this seems entirely acceptable for the massive gain of not
+having an <code>O(H)</code> term!
+
+<h2><a name="applications">Applications</a></h2>
+
+<p>
+No clear applications immediately spring to mind. Search engines and
+indexing is a related area, and it seems not impossible there might
+be an application there.
+
+<p>
+(<a href="./">back to algorithms index</a>)
+</p>
+
+<hr>
+(comments to <a href="mailto:&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;">&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;</a>)
+<br>
+(thanks to
+<a href="http://www.chiark.greenend.org.uk/">chiark</a>
+for hosting this page)
+<br>
+(last modified on <!--LASTMOD-->[insert date here]<!--END-->)
+</body>
+</html>
