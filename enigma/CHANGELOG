@@ -1,5 +1,5 @@
-Release FIXME
--------------
+Release 1.03
+------------
 
  - Ensure save files are written with perms 0600 (only the saving
    user can read or write them, despite setgid on the enigma
