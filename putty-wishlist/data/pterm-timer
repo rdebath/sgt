@@ -1,0 +1,48 @@
+Summary: pterm should use no CPU if it's not doing anything
+Class: semi-bug
+Priority: medium
+Difficulty: fun
+Content-type: text/plain
+
+pterm currently runs a GTK timer function every 20ms (fifty times a
+second). This timer function takes care of calling term_update() to
+handle actual window updates, calling term_blink() to handle
+blinking cursors etc, and checking whether the child process has
+terminated.
+
+It would be nice if pterm could avoid doing this unless it was
+absolutely necessary. So, alternative ways of doing the same things:
+
+ - to detect stuff in the child process, I'd have to get
+   asynchronous notification of SIGCHLD. I suppose this means having
+   an intra-process pipe in the same way Unix plink does it, so that
+   pty.c's SIGCHLD handler writes a byte to the pipe and the GTK
+   main function calls a function in response.
+
+ - the reason term_update() is called in the timer function is so
+   that it won't happen more than 50 times per second, which means
+   that really fast-scrolling text doesn't slow down pterm the way
+   it does xterm. So it would be a step backwards to move to just
+   calling term_update() after every term_out(). I think a sensible
+   way to fix this might be:
+
+    * Introduce a wrapper function in pterm.c, whose job is to
+      arrange a call to term_update either now or later.
+
+    * The wrapper function will first check how long it's been since
+      the last term_update. If it's been more than 20ms, it will
+      call term_update. If not, it should _schedule_ a GTK timer
+      function which will call term_update at some point 20ms or
+      less in the future. That timer function will then disable
+      itself the first time it runs.
+
+    * Then we call the wrapper function after every term_out().
+
+ - Regular calls to the terminal code are actually necessary if
+   blinking text or blinking cursor are enabled, or if a visual bell
+   is currently active. So I could introduce a spare function in
+   terminal.c which allows the front end to ask the terminal `Do you
+   have any pending events for which I should call you back in
+   future?' The wrapper function described above could call this
+   after term_update, and schedule the timer function _anyway_ if it
+   says yes.
