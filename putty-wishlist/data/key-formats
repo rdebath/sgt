@@ -21,33 +21,6 @@ think if we build the conversion capability into PuTTYgen, there
 will be no need to bloat PuTTY itself with the same code.)
 
 <p>
-In the meantime, other people have written separate programs to
-convert OpenSSH format to PuTTY. These programs read OpenSSH keys by
-using the existing OpenSSL key management library, which means we
-can't conveniently make use of them when we do the same work
-ourselves. However, in case they're useful, they are:
-
-<ul>
-<li>
-The one at
-<a href="http://www.thule.no/~troels/code/pem2putty.c">www.thule.no</a>
-will only write out unencrypted keys, and recommends you immediately
-load the resulting key into PuTTYgen and re-save it with a
-passphrase. It is supplied in C source form only.
-
-<li>
-The one at
-<a href="http://anchor.net.au/openssh2putty.php">anchor.net.au</a>
-will only write out encrypted keys (ones stored with a passphrase),
-though a comment in the code suggests it would be easy to extend to
-deal with unencrypted keys too. A binary is supplied as well as
-source (though of course you should be wary of trusting somebody
-else's binary with your private key - as the web page itself warns
-you!).
-
-</ul>
-
-<p>
-Note that we are not responsible for these programs and cannot
-guarantee their correct functionality or even their trustworthiness.
-You use them at your own risk. Check the source code.
+As of 2002-05-12, PuTTYgen now supports importing of OpenSSH's key
+format. We don't yet support exporting, or ssh.com's format, but we
+plan to.
