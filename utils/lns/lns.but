@@ -128,11 +128,11 @@ create the following symlinks:
 \b \cw{subdir2/subsubdir/file3}, with link text
 \cq{../../subdir/file3}.
 
-\b \cw{subdir3/subsubdir/file4}, with link text \cq{../file4}.
+\b \cw{subdir2/subsubdir/file4}, with link text \cq{../file4}.
 
 Note that in each case \cw{lns} has constructed the \e{shortest}
 relative link it could manage: it did not mindlessly create the
-fourth link with text \cq{../../subdir/file4}.
+fourth link with text \cq{../../subdir2/file4}.
 
 You can specify a target file name instead of a target directory.
 For example, the following command has the same effect as the first
