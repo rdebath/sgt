@@ -12,6 +12,8 @@ Immediate things that need doing:
 
 Longer-term things I'd like:
 
+ - Dump and load mechanism just in case db gets funted.
+
  - TODO tracking
     + TODOs have a start date (they will need doing after that time,
       but aren't required yet)
