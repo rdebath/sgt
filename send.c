@@ -39,11 +39,106 @@ void buffer_cleanup(struct buffer *buf)
     buffer_init(buf);
 }
 
+struct wrap_details {
+    int linelen;
+    int recentws;
+};
+
+void wrap_init(struct wrap_details *wrap)
+{
+    wrap->linelen = 0;
+    wrap->recentws = FALSE;
+}
+
+#define WSP(c) ( (c)==' ' || (c)=='\t' )
+
+/*
+ * This wrap function relies on not receiving two halves of a word
+ * in separate calls. Whitespace can be split, but not words.
+ */
+void append_wrap(struct buffer *buf, struct wrap_details *wrap,
+		 char const *text, int len)
+{
+    char const *p;
+
+    while (len > 0) {
+	/*
+	 * Look forward to find the first non-whitespace. (For
+	 * these purposes, a newline doesn't count as whitespace;
+	 * it's special, and resets the count.)
+	 */
+	p = text;
+	while (p < text+len && (WSP(*p) || *p == '\n')) {
+	    if (*p == '\n')
+		wrap->linelen = 0;
+	    else
+		wrap->linelen++;
+	    if (wrap->linelen == 76) {
+		/*
+		 * The whitespace alone has come to more than we
+		 * can handle! Output a load of it.
+		 */
+		buffer_append(buf, text, p-text);
+		buffer_append(buf, "\n", 1);
+		wrap->linelen = 1;     /* the char we're about to step past */
+		wrap->recentws = TRUE;
+		len -= p-text;
+		text = p;
+	    }
+	    p++;
+	}
+
+	/*
+	 * Output the whitespace.
+	 */
+	if (p > text) {
+	    buffer_append(buf, text, p-text);
+	    len -= p-text;
+	    text = p;
+	    /*
+	     * We have to set recentws to FALSE if the last thing
+	     * we output was a newline. This will be true iff
+	     * linelen==0.
+	     */
+	    wrap->recentws = (wrap->linelen > 0);
+	}
+
+	/*
+	 * Now we have the start of a word. Scan forward to find
+	 * the end of it.
+	 */
+	while (p < text+len && !WSP(*p) && *p != '\n')
+	    p++;
+
+	/*
+	 * So we're trying to fit a word of length (p-text) on the
+	 * current line. If we can't, we need to go back and add a
+	 * fold (newline) _before_ the last whitespace character we
+	 * output.
+	 *
+	 * This is only possible, of course, if we _did_ just
+	 * output some whitespace.
+	 */
+	if (p-text + wrap->linelen > 76 && wrap->recentws) {
+	    char c = buf->text[buf->length - 1];
+	    buf->text[buf->length - 1] = '\n';
+	    buffer_append(buf, &c, 1);
+	    wrap->linelen = 1;
+	}
+	buffer_append(buf, text, p - text);
+	wrap->linelen += p-text;
+	wrap->recentws = FALSE;
+	len -= p-text;
+	text = p;
+    }
+}
+
 struct send_output_ctx {
     charset_state main_instate, instate;
     int default_input_charset, curr_input_charset;
     charset_state outstate;
     int curr_output_charset;
+    struct wrap_details wrap;
     const int *charset_list;
     int ncharsets;
     struct buffer headers, pre2047;
@@ -79,8 +174,13 @@ static void send_output_fn(void *vctx, const char *text, int len,
 	    char *post2047 =
 		rfc2047_encode(ctx->pre2047.text, ctx->pre2047.length,
 			       CS_UTF8, ctx->charset_list, ctx->ncharsets,
-			       TRUE /* FIXME */, 75 /* FIXME */);
-	    buffer_append(&ctx->headers, post2047, strlen(post2047));
+			       TRUE /* FIXME */,
+			       /* Reduce first RFC2047 word to fit on line
+				* with a shortish header. */
+			       ctx->wrap.linelen <= 17 ?
+			       74 - ctx->wrap.linelen : 74);
+	    append_wrap(&ctx->headers, &ctx->wrap,
+			post2047, strlen(post2047));
 	    sfree(post2047);
 	    buffer_cleanup(&ctx->pre2047);
 	}
@@ -103,7 +203,10 @@ static void send_output_fn(void *vctx, const char *text, int len,
 					       lenof(outbuf),
 					       output_charset,
 					       &ctx->outstate, NULL)) > 0) {
-	    buffer_append(buf, outbuf, midret);
+	    if (buf == &ctx->headers)
+		append_wrap(buf, &ctx->wrap, outbuf, midret);
+	    else
+		buffer_append(buf, outbuf, midret);
 	}
     }
 }
@@ -125,6 +228,7 @@ void send(int charset, char *message, int msglen)
     ctx.ncharsets = lenof(charset_list);
     buffer_init(&ctx.headers);
     buffer_init(&ctx.pre2047);
+    wrap_init(&ctx.wrap);
 
     parse_message(message, msglen, send_output_fn, &ctx,
 		  null_info_fn, NULL, charset);

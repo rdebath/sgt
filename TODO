@@ -4,13 +4,6 @@ Mail sending plan of action
 So. I now have code which parses the input message and RFC2047s the
 headers. Things left to do:
 
- - 76-character-per-line limit on any header involving at least one
-   encoded-word.
-    + This is trivial for Subject, but a pest for address headers:
-      it means we have to wrap the _rest_ of the header, and not
-      only at FWS either in case a single _email address_ goes over
-      that limit.
-
  - Correct handling of structured headers.
     + rfc2047_encode() wants to know more than just `is it
       structured' - it wants to distinguish phrases from comments.
