@@ -1,0 +1,72 @@
+\cfg{man-identity}{base64}{1}{2004-08-02}{Simon Tatham}{Simon Tatham}
+\cfg{man-mindepth}{1}
+
+\C{base64-manpage} Man page for \cw{base64}
+
+\H{base64-manpage-name} NAME
+
+\cw{base64} - stand-alone encoder and decoder for base64
+
+\H{base64-manpage-synopsis} SYNOPSIS
+
+\c base64 [ -d ] [ filename ]
+\e bbbbbb   bb     iiiiiiii
+\c base64 -e [ -cwidth ] [ filename ]
+\e bbbbbb bb   bbiiiii     iiiiiiii
+
+\H{base64-manpage-description} DESCRIPTION
+
+\cw{base64} is a command-line utility for encoding and decoding the
+\q{base64} encoding.
+
+This encoding, defined in RFC 2045, is primarily used to encode
+binary attachments in MIME e-mail, but is widely used in many other
+applications as well. For example, the \q{Content-MD5} mail header
+contains a small piece of base64; SSH private keys are generally
+stored as base64-encoded blobs; and so on.
+
+Other utilities, such as \cw{munpack}, exist which will take an
+entire MIME-encoded message, identify the base64-encoded subparts,
+and decode them. However, these utilities will not help you if you
+need to inspect a Content-MD5 header or an SSH private key.
+
+\cw{base64} is a very simple stand-alone encoder and decoder for the
+base64 format \e{alone}. It does not try to understand MIME headers
+or anything other than raw data.
+
+\H{base64-manpage-options} OPTIONS
+
+By default (if neither \cw{-d} or \cw{-e} is supplied), \cw{base64}
+operates in decode mode.
+
+\dt \cw{-d}
+
+\dd Places \cw{base64} into decode mode. In this mode, it will read
+from standard input or the supplied file name, ignore all characters
+that are not part of the base64 alphabet, decode the ones that are,
+and output the decoded data on standard output.
+
+\dt \cw{-e}
+
+\dd Places \cw{base64} into encode mode. In this mode, it will read
+binary data from standard input or the supplied file name, encode it
+as base64, and output the encoded data on standard output.
+
+\dt \cw{-c}\e{width}
+
+\dd If \cw{base64} is operating in encode mode, this controls the
+number of base64 characters output per line of the encoded file.
+Normally base64-reading applications do not care about this, so the
+default of 64 characters per line is perfectly adequate.
+
+\lcont{
+
+The special value 0 will prevent \cw{base64} from ever writing a
+line break in the middle of the data at all.
+
+The base64 encoding converts between a group of three plaintext
+bytes and a group of four encoded bytes. \cw{base64} does not
+support breaking an encoded group across a line. Therefore, the
+\e{width} parameter passed to \cw{-c} must be a multiple of 4.
+
+}

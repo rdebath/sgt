@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <errno.h>
+#include <string.h>
 
 #define isbase64(c) (    ((c) >= 'A' && (c) <= 'Z') || \
                          ((c) >= 'a' && (c) <= 'z') || \
@@ -93,11 +95,11 @@ void usage(void) {
 }
 
 void version(void) {
-#define CVS_REV "$Revision: 1.3 $"
-    char rev[sizeof(CVS_REV)];
+#define SVN_REV "$Revision$"
+    char rev[sizeof(SVN_REV)];
     char *p, *q;
 
-    strcpy(rev, CVS_REV);
+    strcpy(rev, SVN_REV);
 
     for (p = rev; *p && *p != ':'; p++);
     if (*p) {
@@ -105,7 +107,7 @@ void version(void) {
         while (*p && isspace(*p)) p++;
         for (q = p; *q && *q != '$'; q++);
         if (*q) *q = '\0';
-        printf("base64 version %s\n", p);
+        printf("base64 revision %s\n", p);
     } else {
         printf("base64: unknown version\n");
     }
@@ -121,7 +123,7 @@ int main(int ac, char **av) {
     fname = NULL;
 
     while (--ac) {
-        char *p = *++av;
+        char *v, *p = *++av;
         if (*p == '-') {
             while (*p) {
                 char c = *++p;
@@ -153,18 +155,35 @@ int main(int ac, char **av) {
                     encoding = 1;
                     break;
                   case 'c':
-                    cpl = strtol(p+1, &eptr, 10);
-                    if (eptr && *eptr) {
-                        fprintf(stderr, "base64: option -c expects"
-                                " a numeric argument\n");
-                        exit(0);
-                    }
-                    if (cpl % 4) {
-                        fprintf(stderr, "base64: chars per line should be"
-                                " divisible by 4\n");
-                        exit(0);
-                    }
-                    p = "";
+		    /*
+		     * Options requiring values.
+		     */
+		    v = p+1;
+		    if (!*v && ac > 1) {
+			--ac;
+			v = *++av;
+		    }
+		    if (!*v) {
+                        fprintf(stderr, "base64: option '-%c' expects"
+                                " an argument\n", c);
+			exit(1);
+		    }
+		    switch (c) {
+		      case 'c':
+			cpl = strtol(v, &eptr, 10);
+			if (eptr && *eptr) {
+			    fprintf(stderr, "base64: option -c expects"
+				    " a numeric argument\n");
+			    exit(1);
+			}
+			if (cpl % 4) {
+			    fprintf(stderr, "base64: chars per line should be"
+				    " divisible by 4\n");
+			    exit(1);
+			}
+			break;
+		    }
+		    p = "";
                     break;
                 }
             }
@@ -178,9 +197,14 @@ int main(int ac, char **av) {
         }
     }
 
-    if (fname)
+    if (fname) {
         fp = fopen(fname, encoding ? "rb" : "r");
-    else
+	if (!fp) {
+	    fprintf(stderr, "base64: unable to open '%s': %s\n", fname,
+		    strerror(errno));
+	    exit(1);
+	}
+    } else
         fp = stdin;
 
     if (encoding) {
@@ -191,7 +215,7 @@ int main(int ac, char **av) {
 
         column = 0;
         while (1) {
-            if (column >= cpl) {
+            if (cpl && column >= cpl) {
                 putchar('\n');
                 column = 0;
             }
@@ -234,4 +258,6 @@ int main(int ac, char **av) {
 
     if (fname)
         fclose(fp);
+
+    return 0;
 }
