@@ -1,14 +1,6 @@
 Caltrap wish list
 -----------------
 
-Urgent:
-
- - TERMINAL TYPE QUERYING!
-    + Stop assuming ECMA-48; figure out some plausibly sane way to
-      get terminfo to tell us the colour escape sequences we need.
-
-Less urgent:
-
  - Ability to enter holiday entries other than by db frobbing.
 
  - Ability to enter repeated events other than by db frobbing.
