@@ -1,0 +1,11 @@
+Summary: Context menu on Ctrl+right-click
+Class: wish
+Priority: low
+Difficulty: fun
+Fixed-in: 2003-11-20
+
+In Windows PuTTY, a context menu which appears when holding down Ctrl
+and right-clicking on the PuTTY window, like in xterm/pterm.
+
+Contains all the System menu options (except move/resize/etc), and
+`Paste'.
