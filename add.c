@@ -28,13 +28,25 @@ int caltrap_add(int nargs, char **args, int nphysargs)
 	t = NO_TIME;
 
     if (isatty(fileno(stdin))) {
-	printf("Enter message, on a single line:\n> ");
+	char *dfmt, *tfmt;
+	dfmt = format_date_full(d);
+	tfmt = format_time(t);
+	printf("New entry will be placed at %s %s\n", dfmt, tfmt);
+	sfree(dfmt);
+	sfree(tfmt);
+	printf("Existing entries in the surrounding week:\n");
+	list_entries(d - 3, d + 4);
+	printf("Now enter message, on a single line,\n"
+	       "or just press Return to cancel the operation.\n"
+	       "> ");
 	fflush(stdout);
     }
 
     if (!fgets(msg, sizeof(msg), stdin))
 	return;
     msg[strcspn(msg, "\r\n")] = '\0';
+    if (!msg[0])
+	return;
 
     db_add_entry(d, t, msg);
 }

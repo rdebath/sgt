@@ -37,11 +37,18 @@ static void list_callback(void *vctx, Date d, Time t, char *msg)
     ctx->last = d;
 }
 
+int list_entries(Date sd, Date ed)
+{
+    struct list_ctx ctx;
+    ctx.last = sd - 1;
+    db_list_entries(sd, ed, list_callback, &ctx);
+    list_upto(&ctx, ed);
+}
+
 int caltrap_list(int nargs, char **args, int nphysargs)
 {
     Date sd, ed;
     Time t;
-    struct list_ctx ctx;
 
     if (nargs > 2)
 	fatal(err_addargno);
@@ -67,7 +74,5 @@ int caltrap_list(int nargs, char **args, int nphysargs)
 	}
     }
 
-    ctx.last = sd - 1;
-    db_list_entries(sd, ed, list_callback, &ctx);
-    list_upto(&ctx, ed);
+    list_entries(sd, ed);
 }

@@ -79,6 +79,7 @@ int caltrap_add(int nargs, char **args, int nphysargs);
 /*
  * list.c
  */
+int list_entries(Date sd, Date ed);
 int caltrap_list(int nargs, char **args, int nphysargs);
 
 /*
