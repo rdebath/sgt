@@ -1,0 +1,21 @@
+Summary: Bubble-babble encoding for host keys
+Class: wish
+Difficulty: fun
+Priority: low
+Content-type: text/x-html-body
+
+<p>
+Perhaps we should display the "bubble-babble" encoding for host key
+fingerprints, as well as the hexadecimal one, since several other
+implementations support it.
+
+<p>
+Bubble-babble is specified in an expired Internet-Draft
+(draft-huima-babble-01), archived on the IETF SECSH
+<a href="ftp://ftp.ietf.org/ietf-mail-archive/secsh/2001-08.mail">mailing list</a>.
+There are various implementations around, such as
+<a href="http://search.cpan.org/~btrott/Digest-BubbleBabble-0.01/BubbleBabble.pm">Digest::BubbleBabble.pm</a>.
+
+<p>
+Should we display both formats always, or let it be configurable? If
+the latter, per-session, or global?
