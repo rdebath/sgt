@@ -1,0 +1,26 @@
+Summary: Keyboard-interactive authentication only permits one try
+Class: bug
+Difficulty: fun
+Priority: high
+Present-in: 0.56
+Fixed-in: 2005-01-07
+Content-type: text/x-html-body
+
+<p>
+It's been observed that SSH-2 "keyboard-interactive" authentication in
+PuTTY only permits one attempt at authentication before falling back
+to other forms of authentication, such as password-based. If no other
+methods are supported by the server, PuTTY will bomb out with the
+message "No supported authentication methods left to try!".
+
+<p>
+This has been exacerbated recently as several distributions are
+configuring OpenSSH to use k-i for even basic password authentication
+these days, and not enabling PasswordAuthentication at all by default.
+
+<p>
+As of 2005-01-07, PuTTY will continue to attempt keyboard-interactive
+authentication as long as the server continues to offer it, in
+preference to password authentication, unless the server refuses it
+outright. (If this is a problem for you, you can disable attempts to
+use keyboard-interactive entirely on the "Auth" panel.)
