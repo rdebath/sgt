@@ -148,6 +148,8 @@ verbose = 0
 config = os.environ["HOME"] + "/.iwho"
 server = None
 channels = []
+usernames = []
+usermode = 0
 i = 1
 while i < len(sys.argv):
     arg = sys.argv[i]
@@ -167,12 +169,19 @@ while i < len(sys.argv):
 		i = i + 1
 	    else:
 		print "iwho: option \"-f\" requires an argument"
+	elif arg == "-u":
+	    usermode = 1
+	elif arg == "-c":
+	    usermode = 0
 	else:
 	    print "iwho: unknown option \"" + i + "\""
     else:
-	if arg[0] != "#":
+	if arg[0:1] != "#" and not usermode:
 	    arg = "#" + arg
-	channels.append(arg)
+	if arg[0:1] == "#":
+	    channels.append(arg)
+	else:
+	    usernames.append(arg)
 
 f = open(config, "r")
 cfg = {}
@@ -195,7 +204,7 @@ if server == None and cfg.has_key("server"):
 if server == None:
     print "iwho: no server specified; use \"-s servername:port\""
 
-if len(channels) == 0:
+if len(channels) == 0 and len(usernames) == 0:
     print "usage: iwho [-v] channel [channel...]"
     print "       (channels need not have a leading #)"
     sys.exit(0)
@@ -264,6 +273,10 @@ while 1:
     else:
 	break
 
+for i in usernames:
+    whois[i] = 1
+    nicks[i] = [None, None, None, -1, -1]
+
 whoissent = 0
 for i in whois.keys():
     send("WHOIS " + i + " " + i + "\r\n")
@@ -277,11 +290,34 @@ while 1:
 	code, params = breakup(d)
 	if code == "318":
 	    whoisgot = whoisgot + 1
+	if code == "319":
+	    nick, chans = words(1, params)
+	    if chans[0:1] == ":":
+		chans = chans[1:]
+	    for chan in string.split(chans):
+		if (chan in channels) and not (nick in users[chan]):
+		    users[chan].append(nick)
 	elif code == "317":
 	    nick, idle, connect, rest = words(3, params)
 	    nicks[nick][3] = string.atoi(idle)
 	    if connect[0] in string.digits:
 		nicks[nick][4] = string.atoi(connect)
+	elif code == "311":
+	    nick, user, host, asterisk, name = words(4, params)
+	    if name[0:1] == ":":
+		name = name[1:]
+	    nicks[nick][0] = user
+	    nicks[nick][1] = host
+	    nicks[nick][2] = name
+	elif code == "401" or code == "402":
+	    # User not found.
+	    whoisgot = whoisgot + 1
+	    nick, rest = words(1, params)
+	    nicks[nick][0] = "<nobody>"
+	    nicks[nick][1] = "<nowhere>"
+	    nicks[nick][2] = "<absent>"
+	    nicks[nick][3] = -1
+	    nicks[nick][4] = -1
     if whoisgot < whoissent and not done:
 	send("")
     else:
@@ -297,5 +333,11 @@ for chan in channels:
     u.sort(strcompare)
     print chan + ":"
     for nick in u:
+	n = nicks[nick]
+	print fmtnick(nick, n)
+
+if len(usernames) > 0:
+    print "Users specified on command line:"
+    for nick in usernames:
 	n = nicks[nick]
 	print fmtnick(nick, n)
