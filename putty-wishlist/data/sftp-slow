@@ -2,6 +2,7 @@ Summary: PSFTP transfers files much slower than PSCP.
 Difficulty: taxing
 Priority: low
 Class: semi-bug
+Content-Type: text/x-html-body
 
 <p>
 We believe this is because the SFTP and SSH2 protocols are less efficient at
