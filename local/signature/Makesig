@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 
 $debug = 0;
 $debug = 1, shift @ARGV if $ARGV[0] eq "-d";
