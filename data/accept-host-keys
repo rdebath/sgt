@@ -19,3 +19,9 @@ That way you still get the convenience, but without losing the
 security. We will <em>not</em> accept a command line option to turn
 off host key checking, no matter how many people have already done
 the work and send us polished production-quality patches.
+
+<p>
+If you have host keys available in the common `known_hosts' format, we
+have <a href="http://cvs.tartarus.org/putty/contrib/kh2reg.py">a script</a>
+to convert them to a Windows .REG file which can be installed ahead of
+time by double-clicking.
