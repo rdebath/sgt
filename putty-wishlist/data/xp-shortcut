@@ -1,0 +1,23 @@
+Summary: Trouble creating PuTTY shortcuts in WinXP
+Class: wish
+Priority: low
+Content-type: text/x-html-body
+
+<p>
+Many people have reported that bad things happen to @ signs in
+shortcut (.LNK) files under Windows XP. No-one has been able to find a
+way of quoting them yet. This makes use of shortcuts with PuTTY
+problematic.
+
+<p>
+This obviously isn't a bug in PuTTY per se, but it might be nice if we
+could characterise the problem, and publish a workaround in the FAQ
+(possibly by extending PuTTY's command-line syntax).
+
+<p>
+Examples of reports received so far:
+<ul>
+<li><tt>NDBBKAOEAFAMLKEAFJIOOEHNGDAA.guy@SiliconStrat.com</tt>
+<li><tt>5.1.0.14.0.20020615214407.023a33a0@amusive.com</tt>
+<li><tt>000501c2263d$190195b0$0200a8c0@quadzone.net</tt>
+</ul>
