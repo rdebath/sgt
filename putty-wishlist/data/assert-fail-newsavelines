@@ -1,0 +1,26 @@
+Summary: Failed assertion: count234(term->scrollback) <= newsavelines
+Class: bug
+Present-in: 0.55
+
+<p>
+We've had occasional reports of the failure of the following assertion:
+
+<p>terminal.c:559 (0.55)
+<br>count234(term-&gt;scrollback) &lt;= newsavelines
+
+<p>
+All the reports we've had seem to also include a CPU-intensive delay at
+connection startup (possibly at other times too).
+
+<p>
+We've not been able to reproduce this ourselves.
+
+<ul>
+
+<li><tt>OFA8A74C15.A4B5BE13-ON65256EF4.00210ED6-80256EF4.003C2FE1@in.ibm.com</tt>
+<br>Telnet
+
+<li><tt>2872.66.167.58.15.1094144958.squirrel@66.167.58.15</tt>
+<br>0.55, "09-02-2004"; SSH
+
+</ul>
