@@ -196,11 +196,18 @@ static const int actions[4+10] = {
     -1, -1
 };
 
-static const int keys[] = {
-    SDLK_z, SDLK_a,
-    SDLK_x, SDLK_s,
-    SDLK_SLASH, SDLK_RETURN, SDLK_QUOTE, SDLK_HASH,
-    SDLK_LSHIFT, SDLK_SPACE
+static const struct { int key, action; } keys[] = {
+    {SDLK_z, ACT_LEFT},
+    {SDLK_a, ACT_FASTLEFT},
+    {SDLK_x, ACT_RIGHT},
+    {SDLK_s, ACT_FASTRIGHT},
+    {SDLK_SLASH, ACT_SOFTDROP},
+    {SDLK_RETURN, ACT_REFLECT},
+    {SDLK_QUOTE, ACT_ANTICLOCK},
+    {SDLK_HASH, ACT_CLOCKWISE},
+    {SDLK_LSHIFT, ACT_HOLD},
+    {SDLK_TAB, ACT_HOLD},
+    {SDLK_SPACE, ACT_HARDDROP},
 };
 
 static void do_score(int y, char *title, int score, int evenifzero)
@@ -343,26 +350,26 @@ static void play_game(void)
 		hold = 1;
 
 	    for (j = 0; j < lenof(keys); j++) {
-		if (keys[j] < 0 || keys[j] > lenof(keystate))
+		if (keys[j].key < 0 || keys[j].key > lenof(keystate))
 		    continue;
-		if (!keystate[keys[j]] ||
-		    (prevkeystate[keys[j]] && !repeating_action(j)))
+		if (!keystate[keys[j].key] ||
+		    (prevkeystate[keys[j].key] && !repeating_action(keys[j].action)))
 		    continue;
-		if (j == ACT_LEFT || j == ACT_FASTLEFT)
+		if (keys[j].action == ACT_LEFT || keys[j].action == ACT_FASTLEFT)
 		    left = 1;
-		if (j == ACT_RIGHT || j == ACT_FASTRIGHT)
+		if (keys[j].action == ACT_RIGHT || keys[j].action == ACT_FASTRIGHT)
 		    right = 1;
-		if (j == ACT_CLOCKWISE)
+		if (keys[j].action == ACT_CLOCKWISE)
 		    clockwise = 1;
-		if (j == ACT_ANTICLOCK)
+		if (keys[j].action == ACT_ANTICLOCK)
 		    anticlock = 1;
-		if (j == ACT_REFLECT)
+		if (keys[j].action == ACT_REFLECT)
 		    reflect = 1;
-		if (j == ACT_SOFTDROP)
+		if (keys[j].action == ACT_SOFTDROP)
 		    dropsoft = 1;
-		if (j == ACT_HARDDROP)
+		if (keys[j].action == ACT_HARDDROP)
 		    drophard = 1;
-		if (j == ACT_HOLD)
+		if (keys[j].action == ACT_HOLD)
 		    hold = 1;
 	    }
 	    memcpy(prevkeystate, keystate, sizeof(prevkeystate));
