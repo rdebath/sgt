@@ -1,0 +1,26 @@
+Summary: Cipher "des-cbc" is less non-standard than PuTTY claims
+Class: bug
+Priority: low
+Difficulty: fun
+Present-in: 2003-02-11
+Content-type: text/x-html-body
+
+<p>According to
+<a href="http://www.ietf.org/internet-drafts/draft-ietf-secsh-assignednumbers-01.txt">
+draft-ietf-secsh-assignednumbers-01.txt</a>, "des-cbc" is one of the
+assigned cipher names for SSH2.  PuTTY currently describes it (in the
+configuration box, the documentation, and comments in sshdes.c) as
+non-standard.
+
+<p>
+<a href="http://www.ietf.org/internet-drafts/draft-ietf-secsh-assignednumbers-01.txt">
+draft-ietf-secsh-assignednumbers-01.txt</a> is, however, incorrect in
+this area, since it claims:
+<blockquote>
+   This document defines the initial state of the IANA assigned numbers
+   for the SSH protocol as defined in [SSH-ARCH], [SSH-TRANS], [SSH-CONNECT],
+   [SSH-USERAUTH].  This document does not define any new
+   protocols or any number ranges not already defined in the above
+   referenced documents.
+</blockquote>
+<p>"des-cbc" is not defined in any of those referenced documents.
