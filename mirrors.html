@@ -329,8 +329,11 @@ it will only work as designed if your web server is Apache: the site
 contains a <code>.htaccess</code> file which handles a couple of
 non-obvious MIME types and deals with making the virtual
 subdirectory "<code>latest</code>" redirect to the current latest
-release. If you do not use Apache, you will have to reproduce this
-behaviour in some other way suitable for your own web server.
+release. You may need to configure Apache to honour the
+<code>.htaccess</code> file with a directive such as
+<code>AllowOverride</code>. If you do not use Apache, you will have to
+reproduce this behaviour in some other way suitable for your own web
+server.
 
 <p>
 (We prefer that the "<code>latest</code>" redirect be handled as an
