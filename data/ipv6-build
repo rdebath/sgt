@@ -2,6 +2,7 @@ Summary: We should provide IPv6-enabled binaries.
 Class: wish
 Priority: medium
 Difficulty: taxing
+Fixed-in: 2004-12-31
 Content-type: text/x-html-body
 
 <p>
@@ -17,3 +18,9 @@ In the meantime,
 <a href="http://unfix.org/projects/ipv6/">unfix.org</a> makes
 available some binaries compiled with -DIPV6. But note that we haven't
 personally checked them, and can't vouch for their trustworthiness.
+
+<p>
+<b>SGT, 2004-12-30</b>: Now that a kind and helpful user has donated
+a more up-to-date compiler with up-to-date headers, I have
+integrated unfix.org's latest patch, polished it a bit, and enabled
+it by default in the nightly builds.
