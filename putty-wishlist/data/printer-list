@@ -1,0 +1,13 @@
+Summary: Printer list not working properly
+Class: bug
+Difficulty: taxing
+Content-type: text/x-html-body
+Absent-in: 0.52
+Present-in: 2002-05-09
+
+<p>
+The magic we use to get a drop-down list of printers for our raw ANSI
+printing support doesn't work too well on all systems. You can still
+type a printer name into the combo box and expect it to work. We've
+received various suggested fixes, but we haven't understood / tested
+them thoroughly yet.
