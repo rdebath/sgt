@@ -16,3 +16,22 @@ WM_CHAR WM_KEYUP rather than the usual WM_KEYDOWN WM_KEYUP; it's the
 extra WM_CHAR that's the problem, but I don't know where it's coming
 from.  Is something in the config box doing TranslateMessage() behind
 our backs?
+
+OSD: The implicit message loop in DialogBox is doing
+TranslateMessage() (windlg.c, line 647).  We need to change it to use
+CreateDialog and then have our own non-translating message loop:
+
+    MSG msg;
+    HWND boxhwnd;
+
+    boxhwnd =
+    CreateDialog(hinst, MAKEINTRESOURCE(IDD_MAINBOX), NULL,
+			  GenericMainDlgProc);
+
+    while (IsWindow(boxhwnd) && GetMessage(&msg, NULL, 0, 0)) {
+    if (!IsDialogMessage(boxhwnd, &msg))
+        DispatchMessage(&msg);
+    }
+
+This fixes the double characters, but doesn't correctly get rid of the
+dialogue box because EndDialog() only works with DialogBox().  Bah.
