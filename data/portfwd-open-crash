@@ -2,6 +2,7 @@ Summary: Crashes with heavy open/close activity in port-forwarding
 Content-type: text/x-html-body
 Class: bug
 Present-in: 0.52 2002-06-06
+Priority: high
 
 <p>
 Apparently, if working in a terminal session at the moment a
@@ -26,4 +27,6 @@ Individual reports (first is 2002 May 4):
   (contains an SSH packet log)
 <li><tt>Pine.LNX.4.44.0206071159080.15544-100000@stum.gink.org</tt>
 <li><tt>000701c1f3cd$b0b87b50$070ca8c0@FITZLT</tt>
+<li><tt>Pine.LNX.4.40.0206120938460.10271-100000@squishy.ameth.org</tt>
+  (contains full event log)
 </ul>
