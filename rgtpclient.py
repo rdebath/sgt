@@ -473,7 +473,7 @@ class RGTPConnection:
 	    if s2[0:3] != "220":
 		FIXME()
 	    if seqfn != None:
-		seqfn(string.atol(s[4:12], 16))
+		seqfn(string.atol(s2[4:12], 16))
 	    return "ok"
 	elif s[0:3] == "122":
 	    s2 = self._getline()
