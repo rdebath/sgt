@@ -14,6 +14,7 @@ firstface = None
 facelabels = 0
 cmpsign = +1
 picfile = None
+adjpairs = {}
 while len(args) > 0 and args[0][:1] == "-":
     a = args[0]
     args = args[1:]
@@ -45,6 +46,20 @@ while len(args) > 0 and args[0][:1] == "-":
         # projection of the original spherical image (e.g. an
         # icosahedral globe).
         picfile = a[2:]
+    elif a[:2] == "-a":
+        # Undocumented option which attempts to force a pair of
+        # faces to be placed adjacent to one another in the net.
+        # Expects two face names separated by a colon.
+        s = a[2:]
+        comma = string.find(s, ",")
+        if comma <= 0 or comma == len(s)-1:
+            sys.stderr.write("-a option expects two face names separated"+\
+            " by a comma\n")
+        else:
+            f1 = s[:comma]
+            f2 = s[comma+1:]
+            adjpairs[f1] = adjpairs.get(f1, ()) + (f2,)
+            adjpairs[f2] = adjpairs.get(f2, ()) + (f1,)
     else:
 	sys.stderr.write("ignoring unknown option \"%s\"\n", a)
 
@@ -426,17 +441,46 @@ while 1:
     # Select one out of the remainder, and go back round the loop.
     # Simplest thing here is to pick the one with the smallest
     # |pos|, to encourage the net to be roughly circular in shape.
-    mindist2 = None
+    #
+    # We also process the adjpairs data here. We tag each possible
+    # placement (which itself is a pair of adjacent faces) as Yes,
+    # No or Maybe. `Yes' means this face pair is explicitly listed
+    # in adjpairs; `No' means this face pair _rules out_ one in
+    # adjpairs (i.e. that there is a face already placed which the
+    # user wants this one placed next to); `Maybe' means neither of
+    # these things is the case. Then we place a Yes pair if
+    # possible, a Maybe pair failing that, and if we really have
+    # nothing but No pairs left to place then we place a No pair
+    # and give a warning.
+    bestscore = None
     best = None
     for n, p in nextface:
+        brokenrule = None
+        if p in adjpairs.get(n, ()):
+            status = 2 # YES
+        else:
+            # Go through all the faces which n is requested to be
+            # next to. If any is already placed (and isn't p, but
+            # the above test has ruled that out already), our
+            # status is No, otherwise it's Maybe.
+            status = 1 # MAYBE
+            for ff in adjpairs.get(n, ()):
+                if facepos.has_key(ff):
+                    status = 0 # NO
+                    brokenrule = (n, ff)
+                    break
 	placement = facepos[p].adjacent[n]
 	dist2 = placement.pos[0] ** 2 + placement.pos[1] ** 2
-	if mindist2 == None or dist2 * cmpsign < mindist2 * cmpsign:
-	    mindist2 = dist2
+        score = (status, dist2 * -cmpsign, brokenrule)
+	if bestscore == None or score > bestscore:
+            bestscore = score
 	    best = n, p
     if best == None:
 	#debug("run out of faces to place")
 	break
+    if bestscore[2] != None:
+        debug("!!! unable to place faces", bestscore[2][0], "and", \
+        bestscore[2][1], "adjacent");
     n, p = best
     facepos[n] = facepos[p].adjacent[n]
     f = n
