@@ -2,6 +2,7 @@ Summary: Bug compatibility modes accidentally triggered for VShell.
 Class: bug
 Priority: medium
 Difficulty: fun
+Fixed-in: 2003-05-25
 Content-type: text/x-html-body
 
 <p>
@@ -25,3 +26,7 @@ A better solution would be to use the wildcard engine we already
 have for PS*P internally to match version strings. (This depends on
 our being able to reconstruct exactly which version strings we should
 be matching, of course!)
+
+<p>
+<em>Update:</em> an exception has been added to the bug compatibility
+modes for VShell, although I haven't tested it.
