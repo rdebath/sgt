@@ -652,9 +652,9 @@ void ab_display_attr_history (const char *contact_id,
     assert (3 == cols);
 
     for (row = 1; row <= rows; ++row) {
-	printf ("%d:", cid);
-	printf ("%s:", table[row * cols]);
-	printf (table[1 + row * cols] ? "%s:" : ":", table[1 + row * cols]);
+	printf ("%d;", cid);
+	printf ("%s;", table[row * cols]);
+	printf (table[1 + row * cols] ? "%s;" : ";", table[1 + row * cols]);
 	printf ("%s\n", table[2 + row * cols]);
     }
     sqlite_free_table(table);
