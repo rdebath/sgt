@@ -1,7 +1,11 @@
-all: interfaces.html interfaces.txt smell.html aliases.html aliases.txt
+all: interfaces.html interfaces.txt smell.html aliases.html aliases.txt \
+     svn.html
 
 smell.html: smell.but
 	$(HOME)/src/halibut/build/halibut --html=smell.html smell.but
+
+svn.html: svn.but
+	$(HOME)/src/halibut/build/halibut --html=svn.html svn.but
 
 interfaces.html interfaces.txt: interfaces.but
 	$(HOME)/src/halibut/build/halibut --html=interfaces.html \
