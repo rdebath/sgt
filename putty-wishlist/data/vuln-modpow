@@ -82,5 +82,6 @@ and documented in their advisory
 <a href="http://www.coresecurity.com/common/showdoc.php?idx=417&idxseccion=10">CORE-2004-0705</a>.
 It is also mentioned in an advisory by Secunia, numbered
 <a href="http://secunia.com/advisories/12212/">SA12212</a>,
-and has been assigned
-<a href="http://www.osvdb.org/8299">OSVDB ID 8299</a>.
+and has been assigned CVE ID
+<a href="http://cve.mitre.org/cgi-bin/cvename.cgi?name=CAN-2004-1440">CAN-2004-1440</a>
+and <a href="http://www.osvdb.org/8299">OSVDB ID 8299</a>.
