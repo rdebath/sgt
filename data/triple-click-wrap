@@ -1,0 +1,25 @@
+Summary: Perhaps triple-click select should take account of wrapped lines
+Class: wish
+Difficulty: fun
+Priority: low
+
+> But: while copying a word (double clicking) just at the wrapping edge
+> really selects the complete wrapped word, copying a whole line (triple
+> clicking) only selects a screen line and omits the part wrapped to next
+> screen line ...
+
+Hmm. I'd call that a semi-bug at worst -- I don't think there's any
+pressing need for the triple-click selection to be a superset of the
+double-click selection. (When I ask for full lines that's what I want,
+so I wouldn't want the end of a wrapped word tacked on -- not that you
+were suggesting that.)
+
+However, the closest we have to a spec is xterm, and the xterm I
+have[1] will select multiple lines at once when wrapped, preserving
+the superset property. (I.e., if I have something wrapped over three
+physical lines, the triple-click mode will select either all three
+lines, or none of them.)
+
+Personally I'm not sure I have a strong opinion either way.
+
+    [1] RH XFree86 4.0.3-5, from Red Hat Linux 7.1
