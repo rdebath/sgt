@@ -75,7 +75,7 @@ static int spot_encoded_word(const char *text, int length)
  * encoded-word is output using the provided default charset.
  */
 void rfc2047(const char *text, int length, parser_output_fn_t output,
-	     int structured, int default_charset)
+	     void *outctx, int structured, int default_charset)
 {
     while (length > 0) {
 	const char *startpoint = text;
@@ -127,7 +127,7 @@ void rfc2047(const char *text, int length, parser_output_fn_t output,
 	    }
 
 	    if (tlen > 0)
-		output(wbuf2, tlen, TYPE_HEADER_TEXT, charset);
+		output(outctx, wbuf2, tlen, TYPE_HEADER_TEXT, charset);
 	    if (wbuf2)
 		sfree(wbuf2);
 
@@ -167,28 +167,31 @@ void rfc2047(const char *text, int length, parser_output_fn_t output,
 	    spot_encoded_word(text, length))
 	    /* do not output anything */;
 	else if (text - startpoint > 0)
-	    output(startpoint, text-startpoint, TYPE_HEADER_TEXT,
+	    output(outctx, startpoint, text-startpoint, TYPE_HEADER_TEXT,
 		   default_charset);
     }
 }
 
 #ifdef TESTMODE
 
+#include <stdio.h>
+
 /*
-gcc -g -DTESTMODE -Icharset -o rfc2047{,.c} \
+gcc -Wall -g -DTESTMODE -Icharset -o rfc2047{,.c} \
     build/{base64,qp,cs-mimeenc,malloc}.o
  */
 
 void fatal(int code, ...) { abort(); }
 
-void test_output_fn(const char *text, int len, int type, int charset)
+void test_output_fn(void *outctx, const char *text, int len,
+		    int type, int charset)
 {
     printf("%d (%d) <%.*s>\n", type, charset, len, text);
 }
 
 #define TEST(s) do { \
     printf("Testing >%s<\n", s); \
-    rfc2047(s, sizeof(s)-1, test_output_fn, TRUE, CS_ASCII); \
+    rfc2047(s, sizeof(s)-1, test_output_fn, NULL, TRUE, CS_ASCII); \
 } while (0)
 
 int main(void)
@@ -208,6 +211,8 @@ int main(void)
     TEST("=?ISO-8859-1?Q?a?=\n    =?ISO-8859-1?Q?b?=");
     TEST("=?ISO-8859-1?Q?a_b?=");
     TEST("=?ISO-8859-1?Q?a?= =?ISO-8859-2?Q?_b?=");
+
+    return 0;
 }
 
 #endif

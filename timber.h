@@ -111,23 +111,26 @@ int qp_decode(const char *input, int length, char *output, int rfc2047);
 /*
  * rfc822.c
  */
-typedef void (*parser_output_fn_t)(const char *text, int len,
+typedef void (*parser_output_fn_t)(void *ctx, const char *text, int len,
 				   int type, int charset);
 enum {				       /* values for above `type' argument */
     TYPE_HEADER_NAME,
     TYPE_HEADER_TEXT,
     TYPE_BODY_TEXT
 };
-typedef void (*parser_info_fn_t)(int type, const char *text, int len);
+typedef void (*parser_info_fn_t)(void *ctx, int type,
+				 const char *text, int len);
 enum {				       /* values for above `type' argument */
     TYPE_SUBJECT,
     TYPE_FROM_ADDR,
     /* FIXME: fill in the rest of these... */
 };
-void null_output_fn(const char *text, int len, int type, int charset);
-void null_info_fn(int type, const char *text, int len);
+void null_output_fn(void *ctx, const char *text, int len,
+		    int type, int charset);
+void null_info_fn(void *ctx, int type, const char *text, int len);
 void parse_message(const char *message, int msglen,
-		   parser_output_fn_t output, parser_info_fn_t info);
+		   parser_output_fn_t output, void *outctx,
+		   parser_info_fn_t info, void *infoctx);
 
 void parse_for_db(const char *message, int msglen);
 
@@ -135,7 +138,6 @@ void parse_for_db(const char *message, int msglen);
  * rfc2047.c
  */
 void rfc2047(const char *text, int length, parser_output_fn_t output,
-	     int structured, int default_charset);
-
+	     void *outctx, int structured, int default_charset);
 
 #endif
