@@ -3,6 +3,7 @@ Class: bug
 Difficulty: fun
 Priority: medium
 Present-in: 2003-02-09
+Fixed-in: 2005-01-10
 Content-type: text/plain
 
 In various places, PuTTY calls time() and passes the result straight to
