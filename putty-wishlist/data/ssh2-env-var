@@ -2,7 +2,7 @@ Summary: Support setting environment variables in SSH-2
 Class: wish
 Difficulty: fun
 Priority: low
-Fixed-in: 2004-10-17
+Fixed-in: 2004-10-17 0.56
 Content-type: text/x-html-body
 
 <p>

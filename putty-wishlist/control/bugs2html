@@ -1,5 +1,5 @@
 #! /usr/bin/perl
-# $Id: bugs2html,v 1.36 2004/10/26 18:16:11 simon Exp $
+# $Id: bugs2html,v 1.37 2004/10/26 18:29:51 jacob Exp $
 
 use FileHandle;
 use POSIX;
@@ -25,11 +25,11 @@ require "./config.pl";
 # snapshot date as also being fixed in a release.
 # (It's only used for recent releases - old ones are all
 # be explicitly marked in the wishlist data. Obviously branch
-# releases don't go here either.)
+# releases need special handling.)
 @releases = (
     [ "0.54",   "2004-02-12" ],
-    [ "0.55",   "2004-08-02" ]
-    [ "0.56",   "2004-10-25" ]
+    [ "0.55",   "2004-08-02" ],
+    [ "0.56",   "2004-10-13" ]      # branch date -- released on 2004-10-26
 );
 
 %classdesc =
