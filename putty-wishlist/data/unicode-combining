@@ -3,6 +3,7 @@ Class: wish
 Priority: medium
 Difficulty: tricky
 Depends: compressed-scrollback
+Fixed-in: 2004-10-16
 Content-type: text/x-html-body
 
 <p>
@@ -57,3 +58,8 @@ As I understand it, while there are a lot of precomposed Korean characters
 available, they don't *all* exist, so real Korean support needs real
 combining support.
 </blockquote>
+
+<p>
+<em>Update, 2004-10-15:</em> PuTTY now has the ability to store an
+arbitrary number of code points per character cell. Cut and paste is
+implemented correctly, and display is by simple overlaying.
