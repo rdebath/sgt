@@ -1,4 +1,4 @@
-#!/usr/local/gnu/bin/perl
+#!/usr/bin/perl
 
 use Fcntl;
 

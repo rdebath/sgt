@@ -69,11 +69,11 @@ variable timber_sendmail = "/usr/lib/sendmail -oem -t -oi";
 % This variable may be reassigned in `.timberrc'. It gives
 % the full pathname of the program which fetches the user's new mail
 % into a file specified on the command line.
-variable timber_fetch_prog = dircat(JED_ROOT,"bin/timber.pl");
+variable timber_fetch_prog = "perl " + dircat(JED_ROOT,"bin/timber.pl");
 
 % This variable may be reassigned in `.timberrc'. It gives
 % the full pathname of the program which decodes MIME encodings.
-variable timber_mime_prog = dircat(JED_ROOT,"bin/timberm.pl");
+variable timber_mime_prog = "perl " + dircat(JED_ROOT,"bin/timberm.pl");
 
 % This variable may, and almost certainly should, be reassigned
 % in `.timberrc'. It gives a comma-separated list of e-mail
