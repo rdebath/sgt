@@ -124,6 +124,11 @@ when you log in. For example:
 
   doit m:\.doit-secret
 
+You can supply the option "-r" before the secret name, in which case
+DoIt will reload the secret file every time it gets a request. This
+might be useful if the secret is changed more often than the DoIt
+server is restarted.
+
 Setting up .doitrc
 ------------------
 

@@ -19,6 +19,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <ctype.h>
 
 #include "doit.h"
 
@@ -52,6 +53,9 @@ HWND aboutbox = NULL;
 
 static char *secret;
 static int secretlen;
+static char *secretname;
+static int secret_reload;
+static char dummy_secret[1] = { '\0' };
 
 /*
  * Export the application name.
@@ -64,6 +68,33 @@ char const *listener_appname = "DoIt";
 static int const port_array[] = { DOIT_PORT };
 int listener_nports = sizeof(port_array) / sizeof(*port_array);
 int const *listener_ports = port_array;
+
+/*
+ * Load the secret out of a file.
+ */
+static void load_secret(void) {
+    FILE *fp;
+
+    if (secret && secret != dummy_secret)
+	free(secret);
+
+    fp = fopen(secretname, "rb");
+    if (!fp) {
+        secretlen = 0;
+        secret = dummy_secret;
+        return;
+    }
+    fseek(fp, 0, SEEK_END);
+    secretlen = ftell(fp);
+    secret = malloc(secretlen);
+    if (!secret) {
+        secretlen = 0;
+        secret = dummy_secret;
+    }
+    fseek(fp, 0, SEEK_SET);
+    fread(secret, 1, secretlen, fp);
+    fclose(fp);
+}
 
 /*
  * Helper function to deal with send() partially completing.
@@ -317,6 +348,9 @@ int listener_newthread(SOCKET sock, int port, SOCKADDR_IN remoteaddr) {
     char *cmdline = NULL, *currdir = NULL;
     DWORD threadid;
 
+    if (secret_reload)
+	load_secret();
+
     ctx = doit_init_ctx(secret, secretlen);
     if (!ctx)
         goto done;
@@ -528,24 +562,16 @@ int listener_newthread(SOCKET sock, int port, SOCKADDR_IN remoteaddr) {
  * Export the function that gets the command line.
  */
 void listener_cmdline(char *cmdline) {
-    FILE *fp;
-
-    fp = fopen(cmdline, "rb");
-    if (!fp) {
-        secretlen = 0;
-        secret = "";
-        return;
+    secret_reload = 0;
+    while (*cmdline && isspace(*cmdline)) cmdline++;
+    if (!strncmp(cmdline, "-r", 2)) {
+	secret_reload = 1;
+	cmdline += 2;
+	while (*cmdline && isspace(*cmdline)) cmdline++;
     }
-    fseek(fp, 0, SEEK_END);
-    secretlen = ftell(fp);
-    secret = malloc(secretlen);
-    if (!secret) {
-        secretlen = 0;
-        secret = "";
-    }
-    fseek(fp, 0, SEEK_SET);
-    fread(secret, 1, secretlen, fp);
-    fclose(fp);
+    secretname = cmdline;
+    if (!secret_reload)
+	load_secret();
 }
 
 /* ======================================================================
@@ -673,7 +699,7 @@ void showversion(int line, char *buffer)
     extern char doitlib_revision[], listener_revision[];
 
     if (line == 0)
-	v = "$Revision: 1.18 $", f = "doit.c";
+	v = "$Revision: 1.19 $", f = "doit.c";
     else if (line == 1)
 	v = doitlib_revision, f = "doitlib.c";
     else if (line == 2)
