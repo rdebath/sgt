@@ -235,7 +235,7 @@ static void display_output_fn(void *vctx, const char *text, int len,
      */
     if (type == TYPE_HEADER_NAME && !ctx->full)
 	ctx->boring = is_boring_hdr(text, len);
-    else if (type != TYPE_HEADER_TEXT && type != TYPE_HEADER_DECODED)
+    else if (!is_type_header_text(type))
 	ctx->boring = FALSE;
 
     if (ctx->boring)
