@@ -86,7 +86,7 @@ void fatal(int code, ...) {
     va_start(ap, code);
     do_error(code, ap);
     va_end(ap);
-    db_close();
+    sql_close_all();
     exit(EXIT_FAILURE);
 }
 
