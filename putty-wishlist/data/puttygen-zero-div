@@ -3,6 +3,7 @@ Class: bug
 Difficulty: taxing
 Priority: medium
 Present-in: 0.53 0.53b
+Fixed-in: 2003-06-29
 Content-type: text/x-html-body
 
 <p>
@@ -32,3 +33,9 @@ PUTTYGEN! 004051c2()  puttygen.obj:_generate_rsa_key_thread@4
 KERNEL32! 77e887dd()</pre>
 
 </ul>
+
+<p>
+<b>SGT, 2003-06-28</b>: Believed fixed. Thankfully, the bug was not
+in the bignum implementation (although I found a small bug in there
+too in the course of fixing it!) but in the much simpler
+prime-generation code that called it.
