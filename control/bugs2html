@@ -1,5 +1,5 @@
 #! /usr/bin/perl
-# $Id: bugs2html,v 1.27 2004/02/07 21:06:34 jacob Exp $
+# $Id: bugs2html,v 1.28 2004/02/07 22:00:19 jacob Exp $
 
 use FileHandle;
 use POSIX;
@@ -111,9 +111,9 @@ been added.
 
 <p>
 The Debian bug-tracking system also accrues bug reports and feature
-requests relating to the experimental
+requests relating to the
 <a href="http://packages.qa.debian.org/p/putty.html">Debian package</a>
-of the nascent Unix port.
+of the Unix port.
 
 EOF
 
