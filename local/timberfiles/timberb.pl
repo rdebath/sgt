@@ -78,7 +78,7 @@ while (1) {
       }
     } elsif (/^Subject: (.*)$/i) {
       $subjfield = $1;
-    } elsif (/^Content-type: (([^\/; ]+)\/[^\/; ]+)/i) {
+    } elsif (/^Content-type:\s+(([^\/; ]+)\/[^\/; ]+)/i) {
       $conttype = $1;
       if (lc $2 eq "multipart") {
         chomp ($h = $_);
@@ -90,9 +90,9 @@ while (1) {
           $_ = <STDIN>;
         }
         $read = 1;
-        if ($h =~ /boundary="([^"]*)"/i) {
+        if ($h =~ /boundary\s*=\s*"([^"]*)"/i) {
           $mimesep = "--$1";
-        } elsif ($h =~ /boundary=([^ \t;]*)/) {
+        } elsif ($h =~ /boundary\s*=\s*([^ \t;]*)/) {
           $mimesep = "--$1";
         } else {
           $mimesep = "";
