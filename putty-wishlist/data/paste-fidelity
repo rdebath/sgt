@@ -1,0 +1,18 @@
+Summary: Extra fidelity in copy and paste operations
+Class: wish
+Priority: low
+Difficulty: tricky
+Content-type: text/x-html-body
+
+<p>
+Extra features in pasting. Perhaps PuTTY could somehow remember
+which on-screen spaces had been output as the result of a tab
+character, and which were genuine spaces, and reproduce that when
+copying to the clipboard. Likewise, perhaps, trailing spaces. Also,
+since we now allow RTF pasting, perhaps it could paste style
+information (bold, italic etc) alongside the actual text.
+
+<p>
+Probably at least some of these features will want to be
+configurable off, since I can imagine them causing trouble in some
+situations.

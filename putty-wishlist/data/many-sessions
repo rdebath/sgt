@@ -1,0 +1,32 @@
+Summary: Make life easier for people with lots of saved sessions
+Class: wish
+Priority: medium
+Difficulty: tricky
+Content-type: text/x-html-body
+
+<p>
+PuTTY's saved sessions list box is fine for people with only a few
+saved sessions, but some people (such as sysadmins) might plausibly
+have a much larger number of them and might find the list box
+unwieldy.
+
+<p>
+One solution to this is to invent a means of categorising saved
+sessions, perhaps by introducing a hierarchical directory structure
+within the saved-sessions list. (Some list entries would be
+directories, which you could click on to go down a level; in any
+non-root directory there would be a `back up a level' item you could
+click on to go back up.)
+
+<p>
+A smaller and simpler alternative would be simply to allow the PuTTY
+config box to be resized - and grow the saved sessions list box as
+the window grows. We've been deliberately keeping the config box
+small for the benefit of people with 640x480 screens, but if a
+particular user were to want to expand their own config box there'd
+be no reason to prevent them. For this to be really useful I suppose
+PuTTY would have to remember the size of its config box...
+
+<p>
+It's not impossible that we might want to do both of these things,
+or something else entirely. Some design is required.

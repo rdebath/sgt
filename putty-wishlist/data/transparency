@@ -1,0 +1,15 @@
+Summary: Transparent or translucent PuTTY window
+Class: wish
+Priority: never
+Difficulty: fun
+Content-type: text/x-html-body
+
+<p>
+A transparent, semi-transparent or alpha-blended PuTTY window. We
+think this is pointless frippery and would bloat the binary to no
+useful purpose. Furthermore, there are third-party utilities which
+will do this for you without us needing to modify PuTTY; have a look
+at
+<a href="http://www.veridicus.com/tummy/programming/powermenu/">PowerMenu</a>
+and also
+<a href="http://www.chime.tv/products/glass2k.shtml">Glass2k</a>.

@@ -1,0 +1,14 @@
+Summary: Support for SSL
+Class: wish
+Priority: low
+Difficulty: taxing
+Content-type: text/x-html-body
+
+<p>
+There's been one request for SSL. (SSL/Telnet in particular;
+possibly also raw-SSL in order to talk directly to HTTPS?) Most of
+the SSL protocol looks reasonably sane, except for the certificates
+(ASN.1 and X509 and other buzzwords). If the certificate processing
+turns out to take <em>too</em> much code, SSL might not make it into
+the PuTTY core for size reasons - it would have to be compiled in
+specially, or perhaps shipped as a separate DLL.

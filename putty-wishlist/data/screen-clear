@@ -1,0 +1,9 @@
+Summary: Screen clears should interact with scrollback differently
+Class: wish
+Priority: medium
+Difficulty: fun
+Content-type: text/x-html-body
+
+<p>
+It's possible that a screen-clear should push the previous screen
+contents into the scrollback, rather than losing it completely.

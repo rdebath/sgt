@@ -1,14 +1,10 @@
 Summary: Ability to re-use dead session windows
 Class: wish
 Priority: medium
-Difficulty: tricky
+Difficulty: fun
+Depends: remove-statics
 Content-Type: text/x-html-body
 
 <p>
 Perhaps an inactive window should have a menu option to reactivate
 the session (like Duplicate Session but in the same window).
-
-<p>
-This is a non-trivial amount of work, because it would involve
-ensuring all the static data was correctly reset to plausible
-initial values.

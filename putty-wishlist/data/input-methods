@@ -1,0 +1,14 @@
+Summary: Support for international input methods
+Class: wish
+Priority: low
+Difficulty: taxing
+Content-type: text/x-html-body
+
+<p>
+Support for various international input methods. There's been a
+report from the Netherlands of an "international keyboard driver"
+which allows you to enter, for example, an "&Euml;" just by typing a
+double quote and then an E. I believe there are also Eastern input
+mechanisms we don't handle sensibly. Somebody who knows about this
+stuff will have to do it for me and probably explain it to me as
+well, because I just don't know enough about internationalisation.

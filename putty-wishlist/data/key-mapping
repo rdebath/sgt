@@ -1,0 +1,28 @@
+Summary: Generic key mapping facility
+Class: wish
+Priority: medium
+Difficulty: tricky
+Content-type: text/x-html-body
+
+<p>
+We've resisted introducing generalised key remapping for some time,
+on the grounds that it's just too horrible, and also on the grounds
+that if we introduce a scripting language then key remapping could
+appear as a side benefit of that.
+
+<p>
+However, since scripting now looks likely to be a DLL plugin if
+it even happens at all, and since more and more people have written
+to tell us that there are more configurations in use for the
+function keys than we could possibly have dreamed of, I think we're
+eventually going to have to get round to doing a proper key
+remapping facility.
+
+<p>
+The major difficulty in this is that we want PuTTY to end up
+portable to other operating systems. So we're somehow going to have
+to split the keyboard processing down the middle, so that we have a
+platform-dependent half which converts Windows keyboard messages
+into a set of PuTTY standard key and modifier names, and then a
+platform-generic half which maps our standard key names into actual
+character sequences to be sent to the host.

@@ -1,0 +1,10 @@
+Summary: Multiple file transfers (wildcards, recursion) in PSFTP
+Class: wish
+Priority: medium
+Difficulty: fun
+Content-type: text/x-html-body
+
+<p>
+PSFTP could do with more features: options and wildcards to ls (-l
+etc), and perhaps recursive transfer of whole directories like scp.
+(After all, we can <em>do</em> this in SFTP already!)

@@ -1,0 +1,16 @@
+Summary: File transfers using Zmodem
+Class: wish
+Priority: low
+Difficulty: tricky
+Content-type: text/x-html-body
+
+<p>
+Lots of people seem to want Zmodem file transfers. We don't see that
+this is a vital requirement because we already supply two file
+transfer mechanisms in the PuTTY suite; but if someone were to do
+the work for us we might accept it.
+
+<p>
+Then again, it might be better if it went in as a DLL plugin.
+Depends how big it is, I think.
+

@@ -1,0 +1,22 @@
+Summary: Inheritance between saved sessions
+Class: wish
+Priority: medium
+Difficulty: tricky
+Content-type: text/x-html-body
+
+<p>
+Inheritable saved sessions. The way I see this working is that you'd
+have a button marked "Inherit" next to the "Load" button. Selecting
+an existing saved session and clicking this would give you a
+weird-looking config box in which all the features had an indicator
+beside them saying they were inherited from the parent session.
+Modifying any setting would clear this indicator; clicking the
+indicator would set it and revert the setting to the way it is in
+the parent. You could then save and launch this session in the usual
+way - but if you modified a setting in the parent session which was
+inherited rather than locally modified in the child, then the
+child's setting would change. So, for example, you could have most
+of your day-to-day sessions _inherit_ from Default Settings rather
+than copying it, so if you found a nicer font you could change them
+all in one go. Of course there'd be no reason an inherited session
+couldn't inherit from another inherited session.

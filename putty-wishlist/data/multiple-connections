@@ -1,0 +1,28 @@
+Summary: Managing multiple connections in one PuTTY
+Class: wish
+Priority: low
+Difficulty: tricky
+Depends: remove-statics
+Content-type: text/x-html-body
+
+<p>
+A lot of people seem to want a single PuTTY to be able to manage
+multiple connections. Some want an MDI-style application, with one
+large main window containing several session windows; other people
+want the window to stay the same size and the multiple sessions to
+be selected by Alt-F1, Alt-F2 etc., or by selecting tabs on the
+window.
+
+<p>
+For a start, this can't be done until we've ceased using static
+variables in the PuTTY back end code. But even assuming that, it
+would involve a fair amount of reorganisation to set up. In addition
+I'd want a strong guarantee of reliability (if one session crashes,
+can it avoid taking the other nine down?). Also I'd want to be able
+to configure PuTTY to be just the way it is now, because not
+everybody likes the idea of all their sessions being bound together
+in a single window; and finally I'd want to be convinced that the
+code size increase wouldn't be excessive. This is close to having
+priority "never", in fact, unless someone can convince me it's
+really worth its while.
+

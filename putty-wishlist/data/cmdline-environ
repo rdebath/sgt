@@ -1,0 +1,13 @@
+Summary: Command line stored in environment variable
+Class: wish
+Priority: low
+Difficulty: fun
+Content-type: text/x-html-body
+
+<p>
+Perhaps PSCP (and possibly Plink and PSFTP and other potential
+command-line type tools) should be able to read some default
+command-line options from an environment variable? Note that if we
+did this we would also need to supply a negative form of
+<em>every</em> option, so that a user could always choose to turn
+off an option that the environment variable had turned on.

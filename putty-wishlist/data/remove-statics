@@ -1,0 +1,12 @@
+Summary: Remove static variables to allow multiple or sequential connections
+Class: wish
+Difficulty: tricky
+Priority: low
+Content-type: text/plain
+
+For several reasons it would be handy to be able to run multiple
+connections in a single process. This will require removing most (or
+all) of PuTTY's static and global variables, and replacing them with
+fields in dynamically allocated structures.
+
+This is a code cleanup which we should probably do anyway.

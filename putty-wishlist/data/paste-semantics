@@ -1,0 +1,45 @@
+Summary: Alternative semantics for copy and paste
+Class: wish
+Priority: low
+Difficulty: fun
+Content-type: text/x-html-body
+
+<p>
+Some people don't like the X-style copy/paste semantics in which
+selecting text automatically copies it to the clipboard and clicking
+a mouse button is enough to perform a paste. These semantics make
+copy and paste something of a hair-trigger operation - a misplaced
+click and drag can destroy valuable data from another application
+which you'd had in the clipboard, and equally a misplaced mouse
+action can paste all sorts of weird text into an unsuspecting PuTTY.
+
+<p>
+An alternative would be to adopt conventional Windows-style copy and
+paste keys: selecting text has no direct effect, Ctrl-Ins copies it
+to the clipboard, and Shift-Ins pastes it. (We actually already
+support Shift-Ins to paste.) We could also support ^C and ^V to do
+the same things, although this would be unlikely to be very useful
+since those key combinations are almost always needed to perform
+server-side actions.
+
+<p>
+Another possibility is that perhaps the mouse-clicks-only copy and
+paste could still work within a single PuTTY window, but Shift-Ins
+and Ctrl-Ins would be required in order to interact with the main
+Windows clipboard. This might strike a balance between convenience
+and safety (although it requires the user to keep in mind that there
+are two separate clipboards, so it wouldn't make a good default
+configuration).
+
+<p>
+Other options would be to introduce Copy and Paste entries in the
+System menu (like DOS boxes), or in the toolbar (if we ever add
+one). And if the current mouse-driven pasting is disabled, then that
+would leave the right mouse button free to bring up a context menu
+which could contain Copy and Paste as menu items.
+
+<p>
+These would <em>certainly</em> be configurable options if we do them
+at all - enough people, including the developers, like the copy and
+paste the way it is that we would never consider removing the
+current behaviour.

@@ -1,0 +1,10 @@
+Summary: Make selection colours configurable
+Class: wish
+Priority: low
+Difficulty: fun
+Content-type: text/x-html-body
+
+<p>
+Make selection colours configurable rather than forcing them to be
+inverse-of-current. But still need inverse-of-current as an option.
+Come up with a sane UI for this and then implement it.

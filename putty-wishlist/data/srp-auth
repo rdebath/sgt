@@ -1,0 +1,24 @@
+Summary: SRP authentication (in SSH and perhaps also Telnet)
+Class: wish
+Priority: medium
+Difficulty: tricky
+Content-type: text/x-html-body
+
+<p>
+SRP support, as an alternative to pure password authentication.
+Possibly also in Telnet.
+
+<p>
+This would be <em>really</em> useful in SSH, because it removes a
+lot of the danger of accepting a host key you're uncertain about.
+The SRP exchange convinces each side that the other side knows the
+same password, without requiring either side to give the password
+away to the other - so if you use SRP authentication, you can safely
+type your password in even if you don't know the remote host key is
+correct. Moreover, the current drafts of SRP authentication in SSH
+then use the SRP shared secret to authenticate the SSH host key - so
+that even if you aren't sure the host key belongs to the host you
+think it does, you can at least be sure that it does belong to a
+machine which knows your password. This would be a massive
+improvement in the SSH host key model.
+

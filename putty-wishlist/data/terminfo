@@ -1,0 +1,10 @@
+Summary: Maintain a terminfo for PuTTY's terminal emulator
+Class: wish
+Priority: medium
+Difficulty: 
+Content-type: text/x-html-body
+
+<p>
+It would be nice to maintain our own terminfo/termcap description of
+the terminal emulated by PuTTY, as an alternative to having PuTTY
+claim to be an xterm and hoping everybody's xterms behave similarly.
