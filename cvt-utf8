@@ -308,6 +308,10 @@ if args[0] == "--build-unihan" or args[0] == "--fetch-build-unihan":
         infile = zip_untangler(infile, "")
 	outfile = args[1]
         s = ""
+    # Now build the database.
+    if outfile[-3:] == ".db":
+	print "cvt-utf8: warning: you should not append .db to db name"
+
     db = anydbm.open(outfile, "n")
     while 1:
 	s = s + infile.readline()
