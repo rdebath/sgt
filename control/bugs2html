@@ -1,5 +1,5 @@
 #! /usr/bin/perl
-# $Id: bugs2html,v 1.10 2002/10/25 15:18:21 jacob Exp $
+# $Id: bugs2html,v 1.11 2002/10/25 16:31:10 jacob Exp $
 
 use FileHandle;
 use POSIX;
@@ -203,7 +203,17 @@ Plausible features we hope to get round to adding at some point:
 EOF
 
 my @tmp = grep(($bugs{$_}->{priority} eq 'medium'),@wishlist);
-subtractbugs(\@fullbuglist, printbugs(\@tmp));
+
+foreach my $difficulty ("fun", "tricky", "taxing", "mayhem") {
+    nest(<<EOF);
+<li>"$difficulty": $difficultydesc{$difficulty}
+<ul>
+EOF
+    my @tmp2 = grep(($bugs{$_}->{difficulty} eq $difficulty),@tmp);
+    subtractbugs(\@fullbuglist, printbugs(\@tmp2));
+
+    unnest("</ul>\n");
+}
 
 unnest("</ul>\n");
 
@@ -216,7 +226,17 @@ unless someone else does the hard work:
 EOF
 
 my @tmp = grep(($bugs{$_}->{priority} eq 'low'),@wishlist);
-subtractbugs(\@fullbuglist, printbugs(\@tmp));
+
+foreach my $difficulty ("fun", "tricky", "taxing", "mayhem") {
+    nest(<<EOF);
+<li>"$difficulty": $difficultydesc{$difficulty}
+<ul>
+EOF
+    my @tmp2 = grep(($bugs{$_}->{difficulty} eq $difficulty),@tmp);
+    subtractbugs(\@fullbuglist, printbugs(\@tmp2));
+
+    unnest("</ul>\n");
+}
 
 unnest("</ul>\n");
 
