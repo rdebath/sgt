@@ -16,7 +16,8 @@ method `securid-1@ssh.com', it appears that more recent versions use
 
 <p>
 We haven't seen a spec for the private method, so can't implement it
-in PuTTY.
+in PuTTY, though there's <a href="http://sweb.cz/v_t_m/">a patch to
+support it in OpenSSH 3.7.1p2</a>.
 
 <p>
 (There appears to be
