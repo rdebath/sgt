@@ -24,6 +24,7 @@
 #define SCR_WIDTH 320
 #define SCR_HEIGHT 240
 #define SQUARE_SIDE 8
+#define HIGHLIGHT 2
 #define PLAY_HEIGHT (SCR_HEIGHT / SQUARE_SIDE - 1)
 #define PLAY_WIDTH 10
 #define LEFT_EDGE ((SCR_WIDTH - SQUARE_SIDE * PLAY_WIDTH) / 2)
@@ -62,23 +63,115 @@ static void lineplotsimple(void *ctx, int x, int y)
     plotc(x, y, colour);
 }
 
+/*
+ * `blockpixels' holds the diagram of a fully highlighted block, in
+ * accordance with the description in ntris.h. The indices in this
+ * array are
+ * 
+ * 0001111223
+ * 0001111234
+ * 0001111344
+ * 5556666777
+ * 5556666777
+ * 5556666777
+ * 5556666777
+ * 889BBBBCCC
+ * 89ABBBBCCC
+ * 9AABBBBCCC
+ * 
+ * (A=10, B=11, C=12, D=13). The `block' function computes which
+ * actual colours need to be allocated to each of these indices,
+ * and then plots straight from this array.
+ */
+static int blockpixels[SQUARE_SIDE*SQUARE_SIDE];
+
+void init_blockpixels(void)
+{
+    int ix, iy;
+    int *p = blockpixels;
+
+    for (ix = 0; ix < SQUARE_SIDE; ix++)
+	for (iy = 0; iy < SQUARE_SIDE; iy++) {
+	    int left, right, top, bottom;
+	    left = (ix < HIGHLIGHT);
+	    right = (ix >= SQUARE_SIDE - HIGHLIGHT);
+	    top = (iy < HIGHLIGHT);
+	    bottom = (iy >= SQUARE_SIDE - HIGHLIGHT);
+	    if (left && top) {
+		*p = 0;
+	    } else if (right && bottom) {
+		*p = 0xC;
+	    } else if (left && bottom) {
+		int ty = SQUARE_SIDE-1 - iy;
+		*p = (ix < ty ? 8 : ix > ty ? 0xA : 9);
+	    } else if (right && top) {
+		int tx = SQUARE_SIDE-1 - ix;
+		*p = (tx < iy ? 4 : tx > iy ? 2 : 3);
+	    } else if (left) {
+		*p = 5;
+	    } else if (bottom) {
+		*p = 0xB;
+	    } else if (right) {
+		*p = 7;
+	    } else if (top) {
+		*p = 1;
+	    } else {
+		*p = 6;
+	    }
+	    p++;
+	}
+}
+
 void block(struct frontend_instance *inst, int x, int y, int col, int type)
 {
     int ix, iy;
+    int colours[0xD];
+    int light, medium, dark;
+    int *p;
 
     x--;			       /* playing area starts at 1 */
     y *= SQUARE_SIDE;
     x *= SQUARE_SIDE;
     x += LEFT_EDGE;
 
-    if (col == -1)
-	col = 0;
-    else
-	col = 2 + 3*col;
+    if (col == -1) {
+	for (ix = 0; ix < SQUARE_SIDE; ix++)
+	    for (iy = 0; iy < SQUARE_SIDE; iy++)
+		plotc(x+ix, y+iy, 0);
+	return;
+    }
 
+    medium = 1 + 3*col;
+    light = medium+2;
+    dark = medium+1;
+
+    /*
+     * Compute highlight colours.
+     */
+    colours[0] = ((type & (FLAG_LEDGE|FLAG_TEDGE|FLAG_TLCORNER)) ?
+		  light : medium);
+    colours[0xC] = ((type & (FLAG_REDGE|FLAG_BEDGE|FLAG_BRCORNER)) ?
+		    dark : medium);
+    colours[5] = ((type & FLAG_LEDGE) ? light : medium);
+    colours[1] = ((type & FLAG_TEDGE) ? light : medium);
+    colours[7] = ((type & FLAG_REDGE) ? dark : medium);
+    colours[0xB] = ((type & FLAG_BEDGE) ? dark : medium);
+    colours[2] = ((type & FLAG_TEDGE) ? light :
+		  (type & (FLAG_REDGE|FLAG_TRCORNER)) ? dark : medium);
+    colours[4] = ((type & FLAG_REDGE) ? dark :
+		  (type & (FLAG_TEDGE|FLAG_TRCORNER)) ? light : medium);
+    colours[8] = ((type & FLAG_LEDGE) ? light :
+		  (type & (FLAG_BEDGE|FLAG_BLCORNER)) ? dark : medium);
+    colours[0xA] = ((type & FLAG_BEDGE) ? dark :
+		  (type & (FLAG_LEDGE|FLAG_BLCORNER)) ? light : medium);
+    colours[3] = (colours[2] == colours[4] ? colours[2] : medium);
+    colours[9] = (colours[8] == colours[0xA] ? colours[8] : medium);
+    colours[6] = medium;
+
+    p = blockpixels;
     for (ix = 0; ix < SQUARE_SIDE; ix++)
 	for (iy = 0; iy < SQUARE_SIDE; iy++)
-	    plotc(x+ix, y+iy, col);
+	    plotc(x+ix, y+iy, colours[*p++]);
 }
 
 enum {
@@ -322,6 +415,12 @@ int main(int argc, char **argv)
 	SDL_Event event;
 	while (SDL_PollEvent(&event));
     }
+
+    /*
+     * Set up the `blockpixels' array, used to compute the edge
+     * highlights on the pieces.
+     */
+    init_blockpixels();
 
     play_game();
 
