@@ -1317,7 +1317,12 @@ define timber_open_folder(name) {
 
     timber_buffers_more();
 
-    sw2buf(Sprintf("[T] %s", name, 1));
+    fname = dircat(timber_folders, extract_filename(name));
+    if (fname == name)
+	fname = extract_filename(name);
+    else
+	fname = name;
+    sw2buf(Sprintf("[T] %s", fname, 1));
 
     set_mode(modename, 0);
     use_keymap(modename);
@@ -2043,12 +2048,14 @@ define timber_reply_all() { timber_reply_common(1); }
 %{{{ timber_compose(): FIXME
 
 % Begin composition of a brand new message.
-define timber_compose() {
+define timber_compose_given(to_list) {
     timber_open_composer();
 
-    insert("To: ");
-    push_spot();
-    insert("\nSubject: \n\n");
+    insert("To: " + to_list);
+    if (to_list == "") push_spot();
+    insert("\nSubject: ");
+    if (to_list != "") push_spot();
+    insert("\n\n");
 
     if (file_status(expand_filename(timber_sig)) == 1) {
 	insert("\n-- \n");
@@ -2061,6 +2068,10 @@ define timber_compose() {
     pop_spot();
 
     setbuf_info( (getbuf_info() & ~0x303) | 0x20 );
+}
+
+define timber_compose() {
+    timber_compose_given("");
 }
 
 %}}}
@@ -2093,12 +2104,29 @@ define timber() {
 }
 
 %}}}
-%{{{ timber_only(): FIXME
+%{{{ timber_only() and friends: complex command line capability
+
+% Hooks for invocation of Timber from the Jed command line.
+
+% This sets timber-only mode, in which Jed quits when the last Timber-
+% related buffer is closed.
+define timber_set_only() {
+    timber_is_only = 1;
+}
+
+% This causes timber_goto with a provided argument.
+define timber_goto_given(folder) {
+    if (timber_acquire_lock(folder)) {
+        timber_open_folder(folder);
+    } else {
+	error(folder + " is locked by another Timber!");
+    }
+}
 
 % An alternative starting command, `timber_only', designed to be
 % invoked as `jed -f timber_only'.
 define timber_only() {
-    timber_is_only = 1;
+    timber_set_only();
     timber();
 }
 

@@ -1,0 +1,23 @@
+#!/bin/sh
+set -- "$@" --end--
+folders=no
+while test "$1" != --end--; do
+  case "$1" in
+    -f) shift; folders=yes;;
+    -c) shift; set -- "$@" -f ". \"\" timber_compose_given";;
+    *) if test $folders = yes; then
+         set -- "$@" -f ". \"$1\" timber_goto_given"
+       else
+         set -- "$@" -f ". \"$1\" timber_compose_given"
+       fi
+       shift;;
+    
+  esac
+done
+shift
+if test "$#" = 0; then
+  set -- -f timber_only
+else
+  set -- -l timber.sl -f timber_set_only "$@"
+fi
+exec jed "$@"
