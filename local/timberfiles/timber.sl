@@ -532,6 +532,15 @@ define timber_strchopr(s, delim, quote) {
 }
 
 %}}}
+%{{{ timber_remove: hack to support 0.98's lack of remove()
+define timber_remove(file) {
+#ifexists remove
+    remove(file);
+#else
+    run_shell_cmd("rm -f " + file);
+#endif
+}
+%}}}
 %{{{ timber_undefined(): for undefined keys
 
 % Used when a key is pressed which has no effect in Timber.
@@ -733,7 +742,7 @@ define timber_enbuf() {
     pipe_region(timber_enbuf_prog + " " + file);
     del_region();
     insert_file(file);
-    remove(file);
+    timber_remove(file);
 }
 %}}}
 %{{{ timber_blankfolder(): make an empty folder buffer
