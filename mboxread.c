@@ -56,16 +56,13 @@ static int is_mbox_message_separator(char *p)
 
 int import_message(char *message, int msglen)
 {
+    char *location;
     assert(msglen > 0 && message[msglen-1] == '\n');
-    if (!store_literal(message, msglen))
+    location = store_literal(message, msglen);
+    if (!location)
 	return FALSE;
-    parse_for_db(message, msglen);
-    /*
-     * Diagnostic now removed:
-     *
-     * printf("-=-=-=-=-=-=- Size: %d -=-=-=-=-=-=-\n%.*s",
-     *        msglen, msglen, message);
-     */
+    parse_for_db(NULL, location, message, msglen);
+    sfree(location);
     return TRUE;
 }
 

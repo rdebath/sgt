@@ -585,6 +585,11 @@ void parse_headers(char const *base, char const *message, int msglen,
 				  hdr->header_id, default_charset);
 		    }
 		    lh = lh2;
+		    /*
+		     * Eat the terminating character.
+		     */
+		    if (lh->token)
+			lh++;
 		}
 		break;
 	      case EXTRACT_MESSAGE_IDS:
@@ -1242,7 +1247,7 @@ void parse_content_type(struct lexed_header *lh, struct mime_details *md)
 		assert(len <= lh[2].length);
 		md->boundary[len] = '\0';
 	    }
-	    lh += 4;
+	    lh += 3;
 	}
     }
 }
@@ -1316,7 +1321,7 @@ void parse_content_disp(struct lexed_header *lh, struct mime_details *md)
 
 		md->filename_location = CD_FILENAME;
 	    }
-	    lh += 4;
+	    lh += 3;
 	}
     }
 }
@@ -1478,17 +1483,6 @@ void null_info_fn(void *ctx, struct message_parse_info *info)
 {
 }
 
-/* FIXME: should this really be in here, or should it go in another module?
- * It is, after all, a _client_ of the parser code. */
-void db_info_fn(void *ctx, struct message_parse_info *info)
-{
-    /* FIXME */
-}
-void parse_for_db(const char *message, int msglen)
-{
-    parse_message(message, msglen, null_output_fn, NULL, db_info_fn, NULL);
-}
-
 #ifdef TESTMODE
 
 #include <stdlib.h>
@@ -1498,7 +1492,7 @@ void parse_for_db(const char *message, int msglen)
 
 /*
 gcc -Wall -g -DTESTMODE -Icharset -o rfc822{,.c} \
-    build/{base64,qp,cs-*,malloc,rfc2047}.o
+    build/{base64,misc,qp,cs-*,malloc,rfc2047}.o
  */
 
 void fatal(int code, ...) { abort(); }
@@ -1530,42 +1524,6 @@ void test_output_fn(void *outctx, const char *text, int len,
     }
     if (type == TYPE_HEADER_NAME)
 	printf("\033[39;0m");
-}
-
-const char *header_name(int header_id)
-{
-    if (header_id == H_BCC) return "Bcc";
-    if (header_id == H_CC) return "Cc";
-    if (header_id == H_CONTENT_DESCRIPTION) return "Content-Description";
-    if (header_id == H_CONTENT_DISPOSITION) return "Content-Disposition";
-    if (header_id == H_CONTENT_TRANSFER_ENCODING)
-	return "Content-Transfer-Encoding";
-    if (header_id == H_CONTENT_TYPE) return "Content-Type";
-    if (header_id == H_DATE) return "Date";
-    if (header_id == H_FROM) return "From";
-    if (header_id == H_IN_REPLY_TO) return "In-Reply-To";
-    if (header_id == H_MESSAGE_ID) return "Message-ID";
-    if (header_id == H_REFERENCES) return "References";
-    if (header_id == H_REPLY_TO) return "Reply-To";
-    if (header_id == H_RESENT_BCC) return "Resent-Bcc";
-    if (header_id == H_RESENT_CC) return "Resent-Cc";
-    if (header_id == H_RESENT_FROM) return "Resent-From";
-    if (header_id == H_RESENT_REPLY_TO) return "Resent-Reply-To";
-    if (header_id == H_RESENT_SENDER) return "Resent-Sender";
-    if (header_id == H_RESENT_TO) return "Resent-To";
-    if (header_id == H_RETURN_PATH) return "Return-Path";
-    if (header_id == H_SENDER) return "Sender";
-    if (header_id == H_SUBJECT) return "Subject";
-    if (header_id == H_TO) return "To";
-    return "[no-header]";
-}
-
-const char *encoding_name(int encoding)
-{
-    if (encoding == QP) return "qp";
-    if (encoding == BASE64) return "base64";
-    if (encoding == UUENCODE) return "uuencoded";
-    return "not encoded";
 }
 
 void test_info_fn(void *ctx, struct message_parse_info *info)

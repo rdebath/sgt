@@ -47,6 +47,10 @@ static void do_error(int code, va_list ap) {
                 sp, sp2);
         flags = PREFIX;
         break;
+      case err_dbfull:
+        sprintf(error, "database contains an unmanageable number of messages");
+        flags = PREFIX;
+        break;
       case err_dberror:
         sp = va_arg(ap, char *);
         sprintf(error, "database error: %.200s", sp);
