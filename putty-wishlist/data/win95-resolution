@@ -1,0 +1,27 @@
+Summary: Problems with host name resolution on Win95; WinSock 2 implicated?
+Absent-in: 0.52 0.53b
+Present-in: 0.54 0.56
+Content-type: text/x-html-body
+
+<p>
+We've had a couple of reports that recent versions of PuTTY have
+trouble resolving hostnames, while other apps such as Windows Telnet,
+and old versions of PuTTY, work fine. However, the only Win95 system I
+(JTN) have access to appears to work fine in this regard; on that
+system the Windows Sockets 2 upgrade is <em>not</em> installed,
+whereas on at least one of the problem systems WinSock2 <em>does</em>
+appear to be installed. (We changed to dynamically loading WinSock 2
+where available in all applications between 0.53b and 0.54; previously
+all the apps except Plink linked against WinSock 1.)
+
+<p>
+The error reported is "<tt>ssh_init: Host does not exist</tt>".
+
+<p>
+Reports:
+<ul>
+<li><tt>E1Bq1Ni-00053V-00@smtp6.mindspring.com</tt> (looks like
+WinSock 2 <em>is</em> installed)
+<li><tt>Pine.SOL.3.96.1040920100623.8845A-100000@langs</tt>, perhaps
+<li><tt>20041115005023.GA28326@radon.dcs.kcl.ac.uk</tt>
+</ul>
