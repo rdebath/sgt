@@ -1,7 +1,7 @@
 Summary: Option to leave DNS lookup to proxies
 Class: wish
 Priority: low
-Difficulty: fun
+Difficulty: medium
 Content-type: text/x-html-body
 
 <p>When connecting through a proxy, there should be an option to
