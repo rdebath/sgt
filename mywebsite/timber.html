@@ -1,0 +1,261 @@
+<html>
+<head>
+<title>Timber: A New Mail User Agent</title>
+</head>
+<link rel="stylesheet" type="text/css" href="sitestyle.css" name="Simon Tatham's Home Page Style">
+<body>
+<h1>Timber: A New Mail User Agent</h1>
+
+<p>
+This is a page about Timber, a new mail user agent which I'm
+currently in the process of writing.
+
+<h2>History</h2>
+
+<p>(or, <i>Why Yet Another MUA?</i>)
+
+<p>
+I'm working on Timber for the usual reason people want to write yet
+another of something: none of the existing MUAs quite do what I
+want.
+
+<p>
+Three or so years ago, I finally got sick of the MUA I had been
+using up until then,
+<a href="http://www.washington.edu/pine/">Pine</a>,
+for the simple reason that I'd become a very proficient user of the
+Emacs-like text editor
+<a href="http://space.mit.edu/~davis/jed/">Jed</a>
+and I didn't like having to downgrade my editing reflexes when I was
+writing e-mail. I wanted an MUA embedded in Jed, so I'd have the
+same editing environment, and better still I'd be able to dash off a
+quick e-mail in the middle of a long editing session.
+
+<p>Unfortunately, there weren't any MUAs written in Jed, or at least
+none that were much good; so I wrote my own. It ran mostly inside
+Jed, with a few Perl scripts to help it do system-access things. Its
+usage model was largely derived from Pine, because that was what I
+was used to: you had an Inbox, and some Folders, and when you'd read
+each mail you could save it into a Folder.
+
+<p>
+I called it Timber, whimsically, because it heralded the fall of
+Pine. (From my own perspective, at least.)
+
+<p>
+Timber v0 never made it out into the world. It's not production
+quality software, and more sort of <i>symbiosisware</i>: it has a
+lot of bits missing, and when I run across a missing bit, I decide
+whether it's easier to implement it or to live without it.
+
+<p>
+Three years on, I'm getting heartily sick of Timber v0 for a variety
+of reasons. Partly, it's far too slow (being written in the
+interpreted language
+<a href="http://www.s-lang.org/">S-Lang</a>),
+and partly I'm getting annoyed with the underlying folder model.
+It's time for a rewrite, in a proper fast compiled language. Timber
+v2.
+
+<p>
+(Yes, I'm going to go straight from v0 to v2. So what?)
+
+<h2>Features</h2>
+
+<p>
+Timber v2 will feature two big design concepts which I keep getting
+annoyed at the lack of in Timber v0, and in Pine, and in pretty much
+anything else I've seen. They are: <em>threading</em> and
+<em>categories</em>.
+
+<p>
+Recently I've been trying (with notable lack of success) to plough
+through a backlog of several hundred e-mails which I've built up.
+Many of those mails are sent to the
+<a href="http://www.chiark.greenend.org.uk/~sgtatham/putty/">PuTTY</a>
+maintainer alias, which means they've been seen by the other members
+of the PuTTY core team. Quite a few of them have already been
+answered by other team members. So working through the backlog from
+the beginning is a confusing job, because I might easily reply to a
+message and then realise somebody else has replied to it already, a
+lot further down the folder, and I hadn't noticed. A threaded mailer
+would solve this, because each message would automatically be
+grouped together with any existing replies.
+
+<p>
+The other big thing, categories, is a concept designed to replace
+folders. Folders are a means of <em>storing</em> mail: you move your
+message out of the Inbox, into a folder, and it stays in that
+folder. Any mail not in a folder doesn't exist at all. In Timber,
+all mail will be stored in one large heap, and categories will
+be a means of <em>indexing</em> the mail. So a message can be in
+multiple categories, without actually storing multiple copies of the
+message; and conversely, a message can be in no categories at all
+and still exist. So when I get a message from John about PuTTY, I
+don't have to decide whether to file it under "John" or under
+"PuTTY", and when I come back to look at it in the future, I don't
+have to try and remember which one I chose. I can file it under
+<em>both</em>. No more problem.
+
+<p>
+Filing messages in multiple categories sounds like a lot of work for
+the user: if it's a pain trying to think of <em>one</em> good place
+to file each message you get, it must be much worse to try to think
+of several! To try to alleviate that, there will be some degree of
+<em>automatic</em> categorisation. For one thing, every person
+listed in your address book will automatically have an associated
+category - so you can immediately see every mail you have on file
+which was sent to or from that person. In addition, there will be a
+configurable mechanism whereby you can automatically assign
+categories to incoming messages by recognising things about them.
+For example, messages with a <tt>List-Id:</tt> header describing a
+particular mailing list might automatically be filed in the category
+for that mailing list. (And note that mailing lists can be read
+almost exactly like newsgroups, because Timber will be threaded.)
+
+<p>
+Other features I plan to add include:
+
+<ul>
+<li>
+Good support for character set handling. Timber v0 has no
+understanding at all of character sets; it's just about competent to
+decode a quoted-printable or base64 encoded text part in a message,
+but if the decoded text isn't in the same character set as my
+terminal, then I have to make my own guess at what it's supposed to
+say. Timber v2 will include a reasonably comprehensive character set
+conversion library, and will automatically perform all necessary
+conversions (including decoding RFC 2047 mail headers) so that the
+message appearing on my screen will be the best representation my
+terminal can generate of what the sender intended. In particular, it
+is prepared to deal with people using the Windows-1252 quote
+characters in mail claiming to be ISO-8859-1.
+<li>
+The surprisingly useful "queue" function: you compose a message,
+state a date and time, and the message is delayed until that time
+before being sent. I often use this to send myself reminders of
+things, but also I find it very handy in PuTTY development: a
+snapshot is built from the sources every night, so if I fix a bug
+one day then I can send a time-delayed reply to the reporter saying
+"please try today's snapshot", which doesn't go out until the
+following day after the snapshot has built. (Of course, this fails
+if the snapshot build doesn't happen for some reason. Perhaps I'll
+build in a safeguard mechanism, so that you can require a command to
+be run which must return success for the mail to be sent.)
+<li>
+I'd like to build in integration with GPG, although planning is only
+at a very early stage as yet.
+</ul>
+
+<h2>Architecture</h2>
+
+<p>
+In order to embed this MUA in my editor but still have it run fast,
+I'm writing a C back end which speaks a simple text protocol. Then
+I'll write a front end in S-Lang, which will invoke the Timber back
+end every time it needs to perform an operation on the mail store.
+So I'll have all the speed of the C back end, with all the
+convenience of the Jed front end. And better still, it'll be
+possible to write alternative front ends just as easily: Timber
+embedded in Emacs, Timber as a stand-alone Unix console application,
+Timber as an X or GTK application, and so on. In particular, one
+person is already interested in writing a GUI front end for Mac OS
+X.
+
+<p>
+It will also be possible to invoke the back end directly from the
+command line; and in fact it's entirely possible that I won't bother
+to implement some of the less commonly used functions of Timber in
+the Jed front end at all, so they'll have to be invoked from the
+command line. Examples include retrieving a specific message, or a
+whole category, and exporting it in mbox format; importing mail from
+an external mbox; performing full-text searches over all or part of
+your mail; and other useful things. In particular, the command-line
+utility will also support hands-off <em>sending</em> of mail; you'll
+be able to use it in scripts, in place of <tt>mailx</tt> or
+<tt>/usr/lib/sendmail</tt>, and have a copy of the message
+automatically filed in the database and indexed in a given set of
+categories.
+
+<p>
+The mail storage architecture comes in two parts. Firstly, a "mail
+store", which is where actual messages are held; and secondly, an
+index database which stores all the information about categories,
+all the details of senders and recipients and message IDs, the
+subjects and dates of the messages, and anything else to which
+efficient access is required. The idea is that when generating an
+index of messages to be displayed on the screen, only the
+information in the index database should be needed, and the MUA
+should not have to retrieve the full text of any actual message
+until the user specifically says they want to <em>read</em> that
+particular message.
+
+<p>
+I had initially planned to have the index database store the full
+text of the messages as well as index data, but decided this was a
+silly idea for two major reasons. Firstly, if the mail store is in a
+simple text format (in the initial version of Timber it will be a
+set of text files in the ordinary Unix mbox format), this guarantees
+that if the index database becomes corrupt and unusable, you can
+still recover all your mail and shovel it into another MUA without
+too much difficulty. Secondly, separating the mail store from the
+index opens up the possibility of changing the mail store at a later
+date; in particular, one thing that might be useful is to support
+IMAP as the mail store while retaining the index database. (This
+would lose the major advantage of IMAP that you can access your mail
+from anywhere; but for some IMAP users this isn't a particular
+concern, and if a site policy forces them to store their mail on an
+IMAP server then they might appreciate Timber's use of a locally
+stored index to speed up their mail operations and keep IMAP
+requests to a minimum.)
+
+<h2>Status</h2>
+
+<p>
+Timber v2 was nothing but vapourware for some time. My requirement
+for a database was the sticking point: most database software I'm
+aware of follows a client/server model, where the database server
+must be installed systemwide and the sysadmin needs to intervene to
+allow a given user to put any data in it. This seemed like a silly
+requirement for an MUA: if Timber were to see widespread uptake,
+then on a large multi-user Unix system the sysadmin might have to
+individually set up a database area for many of the users to each
+run Timber in.
+
+<p>
+What I really needed was a database which was implemented as a
+library: something I could link into a user-level process and have
+it give me efficient data storage, locking and transactions simply
+by accessing a disk file and using file-locking system calls, with
+no need to ask the sysadmin to do anything at all. I spent a lot of
+planning time on trying to figure out how to write one from scratch,
+but without any database coding experience it looked like being a
+long job and I never started it.
+
+<p>
+Late in 2003, someone brought
+<a href="http://www.hwaci.com/sw/sqlite/">SQLite</a>
+to my attention. This appeared, both at first sight and on closer
+inspection, to be <em>exactly</em> what I'd been looking for. I
+played with it a bit and nothing made me doubt this; so the major
+obstacle to Timber development was removed and I got started in
+earnest.
+
+<p>
+As I write this in January 2004, the bottom layers of Timber - mail
+storage and retrieval, parsing and indexing, character-set
+translation, and encoding of messages for sending - are well under
+way. The high-level layers such as threading and categories, address
+book management, and non-command-line front ends, have yet to get
+started.
+
+<hr>
+(comments to <a href="mailto:&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;">&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;</a>)
+<br>
+(thanks to
+<a href="http://www.chiark.greenend.org.uk/">chiark</a>
+for hosting this page)
+<br>
+(last modified on <!--LASTMOD-->[insert date here]<!--END-->)
+</body>
+</html>

@@ -1,0 +1,195 @@
+<HTML><HEAD>
+<TITLE>Halibut: yet another free document preparation system</TITLE>
+</HEAD>
+<link rel="stylesheet" type="text/css" href="../sitestyle.css" name="Simon Tatham's Home Page Style">
+<BODY>
+<h1>Halibut: yet another free document preparation system</h1>
+
+<p>
+Halibut is a documentation production system, with elements similar
+to TeX, debiandoc, TeXinfo, and others. It is primarily targeted at
+people producing software manuals.
+
+<h2>What does it do?</h2>
+
+<ul>
+<li>
+Accepts one input format and produces multiple output formats. Among
+the intended output formats are such diverse elements as:
+  <ul>
+  <li>Plain ASCII text (done)
+  <li>HTML (done, but could use some work)
+  <li>Windows Help (done, and without requiring a help compiler!)
+  <li><code>man</code> pages (done)
+  <li><code>info</code> (done but unreleased; Halibut generates
+<code>.info</code> files directly rather than generating the
+<code>.texi</code> sources)
+  <li>PostScript (mostly done, but unreleased and not yet configurable)
+  <li>PDF (mostly done, but unreleased and not yet configurable)
+  <li>the newer Windows HTMLHelp (not done)
+  </ul>
+
+<li>
+Hypertext cross-references are ubiquitous where possible. In
+particular, the HTML and PDF output both have hyperlinks in every
+reference between sections, and throughout the index and contents
+sections. (It seems daft to me that so many PDF documents fail to
+have this; it's one of the most useful features of PDF.)
+
+<li>
+Support for international characters via Unicode, with the ability
+to fall back to an alternative representation. For example, you can
+write <code>\u00F6{oe}</code>, and in output formats that support it
+you will see "&ouml;" whereas in those that don't you will see "oe".
+
+<li>
+Comprehensive indexing support. Indexing is easy in the simple case:
+as you write the manual, you just wrap a word or two in
+<code>\i{this wrapper}</code>, and those words will appear in the
+index. More complex indexing, such as adding references to things
+you never explicitly said, rewriting the appearance of index entries
+for a consistent style, duplicating index entries to several places
+because you don't know which concept they'll be looked up under,
+merging references to several things into one combined list, and so
+on, is also supported.
+
+<li>
+Portability. The Halibut source code is portable ANSI C (its memory
+requirements are probably too high to make it feasible to run it on
+16-bit platforms, but that's a fairly reasonable restriction these
+days) and will (should) run without change on Unix, Windows, BeOS,
+MacOS, VMS, whatever other OS you fancy. (Well, you might have
+trouble outputting PDF under VMS, due to file typing issues. I
+dunno.)
+
+<li>
+Configurability. Each output format supplies configuration
+directives, so it is easy to tailor the HTML output (say) to contain
+a standard header with links to other parts of a site, or to use a
+style sheet, or whatever.
+
+</ul>
+
+<h2>So why didn't you just use...</h2>
+
+<ul>
+<li>
+TeX? Because it's huge, and fiddly to set up. Halibut comes as one
+executable, so there <em>can't</em> be trouble installing it. And I
+didn't fancy trying to get TeX to output most of the formats I
+wanted. On the other hand, I managed to steal useful bits of TeX
+along the way, such as the idea of an optimal line wrapping
+algorithm.
+
+<li>
+TeXinfo? After all, that gives a printed manual <em>and</em> on-line
+help, doesn't it? Well, yes, but neither one is very pretty, and one
+of the applications I intended to document was
+<a href="../putty/">PuTTY</a>,
+so Windows Help is a really nice thing to have in the list of outputs.
+
+<li>
+debiandoc, and hack in the extra file formats? Because of lack of
+indexing, mainly. I looked at debiandoc, and couldn't see any way of
+maintaining an index easily. Indexing is a big and tricky task, and
+I would hate to hack index support into a document producer
+<em>after</em> it was written; better to design it in from scratch.
+
+<li>
+DocBook? First of all, because DocBook wasn't around when this
+project started. Secondly, because I looked at the DocBook format
+and simply didn't like it; all the keywords are far too long
+(<code>&lt;appendix&gt;</code> rather than <code>\A</code>, for
+example), I've always preferred the TeX-like backslash-and-braces
+syntax to the HTML/SGML/XML angle-brackets-and-slashes fashion (in
+particular, the former doesn't require you to type each keyword
+twice), and I was also suspicious of DocBook's very detailed markup
+such as individually annotating things like people's names - I find
+writing manuals hard enough work as it is, without having to write
+as much metadata as text. At some point I might write a DocBook
+output format so that Halibut input can be conveniently translated
+<em>into</em> DocBook format, if anyone really needs it.
+
+</ul>
+
+<h2>Where did this crazy idea come from?</h2>
+
+<p>This crazy idea came to me while I was working on
+<a href="http://www.cryogen.com/nasm/">NASM</a>,
+and wanted the documentation to be available on the project's web
+site as well as in printable and online-viewable formats. I hacked
+together a Perl implementation of most of the Halibut concepts,
+without any real design, and it worked well enough to get the NASM
+manual off the ground.
+
+<p>
+The Perl version is still distributed in the NASM archive. It's
+hideously slow, the code is unreadable to the point of being
+unmaintainable (most of the work of the parsing, for example, is
+done by long line-noise regexps and even <em>I've</em> forgotten
+what they all mean), the index management is broken (since it was
+never clearly designed, my perception of what I wanted it to be
+wavered as I implemented it...), the title of the manual is
+hard-coded because I never got round to adding a way to specify that
+in the document source, PDF output isn't there, and configurability
+is nonexistent.
+
+<p>
+So I decided enough was enough, and together with my friends at
+<a href="http://www.tartarus.org/">Tartarus</a>,
+I began a loud and argumentative design session, in which we argued
+about Unicode, worked out precisely what the index mechanism had
+failed to be and what it really should have been, and sorted out
+other irritating details, and in which I strenuously resisted adding
+a variety of creeping features to the design. And then I started
+rewriting from scratch, in portable C. It's going quite well so far.
+
+<h2>Why on earth "Halibut"? What relevance does the name have to
+anything?</h2>
+
+<p>
+Historical reasons. It's probably better not to ask.
+
+<h2>What is its current status?</h2>
+
+Halibut 0.9 is now released. Supported output formats are text,
+HTML, Windows Help and Unix <code>man</code> pages.
+
+You can download the release source code here
+[<a href="halibut-0.9.tar.gz"><code>halibut-0.9.tar.gz</code></a>],
+or you can read the
+<a href="doc-0.9/">release documentation</a> online in HTML format.
+
+<p>
+If you want to see the very latest state of development, you can
+check the development sources out from our Subversion repository.
+
+<p>
+The Subversion URL you need for the Halibut trunk development is
+<code>svn://ixion.tartarus.org/main/halibut</code>. You will also need
+the character-set handling library, which Halibut will expect to be
+checked out alongside the main Halibut source. So you could check
+out all the code necessary for the trunk version of Halibut using a
+pair of commands such as
+<pre><code>svn co svn://ixion.tartarus.org/main/halibut
+svn co svn://ixion.tartarus.org/main/charset</code></pre>
+
+<p>
+To check out branches or release tags of the code, replace <code>halibut</code> with
+the branch or tag name (such as <code>halibut-0.9</code>). You can
+see what branches exist using the command <code>svn ls
+svn://ixion.tartarus.org/main</code>.
+
+<p>
+Alternatively, you can browse the Subversion repository on the WWW,
+<a href="http://www.tartarus.org/~simon-anonsvn/viewcvs.cgi/halibut/">here</a>.
+</p>
+
+
+<hr>
+Page maintained by
+<a href="mailto:&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;">Simon Tatham</a>.
+<br>
+(last modified on <!--LASTMOD-->[insert date here]<!--END-->)
+
+</BODY></HTML>

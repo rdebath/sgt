@@ -1,0 +1,346 @@
+<html>
+<head>
+<title>Cumulative Frequency Tables</title>
+</head>
+<link rel="stylesheet" type="text/css" href="../sitestyle.css" name="Simon Tatham's Home Page Style">
+<body>
+<h1 align=center>Cumulative Frequency Tables</h1>
+
+<h2><a name="intro">Introduction</a></h2>
+
+<p>
+Suppose you are maintaining a table of frequencies. You are
+receiving a steady incoming stream of symbols (represented as
+numbers between 0 and <code>NSYMS</code>), and you want to be able
+to track how many symbols of a given type you've seen.
+
+<p>
+The obvious way to do this is to have an array indexed by the symbol
+number: <code>a[sym]</code> tells you how many occurrences of symbol
+<code>sym</code> you've seen. Insertion is constant-time (increment
+<code>a[sym]</code>), and lookup is also constant-time (read
+<code>a[sym]</code>).
+
+<p>
+This is less helpful when you want <em>cumulative</em> frequencies:
+not "how many of symbol 18 have I seen", but "how many symbols
+<em>up to</em> 18 have I seen". Looking that statistic up in the
+array takes <code>O(NSYMS)</code> time, because you have to walk
+along the array from 0 to <code>sym</code> adding together all the
+entries.
+
+<p>
+If you change the contents of the array so that it contains the
+cumulative frequencies instead of the individual frequencies, that's
+not much help either, because although cumulative frequency lookup
+is now very fast, <em>insertion</em> takes <code>O(NSYMS)</code>
+time, because when a symbol <code>sym</code> arrives you have to
+walk along the array adding 1 to the first <code>sym</code> elements.
+
+<p>
+So it looks as if we have the choice between constant-time insertion
+and linear-time lookup, or linear-time insertion and constant-time
+lookup. As <code>NSYMS</code> increases, this looks less and less
+attractive. There must be a better way.
+
+<h2><a name="algorithm">Algorithm Description</a></h2>
+
+<p>
+There is, and I'll now describe it.
+
+<p>
+(I'm going to start by describing the simple case when
+<code>NSYMS</code> is a power of two. The algorithm still works when
+this isn't the case, but takes a bit more explaining.)
+
+<p>
+Conceptually, our new data structure is going to be a collection of
+arrays. It's possible to store all of these end-to-end in the same
+<em>physical</em> array, but it's easiest to think of them as a
+bunch of independent arrays. The arrays themselves are numbered from
+0 to <code>N</code>, where <code>2^N = NSYMS</code>.
+
+<ul>
+<li>
+Array <code>N</code> has one element, which counts the total number
+of symbols we have seen overall.
+<li>
+Array <code>N-1</code> has one element, which counts the total
+number of symbols we have seen in the range 0 to
+<code>2^(N-1)</code>. (Including 0, excluding <code>2^(N-1)</code>).
+<li>
+Array <code>N-2</code> has two elements. Element 0 counts the
+symbols we have seen in the range 0 to <code>2^(N-2)</code>, and
+element 1 counts the symbols we have seen in the range
+<code>2*2^(N-2)</code> to <code>3*2^(N-2)</code>.
+<li>
+(and so on)
+<li>
+Array 0 has <code>2^(N-1)</code> elements. Element 0 counts the
+number of symbol 0 we have seen; element 1 counts the number of
+symbol 2; in general, element <code>i</code> counts the number of
+symbol <code>2*i</code>.
+</ul>
+
+<p>
+In general:
+<ul>
+<li>
+array <code>i</code> has <code>2^(N-1-i)</code> elements (except that
+array <code>N</code> is a special case)
+<li>
+element <code>j</code> of array <code>i</code> counts the total
+number of symbols between <code>j&nbsp;*&nbsp;2^(i+1)</code> and
+<code>j&nbsp;*&nbsp;2^(i+1)&nbsp;+&nbsp;2^i</code>.
+</ul>
+
+<p>
+Here's a diagram illustrating the case <code>N=3</code> (so
+<code>NSYMS=8</code>):
+
+<p><code><pre>          array A3  array A2  array A1  array A0
+         +---------+---------+---------+---------+
+symbol 7 |         |         |         |         | symbol 7
+         |         |         |         +---------+
+symbol 6 |         |         |         |  A0[3]  | symbol 6
+         |         |         +---------+---------+
+symbol 5 |         |         |         |         | symbol 5
+         |         |         |  A1[1]  +---------+
+symbol 4 |         |         |         |  A0[2]  | symbol 4
+         |  A3[0]  +---------+---------+---------+
+symbol 3 |         |         |         |         | symbol 3
+         |         |         |         +---------+
+symbol 2 |         |         |         |  A0[1]  | symbol 2
+         |         |  A2[0]  +---------+---------+
+symbol 1 |         |         |         |         | symbol 1
+         |         |         |  A1[0]  +---------+
+symbol 0 |         |         |         |  A0[0]  | symbol 0
+         +---------+---------+---------+---------+</pre></code>
+
+<p>
+So that describes the data structure; now for the operations.
+
+<p>
+Insertion is log-time. Since any given symbol is counted by either
+zero or one elements of each array, we need to modify at most
+<code>N</code> elements.
+<ul><li>
+For example, in the above diagram: to add a new symbol 4 to the
+table, we need to increment <code>A3[0]</code>, nothing in
+<code>A2</code>, <code>A1[1]</code>, and <code>A0[2]</code>.
+<li>
+In general, to increment the count for symbol <code>sym</code>: for
+each array <code>i</code>, let
+<code>j&nbsp;=&nbsp;sym&nbsp;/&nbsp;2^(i+1)</code>. Then increment
+element <code>j</code> of array <code>i</code>, <em>if and only
+if</em> bit <code>i</code> of <code>sym</code> is 0.
+<li>
+This generalises easily to adding more than one instance of a
+symbol at once, or even to <em>taking away</em> some instances of a
+symbol. To add <code>n</code> to the count of symbol
+<code>sym</code>, you just add <code>n</code> to precisely the same
+array elements listed above.
+</ul>
+
+<p>
+Cumulative frequency lookup is also log-time. Suppose we want to
+determine the total number of symbols we have seen whose value is
+less than <code>sym</code>. (So <code>sym</code> could range from 0
+to <code>NSYMS</code>, <em>inclusive</em>.) We can achieve this by
+adding together at most one element of each array.
+
+<ul>
+<li>
+For example, in the above diagram: to count all the symbols with
+value less than 3, we compute <code>A1[0]+A0[1]</code>. To count all
+the symbols with value less than 7, we compute
+<code>A2[0]+A1[1]+A0[3]</code>. To count all the symbols with value
+less than 8, we just return <code>A3[0]</code>.
+<li>
+In general, to count all the symbols with value less than
+<code>sym</code>: start with a count of zero, and loop over each
+array. For each array <code>i</code>, test whether bit
+<code>i</code> of <code>sym</code> is 1. If it is, then let
+<code>j&nbsp;=&nbsp;sym&nbsp;/&nbsp;2^(i+1)</code>, and add element
+<code>j</code> of array <code>i</code> to the count.
+<li>
+Special case: if <code>sym=NSYMS</code>, we just return the single
+element of array <code>N</code>.
+</ul>
+
+<p>
+Single frequency lookup can be done by retrieving two adjacent
+cumulative frequencies and subtracting them. However, there's a
+slightly quicker way too, still log-time but requiring only one pass
+through the arrays instead of two:
+<ul>
+<li>
+Let <code>count</code> equal element 0 (the only element) of array
+<code>N</code>.
+<li>
+Let <code>i</code> loop from <code>N-1</code> down to zero,
+inclusive. For each <code>i</code>: let
+<code>j&nbsp;=&nbsp;sym&nbsp;/&nbsp;2^(i+1)</code>, and look up
+<code>e&nbsp;=&nbsp;Ai[j]</code>, element <code>j</code> of array
+<code>i</code>. If bit <code>i</code> of <code>sym</code> is 0, then
+let <code>count</code> equal <code>e</code>; otherwise let
+<code>count</code> equal <code>count-e</code>.
+<li>
+After the loop is finished (having just processed array 0),
+<code>count</code> contains the individual count of symbol
+<code>sym</code>.
+</ul>
+
+<p>
+Finally, there's one more operation you might want: given a number,
+we might want to find which cumulative frequency band it falls in.
+(In other words: if you sorted all the symbols in the table into
+order, what would the <code>n</code>th one be?) This can be done, in
+log time, similarly to the other operations:
+<ul>
+<li>
+Let <code>c=0</code>.
+<li>
+Let <code>i</code> loop from <code>N-1</code> down to zero,
+inclusive. For each i: look up <code>j = Ai[c]</code>. If
+<code>n &lt; j</code>, then let <code>c = c * 2</code>; otherwise,
+let <code>c = c * 2 + 1</code> and let <code>n = n - j</code>.
+<li>
+After the loop has finished (having just processed array 0),
+<code>c</code> contains the index of the symbol <code>S</code>
+required. That is, the cumulative frequency of all symbols
+<em>below</em> <code>S</code> is less than or equal to
+<code>n</code>, and the cumulative frequency of all symbols
+<em>below or equal to</em> <code>S</code> is greater than
+<code>n</code>.
+</ul>
+
+<p>
+This completes the algorithm definition. All that remains is to deal
+with the case in which <code>NSYMS</code> is not a power of two.
+Conceptually, we can deal with this by rounding <code>NSYMS</code>
+up to the next power of two and using the algorithm in the ordinary
+way. If we do that, we discover we can shorten most of the arrays
+as a result: every index into every array is computed by the formula
+<code>j&nbsp;=&nbsp;sym&nbsp;/&nbsp;2^(i+1)</code>, and therefore
+the maximum length needed for each array must be given by the
+formula <code>(NSYMS-1)&nbsp;/&nbsp;2^(i+1) + 1</code>.
+(<code>sym</code> is always strictly less than <code>NSYMS</code>,
+<em>except</em> that in the cumulative lookup operation it can be
+equal to <code>NSYMS</code>. But in this case the operation
+instantly returns the single element of array <code>N</code>, and
+never progresses to the other arrays, so this special case doesn't
+need to affect us.)
+
+<p>
+Consider the example diagram above. We had:
+
+<p><code><pre>    NSYMS = 8; NSYMS-1 = 7
+    len(A3) = 7 / 16 + 1 = 1
+    len(A2) = 7 / 8 + 1 = 1
+    len(A1) = 7 / 4 + 1 = 2
+    len(A0) = 7 / 2 + 1 = 4</pre></code>
+
+Now suppose we changed <code>NSYMS</code> to be 5 instead of 8. Then
+we would have
+
+<p><code><pre>    NSYMS = 5; NSYMS-1 = 4
+    len(A3) = 4 / 16 + 1 = 1
+    len(A2) = 4 / 8 + 1 = 1
+    len(A1) = 4 / 4 + 1 = 2
+    len(A0) = 4 / 2 + 1 = 3</pre></code>
+
+<p>
+In other words, nothing changes in this case except for the final
+array. This would lead to the modified diagram
+
+<p><code><pre>          array A3  array A2  array A1  array A0
+         +---------+---------+---------+---------+
+symbol 4 |         |         |  A1[1]  |  A0[2]  | symbol 4
+         |         +---------+---------+---------+
+symbol 3 |         |         |         |         | symbol 3
+         |         |         |         +---------+
+symbol 2 |  A3[0]  |         |         |  A0[1]  | symbol 2
+         |         |  A2[0]  +---------+---------+
+symbol 1 |         |         |         |         | symbol 1
+         |         |         |  A1[0]  +---------+
+symbol 0 |         |         |         |  A0[0]  | symbol 0
+         +---------+---------+---------+---------+</pre></code>
+
+<p>
+in which all the operations still work exactly as they did before.
+
+<h2><a name="complexity">Complexity</a></h2>
+
+<p>
+I've already shown that the time cost of the operations (increment
+or modify a single count; look up a cumulative frequency; look up a
+single frequency) is <code>O(N)</code> (i.e. <code>O(log
+NSYMS)</code>) for all operations.
+
+<p>
+The storage cost of the data structure is roughly
+<code>O(NSYMS)</code>. This is easily seen because the size of array
+<code>i</code> is approximately <code>NSYMS/2^i</code> (perhaps off
+by one.) Therefore, the total size of all the arrays is
+<code>NSYMS*(1/2+1/4+1/8+1/16+...)</code>, which is at most
+<code>NSYMS</code>. (The off-by-one errors might add up to an error
+of <code>log NSYMS</code>, but we don't mind about that.)
+
+<h2><a name="applications">Applications</a></h2>
+
+<p>
+I invented this algorithm when writing an adaptive arithmetic
+compressor (for my own interest and education, since I'm told
+arithmetic compression is a patented technology). For arithmetic
+compression to work, you need cumulative probabilities for all your
+symbols: for each symbol, you need to be able to retrieve the
+probability of seeing that symbol or anything lower than it in
+value. This is clearly a job for a cumulative frequency table. In
+addition, my compressor's probabilities were adaptively based on the
+symbol frequencies in the last 16Kb of data, so every time the
+compressor received a new character it had to enter it in the
+frequency table and also remove the character from 16Kb earlier.
+Therefore, for every character I compressed, I needed to do an
+insertion, a removal, and two cumulative lookups. Linear time would
+have been painful.
+
+<p>
+In addition, it seems to me that this algorithm might potentially
+have uses in code generation. Instead of thinking of it as a
+cumulative frequency table, think of it as a set of
+<code>NSYMS+1</code> marks with varying distances between them,
+allowing you to move any adjacent pair of marks closer together or
+further apart, and allowing you to quickly measure the distance
+between <em>any</em> (not necessarily adjacent) pair of marks.
+
+<p>
+So imagine a situation in which you have a number of "basic blocks",
+and each has an optional jump at the end that targets the beginning
+of another block. You know the length of the code in each block
+(i.e. the distance between the marks either side of it), and you can
+work out the distance required in each jump. If you were to try an
+optimisation phase in which you modified or re-ordered blocks so as
+to try to reduce those distances, this algorithm might be a
+convenient way to keep track of where you'd got to.
+
+<h2><a name="code">Sample Code</a></h2>
+
+<p>
+Sample code in C is provided
+<a href="cumulative.c">here</a>.
+
+<p>
+(<a href="./">back to algorithms index</a>)
+</p>
+
+<hr>
+(comments to <a href="mailto:&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;">&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;</a>)
+<br>
+(thanks to
+<a href="http://www.chiark.greenend.org.uk/">chiark</a>
+for hosting this page)
+<br>
+(last modified on <!--LASTMOD-->[insert date here]<!--END-->)
+</body>
+</html>

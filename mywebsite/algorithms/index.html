@@ -1,0 +1,125 @@
+<html>
+<head>
+<title>Simon Tatham's Algorithms Page</title>
+</head>
+<link rel="stylesheet" type="text/css" href="../sitestyle.css" name="Simon Tatham's Home Page Style">
+<body>
+<h1 align=center>Simon Tatham's Algorithms Page</h1>
+
+<p>
+This web page is a repository for algorithms, maintained by
+<a href="../">Simon Tatham</a>.
+Its purposes are:
+
+<ul>
+<li>
+To provide unusual algorithms to people who might have a use for
+them.
+<li>
+To make interesting reading for people who are into algorithm design.
+<li>
+To act as prior art in case anybody else tries to patent one of
+these algorithms.
+</ul>
+
+<p>
+In addition to actual algorithms, I've also got a couple of unsolved
+problems, in the hope that people might send me ideas on how to
+solve them.
+
+<p>
+If you have an interesting and unusual algorithm and would like it
+stored on this site,
+<a href="mailto:&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;">send it to me</a>
+and I might well add it. If you could write it up in HTML in a form
+that looks like the existing pages, that would be helpful.
+
+<p>
+Algorithms on this site <em>don't</em> have to be new and undiscovered
+inventions. They only have to be unusual enough not to show up in
+the average algorithms textbook.
+
+<p>
+So, enough of the introduction. Time for some actual algorithms.
+
+<h2>Algorithms I have invented</h2>
+
+<p>
+(Disclaimer: I don't intend to imply that nobody else has ever
+thought of these algorithms. They might easily have done. The nice
+thing about not patenting them is that I don't have to know for sure
+whether they're original or not :-)
+
+<dl>
+<dt>
+<a href="cumulative.html">Cumulative frequency tables</a>
+<dd>
+A quick (log-time) mechanism for maintaining a cumulative frequency
+table. Useful in adaptive compression methods (particularly
+arithmetic compression). Might also have applications in assembly or
+code generation.
+
+<dt>
+<a href="blocksort.html">A block-sorting approach to string
+searching</a>
+<dd>
+A method of searching one string for another, inspired by the
+Burrows-Wheeler transform. Unlike most searching algorithms, which
+are optimised to search for one needle in a large amount of haystack
+text, this algorithm is optimised to take one fixed haystack and
+search it very fast for lots of different needles.
+
+<dt>
+<a href="listsort.html">Sorting a linked list using Mergesort</a>
+<dd>
+All the serious computer-science literature about sorting tells you
+how to do it on arrays. As it turns out, sorting a linked list is
+much easier, but nobody actually bothers to <em>tell</em> you about
+it. Well, I do, and here's how you can use a variant of Mergesort to
+sort a linked list in reliable <code>O(N log N)</code> time, with no
+worst cases, no auxiliary storage requirements, <em>and</em> stably.
+
+<dt>
+<a href="cbtree.html">Counted B-trees</a>
+<dd>
+An enhancement to the well known B-tree algorithms to allow you to
+look up items in the tree by numeric index, or to find the numeric
+index of an item. Useful for finding percentiles, for deciding on a
+strategy for a complex search operation, or for storing items in a
+B-tree in arbitrary order without a sorting criterion.
+
+<dt>
+<a href="revlist.html">Reversible linked lists</a>
+<dd>
+A modified form of doubly linked list, which allows an arbitrary
+section of a list to be <em>reversed</em> in constant time, simply by
+changing a few pointers around, like any list splice operation.
+Completely useless as far as I know, but very cute.
+
+</dl>
+
+<h2>Unsolved problems: algorithms I wish I knew</h2>
+
+<dl>
+
+<dt>
+<a href="equivalence.html">Equivalence relations</a>
+<dd>
+I'd like a data structure that represents an equivalence relation on
+a given set, so that you start off assuming everything to be
+equivalent, and gradually split equivalence classes as more and more
+distinctions are found between elements. Applications include state
+machine construction, but I'm sure there are others.
+
+</dl>
+
+<hr>
+(comments to <a href="mailto:&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;">&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;</a>)
+<br>
+(thanks to
+<a href="http://www.chiark.greenend.org.uk/">chiark</a>
+for hosting this page)
+<br>
+(last modified on <!--LASTMOD-->[insert date here]<!--END-->)
+</body>
+</html>

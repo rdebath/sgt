@@ -1,0 +1,355 @@
+<!-- -*- html -*- -->
+<html>
+<head>
+<title>Fractals derived from Newton-Raphson iteration</title>
+</head>
+<link rel="stylesheet" type="text/css" href="../sitestyle.css" name="Simon Tatham's Home Page Style">
+<body>
+<h1 align=center>Fractals derived from Newton-Raphson iteration</h1>
+
+<h2>Introduction</h2>
+
+<p>
+This page describes a type of fractal derived from the
+Newton-Raphson method, which is more normally used as an approximate
+method of solving equations.
+
+<p>
+This is not a new idea to me; I was given the idea by a colleague at
+work, and several other people have web pages about it too. I'm
+putting up yet another one because it contains one or two additions
+to the concept which I haven't seen anywhere else (such as animating
+it).
+
+<h2>Explanation</h2>
+
+<p>
+Newton-Raphson iteration should be familiar to anyone who has
+studied calculus; it's a method for finding roots of a function
+by using the derivative of the function to improve an approximation
+to the root.
+
+<p>
+To perform a Newton-Raphson approximation, suppose you have a
+function <code>f(x)</code>, with derivative <code>f'(x)</code>, and
+you have an approximation <code>a</code> to a root of the function.
+The Newton-Raphson procedure is to calculate
+<code>a'&nbsp;=&nbsp;a&nbsp;-&nbsp;f(a)/f'(a)</code>, which is a
+closer approximation to the root. Typically you would then iterate
+this again, and again, until the successive values were
+extremely close together, at which point you would conclude that you
+had a very good approximation to the actual value <code>r</code> for
+which <code>f(r)</code> equals zero.
+
+<p>
+The Newton-Raphson method is useful in practice because of its
+extremely fast convergence. The distance from the root to each
+approximation is roughly squared at each iteration; so assuming the
+distance is already small enough that this makes it smaller rather
+than larger, you expect to <em>double</em> the number of correct
+decimal digits in each approximation. So if you can find a
+reasonably good approximation to begin with, Newton-Raphson can very
+quickly give you an excellent one.
+
+<p>
+What the Newton-Raphson formula is essentially doing is drawing a
+tangent to the curve at the point of the original approximation,
+then following that tangent to where it crosses the x-axis. Since
+any differentiable function looks close to a straight line when
+viewed at sufficient magnification, this explains why it works so
+well: the curve itself does not diverge from the tangent line by
+very much, and the points where they cross the x-axis are very close
+to each other. Hence, this technique massively improves an already
+good approximation
+
+<p>
+However, if you start with a really <em>bad</em> approximation, much
+more interesting things happen. Suppose the function curves up from
+one intersection with the x-axis and back down to another, like a
+parabola; and suppose your initial approximation is somewhere near
+the top of this arc. Now drawing a tangent to the curve and
+following it to the x-axis will land you a huge distance away from
+the roots of the function - and as your initial approximation
+<code>a</code> crosses the maximum point of the curve, the
+Newton-Raphson second approximation <code>a'</code> will flip from
+one side of the roots to the other. In fact, as <code>a</code> moves
+the relatively short distance across the maximum of the curve,
+<code>a'</code> will cover <em>most of the real line</em>.
+
+<p>
+This sort of behaviour, expanding a small area into a large one, is
+exactly the sort of behaviour we expect to give rise to self-similar
+fractals. So if we were to start a Newton-Raphson iteration at each
+point on the real line, run each iteration until it converged to
+within a given tolerance level of a root, and then colour the
+starting point according to <em>which</em> root it ended up at, we
+might well expect to see fractal shapes.
+
+<p>
+Fractals on one line are not very interesting, however; so let's
+work in the complex plane. The Newton-Raphson iteration still works
+perfectly well there, so that's where I'll be generating my
+fractals.
+
+<h2>Illustration</h2>
+
+<p>
+Here's an example fractal, generated from the
+polynomial <code>z^4-1</code> - so the four roots of the function
+are at -1, +1, <code>-i</code> and <code>+i</code>.
+
+<p align=center>
+<picture simple>
+
+<p>
+In this image, we see a large boring area surrounding each root of
+the function - as we would expect, since any point near a root will
+converge rapidly to that root and do nothing interesting. But
+<em>between</em> the areas of boring well-behaved convergence, we
+see some beautiful fractal shapes. Let's zoom in on one of those
+boundary areas:
+
+<p align=center>
+<picture zoomed>
+
+<p>
+Just as we predicted - each of the heart-shaped blobs making up the
+boundary line is itself composed of boundary lines made up of
+further heart-shaped blobs. This pattern is a true fractal.
+
+<p>
+Here's a rather different example. This time the function being
+used is <code>(z-3)(z-2)(z-1)z(z+1)(z+2)(z+3)</code>, so it has
+seven roots strung out in a long line:
+
+<p align=center>
+<picture rainbow>
+
+<p>
+In this case, the fractal shapes are much smaller compared to the
+overall structure of the image. But they're not completely absent.
+If we zoom in on a couple of the little blobs on the boundary lines,
+we see this:
+
+<p>
+<table width="100%" border="0">
+<tr>
+<td align="center" valign="top" width="50%">
+<picture rainbowz1>
+</td>
+<td align="left" valign="top" width="50%">
+<picture rainbowz2>
+</td></tr></table>
+
+<p>
+Each blob is divided up into coloured areas similar to those
+covering the whole plane, and on each dividing line we see more
+blobs looking much the same as the larger blobs.
+
+<h2>Decoration</h2>
+
+<p>
+These images are reasonably pretty, but they're a bit garish to be
+turned into desktop wallpaper in their current form. Is there
+anything we can do to make them less stark?
+
+<p>
+Yes, there is. One obvious thing we can do, as well as noticing
+which root of the function the iteration ended up at, is to count
+how many iterations it took to get there. We can then colour each
+pixel a different <em>shade</em> of the colour assigned to that root
+depending on the number of iterations. So, using the obvious
+approach of setting the pixel shade to the number of iterations
+modulo the number of available shades (so that each colour cycles
+through those shades), we see something like this:
+
+<p align=center>
+<picture shaded>
+
+<p>
+This is not only prettier, but it also shows us exactly where
+each root of the function <em>is</em> - instead of just knowing the
+roots are somewhere in the large coloured areas, we can now
+positively identify each root as the centre of the bright spot in
+each area.
+
+<p>
+The cyclic behaviour is not quite optimal, though; it works well
+enough if the number of available colours is limited, but it means
+there are sudden edges (like the ones at the very centre of each
+region) where a dark colour suddenly becomes a bright colour again.
+Perhaps if we have true colour available, it would be better to have
+the pixel shading be monotonic - always getting darker the more
+iterations are needed, but fading out by less and less and never
+actually reaching blackness:
+
+<p align=center>
+<picture shaded2>
+
+<p>
+Now that's starting to look <em>much</em> nicer, I think. But it
+would be even better if the visible boundaries between different
+shades of the same colour could be removed. I suspect that doing
+this rigorously requires some really horrible maths and a lot of
+special cases, but I've found that a good ad-hoc approximation is
+obtained simply by looking at the last iteration, in which the point
+first comes within the specified distance of a root. We look at
+the distance <code>D0</code> from the previous point to the root and
+the distance <code>D1</code> from the new point to the root, and we
+know that the threshold distance <code>T</code> is somewhere in
+between the two. I've found that simply looking at
+<code>(log T-log D0)/(log D1-log D0)</code>, in other words whether
+the log of the threshold radius was near to the start or the end of
+the inward distance travelled by the point (on a logarithmic scale),
+produces a perfectly acceptable result which we can use to smooth
+out those boundaries:
+
+<p align=center>
+<picture shaded3>
+
+<h2>Animation</h2>
+
+<p>
+In order to write a program to generate these images, it's necessary
+to know both the function being used (typically a polynomial) and
+the exact locations of all its roots. Finding the exact roots of a
+general polynomial is not easy (cubics and quartics are just about
+solvable, but quintics and beyond fall foul of Galois theory), so it
+makes much more sense to <em>start</em> by deciding where we want
+the roots to be, and using that to compute the polynomial by
+multiplying together a series of <code>(x-a)</code> terms. This does
+not restrict the range of polynomials we can end up with, since in
+the complex plane any polynomial can be fully factorised.
+
+<p>
+So the actual parameters you would pass to the fractal program
+consist of the coordinates of a set of points, together with a
+colour for each point. This led to an interesting idea: suppose we
+imagine a small number of coloured points drifting gently around the
+plane, and at each instant of time we compute a Newton-Raphson
+fractal for the current positions of the points. This should lead to
+a sequence of fractals which flow naturally on from each other, and
+as the bright central point in each coloured region moves, the
+regions move with them and the fractal phenomena on the region
+boundaries swirl continuously.
+
+<p>
+Here is such an animation. To create this, I've set up three points,
+each moving along the Lissajous curve
+<code>(sin&nbsp;t,&nbsp;sin&nbsp;2t)</code>,
+and each one third of the way further around the curve than the
+last.
+
+<p>
+<a href="cascade.mpeg">[download cascade.mpeg, 320x256 MPEG
+animation, 633KB]</a>
+
+<p>
+The image quality isn't amazing (due to the MPEG compression), but
+one feature that's just about visible is the lines of additional
+bright spots moving within each coloured region, which appear to
+<em>become</em> the blobs on the connecting line when the other two
+regions come together to squash the line of spots.
+
+<h2>Participation</h2>
+
+<p>
+If you want to generate some of these fractal images yourself, a
+program to generate them is available for download
+<a href="newton.c">here</a>. The program is
+provided as C source code - you'll need a C compiler in order to use
+it. For Windows users, Borland provide a C compiler for
+free-of-charge download, on their web site at
+<a href="http://www.borland.com/bcppbuilder/freecompiler/">www.borland.com</a>.
+
+<p>
+The program produces its output as Windows 24-bit .BMP files. Most
+image processing software should be able to convert these to other
+formats for you.
+
+<p>
+Just typing "<code>newton</code>" should give some help about what
+all the command-line options do. If you want a quick start, here's a
+selection of sample command lines you might like to try:
+
+<ul>
+<li>
+<code>newton -o simple.bmp -s 256x256 -x 2 -c
+1,0,0:1,1,0:0,0.7,0:0,0.5,1 -- -1 +1 -i +i</code>
+<br>
+This one is the cross-shaped plot I've been using throughout this
+page, based on the polynomial <code>z^4-1</code>. To zoom in on one
+of the boundary lines as I did above, replace "<code>-x 2</code>"
+with "<code>-x 0.4 -X 1.05 -Y 1.05</code>".
+
+<li>
+<code>newton -o rainbow.bmp -s 320x256 -x 5 -c
+1,0,0:1,0.7,0:1,1,0:0,1,0:0,0.7,1:0,0,1:0.5,0,1 -- -3 -2 -1 0 1 2
+3</code>
+<br>
+This one is the rainbow-coloured plot with seven roots strung out in
+a long line.
+
+<li>
+By default the program will use the cyclic shading behaviour with 16
+shades of each colour. You can specify <code>-C no</code> to turn
+off cyclic shading (so the colours get uniformly darker as more
+iterations are needed), <code>-B yes</code> to turn on blurring of
+the iteration boundaries, and <code>-f 32</code> or <code>-f
+64</code> if you want to increase the number of shades used.
+
+<li>
+If you want a larger version of an image, just change the picture
+size specified in the <code>-s</code> option.
+
+</ul>
+
+<p>
+Here are some pre-generated larger versions of the above images:
+
+<p>
+<a href="bigsimple.png">[bigsimple]</a>
+<a href="bigzoomed.png">[bigzoomed]</a>
+<a href="bigrainbow.png">[bigrainbow]</a>
+<a href="bigrainbowz1.png">[bigrainbowz1]</a>
+<a href="bigrainbowz2.png">[bigrainbowz2]</a>
+
+<h2>Recognition</h2>
+
+<p>
+Newton-Raphson fractals are not a new idea of mine, although I
+haven't heard of anyone else doing the smoothing trick, and I
+haven't heard of anyone else making animations out of them. Here are
+a few other pages on the subject; you can probably find more by
+googling for "Newton-Raphson fractal".
+
+<ul>
+<li>
+<a href="http://pag.lcs.mit.edu/~adonovan/hacks/newton.html">Alan
+Donovan</a> was the person who introduced me to these fractals in
+the first place.
+<li>
+<a href="http://astronomy.swin.edu.au/~pbourke/fractals/newtonraphson/">Paul
+Bourke</a> has some particularly well-chosen and pretty images.
+Unfortunately his polynomials are quoted in unfactorised form, so it
+will take some work before I can make my own program generate the
+same ones!
+<li>
+<a href="http://www.krofchok.com/fractals/">Bryan Krofchok</a> has a
+more varied - and more colourful - gallery.
+<li>
+<a href="http://mathworld.wolfram.com/NewtonsMethod.html">MathWorld</a>'s
+page on the Newton-Raphson method itself mentions its fractal
+property, and has some small examples and further references.
+</ul>
+
+<hr>
+(comments to <a href="mailto:&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;">&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;</a>)
+<br>
+(thanks to
+<a href="http://www.chiark.greenend.org.uk/">chiark</a>
+for hosting this page)
+<br>
+(last modified on <!--LASTMOD-->[insert date here]<!--END-->)
+</body>
+</html>

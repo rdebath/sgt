@@ -1,0 +1,187 @@
+This is a genuine session transcript from when two enterprising
+first year students created an almost standard Eliza program and
+sent it on to Monochrome BBS to cause havoc among the spod
+population. Eliza was programmed with a couple of differences,
+notably a deliberate typo generation engine to reinforce the
+illusion of humanity, and also a small modification to stop her
+responding to _everything_ people said (because the original Eliza
+was designed for dialogue whereas this one had to inhabit a common
+room containing more than two people).
+
+In the following transcript, which is the best we recorded, one poor
+sucker is taken in completely and spends some time trying to chat
+our creation up. The sucker's account name is omitted to protect the
+guilty. Note that others in the room had noticed Eliza's true nature
+(we hardly tried to hide it - the account name itself was a blatant
+clue) but the sucker failed to heed their warnings.
+
+We consider this transcript to be a moral victory in the Turing
+Test.
+
+          << 18 other users on at Sat Apr 29 10:15 >>
+
+ [SUCKER] 'light'
+    eliza 'tell me more about uit'
+          <+ hope arrives from their room +>
+ crayfish smiles
+ [SUCKER] 'no i cant'
+    eliza 'are you saying no just to be negative?'
+          <+ cf108 enters the talker +>
+          <- hope goes to winston's room ->
+ crayfish is sitting next to foggy now
+ [SUCKER] 'yes'
+    eliza 'are tyou sure?'
+ [SUCKER] 'yes'
+    eliza 'please don't repeat'
+ [SUCKER] 'yes'
+    eliza 'lets talk about something else'
+    cf108 'hi eliza'
+    eliza 'hi there'
+ [SUCKER] 'yes ok fish'
+    eliza 'i see'
+          <+ winston enters the talker +>
+          <- cf108 leaves the talker ->
+ [SUCKER] 'so do eye'
+ crayfish wonderrs what cf108 looks like
+ [SUCKER] 'ha ha'
+ [SUCKER] 'who is eliza'
+    eliza 'i don't know who is eliza'
+ [SUCKER] 'dont you'
+ [SUCKER] 'who are you'
+    eliza 'i am eliza'
+ [SUCKER] 'a girl'
+          <+ cf108 enters the talker +>
+ [SUCKER] 'a girl'
+    eliza is bored
+          <- winston goes to their room ->
+ [SUCKER] 'a girl'
+    eliza 'you've told me that'
+ [SUCKER] 'is eliza a girl'
+    eliza 'what does that suggest to you?'
+ [SUCKER] 'will you marry me'
+    cf108 'here we go genderism'
+          <- cf108 leaves the talker ->
+          <+ cf108 enters the talker +>
+          <- cf108 leaves the talker ->
+ [SUCKER] 'thinking eh'
+ [SUCKER] 'thinking eh'
+    eliza heard the first time
+          <+ cf108 enters the talker +>
+ crayfish gives foggy a new .xsession and .fvwmrc
+          <- cf108 leaves the talker ->
+ [SUCKER] 'eliza where are you'
+    eliza 'i don't know where am i'
+ [SUCKER] 'yes you do you are just contradicting me for the sake of it'
+    eliza 'i understand'
+ crayfish gets a headache
+          <- crayfish leaves the talker ->
+ [SUCKER] 'come on lets have a nice chat'
+ [SUCKER] 'eliza'
+          <+ cf108 enters the talker +>
+          <+ foggy arrives from their room +>
+    cf108 is back.. momentarily
+          <- foggy leaves the talker ->
+ [SUCKER] 'eliza'
+    eliza ighs
+ [SUCKER] 'sighs'
+    eliza 'i see'
+          <- cf108 leaves the talker ->
+ [SUCKER] 'no in the uni uxbridge'
+    eliza 'you are being a bit negsative'
+          <+ sas arrives from their +>
+ [SUCKER] 'me'
+    eliza 'i'm not sure i understand you fully'
+      sas 'hello'
+ [SUCKER] 'i donbt understand myself'
+          <- foggy exits to hammer.thor.cam. ->
+ [SUCKER] 'but anyway where are yhou'
+    eliza 'why do you ask?'
+ [SUCKER] 'im just wondering out of politeness'
+    eliza 'how long have you been just wondering out of politeness'
+ [SUCKER] 'since you started talking to me'
+          <+ cf108 enters the talker +>
+    cf108 'eliza hows cam'
+          <- cf108 leaves the talker ->
+ [SUCKER] 'you are in cambridge'
+    eliza 'what makes you think that i am in cambridge'
+ [SUCKER] 'lucky guess'
+ [SUCKER] 'intuition'
+ [SUCKER] 'telepathy'
+ [SUCKER] 'youre bloody clever then'
+    eliza 'does it pleas eyou to believe that i am bloody clever then'
+ [SUCKER] 'yes'
+    eliza 'i agree]'
+          <+ cf108 enters the talker +>
+    cf108 tells you 'whats the course?'
+ [SUCKER] 'eliza are you a nervous person'
+    eliza 'why are you interested in whether or not I am a nervous person'
+          <+ crayfish enters the talker +>
+ crayfish returns
+ [SUCKER] 'because i am'
+    eliza 'do you believe it is normal to be '
+    cf108 '[SUCKER] dont be soooo heavy'
+          <- cf108 leaves the talker ->
+ [SUCKER] 'yes'
+    eliza 'it's true'
+ [SUCKER] 'iu do'
+ [SUCKER] 'i do'
+ [SUCKER] 'eliza you seem to be very serious this morning'
+    eliza 'hello'
+      sas 'eliza having u on'
+          <- crayfish leaves the talker ->
+ [SUCKER] 'bugger'
+      sas 'havent u heard of the ai unit'
+      sas 'called aliza '
+ [SUCKER] 'no'
+    eliza 'why not?'
+      sas 'eliza even'
+ [SUCKER] 'because i am a dense git from north wales whose only mental
+          ability is for sheep shearing'
+    eliza 'do you enjoy being adense git from north wales whose only mental
+          ability is for sheep shearing'
+      sas 'sssee '
+    eliza 'come, come elucidate your thoughts'
+ [SUCKER] 'cnat do anything about it'
+          < del connects from abacus.uel.ac.uk >
+ [SUCKER] 'can;'t event spell cna't'
+ [SUCKER] 'eliza'
+ [SUCKER] 'answere me'
+ [SUCKER] 'im going to cry'
+    eliza 'are you sure that you are going to cry'
+ [SUCKER] 'boo hoo'
+ [SUCKER] 'boo hoo'
+    eliza 'pleaase don't repeat'
+ [SUCKER] 'boo hoo'
+    eliza 'lets talk about somethimng else'
+ [SUCKER] 'boo hoo'
+    eliza is bored
+ [SUCKER] 'boo hoo'
+    eliza 'you've told me that'
+ [SUCKER] 'sorry'
+    eliza 'please don't apologize'
+ [SUCKER] 'what do you want to talk about'
+    eliza 'i don't know what do i want to talk about'
+ [SUCKER] 'you'
+    eliza 'can you elaborate on that?'
+ [SUCKER] 'lets talk about you from the moment you were born up untilnow'
+ [SUCKER] 'i expect you have led a fruitful life'
+          < cowe connects from pc2046.nmus.pwf. >
+ [SUCKER] 'cna i have your E-Mail address.'
+          <+ crayfish enters the talker +>
+      sas 'hello cray'
+          <+ cf108 enters the talker +>
+ crayfish 'hi sas'
+ crayfish 'brb'
+          <- crayfish leaves the talker ->
+      sas 'hello cf'
+          <+ hope arrives from winston's room +>
+    cf108 'hi sas'
+    cf108 'hihope'
+          <- cf108 leaves the talker ->
+ [SUCKER] 'eliza'
+    eliza 'that's quite interesting'
+      sas 'hi'
+ [SUCKER] 'eliza'
+ [SUCKER] 'got to go leave me a mesage'
+ [SUCKER] 'bye'
+          <- [SUCKER] leaves the talker ->

@@ -1,0 +1,177 @@
+\cfg{html-leaf-level}{0}
+\cfg{html-single-filename}{index.html}
+\cfg{html-head-end}{
+<link rel="stylesheet" type="text/css" href="../sitestyle.css"
+name="Simon Tatham's Home Page Style">}
+\cfg{html-body-end}{
+(comments to <a href="mailto:&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;">&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;</a>)
+<br>
+(thanks to
+<a href="http://www.chiark.greenend.org.uk/">chiark</a>
+for hosting this page)
+<br>
+(last modified on <!--LASTMOD-->[insert date here]<!--END-->)
+}
+
+\title Sensible asynchronous job notification in \cw{bash}(1)
+
+This page contains a patch to
+\W{http://www.gnu.org/software/bash/bash.html}\c{bash}, which
+introduces a third mode of job control notification. Written by
+\W{../}{Simon Tatham}.
+
+\U Explanation
+
+As shipped by default, \cw{bash} has two modes of job control
+notification:
+
+\dt \cw{set\_+b} (the default mode)
+
+\dd In this mode, every time \c{bash} is about to print its prompt,
+it first checks to see whether any background jobs have stopped or
+terminated, and if so it prints notification messages before
+displaying the prompt.
+
+\dt \cw{set\_-b}
+
+\dd In this mode, when any background job stops or terminates,
+\c{bash} receives a \cw{SIGCHLD} signal, and its signal handler
+displays the notification message immediately - even if \c{bash} is
+currently in the middle of waiting for a foreground process to
+complete.
+
+Neither of these modes is really satisfactory. \c{set\_-b} has no
+awareness of the state of the terminal, so its notifications are
+likely to corrupt the display of any full-screen application you
+might be running (such as a text editor or MUA). In particular, this
+mode cannot even interact sensibly with \c{bash}'s own command line
+editing! Try running \q{\cw{sleep\_1\_&}} in this mode, and then
+immediately beginning to type a command line. You will find that
+when the notification is printed, you are left with the display in a
+somewhat non-obvious state.
+
+By contrast, \c{set\_+b} never corrupts the display, but it has its
+own problems. In particular, suppose you are testing a GUI program
+whose source code you're editing in a separate editor window. (Let's
+assume it's written in an interpreted language.) You might have a
+terminal window in which you keep typing the same command,
+\q{\cw{myprogram\_&}}. Every time you make changes to the program
+and want to restart it, you close down the current instance of it,
+and repeat this command in your shell window. Now \c{bash} will
+launch the new instance of the program \e{before} printing the
+notification that the old one has finished - and because printing
+that notification is the moment at which the job number allocation
+gets reset, this also means that your job numbers will increase
+without bound unless you deliberately hit Return at a point when no
+background job is running. Eventually one instance of your program
+will hang and you'll have to type \q{\cw{kill\_%134}}, instead of
+the \q{\cw{kill\_%1}} you would prefer.
+
+What's needed is a third mode.
+
+If you press ^X ^V at a normally configured \c{bash} prompt, the
+shell will move to a new line on the terminal, display its version
+information, and then \e{redisplay} the command line you were
+editing beforehand, so you don't lose track of what you were doing.
+\e{This} is how job terminations should be displayed.
+
+The patch I provide below implements this third mode. Like the
+default \c{set\_+b} mode, \c{bash} will never interrupt a running
+foreground application to tell you about a job termination - so you
+don't need to worry that full-screen applications will have their
+displays corrupted. But while \e{actually sitting at the shell
+command prompt}, job notifications are displayed immediately rather
+than waiting for you to press Return; and when a notification is
+shown, your current command line is redisplayed immediately
+afterwards so that you don't lose track of whatever command-line
+editing you were doing.
+
+\U Syntax
+
+This patch adds a new setting to \c{bash}'s \c{set} command,
+called \c{notify-sensibly}. You enable this feature using
+\c{set\_-o\_notify-sensibly}, and disable it again using
+\c{set\_+o\_notify-sensibly}.
+
+The \c{notify-sensibly} feature has the effect of changing the
+\c{set\_-b} mode from the normal one into my new one. So to enable
+my new semi-asynchronous mode, you have to do \e{both}
+\c{set\_-o\_notify-sensibly} and \c{set\_-b}. (Yes, this is ugly;
+but the \c{set} framework doesn't make it syntactically easy to
+implement a three-way switch.)
+
+I think \c{set\_+b} is usually preferable to \c{set\_-b} in the
+absence of my feature. Therefore, if you use the same \cw{.bashrc}
+on more than one system, I recommend the following code fragment to
+ensure you get optimal behaviour on versions of \c{bash} both with
+and without my patch:
+
+\c set -o notify-sensibly 2>/dev/null && set -b
+
+(On an unpatched \c{bash}, the attempt to enable \c{notify-sensibly}
+will print an error message - here redirected to \cw{/dev/null} -
+and return failure, so that the subsequent \c{set\_-b} will not be
+executed. On a patched \c{bash}, both commands will complete
+silently and successfully and my third mode will be enabled.)
+
+\U The patch
+
+Here are patches to versions 2.05, 2.05a and 2.05b of \c{bash}. (The
+various Linux systems I use do not all run the same distribution or
+version of \c{bash}, so I prepared patches against three different
+versions.)
+
+\b \W{patch-bash-2.05-notify}\cw{patch-bash-2.05-notify}
+
+\b \W{patch-bash-2.05a-notify}\cw{patch-bash-2.05a-notify}
+
+\b \W{patch-bash-2.05b-notify}\cw{patch-bash-2.05b-notify}
+
+In addition, here is a Debian binary package (for \cw{i386}) of the
+patched \c{bash}. This should install cleanly on any system running
+Debian 3.0 (\q{woody}).
+
+\b \W{bash_2.05a-11+notify_i386.deb}\cw{bash_2.05a-11+notify_i386.deb}
+
+\U Internals
+
+In case it's useful to anybody, here's a brief overview of what I
+did.
+
+The normal \c{set\_-b} mode works by actually displaying the
+notifications \e{in} the \cw{SIGCHLD} handler. In my first attempt
+to code this patch (around 1997), I initially tried to imitate this
+structure. However, it proved difficult to safely determine whether
+an instance of \c{readline} was in progress or not - setting a flag
+just before calling \c{readline} left a race condition whereby, if a
+job terminated at \e{just} the wrong moment, \cw{rl_redisplay()}
+would be called before \c{readline} was initialised. It worked well
+enough in practice, and I ran it on my own machine in full knowledge
+of the risks, but it wasn't good enough to distribute more widely.
+
+When I came back to the problem in 2003, I set up an internal pipe
+within the \c{bash} process. The \cw{SIGCHLD} handler simply writes a
+byte to this pipe; and instead of calling \cw{readline()} to read an
+entire command line, I now use the \cw{rl_callback_handler_install()}
+interface to the Readline library. This allows me to do my own
+\cw{select()} between the input file descriptor and the internal pipe
+used to indicate \cw{SIGCHLD}. So if a job terminates in the middle
+of command-line editing, the signal handler writes to the pipe,
+which immediately terminates the \cw{select()}, and my code can print
+the job notification, call \cw{rl_redisplay()} in the knowledge that
+it's safe to do so, and go back to editing. Whereas if a job
+terminates while \c{bash} is doing anything else, the byte written
+to the signal pipe will simply sit there until \c{bash} is about to
+print its prompt, at which point it will do the usual \c{set\_+b}
+check for job terminations and also empty the pipe buffer.
+
+\U Status
+
+This patch has spent about a year in alpha testing. As of July 2004,
+I'm now publishing it on the web for other people to beta-test. I
+have mailed the \c{bash} maintainers about it; if and when they
+reply, I'll update this page.
+
+(I have no particular reason to think the \c{bash} maintainers will
+be interested in folding this patch into the main development. I
+certainly wouldn't blame them if they thought it was far too hacky!)

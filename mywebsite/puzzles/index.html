@@ -1,0 +1,197 @@
+<html>
+<head>
+<title>Simon Tatham's Portable Puzzle Collection</title>
+</head>
+<link rel="stylesheet" type="text/css" href="../sitestyle.css" name="Simon Tatham's Home Page Style">
+<body>
+<h1 align=center>Simon Tatham's Portable Puzzle Collection</h1>
+
+<h2>Introduction</h2>
+
+<p>
+This page contains a collection of small computer programs which
+implement one-player puzzle games. All of them run natively on both
+Unix (GTK) and on Windows.
+
+<p>
+I wrote this collection because I thought there should be more small
+desktop toys available: little games you can pop up in a window and
+play for two or three minutes while you take a break from whatever
+else you were doing. And I was also annoyed that every time I found
+a good game on (say) Unix, it wasn't available the next time I was
+sitting at a Windows machine, or vice versa; so I arranged that
+everything in my personal puzzle collection will happily run on
+both. When I find (or perhaps invent) further puzzle games that I
+like, they'll be added to this collection and will immediately be
+available on both platforms. And if anyone feels like writing any
+other front ends - Mac OS, PocketPC, or whatever it might be - then
+all the games in this framework will immediately become available on
+another platform as well.
+
+<h2>The games</h2>
+
+The actual games in this collection were mostly not my invention; I
+saw them elsewhere, and rewrote them in a form that was more
+convenient for me. I do not claim credit, in general, for inventing
+the rules of any of these puzzles; all I claim is authorship of the
+code.
+
+<dl>
+
+<dt style="clear: both">
+<a href="doc/net.html#net">
+<image style="margin: 0.5em" alt="" width=150 height=150 border=0 align=right src="net.png" />
+</a>
+<a href="doc/net.html#net">Net</a>
+</dt>
+<dd><p>Reassemble the shuffled tiles into a fully connected network
+by rotating them back to their correct orientations.
+</dd>
+<dt style="clear: both">
+<a href="doc/cube.html#cube">
+<image style="margin: 0.5em" alt="" width=150 height=150 border=0 align=right src="cube.png" />
+</a>
+<a href="doc/cube.html#cube">Cube</a>
+</dt>
+<dd><p>Pick up the blue squares by rolling the cube over them. Try
+to get all six blue squares on the faces of the cube at once. Count
+your moves and try to do it in as few as possible. Then try it on a
+triangular grid with any of a tetrahedron, an octahedron or an
+icosahedron.
+</dd>
+<dt style="clear: both">
+<a href="doc/fifteen.html#fifteen">
+<image style="margin: 0.5em" alt="" width=150 height=150 border=0 align=right src="fifteen.png" />
+</a>
+<a href="doc/fifteen.html#fifteen">Fifteen</a>
+</dt>
+<dd><p>The good old "15-puzzle". Slide the tiles around to arrange
+them into numerical order.
+</dd>
+<dt style="clear: both">
+<a href="doc/sixteen.html#sixteen">
+<image style="margin: 0.5em" alt="" width=150 height=150 border=0 align=right src="sixteen.png" />
+</a>
+<a href="doc/sixteen.html#sixteen">Sixteen</a>
+</dt>
+<dd><p>Arrange the tiles into numerical order again, this time by
+rotating an entire row or column at a time within itself.
+</dd>
+<dt style="clear: both">
+<a href="doc/rectangles.html#rectangles">
+<image style="margin: 0.5em" alt="" width=150 height=150 border=0 align=right src="rect.png" />
+</a>
+<a href="doc/rectangles.html#rectangles">Rectangles</a>
+</dt>
+<dd><p>Subdivide the grid into rectangles so that each rectangle
+contains only one number, and has area equal to that number.
+</dd>
+<dt style="clear: both">
+<a href="doc/netslide.html#netslide">
+<image style="margin: 0.5em" alt="" width=150 height=150 border=0 align=right src="netslide.png" />
+</a>
+<a href="doc/netslide.html#netslide">Netslide</a>
+</dt>
+<dd><p>Combine two of these puzzles at once: use the sliding action
+of "Sixteen" to reassemble a grid in the style of "Net".
+</dd>
+<dt style="clear: both">
+<a href="doc/pattern.html#pattern">
+<image style="margin: 0.5em" alt="" width=150 height=150 border=0 align=right src="pattern.png" />
+</a>
+<a href="doc/pattern.html#pattern">Pattern</a>
+</dt>
+<dd><p>Fill in a grid with a black and white pattern, given only the
+lengths of the continuous runs of black squares.
+</dd>
+</dl>
+
+<h2 style="clear: both">Licence</h2>
+
+This game collection is copyright 2004 Simon Tatham. It is all
+distributed under the
+<a href="doc/licence.html#licence">MIT licence</a>.
+This means that you can do pretty much anything you like with the
+game binaries or the code, except pretending you wrote them
+yourself, or suing me if anything goes wrong.
+
+<h2>Download</h2>
+
+<p>Here are Windows executables of the puzzle games in the
+collection. (On Windows only, the Net executable is called
+"<code>netgame.exe</code>" in order to avoid clashing with Windows's
+own "<code>net.exe</code>". The name of the <em>game</em> is still
+"Net" :-)
+
+<blockquote>
+<p>
+<code>
+<a href="netgame.exe">netgame.exe</a>
+|
+<a href="cube.exe">cube.exe</a>
+|
+<a href="fifteen.exe">fifteen.exe</a>
+|
+<a href="sixteen.exe">sixteen.exe</a>
+|
+<a href="rect.exe">rect.exe</a>
+|
+<a href="netslide.exe">netslide.exe</a>
+|
+<a href="pattern.exe">pattern.exe</a>
+</code>
+</blockquote>
+
+<p>Here is a Windows help file (and its accompanying contents file).
+If you install these in the same directory as the executable files,
+then each game should display a "Help" menu giving help about the
+game collection in general and that game in particular. You can also
+browse the same documentation
+<a href="doc/">online in HTML format</a>.
+
+<blockquote>
+<p>
+<code>
+<a href="puzzles.hlp">puzzles.hlp</a>
+|
+<a href="puzzles.cnt">puzzles.cnt</a>
+</code>
+</blockquote>
+
+<p>Here is a source archive of the collection, which should allow
+you to compile the games on any Unix system supporting GTK. (At
+least, I hope so; I've only tested it on Linux so far, and I
+wouldn't rule out portability issues on other types of Unix.)
+
+<blockquote>
+<p>
+<code>
+<a href="puzzles.tar.gz">puzzles.tar.gz</a>
+</code>
+</blockquote>
+
+<h2>Feedback</h2>
+
+<p>
+Please report bugs to
+<a href="mailto:&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;">&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;</a>.
+
+<p>
+You might find it helpful to read
+<a href="../bugs.html">this article</a>
+before reporting a bug.
+
+<p>
+Patches are welcome. Especially if they provide a new front end (to
+make all these games run on another platform), or a new game.
+
+<hr>
+(comments to <a href="mailto:&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;">&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;</a>)
+<br>
+(thanks to
+<a href="http://www.chiark.greenend.org.uk/">chiark</a>
+for hosting this page)
+<br>
+(last modified on <!--LASTMOD-->[insert date here]<!--END-->)
+</body>
+</html>

@@ -1,0 +1,103 @@
+<HTML><HEAD>
+<TITLE>Simon Tatham's miscellaneous utilities collection</TITLE>
+</HEAD>
+<link rel="stylesheet" type="text/css" href="../sitestyle.css" name="Simon Tatham's Home Page Style">
+<BODY>
+<h1>Simon Tatham's miscellaneous utilities collection</h1>
+
+<p>
+This web page presents a collection of small Unix-based utility
+programs which I wrote for myself and found useful. Each of these is
+a program I ended up giving copies of to other people because they
+found it useful too; so now I'm publishing the whole lot to the
+world just in case anyone else wants them.
+
+<h2>The utilities</h2>
+
+<p>
+Click on the name of each utility to see its <code>man</code> page.
+
+<dl>
+<dt><a href="base64.html"><code>base64</code></a>
+<dd>Simple stand-alone converter between base64
+(<a href="http://www.ietf.org/rfc/rfc2045.txt">RFC 2045</a>) and
+ordinary binary data.
+<dt><a href="cvt-utf8.html"><code>cvt-utf8</code></a>
+<dd>Convert between Unicode code points and the UTF-8 encoding. Also
+looks up each code point in the Unicode Character Database and/or
+the Unihan Database, and displays its name and/or definition.
+<dt><a href="lns.html"><code>lns</code></a>
+<dd>User-friendly tool for creating symlinks. Uses the same
+semantics as <code>mv</code> or <code>cp</code> (i.e. relative paths
+are always interpreted relative to the <em>current</em> directory,
+not the target one).
+<dt><a href="multi.html"><code>multi</code></a>
+<dd>Perl-based bulk file renamer. Transforms a list of file names
+using a user-provided Perl expression, and passes each name plus the
+transformed version to a command of your choice (often, but not
+limited to, <code>mv</code> or <code>cp</code>).
+<dt><a href="nntpid.html"><code>nntpid</code></a>
+<dd>Connects to a news server and retrieves a single article given
+its Message-ID, or given a group name and article number. Handy if
+your newsreader doesn't know how to follow references lines between
+newsgroups, so you can find out where a migrated thread came from.
+<dt><a href="xcopy.html"><code>xcopy</code></a>
+<dd>Reads text out of the X selection and writes it to standard
+output, or alternatively reads text from standard input and places
+it in the X selection.
+</dl>
+
+<h2>Download</h2>
+
+<p>
+Tarballs of each utility are available here.
+
+<blockquote>
+<p>
+<code>
+<a href="base64.tar.gz">base64.tar.gz</a>
+</code>
+<br>
+<code>
+<a href="cvt-utf8.tar.gz">cvt-utf8.tar.gz</a>
+</code>
+<br>
+<code>
+<a href="lns.tar.gz">lns.tar.gz</a>
+</code>
+<br>
+<code>
+<a href="multi.tar.gz">multi.tar.gz</a>
+</code>
+<br>
+<code>
+<a href="nntpid.tar.gz">nntpid.tar.gz</a>
+</code>
+<br>
+<code>
+<a href="xcopy.tar.gz">xcopy.tar.gz</a>
+</code>
+</blockquote>
+
+<p>
+If you want to see the latest state of development, you can check
+the development sources out from my Subversion repository.
+
+<p>
+The Subversion URL you need is
+<code>svn://ixion.tartarus.org/main/utils</code>. So you could use a
+checkout command such as this:
+<pre><code>svn co svn://ixion.tartarus.org/main/utils</code></pre>
+
+<p>
+Alternatively, you can browse the Subversion repository on the WWW,
+<a href="http://www.tartarus.org/~simon-anonsvn/viewcvs.cgi/utils/">here</a>.
+</p>
+
+<hr>
+Page maintained by
+<a href="mailto:&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;">Simon Tatham</a>.
+<br>
+(last modified on <!--LASTMOD-->[insert date here]<!--END-->)
+
+</BODY></HTML>

@@ -1,0 +1,35 @@
+/tshow {
+  gsave
+  currentpoint translate 0 0 moveto
+  dup true charpath flattenpath pathbbox
+  4 1 roll exch pop add 2 div
+  neg exch neg translate
+  0 0 moveto show
+  grestore
+} def
+
+/lshow {
+  gsave
+  currentpoint translate 0 0 moveto
+  dup true charpath flattenpath pathbbox
+  3 -1 roll add 2 div exch pop
+  neg exch neg exch translate
+  0 0 moveto show
+  grestore
+} def
+
+% The actual headings
+0 setgray
+/Helvetica findfont 50 scalefont setfont
+10 50 moveto (R) lshow
+100 140 moveto (C) tshow
+
+% A bit of border
+0 setgray
+/x 100.0 30.0 div def
+200 x moveto
+150 x sub x lineto
+150 x sub -50 lineto
+2 x mul setlinewidth stroke
+
+showpage

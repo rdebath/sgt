@@ -1,0 +1,234 @@
+diff -ur bash-2.05.orig/builtins/set.def bash-2.05/builtins/set.def
+--- bash-2.05.orig/builtins/set.def	Thu Jul  1 15:56:52 2004
++++ bash-2.05/builtins/set.def	Thu Jul  1 15:57:07 2004
+@@ -93,6 +93,8 @@
+             noexec       same as -n
+             noglob       same as -f
+             notify       same as -b
++            notify-sensibly
++                         cause async notifications to behave more sensibly
+             nounset      same as -u
+             onecmd       same as -t
+             physical     same as -P
+@@ -190,6 +192,7 @@
+ #endif
+   { "ignoreeof", &ignoreeof, set_ignoreeof, (Function *)NULL },
+   { "interactive-comments", &interactive_comments, (Function *)NULL, (Function *)NULL },
++  { "notify-sensibly", &asynchronous_sensibly, (Function *)NULL, (Function *)NULL },
+   { "posix", &posixly_correct, set_posix_mode, (Function *)NULL },
+ #if defined (READLINE)
+   { "emacs", (int *)NULL, set_edit_mode, get_edit_mode },
+diff -ur bash-2.05.orig/flags.c bash-2.05/flags.c
+--- bash-2.05.orig/flags.c	Thu Jul  1 15:56:52 2004
++++ bash-2.05/flags.c	Thu Jul  1 15:57:07 2004
+@@ -127,6 +127,9 @@
+ /* Non-zero means that we allow comments to appear in interactive commands. */
+ int interactive_comments = 1;
+ 
++/* Non-zero enables sensible asynchronous job notification. */
++int asynchronous_sensibly = 0;
++
+ #if defined (RESTRICTED_SHELL)
+ /* Non-zero means that this shell is `restricted'.  A restricted shell
+    disallows: changing directories, command or path names containing `/',
+diff -ur bash-2.05.orig/flags.h bash-2.05/flags.h
+--- bash-2.05.orig/flags.h	Thu Jul  1 15:56:52 2004
++++ bash-2.05/flags.h	Thu Jul  1 15:57:07 2004
+@@ -45,7 +45,8 @@
+   just_one_command, unbound_vars_is_error, echo_input_at_read,
+   echo_command_at_execute, no_invisible_vars, noclobber,
+   hashing_enabled, forced_interactive, privileged_mode,
+-  asynchronous_notification, interactive_comments, no_symbolic_links;
++  asynchronous_notification, interactive_comments, no_symbolic_links,
++  asynchronous_sensibly;
+ 
+ #if 0
+ extern int lexical_scoping;
+diff -ur bash-2.05.orig/jobs.c bash-2.05/jobs.c
+--- bash-2.05.orig/jobs.c	Thu Jul  1 15:56:52 2004
++++ bash-2.05/jobs.c	Thu Jul  1 15:57:07 2004
+@@ -2259,6 +2259,8 @@
+   return (result);
+ }
+ 
++int sigchld_pipe[2] = {-1, -1};
++
+ /* sigchld_handler () flushes at least one of the children that we are
+    waiting for.  It gets run when we have gotten a SIGCHLD signal. */
+ static sighandler
+@@ -2380,7 +2382,14 @@
+      that this process belongs to is no longer running, then notify the user
+      of that fact now. */
+   if (asynchronous_notification && interactive)
+-    notify_of_job_status ();
++    {
++      char buf[1];
++      buf[0] = 'x';
++      if (!asynchronous_sensibly ||
++          sigchld_pipe[1] == -1 ||
++          write(sigchld_pipe[1], buf, 1) != 1)
++        notify_of_job_status ();
++    }
+ 
+   return (children_exited);
+ }
+@@ -2831,6 +2840,9 @@
+   if (shell_tty != fileno (stderr))
+     SET_CLOSE_ON_EXEC (shell_tty);
+ 
++  if (pipe(sigchld_pipe) < 0) {
++      sigchld_pipe[0] = sigchld_pipe[1] = -1;
++  }
+   set_signal_handler (SIGCHLD, sigchld_handler);
+ 
+   change_flag ('m', job_control ? '-' : '+');
+Only in bash-2.05: jobs.c.orig
+diff -ur bash-2.05.orig/parse.y bash-2.05/parse.y
+--- bash-2.05.orig/parse.y	Thu Jul  1 15:56:52 2004
++++ bash-2.05/parse.y	Thu Jul  1 15:57:07 2004
+@@ -35,6 +35,7 @@
+ #endif
+ 
+ #include <stdio.h>
++#include <errno.h>
+ #include <signal.h>
+ 
+ #include "memalloc.h"
+@@ -966,8 +967,118 @@
+ char *current_readline_line = (char *)NULL;
+ int current_readline_line_index = 0;
+ 
++static char *my_readline_return_str;
++static int my_readline_done;
++
++extern int sigchld_pipe[2];
++
++static void
++  my_readline_callback(char *string)
++{
++  my_readline_return_str = string;
++  my_readline_done = 1;
++  rl_callback_handler_remove();
++}
++
++static void
++  clean_sigchld_pipe(void)
++{
++  if (sigchld_pipe[0] >= 0)
++    {
++      while (1)
++        {
++          fd_set rset;
++          int ret;
++          struct timeval tv;
++
++          FD_ZERO(&rset);
++          FD_SET(sigchld_pipe[0], &rset);
++
++          tv.tv_sec = tv.tv_usec = 0;
++
++          ret = select(sigchld_pipe[0] + 1, &rset, NULL, NULL, &tv);
++
++          if (ret > 0 && FD_ISSET(sigchld_pipe[0], &rset))
++            {
++              char buf[1];
++              read(sigchld_pipe[0], buf, 1);
++            }
++          else
++            {
++              break;
++            }
++        }
++    }
++}
++
++static char *
++  my_readline(char *prompt)
++{
++  my_readline_return_str = NULL;
++  my_readline_done = 0;
++  rl_callback_handler_remove();
++  rl_callback_handler_install(prompt, my_readline_callback);
++  while (1)
++    {
++      fd_set rset;
++      int ret;
++      int max;
++
++      FD_ZERO(&rset);
++      FD_SET(0, &rset);
++      max = 1;
++
++      if (sigchld_pipe[0] >= 0)
++        {
++          FD_SET(sigchld_pipe[0], &rset);
++          if (max < sigchld_pipe[0] + 1)
++            max = sigchld_pipe[0] + 1;
++        }
++
++      ret = select(max, &rset, NULL, NULL, NULL);
++
++      if (ret < 0)
++        {
++          if (errno == EINTR)
++            continue;
++          perror("bash: select");
++          exit(1);
++        }
++
++      if (sigchld_pipe[0] >= 0 && FD_ISSET(sigchld_pipe[0], &rset))
++        {
++          clean_sigchld_pipe();
++
++          rl_crlf ();
++
++#if defined (JOB_CONTROL)
++          /* This can cause a problem when reading a command as the result
++             of a trap, when the trap is called from flush_child.  This call
++             had better not cause jobs to disappear from the job table in
++             that case, or we will have big trouble. */
++          notify_and_cleanup ();
++#else /* !JOB_CONTROL */
++          cleanup_dead_jobs ();
++#endif /* !JOB_CONTROL */
++
++          putc ('\r', rl_outstream);
++          fflush (rl_outstream);
++          rl_on_new_line ();
++          rl_redisplay ();
++        }
++
++      if (FD_ISSET(0, &rset))
++        {
++          rl_callback_read_char();
++          if (my_readline_done)
++            break;
++        }
++    }
++  return my_readline_return_str;
++}
++
+ static int
+-yy_readline_get ()
++  yy_readline_get ()
+ {
+   SigHandler *old_sigint;
+   int line_len, c;
+@@ -988,7 +1099,7 @@
+ 	  interrupt_immediately++;
+ 	}
+ 
+-      current_readline_line = readline (current_readline_prompt ?
++      current_readline_line = my_readline (current_readline_prompt ?
+       					  current_readline_prompt : "");
+ 
+       if (signal_is_ignored (SIGINT) == 0)
+@@ -1617,6 +1728,7 @@
+       i = 0;
+       shell_input_line_terminator = 0;
+ 
++      clean_sigchld_pipe();
+ #if defined (JOB_CONTROL)
+       /* This can cause a problem when reading a command as the result
+ 	 of a trap, when the trap is called from flush_child.  This call
+Only in bash-2.05: parse.y.orig

@@ -1,0 +1,46 @@
+(7) 6 (+2)
+
+/cshow {
+  gsave
+  currentpoint translate 0 0 moveto
+  dup true charpath flattenpath pathbbox
+  3 -1 roll add 2 div
+  3 1 roll add 2 div
+  neg exch neg translate
+  0 0 moveto show
+  grestore
+} def
+
+/trshow {
+  gsave
+  currentpoint translate 0 0 moveto
+  dup true charpath flattenpath pathbbox
+  neg exch neg exch translate pop pop
+  0 0 moveto show
+  grestore
+} def
+
+% The secondary number
+1 0 0 setrgbcolor
+/Helvetica-Bold findfont 20 scalefont setfont
+92 92 moveto trshow
+
+% The dots
+1 0 0 setrgbcolor
+dup 1 sub 2.0 div /xmod exch def
+0 exch 1 exch 1 sub {
+  xmod sub 14 mul 50 add 16
+  newpath 4 0 360 arc fill
+} for
+newpath
+
+% The primary number
+0 setgray
+/Helvetica-Bold findfont 50 scalefont setfont
+50 50 moveto cshow
+
+% The border
+0 setgray
+1 1 moveto 1 99 lineto 99 99 lineto 99 1 lineto closepath
+2 setlinewidth stroke
+showpage

@@ -1,0 +1,232 @@
+diff -ur --exclude='y.tab.*' bash-2.05b.orig/builtins/set.def bash-2.05b/builtins/set.def
+--- bash-2.05b.orig/builtins/set.def	2003-06-30 10:27:52.000000000 +0100
++++ bash-2.05b/builtins/set.def	2003-06-30 17:21:57.000000000 +0100
+@@ -94,6 +94,8 @@
+             noglob       same as -f
+             nolog        currently accepted but ignored
+             notify       same as -b
++            notify-sensibly
++                         cause async notifications to behave more sensibly
+             nounset      same as -u
+             onecmd       same as -t
+             physical     same as -P
+@@ -191,6 +193,7 @@
+ #endif
+ #if defined (JOB_CONTROL)
+   { "notify",	  'b', (int *)NULL, (setopt_set_func_t *)NULL, (setopt_get_func_t *)NULL  },
++  { "notify-sensibly", '\0', &asynchronous_sensibly, (setopt_set_func_t *)NULL, (setopt_get_func_t *)NULL  },
+ #endif /* JOB_CONTROL */
+   { "nounset",	  'u', (int *)NULL, (setopt_set_func_t *)NULL, (setopt_get_func_t *)NULL  },
+   { "onecmd",	  't', (int *)NULL, (setopt_set_func_t *)NULL, (setopt_get_func_t *)NULL },
+diff -ur --exclude='y.tab.*' bash-2.05b.orig/flags.c bash-2.05b/flags.c
+--- bash-2.05b.orig/flags.c	2003-06-30 10:27:52.000000000 +0100
++++ bash-2.05b/flags.c	2003-06-30 17:22:39.000000000 +0100
+@@ -131,6 +131,9 @@
+ /* Non-zero means that we allow comments to appear in interactive commands. */
+ int interactive_comments = 1;
+ 
++/* Non-zero enables sensible asynchronous job notification. */
++int asynchronous_sensibly = 0;
++
+ #if defined (RESTRICTED_SHELL)
+ /* Non-zero means that this shell is `restricted'.  A restricted shell
+    disallows: changing directories, command or path names containing `/',
+diff -ur --exclude='y.tab.*' bash-2.05b.orig/flags.h bash-2.05b/flags.h
+--- bash-2.05b.orig/flags.h	2003-06-30 10:27:52.000000000 +0100
++++ bash-2.05b/flags.h	2003-06-30 17:29:00.000000000 +0100
+@@ -46,7 +46,8 @@
+   just_one_command, unbound_vars_is_error, echo_input_at_read,
+   echo_command_at_execute, no_invisible_vars, noclobber,
+   hashing_enabled, forced_interactive, privileged_mode,
+-  asynchronous_notification, interactive_comments, no_symbolic_links;
++  asynchronous_notification, interactive_comments, no_symbolic_links,
++  asynchronous_sensibly;
+ 
+ #if 0
+ extern int lexical_scoping;
+diff -ur --exclude='y.tab.*' bash-2.05b.orig/jobs.c bash-2.05b/jobs.c
+--- bash-2.05b.orig/jobs.c	2003-06-30 10:27:52.000000000 +0100
++++ bash-2.05b/jobs.c	2003-06-30 17:29:09.000000000 +0100
+@@ -2389,6 +2389,8 @@
+   return (result);
+ }
+ 
++int sigchld_pipe[2] = {-1, -1};
++
+ /* sigchld_handler () flushes at least one of the children that we are
+    waiting for.  It gets run when we have gotten a SIGCHLD signal. */
+ static sighandler
+@@ -2512,7 +2514,14 @@
+      that this process belongs to is no longer running, then notify the user
+      of that fact now. */
+   if (asynchronous_notification && interactive)
+-    notify_of_job_status ();
++    {
++      char buf[1];
++      buf[0] = 'x';
++      if (!asynchronous_sensibly ||
++          sigchld_pipe[1] == -1 ||
++          write(sigchld_pipe[1], buf, 1) != 1)
++        notify_of_job_status ();
++    }
+ 
+   return (children_exited);
+ }
+@@ -2981,6 +2990,9 @@
+   if (shell_tty != fileno (stderr))
+     SET_CLOSE_ON_EXEC (shell_tty);
+ 
++  if (pipe(sigchld_pipe) < 0) {
++      sigchld_pipe[0] = sigchld_pipe[1] = -1;
++  }
+   set_signal_handler (SIGCHLD, sigchld_handler);
+ 
+   change_flag ('m', job_control ? '-' : '+');
+diff -ur --exclude='y.tab.*' bash-2.05b.orig/parse.y bash-2.05b/parse.y
+--- bash-2.05b.orig/parse.y	2003-06-30 10:27:52.000000000 +0100
++++ bash-2.05b/parse.y	2003-06-30 17:25:09.000000000 +0100
+@@ -35,6 +35,7 @@
+ #endif
+ 
+ #include <stdio.h>
++#include <errno.h>
+ #include "chartypes.h"
+ #include <signal.h>
+ 
+@@ -1081,8 +1082,118 @@
+ char *current_readline_line = (char *)NULL;
+ int current_readline_line_index = 0;
+ 
++static char *my_readline_return_str;
++static int my_readline_done;
++
++extern int sigchld_pipe[2];
++
++static void
++  my_readline_callback(char *string)
++{
++  my_readline_return_str = string;
++  my_readline_done = 1;
++  rl_callback_handler_remove();
++}
++
++static void
++  clean_sigchld_pipe(void)
++{
++  if (sigchld_pipe[0] >= 0)
++    {
++      while (1)
++        {
++          fd_set rset;
++          int ret;
++          struct timeval tv;
++
++          FD_ZERO(&rset);
++          FD_SET(sigchld_pipe[0], &rset);
++
++          tv.tv_sec = tv.tv_usec = 0;
++
++          ret = select(sigchld_pipe[0] + 1, &rset, NULL, NULL, &tv);
++
++          if (ret > 0 && FD_ISSET(sigchld_pipe[0], &rset))
++            {
++              char buf[1];
++              read(sigchld_pipe[0], buf, 1);
++            }
++          else
++            {
++              break;
++            }
++        }
++    }
++}
++
++static char *
++  my_readline(char *prompt)
++{
++  my_readline_return_str = NULL;
++  my_readline_done = 0;
++  rl_callback_handler_remove();
++  rl_callback_handler_install(prompt, my_readline_callback);
++  while (1)
++    {
++      fd_set rset;
++      int ret;
++      int max;
++
++      FD_ZERO(&rset);
++      FD_SET(0, &rset);
++      max = 1;
++
++      if (sigchld_pipe[0] >= 0)
++        {
++          FD_SET(sigchld_pipe[0], &rset);
++          if (max < sigchld_pipe[0] + 1)
++            max = sigchld_pipe[0] + 1;
++        }
++
++      ret = select(max, &rset, NULL, NULL, NULL);
++
++      if (ret < 0)
++        {
++          if (errno == EINTR)
++            continue;
++          perror("bash: select");
++          exit(1);
++        }
++
++      if (sigchld_pipe[0] >= 0 && FD_ISSET(sigchld_pipe[0], &rset))
++        {
++          clean_sigchld_pipe();
++
++          rl_crlf ();
++
++#if defined (JOB_CONTROL)
++          /* This can cause a problem when reading a command as the result
++             of a trap, when the trap is called from flush_child.  This call
++             had better not cause jobs to disappear from the job table in
++             that case, or we will have big trouble. */
++          notify_and_cleanup ();
++#else /* !JOB_CONTROL */
++          cleanup_dead_jobs ();
++#endif /* !JOB_CONTROL */
++
++          putc ('\r', rl_outstream);
++          fflush (rl_outstream);
++          rl_on_new_line ();
++          rl_redisplay ();
++        }
++
++      if (FD_ISSET(0, &rset))
++        {
++          rl_callback_read_char();
++          if (my_readline_done)
++            break;
++        }
++    }
++  return my_readline_return_str;
++}
++
+ static int
+-yy_readline_get ()
++  yy_readline_get ()
+ {
+   SigHandler *old_sigint;
+   int line_len;
+@@ -1105,7 +1216,7 @@
+ 	  interrupt_immediately++;
+ 	}
+ 
+-      current_readline_line = readline (current_readline_prompt ?
++      current_readline_line = my_readline (current_readline_prompt ?
+       					  current_readline_prompt : "");
+ 
+       if (signal_is_ignored (SIGINT) == 0 && old_sigint)
+@@ -1778,6 +1889,7 @@
+       i = 0;
+       shell_input_line_terminator = 0;
+ 
++      clean_sigchld_pipe();
+ #if defined (JOB_CONTROL)
+       /* This can cause a problem when reading a command as the result
+ 	 of a trap, when the trap is called from flush_child.  This call

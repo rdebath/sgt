@@ -1,0 +1,103 @@
+<html>
+<head>
+<title>Unsolved: Equivalence Relations</title>
+</head>
+<link rel="stylesheet" type="text/css" href="../sitestyle.css" name="Simon Tatham's Home Page Style">
+<body>
+<h1 align=center>Unsolved: Equivalence Relations</h1>
+
+<h2><a name="intro">Introduction</a></h2>
+
+<p>
+An <em>equivalence relation</em> on a set is a partition of the set
+into classes. Two elements are considered equivalent if they are in
+the same class, and not if they are not.
+
+<p>
+In some situations, you might find yourself dealing with a set of
+elements and gradually discover ways in which they behave
+differently; so you might want to keep track of which ones are
+different and which ones are not.
+
+<p>
+(In other situations, you might find yourself dealing with a set of
+distinct elements and gradually discover that some are equivalent to
+others; but there's a known algorithm for this. It's made easier by
+the fact that if all elements start off distinct, you're unlikely
+ever to be dealing with too many of them to enumerate individually.)
+
+<h2><a name="properties">Desired Properties</a></h2>
+
+<p>
+So I'm looking for data structures with these operations:
+
+<ul>
+<li>
+Canonify. Given an element of the set, return a canonical element of
+the equivalence class containing that element. Any two equivalent
+elements should return the same element when canonified. Any two
+non-equivalent elements should return different elements.
+<li>
+Enumerate. Run through all the equivalence classes one by one,
+probably by means of their canonical elements.
+<li>
+Disconnect. Given a subset of the set, arrange that every
+equivalence class is either totally inside the subset or totally
+outside it, by means of splitting any class that crosses the
+boundary into two.
+</ul>
+
+<h2><a name="bestknown">Best Known Approximations</a></h2>
+
+<p>
+For a small and dense set, where it's feasible to use the set
+elements as array indices, there's a reasonable implementation of
+all this: have an array <code>A</code> with one element for each set
+element. Then, for each set element <code>e</code>, let
+<code>A[e]</code> contain the canonical element of the class
+containing <code>e</code>. The canonical element of any class is
+defined to be the smallest-value element of that class.
+
+<p>
+Then the "canonify" operation is a simple array lookup, and the
+"enumerate" operation consists of going through the array looking
+for any <code>e</code> satisfying <code>A[e]&nbsp;=&nbsp;e</code>.
+Disconnection is <code>O(N)</code>, and connection is also
+<code>O(N)</code>; but by assumption <code>N</code> is small, so
+that isn't too big a problem.
+
+<p>
+For a sparse set - perhaps the set of all strings, or the set of
+basic blocks in a compilation process - I have no answer.
+
+<h2><a name="applications">Applications</a></h2>
+
+<p>
+One clear application for equivalence classes with a disconnect
+operation is the algorithm that constructs a deterministic finite
+state machine from a nondeterministic one (used in regular
+expression processing). Most of the character set can be treated as
+equivalent: any character not mentioned explicitly in the regular
+expression behaves just the same as any other, and any two
+characters that are always used as part of the same character class
+are equivalent. For example, in the regular expression
+<code>(0[xX][0-9A-Fa-f]+|[1-9][0-9]*|0[0-7]*)</code>, there is no
+need to treat all ASCII characters differently. The equivalence
+classes are <code>[0]</code>, <code>[Xx]</code>,
+<code>[A-Fa-f]</code>, <code>[1-7]</code>, <code>[8-9]</code>, and
+everything else. So we only need to compute six transitions for each
+state, instead of 256.
+
+(<a href="./">back to algorithms index</a>)
+</p>
+
+<hr>
+(comments to <a href="mailto:&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;">&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;</a>)
+<br>
+(thanks to
+<a href="http://www.chiark.greenend.org.uk/">chiark</a>
+for hosting this page)
+<br>
+(last modified on <!--LASTMOD-->[insert date here]<!--END-->)
+</body>
+</html>

@@ -1,0 +1,170 @@
+<html>
+<head>
+<title>Simon Tatham's Fonts Page</title>
+</head>
+<link rel="stylesheet" type="text/css" href="../sitestyle.css" name="Simon Tatham's Home Page Style">
+<body>
+<h1 align=center>Simon Tatham's Fonts Page</h1>
+
+<p>
+This page contains fonts and font utilities, written and/or
+maintained by <a href="../">Simon Tatham</a>.
+
+<h2>mkwinfont</h2>
+
+<p>
+<code>mkwinfont</code> is a small program that generates Windows
+bitmap fonts from a text description. Also supplied is
+<code>dewinfont</code>, which generates the text description files
+from the source fonts.
+
+<p>
+The programs are written in Python, so you will need the Python
+interpreter to run them. The Python interpreter can be downloaded
+from
+<a href="http://www.python.org/">www.python.org</a>.
+
+<p>
+Windows .FON files come in two different types: NE and PE. These
+stand for New Executable and Portable Executable (Windows font files
+have the same basic structure as Windows executables). NE is the old
+format that was used by Windows 3, and PE is the new 32-bit
+executable format used in Win95 and above. I believe <em>fonts</em>
+in PE format are not supported by anything below Windows NT. (So
+oddly, the "new" NE is the older of the two formats, and the
+"portable" PE is the one which doesn't work everywhere!) The
+"mkwinfont" script below generates NE fonts only, so they should
+work everywhere. The "dewinfont" script can untangle both NE and PE
+fonts, so you could use these scripts to convert a non-portable PE
+font into a portable NE one.
+
+<p>
+The files are provided for download here:
+
+<ul>
+<li>
+<a href="mkwinfont">mkwinfont</a>
+<li>
+<a href="dewinfont">dewinfont</a>
+</ul>
+
+<h2>Tektite</h2>
+
+Tektite is a 9x15-pixel bitmap font which I use for almost all my
+text-based computing (terminal windows and text editors, on both
+Unix and Windows). I originally constructed it from the font named
+"t" in the Slackware "kbd" package; this font in turn, according to
+a README in an old version of this package, was extracted from a DOS
+utility called VFONT, apparently created by
+<a href="http://www.clysmic.com/attic/">clySmic Software</a>.
+
+<p align=center>
+<a href="tektite.png"><img src="tektite.png"
+alt="[Tektite font sample]" width=387 height=45 border=0></a>
+
+<p>
+I'm therefore uncertain of the copyright status of this font. The
+original VFONT copyright said you could copy and distribute the
+VFONT program itself without charge but couldn't sell it; however no
+mention was made of derivative works. My Tektite font as distributed
+here is a derivative work: I've redrawn a couple of the uglier
+characters (notably the zero and the asterisk) and added a whole
+load of additional characters to make the font ISO-8859-1
+compatible. I've mailed clySmic twice to ask about this, but they
+have never replied.
+
+<p>
+On the assumption that clySmic is either defunct or doesn't care
+about what I'm doing, I'm therefore offering my ultimately
+VFONT-derived fonts for download. If they ever contact me and
+request that I stop doing so, I will.
+
+<p>
+So, here are the Tektite files for download:
+
+<ul>
+<li>
+<a href="tektite.fon">tektite.fon</a>
+is Tektite in the form of a Windows .FON bitmap font. Character
+encoding is Windows-1252 (the usual superset of ISO-8859-1), but
+also the bottom 32 glyphs contain the VT100 line-drawing character
+set (which makes it suitable for use with the "Font has XWindows
+encoding" option in
+<a href="http://www.chiark.greenend.org.uk/~sgtatham/putty/">PuTTY</a>).
+Also
+<a href="tektite.fd">tektite.fd</a>,
+a textual font description in the format accepted by the "mkwinfont"
+script above.
+<li>
+<a href="tektitec.fon">tektitec.fon</a>
+is Tektite in the form of a Windows .FON bitmap font, but under the
+name "Terminal" so that DOS boxes are able to use it. Character
+encoding is CP437 (the old DOS encoding, with some multinational
+characters and a lot of line-drawing stuff). Also
+<a href="tektitec.fd">tektitec.fd</a>,
+a textual font description in the format accepted by the "mkwinfont"
+script above.
+<li>
+<a href="tektite.pcf.gz">tektite.pcf.gz</a>
+and
+<a href="tektite.pcf.Z">tektite.pcf.Z</a>
+(choose your preferred compression) are both Tektite in the form of
+an X bitmap font. The font name is
+"<code>-clySmic-Tektite-Medium-R-Normal--15-140-75-75-C-90-ISO8859-1</code>".
+Character encoding is the X adaptation of ISO-8859-1 (i.e. the
+bottom 32 glyphs contain the VT100 line-drawing characters). Also
+<a href="tektite.bdf">tektite.bdf</a>,
+the textual BDF form of the font (suitable for input to the X
+utility "bdftopcf").
+</ul>
+
+<h2>fixed for Windows</h2>
+
+<p>
+Many X users swear by the font called "fixed" or "6x13". It's small
+but readable, and it allows a lot of terminal windows on screen at
+once.
+
+<p align=center>
+<a href="fixed.png"><img src="fixed.png"
+alt="[fixed font sample]" width=258 height=39 border=0></a>
+
+<p>
+Since I have scripts that can create Windows fonts from textual
+descriptions, inevitably I was asked to produce a Windows version of
+"fixed" for one of my friends. Here it is for download, in case
+anyone else wants it:
+
+<ul>
+<li>
+<a href="fixed.fon">fixed.fon</a> is "fixed" in the form of a
+Windows .FON bitmap font. Character encoding is Windows-1252 (the
+usual superset of ISO-8859-1), but also the bottom 32 glyphs contain
+the VT100 line-drawing character set (which makes it suitable for
+use with the "Font has XWindows encoding" option in
+<a href="http://www.chiark.greenend.org.uk/~sgtatham/putty/">PuTTY</a>).
+Also
+<a href="fixed.fd">fixed.fd</a>,
+a textual font description in the format accepted by the "mkwinfont"
+script above.
+<li>
+<a href="fixedc.fon">fixedc.fon</a>
+is "fixed" in the form of a Windows .FON bitmap font, but under the
+name "Terminal" so that DOS boxes are able to use it. Character
+encoding is CP437 (the old DOS encoding, with some multinational
+characters and a lot of line-drawing stuff). Also
+<a href="fixedc.fd">fixedc.fd</a>,
+a textual font description in the format accepted by the "mkwinfont"
+script above.
+</ul>
+
+<hr>
+(comments to <a href="mailto:&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;">&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;</a>)
+<br>
+(thanks to
+<a href="http://www.chiark.greenend.org.uk/">chiark</a>
+for hosting this page)
+<br>
+(last modified on <!--LASTMOD-->[insert date here]<!--END-->)
+</body>
+</html>
