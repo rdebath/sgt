@@ -22,6 +22,8 @@ channel -1"
 
 <p>
 <b>Update:</b>
-We believed this fixed as of 2002 May 18, but we've received one
-report that the 'ieof' variant is still out there (in 2002-07-04).
+We believed this fixed as of 2002 May 18 (and have had one person
+report that our fix made their problem go away), but we've received
+one report that the `ieof' variant at least is still out there (in
+2002-07-04).
 <br><tt>OAEBLEDJOCNMIAODAMHBOEHIFDAA.ewang@collectivebid.com</tt>
