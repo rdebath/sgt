@@ -6,14 +6,28 @@
 #include <stdlib.h>
 #include "caltrap.h"
 
+char *dbpath;
+
 int main(int argc, char **argv) {
     int nogo;
     int errs;
+    enum { NONE, INIT, ADD, LIST } command;
+    char *args[2];
+    int nargs = 0;
+    char *homedir;
 
     /*
      * Set up initial (default) parameters.
      */
     nogo = errs = FALSE;
+
+    homedir = getenv("HOME");
+    if (homedir == NULL) homedir = "/";
+    dbpath = smalloc(strlen(homedir) + 20);
+    sprintf(dbpath, "%s%s.caltrapdb", homedir,
+	    homedir[strlen(homedir)-1] == '/' ? "" : "/");
+
+    command = NONE;
 
     /*
      * Parse command line arguments.
@@ -44,6 +58,8 @@ int main(int argc, char **argv) {
 			if (!strcmp(opt, "-help")) {
 			    help();
 			    nogo = TRUE;
+			} else if (!strcmp(opt, "-init")) {
+			    command = INIT;
 			} else if (!strcmp(opt, "-version")) {
 			    showversion();
 			    nogo = TRUE;
@@ -71,6 +87,8 @@ int main(int argc, char **argv) {
 		  case 'h':
 		  case 'V':
 		  case 'L':
+		  case 'a':
+		  case 'l':
 		    /*
 		     * Option requiring no parameter.
 		     */
@@ -87,6 +105,12 @@ int main(int argc, char **argv) {
 			licence();
 			nogo = TRUE;
 			break;
+		      case 'a':
+			command = ADD;
+			break;
+		      case 'l':
+			command = LIST;
+			break;
 		    }
 		    break;
 		    /*
@@ -94,7 +118,7 @@ int main(int argc, char **argv) {
 		     * options that require parameters. An example
 		     * is shown, commented out.
 		     */
-		  /* case 'o': */
+		  case 'D':
 		    /*
 		     * Option requiring parameter.
 		     */
@@ -111,13 +135,11 @@ int main(int argc, char **argv) {
 		     * Now c is the option and p is the parameter.
 		     */
 		    switch (c) {
-			/*
-			 * A sample option requiring an argument:
-			 *
-		         * case 'o':
-			 *   ofile = p;
-			 *   break;
-			 */
+		      case 'D':
+			sfree(dbpath);
+			dbpath = smalloc(1+strlen(p));
+			strcpy(dbpath, p);
+			break;
 		    }
 		    p = NULL;	       /* prevent continued processing */
 		    break;
@@ -137,6 +159,9 @@ int main(int argc, char **argv) {
 	    /*
 	     * A non-option argument.
 	     */
+	    if (nargs < lenof(args))
+		args[nargs] = p;
+	    nargs++;
 	}
     }
 
@@ -148,7 +173,20 @@ int main(int argc, char **argv) {
     /*
      * Do the work.
      */
-    printf("FIXME: put some activity here\n");
+    switch (command) {
+      case NONE:
+	usage();
+	break;
+      case INIT:
+	db_init();
+	break;
+      case ADD:
+	caltrap_add(nargs, args, lenof(args));
+	break;
+      case LIST:
+	caltrap_list(nargs, args, lenof(args));
+	break;
+    }
 
     return 0;
 }

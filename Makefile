@@ -37,10 +37,12 @@ endif
 
 SRC := ../
 
-MODULES := main malloc error help licence version
+MODULES := main malloc error help licence version add list datetime sqlite
 
 OBJECTS := $(addsuffix .o,$(MODULES))
 DEPS := $(addsuffix .d,$(MODULES))
+
+LIBS := -lsqlite
 
 caltrap: $(OBJECTS)
 	$(CC) $(LFLAGS) -o caltrap $(OBJECTS) $(LIBS)
