@@ -10,8 +10,8 @@ features (as used by UnixWare etc).
 
 <dl>
 
-<dd>Colours</dd>
-<dt>From <code><a href="http://groups.google.com/groups?q=msgid%3Ab1dhv1$s98$1%40hyppo.gu.net">comp.security.ssh</a></code>:
+<dt>Colours</dt>
+<dd>From <code><a href="http://groups.google.com/groups?q=msgid%3Ab1dhv1$s98$1%40hyppo.gu.net">comp.security.ssh</a></code>:
 <pre>Select foreground color              \027[=PsF
 Select background color              \027[=PsG
 Select reverse color                 \027[=PsH
@@ -34,15 +34,15 @@ Select reverse background color      \027[=PsI
 sequences buried in the putty-bugs archives.
 <a href="http://www.chiark.greenend.org.uk/~bjharris/ftp/all-escapes/">all-escapes</a>
 also lists some sequences.
-<p>Patch: <code>342AD8A1750B844BA61AF9DFC417CCF5154D29@eciexchange.ecinet.com</code></dt>
+<p>Patch: <code>342AD8A1750B844BA61AF9DFC417CCF5154D29@eciexchange.ecinet.com</code></dd>
 
-<dd>Line drawing</dd>
-<dt>(`SCO ACS'?) Setting line character set to `CP437' on the
-Translation panel <em>might</em> help with this.</dt>
+<dt>Line drawing</dt>
+<dd>(`SCO ACS'?) Setting line character set to `CP437' on the
+Translation panel <em>might</em> help with this.</dd>
 
-<dd>Function keys</dd>
-<dt>`SCO mode' function keys (and keypad top row) are already
+<dt>Function keys</dt>
+<dd>`SCO mode' function keys (and keypad top row) are already
 implemented (and possibly even do what you want). See the Keyboard
-panel.</dt>
+panel.</dd>
 
 </dl>
