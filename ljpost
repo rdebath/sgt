@@ -12,8 +12,11 @@ dict = {"mode":"postevent", "lineendings":"unix"}
 for arg in sys.argv[1:]:
     if arg == "--private":
 	dict["security"] = "private"
-    if arg == "-v":
+    elif arg == "-v":
 	verbose = 1
+    else:
+	sys.stderr.write("Unknown option "+arg+"\n")
+	sys.exit(1)
 
 dict["event"] = sys.stdin.read()
 
