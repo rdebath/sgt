@@ -1,13 +1,14 @@
 #!/bin/sh
-i=$2
+s="$1"; shift
+i="$1"; shift
 name=`basename $0`
 if test ! -n "$i"; then
-  case $1 in
+  case "$s" in
     *.sh) i=sh;;
     *.pl) i=perl;;
     *) echo >&2 "usage: $name <scriptname> <interpreter>"; exit 1;;
   esac
 fi
 i=`which $i`
-echo '#!'$i > $1
-chmod +x $1
+echo "#!$i $@" > $s
+chmod +x $s
