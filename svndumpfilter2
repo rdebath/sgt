@@ -317,6 +317,15 @@ class Filter:
 		    srctree = self.revisions[srcrev]
 		    self.docopy(srctree, srcrev, srcpath, \
 		    self.dirtree, path, contents2)
+		    if len(lump.text) > 0 and self.paths.interesting(path):
+			# This was a copyfrom _plus_ some sort of
+			# delta or new contents, which means that
+			# having done the copy we now also need a
+			# change record providing the new contents.
+			lump.sethdr("Node-action", "change")
+			lump.delhdr("Node-copyfrom-rev")
+			lump.delhdr("Node-copyfrom-path")
+			contents2.append(lump)
 		elif lump.hdrdict["Node-kind"] == "dir":
 		    self.dirtree.mkdir(path, lump.props)
 		    if self.paths.interesting(path):
