@@ -17,5 +17,6 @@ Content-type: text/x-html-body
   support for it will almost certainly be added to PuTTY.
 
 <p>
-<em>Update:</em> a set of URL schemes has been proposed in
-<a href="http://www.ietf.org/internet-drafts/draft-ietf-secsh-scp-sftp-ssh-uri-01.txt">draft-ietf-secsh-scp-sftp-ssh-uri-01</a>.
+<em>Update:</em> a set of URL schemes was proposed in
+draft-ietf-secsh-scp-sftp-ssh-uri-01, but that draft has
+<a href="http://www.ietf.org/internet-drafts/draft-ietf-secsh-scp-sftp-ssh-uri-02.txt">expired</a> and not been replaced.
