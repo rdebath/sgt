@@ -1,5 +1,5 @@
 % -*- mode: slang; mode: fold -*-
-% Simon Tatham: version $Revision: 1.7 $
+% Simon Tatham: version $Revision: 1.8 $
 
 %{{{ load Emacs keybindings to start with
 
@@ -466,6 +466,33 @@ define t9() { t(9); }
 define t10() { t(10); }
 
 %}}}
+%{{{ M-x underline and M-x underline-double
+
+define jedrc_underline(s) {
+    variable i, len;
+    bol();
+    push_spot();
+    left(1);
+    bol();
+    i = what_column();
+    eol();
+    i = what_column() - i;
+    pop_spot();
+    len = strlen(s);
+    while (i > 0) {
+        insert(s);
+        i = i - len;
+    }
+    !if (eolp()) insert("\n");
+}
+
+define underline() { jedrc_underline("-"); }
+define underline_double() { jedrc_underline("="); }
+
+add_completion("underline");
+add_completion("underline_double");
+
+%}}}
 %{{{ ^X^] to show column
 
 define showcolm() {
@@ -633,8 +660,15 @@ define text_format_paragraph() {
     if (text_parsep())
         return;
     push_spot();
-    while (down(1) and not text_item1st() and not text_parsep());
-    bol();
+    while (1) {
+        !if (down(1))
+            break;
+        if (text_item1st() or not text_parsep()) {
+            up(1);
+            break;
+        }
+    }
+    eol();
     insert("\n");
     mkbot = create_user_mark();
     pop_spot();
@@ -679,7 +713,7 @@ define text_format_paragraph() {
         whitespace(j);
     }
     goto_user_mark(mkbot);
-    deln(left(1));
+    deln(1);
     goto_user_mark(mktop);
     deln(left(1));
     pop_spot();
