@@ -1,0 +1,12 @@
+Summary: Keystrokes are doubled if "Change Settings" is open
+Class: bug
+Absent-in: 0.53b 2003-05-05
+Present-in: 2003-05-06 2003-04-24 2003-05-24
+Priority: medium
+
+If you bring up Change Settings mid-session and type in its parent
+window, your keystrokes are mysteriously doubled.
+
+In 2003-05-05 and before, Change Settings was modal, so this situation
+could not occur. This appears to be a side effect of the config box
+revamp.
