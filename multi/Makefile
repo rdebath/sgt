@@ -17,5 +17,5 @@ release: multi.1
 	ln -s ../../multi.1 reltmp/multi
 	ln -s ../../multi.but reltmp/multi
 	ln -s ../../Makefile reltmp/multi
-	tar -C reltmp -chzvf $(DESTDIR)/multi.tar.gz multi
+	tar -C reltmp -chzf $(DESTDIR)/multi.tar.gz multi
 	rm -rf reltmp
