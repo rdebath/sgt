@@ -29,6 +29,11 @@ void *srealloc(void *q, size_t size) {
     return p;
 }
 
+void sfree(void *q) {
+    if (q)
+	free(q);
+}
+
 char *dupstr(char *str) {
     char *p = (char *)smalloc(1+strlen(str));
     strcpy(p, str);

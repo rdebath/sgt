@@ -74,6 +74,9 @@ static struct {
     { COLOR_CYAN, COLOR_BLUE, 0 },
 #define T_INSTRUCTIONS 19	       /* instructions on what keys to press */
     { COLOR_YELLOW, COLOR_BLACK, 0 },
+
+#define T_INPUT 20		       /* accepting text input from user */
+    { COLOR_WHITE, COLOR_BLACK, 0 },
 };
 
 void screen_init(void) {
@@ -204,7 +207,7 @@ void screen_level_display(gamestate *s, char *message) {
 
 /*
  * Get a move. Can return 'h','j','k','l', or 'q', or '0'-'9' for
- * saves, or 's'.
+ * saves, or 's', or 'm' (enter movie mode).
  */
 int screen_level_getmove(void) {
     int i;
@@ -217,7 +220,26 @@ int screen_level_getmove(void) {
 	if (i >= 'A' && i <= 'Z')
 	    i += 'a' - 'A';
     } while (i != 'h' && i != 'j' && i != 'k' && i != 'l' && i != 'q' &&
-	     i != 's' && i != 'r' && (i < '0' || i > '9'));
+	     i != 's' && i != 'r' && (i < '0' || i > '9') && i != 'm');
+    return i;
+}
+
+/*
+ * Get a keypress in movie mode. Can return 'f' or 'b', '+' or '-',
+ * '>' or '<', or 'q'.
+ */
+int screen_movie_getmove(void) {
+    int i;
+    do {
+	i = getch();
+	if (i >= 'A' && i <= 'Z')
+	    i += 'a' - 'A';
+	if (i == ' ') i = 'f';
+	if (i == KEY_LEFT) i = '+';
+	if (i == KEY_RIGHT) i = '-';
+	if (i == '\033') i = 'q';
+    } while (i != 'f' && i != 'b' && i != '+' && i != '-' &&
+	     i != '>' && i != '<' && i != 'q');
     return i;
 }
 
@@ -429,6 +451,93 @@ int screen_saveslot_ask(char action, gamestate **saves, int defslot) {
 	if (k == 'n' || k == 'q')
 	    return -1;
     }
+}
+
+char *screen_ask_movefile(void) {
+    const int width = 40;
+    const int height = 4;
+    int sx, sy, dx, dy;
+    int i, k;
+    char buf[50];
+    int len;
+    char *p;
+
+    getmaxyx(stdscr, sy, sx);
+    dx = (sx - width) / 2;
+    dy = (sy - height) / 2;
+
+    len = 0;
+
+    while (1) {
+	for (i = 1; i < width-1; i++) {
+	    screen_printc(dx+i, dy, T_LIST_BOX, '-');
+	    screen_printc(dx+i, dy+height-1, T_LIST_BOX, '-');
+	    screen_printc(dx+i, dy+1, T_INSTRUCTIONS, ' ');
+	    screen_printc(dx+i, dy+2, T_INPUT, ' ');
+	}
+	for (i = 1; i < height-1; i++) {
+	    screen_printc(dx, dy+i, T_LIST_BOX, '|');
+	    screen_printc(dx+width-1, dy+i, T_LIST_BOX, '|');
+	}
+	screen_printc(dx, dy, T_LIST_BOX, '+');
+	screen_printc(dx, dy+height-1, T_LIST_BOX, '+');
+	screen_printc(dx+width-1, dy, T_LIST_BOX, '+');
+	screen_printc(dx+width-1, dy+height-1, T_LIST_BOX, '+');
+	screen_prints(dx+1, dy+1, T_INSTRUCTIONS,
+		      "Enter a move sequence file name:");
+	buf[len] = '\0';
+	screen_prints(dx+1, dy+2, T_INPUT, buf);
+	move(dy+2, dx+1+len);
+	refresh();
+	k = getch();
+	if (k == '\r' || k == '\n')
+	    break;
+	else if (k == '\e')
+	    return NULL;	       /* input abandoned */
+	else if (k == '\010' || k == '\177' || k == KEY_BACKSPACE)
+	    len = (len>0 ? len-1 : 0);
+	else if (k == '\025')
+	    len = 0;
+	else if (k >= '\040' && k <= '\176' && len < width-2)
+	    buf[len++] = (char)k;
+    }
+    if (!len)
+	return NULL;
+    buf[len] = '\0';
+    p = smalloc(len+1);
+    strcpy(p, buf);
+    return p;
+}
+
+void screen_error_box(char *msg) {
+    int width = 2 + strlen(msg);
+    const int height = 3;
+    int sx, sy, dx, dy;
+    int i;
+    int len;
+
+    getmaxyx(stdscr, sy, sx);
+    dx = (sx - width) / 2;
+    dy = (sy - height) / 2;
+
+    len = 0;
+
+    for (i = 1; i < width-1; i++) {
+	screen_printc(dx+i, dy, T_LIST_BOX, '-');
+	screen_printc(dx+i, dy+height-1, T_LIST_BOX, '-');
+    }
+    for (i = 1; i < height-1; i++) {
+	screen_printc(dx, dy+i, T_LIST_BOX, '|');
+	screen_printc(dx+width-1, dy+i, T_LIST_BOX, '|');
+    }
+    screen_printc(dx, dy, T_LIST_BOX, '+');
+    screen_printc(dx, dy+height-1, T_LIST_BOX, '+');
+    screen_printc(dx+width-1, dy, T_LIST_BOX, '+');
+    screen_printc(dx+width-1, dy+height-1, T_LIST_BOX, '+');
+    screen_prints(dx+1, dy+1, T_INSTRUCTIONS, msg);
+    move(0,0);
+    refresh();
+    getch();
 }
 
 void screen_completed_game(void) {

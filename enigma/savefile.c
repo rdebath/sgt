@@ -1,6 +1,7 @@
 /*
  * enigma/savefile.c - provide routines that load and save a user's
- * progress details and saved positions.
+ * progress details and saved positions, plus a routine to load a
+ * move sequence from a file for replay.
  * 
  * Copyright 2000 Simon Tatham. All rights reserved.
  * 
@@ -248,4 +249,45 @@ void progress_save(levelset *set, char *user, progress p) {
     fprintf(fp, "Level: %d\nDate: %s\n", p.levnum, datebuf);
 
     fclose(fp);
+}
+
+char *sequence_load(char *fname) {
+    FILE *fp;
+    char *p;
+    int len, size;
+    int c;
+
+    p = NULL;
+    len = size = 0;
+
+    fp = fopen(fname, "r");
+    if (!fp)
+	return NULL;
+    while (1) {
+	c = fgetc(fp);
+	if (c == EOF)
+	    break;
+	if (c == 'L')
+	    c = 'h';
+	if (c == 'D')
+	    c = 'j';
+	if (c == 'U')
+	    c = 'k';
+	if (c == 'R')
+	    c = 'l';
+	if (c == 'h' || c == 'j' || c == 'k' || c == 'l') {
+	    if (len >= size) {
+		size = len + 256;
+		p = (p ? realloc(p, size) : malloc(size));
+		if (!p) {
+		    fclose(fp);
+		    return NULL;
+		}
+	    }
+	    p[len++] = c;
+	}
+    }
+    p[len] = '\0';
+    fclose(fp);
+    return p;
 }

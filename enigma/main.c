@@ -92,6 +92,71 @@ int main(int argc, char **argv) {
 			    gs = gamestate_copy(saves[saveslot]);
 			    l = set->levels[gs->levnum-1];
 			}
+		    } else if (k == 'm') {
+			char *fname;
+			char *sequence;
+			gamestate **movie;
+			int nframes;
+			int frame;
+			char msg[80];
+			int km;
+
+			fname = screen_ask_movefile();
+			if (!fname)
+			    continue;
+			sequence = sequence_load(fname);
+			if (!sequence) {
+			    screen_error_box("Unable to load move sequence");
+			    continue;
+			}
+			sfree(fname);
+			movie = smalloc(sizeof(*movie) * (strlen(sequence)+1));
+			movie[0] = gamestate_copy(gs);
+			frame = 0;
+			while (sequence[frame]) {
+			    movie[frame+1] = make_move(movie[frame],
+						       sequence[frame]);
+			    frame++;
+			    nframes = frame;
+			    if (movie[frame]->status != PLAYING)
+				break;
+			}
+			sfree(sequence);
+			frame = 0;
+			while (1) {
+			    char *status;
+			    status = "";
+			    if (movie[frame]->status == DIED)
+				status = " - GAME OVER";
+			    if (movie[frame]->status == COMPLETED)
+				status = " - LEVEL COMPLETE";
+			    sprintf(msg, "MOVIE MODE - %3d / %3d%s",
+				    frame, nframes, status);
+			    screen_level_display(movie[frame], msg);
+			    km = screen_movie_getmove();
+			    if (km == 'f' && frame < nframes) {
+				frame++;
+			    } else if (km == 'b' && frame > 0) {
+				frame--;
+			    } else if (km == '+') {
+				frame += 10;
+				if (frame > nframes) frame = nframes;
+			    } else if (km == '-') {
+				frame -= 10;
+				if (frame < 0) frame = 0;
+			    } else if (km == '>') {
+				frame = nframes;
+			    } else if (km == '<') {
+				frame = 0;
+			    } else if (km == 'q') {
+				break;
+			    }
+			}
+			gamestate_free(gs);
+			gs = movie[nframes];
+			for (i = 0; i < nframes; i++)
+			    gamestate_free(movie[i]);
+			sfree(movie);
 		    } else if (k == 'q') {
 			break;
 		    }
