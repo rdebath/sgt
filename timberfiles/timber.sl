@@ -2114,6 +2114,7 @@ define timber_appendmsg(file) {
 define timber_save() {
     variable file;
     variable buffer;
+    variable lock_required = 1;
 
     push_spot();
 
@@ -2122,16 +2123,27 @@ define timber_save() {
     buffer = strcat("[T] ", file);
     if (bufferp(buffer)) {
 	timber_savetobuf(buffer);
+	lock_required = 0;
     } else {
 	buffer = strcat("[T] ", extract_filename(file));
-	if (bufferp(buffer))
+	if (bufferp(buffer)) {
 	    timber_savetobuf(buffer);
+	    lock_required = 0;
+	}
     }
 
+    if (lock_required) {
+	!if (timber_acquire_lock(file)) {
+	    pop_spot();
+	    error(file + " is locked by another Timber!");
+	}
+    }
     pop_spot();
     push_spot();
     timber_appendmsg(file);
     pop_spot();
+    if (lock_required)
+	timber_release_lock(file);
 
     timber_delete();
     message(Sprintf("Saved message to folder %s.", file, 1));
