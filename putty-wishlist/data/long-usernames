@@ -2,9 +2,13 @@ Summary: Increase space allocated to auto-login username
 Class: semi-bug
 Difficulty: fun
 Content-type: text/x-html-body
+Fixed-in: 2002-09-13
 
 <p>
 Trivial fix: PuTTY truncates the `auto-login username' field to about
 32 characters. Some sites have taken to allocating usernames of the
 form <tt>username@verrylongdomainname.org</tt>, so we've received some
 requests to increase this.
+
+<p>
+Now increased to ~100 chars.
