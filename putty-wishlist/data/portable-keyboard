@@ -28,16 +28,37 @@ to handle.  Further suggestions welcome.
   converted to characters as if Compose were not held down, and then composed
   through a fixed table.
 
+* Typewriter keys in "Cyrillic-Lock" mode.  Here, if Caps Lock is on, those
+  keys that would usually generate certain ASCII characters generate Cyrillic
+  ones instead.
+
 * Function keys, including Tab, Esc, Backspace, F1-F12 and editing keys, but
   not the numeric keypad.  These emit escape sequences (sequences of _bytes_,
   not characters), with the precise sequence depending on terminal modes,
   configuration, keys held down etc.  While complex, I think this is all
   entirely platform- and keyboard-layout independent, and hence not scary.
 
-* The numeric keypad.  I haven't worked this out yet.
+* The numeric keypad in application mode.  In this mode, the keypad, including
+  Num Lock, behaves as a set of function keys.
+
+* The numeric keypad in normal mode, with Num Lock off.  In this mode, those
+  keypad keys which can also be editing keys generate the same sequences as
+  the editing keys themselves.  Other keys are, I think, processed as with
+  Num Lock on below.
+
+* The numeric keypad in normal mode, with Num Lock on.  In this mode, the
+  keypad behaves as typewriter keys.
+
+* The numeric keypad with Alt held down.  This accumulates a numeric character
+  code (line charset) in decimal which is sent when Alt goes up.
 
 * All the above, with Meta held down.  This should send the same sequence as
   without Meta down, but preceded by ESC.
+
+* Keys which cause PuTTY to do things but which aren't sent to the host. 
+  Some of these (e.g. Shift+Page Up) are platform-independent, and can
+  be treated as function keys.  Others (e.g. Alt+Space) are better handled
+  in platform-dependent code.
 
 * Keys which should be handled by the OS.  I don't think the platform-
   independent keyboard handler should see these at all.
