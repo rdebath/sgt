@@ -3,6 +3,7 @@ Class: semi-bug
 Difficulty: taxing
 Content-type: text/x-html-body
 Present-in: 0.52 2002-02-24 0.53b 0.54
+Fixed-in: 2004-03-18
 
 <p>
 Apparently, for some people, PuTTY randomly becomes unresponsive with

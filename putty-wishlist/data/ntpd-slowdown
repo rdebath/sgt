@@ -4,6 +4,7 @@ Priority: medium
 Difficulty: taxing
 Present-in: 0.53b
 Content-type: text/x-html-body
+Fixed-in: 2004-03-18
 
 <p>
 It's been reported that running an SSH2 session through PuTTY causes ntpd
