@@ -1,0 +1,23 @@
+Redirect permanent /~sgtatham/putty/latest/putty.exe http://www.chiark.greenend.org.uk/~sgtatham/putty/latest/x86/putty.exe
+Redirect permanent /~sgtatham/putty/latest/puttytel.exe http://www.chiark.greenend.org.uk/~sgtatham/putty/latest/x86/puttytel.exe
+Redirect permanent /~sgtatham/putty/latest/psftp.exe http://www.chiark.greenend.org.uk/~sgtatham/putty/latest/x86/psftp.exe
+Redirect permanent /~sgtatham/putty/latest/plink.exe http://www.chiark.greenend.org.uk/~sgtatham/putty/latest/x86/plink.exe
+Redirect permanent /~sgtatham/putty/latest/pscp.exe http://www.chiark.greenend.org.uk/~sgtatham/putty/latest/x86/pscp.exe
+Redirect permanent /~sgtatham/putty/latest/pageant.exe http://www.chiark.greenend.org.uk/~sgtatham/putty/latest/x86/pageant.exe
+Redirect permanent /~sgtatham/putty/latest/puttygen.exe http://www.chiark.greenend.org.uk/~sgtatham/putty/latest/x86/puttygen.exe
+Redirect permanent /~sgtatham/putty/latest/putty-alpha.exe http://www.chiark.greenend.org.uk/~sgtatham/putty/latest/alpha/putty.exe
+Redirect permanent /~sgtatham/putty/latest/puttytel-alpha.exe http://www.chiark.greenend.org.uk/~sgtatham/putty/latest/alpha/puttytel.exe
+Redirect permanent /~sgtatham/putty/latest/psftp-alpha.exe http://www.chiark.greenend.org.uk/~sgtatham/putty/latest/alpha/psftp.exe
+Redirect permanent /~sgtatham/putty/latest/plink-alpha.exe http://www.chiark.greenend.org.uk/~sgtatham/putty/latest/alpha/plink.exe
+Redirect permanent /~sgtatham/putty/latest/pscp-alpha.exe http://www.chiark.greenend.org.uk/~sgtatham/putty/latest/alpha/pscp.exe
+Redirect permanent /~sgtatham/putty/latest/pageant-alpha.exe http://www.chiark.greenend.org.uk/~sgtatham/putty/latest/alpha/pageant.exe
+Redirect permanent /~sgtatham/putty/latest/puttygen-alpha.exe http://www.chiark.greenend.org.uk/~sgtatham/putty/latest/alpha/puttygen.exe
+Redirect permanent /~sgtatham/putty/latest/putty.zip http://www.chiark.greenend.org.uk/~sgtatham/putty/latest/putty-src.zip
+Redirect permanent /~sgtatham/putty/latest/ http://the.earth.li/~sgtatham/putty/latest/
+Redirect temp /~sgtatham/putty/0.52/ http://the.earth.li/~sgtatham/putty/0.52/
+Redirect temp /~sgtatham/putty/0.53/ http://the.earth.li/~sgtatham/putty/0.53/
+Redirect temp /~sgtatham/putty/0.53b/ http://the.earth.li/~sgtatham/putty/0.53b/
+Redirect permanent /~sgtatham/putty/bugs.html http://www.chiark.greenend.org.uk/~sgtatham/putty/feedback.html
+Redirect permanent /~sgtatham/putty/wishlist.html http://www.chiark.greenend.org.uk/~sgtatham/putty/wishlist/
+AddType application/octet-stream .hlp
+AddType application/octet-stream .cnt

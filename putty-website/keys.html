@@ -1,0 +1,178 @@
+<HTML><HEAD>
+<TITLE>PuTTY Download Keys and Signatures</TITLE>
+</HEAD>
+<link rel="stylesheet" type="text/css" href="sitestyle.css" name="PuTTY Home Page Style">
+<BODY>
+<h1 align=center>PuTTY Download Keys and Signatures</h1>
+
+<p align=center>
+<a href="./">Home</a> |
+<a href="licence.html">Licence</a> |
+<a href="faq.html">FAQ</a> |
+<a href="docs.html">Docs</a> |
+<a href="download.html">Download</a> |
+<b>Keys</b><br>
+<a href="mirrors.html">Mirrors</a> |
+<a href="maillist.html">Updates</a> |
+<a href="feedback.html">Feedback</a> |
+<a href="changes.html">Changes</a> |
+<a href="wishlist/">Wishlist</a></p>
+
+<p>
+We are currently in the process of setting up GnuPG signatures for
+all the PuTTY files distributed from this web site, so that users
+can be confident that the files have not been tampered with. On this
+page we provide our public keys, and explain our signature policy so
+you can have an accurate idea of what each signature guarantees.
+
+<h2>Public keys</h2>
+
+<p>
+We supply two complete sets of keys. We supply a set of RSA keys,
+compatible with both GnuPG and PGP2, and also a set of DSA keys
+compatible with GnuPG.
+
+<p>
+In each format, we have three keys:
+<ul>
+<li>
+A Development Snapshots key, used to sign the nightly builds.
+<li>
+A Releases key, used to sign actual releases.
+<li>
+A Master Key. The Master Key is used to sign the other two keys, and
+they sign it in return.
+</ul>
+
+<p>
+Therefore, we have six public keys in total. They are provided for
+download here:
+<table>
+<tr>
+<td>RSA:</td>
+<td><a href="keys/master-rsa.asc">Master Key</a></td>
+<td><a href="keys/release-rsa.asc">Release Key</a></td>
+<td><a href="keys/snapshot-rsa.asc">Snapshot Key</a></td>
+</tr>
+<tr>
+<td>DSA:</td>
+<td><a href="keys/master-dsa.asc">Master Key</a></td>
+<td><a href="keys/release-dsa.asc">Release Key</a></td>
+<td><a href="keys/snapshot-dsa.asc">Snapshot Key</a></td>
+</tr>
+</table>
+
+<h2>Security details</h2>
+
+<p>
+The various keys have various different security levels. This
+section explains what those security levels are, and how far you can
+expect to trust each key.
+
+<h3>The Development Snapshots keys</h3>
+
+<p>
+These keys are stored <em>without passphrases</em>. This is
+necessary, because the snapshots are generated every night without
+human intervention, so nobody would be able to type a passphrase.
+
+<p>
+The actual snapshots are built on systems running on a company
+network (because that company happens to have a trusted member of
+the PuTTY core team working for it, and also has both Intel and
+Alpha NT machines capable of running scheduled batch builds).
+
+<p>
+To avoid having to trust that company with passphraseless keys, the
+keys themselves are stored on an independently run Unix box outside
+that company. After being built, the binaries are uploaded to this
+Unix box and then signed automatically.
+
+<p>
+Therefore, a signature from one of the Development Snapshots keys
+<em>DOES</em> protect you against:
+<ul>
+<li>
+People tampering with the PuTTY binaries between the PuTTY web site
+and you.
+</ul>
+<p>
+But it <em>DOES NOT</em> protect you against:
+<ul>
+<li>
+People within the company tampering with the build process, or
+tampering with the binaries before they are uploaded to the
+independent Unix box.
+<li>
+The sysadmin of the independent Unix box using his root privilege to
+steal the private keys and abuse them, or tampering with the
+binaries before they are signed.
+<li>
+Somebody getting root on the Unix box.
+</ul>
+<p>
+Of course, we don't believe any of those things is very likely. We
+know our sysadmin personally and trust him (both to be competent and
+to be non-malicious), and we are reasonably confident that anybody
+inside the company wanting to cause damage would be far more likely
+to choose other targets. But when you see a signature, you should
+always be certain of precisely what it guarantees and precisely what
+it does not.
+
+<h3>The Releases keys</h3>
+
+<p>
+The Release keys have passphrases and we can be more careful about
+how we use them.
+
+<p>
+The Release keys are kept safe on the developers' own local
+machines, and only used to sign releases that have been built by
+hand. A signature from a Release key protects you from almost any
+plausible attack.
+
+<p>
+(Some of the developers' machines have cable modem connections and
+might in theory be crackable, but of course the private keys are
+still encrypted, so the crack would have to go unnoticed for long
+enough to steal a passphrase.)
+
+<p>
+Note that none of the PuTTY developers has an Alpha NT machine
+locally - the only one we have access to is the company-owned one
+used to build the nightly snapshots. Therefore, we <em>cannot</em>
+build Alpha releases with the same level of confidence we build
+Intel releases with. So the Alpha releases will be signed using the
+Development Snapshots keys. Only the Intel releases will be signed
+using the Releases keys.
+
+<h3>The Master Keys</h3>
+
+<p>
+The Master Keys sign almost nothing. Their purpose is to bind the
+other keys together and certify that they are all owned by the same
+people and part of the same integrated setup. The only signatures
+produced by the Master Keys, <em>ever</em>, should be the signatures
+on the other keys.
+
+<p>
+We intend to arrange for the Master Keys to sign each other, to
+certify that the DSA keys and RSA keys are part of the same setup.
+We have not yet got round to this.
+
+<p>
+We intend to collect third-party signatures on the Master Keys. We
+have not yet got round to this.
+
+<p>
+We intend to upload our various keys to public keyservers, so that
+even if you don't know any of the people who we get to sign our
+keys, you can still be reasonably confident that an attacker would
+find it hard to substitute fake keys on all the public keyservers at
+once. We have not yet got round to this either.
+
+<p><hr>If you want to comment on this web site, see the
+<a href="feedback.html">Feedback page</a>.
+<br>
+(last modified on <!--LASTMOD-->[insert date here]<!--END-->)
+</BODY></HTML>

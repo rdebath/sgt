@@ -1,0 +1,794 @@
+<HTML><HEAD>
+<TITLE>PuTTY Known Bugs and Wish List</TITLE>
+</HEAD>
+<link rel="stylesheet" type="text/css" href="sitestyle.css" name="PuTTY Home Page Style">
+<BODY>
+<h1 align=center>PuTTY Known Bugs and Wish List</h1>
+
+<p align=center>
+<a href="./">Home</a> |
+<a href="licence.html">Licence</a> |
+<a href="faq.html">FAQ</a> |
+<a href="docs.html">Docs</a> |
+<a href="download.html">Download</a> |
+<a href="keys.html">Keys</a><br>
+<a href="mirrors.html">Mirrors</a> |
+<a href="maillist.html">Updates</a> |
+<a href="feedback.html">Feedback</a> |
+<a href="changes.html">Changes</a> |
+<b>Wishlist</b></p>
+
+<p>
+This is the list of bugs that need fixing, and features that want
+adding, to PuTTY. This list represents things that have not been
+done to the current <em>development</em> code. If you do not see a
+feature here, it's worth checking the
+<a href="changes.html">Changes page</a>
+before mailing us to ask for the feature; we might have already
+added it since the last release.
+
+<a name="bugs"><h2>Bugs</h2></a>
+
+<p>
+These items are clearly actual problems and I want them fixed.
+
+<ul>
+
+<li>
+Fatal error handling is patchy and flaky. It's very easy to throw a
+fatal error, put up a message box, and then receive a Windows
+message containing yet more socket data. The MessageBox message loop
+then dispatches that message automatically and the back end is
+called reentrantly. Chaos ensues. Solution: the fatal error
+behaviour should be much more robust. Close <em>all</em> sockets the
+instant a fatal error occurs; also set some global flags that
+prevent action messages from having any back end effect.
+
+<li>
+If there is data being transferred through PuTTY while the SSH2
+repeat key exchange is taking place, it can confuse some servers.
+As far as I'm aware nobody has properly standardised this aspect of
+the SSH2 protocol (what happens to the connection layer while the
+transport layer is in a key exchange phase?) so it isn't clear what
+PuTTY <em>should</em> do in this situation, but a good
+conservative/liberal option would be to accept incoming
+connection-layer packets provided we can decrypt them, and to queue
+outgoing connection-layer packets until the key exchange is
+completed. I can't easily imagine a standards decision that would
+invalidate that behaviour.
+
+<li>
+Problems with various keyboard layouts. It would be hard for me to
+debug these myself because I'd have to be able to work in the same
+keymap as I was testing PuTTY in! If anybody can debug these
+problems it would be greatly appreciated.
+<ul>
+<li>
+The
+<a href="http://www.users.one.se/liket/svorak/">svorak</a> (Swedish
+Dvorak) layout apparently gets a few control combinations wrong: ^W,
+^V and ^Z.
+<li>
+On the Danish keyboard, apparently the tilde (~) is acting as a dead
+key <em>and</em> generating a code in itself; so if you hit ~ and
+then n, you get a ~ followed by a &ntilde;.
+<li>
+There's been a report from a Korean user that Korean multi-byte
+input doesn't work.
+<li>
+A German user has reported that Caps Lock is more like Shift Lock -
+it affects a lot of keys other than alphabetics.
+</ul>
+
+<li>
+If PuTTY starts up with its window unselected, something slightly
+odd can happen with the cursor: it doesn't revert from box to block
+when the window gains focus.
+
+<li>
+DNS lookups are synchronous. We could make them async quite easily,
+which would stop the last potential delay before the PuTTY window
+appears and would also prevent an absent DNS server from hanging
+PuTTY while a remote-to-local port forwarding times out on DNS; but
+ideally I'd like an abstraction of DNS so that we can still port
+later (since the socket API only has synchronous DNS). Porting to
+Unix will be fine (we can use adns), and any thread-capable OS won't
+have a problem. Everything else will just have to degrade gracefully
+to synchronous DNS, which will be fun. :-(
+
+<li>
+There's a two-pronged problem with fonts whose characters overlap
+outside their designated rectangular cell.
+<ul>
+<li>
+Firstly, we don't deal
+well with this. Each <em>string</em> passed to
+<code>do_text()</code> is clipped to the rectangle it should be in;
+but <em>within</em> that string there's still scope for overlap
+between character cells. If half the string is then updated then
+there will be artefacts left on the screen; I can't see any obvious
+fix except to always draw one character at a time, which is just
+ghastly.
+<li>
+Secondly, the resize-by-changing-font code has a tendency to choose
+fonts that cause this problem a lot. For bitmap fonts I think this
+is just a hazard of the job - if you ask PuTTY to resize a non-
+resizeable font, you can expect it to do a shoddy job at best - but
+it even happens slightly in Courier New (the very RH edge of the
+lower case m sometimes protrudes into the next character cell),
+which really isn't on. Sadly I have no idea how we can fix this in
+general - if we ask for a smaller width than we really want, then
+(a) we penalise well-behaved fonts, and (b) the spacing when drawing
+a large string will come out wrong.
+</ul>
+
+<li>
+Resizing the window is still pretty flaky. One particular current
+problem is: if you choose a font that fits 80 columns on your screen
+but not 132, then sending ESC[?3h to switch to 132-column mode will
+squish the font just enough to fit 132 columns in a full-width
+window. So far so good; but when you send ESC[?3l to return to 80
+columns, really it would be nice if the window was put back the way
+it started out. Also there's some indication that the squishing
+doesn't work quite right; first PuTTY expands the window to full
+width, then it chooses a font size, and then it leaves a big border
+down each side of the window when that font size fails to fit quite
+right. Really it should recompute the window size once it knows the
+font size.
+
+</ul>
+
+<h2>Semi-bugs</h2>
+
+<p>
+These are things which might be bugs or might not, depending on your
+precise definition of what a bug is.
+
+<ul>
+
+<li>
+PSCP ought to handle really really big (&gt;2Gb) files. There's been
+a report that it doesn't do so properly. (Apparently this will only
+be meaningful under an NT-series OS; the 95 series inherently can't
+handle more than 2Gb in any case.)
+
+<li>
+Better handling of the connection closing, and of SSH_MSG_DISCONNECT
+being received. Ideally we should maintain our own idea of when and
+whether we <em>expect</em> to see a closure, and only signal clean
+exit when a closure or disconnect arrives that we were expecting. If
+one arrives unexpectedly it should count as an ungraceful closure,
+display a dialog box containing the text out of MSG_DISCONNECT, and
+not close the window unless the user selected "Always".
+
+<li>
+Opaque resizes under NT cause trouble when the user changes their
+mind and carefully drags the window back to the way it started out:
+the contents of the screen have been trashed and no resize event is
+sent to the server. Perhaps redisplay during resizing should be
+reimplemented in a way that doesn't change the terminal buffer's
+size at all.
+
+<li>
+Port forwarding upgrade: it would be nice to be able to (at least
+try to) reconfigure forwardings in Change Settings.
+
+<li>
+Interesting port forwarding feature: someone suggested that being
+able to choose <em>which</em> loopback address to bind to might be a
+useful feature (so that you could have separate forwardings
+listening on the same port of 127.0.0.1, 127.0.0.2, 127.0.0.3 and so
+on). The UI for this would probably work by specifying the address
+alongside the port number (bind local port 127.0.0.2:3456 instead of
+just 3456).
+
+<li>
+Apparently PuTTY doesn't correctly handle switching Windows keymaps
+in mid-session: the keymap in force when PuTTY starts up remains in
+force throughout. I have no idea what you have to do to fix this, so
+someone else will have to help me if it's ever going to be fixed.
+
+<li>
+Window placement is non-ideal. PuTTY creates a "guess" window of
+arbitrary size and then measures the difference between its full and
+client-area sizes; this allows it to precisely calculate the correct
+<em>real</em> size, and resize the window. Sadly this scuppers
+Windows's default-placement scheme. Unsure what should be done about
+this, but clearly something should.
+
+<li>
+It is claimed that MapVirtualKeyEx and ToAsciiEx don't work in
+Korean Win98 (although they're fine in other Korean Windows
+products); MapVirtualKey and ToAscii work fine. If anyone can
+reproduce this problem and work out a way for PuTTY to determine
+which pair of functions to use on any given system, that would be
+useful.
+
+<li>
+I have no idea whatsoever what the Unicode handling does about
+Hebrew and other right-to-left scripts. I have equally little idea
+what it <em>should</em> do. If someone who knows about these things
+could at least let me know of the answers to those questions, that
+would be a good start.
+
+</ul>
+
+<a name="wishlist"><h2>Plausible feature wish list</h2></a>
+
+<p>
+This list contains features I hope to get round to adding at some
+stage.
+
+<ul>
+
+<li>
+When you adjust the properties of a running session using the
+"Change Settings" menu option, it might be nice to be able to save
+the adjusted settings back to the saved-session slot you loaded
+from, or to a new session slot. This feature is one of the most
+requested, but is currently pending some design work:
+<ul>
+<li>
+If you load an existing saved session exactly "as is", by
+double-clicking or by running "<code>putty @sessionname</code>" or
+whatever, it's reasonably obvious that hitting the Save button in
+mid-session should write the changed details back to the same slot
+you loaded from.
+<li>
+What if you loaded the session, modified a setting or two, and
+<em>then</em> started it? Should a mid-session Save still write back
+to the original slot by default? It sounds as if it obviously
+should ... but what if the one setting you changed was the
+<em>hostname</em>? Suddenly I think it's no longer completely
+obvious that you should be conveniently able to overwrite your
+previous saved session with the new one.
+<li>
+So the user interface for this feature needs some serious thought;
+we have to have a means for working out precisely when it does and
+does not make sense to have an automatic
+save-to-where-we-loaded-from button available.
+</ul>
+
+<li>
+You should be able to specify <em>only</em> the SSH 2 protocol, i.e.
+have a mode in which PuTTY will refuse to connect rather than
+degrade to SSH 1. (For symmetry, perhaps vice versa as well,
+although I can't see an obvious use for it.)
+
+<li>
+An extra bell option that uses the PC speaker. I'm sure I remember
+reading once that you could access this using
+MessageBeep(0xFFFFFFFF), but when I tried that on Win2k it played
+the Windows Default Sound just like MB_OK. Anyone who knows how this
+is really done is welcome to let me know...
+
+<li>
+PSCP should allow cipher selection by other means than loading a
+PuTTY saved session.
+
+<li>
+PSCP should allow a user option to specify the Unix file permissions
+on files created at the remote end.
+
+<li>
+Now that PSCP supports SFTP as a back end, perhaps we should
+implement the reget/reput functionality with an extra command line
+option. Of course it would fail in an SCP1-type connection.
+
+<li>
+Pageant should offer a wider range of passphrase and key management
+options.
+<ul>
+<li>
+It should be possible to expire the passphrase on a key after a
+specified time, and also to load a key but defer requesting the
+passphrase until the key is first used.
+<li>
+Perhaps it should be possible for Pageant to remember the keys it
+has loaded and automatically reload them on restart.
+<li>
+It would also be nice to be able to invoke a second Pageant with a
+special command line, and have it delete keys from the main one or
+shut it down.
+<li>
+When loading more than one key in immediate succession, it might be
+nice to cache passphrases at least for the duration of that run, in
+case two keys have the same one.
+</ul>
+
+<li>
+Perhaps, for people who don't like dialog boxes, messages like
+"connection closed" and fatal errors should be configurable to
+appear inside the window instead of popping up sudden message boxes.
+If we do this, we should probably include a means of distinguishing
+that sort of error output from <em>anything</em> the remote site can
+possibly send.
+
+<li>
+Perhaps Shift-Backspace could do whichever of ^H and ^? normal
+Backspace <em>isn't</em> doing. Apart from anything else this would make
+documentation of the Backspace functionality switch easier (we could
+invite users to try Shift-Backspace if just Backspace doesn't work,
+and this would be a clear indication that they needed to frob that
+switch).
+
+<li>
+PuTTY should do something sensible if the user key it's given in the
+configuration matches one of the ones in Pageant. (In particular, if
+it tries the one in Pageant and the server refuses it, it shouldn't
+then try it again.)
+
+<li>
+When doing a local-to-remote copy using PSCP, perhaps it could check
+the source filespec <em>before</em> attempting to connect to the
+host. That would save time and effort by notifying the user of a
+typo sooner than otherwise.
+
+<li>
+When selecting with the mouse, it might make sense for further
+incoming data to be buffered until the user lets go, so that they
+aren't trying to work with a moving target. This might also be nice
+when scrolling with the scrollbar.
+
+<li>
+Allow the "ANSI Green" used for foregrounds to be different from the
+one used for backgrounds (for all values of "Green").
+
+<li>
+Terminal settings that are modifiable from "Change Settings" but
+which only control an <em>initial</em> state should be handled
+better. Perhaps a sensible procedure would be that if the user
+changes such a setting, then when they hit Apply they get a message
+box: "You have modified the initial state of the Foo setting. This
+change will take effect the next time your terminal is reset. Do you
+want to force it to take effect immediately as well? [yes] [no]".
+
+<li>
+Perhaps an inactive window should have a menu option to reactivate
+the session (like Duplicate Session but in the same window).
+
+<li>
+A second font selection for 132-column mode. Perhaps, in general,
+the ability to select multiple fonts and switch between them quickly?
+
+<li>
+Ability to configure font quality (the fdwQuality parameter to
+CreateFont). Choices should include "antialiased",
+"non-antialiased", "ClearType", "default".
+
+<li>
+There have been various requests to have various config options
+available conveniently in the System menu instead of having to go
+all the way to Change Settings. A particularly common request is the
+ability to turn logging on and off quickly.
+
+<li>
+PSCP should be able to send its log messages to stdout instead of
+stderr, since Windows doesn't provide any easy way to redirect
+stderr.
+
+<li>
+Ctrl-PgUp and Ctrl-PgDn to scroll by one line at a time.
+
+<li>
+Command line options, in general. In particular, SSH protocol,
+cipher and compression selection in the auxiliary utilities (PSCP
+etc). The command-line utilities should also be able to specify an
+identity file using the standard option, because this might enable
+the WinCVS GUI identity-file chooser to work with Plink.
+
+<li>
+Users from countries (is it <em>only</em> the US?) that don't need
+the AltGr key might like to have an option that makes it work the
+same way as the left Alt key.
+
+<li>
+Allow saving of the current screen+scrollback state to a file. Or
+printing it, possibly.
+
+<li>
+One user suggested a search facility for finding text in the
+scrollback. Full-blown regexp-style grep is probably overkill, but a
+Notepad-esque search box (select up/down search direction, select
+case sensitivity, type your text and go) might be feasible.
+
+<li>
+It might be generous if we skipped whitespace when parsing IP
+addresses in the Host Name box.
+
+<li>
+<i>Possibly</i> copy/paste should be implicit in the mouse only within
+one window. Not convinced. Certainly the current behaviour would be
+available by configuration (and probably still the default too).
+
+<li>
+Extra features in pasting. Perhaps PuTTY could somehow remember
+which on-screen spaces had been output as the result of a tab
+character, and which were genuine spaces, and reproduce that when
+copying to the clipboard. Likewise, perhaps, trailing spaces. Also,
+since we now allow RTF pasting, perhaps it could paste style
+information (bold, italic etc) alongside. Probably at least some of
+these features will want to be configurable off, since I can imagine
+them causing trouble in some situations.
+
+<li>
+Perhaps (configurably) we could do the X trick of emulating the
+middle button when both buttons are pressed, to improve X exiles'
+experience of PuTTY's mouse handling.
+
+<li>
+Some means of categorising saved sessions, for people who have lots.
+
+<li>
+Someone suggested adaptive ordering in the saved session box (a new
+session is placed in the middle of the list, and whenever you use a
+session it moves up by one, so the commonly-used ones end up at the
+top of the list). Not sure about this one at all, but it's worth at
+least considering.
+
+<li>
+WM_PASTE and drag&drop support.
+
+<li>
+Possibly support OpenSSH's host key policy: file each host key under
+a (hostname,IP) pair, so as to be able to deal with one hostname
+mapping to a cluster of several IPs with different host keys. First
+think through all the implications and work out whether we really
+want to do this. Also, for the benefit of really weird network
+setups, be able to explicitly <em>specify</em> what name to store a
+host key under.
+
+<li>
+Remapping of keypad-Delete to ^? as an option. Also, optional
+remapping of Home/End to ^A/^E. And one user wanted a user-definable
+F5 sequence. And several users want the block above the arrow keys
+to be mapped in the LK450 layout. Maybe a generic key remapping
+facility, though that would probably be horrible to implement...
+
+<li>
+Perhaps copy and paste in the Windows style: ^C/^V or
+ShiftIns/CtrlIns. (Note that we already have ShiftIns as paste, so
+this would have to be a configurable option that disabled the
+existing copy-on-selection.) Also, perhaps, (copy) and paste options
+on the System menu, and/or the toolbar (if we add one). And, in
+fact, if the user selects Windows-style copy/paste <em>instead</em>
+of the X style, then the right mouse button will be free to bring up
+a context menu that can have "Copy" and "Paste" options.
+
+<li>
+Make selection colours configurable rather than forcing them to be
+inverse-of-current. But still need inverse-of-current as an option.
+Come up with a sane UI for this and then implement it.
+
+<li>
+Allow the user to select a different default colour for underlined
+text, and a different default background colour for bold text, and
+so on. Not everybody wants true WYSIWYG in attribute rendering.
+Also, consider the possibility of changing <em>fonts</em> for some
+of these criteria (might be useful for people with low vision).
+
+<li>
+Some support for the generality of SSH 2, in the sense that it's not
+necessary to start a shell; you can make a connection and just do
+port forwarding, for example.
+
+<li>
+Think about pre-building a bitmap for better scrolling, or possibly
+just doing the old scroll optimisations over again and getting them
+<i>right</i>.
+
+<li>
+Possibly line-end conversion in pscp. An option to turn it on, an
+option (enabled by default) to turn it off, and perhaps an option to
+try to auto-detect whether to turn it on or not. (Anyone know a good
+heuristic for distinguishing text from binary files? infozip has
+one, as does less; anyone want to comment on which is better or
+whether there are better still?)
+
+<li>
+Port to other OSes: Unix/X (need a local-xterm back end), BeOS
+(likewise).
+
+<li>
+Perhaps a screen-clear should push the previous screen contents into
+the scrollback?
+
+<li>
+Toolbar, <i>maybe</i>. Certainly optional, if so.
+
+<li>
+Optional status bar with various information on it. A visible
+indicator of whether the connection is secured or not (for the
+paranoids who aren't sure whether they remembered to hit the SSH
+button); a display of the cursor coordinates; whether the terminal
+bell is currently overloaded; some sort of visual representation of
+the host key perhaps. Anything else that springs to mind.
+
+<li>
+Menu bar, to go with the toolbar. Definitely optional. Option for
+cut and paste to be in the Windows style and/or via the menu/tool
+bars.
+
+<li>
+The default-foreground and default-background colour selection
+should have an option to go with the Windows colour scheme.
+
+<li>
+It would be nice to maintain our own terminfo/termcap description of
+the terminal emulated by PuTTY, as an alternative to having PuTTY
+claim to be an xterm and hoping everybody's xterms behave similarly.
+
+<li>
+Possibly more encryptions? IDEA is out due to the patent
+restrictions being incompatible with the PuTTY licence; RC4 would
+probably be doable if anyone actually wants it; Twofish and Serpent
+would both be feasible.
+
+<li>
+Ability to select a preference order of authentications.
+
+<li>
+Ability to connect to a serial port as well as a Telnet or SSH
+connection. Also, ability to run a local command interpreter in a
+pipe (probably an NT-only feature).
+
+<li>
+Support for proxies. There are several types of proxy to consider:
+<ul>
+<li>
+SOCKS.
+<li>
+HTTP CONNECT style proxying (connect to the HTTP port and send
+something like "<code>CONNECT hostname.example.com:22
+HTTP/1.0</code>", then parse the HTTP return headers and go)
+<li>
+Simple by-hand proxy: the kind where you telnet to the firewall and
+type "<code>connect hostname.example.com 22</code>", and then expect
+a connection to begin.
+</ul>
+We would also want the ability to define non-proxy zones (probably
+give the user the choice of DNS or IP address space).
+
+<li>
+Ability to cache host keys and settings in a file as well as the
+registry, so that people can (for example) easily carry a complete
+PuTTY setup around on a floppy.
+
+<li>
+Ability to store PuTTY host keys and settings in HKEY_ALL_USERS as
+well as HKEY_CURRENT_USER, so that sysadmins can set up a default
+set of host keys (for example, all the servers in a company) to
+spare some classes of user the constant "new host key" messages.
+Also so that sysadmins can provide a default set of saved sessions
+or local Default Settings (sensible local proxy support springs to
+mind once it's implemented) but this MUST be a default only and the
+user MUST be able to override all of it using settings in
+HKEY_CURRENT_USER.
+
+<li>
+Inheritable saved sessions. The way I see this working is that you'd
+have a button marked "Inherit" next to the "Load" button. Selecting
+an existing saved session and clicking this would give you a
+weird-looking config box in which all the features had an indicator
+beside them saying they were inherited from the parent session.
+Modifying any setting would clear this indicator; clicking the
+indicator would set it and revert the setting to the way it is in
+the parent. You could then save and launch this session in the usual
+way - but if you modified a setting in the parent session which was
+inherited rather than locally modified in the child, then the
+child's setting would change. So, for example, you could have most
+of your day-to-day sessions _inherit_ from Default Settings rather
+than copying it, so if you found a nicer font you could change them
+all in one go. Of course there'd be no reason an inherited session
+couldn't inherit from another inherited session.
+
+<li>
+PSFTP could do with more features: options and wildcards to ls (-l
+etc), and perhaps recursive transfer of whole directories like scp.
+(After all, we can <em>do</em> this in SFTP already!)
+
+<li>
+Perhaps PSCP (and possibly Plink and PSFTP and other potential
+command-line type tools) should be able to read some default
+command-line options from an environment variable? Note that if we
+did this we would also need to supply a negative form of
+<em>every</em> option, so that a user could always choose to turn
+off an option that the environment variable had turned on.
+
+<li>
+Scripting support, so you can have PuTTY perform automatic tasks.
+(Such as remembering your password for you, although I don't
+recommend this on grounds of security!)
+
+<li>
+Extract all the user-visible text to a single location, so it can be
+easily replaced with a set of translations into other languages.
+It's not yet clear whether we want to do this at compile time,
+post-compile time, or using a Windows string resource (probably not
+the latter since we will eventually be porting to non-Windows
+environments).
+
+</ul>
+
+<h2>Implausible feature wish list</h2>
+
+<p>
+These are features I will probably never get round to adding myself.
+I wouldn't be opposed to seeing them written, but if it happens
+somebody else will have to do it, because they're big and
+complicated and I wouldn't use them enough myself to justify
+spending all that effort.
+
+<ul>
+
+<li>
+Improved ANSI printer control support. Squirting raw data out to a
+random printer is all very well for people who already have their
+remote application configured with a driver for their specific
+printer, but not ideal if you just want to send a text file and have
+it print in a sensible sort of way. I'd like an alternative printing
+mode using the Windows graphical printing API (where the printing
+application has to draw on the page like a canvas), doing the layout
+myself. Advantages include being able to guarantee the right number
+of columns and rows per page, being able to let the user select
+portrait/landscape, and possibly also doing some escape-sequence
+parsing on the input data stream to handle a variety of simple
+control codes (DEC/ANSI and PCL both spring to mind, and I think the
+simple ones of these could both be supported at once without clashes
+requiring user-level configuration).
+
+<li>
+X11 forwarding currently doesn't even attempt to authenticate with
+the local X server. In order for it to do so, PuTTY would have to
+know where to look for authentication data. It would be nice if this
+were to happen.
+
+<li>
+A GUI SFTP client. (Possibly it should also be able to use SCP but
+with massively reduced functionality.) Writing big complex GUIs is
+hard work and I simply don't have the effort to spare.
+
+<li>
+SRP support, as an alternative to pure password authentication.
+Possibly also in Telnet.
+
+<li>
+Zmodem file transfers.
+
+<li>
+An option in Plink to handle terminal escape codes, so that you get
+"PuTTY in a console window", and so you can run it full-screen.
+
+<li>
+Somebody requested "Kerberos 5 credential forwarding". I don't know
+anything about Kerberos, so if this gets done it will have to be
+done by somebody who does.
+
+<li>
+Support for various international input methods. There's been a
+report from the Netherlands of an "international keyboard driver"
+which allows you to enter, for example, an "&Euml;" just by typing a
+double quote and then an E. I believe there are also Eastern input
+mechanisms we don't handle sensibly. Somebody who knows about this
+stuff will have to do it for me and probably explain it to me as
+well, because I just don't know enough about internationalisation.
+
+<li>
+There's been one request for SSL. (SSL/Telnet in particular;
+possibly also raw-SSL in order to talk directly to HTTPS?) Most of
+the SSL protocol looks reasonably sane, except for the certificates
+(ASN.1 and X509 and other buzzwords). If the certificate processing
+turns out to take <em>too</em> much code, SSL might not make it into
+the PuTTY core for size reasons - it would have to be compiled in
+specially, or perhaps shipped as a separate DLL.
+
+<li>
+A lot of people seem to want a single PuTTY to be able to manage
+multiple connections. Some want an MDI-style application, with one
+large main window containing several session windows; other people
+want the window to stay the same size and the multiple sessions to
+be selected by Alt-F1, Alt-F2 etc., or by selecting tabs on the
+window. This is a <em>huge</em> amount of work, because for a start
+it would need most of the code reworking to be able to deal with
+more than one instance of an SSH connection or a terminal
+(currently, each PuTTY connection is an entirely separate process).
+In addition I'd want a strong guarantee of reliability (if one
+session crashes, can it avoid taking the other nine down?). Also I'd
+want to be able to configure PuTTY to be just the way it is now,
+because not everybody likes the idea of all their sessions being
+bound together in a single window; and finally I'd want to be
+convinced that the code size increase wouldn't be excessive. This is
+close to being a non-wish, in fact, unless someone can convince me
+it's really worth its while.
+
+<!-- might need to put this back if anyone ever reports it again and
+isn't satisfied with RDB's solution as of build 2001-01-30
+<li>
+I'm still getting the occasional report of Telnet SYNCH not working
+quite right (common symptoms being "&ograve;" and/or "&yuml;"
+appearing when you press Ctrl-C at a Unix shell prompt). If somebody
+who <em>really</em> knows about OOB data (aka TCP Urgent) could look
+over my Windows networking code and fix the OOB handling so that it
+actually works, that would be fantastic. After much swearing, I'm
+not convinced this is actually possible, but I'm not confident of my
+diagnosis either. I'd like somebody who really does know their stuff
+to either fix it for me, or convince me it seriously is impossible.
+-->
+
+</ul>
+
+<h2>Non-wish list</h2>
+
+<p>
+These are features I am actively opposed to seeing in PuTTY. Don't
+bother writing them and sending them to me! If you think you have a
+good argument why they would be good, feel free to plead for them,
+but generally I'll already have a good reason not to do them.
+
+<ul>
+
+<li>
+Use of the System tray. So many people have requested this that I
+think it's a genuine desirable feature, but I don't want it to bloat
+the core of PuTTY. Therefore, it should be implemented using a
+separate program. There are a variety of programs out there already
+that do this. Here are some links to them.
+  <ul>
+  <li>
+  <a href="http://www.toggle.com/products/minimize/index.html">ToggleMINIMIZE</a>.
+  <li>
+  <a href="http://longwood.cs.ucf.edu/~heimburg/software.html">The Wonderful Icon</a>.
+  <li>
+  <a href="http://www.mlin.net/TraySaver.shtml">TraySaver</a>.
+  </ul>
+
+<li>
+The ability to specify the precise position on the screen you want
+your PuTTY window to open at. This is clearly a very useful thing to
+have, but it would be just as useful for all the <em>other</em>
+Windows apps anyone uses. It shouldn't be the responsibility of
+every single program to include a configuration option to specify
+window position. Instead, it should be the responsibility of the
+Windows system itself, or a third-party program, to remember where
+you like individual programs to go.
+<br>
+One such program is
+<a href="http://www.basta.com/ProdZMover.htm">ZMover</a>
+(shareware); another is
+<a href="http://www.starfishbay.com/handything/">HandyThing</a>
+(free as in beer). If anyone knows of a free (as in speech) one, I'd
+like to hear about it.
+
+<li>
+An option to automatically accept all SSH host keys. For some reason
+lots of people seem to think this would be a really useful feature.
+I'm sure it would be very convenient, but at the expense of
+security! The whole point of host keys is that they're the
+<em>only</em> guarantee you have that your connection hasn't been
+hijacked by an active attacker between you and the server, and that
+your data isn't being decrypted by the attacker and re-encrypted. If
+you want to schedule an automated batch job to use PSCP or Plink,
+and the interactive host key prompt is making this difficult,
+<em>add the correct host key to the registry ahead of time</em>.
+That way you still get the convenience, but without losing the
+security. We will <em>not</em> accept a command line option to turn
+off host key checking, no matter how many people have already done
+the work and send us polished production-quality patches.
+
+<li>
+A transparent, semi-transparent or alpha-blended PuTTY window. We
+think this is pointless frippery and would bloat the binary to no
+useful purpose. Furthermore, there are third-party utilities which
+will do this for you without us needing to modify PuTTY; have a look
+at
+<a href="http://www.veridicus.com/tummy/programming/powermenu/">PowerMenu</a>
+and also
+<a href="http://www.chime.tv/products/glass2k.shtml">Glass2k</a>.
+
+</ul>
+
+<p><hr>If you want to comment on this web site, see the
+<a href="feedback.html">Feedback page</a>.
+<br>
+(last modified on <!--LASTMOD-->[insert date here]<!--END-->)
+</BODY></HTML>
