@@ -1,5 +1,7 @@
 Summary: Short RSA2 key causes PuTTY crash
 Class: bug
+Priority: medium
+Difficulty: tricky
 Present-in: 0.53b 2003-11-03
 
 "If I create a really short RSA2 key (I used 256 bits) it is generated and
@@ -9,3 +11,30 @@ More detail: <20031101102009.GA29907@chiark.greenend.org.uk>
 (includes suspected root cause)
 
 (I've tested that DSA and RSA1 keys don't suffer from the same problem.)
+
+-----
+More analysis:
+
+> Looking at rsa2_sign(), if the RSA modulus of the key is too small, we
+> can't fit in the padding, ASN1 goop and hash, but the loop is merrily
+> attempting to cram it all in anyway, overrunning the malloced block and
+> (apparently) causing fruity stack badness.
+
+*nods* Yes, I managed to trace that much myself. The trouble is not
+that I don't know the cause of the problem, but more that I don't
+know how best to fix it.
+
+[...] the plausible options are (a) reject the key when PuTTY attempts
+to load it, or (b) return failure and a useful error message from
+the sign operation. I'm undecided between those two; (a) is nice
+from the point of view of detecting and reporting any error
+condition at the earliest possible moment, but (b) feels a little
+more robust since the check can be performed in the _same_ code that
+will then go and use the buffer space - so rather than having to
+keep two pieces of similar-looking code in sync, there's just one
+piece of code which is likely to keep naturally in sync with itself.
+Either one, however, requires some infrastructure change to support,
+which is why I didn't fix it before the 0.54 release.
+
+(Quite why anyone's using 256-bit keys _anyway_ is beyond me, but
+these days no weird user behaviour is a surprise to me.)
