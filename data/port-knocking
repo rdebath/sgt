@@ -1,0 +1,69 @@
+Summary: Port knocking
+Class: wish
+Priority: never
+Difficulty: tricky
+Content-type: text/x-html-body
+
+<p>
+We have been asked several times to implement <a
+href="http://www.portknocking.org/">Port Knocking</a>: a mechanism
+for making a running service appear to be a connection-refusing
+closed port unless the right sequence of "knocks" (attempted
+connections to genuinely closed ports) is received before the
+connection attempt.
+
+<p>
+The PuTTY team is collectively unconvinced that this is a good idea.
+For a start, it's not universally usable, because many firewalls
+won't let the knocks through. (Obviously the firewall at the server
+end is precisely what will need to be specifically listening out for
+the knock, but firewalls at the client end or in between are likely
+to cause a lot more trouble. And in particular, if you're connecting
+through an <em>SSH tunnel</em>, you'll have a hard time sending a
+knock.) Also, since the knock is effectively sent in cleartext, it
+doesn't buy you a great deal of security - the only real gain is
+that your service appears to be a closed port to anyone doing a port
+scan, and although that might have advantages it might also cause
+administrators to become more relaxed about the <em>real</em>
+security of their service. It seems like a lot of effort for very
+little gain.
+
+<p>
+Much more importantly, though, we don't like the idea of this
+mechanism having to be implemented separately in <em>every</em>
+network client program - particularly given the hints on the port
+knocking website that more inventive forms of knock may be developed
+in future, which would of course mean we'd have to keep up with
+development. To implement and maintain this in PuTTY and all other
+network utilities would be a huge amount of effort.
+
+<p>
+If this is to be done at all, it should be done in a largely
+client-independent manner. For example:
+
+<ul>
+<li>
+On Unix, you could construct a dynamic library which replaced the
+<code>connect</code>(2) system call, and use <code>LD_PRELOAD</code>
+to apply it to almost any application.
+<li>
+Also on Unix, you could write a small command-line application which
+performed the port knock and then made the connection (a
+port-knocking enabled equivalent
+of <a href="http://netcat.sourceforge.net/"><code>nc</code>(1)</a>),
+and then invoke that using the "Local" proxy setting in PuTTY. At
+some point we would like to implement this proxy setting in Windows
+PuTTY as well (see <a href="proxy-command.html">proxy-command</a>),
+and at that point this solution will be applicable to Windows as well.
+<li>
+On either (or both) of Windows or Unix, you could write a SOCKS
+server which performed appropriate port knocks before proxying any
+given connection, and point PuTTY at it using the existing SOCKS
+proxy support.
+</ul>
+
+<p>
+If anyone really wants to see this feature in PuTTY, they should
+probably look into one of the above options. The most universally
+applicable solution without needing to change PuTTY at all would be
+the SOCKS server approach.
