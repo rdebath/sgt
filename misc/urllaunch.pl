@@ -15,9 +15,16 @@ if ($ARGV[0] eq "-g") {
     $url =~ s/^[\s\240]*//;
     # Strip every \n, plus any spaces just after that \n.
     $url =~ s/\n[\s\240]*//gs;
-    # Prepend `http://' if there's no leading protocol prefix.
-    $url = "http://" . $url unless $url =~ /^[a-zA-Z]+:/;
-    
+    # Prepend `http://' if there's no leading protocol prefix,
+    # unless the string begins with a single slash in which case we
+    # prepend `file://'.
+    if ($url =~ /^[a-zA-Z]+:/) {
+        # do nothing
+    } elsif ($url =~ /^\/([^\/].*)?$/) {
+        $url = "file://" . $url;
+    } else {
+        $url = "http://" . $url;
+    }
 }
 
 # Mozilla is a bit weird about launching URLs. If we just run
