@@ -34,7 +34,7 @@ btree.html:  btree.but
 # command like `make release VERSION=3.00'.
 release: tweak.1 btree.html
 	mkdir -p reltmp/tweak-$(VERSION)
-	for i in *.c *.h *.but tweak.1 btree.html Makefile; do   \
+	for i in LICENCE *.c *.h *.but tweak.1 btree.html Makefile; do   \
 		ln -s ../../$$i reltmp/tweak-$(VERSION);         \
 	done
 	(cd reltmp; tar chzvf ../tweak-$(VERSION).tar.gz tweak-$(VERSION))
