@@ -84,12 +84,24 @@ int main(int argc, char **argv) {
 	    }
 	    if (gs) {
 		screen_level_init();
-		while (gs->status == PLAYING) {
+		while (1) {
 		    gamestate *newgs;
 		    int k;
-		    screen_level_display(gs, NULL);
-		    k = screen_level_getmove();
-		    if (k == 'h' || k == 'j' || k == 'l' || k == 'k') {
+		    char *msg;
+
+		    if (gs->status == PLAYING) {
+			msg = NULL;
+		    } else if (gs->status == DIED) {
+			msg = "GAME OVER";
+		    } else if (gs->status == COMPLETED) {
+			msg = "LEVEL COMPLETE";
+		    } else {
+			msg = "!INTERNAL ERROR!";
+		    }
+		    screen_level_display(gs, msg);
+		    k = screen_level_getmove(gs->status == PLAYING);
+		    if (gs->status == PLAYING &&
+			(k == 'h' || k == 'j' || k == 'l' || k == 'k')) {
 			newgs = make_move(gs, k);
 			gamestate_free(gs);
 			gs = newgs;
@@ -98,7 +110,7 @@ int main(int argc, char **argv) {
 			if (!fname)
 			    continue;
 			sequence_save(fname, gs);
-		    } else if (k == 's') {
+		    } else if (gs->status == PLAYING && k == 's') {
 			n = screen_saveslot_ask('s', saves, saveslot);
 			if (n >= 0) {
 			    saveslot = n;
@@ -113,7 +125,7 @@ int main(int argc, char **argv) {
 			    gs = gamestate_copy(saves[saveslot]);
 			    l = set->levels[gs->levnum-1];
 			}
-		    } else if (k == 'm') {
+		    } else if (gs->status == PLAYING && k == 'm') {
 			char *fname;
 			char *sequence;
 			gamestate **movie;
@@ -178,41 +190,26 @@ int main(int argc, char **argv) {
 			for (i = 0; i < nframes; i++)
 			    gamestate_free(movie[i]);
 			sfree(movie);
-		    } else if (k == 'q') {
+		    } else if (gs->status != PLAYING || k == 'q') {
+			/*
+			 * (Any key quits this loop when not in
+			 * PLAYING state; only `q' quits it in
+			 * PLAYING state.)
+			 */
 			break;
 		    }
 		}
-		if (gs->status != PLAYING) {
-		    int increased_level = FALSE;
-		    char *msg;
-		    int k;
-
-		    if (gs->status == DIED) {
-			msg = "GAME OVER";
-		    } else if (gs->status == COMPLETED) {
-			msg = "LEVEL COMPLETE";
-			if (p.levnum < gs->levnum) {
-			    p.levnum = gs->levnum;
-			    p.date = time(NULL);
-			    progress_save(set, user, p);
-			    increased_level = TRUE;
-			}
-		    } else {
-			msg = "!INTERNAL ERROR!";
+		if (gs->status == COMPLETED) {
+		    if (p.levnum < gs->levnum) {
+			p.levnum = gs->levnum;
+			p.date = time(NULL);
+			progress_save(set, user, p);
 		    }
-		    screen_level_display(gs, msg);
-		    k = screen_finish_getmove();
-		    if (k == 'w') {
-			char *fname = screen_ask_movefile(1);
-			if (!fname)
-			    continue;
-			sequence_save(fname, gs);
-		    }
-		    screen_level_finish();
-		    if (increased_level && p.levnum == set->nlevels) {
+		    if (p.levnum == set->nlevels) {
 			screen_completed_game();
 		    }
 		}
+		screen_level_finish();
 	    }
 	}
     } else {

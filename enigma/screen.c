@@ -137,27 +137,6 @@ void screen_level_finish(void) {
     /* In this implementation, we do nothing. */
 }
 
-int screen_finish_getmove(void) {
-    /*
-     * This is called after showing the final game position. Its
-     * task is to allow the user the chance to see everything and
-     * possibly write out a move sequence file.
-     */
-    int sw, sh, k;
-    char msg[] = "(Press any key)";
-
-    getmaxyx(stdscr, sh, sw);
-
-    screen_prints((sw-(sizeof(msg)-1))/2, sh-1, T_INSTRUCTIONS, msg);
-    move(0,0);
-    refresh();
-    k = getch();
-    if (k == 'w' || k == 'W')
-	return 'w';
-    else
-	return '\r';
-}
-
 void screen_level_display(gamestate *s, char *message) {
     int sw, sh;
     int i, j;
@@ -225,16 +204,21 @@ void screen_level_display(gamestate *s, char *message) {
  * Get a move. Can return 'h','j','k','l', or 'q', or '0'-'9' for
  * saves, or 's', 'm' (enter movie mode) and 'w' (save sequence).
  */
-int screen_level_getmove(void) {
+int screen_level_getmove(int playing) {
     int i;
     do {
 	i = getch();
-	if (i == KEY_UP) i = 'k';
-	if (i == KEY_DOWN) i = 'j';
-	if (i == KEY_LEFT) i = 'h';
-	if (i == KEY_RIGHT) i = 'l';
-	if (i >= 'A' && i <= 'Z')
-	    i += 'a' - 'A';
+	if (playing) {
+	    if (i == KEY_UP) i = 'k';
+	    if (i == KEY_DOWN) i = 'j';
+	    if (i == KEY_LEFT) i = 'h';
+	    if (i == KEY_RIGHT) i = 'l';
+	    if (i >= 'A' && i <= 'Z')
+		i += 'a' - 'A';
+	} else if (i != 'w' && i != 'r') {
+	    /* When the playing is over, most keys just quit. */
+	    i = 'q';
+	}
     } while (i != 'h' && i != 'j' && i != 'k' && i != 'l' && i != 'q' &&
 	     i != 's' && i != 'r' && (i < '0' || i > '9') &&
 	     i != 'm' && i != 'w');
