@@ -34,3 +34,8 @@ and <code>GetSystemPowerStatus()</code>.
 <p>By use of diagnostic builds we've narrowed the problem down to use
 of <code>GetSystemPowerStatus()</code>, which is likely to be calling
 the APM BIOS, which ISTR has to be done with interrupts disabled.
+
+<p><em>Update, 2004-03-18</em>: the <code>GetSystemPowerStatus()</code>
+call has been removed in an attempt to fix
+<a href="hard-hangs.html">`hard-hangs'</a>. With luck, that should
+make this problem go away too.
