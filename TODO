@@ -11,9 +11,8 @@ Caltrap wish list
       special date meaning `since the dawn of time'. Hmmm.
 
  - Multiple-day events.
-    + the db schema now supports these and we can hack them in using
-      --load, but we can't enter them and they don't show up on the
-      listing except as a start date.
+    + should these show up somehow in the listing if they're type
+      EVENT? Unclear. Depends on what I'm going to use them for!
 
  - Use of the holiday types.
     + these should highlight throughout their run.
