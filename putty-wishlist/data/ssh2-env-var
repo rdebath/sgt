@@ -2,6 +2,7 @@ Summary: Support setting environment variables in SSH-2
 Class: wish
 Difficulty: fun
 Priority: low
+Fixed-in: 2004-10-17
 Content-type: text/x-html-body
 
 <p>
@@ -15,3 +16,7 @@ to support this, but that was a some time ago now.
 
 <p>
 (The SSH-1 protocol doesn't support this at all.)
+
+<p>
+<em>Update:</em> we now support this, although we still don't know of
+any SSH servers that do.
