@@ -33,7 +33,7 @@ against MITM attacks are bypassed. Even if you trust the server you
 <em>think</em> you are connecting to, you are not safe.
 
 <p>
-This bug does not affect SSH protocol version 1, as the SSH2_MSG_DEBUG
+This bug does not affect SSH protocol version 1, as the SSH1_MSG_DEBUG
 string length is sanity-checked against the packet length before use.
 
 <p>
