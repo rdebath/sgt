@@ -1,0 +1,10 @@
+Summary: HTTP proxy authorization using digest auth
+Class: wish
+Priority: low
+Difficulty: tricky
+Content-type: text/x-html-body
+
+<p>
+PuTTY currently uses HTTP basic authentication to make connections through
+an HTTP proxy.  It would be good if we also supported digest auth.
+
