@@ -15,12 +15,15 @@ def makedict(attrs):
 	attrdict[string.lower(attr[0])] = attr[1]
     return attrdict				    
 
+transtable = string.maketrans("\240", " ")
+
 class mysha:
     def __init__(self):
 	self.sha = sha.new()
 	self.hdata = ""
 	
     def update(self, data):
+	data = string.translate(data, transtable)
 	self.sha.update(data)
 	self.hdata = self.hdata + data
     
