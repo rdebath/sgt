@@ -86,13 +86,16 @@ my @test;
 
 push @test, a_test init => a_cmd "init";
 push @test, a_test get_name => (a_cmd ("init"),
-				a_cmd ("contact-names 0", stdout => "0\n"));
+				a_cmd ("contact name 0", stdout => "0\n"));
 push @test, a_test set_name => (a_cmd ("init"),
-				a_cmd ("set-contact-name 0 Dave"),
-				a_cmd ("contact-names 0",
+				a_cmd ("set-contact name 0 Dave"),
+				a_cmd ("contact name 0",
 				       stdout => "0:Dave\n"),
-				a_cmd ("set-contact-name 0"),
-				a_cmd ("contact-names 0", stdout => "0\n"));
+				a_cmd ("set-contact name 0 Eric"),
+				a_cmd ("contact name 0",
+				       stdout => "0:Eric\n"),
+				a_cmd ("set-contact name 0"),
+				a_cmd ("contact name 0", stdout => "0\n"));
 
 my @failure = map { run_test($_) } @test;
 print @failure, SEP summary @failure, @test;
