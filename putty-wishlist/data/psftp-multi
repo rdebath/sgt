@@ -2,6 +2,7 @@ Summary: Multiple file transfers (wildcards, recursion) in PSFTP
 Class: wish
 Priority: medium
 Difficulty: fun
+Fixed-in: 2004-12-17
 Content-type: text/x-html-body
 
 <p>
@@ -20,4 +21,5 @@ Need to think about reget-type operation with mget?
 <b>SGT, 2004-12-16</b>: Recursion is now implemented (<code>get
 -r</code> and <code>put -r</code>), and so are wildcards
 (<code>mget</code> and <code>mput</code>, basically like the
-standard <code>ftp</code> client).
+standard <code>ftp</code> client). <code>ls</code> also supports
+wildcards.
