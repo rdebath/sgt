@@ -1,4 +1,4 @@
-Summary: PSFTP transfers files much slower than PSCP.
+Summary: PSFTP, and PSCP in SFTP mode, transfer files much slower than old-PSCP.
 Difficulty: taxing
 Priority: low
 Class: semi-bug
