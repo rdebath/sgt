@@ -1,0 +1,34 @@
+Summary: Hangs on paste with middle button (Intellipoint implicated)
+Class: semi-bug
+Present-in: 0.53b
+
+<p>
+I've observed the following behaviour on a colleague's machine. I
+can't reproduce it myself. - JTN
+
+<p>
+PuTTY is set to paste on middle button. On this system, when the
+middle button is pressed, there's a chance that the Microsoft
+Intellipoint scroll pointer thing is activates (the pointer changes to
+a circle containing a dot and up/down triangles, and moving the mouse
+scrolls the window).
+
+<p>
+If the middle button is pressed and released quickly, there is no
+deletorious effect other than the appearance of this pointer.
+
+<p>
+However, if the middle button is held and then released part-way
+through a multi-line paste, the following occurs:
+<ul>
+<li>The pasting stops dead part-way through.
+<li>PuTTY appears to "hang" - keypresses do nothing, and the mouse
+pointer stays an I-beam over the title bar (normally it changes to a
+proper pointer).
+</ul>
+<p>
+Alt-Tabbing away unwedges PuTTY, although the missing pasted
+characters never come through.
+
+<p>
+Could be a bug in the way we deal with press/release events?
