@@ -1,0 +1,408 @@
+Documentation for DBOOT v0.1
+============================
+
+Introduction
+------------
+
+DBOOT is a boot loader for dual-booting DOS, Windows 95, Linux, and
+probably other operating systems as well. It works something like
+LILO, except that instead of storing a fixed list of the physical disk
+sectors in which data is stored, it installs on to a DOS partition and
+uses its knowledge of the DOS file system to find the data at run
+time. This means you can change your Linux kernel, or defragment your
+DOS disk, without having to re-run DBOOT. Once it's set up, it's
+(fairly) permanent.
+
+DBOOT really was intended to dual boot DOS and Linux: hence the loader
+needs a DOS filesystem to install on to, but the install program runs
+under Linux. Call me perverse if you must. I do.
+
+Disclaimer etc.
+---------------
+
+DBOOT is prototype software, and I take no responsibility for anything
+it might or might not do to your computer or the software thereon. You
+use DBOOT at your own risk.
+
+Licence
+-------
+
+Copyright (c) 1995,2000 Simon Tatham
+
+Permission is hereby granted, free of charge, to any person
+obtaining a copy of this software and associated documentation files
+(the "Software"), to deal in the Software without restriction,
+including without limitation the rights to use, copy, modify, merge,
+publish, distribute, sublicense, and/or sell copies of the Software,
+and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+      
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+      
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+Principles
+----------
+
+DBOOT's first stage is small enough to install into a boot sector. It
+can be installed into the boot sector of a spare hard disk partition
+(*not* a DOS partition, since DOS boot sectors contain important
+information), or into the Master Boot Record of a hard disk. (The
+DBOOT first stage is small enough to avoid overwriting the partition
+table at the end of the MBR.) The DBOOT boot sector may also be
+installed on to a floppy, so that DBOOT can be correctly configured
+without risk before installing to your hard disk.
+
+The DBOOT first stage has no function except to load the DBOOT second
+stage. This is a somewhat larger piece of code, which sits on a DOS
+partition and is located at boot time by the first stage. It must be
+located in the root directory of a DOS partition which is available at
+boot time. It must also be less than one cluster in length, since the
+DBOOT first stage does not contain enough code to traverse the FAT.
+This shouldn't be a problem unless your DOS partition is *very* small.
+
+The DBOOT second stage will prompt you for several boot options, and
+depending on your choice it will either load a boot sector from
+somewhere else and run it, or load a Linux kernel image off the same
+DOS partition and pass control to the init code of that. When using a
+bootsector-type boot option, you can also tell DBOOT to stick data
+into the BIOS keyboard buffer before passing control to the boot
+sector. For example, if you have Windows 95, you can still boot your
+old version of DOS by typing F8, 8, Return immediately after the
+"Starting Windows 95" message. With DBOOT, you can have a boot option
+labelled "DOS" which will automatically stick those three keys into
+the keyboard buffer, and *then* boot of the Win95 partition.
+
+Using DBOOT
+-----------
+
+The DBOOT installation program must be run from Linux, as root
+(obviously). To install, just type "dboot". It will look for a
+configuration file "/etc/dboot.ini", although you can specify an
+alternate path name with the "-f" option. The format of the INI file
+is described below.
+
+Other options that may be passed to DBOOT are:
+
+"-T" and "-t": test only. "-t" will cause DBOOT to refrain from
+writing any output at all to your hard disk; "-T" will cause DBOOT to
+write its output to two programs "test.bootsect" and "test.loader" in
+your current directory, rather than to the boot sector and DOS
+partition.
+
+"-v": verbose. This will cause DBOOT to paraphrase its configuration
+file back to your terminal after reading it. You probably want to use
+this option, along with "-T", to make sure DBOOT has correctly
+interpreted your INI file before you let it touch your boot sector.
+
+Format of INI file
+------------------
+
+The "dboot.ini" file is formatted like a Windows .INI file: a section
+name is given in square brackets, and then several lines follow, of
+the form "key=value". Anything after a # sign on a line is treated as
+a comment, unless the # turns up in double quotes.
+
+[BIOS] contains drive mappings. DBOOT will make educated guesses at
+which Linux devices (/dev/hda, /dev/sda, /dev/fd0, etc) map to which
+BIOS device numbers (0x00 for floppy, 0x80 for first hard disk...). If
+DBOOT gets this wrong - and it might well - you can override its
+guesswork by including a [BIOS] section in dboot.ini. A typical entry
+might look like "128=/dev/sda" to tell DBOOT that Linux device
+/dev/sda corresponds to BIOS device 0x80. Also, if Linux takes a
+different view of how many heads and sectors your disk has to your
+BIOS, you can write "128heads=12" or "128sectors=56" or something.
+
+[DBOOT] contains the main configuration options for DBOOT itself. The
+options will be:
+
+    "bootsector=/dev/xxx" tells DBOOT where to install its first-stage
+    loader. This should point to some hard (or floppy) disk device;
+    DBOOT will write its first stage loader to the first 512-byte
+    sector of this device.
+
+    "mbr=true" or "mbr=false" tells DBOOT whether the boot sector
+    location is in fact a Master Boot Record. If it is, DBOOT will
+    preserve the partition table in the boot sector. This option
+    *must* be specified, one way or the other: that way DBOOT can't
+    overwrite your partition table unless you *deliberately* tell it
+    to. Note that "mbr=true" is currently always a safe choice.
+
+    "partition=/dev/xxx" tells DBOOT the location of the DOS partition
+    from which it will expect to load its second-stage loader, and
+    also any kernel images you set up. DBOOT cannot (yet) tell where
+    in the Linux virtual file system this device is mounted, if at
+    all, so you have to tell it, using the line "mounted=/dosc" or
+    some such.
+
+    "mounted=/directory" tells DBOOT where the DOS partition it will
+    use is mounted. It needs to know this so it can install files on
+    it.
+
+    "message=string" lets you specify the text you want DBOOT to print
+    when it prompts you for a boot option. The string must be in
+    double quotes: a double quote may be included by using a
+    backslash, as in C.
+
+    "loader=filename" allows you to specify the filename of the second
+    stage loader. The loader file will be written to your DOS
+    partition with this name. I use dboot.bin, but you don't have to.
+    The file has to be in the root directory. Suggest you don't call
+    it IO.SYS!
+
+    "default=off", optionally, causes DBOOT to display its prompt by
+    default, instead of its normal behaviour which is to boot the
+    first option on the list, and only display the prompt if SHIFT,
+    CTRL, ALT or Caps Lock is active.
+
+The remaining sections are devoted to the actual boot options. The
+section names are the names of the boot options, and as such are
+selected by the user. In each boot option section you need:
+
+    "type=bootsector" or "type=kernel". This tells DBOOT whether it is
+    booting a Linux kernel image, or chaining to another boot sector
+    in order to boot any other OS. (Of course, if you're *really*
+    perverse, you could install LILO into the boot sector of your
+    Linux partition, and then have DBOOT use a "type=bootsector"
+    option to chain to LILO. :-) The content of most of the rest of
+    the section depends on this entry.
+
+    "keys=A,a" tells DBOOT what key presses, when received at the boot
+    prompt, should be taken to signify this boot option. Keys should
+    be separated by commas; anything more than one character long will
+    be treated as a numeric ASCII code. For example, if you wanted to
+    boot Linux versus DOS, but Linux "by default", you might define
+    Linux as "keys=L,l,13" and DOS as "keys=D,d". So pressing ENTER at
+    the boot prompt would get you Linux.
+
+In bootsector-type boot options you need the further information:
+
+    "device=/dev/xxx" gives the location of the boot sector that
+    DBOOT should chain to.
+
+    Optionally, "table=/dev/xxx" and "entry=n" tell DBOOT the location
+    of the MBR in which the bootsector partition is defined. This MBR
+    gets loaded into memory at location 0x600 before passing control
+    to the boot sector at 0x7C00, and on jumping to the boot sector SI
+    contains the address of the partition table entry. So for example,
+    you might have "bootsector=/dev/hda1", "table=/dev/hda" and
+    "entry=1". Nice and easy. I filched this idea from LILO, although
+    I'm not sure it's actually necessary. I seem to be able to boot
+    DOS fine without it... other OS's might complain if it's not
+    there. It goes without saying (well, it should ;-) that you can't
+    have "table" without "entry" or vice versa.
+
+    Also optionally, "insert=a,b,c" defines some key codes to stuff
+    into the BIOS keyboard buffer before passing control to the boot
+    sector. The rationale for this is explained above. The keys are
+    specified as in the "keys=" line, except that in "insert" lines
+    you can also specify function keys like "F8" or "Up". A full list
+    of the key names supported by "insert" is given at the end of this
+    document. For example, to dual-boot Win95 with DOS, the two boot
+    option sections might be identical except for the line
+    "insert=F8,8,13" in the [DOS] section. This causes Win95 to be
+    booted, its boot menu to be invoked, and option 8 (boot old
+    version of DOS) to be selected from that menu. Ugly, but it works.
+
+In kernel-type boot options you need the information:
+
+    "filename=vmlinuz" or some such defines the filename of the kernel
+    image that DBOOT is to load for this boot option. Like the
+    second-stage loader, this should be stored in the root directory
+    of the DOS partition specified in the "partition" line in the
+    [DBOOT] section of the file. Note that DBOOT will not actually
+    create this file for you, and in fact it won't even check for its
+    existence. *You* are responsible for putting your kernel somewhere
+    DBOOT can find it.
+
+    Optionally, "cmdline=string" gives DBOOT a command line to feed to
+    the kernel. The standard stuff: "ether=5,0x300 root=/dev/hda3 ro"
+    or whatever - it's not interpreted by DBOOT at all. It just gets
+    passed to the kernel init code in the approved manner.
+
+An Example INI File
+-------------------
+
+My setup on my own system is as follows: I have two hard disks, one
+IDE and one SCSI. My Linux system is entirely on the SCSI disk; my
+SCSI card has no on-board BIOS so the SCSI disk is not available at
+boot time. That's why I had to write DBOOT in the first place: LILO
+*is* willing to let you store its boot-time files on a DOS partition,
+but you have to be very careful about using Defrag. My IDE disk
+contains a DOS (well, Win95 in fact) partition on hda1, and its MBR
+contains DBOOT. I also keep my BIOS settings configured to boot off
+the hard disk without checking for a floppy, since I almost never boot
+off a floppy and it's annoying when I leave a non-bootable floppy in
+the drive and my computer tries to boot it.
+
+So I have four boot options: Linux, DOS, Win95 and Floppy. "Linux" is
+a kernel type option, booting out of C:\VMLINUZ on the DOS partition.
+"DOS" and "Win95" both chain to the boot sector of /dev/hda1, except
+that "DOS" also sticks F8, 8, Return into the BIOS keyboard buffer.
+"Floppy" chains to the boot sector of /dev/fd0, so when I *do* want to
+boot off a floppy, I can do so without having to fiddle with my BIOS
+settings.
+
+I install the DBOOT second stage loader, and my kernel, on the DOS
+partition hda1. At the time of running the DBOOT installer,
+/dev/hda1 is mounted on directory /dosc.
+
+Bits of this file are unnecessary: the "table" and "entry" lines in
+the DOS and Win95 sections don't make any difference (because the
+DOS boot mechanism is robust enough not to need them, though other
+OSes might). I have included them as examples of how these things
+should be done, should you need to do them.
+
+[dboot]
+mbr=true
+bootsector=/dev/hda
+partition=/dev/hda1
+mounted=/dosc
+loader=dboot.bin
+message="Press L for Linux, D for DOS, W for Windows 95, or F to boot from a floppy: "
+
+[Linux]
+keys=L,l,13
+type=kernel
+filename=vmlinuz
+cmdline="aha152x=0x340,11,7,0 sbpcd=0x230,SoundBlaster ether=5,0x300 root=/dev/sda1 ro"
+
+[Windows 95]
+keys=W,w
+type=bootsector
+device=/dev/hda1
+table=/dev/hda
+entry=1
+
+[DOS]
+keys=D,d
+type=bootsector
+device=/dev/hda1
+table=/dev/hda
+entry=1
+insert=F8,8,13
+
+[Floppy]
+keys=F,f
+type=bootsector
+device=/dev/fd0
+
+Recommended Practice
+--------------------
+
+DBOOT couldn't care less where its first stage loader is stored: it
+makes no difference, since the first stage contains all the necessary
+information to find the second stage. So a good plan would be to start
+off with "bootsector=/dev/fd0" in the [DBOOT] section, and keep
+installing the DBOOT first stage on to a spare floppy. Then, when
+you're sure you've configured DBOOT correctly, you can change that
+"bootsector" line to point to wherever you *really* wanted to put it.
+
+The obvious safety points: installing boot loaders is inherently
+dangerous. *Do* make sure you've got an emergency boot floppy, or
+better still two of them, from which you can boot any OS you might
+need to. My fave is to make a bootable DOS floppy, and to put Loadlin
+and my kernel image on it. That way I can boot DOS or Linux in an
+emergency, from the same disk. I personally haven't ever had DBOOT
+screw my system - and I *wrote* it! - but I don't believe in taking
+chances with these things. Oh - and *do* take spare copies of the boot
+sector you're installing the first-stage loader to! You know, by doing
+  dd if=/dev/hda of=backup.bootsect bs=512 count=1
+or something similar.
+
+DBOOT has its own "safety valve": if it detects that the bootsector
+it's about to install to contains the exact same data it was going to
+write to it, it won't bother. This is usually the case - changing the
+DBOOT configuration doesn't usually involve a change in the *first*
+stage loader. So once your MBR (or whatever) is set up for DBOOT, it
+can stay that way without you needing to keep rewriting it.
+
+I suggest you boot DOS once you've installed DBOOT, and make the
+second stage loader (I call it DBOOT.BIN but you can call it what you
+like of course) and any kernel images read-only. And probably hidden
+and system as well. Not that the System attribute is really necessary:
+all it does, as far as I know, is to stop Defrag from moving the file.
+And as I said, DBOOT contains no hard-coded sector numbers, so you can
+Defrag your disk or change your kernel images with impunity and never
+need to reinstall DBOOT - but once again, don't take chances.
+
+Wish List (or, What I've Been Too Lazy To Do)
+---------------------------------------------
+
+It would be nice for DBOOT to be able to read /etc/mtab and work out
+where its DOS partition was mounted, rather than having to be told.
+And it should probably temporarily mount it itself if it isn't mounted
+already.
+
+A timer on bootup, so it gives you a bit longer to hit Shift, could be
+handy. I wouldn't use it myself, or I'd have put it in already.
+
+Password protection, so you had to enter a password in order to boot
+anything but the default option. (Or anything at all, maybe? Depends
+on the application.)
+
+Make it understand the ext2 file system as an alternative to DOS. (Not
+useful for me, since none of my ext2 partitions are available at boot
+time, but it would make it more useful in general.)
+
+A DOS based installation program, for those that don't need to boot
+Linux with it at all? More work, I know, but...
+
+Known Bugs
+----------
+
+I strongly believe that DBOOT is _likely_ to have bugs. However, I
+don't believe it's likely to have _intermittent_ bugs.
+
+You are _VERY_ STRONGLY recommended to install the DBOOT boot sector
+on a floppy first, and TEST ALL BOOT OPTIONS. If it all works when
+the boot sector is on a floppy, I believe it should continue to work
+when you move the boot sector on to your hard disk (provided you
+don't put it anywhere that overwrites something important).
+
+While I accept no legal responsibility for any bugs in DBOOT and you
+use it at your own risk, I ABSOLUTELY accept not even MORAL
+responsibility for any damage you cause to your system by failing to
+test DBOOT on a floppy first. If it works on a floppy and _then_
+fails on your hard disk, I might at least feel guilty (although I
+still disclaim legal liability).
+
+Building DBOOT
+--------------
+
+To build DBOOT you need the Netwide Assembler, NASM. If this isn't
+already provided by your Linux distribution, you can download the
+latest version from
+  http://www.web-sites.co.uk/nasm/
+
+The files "loader" and "bootsect" are therefore distributed as part of
+the DBOOT source package, in order that you don't need NASM if all you
+want to do is rebuild the thing as is. When you've unpacked the kit,
+you might need to do "touch loader bootsect" so Make realises that
+those files are "newer" than the corresponding .asm files. Then again,
+it might work anyway.
+
+About Me!
+---------
+
+My email address for bug reports is <anakin@pobox.com>.
+
+Money
+-----
+
+Please send me lots of money, of course! :) Seriously, DBOOT is free
+software, and fairly experimental, and no charge is made for it at
+all. (But if you *do* feel generous, don't let me stop you...)
+
+That's All Folks!
+-----------------
+
+The End.
