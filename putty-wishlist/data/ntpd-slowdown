@@ -24,12 +24,13 @@ and hunt for noise even if no-one's ever going to consume it).
 session, so it shouldn't cause continuing problems, especially not ones
 that go away when the session ends.
 
-I think this narrows us down to <code>noise_get_light()</code>,
+<p>I think this narrows us down to <code>noise_get_light()</code>,
 which is called every time the random pool is used, which
 looks like being most packets in an SSH session, but never
 in a Telnet session.  <code>noise_get_light()</code> calls
 <code>GetSystemTime()</code>, <code>GetSystemTimeAdjustment()</code>
-and <code>GetSystemPowerStatus()</code>.  I'd suspect that either
-<code>GetSystemTimeAdjustment()</code> is mangling said adjustment in
-the process or (more likely) <code>GetSystemPowerStatus()</code> is
-calling the APM BIOS, which ISTR has to be done with interrupts disabled.
+and <code>GetSystemPowerStatus()</code>.
+
+<p>By use of diagnostic builds we've narrowed the problem down to use
+of <code>GetSystemPowerStatus()</code>, which is likely to be calling
+the APM BIOS, which ISTR has to be done with interrupts disabled.
