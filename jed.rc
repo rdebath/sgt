@@ -1,5 +1,5 @@
 % -*- mode: slang; mode: fold -*-
-% Simon Tatham: version $Revision: 1.47 $
+% Simon Tatham: version $Revision: 1.48 $
 
 %{{{ load Emacs keybindings to start with
 
@@ -191,11 +191,15 @@ define set_bookmark() {
 }
 define goto_bookmark() {
     variable bkmk_fun = "%jedrc_bookmark%";
+    variable bkmk_var = "jedrc_bookmark_returnpoint";
     variable repeat, mark;
     push_spot();
     if (strcmp(LAST_KBD_COMMAND, bkmk_fun)) {
         % Last keyboard action wasn't another goto-bookmark, so we
-        % must start from the top.
+        % must start from the top. Save the start position so we
+        % can come back if all bookmarks are exhausted.
+        create_blocal_var(bkmk_var);
+        set_blocal_var(create_user_mark(), bkmk_var);
         bob();
         repeat = 0;
     } else {
@@ -214,10 +218,12 @@ define goto_bookmark() {
         set_current_kbd_command(bkmk_fun);
     } else {
         pop_spot();
-        if (repeat)
-            error("No more bookmarks.");
-        else
+        if (repeat) {
+            message("No more bookmarks.");
+            goto_user_mark(get_blocal_var(bkmk_var));
+        } else {
             error("No bookmark found.");
+        }
     }
 }
 #ifdef MSDOS MSWINDOWS
