@@ -2,8 +2,9 @@ Summary: Bidirectional text support
 Class: semi-bug
 Priority: medium
 Difficulty: taxing
-Content-type: text/plain
+Content-type: text/x-html-body
 
+<p>
 If you use Unicode mode and attempt to display text in a
 right-to-left script such as Hebrew or Arabic, PuTTY gets somewhat
 confused. It has no internal awareness of which text should be
@@ -16,13 +17,26 @@ the cursor across the text it will change, revealing that PuTTY's
 beliefs about what characters Windows displayed where don't match
 reality.
 
+<p>
 Proper support for this will need to involve a properly thought out
 design for how a VT-series terminal should support bidirectional
 text. For a start this will require research into how existing
 Unicode-enabled VT-series terminal emulators do it, and how big the
 software support base for those is.
 
+<p>
 (Also we'll need to find out exactly what algorithm the Windows text
 display functions use to lay out their output, so that once we know
 exactly what we want the window to look like we can be sure it
 really does look like that. This won't be easy either.)
+
+<p>
+<b>JTN, 2002-06-07:</b>
+Some time ago, we came to the conclusion that 
+<a href="http://www.ecma.ch/ecma1/STAND/ECMA-048.HTM">ECMA-48</a>,
+in the course of defining VT-series-ish terminals, defines how such
+terminals should support bi-directional text, while
+<a href="http://www.ecma.ch/ecma1/TECHREP/E-TR-053.HTM">ECMA TR/53</a>
+nicely encapsulates all the bidi-specific bits in a (more)
+understandable format, gives examples, etc. Of course, we don't know
+whether anyone <em>really</em> implements it this way.
