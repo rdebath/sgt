@@ -17,6 +17,13 @@ terminal escape codes, so that you get `PuTTY in a console window'.
 Unless there's some good reason why running PuTTY full-screen isn't
 enough to address this wish, we're unlikely to consider it worth the
 extra effort and code bloat.
+<ul>
+<li>We have actually been given one vaguely good reason: it's been
+suggested that this might improve the experience of people using
+screen readers. However, fixing
+<a href="windows-scrollopt.html">`windows-scrollopt'</a> should have
+the same effect and probably be easier.
+</ul>
 
 <p>
 Perhaps it's possible to augment the Windows console with terminal
