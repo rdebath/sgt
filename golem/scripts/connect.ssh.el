@@ -3,7 +3,7 @@
 #
 # Make Contact
 #
-MACHINE=enigma.mono.org
+MACHINE=nin.mono.org
 
 #
 # Check for login barring ....
