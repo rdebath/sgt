@@ -11,7 +11,7 @@ endif
 all:
 	@test -d $(BUILDDIR) || mkdir $(BUILDDIR)
 	@make -C $(BUILDDIR) -f ../Makefile REALBUILD=yes
-test: clean
+test:
 	@test -d $(BUILDDIR) || mkdir $(BUILDDIR)
 	@make -C $(BUILDDIR) -f ../Makefile REALBUILD=yes test
 clean:
@@ -57,7 +57,9 @@ LIBS := -lsqlite
 CFLAGS += $(CFL) -Wall -I$(SRC)charset -I.
 
 TESTS := main date
-TEST_OBJECTS := $(addsuffix -tests.o,$(TESTS))
+TEST_MODULES := $(addsuffix -tests,$(TESTS))
+TEST_OBJECTS := $(addsuffix .o,$(TEST_MODULES))
+DEPS += $(addsuffix .d,$(TEST_MODULES))
 TEST_LIBS := -lcheck
 
 timber: $(OBJECTS)
@@ -86,7 +88,7 @@ test: unit-tests
 unit-tests: $(TEST_OBJECTS)
 	$(CC) $(LFLAGS) -o unit-tests $(TEST_OBJECTS) $(TEST_LIBS)
 
-%-tests.o: $(SRC)tests/%.c
+%-tests.o: $(SRC)tests/%-tests.c
 	$(CC) $(CFLAGS) -I.. -I- -MD -o $@ -c $<
 
 clean:
