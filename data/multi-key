@@ -1,0 +1,10 @@
+Summary: Support for Multi_Key in GTK port
+Class: semi-bug
+Priority: low
+Content-type: text/plain
+
+E1Cp2HC-0004Ni-00@chiark.greenend.org.uk:
+
+ The Multi_Key (that is the X Compose key) doesn't appear to work in
+pterm.  In other applications if I type "<Multi_Key> ' e" then I get
+an e-acute whereas in pterm I just get 'e.
