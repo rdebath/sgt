@@ -12,3 +12,6 @@ People occasionally send us patches to make the Unix port more portable.
 
    * NetBSD with gcc-3.x
      20031126022610.GA13294@babymeat.com
+
+   * FreeBSD-5.2-RELEASE
+     1075418510.724.16.camel@localhost
