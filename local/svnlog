@@ -4,7 +4,12 @@
 
 uuid=`svn info | grep '^Repository UUID:' | cut -f3- -d' '`
 
-svn log -v -rHEAD:1 "$@" | \
+case "$1" in
+  -r*) dashr=;;
+  *) dashr=-rHEAD:1;;
+esac
+
+svn log -v $dashr "$@" | \
   perl -e '
 
 $uuid = shift @ARGV;
