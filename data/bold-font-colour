@@ -1,0 +1,20 @@
+Summary: Ability to change font *and* change colour for bold text
+Class: wish
+Priority: medium
+Difficulty: fun
+Content-type: text/plain
+
+PuTTY allows bold text to be displayed by either emboldening the
+font, or by changing the colour of the text.
+
+xterm allows these two options to be configured independently, so
+you can have both at once if you want it. Some users have highly
+xterm-specific application configurations which depend on this to
+look sensible.
+
+It would be trivially easy to replace PuTTY's single checkbox with a
+pair of checkboxes, allowing bold-as-colour and bold-as-font to be
+selected in any combination. If we do that then we should probably
+warn the user if they disable both at once, though it's not clear
+what form that warning should take (a message box is probably
+overkill for what's basically a cosmetic issue).
