@@ -85,20 +85,20 @@ while ($_=shift @ARGV) {
 	elsif ($opt eq "q") { $quiet=1; }
 	elsif ($opt eq "v") { $verbose++; }
 	elsif ($opt eq "F") { $force=$FILE=1; }
-	else { die "$0: unrecognised option '-$1'\n"; }
+	else { die "lns: unrecognised option '-$1'\n"; }
     }
   }
 }
 
 die $usage if $#ARGV < 1;
 
-die "$0: multiple source files specified with -F option\n"
+die "lns: multiple source files specified with -F option\n"
   if $#ARGV > 1 && $FILE;
-die "$0: -q (quiet) and -v (verbose) options both specified\n"
+die "lns: -q (quiet) and -v (verbose) options both specified\n"
   if $quiet && $verbose;
 
 $target = pop @ARGV;
-die "$0: multiple source files specified, $target not a directory\n"
+die "lns: multiple source files specified, $target not a directory\n"
   if $#ARGV > 0 && !-d $target;
 
 $multiple = (-d $target && !$FILE);
@@ -122,12 +122,12 @@ sub makelink {
   if (-e $target || readlink $target) {
     # If it's a symlink and we're in Force mode, remove it and carry on.
     if ($force && readlink $target) {
-      unlink $target || die "$0: unable to remove link $target\n";
+      unlink $target || die "lns: unable to remove link $target\n";
       # Report that if in Verbose mode.
-      warn "$0: removing existing target link $target\n" if $verbose;
+      warn "lns: removing existing target link $target\n" if $verbose;
     } else {
       # Otherwise, fail. Report that fact if not in Quiet mode.
-      warn "$0: failed to link $source to $target: target exists\n"
+      warn "lns: failed to link $source to $target: target exists\n"
         if !$quiet;
       return;
     }
@@ -142,10 +142,10 @@ sub makelink {
   # name we will reference the source by.
   $sourcename = $abs ? $source : &relname($source, $target);
 
-  warn "$0: linking $source: $target -> $sourcename\n" if $verbose;
+  warn "lns: linking $source: $target -> $sourcename\n" if $verbose;
 
   # Make the link
-  symlink($sourcename, $target) || die "$0: unable to make link to $target\n";
+  symlink($sourcename, $target) || die "lns: unable to make link to $target\n";
 }
 
 sub normalise {
@@ -195,7 +195,7 @@ sub normalise {
 	}
 	$_ = "/" if $_ eq ""; # special case
 	$log .= "$target";
-	warn "$0: $log\n" if $verbose > 1;
+	warn "lns: $log\n" if $verbose > 1;
     }
 
     # The only place where a ".." fragment might still remain is at
