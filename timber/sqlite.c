@@ -15,128 +15,137 @@
 #include "timber.h"
 #include "charset.h"
 
-static char *dbpath;
 
 static int sqlite_null_callback(void *vp, int i, char **cp1, char **cp2)
 {
     return 0;
 }
 
-void db_init(void)
+
+struct database {
+    sqlite *handle;
+    int transaction_open;
+    const char *filename;
+    const char *const *const schema;
+    const schema_len;
+};
+
+#define DATABASE(name,schema) { NULL, FALSE, name, schema, lenof(schema) }
+
+
+void sql_open (struct database *sql,
+	       int must_exist)
 {
-    sqlite *db;
+    char *dbpath;
     char *err;
+
+    assert (NULL == sql->handle);
 
     dbpath = snewn(5 + strlen(dirpath), char);
     sprintf(dbpath, "%s/db", dirpath);
 
-    db = sqlite_open(dbpath, 0666, &err);
-    if (!db)
+    if (must_exist) {
+	struct stat sb;
+	if (stat(dbpath, &sb) < 0 && errno == ENOENT)
+	    fatal(err_perror, dbpath, "stat");
+    }
+
+    sql->handle = sqlite_open(dbpath, 0666, &err);
+    if (!sql->handle)
 	fatal(err_noopendb, dbpath, err);
+
+    sfree (dbpath);
+}
+
+
+static const char *schema[] = {
+    "CREATE TABLE config ("
+    "  key TEXT UNIQUE ON CONFLICT REPLACE,"
+    "  value TEXT,"
+    "  PRIMARY KEY (key));",
+
+    "CREATE TABLE addresses ("
+    "  ego TEXT,"
+    "  header TEXT,"
+    "  idx INTEGER,"
+    "  displayname TEXT,"
+    "  address TEXT,"
+    "  PRIMARY KEY (ego, header, idx));",
+    "CREATE INDEX idx_addresses_displayname"
+    "  ON addresses (displayname, address);",
+    "CREATE INDEX idx_addresses_address"
+    "  ON addresses (address, displayname);",
+
+    "CREATE TABLE messageids ("
+    "  ego TEXT,"
+    "  header TEXT,"
+    "  idx INTEGER,"
+    "  messageid TEXT,"
+    "  PRIMARY KEY (ego, header, idx));",
+    "CREATE INDEX idx_messageids_messageid"
+    "  ON messageids (messageid, header);",
+    
+    "CREATE TABLE subjects ("
+    "  ego TEXT,"
+    "  subject TEXT,"
+    "  PRIMARY KEY (ego));",
+
+    "CREATE TABLE dates ("
+    "  ego TEXT,"
+    "  date TEXT,"
+    "  PRIMARY KEY (ego));",
+
+    "CREATE TABLE mimeparts ("
+    "  ego TEXT,"
+    "  idx INTEGER,"
+    "  major TEXT,"
+    "  minor TEXT,"
+    "  charset TEXT,"
+    "  encoding TEXT,"
+    "  disposition TEXT,"
+    "  filename TEXT,"
+    "  description TEXT,"
+    "  offset INTEGER,"
+    "  length INTEGER,"
+    "  PRIMARY KEY (ego, idx));",
+
+    "CREATE TABLE messages ("
+    "  ego TEXT,"
+    "  location TEXT,"
+    "  PRIMARY KEY (ego));",
+};
+
+
+struct database db[1] = { DATABASE ("db", schema) };
+
+void db_init(void)
+{
+    char *err;
+    int i;
+
+    sql_open (db, FALSE);
 
     /*
      * Here we set up the database schema.
      */
-    sqlite_exec(db,
-		"CREATE TABLE config ("
-		"  key TEXT UNIQUE ON CONFLICT REPLACE,"
-		"  value TEXT,"
-		"  PRIMARY KEY (key));",
-		sqlite_null_callback, NULL, &err);
-    if (err) fatal(err_dberror, err);
+    for (i = 0; i < lenof(schema); ++i) {
+        sqlite_exec (db->handle, schema[i], sqlite_null_callback, NULL, &err);
+	if (err) fatal(err_dberror, err);
+    }
 
-    sqlite_exec(db,
-		"CREATE TABLE addresses ("
-		"  ego TEXT,"
-		"  header TEXT,"
-		"  idx INTEGER,"
-		"  displayname TEXT,"
-		"  address TEXT,"
-		"  PRIMARY KEY (ego, header, idx));",
-		sqlite_null_callback, NULL, &err);
-    if (err) fatal(err_dberror, err);
-    sqlite_exec(db,
-		"CREATE INDEX idx_addresses_displayname"
-		"  ON addresses (displayname, address);",
-		sqlite_null_callback, NULL, &err);
-    if (err) fatal(err_dberror, err);
-    sqlite_exec(db,
-		"CREATE INDEX idx_addresses_address"
-		"  ON addresses (address, displayname);",
-		sqlite_null_callback, NULL, &err);
-    if (err) fatal(err_dberror, err);
-
-    sqlite_exec(db,
-		"CREATE TABLE messageids ("
-		"  ego TEXT,"
-		"  header TEXT,"
-		"  idx INTEGER,"
-		"  messageid TEXT,"
-		"  PRIMARY KEY (ego, header, idx));",
-		sqlite_null_callback, NULL, &err);
-    if (err) fatal(err_dberror, err);
-    sqlite_exec(db,
-		"CREATE INDEX idx_messageids_messageid"
-		"  ON messageids (messageid, header);",
-		sqlite_null_callback, NULL, &err);
-    if (err) fatal(err_dberror, err);
-
-    sqlite_exec(db,
-		"CREATE TABLE subjects ("
-		"  ego TEXT,"
-		"  subject TEXT,"
-		"  PRIMARY KEY (ego));",
-		sqlite_null_callback, NULL, &err);
-    if (err) fatal(err_dberror, err);
-
-    sqlite_exec(db,
-		"CREATE TABLE dates ("
-		"  ego TEXT,"
-		"  date TEXT,"
-		"  PRIMARY KEY (ego));",
-		sqlite_null_callback, NULL, &err);
-    if (err) fatal(err_dberror, err);
-
-    sqlite_exec(db,
-		"CREATE TABLE mimeparts ("
-		"  ego TEXT,"
-		"  idx INTEGER,"
-		"  major TEXT,"
-		"  minor TEXT,"
-		"  charset TEXT,"
-		"  encoding TEXT,"
-		"  disposition TEXT,"
-		"  filename TEXT,"
-		"  description TEXT,"
-		"  offset INTEGER,"
-		"  length INTEGER,"
-		"  PRIMARY KEY (ego, idx));",
-		sqlite_null_callback, NULL, &err);
-    if (err) fatal(err_dberror, err);
-
-    sqlite_exec(db,
-		"CREATE TABLE messages ("
-		"  ego TEXT,"
-		"  location TEXT,"
-		"  PRIMARY KEY (ego));",
-		sqlite_null_callback, NULL, &err);
-    if (err) fatal(err_dberror, err);
-
-    sqlite_close(db);
+    sqlite_close(db->handle);
+    db->handle = NULL;
 }
-
-static sqlite *db = NULL;
-int transaction_open = FALSE;
 
 void db_begin(void)
 {
     if (!nosync) {
 	char *err;
-	assert(db != NULL);
-	assert(!transaction_open);
-	sqlite_exec(db, "BEGIN;", sqlite_null_callback, NULL, &err);
+	assert(db->handle != NULL);
+	assert(!db->transaction_open);
+	sqlite_exec(db->handle, "BEGIN;", sqlite_null_callback, NULL, &err);
 	if (err) fatal(err_dberror, err);
-	transaction_open = TRUE;
+	db->transaction_open = TRUE;
     }
 }
 
@@ -144,11 +153,11 @@ void db_rollback(void)
 {
     if (!nosync) {
 	char *err;
-	assert(db != NULL);
-	assert(transaction_open);
-	sqlite_exec(db, "ROLLBACK;", sqlite_null_callback, NULL, &err);
+	assert(db->handle != NULL);
+	assert(db->transaction_open);
+	sqlite_exec(db->handle, "ROLLBACK;", sqlite_null_callback, NULL, &err);
 	if (err) fatal(err_dberror, err);
-	transaction_open = FALSE;
+	db->transaction_open = FALSE;
     }
 }
 
@@ -156,47 +165,39 @@ void db_commit(void)
 {
     if (!nosync) {
 	char *err;
-	assert(db != NULL);
-	assert(transaction_open);
-	sqlite_exec(db, "COMMIT;", sqlite_null_callback, NULL, &err);
+	assert(db->handle != NULL);
+	assert(db->transaction_open);
+	sqlite_exec(db->handle, "COMMIT;", sqlite_null_callback, NULL, &err);
 	if (err) fatal(err_dberror, err);
-	transaction_open = FALSE;
+	db->transaction_open = FALSE;
     }
 }
 
 void db_close(void)
 {
-    if (transaction_open)
+    if (db->transaction_open)
 	db_rollback();
-    if (db) {
+    if (db->handle) {
 	if (nosync) {
 	    char *err;
-	    sqlite_exec(db, "COMMIT;", sqlite_null_callback, NULL, &err);
+	    sqlite_exec(db->handle,"COMMIT;", sqlite_null_callback, NULL,&err);
 	}
-	sqlite_close(db);
+	sqlite_close(db->handle);
+	db->handle = NULL;
     }
 }
 
 void db_open(void)
 {
-    struct stat sb;
     char *err;
 
-    if (db)
+    if (db->handle)
 	return;			       /* already open! */
 
-    dbpath = snewn(5 + strlen(dirpath), char);
-    sprintf(dbpath, "%s/db", dirpath);
-
-    if (stat(dbpath, &sb) < 0 && errno == ENOENT)
-	fatal(err_perror, dbpath, "stat");
-
-    db = sqlite_open(dbpath, 0666, &err);
-    if (!db)
-	fatal(err_noopendb, dbpath, err);
+    sql_open (db, TRUE);
 
     if (nosync) {
-	sqlite_exec(db, "BEGIN;", sqlite_null_callback, NULL, &err);
+	sqlite_exec(db->handle, "BEGIN;", sqlite_null_callback, NULL, &err);
 	if (err) fatal(err_dberror, err);
     }
 }
@@ -210,7 +211,8 @@ static char *cfg_get_internal(char *key)
 
     db_open();
 
-    sqlite_get_table_printf(db, "SELECT value FROM config WHERE key = '%q'",
+    sqlite_get_table_printf(db->handle,
+			    "SELECT value FROM config WHERE key = '%q'",
 			    &table, &rows, &cols, &err, key);
     if (err) fatal(err_dberror, err);
     if (rows > 0) {
@@ -248,7 +250,8 @@ void cfg_set_str(char *key, char *str)
 
     db_open();
 
-    sqlite_exec_printf(db, "INSERT OR REPLACE INTO config VALUES ('%q','%q');",
+    sqlite_exec_printf(db->handle,
+		       "INSERT OR REPLACE INTO config VALUES ('%q','%q');",
 		       sqlite_null_callback, NULL, &err,
 		       key, str);
     if (err) fatal(err_dberror, err);
@@ -297,7 +300,7 @@ void db_info_fn(void *vctx, struct message_parse_info *info)
 
     switch (info->type) {
       case PARSE_ADDRESS:
-	sqlite_exec_printf(db, "INSERT INTO addresses VALUES ("
+	sqlite_exec_printf(db->handle, "INSERT INTO addresses VALUES ("
 			   "'%q', '%q', %d, '%q', '%q' );",
 			   sqlite_null_callback, NULL, &err,
 			   ctx->ego,
@@ -308,7 +311,7 @@ void db_info_fn(void *vctx, struct message_parse_info *info)
 	if (err) fatal(err_dberror, err);
 	break;
       case PARSE_MESSAGE_ID:
-	sqlite_exec_printf(db, "INSERT INTO messageids VALUES ("
+	sqlite_exec_printf(db->handle, "INSERT INTO messageids VALUES ("
 			   "'%q', '%q', %d, '%q' );",
 			   sqlite_null_callback, NULL, &err,
 			   ctx->ego,
@@ -318,7 +321,8 @@ void db_info_fn(void *vctx, struct message_parse_info *info)
 	if (err) fatal(err_dberror, err);
 	break;
       case PARSE_SUBJECT:
-	sqlite_exec_printf(db, "INSERT OR REPLACE INTO subjects VALUES ("
+	sqlite_exec_printf(db->handle,
+			   "INSERT OR REPLACE INTO subjects VALUES ("
 			   "'%q', '%q' );",
 			   sqlite_null_callback, NULL, &err,
 			   ctx->ego,
@@ -327,7 +331,7 @@ void db_info_fn(void *vctx, struct message_parse_info *info)
 	break;
       case PARSE_DATE:
 	fmt_date(info->u.date, datebuf);
-	sqlite_exec_printf(db, "INSERT OR REPLACE INTO dates VALUES ("
+	sqlite_exec_printf(db->handle, "INSERT OR REPLACE INTO dates VALUES ("
 			   "'%q', '%q' );",
 			   sqlite_null_callback, NULL, &err,
 			   ctx->ego,
@@ -335,7 +339,7 @@ void db_info_fn(void *vctx, struct message_parse_info *info)
 	if (err) fatal(err_dberror, err);
 	break;
       case PARSE_MIME_PART:
-	sqlite_exec_printf(db, "INSERT INTO mimeparts VALUES ("
+	sqlite_exec_printf(db->handle, "INSERT INTO mimeparts VALUES ("
 			   "'%q', %d, '%q', '%q', '%q', '%q',"
 			   "'%q', '%q', '%q', %d, %d);",
 			   sqlite_null_callback, NULL, &err,
@@ -380,7 +384,7 @@ void parse_for_db(const char *ego, const char *location,
     parse_message(message, msglen, null_output_fn, NULL, db_info_fn, &ctx,
 		  CS_NONE);
 
-    sqlite_exec_printf(db, "INSERT INTO messages VALUES ("
+    sqlite_exec_printf(db->handle, "INSERT INTO messages VALUES ("
 		       "'%q', '%q' );",
 		       sqlite_null_callback, NULL, &err,
 		       ego, location);
@@ -401,7 +405,8 @@ char *message_location(const char *ego)
 
     db_open();
 
-    sqlite_get_table_printf(db, "SELECT location FROM messages WHERE ego='%q'",
+    sqlite_get_table_printf(db->handle,
+			    "SELECT location FROM messages WHERE ego='%q'",
 			    &table, &rows, &cols, &err, ego);
     if (err) fatal(err_dberror, err);
     if (rows > 0) {
@@ -423,7 +428,8 @@ struct mime_details *find_mime_parts(const char *ego, int *nparts)
 
     db_open();
 
-    sqlite_get_table_printf(db, "SELECT major, minor, charset, encoding,"
+    sqlite_get_table_printf(db->handle,
+			    "SELECT major, minor, charset, encoding,"
 			    " disposition, filename, description, offset,"
 			    " length, idx FROM mimeparts WHERE ego='%q'"
 			    " ORDER BY idx",
