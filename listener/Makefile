@@ -12,8 +12,11 @@ LIBS = gdi32.lib user32.lib wsock32.lib shell32.lib
 
 all: doit.exe
 
-doit.exe: listener.obj doit.obj
-	link $(LFLAGS) -out:doit.exe listener.obj doit.obj $(LIBS)
+doit.exe: listener.obj doit.obj doit.res
+	link $(LFLAGS) -out:doit.exe listener.obj doit.obj doit.res $(LIBS)
+
+doit.res: doit.rc doit.ico
+	rc -r doit.rc
 
 clean:
 	del *.obj
