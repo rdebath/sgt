@@ -1,11 +1,12 @@
 #! /usr/bin/perl
-# $Id: bugs2html,v 1.3 2002/05/06 13:37:29 ben Exp $
+# $Id: bugs2html,v 1.4 2002/05/06 13:41:34 ben Exp $
 
 use FileHandle;
 use POSIX;
 
 $bugdir = "../data";
 $htmldir = "/u2/bjharris/public-html/putty-wishlist";
+$baseurl = "/~sgtatham/putty";
 
 open(INDEX, "> $htmldir/index.html") or die "$htmldir/index.html: $!";
 print INDEX <<EOH;
@@ -17,16 +18,16 @@ print INDEX <<EOH;
 <h1 align=center>PuTTY Known Bugs and Wish List</h1>
 
 <p align=center>
-<a href="./">Home</a> |
-<a href="licence.html">Licence</a> |
-<a href="faq.html">FAQ</a> |
-<a href="docs.html">Docs</a> |
-<a href="download.html">Download</a> |
-<a href="keys.html">Keys</a><br>
-<a href="mirrors.html">Mirrors</a> |
-<a href="maillist.html">Updates</a> |
-<a href="feedback.html">Feedback</a> |
-<a href="changes.html">Changes</a> |
+<a href="$baseurl/">Home</a> |
+<a href="$baseurl/licence.html">Licence</a> |
+<a href="$baseurl/faq.html">FAQ</a> |
+<a href="$baseurl/docs.html">Docs</a> |
+<a href="$baseurl/download.html">Download</a> |
+<a href="$baseurl/keys.html">Keys</a><br>
+<a href="$baseurl/mirrors.html">Mirrors</a> |
+<a href="$baseurl/maillist.html">Updates</a> |
+<a href="$baseurl/feedback.html">Feedback</a> |
+<a href="$baseurl/changes.html">Changes</a> |
 <b>Wishlist</b></p>
 
 <p>
@@ -34,7 +35,7 @@ This is the list of bugs that need fixing, and features that want
 adding, to PuTTY. This list represents things that have not been
 done to the current <em>development</em> code. If you do not see a
 feature here, it's worth checking the
-<a href="changes.html">Changes page</a>
+<a href="$baseurl/changes.html">Changes page</a>
 before mailing us to ask for the feature; we might have already
 added it since the last release.
 EOH
@@ -115,17 +116,17 @@ sub bug2html {
 <h1 align=center>PuTTY @{[$hdrs->{class}]} $bugname</h1>
 
 <p align=center>
-<a href="../">Home</a> |
-<a href="../licence.html">Licence</a> |
-<a href="../faq.html">FAQ</a> |
-<a href="../docs.html">Docs</a> |
-<a href="../download.html">Download</a> |
-<a href="../keys.html">Keys</a><br>
-<a href="../mirrors.html">Mirrors</a> |
-<a href="../maillist.html">Updates</a> |
-<a href="../feedback.html">Feedback</a> |
-<a href="../changes.html">Changes</a> |
-<b><a href="../wishlist.html">Wishlist</a></b></p>
+<a href="$baseurl/">Home</a> |
+<a href="$baseurl/licence.html">Licence</a> |
+<a href="$baseurl/faq.html">FAQ</a> |
+<a href="$baseurl/docs.html">Docs</a> |
+<a href="$baseurl/download.html">Download</a> |
+<a href="$baseurl/keys.html">Keys</a><br>
+<a href="$baseurl/mirrors.html">Mirrors</a> |
+<a href="$baseurl/maillist.html">Updates</a> |
+<a href="$baseurl/feedback.html">Feedback</a> |
+<a href="$baseurl/changes.html">Changes</a> |
+<b><a href="index.html">Wishlist</a></b></p>
 
 EOH
 
