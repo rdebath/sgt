@@ -61,3 +61,7 @@ useful than the original goal of making it a generic replacement for
 the Command Prompt window. So unless anyone can correct my
 deductions above, I don't think this has a sufficiently high
 benefit-to-effort ratio to be worth doing.
+
+<p>
+A workaround is of course to run an SSH (or telnet) server on your
+Windows box.
