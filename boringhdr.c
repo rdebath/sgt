@@ -3,6 +3,8 @@
  * considered `boring' and not shown except in full-headers mode.
  */
 
+#include <string.h>
+
 #include "timber.h"
 
 int is_boring_hdr(const char *hdr, int len)
