@@ -19,5 +19,5 @@ what form it would take.
 
 <p>
 VanDyke have implementations (their own software, and a 
-<a href="https://secure.vandyke.com/vandyke-php-bin/public_keys.php">patch for OpenSSH</a>).
+<a href="http://www.vandyke.com/download/os/pks_form.html">patch for OpenSSH</a>).
 I don't know whether anyone else does.
