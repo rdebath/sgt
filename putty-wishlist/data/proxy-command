@@ -24,6 +24,8 @@ It's less obvious how a ProxyCommand-type feature should be configured
 on Windows than on Unix, as Windows is much less command-oriented
 (where OpenSSH usually runs). Also, implementation in a manner
 compatible with Win95/98 (which lack useful pipes) might be tricky.
+(see also design discussion in
+<a href="win-command-prompt.html#puttycyg">`win-command-prompt'</a>)
 
 <p>
 A partial solution is to set up a local (e.g.) SOCKS server which will

@@ -14,6 +14,10 @@ backend so far, serial connections have neither hostname nor port,
 and other connections don't have stop bits and guff like that.
 
 <p>
+See also design discussion in
+<a href="win-command-prompt.html#puttycyg">`win-command-prompt'</a>.
+
+<p>
 Workaround: for NT-class systems, you could use
 <a href="http://www.greenend.org.uk/steve/software/wconsd.c">wconsd</a>
 to turn the serial connection into a telnet connection.
