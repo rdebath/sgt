@@ -82,7 +82,12 @@ version.o: FORCE
 
 FORCE: # phony target to force version.o to be rebuilt every time
 
-test: unit-tests
+test: unit-test external-test
+
+external-test: timber
+	perl ../tests/external-tests.pl ./timber
+
+unit-test: unit-tests
 	./unit-tests
 
 unit-tests: $(TEST_OBJECTS)
