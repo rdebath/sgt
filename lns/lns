@@ -118,6 +118,14 @@ if ($multiple) {
 sub makelink {
   local ($source, $target) = @_;
 
+  # Calculate the absolute path names of both source and target.
+  $source = &normalise($source);
+  $target = &normalise($target);
+
+  # If we're in Relative mode (the default), calculate the relative path
+  # name we will reference the source by.
+  $sourcename = $abs ? $source : &relname($source, $target);
+
   # If the target exists...
   if (-e $target || readlink $target) {
     # If it's a symlink and we're in Force mode, remove it and carry on.
@@ -133,18 +141,8 @@ sub makelink {
     }
   }
 
-  # OK, now we're ready to do the link. Calculate the absolute path names
-  # of both source and target.
-  $source = &normalise($source);
-  $target = &normalise($target);
-
-  # If we're in Relative mode (the default), calculate the relative path
-  # name we will reference the source by.
-  $sourcename = $abs ? $source : &relname($source, $target);
-
+  # Make the link.
   warn "lns: linking $source: $target -> $sourcename\n" if $verbose;
-
-  # Make the link
   symlink($sourcename, $target) || die "lns: unable to make link to $target\n";
 }
 
@@ -152,6 +150,8 @@ sub normalise {
     # Normalise a path into an absolute one containing no . or ..
     # segments.
     local ($_) = @_;
+
+    warn "lns: path normalisation required on $_\n" if $verbose > 2;
 
     # Make relative paths absolute.
     $_ = getcwd() . "/" . $_ if !/^\//;
@@ -181,7 +181,7 @@ sub normalise {
     while (/^(.*)\/((\.|\.\.[^\/]+|\.?[^\/\.][^\/]*)\/\.\.)(\/.*)?$/)
     {
 	my ($pre, $dir, $frag, $post) = ($1,$2,$3,$4);
-	my $log = "transforming $target -> ";
+	my $log = "  transforming $_ -> ";
 	if (-l "$pre/$frag") {
 	    my $linktext = readlink "$pre/$frag";
 	    if ($linktext =~ /^\//) { # absolute link
@@ -194,14 +194,16 @@ sub normalise {
 	    $_ = $pre . $post;
 	}
 	$_ = "/" if $_ eq ""; # special case
-	$log .= "$target";
-	warn "lns: $log\n" if $verbose > 1;
+	$log .= "$_";
+	warn "lns: $log\n" if $verbose > 2;
     }
 
     # The only place where a ".." fragment might still remain is at
     # the very start of the string, and "/.." is defined to be
     # equivalent to "/".
-    1 while s/^\/\.\.\//\//;
+    1 while s/^\/\.\.(\/(.*))?$/\/$2/;
+
+    warn "lns: path normalisation returned $_\n" if $verbose > 2;
 
     return $_;
 }
@@ -219,6 +221,8 @@ sub relname {
 
   while (1) {
 
+    warn "lns: trying prefix '$prefix': looking for $target as prefix of $source\n" if $verbose > 1;
+
     # If $target is _precisely_ $source, we are done.
     if ($target eq $source) {
       return "." if $prefix eq "";
@@ -231,7 +235,11 @@ sub relname {
     # linking `a/b/c/foo' to `foo' then a simple relative link will
     # work.)
     if (substr($source, 0, 1 + length $target) eq "$target/") {
-       return $prefix . substr($source, 1 + length $target); # skip the slash
+      warn "lns: found it\n" if $verbose > 1;
+      return $prefix . substr($source, 1 + length $target); # skip the slash
+    } elsif ($target eq "/") {
+      warn "lns: found it\n" if $verbose > 1;
+      return $prefix . substr($source, 1); # special case
     }
 
     # Otherwise, descend to "..".
