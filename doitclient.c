@@ -193,17 +193,30 @@ int do_fetch_pascal_string(int sock, doit_ctx *ctx, char *buf)
 {
     int x = doit_incoming_data(ctx, NULL, 0);
     unsigned char len;
+    int ret;
     while (x == 0) {
-        if (do_receive(sock, ctx) < 0)
+        if ((ret = do_receive(sock, ctx)) <= 0) {
+            if (ret == 0) {
+                fprintf(stderr, "doit: connection unexpectedly closed");
+            } else {
+                fprintf(stderr, "doit: network error: %s\n", strerror(errno));
+            }
             return -1;
+        }
         x = doit_incoming_data(ctx, NULL, 0);
     }
     if (doit_read(ctx, &len, 1) != 1)
         return -1;
     x--;
     while (x < len) {
-        if (do_receive(sock, ctx) < 0)
+        if ((ret = do_receive(sock, ctx)) <= 0) {
+            if (ret == 0) {
+                fprintf(stderr, "doit: connection unexpectedly closed");
+            } else {
+                fprintf(stderr, "doit: network error: %s\n", strerror(errno));
+            }
             return -1;
+        }
         x = doit_incoming_data(ctx, NULL, 0);
     }
     if (doit_read(ctx, buf, len) != len)
@@ -470,7 +483,7 @@ void showversion(void)
     char *v;
     extern char doitlib_revision[];
 
-    v = makeversion(versionbuf, "$Revision: 1.17 $");
+    v = makeversion(versionbuf, "$Revision: 1.18 $");
     if (v)
 	printf("doitclient revision %s", v);
     else
@@ -978,7 +991,16 @@ int main(int argc, char **argv)
     data = doit_make_nonce(ctx, &len);
 
     while (!doit_got_keys(ctx)) {
-        do_receive(sock, ctx);
+        int ret;
+        if ((ret = do_receive(sock, ctx)) <= 0) {
+            close(sock);
+            if (ret == 0) {
+                fprintf(stderr, "doit: connection unexpectedly closed");
+            } else {
+                fprintf(stderr, "doit: network error: %s\n", strerror(errno));
+            }
+            return 1;
+        }
     }
 
     if (do_send(sock, data, len) != len) {
@@ -1147,7 +1169,7 @@ int main(int argc, char **argv)
             fwrite(pbuf, 1, len, stdout);
         }
         if (len < 0) {
-            fprintf(stderr, "doit: connection unexpectedly closed\n");
+            /* we have already printed an appropriate error message */
             close(sock);
             return 1;
         }
