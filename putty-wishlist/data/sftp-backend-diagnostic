@@ -3,6 +3,7 @@ Class: wish
 Difficulty: fun
 Priority: medium
 Content-type: text/x-html-body
+Fixed-in: 2003-06-27
 
 <p>
 There should be better diagnostics surrounding the choice between the
