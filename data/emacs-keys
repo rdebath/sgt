@@ -1,0 +1,19 @@
+Summary: Emacs cursor-key etc mappings
+Class: wish
+Priority: medium
+Difficulty: fun
+Content-type: text/x-html-body
+
+<p>Quite a few applications which don't understand VT100 cursor-key sequences
+do understand Emacs-style ones.  It might thus be a good idea to have an
+option to emit them.  Sensible ones include:
+
+<table>
+ <tr><td>Up    <td>^P
+ <tr><td>Down  <td>^N
+ <tr><td>Left  <td>^B
+ <tr><td>Right <td>^F
+ <tr><td>Home  <td>^A
+ <tr><td>End   <td>^E
+ <tr><td>Delete<td>^D
+</table>
