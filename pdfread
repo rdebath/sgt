@@ -93,42 +93,43 @@ def numeric(s):
     ss = string.translate(s, " " * 256, string.digits)
     return len(s) > 0 and len(ss) == 0
 
-def pdfparse(list):
-    def pdfobj(list):
-        fassert(len(list) > 0, "unexpected end of data")
-        if list[0] == "[":
-            del list[0]
-            ret = []
-            while 1:
-                fassert(len(list) > 0, "unexpected end of data in array")
-                if list[0] == "]":
-                    del list[0]
-                    break
-                ret.append(pdfobj(list))
-            return ret
-        elif list[0] == "<<":
-            del list[0]
-            ret = {}
-            while 1:
-                fassert(len(list) > 0, "unexpected end of data in dictionary")
-                if list[0] == ">>":
-                    del list[0]
-                    break
-                fassert(len(list) > 1, "unexpected end of data in dictionary")
-                key = list[0]
+def pdfobj(list):
+    fassert(len(list) > 0, "unexpected end of data")
+    if list[0] == "[":
+        del list[0]
+        ret = []
+        while 1:
+            fassert(len(list) > 0, "unexpected end of data in array")
+            if list[0] == "]":
                 del list[0]
-                val = pdfobj(list)
-                ret[key] = val
-            return ret
-        elif len(list) >= 3 and numeric(list[0]) and numeric(list[1]) and \
-        list[2] == "R":
-            ret = (string.atoi(list[0]), string.atoi(list[1]))
-            del list[0:3]
-            return ret
-        else:
-            ret = list[0]
+                break
+            ret.append(pdfobj(list))
+        return ret
+    elif list[0] == "<<":
+        del list[0]
+        ret = {}
+        while 1:
+            fassert(len(list) > 0, "unexpected end of data in dictionary")
+            if list[0] == ">>":
+                del list[0]
+                break
+            fassert(len(list) > 1, "unexpected end of data in dictionary")
+            key = list[0]
             del list[0]
-            return ret
+            val = pdfobj(list)
+            ret[key] = val
+        return ret
+    elif len(list) >= 3 and numeric(list[0]) and numeric(list[1]) and \
+    list[2] == "R":
+        ret = (string.atoi(list[0]), string.atoi(list[1]))
+        del list[0:3]
+        return ret
+    else:
+        ret = list[0]
+        del list[0]
+        return ret
+
+def pdfparse(list):
     list = list[:] # copy the list
     parsed = []
     while len(list) > 0:
