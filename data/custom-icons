@@ -1,0 +1,7 @@
+Summary: Custom, per-session icons
+Content-type: text/plain
+Class: wish
+Priority: low
+
+It might be nice if users could specify a custom icon to go with each
+session, to be used as the window/taskbar icon for that session.
