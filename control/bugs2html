@@ -1,5 +1,5 @@
 #! /usr/bin/perl
-# $Id: bugs2html,v 1.11 2002/10/25 16:31:10 jacob Exp $
+# $Id: bugs2html,v 1.12 2002/11/17 18:21:39 jacob Exp $
 
 use FileHandle;
 use POSIX;
@@ -396,9 +396,23 @@ sub compareverclass_s {
     } else {
         my ($aver, $bver) = ($a, $b);
         map s/^release //, ($aver, $bver);
-        # Should probably be based on Debian version-compare algorithm.
-        # Hacked for now (would break with 0.5, 0.100, 0.53a etc)
-        return ($aver <=> $bver);
+        # Debian version compare algorithm (packaging manual 3.1.1.1)
+        my $cmp = 0;
+        while ($cmp == 0) {
+            my ($apre, $bpre);
+
+            ($apre, $aver) = ($aver =~ m/^(\D*)(.*)$/);
+            ($bpre, $bver) = ($bver =~ m/^(\D*)(.*)$/);
+            # Not quite the right collating order...
+            $cmp = ($apre cmp $bpre);
+            last if ($cmp != 0);
+
+            ($apre, $aver) = ($aver =~ m/^(\d*)(.*)$/);
+            ($bpre, $bver) = ($bver =~ m/^(\d*)(.*)$/);
+            $cmp = ($apre <=> $bpre);
+
+        }
+        return $cmp;
     }
 }
 
