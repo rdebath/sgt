@@ -482,7 +482,7 @@ void swash_text(int x, int y, char *text,
                             continue;
                         }
 			/* For alphas, the hx now has to match. */
-			if (opts[i+1][k].chr && opts[i+1][k].hx != hx) {
+			if (opts[i+1][k].chr && LEFT(opts[i+1][k].hx) != hx) {
 			    debug(("    skipping opt %p: hx mismatch\n",
 				   &opts[i+1][k]));
 			    continue;
