@@ -2,7 +2,7 @@ Summary: Full stops on error messages
 Class: wish
 Priority: low
 Difficulty: fun
-Content-type: texh/x-html-body
+Content-type: text/x-html-body
 
 <p>
 It's been suggested that PuTTY's error messages should end in full stops,
