@@ -1,0 +1,29 @@
+Summary: Persistent bell indication on Unix
+Class: wish
+Priority: low
+Content-type: text/x-html-body
+
+<p>
+Windows PuTTY has options in the Bell configuration panel to arrange
+that when a window beeps, a persistent indication appears (the
+taskbar entry and the window title change colour). So if you have
+lots of PuTTYs open at the same time and one of them beeps while
+you're not looking, then when you come back you can see at a glance
+which one it was.
+
+<p>
+There is no analogous feature in the Unix port. One would be nice.
+
+<p>
+It's difficult to do this on Unix as well as it's done on Windows,
+because there is no facility in X to flash windows' title bars or
+(the equivalent of) taskbar entries, because both of those are
+managed by the window manager and no standardised mechanism is
+defined to ask the WM to do this sort of thing on your behalf.
+
+<p>
+On the other hand, it would be relatively easy to apply some sort of
+visual change to the <em>contents</em> of the window (changing the
+background colour springs to mind as a reasonably easy option). This
+wouldn't really be good enough if the window was minimised or in
+another virtual desktop, but it would be better than nothing.
