@@ -10,9 +10,9 @@
 SCREEN=
 MACH=
 TERMSTUFF=
-EXEC=
+EXEC=exec
 FILTER=
-CONNECT='exec telnet -l mono'
+CONNECT='telnet -l mono'
 unset CEND
 stty quit ^^
 if test -f $HOME/.mfilter; then FILTER=$HOME/.mfilter; fi
