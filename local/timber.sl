@@ -1773,6 +1773,8 @@ define timber_open_composer() {
     use_keymap("TimberC");
     use_syntax_table("TimberC");
 
+    create_blocal_var("is_reply", 'i');
+
     insert("X-Mailer: Jed/Timber " + timber_version + "\n");
     insert(timber_custom_headers);
 }
@@ -1875,6 +1877,7 @@ define timber_bcc_self() {
 % is enabled.
 define timber_reply_common(all) {
     variable from, replyto, to, cc, subj, mid, attribution;
+    variable orig_subj, orig_from, orig_replyto, orig_to;
     variable outto, outcc;
     variable i, j, addr, raddr;
     variable got_quote = 0;
@@ -1900,6 +1903,7 @@ define timber_reply_common(all) {
     cc = "";
     mid = "";
     subj = "message with no subject";
+    orig_subj = "";
     eol();
     go_right_1();
     while (1) {
@@ -1912,13 +1916,14 @@ define timber_reply_common(all) {
 		to = timber_getheader(1);
 	    } else if (timber_ila("|Reply-To:")) {
 		go_right(10);
-		replyto = timber_getheader(1);
+		replyto = orig_replyto = timber_getheader(1);
 	    } else if (timber_ila("|Cc:")) {
 		go_right(4);
 		cc = timber_getheader(1);
 	    } else if (timber_ila("|Subject:")) {
 		go_right(9);
 		subj = timber_getheader(1);
+		orig_subj = subj;
 	    } else if (timber_ila("|Message-Id:")) {
 		go_right(12);
 		mid = timber_getheader(1);
@@ -1929,6 +1934,9 @@ define timber_reply_common(all) {
 	} else
 	    break;
     }
+    orig_to = to;
+    orig_from = from;
+    orig_replyto = replyto;
 
     pop_spot();
 
@@ -1997,6 +2005,16 @@ define timber_reply_common(all) {
     % So now open a composer window.
     timber_open_composer();
 
+    create_blocal_var("orig_to", 's');
+    set_blocal_var(orig_to, "orig_to");
+    create_blocal_var("orig_replyto", 's');
+    set_blocal_var(orig_replyto, "orig_replyto");
+    create_blocal_var("orig_from", 's');
+    set_blocal_var(orig_from, "orig_from");
+    create_blocal_var("orig_subj", 's');
+    set_blocal_var(orig_subj, "orig_subj");
+    set_blocal_var(1, "is_reply");
+
     if (strlen(mid)) insert("In-Reply-To: " + mid + "\n");
     timber_insert_hdr("To: " + outto);
     if (strlen(outcc)) timber_insert_hdr("Cc: " + outcc);
@@ -2062,6 +2080,7 @@ define timber_compose_given(to_list) {
 	insert_file(expand_filename(timber_sig));
 	!if (bolp()) insert("\n");
     }
+    set_blocal_var(0, "is_reply");
 
     runhooks("timber_compose_hook");
 
