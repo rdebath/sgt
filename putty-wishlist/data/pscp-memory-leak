@@ -1,0 +1,14 @@
+Summary: PSCP ballooning on large files
+Class: bug
+Present-in: 0.52
+Fixed-in: 2002-03-02
+Content-type: text/x-html-body
+
+<p>
+We've had numerous reports of a memory leak in PSCP 0.52 such that its
+memory consumption would grow with the quantity of data transferred.
+
+<p>
+A big memory leak in sftp.c was fixed 2002-03-01. This would show up
+in PSCP when it chose to use the SFTP backend (most often with SSH-2
+connections).
