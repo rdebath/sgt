@@ -32,6 +32,7 @@ auto: autoconf
 	@rm -rf auto && mkdir auto
 	cd auto && ../configure && make
 release: autoconf
+	if grep FIXME CHANGELOG; then false; else true; fi
 	mkdir enigma-$(VERSION)
 	for i in *.c *.h levels README CHANGELOG LICENCE \
 	Makefile.in configure.in configure install-sh; do \
