@@ -21,3 +21,6 @@ Solutions</a> have a
 <a href="http://www.certifiedsecuritysolutions.com/downloads.html">patched
 version of PuTTY 0.53b</a> which supports Kerberos and GSSAPI, but its
 licence makes it unsuitable for use in PuTTY itself.
+
+<p>
+Patch (unreviewed): 1067597353.3fa23e29bf70c@webmail.technion.ac.il
