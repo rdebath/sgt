@@ -168,67 +168,6 @@ of the program, it could be provided in a function defined in the
 main program and each back end could call that function when it was
 ready.
 
-\H{where-dataflow} The orange-segment model: minimum data flow
-
-If there are no particularly clear reasons to put an interface in a
-particular place, one general guideline that often gives a sensible
-way to divide a program into parts is what I call the
-\q{orange-segment model}. In this model, the aim is to divide your
-program into parts in such a way that the minimum amount of data
-flows between the parts.
-
-(I call this the orange-segment model because an orange is something
-with a natural way to divide it into pieces. Divide an orange the
-right way, and it comes apart cleanly; divide it the wrong way, by
-cutting it indiscriminately with a sharp knife, and you will get
-covered in juice. The correct way to divide up an orange is in such
-a way as to minimise the flow of juice between the pieces.)
-
-For example, suppose you need your program to look a word up in a
-dictionary and check that it's a real word; and suppose that you've
-decided to put an interface between most of the program and the part
-that deals with the dictionary file, so that you can change the file
-format easily later. One option might be to have the dictionary
-module supply a function \cw{GetNthWord()} which accepts a number N,
-and returns the Nth word in the dictionary; then the routine
-\cw{DoesWordExist()} which tests for the presence of a particular
-word can be on the main-program side of the interface, and work by
-calling \cw{GetNthWord()} repeatedly and doing a binary search. But
-the orange-segment model suggests that a better way would be for
-\cw{DoesWordExist()} to be \e{part of} the interface rather than a
-client of it, and for it to be implemented \e{inside} the dictionary
-module. That way, less data flows over the interface: instead of ten
-or twenty requests each returning a word, there is one single
-request which sends a word and receives a boolean response.
-
-This guideline doesn't make sense all the time. In fact, in the
-above example, it might easily \e{conflict} with other design
-principles: if you needed to deal with dictionaries in a large
-number of formats, you would probably want to minimise the amount of
-functionality provided by each dictionary driver, to save programmer
-time and make it easier to add a new driver. So any routine such as
-\cw{DoesWordExist()}, which could be built up from simpler functions
-such as \cw{GetNthWord()}, would be considered non-essential and
-implemented in the main program.
-
-However, the orange-segment model makes a lot of sense in network
-protocols, where the computers at each end are likely to be a lot
-faster than the connection between them; so that if you want
-efficiency, it's more important to minimise data flow over the
-network than to minimise calculation at each end. (See \#{FIXME:
-round-trip times versus simple bandwidth} for more detail on this.)
-It might also make sense in a situation where the inside of a
-particular module dealt with data in a very different format from
-the program calling it - so that every time you call a function in
-the interface, you incur an overhead for translating the data
-between formats.
-
-If neither of these situations apply, the orange-segment model is
-probably not what you want to use to make the final decisions about
-what goes where in your program. But it often gives a good initial
-idea of some rough divisions of the code, and then other design
-principles can be used to fill in the details.
-
 \H{where-trust} Trust boundaries
 
 If your interface is a network protocol between programs that don't
@@ -298,6 +237,66 @@ even less configurability - not only can the server not choose an
 appropriate set of wildcard rules, but now the \e{client} can't
 choose a rule set either. Everybody everywhere must use the One True
 Ruleset defined in the protocol standard.
+
+\H{where-dataflow} The orange-segment model: minimum data flow
+
+If there are no particularly clear reasons to put an interface in a
+particular place, one general guideline that often gives a sensible
+way to divide a program into parts is what I call the
+\q{orange-segment model}. In this model, the aim is to divide your
+program into parts in such a way that the minimum amount of data
+flows between the parts.
+
+(I call this the orange-segment model because an orange is something
+with a natural way to divide it into pieces. Divide an orange the
+right way, and it comes apart cleanly; divide it the wrong way, by
+cutting it indiscriminately with a sharp knife, and you will get
+covered in juice. The correct way to divide up an orange is in such
+a way as to minimise the flow of juice between the pieces.)
+
+For example, suppose you need your program to look a word up in a
+dictionary and check that it's a real word; and suppose that you've
+decided to put an interface between most of the program and the part
+that deals with the dictionary file, so that you can change the file
+format easily later. One option might be to have the dictionary
+module supply a function \cw{GetNthWord()} which accepts a number N,
+and returns the Nth word in the dictionary; then the routine
+\cw{DoesWordExist()} which tests for the presence of a particular
+word can be on the main-program side of the interface, and work by
+calling \cw{GetNthWord()} repeatedly and doing a binary search. But
+the orange-segment model suggests that a better way would be for
+\cw{DoesWordExist()} to be \e{part of} the interface rather than a
+client of it, and for it to be implemented \e{inside} the dictionary
+module. That way, less data flows over the interface: instead of ten
+or twenty requests each returning a word, there is one single
+request which sends a word and receives a boolean response.
+
+This guideline doesn't make sense all the time. In fact, in the
+above example, it might easily \e{conflict} with other design
+principles: if you needed to deal with dictionaries in a large
+number of formats, you would probably want to minimise the amount of
+functionality provided by each dictionary driver, to save programmer
+time and make it easier to add a new driver. So any routine such as
+\cw{DoesWordExist()}, which could be built up from simpler functions
+such as \cw{GetNthWord()}, would be considered non-essential and
+implemented in the main program.
+
+However, the orange-segment model makes a lot of sense in network
+protocols, where the computers at each end are likely to be a lot
+faster than the connection between them; so that if you want
+efficiency, it's more important to minimise data flow over the
+network than to minimise calculation at each end. (See
+\k{misc-speed} for more detail on this.) It might also make sense in
+a situation where the inside of a particular module dealt with data
+in a very different format from the program calling it - so that
+every time you call a function in the interface, you incur an
+overhead for translating the data between formats.
+
+If neither of these situations apply, the orange-segment model is
+probably not what you want to use to make the final decisions about
+what goes where in your program. But it often gives a good initial
+idea of some rough divisions of the code, and then other design
+principles can be used to fill in the details.
 
 \C{what} What to specify in an interface design
 
@@ -503,7 +502,7 @@ long enough to be useful - \cw{asctime()} in a multi-threaded
 program is almost useless, because the buffer it returns could
 easily be overwritten by another call to \cw{asctime()} in another
 thread before the first thread has even had a chance to read the
-data out of it. (See \#{FIXME} for more on thread-safety.)
+data out of it. (See \k{threading} for more on thread-safety.)
 
 \C{bidi} Bidirectional interfaces
 
@@ -900,22 +899,190 @@ without causing each other inconvenience.
 (Of course, SFTP pays for its thread-friendliness by requiring more
 data transfer to do the same amount of work.)
 
-\# is the protocol-level state section plausible? Will it hang
-\# together as a whole or should I scatter bits of it throughout
-\# other sections wherever they happen to be relevant?
+\C{misc} Miscellaneous issues
 
-\# speed considerations seem a little small for a whole section of
-\# its own. Not sure what to do about that.
+This section lists a few things to consider which didn't fit
+sensibly into other sections.
 
-\# another important point: Thou Shalt (Wherever Feasible) Allow
-\# Latitude For Multiple Implementations To Do Things Completely
-\# Differently. SSH's channel numbers leave a _lot_ of latitude like
-\# this. Perhaps also cite GIF/LZW as an algorithm-specific
-\# interface? Or is that too political?
+\H{misc-speed} Speed
 
+Speed is always a potential consideration in programming. It doesn't
+affect interface design as much as it does other areas, but it's not
+completely irrelevant either.
+
+In a function-call interface between modules of the same program,
+speed isn't a major problem at all. In most situations, the amount
+of computation done on each side of the interface is going to be
+much larger than the overheads of the function calls made across the
+interface. The only exception is if the interface provides a
+function which handles very small pieces of data, so that it has to
+be called a very large number of times. For example, \cw{fputc()} in
+the C library might introduce a noticeable speed penalty if it were
+the only way to write a character to a file - because a 1Gb file
+would require a billion function calls to write. Hence the C library
+supplies \cw{fwrite()} as well, to cut down the number of function
+calls to a fraction of the number of bytes written.
+
+In networked interfaces (either conventional network protocols or
+RPC-style systems designed to behave like function calls), speed is
+likely to be more of a problem, since the network is probably more
+limited than the CPU at each end of the connection. In this
+situation there are two separate speed issues to consider:
+
+\b Bandwidth: the total amount of data transferred over the network
+connection.
+
+\b Round trips: the number of times side stops to wait for the other
+side to reply to it. Increasingly, modern networks tend to have high
+bandwidth but also high round-trip times; so if you transfer a large
+amount of data in small blocks, but you stop and wait for a reply
+from the other end between each pair of blocks, then you will use
+only a fraction of the available bandwidth in the connection.
+
+\H{misc-privacy} Keep each side's state on that side
+
+In an interface where each side has limited trust in the other side,
+it's almost never a good idea to ask one side to store the other
+side's private state for it.
+
+This may sound obvious, but at least one reasonably modern protocol
+didn't think so. Version 1 of the SSH protocol implements remote
+port forwarding in a way that violates this principle.
+
+In remote port forwarding, the SSH server listens for connections on
+a particular network port. When a connection comes in, it tells the
+SSH client, which then makes a connection to a local server of some
+kind, and data is exchanged between the process which connected to
+the SSH server and the process the SSH client has connected to.
+
+In SSH v1, the SSH client sets this up by sending a message to the
+server saying \q{Please listen on port 2345. When a connection comes
+in, I will send it to \cw{myserver.example.com} port 3456.} The SSH
+server listens to the requested port, and when it receives a
+connection it sends back a message saying \q{Please connect to
+\cw{myserver.example.com} port 3456}.
+
+This approach has two problems:
+
+\b It's an invitation for client implementations to do the wrong
+thing. The obvious naive client implementation will simply listen
+for any \q{please connect} messages and connect to the address they
+specify. If a client like this connects from inside a firewalled
+zone to a server outside it, it has just given the system
+administrator of the server machine the ability to connect to
+\e{any} service provided behind the firewall. So clients \e{must}
+maintain a list of addresses they have asked the server to send
+\q{please connect} messages for, and must verify that any real
+\q{please connect} message has an address in this list.
+
+\b Even if the client doesn't make that mistake, it's an invasion of
+privacy; the location of services in the client's network might be
+no business of the server administrator, so the client might not
+want to tell the server what they are. In this situation, the client
+might be well advised to tell lies - to make up fictitious service
+addresses to send to the server, and to translate them into the real
+ones when they come back.
+
+SSH version 2 does this the right way. The client isn't even
+\e{asked} to send its local service address to the server. Instead,
+it simply tells the server \q{Please listen on port 2345}, and when
+the server receives a connection it sends back \q{Here's a
+connection on port 2345 as you requested}. Then the list of which
+ports are forwarded to which local services is kept at the client
+end, and the client looks up the port number in that list to decide
+where to connect to. Now the only way the server can cheat is by
+sending a port number that the client never requested - in which
+case the client will fail to find it in its list, and either
+complain or ignore it.
+
+\# \H{misc-secondguess} Don't second-guess
 \# a real biggie: Thou Shalt Not Enumerate Possible User Types And
 \# Cater For Each Individually. I'm sure there must be a fantastic
 \# example of this somewhere, but right now I can't think of one.
+
+\C{summary} Summary
+
+This article has presented a wide range of issues that might be
+worth considering when designing an interface between two pieces of
+software, whether that interface is in the form of function calls, a
+network protocol, or even other forms such as a file format.
+
+I don't claim that everybody must always design interfaces which
+satisfy all these criteria, but I do think it's generally better to
+have considered an issue and decided you don't need to do anything
+about it than not to have considered it at all.
+
+I'll end this article by summarising all the points I've made into a
+quick-reference checklist of things to think about when designing an
+interface.
+
+\b Is it worth designing a well-defined interface at all? Do the
+advantages outweigh the cost?
+
+\b If an interface separates interchangeable parts of a program from
+the rest of the program, that's a strong condition for deciding on
+which side of the interface to put a particular piece of code.
+
+\b When there is limited trust between the sides of an interface,
+position the interface \e{at} the trust boundary. Don't put code on
+one side of the interface which the other side can't trust it to run
+correctly.
+
+\b If all other conditions are equal, it's probably a good guideline
+to place your interface so as to minimise data flow across it (the
+orange-segment model).
+
+\b In every request and response, specify exactly what parameters
+are allowed, forbidden and undefined.
+
+\b When there is limited trust between the sides of an interface,
+\e{no} parameter passed in a request or a response must cause a
+security hole, even if the behaviour caused by that parameter is
+otherwise undefined.
+
+\b Specify the ordering constraints, if any, between requests and
+responses. It might help to draw a state diagram to ensure you have
+considered all the possibilities.
+
+\b When pointers to areas of memory are passed across the interface,
+specify which side owns them after that (both in the sense of having
+the right to modify them, and - where applicable - in the sense of
+having responsibility for freeing the memory).
+
+\b If both sides of the interface can make requests of each other,
+specify what requests may be made in response to what other
+requests, and ensure this can never lead to endless recursion (in
+function-call interfaces) or deadlock (in network protocols).
+
+\b Be sure to prevent race conditions in a network protocol.
+
+\b If the two sides of the interface can be upgraded independently,
+ensure each side can cope with talking to an older or newer version
+of the interface/protocol. You may wish to do this by stating the
+protocol version number explicitly, or by negotiating individiual
+protocol extensions.
+
+\b In a network protocol, ensure proxy authors have enough
+information to write proxies which can handle future protocol
+extensions without losing track of the state of the session.
+
+\b Consider multithreading. Can more than one thread use the same
+instance of the interface at once? In a network protocol, is
+implicit state kept between requests which would make this
+difficult?
+
+\b For speed reasons, don't arrange for very large amounts of data
+to be handled by passing one byte at a time across the interface.
+
+\b When considering speed in a network protocol, consider both the
+amount of data transferred \e{and} the number of network round trips
+required.
+
+\b When there is limited trust between the sides of an interface,
+don't recommend that either side of the interface gives its private
+data to the other for storage.
+
+\# -------------- end ---------------
 
 \# review questions:
 \#  - FFS give me a better title! I want to call it Interface Design
