@@ -772,15 +772,22 @@ static unsigned char rocket_planet_image[3489] = {
 /* this setcolour() macro translates VGA 64-level palettes to 256-level */
 #define setcolour(c,r,g,b) do { \
     SDL_Color colour = { (r)*255/63, (g)*255/63, (b)*255/63 }; \
-    SDL_SetColors(screen, &colour, c, 1); \
+    colours[c] = colour; \
 } while (0)
 
 void rocket_do_palette(int space)
 {
     int p;
+    SDL_Color colours[256];
+
+    setcolour(0, 0, 0, 0);
 
     for (p = 0; p < 16; p++)
 	setcolour(16-p,(p*63)/15,(p*63)/15,63);
+
+    setcolour(40, 32, 0, 0);
+    setcolour(41, 25, 25, 0);
+
     for (p = 0; p < 64; p++)
 	setcolour(p+64,p,p,p);
 
@@ -835,11 +842,14 @@ void rocket_do_palette(int space)
 	for (p = 0; p < 64; p++)
 	    setcolour(p+192,0,p,63);
     }
+    SDL_SetColors(screen, colours, 0, 256);
 }
 
 void rocket_make_background(int space, int planet)
 {
     int p, q, r;
+
+    srand(1);
 
     rocket_bkgnd_image = makeimage(SCR_WIDTH, SCR_HEIGHT, 0, 0);
     if (space) {
