@@ -3,6 +3,7 @@ Class: wish
 Priority: medium
 Difficulty: fun
 Content-Type: text/x-html-body
+Fixed-In: 2002-10-17
 
 <p>
 Perhaps Shift-Backspace could do whichever of ^H and ^? normal
