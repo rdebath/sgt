@@ -25,7 +25,10 @@ Also, GUI popups provide some degree of assurance against spoofing
 attacks; with password/passphrase prompts in the same terminal window
 as everything else, it's not always easy to be sure that your password
 is going where you expect, whereas a dialog box is somewhat harder
-to spoof.
+to spoof. (Although we need to clearly distinguish local prompts such
+as key passphrases from remote prompts, especially keyboard-interactive,
+where the server would like to control as much of the prompt window
+as possible. Not sure of the best way to do this yet.)
 
 <p>
 All optional, of course.
