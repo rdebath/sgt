@@ -24,5 +24,19 @@ whether or not this is evil.  In any case, it should probably be inhibited in
 alternate screen mode, just like copying data into the scrollback is (xterm
 gets this bit wrong).
 
+<p>Another subtlety is what to do about saved cursor positions.  At present in
+PuTTY (and I think in xterm), if you open an 80x24 window, do something to
+put stuff into the scrollback, switch to the alternate screen, enlarge the
+window to the height of the screen and then switch back from the alternate
+screen, you end up with the cursor on line 24, rather than at the bottom of
+the scrren with the text that used to be on line 24.
+
+<p>Another subtlety is what to do about saved cursor positions.  At present in
+PuTTY (and I think in xterm), if you open an 80x24 window, do something to
+put stuff into the scrollback, switch to the alternate screen, enlarge the
+window to the height of the screen and then switch back from the alternate
+screen, you end up with the cursor on line 24, rather than at the bottom of
+the screen with the text that used to be on line 24.  This is clearly wrong.
+
 <p>(cf. <a href="resize-no-truncate.html">`resize-no-truncate'</a> for the
 case where the number of columns is changed.)
