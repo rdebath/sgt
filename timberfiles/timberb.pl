@@ -22,18 +22,32 @@ sub issep($) {
 # Format of a Timber mail folder buffer:
 #
 # Each line has one header character denoting the type of line.
-# `*' denotes a message summary line: one of these exists for each
-# message. `|' denotes a message header line. ` ' denotes a message body
-# line. `!' denotes a summary line for a MIME attachment. `X' denotes guff at
-# the end of the folder. `F' denotes a summary line right at the top.
-# `\240' (the other space char) denotes a decoded MIME attachment (eg
-# decoded QP). `M' denotes a heading line for MIME summaries. `+' denotes
-# a MIME-component header or admin line (including the separator lines
-# themselves, the headers in each component, and the `This message is MIME'
-# section before the components begin).
+#  - `*' denotes a message summary line: one of these exists for
+#    each message.
+#  - `|' denotes a message header line. ` ' denotes a message body
+#    line.
+#  - `!' denotes a summary line for a MIME attachment.
+#  - `X' denotes guff at the end of the folder.
+#  - `F' denotes a summary line right at the top.
+#  - `\240' (the other space char) denotes a decoded MIME
+#    attachment (eg decoded QP).
+#  - `M' denotes a heading line for MIME summaries.
+#  - `+' denotes a MIME-component header or admin line (including
+#    the separator lines themselves, the headers in each component,
+#    and the `This message is MIME' section before the components
+#    begin).
+#  - '>' denotes a line saying `this header was so long the middle
+#    of it has been chopped out',
+#  - '<' ends a chopped-out header section. In normal display mode,
+#    the > line should be shown to the user, and all | lines
+#    thereafter up to and including the < line should be hidden. In
+#    full header mode, the > and < are both hidden.
 #
 # Summary lines with nothing but ` [end]' after the initial character
 # denote the end of the things they summarise.
+
+$hdrlimit = 8; # max no. of lines permitted for a header to be shown in full
+$hdrend = 2;   # no. of lines shown at each end once header is abbreviated
 
 # Loop over each message, inserting message summary lines and header
 # characters.
@@ -63,6 +77,7 @@ while (1) {
   # for the message summary line. Terminate if we see a blank line
   # (start of message body) or a `From ' message separator line.
   $_ = <STDIN>;
+  @hdr = (); # used to accumulate really large headers so we can place >< lines
   while ($_ and /./ and !issep($_)) {
     $read = 0;
     $phdr = "|$_";
@@ -106,9 +121,16 @@ while (1) {
         $phdr = "|Status: O\n";
       }
     }
-    $msg .= $phdr;
+
+    if (/^\S/) {
+      $msg .= join "", &prochdr(@hdr);
+      @hdr = ($phdr);
+    } else {
+      push @hdr, $phdr;
+    }
     $_ = <STDIN> unless $read;
   }
+  $msg .= join "", &prochdr(@hdr);
 
   # If no `Status:' header was found, put one in.
   if ($flagchr eq 'n') {
@@ -148,6 +170,17 @@ while (1) {
                   $sizec, $datefield, $fromfield, $subjfield;
 
   print $sum; print $msg;
+}
+
+sub prochdr {
+  my (@hdr) = @_;
+  if (scalar @hdr > $hdrlimit) {
+    splice @hdr, $hdrend, 0, "> [excessively long header abbreviated;".
+                             " press 'h' to reveal in full]\n";
+    splice @hdr, -$hdrend, 0, "< [if this line is visible there's".
+                              " an internal error!]\n";
+  }
+  @hdr;
 }
 
 sub multipart {
