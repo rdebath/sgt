@@ -294,13 +294,8 @@ class edgedual:
 		sn = sn + 1
 	    r[None] = sn / sl
 	# Now match up the edges between the two polyhedra. As a
-	# test of duality, we expect to end up with an exact
-	# bijection. We test this by finding the matches by
-	# iteration over e2 (so we know everything in e2 maps to
-	# exactly one thing), but storing them in a mapping from e1
-	# to e2, and finally testing that that mapping has the
-	# right size (so we know everything in e1 maps to at least
-	# one thing).
+	# test of duality, we deliberately check that the mapping
+	# we end up with is a bijection.
 	emap = {}
 	scale1 = r1[None]
 	scale2 = r2[None]
@@ -317,7 +312,12 @@ class edgedual:
 		if bestdist == None or dist < bestdist:
 		    bestdist = dist
 		    best = eprime
+	    # Ensure the function from e2 to e1 is injective, by
+	    # making sure we never overwrite an entry in emap.
+	    assert(not emap.has_key(best))
 	    emap[best] = e
+	# Ensure the function from e2 to e1 is surjective, by
+	# making sure everything in e1 is covered.
 	assert len(emap) == len(e1)
 
 	# Output the edge dual's vertices.
