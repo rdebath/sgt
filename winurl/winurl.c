@@ -168,9 +168,15 @@ void do_launch_url(void)
 	 * like an email address, so we'll prefix `http://' on the
 	 * assumption that it's a truncated URL of the form
 	 * `www.thingy.com/wossname' or just `www.thingy.com'.
+	 * 
+	 * Exception: if the URL starts "//", we only prefix the
+	 * "http:".
 	 */
-	strncpy(t, "http://", 7);
-        p = t;                         /* add the standard one */
+	if (t[7] == '/' && t[8] == '/')
+	    p = t+2;
+	else
+	    p = t;
+	strncpy(p, "http://", 7);
     }
 
     ret = (int)ShellExecute(winurl_hwnd, "open", p, NULL, NULL, SW_SHOWNORMAL);
@@ -308,6 +314,20 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int show) {
     WNDCLASS wndclass;
     MSG msg;
 
+    winurl_hwnd = NULL;
+
+    while (*cmdline && isspace(*cmdline)) cmdline++;
+    if (cmdline[0] == '-' && cmdline[1] == 'o' &&
+	(!cmdline[2] || isspace(cmdline[2]))) {
+	/*
+	 * -o means _just_ launch the current clipboard contents as
+	 * a URL and then terminate, rather than starting up a
+	 * window etc.
+	 */
+	do_launch_url();
+	return 0;
+    }
+
     winurl_instance = inst;
 
     if (!prev) {
@@ -325,8 +345,6 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int show) {
 
 	RegisterClass (&wndclass);
     }
-
-    winurl_hwnd = NULL;
 
     winurl_hwnd = CreateWindow (winurl_appname, winurl_appname,
 				WS_OVERLAPPEDWINDOW | WS_VSCROLL,
