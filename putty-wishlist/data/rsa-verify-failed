@@ -13,6 +13,10 @@ written in the server's log:
     error:04077077:lib(4):func(119):reason(119)</pre>
 
 <p>
+which apparently resolves to "the <tt>RSA_verify()</tt> function in
+SSL telling [us] <tt>RSA_R_WRONG_SIGNATURE_LENGTH</tt>".
+
+<p>
 A report of this problem can be found
 <a href="http://groups.google.com/groups?selm=3C96431D.7030504%40nospam.icon-labs.com">here</a>.
 
