@@ -1,0 +1,62 @@
+Summary: Vulnerability: buffer management bug in SSH1 key exchange
+Class: bug
+Difficulty: fun
+Priority: high
+Present-in: 0.45 0.46 0.47 0.48 0.49 0.50 0.51 0.52 0.53 0.53b 0.54
+Fixed-in: 0.55
+Content-type: text/x-html-body
+
+<p>
+All versions of the PuTTY suite prior to 0.55 have a memory
+corruption bug in SSH1 key exchange, which might lead to a security
+vulnerability.
+
+<p>
+The bug lies in the <code>rsaencrypt()</code> function, which
+performs RSA encryption with
+<a href="ftp://ftp.rsasecurity.com/pub/pkcs/ascii/pkcs-1.asc">PKCS#1 v1.5</a>
+padding, as used in the SSH1 key exchange. This function assumes
+that the data to be encrypted is smaller than the modulus of the
+public key. If this is not the case, the <code>memmove()</code>
+operation at the start of the function will overwrite memory before
+the input buffer.
+
+<p>
+A malicious server can trigger this bug by sending an unexpectedly
+small public key modulus. However, it is not clear that the server
+can exploit this bug to take <em>control</em> of the client, since
+the data written beyond the buffer is part of the cleartext invented
+by the client, not part of the key modulus sent by the server. I
+(SGT) doubt that a server can do much more than cause the client to
+crash by exploiting this bug.
+
+<p>
+Nonetheless, that's more than a server <em>should</em> be able to
+do, and it is just possible that there is a more damaging exploit in
+spite of appearances, so this is still a serious bug that needs
+fixing. PuTTY release 0.55 fixes it by having
+<code>rsaencrypt()</code> explicitly check that the public key is
+long enough to allow the encryption of the supplied data.
+
+<p>
+Although PuTTY verifies the server's host key against its Registry
+cache before performing the vulnerable encryption operation, this
+does not protect you from a spoofed server or man-in-the-middle
+attack. SSH1 involves two public keys: a server key (changed every
+hour, for forward security) and a host key (never changed, for
+server authentication). Some data is encrypted using both keys, and
+then the server proves its identity by decrypting it. So a MITM can
+send a maliciously shortened <em>server</em> key and the correct
+<em>host</em> key; the fact that it does not have the private half
+of the host key will not matter, since by the time it is challenged
+to prove its identity by decrypting the doubly encrypted data, the
+short server key will have already triggered the bug and the damage
+will be done.
+
+<p>
+This bug was discovered by
+<a href="http://www.coresecurity.com/">Core Security Technologies</a>,
+and documented in their advisory
+<a href="http://www.coresecurity.com/common/showdoc.php?idx=417&idxseccion=10">CORE-2004-0705</a>.
+It is also mentioned in an advisory by Secunia, numbered
+<a href="http://secunia.com/advisories/12212/">SA12212</a>.

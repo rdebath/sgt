@@ -1,0 +1,84 @@
+Summary: Vulnerability: serious buffer management bug in modpow()
+Class: bug
+Difficulty: fun
+Priority: high
+Present-in: 0.45 0.46 0.47 0.48 0.49 0.50 0.51 0.52 0.53 0.53b 0.54
+Fixed-in: 0.55
+Content-type: text/x-html-body
+
+<p>
+All versions of the PuTTY suite prior to 0.55 have a memory
+corruption vulnerability in the <code>modpow()</code> function.
+
+<p>
+This function performs modular exponentiation: it takes three
+arguments <code>base</code>, <code>exp</code> and <code>mod</code>,
+and it raises <code>base</code> to the power <code>exp</code> modulo
+<code>mod</code>.
+
+<p>
+Unfortunately, it fails to check that <code>base</code> is at most
+the same size as <code>mod</code>. By arranging for
+<code>base</code> to be significantly bigger than <code>mod</code>,
+an attacker can cause the <code>modpow()</code> function to write
+memory before the beginning of one of its working buffers. The data
+written to that memory is taken from the <code>base</code> argument
+itself, so if an attacker can control this value then they can write
+data of their choice to PuTTY's memory.
+
+<p>
+(We are not aware of an actual exploit having been written for this
+bug, so we cannot be absolutely certain that it can be realistically
+exploited. It might be, for example, that no particularly sensitive
+data happens to be within range of the underflowing buffer. However,
+it would be incautious not to assume the worst and treat this as a
+potentially disastrous attack.)
+
+<p>
+The obvious fix is for <code>modpow()</code> to reduce
+<code>base</code> modulo <code>mod</code> as the very first thing it
+does, thus preserving the mathematical correctness of the function
+(and improving performance if anyone should use an overlong
+<code>base</code> for a legitimate reason!). PuTTY release 0.55
+implements this fix, and is believed not to be vulnerable.
+
+<p>
+This bug is <b>EXTREMELY SEVERE</b> in SSH2. SSH2 uses
+Diffie-Hellman key exchange, in which each of client and server
+sends a large number to the other, and each one performs a
+<code>modpow</code> operation using that large number as the base.
+In other words, a malicious server can exploit this bug during the
+initial key exchange phase, <em>before</em> the client has received
+and verified a host key signature. So this attack can be performed
+by a man-in-the-middle between the SSH client and server, and the
+normal host key protections against MITM attacks are bypassed. Even
+if you trust the server you <em>think</em> you are connecting to,
+you are not safe.
+
+<p>
+The bug is of more limited impact in SSH1. In SSH1, all the
+<code>modpow</code> operations performed during key exchange involve
+the <em>client</em> inventing <code>base</code>, while the server
+provides <code>exp</code> and <code>mod</code>. Therefore, a
+malicious server cannot exploit this bug during SSH1 key exchange.
+They can only exploit it during public key authentication, in which
+the server sends an RSA-encrypted value and the client performs a
+<code>modpow</code> to decrypt it. This means that the only servers
+which can attack you through this bug are servers you trust, since
+by the time the server can mount this attack it must already have
+proved that it holds an acceptable host key. Also, if you use SSH1
+but do <em>not</em> use public-key authentication, there is no
+longer any opening for the server to exploit this bug.
+
+<p>
+However, see <a href="vuln-ssh1-kex.html">vuln-ssh1-kex</a> for
+another potential problem in SSH1 key exchange. Even SSH1 users who
+do not use public-key authentication should upgrade.
+
+<p>
+This bug was discovered by
+<a href="http://www.coresecurity.com/">Core Security Technologies</a>,
+and documented in their advisory
+<a href="http://www.coresecurity.com/common/showdoc.php?idx=417&idxseccion=10">CORE-2004-0705</a>.
+It is also mentioned in an advisory by Secunia, numbered
+<a href="http://secunia.com/advisories/12212/">SA12212</a>.
