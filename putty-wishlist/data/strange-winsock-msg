@@ -1,7 +1,7 @@
 Summary: Strange WinSock messages cause failed assertion in tree234.c
 Class: semi-bug
 Priority: medium
-Present-in: 0.53 0.53b 2002-12-09
+Present-in: 0.53 0.53b 2002-12-09 2003-01-07
 Content-type: text/x-html-body
 
 <p>
@@ -35,4 +35,10 @@ Reports:
 As far as we can tell this implies that WinSock is sending us unexpected
 messages. As of 2002-12-09, diagnostics have been added of the form
 "Strange WinSock message: wp=00000000 lp=00000002"; the numbers will
-help us to debug the problem.
+help us to debug the problem. Further info from an original reporter 
+(<code>005801c2b80e$b6a3b470$1f69010a@jefflap3</code>):
+
+<blockquote>
+I have noticed that the lp=1 correlates to the rule
+for port 3000 and lp=2 correlates to the rule for port 110.
+</blockquote>
