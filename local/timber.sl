@@ -8,12 +8,11 @@
 % a processed form from which the original form may be reconstructed.
 
 %{{{ TODO list
-%
+
 % fix: hitting backspace on last (blank) line of mime message will never
 %   fold message however often you do it
 % some form of address book
 % MIME todos: decoding, nested multiparts, better summaries, attaching
-% Include quoted message in reply (do after MIME to get MIME bits right)
 % A forwarding command (do this _after_ MIME and get the MIME handling right)
 % get the message size counting right (exclude From line? CRLF?)
 % ESC-UP and ESC-DOWN should move a message around within the folder
@@ -26,6 +25,7 @@
 % better mailbox locking: option to open a locked box readonly
 % better mailbox locking: research atomicity under NFS
 % better mailbox locking: let user specify something about how it's done
+
 %}}}
 %{{{ User-configurable variables
 
@@ -120,8 +120,6 @@ variable timber_version = "v0.2";
 % This is used in a couple of places so it's kept here for reusability.
 variable timber_headerline =
 "Flags Lin  Size  Date  From                 Subject\n";
-variable timber_mimehdr =
-"Multipart MIME message\n";
 
 %}}}
 
@@ -511,7 +509,8 @@ define timber_issep() { %{{{
 define timber_enbuf() {
     variable sizel, sizec, mmark, amark;
     variable fromfield, datefield, subjfield, flagchr, status, str;
-    variable mimesep, mimeend;
+    variable mimesep, mimeend, mimeoverall, mimetext;
+    variable mimetype, mimename, mimeenc, mimedesc;
     variable i, j;
 
     % Loop over each message, inserting message summary lines and header
@@ -601,6 +600,7 @@ define timber_enbuf() {
 		mimesep = timber_getheader(0);
 		pop_spot();
 		eol();
+                mimeoverall = extract_element(mimesep, 0, ';');
 		if (string_match(mimesep, "[Bb][Oo][Uu][Nn][Dd][Aa][Rr][Yy]=\"\\(.*\\)\"", 1)) {
 		    (i, j) = string_match_nth(1);
 		    mimesep = "--" + substr(mimesep, i+1, j);
@@ -656,7 +656,7 @@ define timber_enbuf() {
 	    % If there was a MIME separator given, start inserting MIME
 	    % separator lines now. First the M line, and skip over the
 	    % subsequent `This is MIME' warning until we hit the separator.
-	    insert(timber_mimehdr);
+	    insert("MIME: " + strlow(mimeoverall) + "\n");
 	    while (not eobp() and not timber_la(mimesep)
 		   and not timber_la(mimeend)) {
 		insert("+");
@@ -675,9 +675,37 @@ define timber_enbuf() {
 		amark = create_user_mark();
 		insert("\n");
 		% Do the headers.
+                mimetype = "";
+                mimename = "";
+                mimedesc = "";
+                mimeenc = "";
 		while (not eobp() and not timber_issep()
 		       and not eolp()) {
 		    insert("+");
+                    if (timber_ila("Content-type:")) {
+                        go_right(13);
+                        skip_white();
+                        push_spot();
+                        mimetext = timber_getheader(0);
+                        pop_spot();
+                        mimetype = extract_element(mimetext, 0, ';');
+                        if (string_match(mimetext, "[Nn][Aa][Mm][Ee]=\"?\\([^\"]*\\)", 1)) {
+                            (i, j) = string_match_nth(1);
+                            mimename = substr(mimetext, i+1, j);
+                        }
+                    } else if (timber_ila("Content-description:")) {
+                        go_right(20);
+                        skip_white();
+                        push_spot();
+                        mimedesc = timber_getheader(0);
+                        pop_spot();
+                    } else if (timber_ila("Content-transfer-encoding:")) {
+                        go_right(26);
+                        skip_white();
+                        push_spot();
+                        mimeenc = timber_getheader(0);
+                        pop_spot();
+                    }
 		    eol();
 		    sizec += what_column() - 1;
 		    go_right_1();
@@ -702,7 +730,10 @@ define timber_enbuf() {
 		push_spot();
 		goto_user_mark(amark);
 		if (i) {
-		    insert("Attachment");
+		    insert(strlow(mimetype));
+                    if (mimeenc != "") insert(" (" + strlow(mimeenc) + ")");
+                    if (mimename != "") insert(" name=`" + mimename + "'");
+                    if (mimedesc != "") insert(" desc=`" + mimedesc + "'");
 		    pop_spot();
 		} else {
 		    insert("[end]");
