@@ -837,13 +837,13 @@ static int adjust_screen(int which)
     y = (200 - h) / 2;
 
     img = makeimage(120, h, 0, 0);
-    pickimage(img, 100, y);
+    pickimage(img, 140, y);
 
     scr_prep();
-    bar(100, y, 219, y+h-1, border);
-    bar(102, y+2, 217, y+h-3, 0);
+    bar(140, y, 259, y+h-1, border);
+    bar(142, y+2, 257, y+h-3, 0);
     
-    swash_centre(100, 219, y+7, "ADJUST SCREEN", plotpoint, (void *)26);
+    swash_centre(140, 259, y+7, "ADJUST SCREEN", plotpoint, (void *)26);
 
     prevval[0] = prevval[1] = 0;
 
@@ -859,11 +859,13 @@ static int adjust_screen(int which)
 	char buf[20];
 
 	scr_prep();
-	bar(105, y+34, 214, y+64, 0);
-	sprintf(buf, "DX =%4d", dx);
-	swash_centre(100, 219, y+37, buf, plotpoint, (void *)26);
-	sprintf(buf, "DY =%4d", dy);
-	swash_centre(100, 219, y+53, buf, plotpoint, (void *)26);
+	bar(145, y+34, 254, y+64, 0);
+	swash_text(160, y+37, "DX =", plotpoint, (void *)26);
+	swash_text(160, y+53, "DY =", plotpoint, (void *)26);
+	sprintf(buf, "%d", dx);
+	swash_text(240-swash_width(buf), y+37, buf, plotpoint, (void *)26);
+	sprintf(buf, "%d", dy);
+	swash_text(240-swash_width(buf), y+53, buf, plotpoint, (void *)26);
 	scr_done();
 
 	while (SDL_WaitEvent(&event)) {
@@ -905,7 +907,7 @@ static int adjust_screen(int which)
     }
 
     scr_prep();
-    drawimage(img, 100, y, -1);
+    drawimage(img, 140, y, -1);
     scr_done();
 
     free(img);
@@ -931,13 +933,13 @@ static int arena_menu(int which)
     y = (200 - h) / 2;
 
     img = makeimage(120, h, 0, 0);
-    pickimage(img, 100, y);
+    pickimage(img, 140, y);
 
     scr_prep();
-    bar(100, y, 219, y+h-1, border);
-    bar(102, y+2, 217, y+h-3, 0);
+    bar(140, y, 259, y+h-1, border);
+    bar(142, y+2, 257, y+h-3, 0);
     
-    swash_centre(100, 219, y+7, "SELECT ARENA", plotpoint, (void *)26);
+    swash_centre(140, 259, y+7, "SELECT ARENA", plotpoint, (void *)26);
 
     mpos = 0;
     for (i = 0; i < nmenu; i++)
@@ -954,9 +956,9 @@ static int arena_menu(int which)
 
 	scr_prep();
 	for (i = 0; i < nmenu; i++) {
-	    bar(105, y+34+i*16, 214, y+48+i*16,
+	    bar(145, y+34+i*16, 254, y+48+i*16,
 		i==mpos ? highlight : 0);
-	    swash_centre(100, 219, y+37+i*16, menu[i].text,
+	    swash_centre(140, 259, y+37+i*16, menu[i].text,
 			 plotpoint, (void *)26);
 	}
 	scr_done();
@@ -1000,7 +1002,7 @@ static int arena_menu(int which)
     }
 
     scr_prep();
-    drawimage(img, 100, y, -1);
+    drawimage(img, 140, y, -1);
     scr_done();
 
     free(img);
