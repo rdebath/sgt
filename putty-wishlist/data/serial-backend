@@ -9,4 +9,6 @@ Extra back end to connect to a serial port instead of a Telnet or SSH
 connection.
 
 <p>
-Need to think about how this fits into our UI.
+Need to think about how this fits into our UI - unlike every other
+backend so far, serial connections have neither hostname nor port,
+and other connections don't have stop bits and guff like that.
