@@ -30,12 +30,6 @@
 /*
  * TODO:
  * 
- *  - add to the test suite:
- *     * test read/write unlocking, by maintaining lists of
- *       currently locked nodes and requiring that all locked nodes
- *       are correctly unlocked. Perhaps also verify that when any
- *       node is write-locked or write-unlocked, its parent is
- *       write-locked at the time. (If that's feasible. Hmm.)
  *  - user read properties.
  *     * need to supply a user-defined equivalent to
  *       bt_lookup_find, which is allowed to look at everything in
@@ -188,6 +182,13 @@ static void sfree(void *p)
 #define INLINE
 #endif
 
+/* Hooks into the low-level code for test purposes. */
+#ifdef TEST
+void testlock(int write, int set, nodeptr n);
+#else
+#define testlock(w,s,n)
+#endif
+
 /* ----------------------------------------------------------------------
  * Low-level helper routines, which understand the in-memory format
  * of a node and know how to read-lock and write-lock. These are
@@ -285,6 +286,7 @@ static INLINE nodeptr bt_new_node(btree *bt, int nsubtrees)
     nodeptr ret = newn(nodecomponent, bt->maxdegree*2+2);
     ret[bt->maxdegree*2-1].i = nsubtrees;
     ret[bt->maxdegree*2+1].i = 1;      /* reference count 1 */
+    testlock(TRUE, TRUE, ret);
     return ret;
 }
 
@@ -293,6 +295,7 @@ static INLINE nodeptr bt_new_node(btree *bt, int nsubtrees)
  */
 static INLINE void bt_destroy_node(btree *bt, nodeptr n)
 {
+    testlock(TRUE, FALSE, n);
     sfree(n);
 }
 
@@ -301,6 +304,8 @@ static INLINE void bt_destroy_node(btree *bt, nodeptr n)
  */
 static INLINE nodeptr bt_reuse_node(btree *bt, nodeptr n, int nsubtrees)
 {
+    testlock(TRUE, FALSE, n);
+    testlock(TRUE, TRUE, n);
     n[bt->maxdegree*2-1].i = nsubtrees;
     return n;
 }
@@ -385,8 +390,10 @@ static INLINE nodeptr bt_write_lock_child(btree *bt, nodeptr a, int index)
     if (addr.p && addr.p[bt->maxdegree*2+1].i > 1) {
 	nodeptr clone = bt_clone_node(bt, addr.p);
 	bt_set_child(bt, a, index, bt_node_addr(bt, clone));
+	testlock(TRUE, TRUE, clone);
 	return clone;
     }
+    testlock(TRUE, TRUE, addr.p);
     return addr.p;
 }
 static INLINE nodeptr bt_write_lock_root(btree *bt)
@@ -395,12 +402,15 @@ static INLINE nodeptr bt_write_lock_root(btree *bt)
     if (addr.p && addr.p[bt->maxdegree*2+1].i > 1) {
 	nodeptr clone = bt_clone_node(bt, addr.p);
 	bt->root = bt_node_addr(bt, clone);
+	testlock(TRUE, TRUE, clone);
 	return clone;
     }
+    testlock(TRUE, TRUE, addr.p);
     return addr.p;
 }
 static INLINE nodeptr bt_read_lock(btree *bt, node_addr a)
 {
+    testlock(FALSE, TRUE, a.p);
     return a.p;
 }
 #define bt_read_lock_root(bt) (bt_read_lock(bt, (bt)->root))
@@ -418,6 +428,8 @@ static INLINE void bt_write_relock(btree *bt, nodeptr n)
     for (i = 0; i < ns; i++)
 	count += bt_child_count(bt, n, i);
     n[bt->maxdegree*2].i = count;
+    testlock(TRUE, FALSE, n);
+    testlock(TRUE, TRUE, n);
 }
 
 static INLINE node_addr bt_write_unlock(btree *bt, nodeptr n)
@@ -429,17 +441,20 @@ static INLINE node_addr bt_write_unlock(btree *bt, nodeptr n)
 
     bt_write_relock(bt, n);
 
+    testlock(TRUE, FALSE, n);
+
     ret.p = n;
     return ret;
 }
 
-static INLINE void bt_read_unlock(btree *bt, nodeptr p)
+static INLINE void bt_read_unlock(btree *bt, nodeptr n)
 {
     /*
      * For trees in memory, we do nothing here. For disk B-trees we
      * would probably use this function to free the in-memory copy
      * of a node that we had allocated.
      */
+    testlock(FALSE, FALSE, n);
 }
 
 /* ----------------------------------------------------------------------
@@ -479,12 +494,11 @@ static void bt_new_root(btree *bt, node_addr left, node_addr right,
 
 /*
  * Discard the root node of a tree, and enshrine a new node as the
+ * root. Expects to be passed a write-locked nodeptr to the old
  * root.
  */
-static void bt_shift_root(btree *bt, node_addr na)
+static void bt_shift_root(btree *bt, nodeptr n, node_addr na)
 {
-    nodeptr n;
-    n = bt_write_lock_root(bt);
     bt_destroy_node(bt, n);
     bt->root = na;
     bt->depth--;
@@ -1104,6 +1118,7 @@ bt_element_t bt_add(btree *bt, bt_element_t element)
     while (n) {
 	child = bt_lookup_cmp(bt, n, element, bt->cmp, &is_elt);
 	if (is_elt) {
+	    bt_read_unlock(bt, n);
 	    return bt_element(bt, n, child);   /* element exists already */
 	} else {
 	    pos += bt_child_startpos(bt, n, child);
@@ -1203,7 +1218,7 @@ bt_element_t bt_delpos(btree *bt, int pos)
 		     * Whoops, we just merged the last two children
 		     * of the root. Better relocate the root.
 		     */
-		    bt_shift_root(bt, bt_node_addr(bt, c));
+		    bt_shift_root(bt, n, bt_node_addr(bt, c));
 		    nnodes--;	       /* don't leave it in nodes[]! */
 		    n = NULL;
 		    bt_write_relock(bt, c);
@@ -1276,7 +1291,7 @@ bt_element_t bt_delpos(btree *bt, int pos)
 		 * destroy it and leave a completely empty tree.
 		 */
 		if (nroot && bt_subtrees(bt, n) == 1) {
-		    bt_shift_root(bt, NODE_ADDR_NULL);
+		    bt_shift_root(bt, n, NODE_ADDR_NULL);
 		    nnodes--;	       /* and take it out of nodes[] */
 		}
 		/* Now we're done */
@@ -1425,6 +1440,7 @@ static void bt_join_internal(btree *bt, nodeptr lp, nodeptr rp,
 		bt_xform(bt, NODE_ADD_ELT, childposns[nnodes],
 			 n, NULL, sep, la, ra,
 			 NODE_JOIN, &n, NULL, NULL);
+		bt_write_unlock(bt, n);
 		break;
 	    }
 	}
@@ -1542,7 +1558,7 @@ static void bt_split_heal(btree *bt, int rhs)
      */
     while (n && bt_subtrees(bt, n) == 1) {
 	nodeptr n2 = bt_write_lock_child(bt, n, 0);
-	bt_shift_root(bt, bt_node_addr(bt, n2));
+	bt_shift_root(bt, n, bt_node_addr(bt, n2));
 	n = n2;
     }
 
@@ -1598,7 +1614,7 @@ static void bt_split_heal(btree *bt, int rhs)
 		 * tree, again.
 		 */
 		if (bt_subtrees(bt, n) == 1) {
-		    bt_shift_root(bt, bt_node_addr(bt, ne));
+		    bt_shift_root(bt, n, bt_node_addr(bt, ne));
 		    nnodes--;	       /* and take it out of nodes[] */
 		}
 	    } else {
@@ -1616,6 +1632,7 @@ static void bt_split_heal(btree *bt, int rhs)
 		bt_xform(bt, NODE_AS_IS, 0, nl, nr, el,
 			 NODE_ADDR_NULL, NODE_ADDR_NULL,
 			 split, &nl, &nr, &el);
+		bt_write_unlock(bt, nn);
 		bt_set_element(bt, n, elt, el);
 	    }
 	}
@@ -1739,6 +1756,8 @@ btree *bt_split(btree *bt, bt_element_t element, cmpfn_t cmp, int rel)
 
 #define TEST_DEGREE 4
 #define BT_COPY bt_clone
+#define MAXTREESIZE 10000
+#define MAXLOCKS 100
 
 int errors;
 
@@ -1918,15 +1937,16 @@ void verifytree(btree *bt, bt_element_t *array, int arraylen)
     n = bt_read_lock_root(bt);
     if (n) {
 	verifynode(bt, n, array, &i, 1);
+	bt_read_unlock(bt, n);
     } else {
 	if (bt->depth != 0) {
 	    error("tree has null root but depth is %d not zero", bt->depth);
 	}
     }
-    bt_read_unlock(bt, n);
     if (i != arraylen)
 	error("tree contains %d elements, array contains %d",
 	      i, arraylen);
+    testlock(-1, 0, NULL);
 }
 
 int mycmp(void *av, void *bv) {
@@ -1939,6 +1959,8 @@ void array_addpos(bt_element_t *array, int *arraylen, bt_element_t e, int i)
 {
     bt_element_t e2;
     int len = *arraylen;
+
+    assert(len < MAXTREESIZE);
 
     while (i < len) {
 	e2 = array[i];
@@ -2016,8 +2038,6 @@ char *strings[] = {
 
 #define NSTR lenof(strings)
 
-#define MAXTREESIZE 10000
-
 void findtest(btree *tree, bt_element_t *array, int arraylen)
 {
     static const int rels[] = {
@@ -2067,6 +2087,7 @@ void findtest(btree *tree, bt_element_t *array, int arraylen)
 	    }
 
 	    realret = bt_findrelpos(tree, p, NULL, rel, &index);
+	    testlock(-1, 0, NULL);
 	    if (realret != ret) {
 		error("find(\"%s\",%s) gave %s should be %s",
 		      p, relnames[j], realret, ret);
@@ -2086,6 +2107,7 @@ void findtest(btree *tree, bt_element_t *array, int arraylen)
     }
 
     realret = bt_findrelpos(tree, NULL, NULL, BT_REL_GT, &index);
+    testlock(-1, 0, NULL);
     if (arraylen && (realret != array[0] || index != 0)) {
 	error("find(NULL,GT) gave %s(%d) should be %s(0)",
 	      realret, index, array[0]);
@@ -2095,6 +2117,7 @@ void findtest(btree *tree, bt_element_t *array, int arraylen)
     }
 
     realret = bt_findrelpos(tree, NULL, NULL, BT_REL_LT, &index);
+    testlock(-1, 0, NULL);
     if (arraylen && (realret != array[arraylen-1] || index != arraylen-1)) {
 	error("find(NULL,LT) gave %s(%d) should be %s(0)",
 	      realret, index, array[arraylen-1]);
@@ -2111,14 +2134,84 @@ void splittest(btree *tree, bt_element_t *array, int arraylen)
     for (i = 0; i <= arraylen; i++) {
 	printf("splittest: %d\n", i);
 	tree3 = BT_COPY(tree);
+	testlock(-1, 0, NULL);
 	tree4 = bt_splitpos(tree3, i, 0);
+	testlock(-1, 0, NULL);
 	verifytree(tree3, array, i);
 	verifytree(tree4, array+i, arraylen-i);
 	bt_join(tree3, tree4);
+	testlock(-1, 0, NULL);
 	verifytree(tree4, NULL, 0);
 	bt_free(tree4);	       /* left empty by join */
+	testlock(-1, 0, NULL);
 	verifytree(tree3, array, arraylen);
 	bt_free(tree3);
+	testlock(-1, 0, NULL);
+    }
+}
+
+/*
+ * Called to track read and write locks on nodes.
+ */
+void testlock(int write, int set, nodeptr n)
+{
+    static nodeptr readlocks[MAXLOCKS], writelocks[MAXLOCKS];
+    static int nreadlocks = 0, nwritelocks = 0;
+
+    int i, rp, wp;
+
+    if (write == -1) {
+	/* Called after an operation to ensure all locks are unlocked. */
+	if (nreadlocks != 0 || nwritelocks != 0)
+	    error("at least one left-behind lock exists!");
+	return;
+    }
+
+    /* Locking NULL does nothing. Unlocking it is an error. */
+    if (n == NULL) {
+	if (!set)
+	    error("attempting to %s-unlock NULL", write ? "write" : "read");
+	return;
+    }
+
+    assert(nreadlocks < MAXLOCKS && nwritelocks < MAXLOCKS);
+
+    /* First look for the node in both lock lists. */
+    rp = wp = -1;
+    for (i = 0; i < nreadlocks; i++)
+	if (readlocks[i] == n)
+	    rp = i;
+    for (i = 0; i < nwritelocks; i++)
+	if (writelocks[i] == n)
+	    wp = i;
+
+    /* Now diverge based on what we're supposed to be up to. */
+    if (set) {
+	/* Setting a lock. Should not already be locked in either list. */
+	if (rp != -1 || wp != -1) {
+	    error("attempt to %s-lock node %p, already %s-locked",
+		  (write ? "write" : "read"), n, (rp==-1 ? "write" : "read"));
+	}
+	if (write)
+	    writelocks[nwritelocks++] = n;
+	else
+	    readlocks[nreadlocks++] = n;
+    } else {
+	/* Clearing a lock. Should exist in exactly the correct list. */
+	if (write && rp != -1)
+	    error("attempt to write-unlock node %p which is read-locked", n);
+	if (!write && wp != -1)
+	    error("attempt to read-unlock node %p which is write-locked", n);
+	if (wp != -1) {
+	    nwritelocks--;
+	    for (i = wp; i < nwritelocks; i++)
+		writelocks[i] = writelocks[i+1];
+	}
+	if (rp != -1) {
+	    nreadlocks--;
+	    for (i = rp; i < nreadlocks; i++)
+		readlocks[i] = readlocks[i+1];
+	}
     }
 }
 
@@ -2150,6 +2243,7 @@ int main(void) {
             printf("deleting %s (%d)\n", strings[j], j);
 	    ret2 = array_del(array, &arraylen, strings[j]);
 	    ret = bt_del(tree, strings[j]);
+	    testlock(-1, 0, NULL);
 	    assert((bt_element_t)strings[j] == ret && ret == ret2);
 	    verifytree(tree, array, arraylen);
 	    in[j] = 0;
@@ -2157,6 +2251,7 @@ int main(void) {
             printf("adding %s (%d)\n", strings[j], j);
 	    array_add(array, &arraylen, strings[j]);
 	    ret = bt_add(tree, strings[j]);
+	    testlock(-1, 0, NULL);
 	    assert(strings[j] == ret);
 	    verifytree(tree, array, arraylen);
             in[j] = 1;
@@ -2171,11 +2266,13 @@ int main(void) {
 	item = array[j];
 	ret2 = array_del(array, &arraylen, item);
 	ret = bt_del(tree, item);
+	testlock(-1, 0, NULL);
 	assert(ret2 == ret);
 	verifytree(tree, array, arraylen);
     }
 
     bt_free(tree);
+    testlock(-1, 0, NULL);
 
     /*
      * Now try an unsorted tree. We don't really need to test
@@ -2192,9 +2289,11 @@ int main(void) {
 	j %= NSTR;
 	k = randomnumber(&seed);
 	k %= bt_count(tree)+1;
+	testlock(-1, 0, NULL);
 	printf("adding string %s at index %d\n", strings[j], k);
 	array_addpos(array, &arraylen, strings[j], k);
 	bt_addpos(tree, strings[j], k);
+	testlock(-1, 0, NULL);
 	verifytree(tree, array, arraylen);
     }
 
@@ -2203,12 +2302,14 @@ int main(void) {
      * of it to use in split and join testing.
      */
     tree2 = BT_COPY(tree);
+    testlock(-1, 0, NULL);
     verifytree(tree2, array, arraylen);/* check the copy is accurate */
     /*
      * Split tests. Split the tree at every possible point and
      * check the resulting subtrees.
      */
     tworoot = bt_tworoot(tree2);       /* see if it has a 2-root */
+    testlock(-1, 0, NULL);
     splittest(tree2, array, arraylen);
     /*
      * Now do the split test again, but on a tree that has a 2-root
@@ -2218,10 +2319,12 @@ int main(void) {
     tmplen = arraylen;
     while (bt_tworoot(tree2) == tworoot) {
 	bt_delpos(tree2, --tmplen);
+	testlock(-1, 0, NULL);
     }
     printf("now trying splits on second tree\n");
     splittest(tree2, array, tmplen);
     bt_free(tree2);
+    testlock(-1, 0, NULL);
 
     /*
      * Back to the main testing of uncounted trees.
@@ -2232,11 +2335,13 @@ int main(void) {
 	j %= bt_count(tree);
 	printf("deleting string %s from index %d\n", (char *)array[j], j);
 	ret = bt_delpos(tree, j);
+	testlock(-1, 0, NULL);
 	assert((bt_element_t)array[j] == ret);
 	array_delpos(array, &arraylen, j);
 	verifytree(tree, array, arraylen);
     }
     bt_free(tree);
+    testlock(-1, 0, NULL);
 
     /*
      * Finally, do some testing on split/join on _sorted_ trees. At
@@ -2247,13 +2352,17 @@ int main(void) {
     for (i = 0; i < 16; i++) {
 	array_add(array, &arraylen, strings[i]);
 	ret = bt_add(tree, strings[i]);
+	testlock(-1, 0, NULL);
 	assert(strings[i] == ret);
 	verifytree(tree, array, arraylen);
 	tree2 = BT_COPY(tree);
 	splittest(tree2, array, arraylen);
+	testlock(-1, 0, NULL);
 	bt_free(tree2);
+	testlock(-1, 0, NULL);
     }
     bt_free(tree);
+    testlock(-1, 0, NULL);
 
     /*
      * Test silly cases of join: join(emptytree, emptytree), and
@@ -2266,7 +2375,9 @@ int main(void) {
     tree4 = bt_new(mycmp, NULL, TEST_DEGREE);
     assert(mycmp(strings[0], strings[1]) < 0);   /* just in case :-) */
     bt_add(tree2, strings[1]);
+    testlock(-1, 0, NULL);
     bt_add(tree4, strings[0]);
+    testlock(-1, 0, NULL);
     array[0] = strings[0];
     array[1] = strings[1];
     verifytree(tree, array, 0);
@@ -2285,31 +2396,42 @@ int main(void) {
      *  - join(tree3,tree) should work and create a bigger tree in tree3.
      */
     assert(tree == bt_join(tree, tree3));
+    testlock(-1, 0, NULL);
     verifytree(tree, array, 0);
     verifytree(tree3, array, 0);
     assert(tree2 == bt_joinr(tree, tree2));
+    testlock(-1, 0, NULL);
     verifytree(tree, array, 0);
     verifytree(tree2, array+1, 1);
     assert(tree4 == bt_join(tree4, tree3));
+    testlock(-1, 0, NULL);
     verifytree(tree3, array, 0);
     verifytree(tree4, array, 1);
     assert(tree == bt_join(tree, tree2));
+    testlock(-1, 0, NULL);
     verifytree(tree, array+1, 1);
     verifytree(tree2, array, 0);
     assert(tree3 == bt_joinr(tree4, tree3));
+    testlock(-1, 0, NULL);
     verifytree(tree3, array, 1);
     verifytree(tree4, array, 0);
     assert(NULL == bt_join(tree, tree3));
+    testlock(-1, 0, NULL);
     verifytree(tree, array+1, 1);
     verifytree(tree3, array, 1);
     assert(tree3 == bt_join(tree3, tree));
+    testlock(-1, 0, NULL);
     verifytree(tree3, array, 2);
     verifytree(tree, array, 0);
 
     bt_free(tree);
+    testlock(-1, 0, NULL);
     bt_free(tree2);
+    testlock(-1, 0, NULL);
     bt_free(tree3);
+    testlock(-1, 0, NULL);
     bt_free(tree4);
+    testlock(-1, 0, NULL);
 
     sfree(array);
 
