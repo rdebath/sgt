@@ -1,0 +1,9 @@
+Summary: Ability to enable TCP keepalives
+Class: wish
+Difficulty: fun
+Priority: low
+Fixed-in: 2004-06-21
+
+It might be nice to have an option to enable TCP keepalives (SO_KEEPALIVE),
+as distinct from the application-level keepalives that are already
+implemented for Telnet and SSH.
