@@ -4,12 +4,6 @@
 
 # TODO
 #
-#  - 3.4.4.4 small rhombicuboctahedron
-#  - 4.6.8 great rhombicuboctahedron
-#
-#  - 3.4.5.4 small rhombicosidodecahedron
-#  - 4.6.10 great rhombicosidodecahedron
-#
 #  - 4.3.3.3 snub cube
 #  - 5.3.3.3 snub dodecahedron
 
@@ -67,9 +61,10 @@ class polyhedron:
 	self.faces[facename] = vlist
 	self.normals[facename] = vprod
 	self.flist.append(facename)
+        return facename
 
     def face(self, *list):
-	self.facelist(list)
+        return self.facelist(list)
 
     def output(self, file):
 	for v in self.vlist:
@@ -284,10 +279,80 @@ def edgemap(p):
             emap[(v1,v2)] = f
     return emap
 
+class dual:
+    # This wrapper class takes as input a function returning a
+    # polyhedron object, and implements a callable object which
+    # returns the dual of that polyhedron.
+    def __init__(self, p):
+        self.p = p
+    def __call__(self):
+        p = self.p()
+        pout = polyhedron()
+
+        # The vertices of the new polyhedron are constructed from
+        # the faces of the original.
+        self.f2v = {}
+        for key in p.flist:
+            # We already have a normal vector for the face. So take
+            # the dot product of that normal vector with each
+            # vertex on the face, take the average (just in case),
+            # invert the length, and there's our vertex.
+            nx, ny, nz = p.normals[key]
+            nl = math.sqrt(nx*nx + ny*ny + nz*nz)
+            nx, ny, nz = nx/nl, ny/nl, nz/nl
+            dps = dpn = 0
+            for v in p.faces[key]:
+                x, y, z = p.vertices[v]
+                dps = dps + x*nx + y*ny + z*nz
+                dpn = dpn + 1
+            dist = dpn / dps   # reciprocal of average of dot products
+            nx, ny, nz = nx * dist, ny * dist, nz * dist
+            self.f2v[key] = pout.vertex(nx, ny, nz)
+
+        edges = edgemap(p)
+
+        # Now we can output the faces, one (of course) for each
+        # vertex of the old polyhedron.
+        self.v2f = {}
+        for key in p.vlist:
+            # Start by finding one face of the old polyhedron
+            # which contains this vertex. This gives us one
+            # vertex of the new one which is on this face.
+            fstart = None
+            for f in p.flist:
+                if key in p.faces[f]:
+                    fstart = f
+                    break
+            assert fstart != None
+
+            f = fstart
+            vl = []
+            while 1:
+                # Now find the edge of that face which comes
+                # _in_ to that vertex, and then look its
+                # reverse up in the edge database. This gives
+                # us the next face going round.
+                vl.append(self.f2v[f])
+                fl = p.faces[f]
+                i = fl.index(key)
+                v1, v2 = fl[i-1], fl[i]
+                f = edges[(v2,v1)]
+                if f == fstart:
+                    break
+            self.v2f[key] = pout.facelist(vl)
+
+        return pout
+
 class edgedual:
     # This wrapper class takes as input two functions returning
     # dual polyhedron objects, and implements a callable object
     # which returns the edge dual of those polyhedra.
+    #
+    # FIXME: this is currently unused (since dual() does a better
+    # job of generating the rhombic dodecahedron and rhombic
+    # triacontahedron), and also it would benefit from only needing
+    # one polyhedron as input (since it could construct the dual
+    # adequately as it went).
     def __init__(self, p1, p2):
 	self.p1 = p1
 	self.p2 = p2
@@ -431,6 +496,216 @@ class truncate:
 
         return pout
 
+class rhombi:
+    # This wrapper class takes a function returning a polyhedron
+    # object, and constructs one of the `rhombi' forms related to
+    # it and its dual.
+    def __init__(self, p, forder, vorder, great):
+        self.p = p
+        self.forder = forder
+        self.vorder = vorder
+        self.great = great
+    def __call__(self):
+        p = self.p()
+        pout = polyhedron()
+
+        if self.great:
+            pratio = edgeratio(self.forder, self.forder*2)
+            dratio = edgeratio(self.vorder, self.vorder*2)
+
+        # Start by finding the polyhedron's dual, and retrieving
+        # the correspondence mappings from the dual object which
+        # indicate which faces go with which vertices and vice
+        # versa.
+        dobj = dual(self.p)
+        d = dobj()
+        f2v = dobj.f2v
+        v2f = dobj.v2f
+
+        e = edges(p)
+        em = edgemap(p)
+        de = edges(d)
+
+        # Find the scale factor which makes the two polyhedra have
+        # compatible face lengths. (For a small rhombi form, this
+        # is just a question of matching the edge lengths. For a
+        # great one, we must match the _post-truncation_ edge
+        # lengths.)
+        e1 = e[0]
+        x1, y1, z1 = p.vertices[e1[0]]
+        x2, y2, z2 = p.vertices[e1[1]]
+        elen = math.sqrt((x2-x1)**2 + (y2-y1)**2 + (z2-z1)**2)
+        e1 = de[0]
+        x1, y1, z1 = d.vertices[e1[0]]
+        x2, y2, z2 = d.vertices[e1[1]]
+        delen = math.sqrt((x2-x1)**2 + (y2-y1)**2 + (z2-z1)**2)
+        if self.great:
+            elen = elen * pratio
+            delen = delen * dratio
+        scale = elen / delen
+        # Actually scale the dual polyhedron object.
+        for dv in d.vertices.keys():
+            x, y, z = d.vertices[dv]
+            d.vertices[dv] = x*scale, y*scale, z*scale
+
+        # Find the distance by which each face must be pushed out
+        # before they meet in the right way. For a small rhombi
+        # form, this means making vertices of adjacent faces meet;
+        # for a great one, post-truncation vertices of adjacent
+        # faces (or equivalently the midpoints of truncation edges)
+        # must meet.
+        #
+        # To do this, we first find a face of p and a face of d
+        # which are `adjacent' in the sense that each face
+        # corresponds to a vertex of the other face. Then we
+        # determine a pair of points which we intend to bring into
+        # congruence (either vertices of the original faces, or
+        # midpoints of truncation edges). Then we mentally draw
+        # this diagram
+        #
+        #       O
+        #       |\
+        #       | \    ,D
+        #       |  \ ,'
+        #       |  ,Q
+        #   A---P---B
+        #       C   |
+        #        \  |
+        #         \ |
+        #          \|
+        #           X
+        #
+        # Here O is the origin; the lines APB and CQD are the
+        # projections of the two faces; and B and C are the points
+        # we are trying to bring together at X.
+        #
+        # A quick bit of trig suggests that the distance XO
+        # measured parallel to OP is equal to
+        #   (PB / tan POQ) + (QC / sin POQ)
+        # and hence by symmetry XO measured perpendicular to CD is
+        # equal to
+        #   (QC / tan POQ) + (PB / sin POQ).
+        e1 = e[0]
+        v = e1[0]
+        f = em[e1]
+        dv = f2v[f]
+        df = v2f[v]
+        # Find the angle theta (POQ above) between the two faces:
+        # arccos of the dot product of the normal vectors.
+        nx1, ny1, nz1 = p.normals[f]
+        nx2, ny2, nz2 = d.normals[df]
+        theta = math.acos(nx1*nx2 + ny1*ny2 + nz1*nz2)
+        # Find the two distances PB and QC.
+        if self.great:
+            # The distance from the centre of a face to the
+            # midpoint of a truncation edge will be equal to the
+            # distance from the centre of the face to the midpoint
+            # of the original edge, so we'll just measure that for
+            # the moment.
+            x1, y1, z1 = p.vertices[e1[0]]
+            x2, y2, z2 = p.vertices[e1[1]]
+            px, py, pz = (x1+x2)/2, (y1+y2)/2, (z1+z2)/2
+            # Now the same in the dual.
+            x1, y1, z1 = d.vertices[f2v[em[e1]]]
+            x2, y2, z2 = d.vertices[f2v[em[(e1[1],e1[0])]]]
+            dx, dy, dz = (x1+x2)/2, (y1+y2)/2, (z1+z2)/2
+        else:
+            # We want the original vertices of the original faces
+            # to come into congruence, so we measure the centre-to-
+            # vertex distance for a face of each polyhedron.
+            px, py, pz = p.vertices[v]
+            dx, dy, dz = d.vertices[dv]
+        pdp = px * nx1 + py * ny1 + pz * nz1
+        cx, cy, cz = nx1 * pdp, ny1 * pdp, nz1 * pdp
+        pdist = math.sqrt((px-cx)**2 + (py-cy)**2 + (pz-cz)**2)
+        # Now the same in the dual.
+        ddp = dx * nx2 + dy * ny2 + dz * nz2
+        cx, cy, cz = nx2 * ddp, ny2 * ddp, nz2 * ddp
+        ddist = math.sqrt((dx-cx)**2 + (dy-cy)**2 + (dz-cz)**2)
+        # Now we can compute the extra distance we must push the p
+        # faces and the d faces.
+        ppush = (pdist / math.tan(theta)) + (ddist / math.sin(theta)) - pdp
+        dpush = (ddist / math.tan(theta)) + (pdist / math.sin(theta)) - ddp
+
+        # Construct the actual vertices of the solid. Every vertex
+        # occurs precisely twice, once due to a transformed face of
+        # the original solid and once due to a transformed face of
+        # the dual. Probably easiest to go with only one of these.
+        #
+        # For a great rhombi form, this is where we truncate.
+        pvmap = {} # maps (face,vertex,othervertex) of p to new vertex
+        for f in p.flist:
+            vl = p.faces[f]
+            nx, ny, nz = p.normals[f]
+            px, py, pz = nx * ppush, ny * ppush, nz * ppush
+            for i in range(len(vl)):
+                v0, v1, v2 = vl[i-2], vl[i-1], vl[i] # -1 and -2 wrap
+                x1, y1, z1 = p.vertices[v1]
+                x2, y2, z2 = p.vertices[v2]
+                if self.great:
+                    # Truncate.
+                    r1 = (1.0 + pratio) / 2
+                    r2 = (1.0 - pratio) / 2
+                    xa, ya, za = r1*x1+r2*x2, r1*y1+r2*y2, r1*z1+r2*z2
+                    xb, yb, zb = r2*x1+r1*x2, r2*y1+r1*y2, r2*z1+r1*z2
+                    pvmap[(f, v1, v2)] = pout.vertex(xa+px, ya+py, za+pz)
+                    pvmap[(f, v2, v1)] = pout.vertex(xb+px, yb+py, zb+pz)
+                else:
+                    nv = pout.vertex(x1+px, y1+py, z1+pz)
+                    pvmap[(f, v1, v2)] = pvmap[(f, v1, v0)] = nv
+        # Build other indexes of the same vertex set.
+        pfmap = {} # maps (face,vertex,otherface) of p to new vertex
+        for f, v1, v2 in pvmap.keys():
+            if em[(v1,v2)] == f:
+                f2 = em[(v2,v1)]
+            else:
+                assert em[(v2,v1)] == f
+                f2 = em[(v1,v2)]
+            pfmap[f, v1, f2] = pvmap[(f, v1, v2)]
+        dvmap = {} # maps (face,vertex,othervertex) of d to new vertex
+        for f1, v, f2 in pfmap.keys():
+            dvmap[v2f[v], f2v[f1], f2v[f2]] = pfmap[(f1, v, f2)]
+
+        # Enumerate the faces of the original solid.
+        for f in p.flist:
+            vl = p.faces[f]
+            newvl = []
+            for i in range(len(vl)):
+                v0, v1, v2 = vl[i-2], vl[i-1], vl[i] # -2 and -1 wrap
+                va = pvmap[(f, v1, v0)]
+                vb = pvmap[(f, v1, v2)]
+                newvl.append(va)
+                if vb != va:
+                    newvl.append(vb)
+            pout.facelist(newvl)
+
+        # Enumerate the faces of the dual.
+        for f in d.flist:
+            vl = d.faces[f]
+            newvl = []
+            for i in range(len(vl)):
+                v0, v1, v2 = vl[i-2], vl[i-1], vl[i] # -2 and -1 wrap
+                va = dvmap[(f, v1, v0)]
+                vb = dvmap[(f, v1, v2)]
+                newvl.append(va)
+                if vb != va:
+                    newvl.append(vb)
+            pout.facelist(newvl)
+
+        # Finally enumerate the square faces due to the edges of
+        # the original solid.
+        for v1, v2 in e:
+            f1 = em[(v1,v2)]
+            f2 = em[(v2,v1)]
+            newvl = []
+            newvl.append(pfmap[(f1, v1, f2)])
+            newvl.append(pfmap[(f2, v1, f1)])
+            newvl.append(pfmap[(f2, v2, f1)])
+            newvl.append(pfmap[(f1, v2, f2)])
+            pout.facelist(newvl)
+
+        return pout
+
 class output:
     # This wrapper class takes a function returning a polyhedron
     # object, and implements a callable object which outputs that
@@ -462,8 +737,12 @@ polyhedra = {
 "truncatedoctahedron": output(truncate(octahedron, edgeratio(3,6))),
 "truncateddodecahedron": output(truncate(dodecahedron, edgeratio(5,10))),
 "truncatedicosahedron": output(truncate(icosahedron, edgeratio(3,6))),
-"rhombicdodecahedron": output(edgedual(cube, octahedron)),
-"rhombictriacontahedron": output(edgedual(dodecahedron, icosahedron)),
+"smallrhombicuboctahedron": output(rhombi(cube, 4, 3, 0)),
+"greatrhombicuboctahedron": output(rhombi(cube, 4, 3, 1)),
+"smallrhombicosidodecahedron": output(rhombi(dodecahedron, 5, 3, 0)),
+"greatrhombicosidodecahedron": output(rhombi(dodecahedron, 5, 3, 1)),
+"rhombicdodecahedron": output(dual(truncate(cube, 0))),
+"rhombictriacontahedron": output(dual(truncate(dodecahedron, 0))),
 "all": all,
 }
 
