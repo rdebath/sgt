@@ -51,7 +51,7 @@ else
 
 # The `real' makefile part.
 
-CFLAGS += -Wall -W -DTESTING
+CFLAGS += -Wall -W -DTESTING -DCURSES_HDR="<ncurses.h>" -DHAS_ATTR_T
 LIBS += -lncurses
 
 ifdef TEST
@@ -93,7 +93,7 @@ version.o: FORCE
 	$(CC) $(VDEF) -MD -c $(SRC)version.c
 
 clean::
-	rm -f *.o enigma core
+	rm -f *.o *.d enigma core
 
 FORCE: # phony target to force version.o to be rebuilt every time
 

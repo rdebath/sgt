@@ -87,10 +87,28 @@ if test $ac_cv_func_strspn = no; then
   AC_MSG_ERROR([Enigma requires ANSI C (specifically, "strspn")])
 fi
 
-dnl Checks for libraries.
+dnl Checks for Curses library.
+curslib=ncurses
 AC_CHECK_LIB(ncurses,initscr)
-if test $ac_cv_lib_ncurses_initscr = no; then
+AC_CHECK_HEADER(ncurses.h)
+if test $ac_cv_lib_ncurses_initscr = no || test $ac_cv_header_ncurses_h = no; then
+  curslib=curses
   AC_CHECK_LIB(curses,initscr)
+  AC_CHECK_HEADER(curses.h)
+  if test $ac_cv_lib_curses_initscr = no || test $ac_cv_header_curses_h = no; then
+    AC_MSG_ERROR([Enigma requires libcurses and curses.h])
+  fi
 fi
+
+dnl Checks for attr_t in curses header.
+AC_MSG_CHECKING(for attr_t in ${curslib}.h)
+AC_TRY_COMPILE(#include <${curslib}.h>
+,attr_t i;
+,cursattr=" -DHAS_ATTR_T"
+AC_MSG_RESULT(yes),
+AC_MSG_RESULT(no))
+CURSES="-DCURSES_HDR=\"<${curslib}.h>\"$cursattr"
+
+AC_SUBST(CURSES)
 
 AC_OUTPUT(Makefile)

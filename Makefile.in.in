@@ -12,7 +12,8 @@ localstatedir   = @localstatedir@
 CC		= @CC@
 CFLAGS		= @CFLAGS@ @GCCFLAGS@ -I$(srcdir) -I. \
 		  -DLEVELDIR=\"@datadir@/enigma/\" \
-		  -DSAVEDIR=\"@localstatedir@/enigma/\"
+		  -DSAVEDIR=\"@localstatedir@/enigma/\" \
+		  @CURSES@
 LDFLAGS		= @LDFLAGS@
 LIBS            = @LIBS@
 
