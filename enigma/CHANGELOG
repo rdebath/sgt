@@ -6,6 +6,9 @@ Release FIXME
  - Error handling improved so we don't segfault on trying to restore
    a nonexistent save, and also so we don't segfault if we can't
    find our level set.
+ - Fixed various bugs in the level-titles list box on the main menu,
+   which don't show up in the standard level set but might if people
+   start designing longer ones.
 
 Release 1.01
 ------------
