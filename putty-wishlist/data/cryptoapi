@@ -1,4 +1,5 @@
 Summary: Use of MS Crypto API on Windows
+Class: wish
 Difficulty: tricky
 Priority: low
 Depends: mdpi
