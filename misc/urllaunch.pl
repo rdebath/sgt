@@ -2,8 +2,12 @@
 
 $url = `xcopy -r`;
 
+# Strip leading spaces.
 $url =~ s/^[\s\240]*//;
+# Strip every \n, plus any spaces just after that \n.
 $url =~ s/\n[\s\240]*//gs;
+# Prepend `http://' if there's no leading protocol prefix.
+$url = "http://" . $url unless $url =~ /^[a-zA-Z]+:/;
 
 # Mozilla is a bit weird about launching URLs. If we just run
 # `mozilla $url' it runs the risk of converting an _existing_
