@@ -1,3 +1,9 @@
 xcopy
 xdispchar
+lz77
+cfreq
+wildcard
+listsort
+tree234
+tsize
 *.pyc
