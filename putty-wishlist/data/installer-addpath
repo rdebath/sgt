@@ -1,0 +1,27 @@
+Summary: Add path to PuTTY programs to PATH in Windows installer
+Class: wish
+Difficulty: tricky
+Priority: low
+Content-type: text/x-html-body
+
+<p>
+We occasionally get asked to add an option in the Windows installer
+package to add the command-line programs such as PSCP and Plink to the
+system <tt>PATH</tt>.
+
+<ul>
+
+<li>
+On Win95/98/Me, this probably involves automatically modifying
+<tt>AUTOEXEC.BAT</tt>, which is probably not something we want to go
+anywhere near.
+
+<li>
+On NT-class systems, it's a bit better, as we can do this by
+modifying a Registry entry, and even prod running programs to pick
+it up. However, it's probably not possible to do this in a
+reversible way, so it would probably stay on the <tt>PATH</tt>
+even after uninstallation, which is bad. (We haven't actually
+<em>tried</em> this yet.)
+
+</ul>
