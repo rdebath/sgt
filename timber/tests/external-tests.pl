@@ -140,3 +140,19 @@ test presentation_transform => (["init"],
                                 ["set-contact Monochrome 0 Catbells"],
                                 ["contact Monochrome 0",
 				 stdout => "0:catbells\n"]);
+
+test unknown_contact =>
+    ["init"],
+    ["set-contact name 1 Dave", ret => failure,
+     stderr => "timber: database error: contact not found\n"];
+
+test add_contact =>
+    ["init"],
+    ["add-contact", stdout => "1\n"],
+    ["set-contact name 1 Dave"];
+
+test list_contacts =>
+    ["init"],
+    ["list-contacts", stdout => "0\n"],
+    ["add-contact", stdout => "1\n"],
+    ["list-contacts", stdout => "0\n1\n"];

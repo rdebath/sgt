@@ -647,9 +647,17 @@ static void ab_set_attr (int contact_id,
     char *attribute_id;
     char *pres, *for_pres = NULL;
     char now[DATEBUF_MAX];
+    char *cid_check;
 
     assert (attr_type);
     sql_open(ab);
+
+    cid_check = sql_get_value_printf (ab,
+				      "SELECT contact_id FROM contacts "
+				      "WHERE contact_id = %d",
+				      contact_id);
+    if (!cid_check) fatal (err_dberror, "contact not found");
+    sfree(cid_check);
 
     pres = sql_get_value_printf (ab,
 				 "SELECT presentation FROM attr_types "
@@ -726,6 +734,30 @@ void ab_display_attr_history (const char *contact_id,
 	printf (table[1 + row * cols] ? "%s;" : ";", table[1 + row * cols]);
 	printf ("%s\n", table[2 + row * cols]);
     }
+    sqlite_free_table(table);
+}
+
+
+void ab_add_contact(void)
+{
+    sql_open(ab);
+    sql_exec_printf (ab, "INSERT INTO contacts (contact_id) VALUES (NULL)");
+    printf ("%d\n", sqlite_last_insert_rowid(ab->handle));
+}
+
+
+void ab_list_contacts(void)
+{
+    char **table;
+    int rows, cols;
+    int i;
+
+    sql_open(ab);
+    sql_get_table_printf (ab, "SELECT contact_id FROM contacts "
+			  "ORDER BY contact_id",
+			  &table, &rows, &cols);
+    assert (1 == cols);
+    for (i = 1; i <= rows; ++i) printf ("%s\n", table[i]);
     sqlite_free_table(table);
 }
 

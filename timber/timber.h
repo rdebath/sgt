@@ -117,6 +117,8 @@ void ab_display_attr_history (const char *contact_id, const char *attr_type);
 void ab_display_attr (const char *contact_id, const char *attr_type);
 void ab_change_attr (const char *contact_id, const char *attr_type,
 		     const char *new_value);
+void ab_add_contact(void);
+void ab_list_contacts(void);
 
 /*
  * main.c
