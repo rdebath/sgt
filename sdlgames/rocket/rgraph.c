@@ -1122,35 +1122,41 @@ void rocket_make_background(int space, int planet)
 {
     int p, q, r;
 
-    rocket_bkgnd_image = makeimage(320, 200, 0, 0);
+    rocket_bkgnd_image = makeimage(SCR_WIDTH, SCR_HEIGHT, 0, 0);
     if (space) {
-	memset(IMGDATA(rocket_bkgnd_image), 192, 64000);
-	for (p = 0; p < 32; p++)
-	    for (q = 0; q < 19; q++)
+	memset(IMGDATA(rocket_bkgnd_image), 192, SCR_WIDTH*SCR_HEIGHT);
+	for (p = 0; p < SCR_WIDTH/10; p++)
+	    for (q = 0; q < (SCR_HEIGHT-10)/10; q++)
 		for (r = 0; r < 1+3*(!!planet); r++)
 		    imagepixel(rocket_bkgnd_image,
 			       p*10+randupto(10), q*10+randupto(10),
 			       randupto(48)+208);
 	if (planet)
-	    imageonimage(rocket_bkgnd_image, rocket_planet_image, 160,95,0);
+	    imageonimage(rocket_bkgnd_image, rocket_planet_image,
+			 PLANETX,PLANETY,0);
     } else {
-	for (p = 0; p < 60; p++)
-	    memset(IMGDATA(rocket_bkgnd_image) + p*960, p+196, 960);
+	for (p = 0; p < 60; p++) {
+	    int x1 = GROUNDHEIGHT * p / 60;
+	    int x2 = GROUNDHEIGHT * (p+1) / 60;
+	    memset(IMGDATA(rocket_bkgnd_image) + x1*SCR_WIDTH,
+		   p+196, (x2-x1)*SCR_WIDTH);
+	}
 	for (p = 0; p < 20; p++)
-	    memset(IMGDATA(rocket_bkgnd_image) + (p+180)*320, 191-p, 320);
+	    memset(IMGDATA(rocket_bkgnd_image) + (p+GROUNDHEIGHT)*SCR_WIDTH,
+		   191-p, SCR_WIDTH);
 	for (p = 0; p < 30; p++) {
 	    imageonimage(rocket_bkgnd_image, rocket_smalltrunk_image,
-			 21,183-p,0);
+			 21,GROUNDHEIGHT+3-p,0);
 	    imageonimage(rocket_bkgnd_image, rocket_bigtrunk_image,
-			 152,183-p,0);
+			 SCR_WIDTH/2-8,GROUNDHEIGHT+3-p,0);
 	    imageonimage(rocket_bkgnd_image, rocket_smalltrunk_image,
-			 291,183-p,0);
+			 SCR_WIDTH-29,GROUNDHEIGHT+3-p,0);
 	}
 	imageonimage(rocket_bkgnd_image, rocket_tree1_image,
-		     0,130,0);
+		     0,GROUNDHEIGHT-50,0);
 	imageonimage(rocket_bkgnd_image, rocket_tree2_image,
-		     120,100,0);
+		     SCR_WIDTH/2-40,GROUNDHEIGHT-80,0);
 	imageonimage(rocket_bkgnd_image, rocket_tree3_image,
-		     270,130,0);
+		     SCR_WIDTH-50,GROUNDHEIGHT-50,0);
     }
 }

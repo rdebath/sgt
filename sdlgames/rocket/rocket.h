@@ -19,3 +19,31 @@ extern unsigned char rocket_p1_image[8+2*9];
 extern unsigned char rocket_p2_image[8+6*9];
 extern Image rocket_keystxt_images[5];
 extern Image rocket_playerstxt_images[2];
+
+/*
+ * Starting x and y positions.
+ */
+/* In space */
+#define SSX1 (SCR_WIDTH/4)
+#define SSX2 (SCR_WIDTH-1-SSX1)
+#define SSY ((SCR_HEIGHT-10)/2)
+#define BALLSTART 20             /* initial displacement of ball from ship */
+/* And on land */
+#define LSX1 (SCR_WIDTH/4+5)
+#define LSX2 (SCR_WIDTH-1-LSX1)
+#define LSY (SCR_HEIGHT-20)
+
+/*
+ * Coords for afterburner bars
+ */
+#define AFTERYTOP (SCR_HEIGHT-10)
+#define AFTERYBOT (SCR_HEIGHT-2)
+#define AFTERX1    37
+#define AFTERX2   (SCR_WIDTH-1-AFTERX1)
+
+/*
+ * Coords for planet, and also ground
+ */
+#define PLANETX   (SCR_WIDTH/2)
+#define PLANETY   ((SCR_HEIGHT-10)/2)
+#define GROUNDHEIGHT (SCR_HEIGHT-20)

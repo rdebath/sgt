@@ -113,15 +113,16 @@ static void show_scores(void)
 	    wp++;
 	    w[wp] = 0;
 	}
-	q = (p == 0 ? 0 : 284);
+	q = (p == 0 ? 0 : SCR_WIDTH - 36);
 	wp = (p == 0 ? 34 : wp-35);
 	for (r = 0; r <= 35; r++)
 	    for (i = 0; i < 9; i++) {
 		if (w[r+wp] & (256 >> i))
-		    plot(r+q, 190+i, 1);
+		    plot(r+q, SCR_HEIGHT - 10 + i, 1);
 		else
-		    plot(r+q, 190+i,
-			 getimagepixel(rocket_bkgnd_image, r+q, 190+i));
+		    plot(r+q, SCR_HEIGHT - 10 + i,
+			 getimagepixel(rocket_bkgnd_image,
+				       r+q, SCR_HEIGHT - 10 + i));
 	    }
     }
 }
@@ -149,24 +150,24 @@ static void init_game(void)
     }
 
     scr_prep();
-    bar(0, 0, 319, 199, 0);
+    bar(0, 0, SCR_WIDTH - 1, SCR_HEIGHT - 1, 0);
     drawimage(rocket_bkgnd_image,0,0,-1);
     bk_after = makeimage(2, 9, 0, 0);
-    pickimage(bk_after,160,190);
+    pickimage(bk_after,SCR_WIDTH / 2, AFTERYTOP);
     if (space) {
-	putsprite(players[0].spr,rocket_player_images[0][8],80,95);
-	putsprite(players[1].spr,rocket_player_images[1][24],240,95);
+	putsprite(players[0].spr,rocket_player_images[0][8],SSX1,SSY);
+	putsprite(players[1].spr,rocket_player_images[1][24],SSX2,SSY);
 	if (balls) {
-	    putsprite(bullets[0][0].spr,rocket_ball_image,100,95);
-	    putsprite(bullets[1][0].spr,rocket_ball_image,220,95);
+	    putsprite(bullets[0][0].spr,rocket_ball_image,SSX1+BALLSTART,SSY);
+	    putsprite(bullets[1][0].spr,rocket_ball_image,SSX2-BALLSTART,SSY);
 	}
     } else {
-	putsprite(players[0].spr,rocket_player_images[0][0],85,180);
-	putsprite(players[1].spr,rocket_player_images[1][0],234,180);
+	putsprite(players[0].spr,rocket_player_images[0][0],LSX1,LSY);
+	putsprite(players[1].spr,rocket_player_images[1][0],LSX2,LSY);
     }
 
-    bar(37,190,36+MAXAFTER,198,1);
-    bar(282,190,283-MAXAFTER,198,1);
+    bar(AFTERX1,AFTERYTOP,AFTERX1-1+MAXAFTER,AFTERYBOT,1);
+    bar(AFTERX2,AFTERYTOP,AFTERX2+1-MAXAFTER,AFTERYBOT,1);
     show_scores();
     scr_done();
 }
@@ -175,8 +176,8 @@ static void invsqgrav(int x, int y, int *dx, int *dy)
 {
     int r, rr;
     
-    x -= 160 << 16;
-    y -= 95 << 16;
+    x -= PLANETX << 16;
+    y -= PLANETY << 16;
     x = sign(x) * (abs(x) >> 16);
     y = sign(y) * (abs(y) >> 16);
     rr = x*x+y*y;
@@ -232,7 +233,7 @@ static void check_tree(int x, int y, int *death)
 {
     x = sign(x) * (abs(x) >> 16);
     y = sign(y) * (abs(y) >> 16);
-    if (y < 180 && y >= 0 && x >= 0 && x <= 319 &&
+    if (y < GROUNDHEIGHT && y >= 0 && x >= 0 && x < SCR_WIDTH &&
 	getimagepixel(rocket_bkgnd_image, x, y) < 192)
 	*death = DEATHTIME;
 }
@@ -250,19 +251,19 @@ static int check(Image img, int x, int y, int *death)
 static int init_player(int p)
 {
     if (space) {
-	players[p].x = (p*160+80) << 16;
-	players[p].y = 95 << 16;
+	players[p].x = (p ? SSX2 : SSX1) << 16;
+	players[p].y = SSY << 16;
 	players[p].a = 32 * p + 16;
 	players[p].landed = FALSE;
 	players[p].invuln = !planet;
 	if (balls) {
-	    bullets[p][0].xb = players[p].x + (1-2*p) * (20<<16);
+	    bullets[p][0].xb = players[p].x + (1-2*p) * (BALLSTART<<16);
 	    bullets[p][0].yb = players[p].y;
 	    bullets[p][0].dxb = bullets[p][0].dyb = 0;
 	}
     } else {
-	players[p].x = (149*p + 85) << 16;
-	players[p].y = 180 << 16;
+	players[p].x = (p ? LSX2 : LSX1) << 16;
+	players[p].y = LSY << 16;
 	players[p].a = 0;
 	players[p].landed = TRUE;
 	players[p].invuln = FALSE;
@@ -284,9 +285,9 @@ static void play_game(void)
     float rr;
 
     if (space)
-	bulletmaxy = 188 << 16;
+	bulletmaxy = (SCR_HEIGHT-12) << 16;
     else
-	bulletmaxy = 180 << 16;
+	bulletmaxy = (SCR_HEIGHT-20) << 16;
 
     for (p = 0; p < 2; p++)
 	init_player(p);
@@ -325,10 +326,10 @@ static void play_game(void)
 	/*
 	 * Draw the afterburner bars.
 	 */
-	bar(37, 190, 36 + players[0].after, 198, 1);
-	drawimage(bk_after, 37 + players[0].after, 190, -1);
-	bar(282, 190, 283 - players[1].after, 198, 1);
-	drawimage(bk_after, 281 - players[1].after, 190, -1);
+	bar(AFTERX1, AFTERYTOP, AFTERX1 - 1 + players[0].after, AFTERYBOT, 1);
+	drawimage(bk_after, AFTERX1 + players[0].after, AFTERYTOP, -1);
+	bar(AFTERX2, AFTERYTOP, AFTERX2 + 1 - players[1].after, AFTERYBOT, 1);
+	drawimage(bk_after, AFTERX2 - players[1].after, AFTERYTOP, -1);
 
 	/*
 	 * Erase and move pixels.
@@ -338,7 +339,8 @@ static void play_game(void)
 
 	    if (!pix->free) {
 		if (pix->px >= 0 && pix->py >= 0 &&
-		    pix->px < (320<<16) && pix->py < (190<<16))
+		    pix->px < (SCR_WIDTH<<16) &&
+		    pix->py < ((SCR_HEIGHT-10)<<16))
 		    plot(pix->px >> 16, pix->py >> 16,
 			 getimagepixel(rocket_bkgnd_image,
 				       pix->px >> 16, pix->py >> 16));
@@ -348,8 +350,8 @@ static void play_game(void)
 		pix->yp += pix->dyp;
 		if (!space) {
 		    pix->dyp += GRAVITY;
-		    if (pix->yp > (180 << 16)) {
-			pix->yp = (180 << 16);
+		    if (pix->yp > (GROUNDHEIGHT << 16)) {
+			pix->yp = (GROUNDHEIGHT << 16);
 			pix->dyp = -abs(pix->dyp);
 		    }
 		}
@@ -362,8 +364,8 @@ static void play_game(void)
 		if (pix->life > 1 &&
 		    pix->yp >= 0 &&
 		    pix->xp >= 0 &&
-		    pix->xp < (320 << 16) &&
-		    pix->yp < (190 << 16)) {
+		    pix->xp < (SCR_WIDTH << 16) &&
+		    pix->yp < ((SCR_HEIGHT-10) << 16)) {
 		    plot(pix->xp >> 16, pix->yp >> 16, pix->colour);
 		}
 	    }
@@ -401,12 +403,12 @@ static void play_game(void)
 		    bul->yb = 9 << 16;
 		    bul->dyb = 0;
 		}
-		if (bul->xb > (311 << 16)) {
-		    bul->xb = 311 << 16;
+		if (bul->xb > ((SCR_WIDTH-9) << 16)) {
+		    bul->xb = (SCR_WIDTH-9) << 16;
 		    bul->dxb = 0;
 		}
-		if (bul->yb > (181 << 16)) {
-		    bul->yb = 181 << 16;
+		if (bul->yb > ((SCR_HEIGHT-19) << 16)) {
+		    bul->yb = (SCR_HEIGHT-19) << 16;
 		    bul->dyb = 0;
 		}
 
@@ -429,7 +431,7 @@ static void play_game(void)
 		    if (bul->life > 2 && 
 			(c != 0 ||
 			 (bul->yb < 0 || bul->yb >= bulletmaxy ||
-			  bul->xb < 0 || bul->xb >= (320 << 16))))
+			  bul->xb < 0 || bul->xb >= (SCR_WIDTH << 16))))
 			bul->life = 2;
 		    bul->life--;
 		    if (bul->life <= 0)
@@ -504,9 +506,10 @@ static void play_game(void)
 		pl->dy += GRAVITY;
 
 	    if (!space) {
-		if (pl->y >= (180 << 16) && pl->dy > 0 && !pl->landed) {
+		if (pl->y >= (GROUNDHEIGHT << 16) &&
+		    pl->dy > 0 && !pl->landed) {
 		    if (pl->aa == 0 && abs(pl->dx)+pl->dy<=50000) {
-			pl->y = 180 << 16;
+			pl->y = GROUNDHEIGHT << 16;
 			pl->landed = TRUE;
 			pl->dy = 0;
 			pl->dx = 0;
@@ -525,12 +528,12 @@ static void play_game(void)
 		    pl->y = 9 << 16;
 		    pl->dy = 0;
 		}
-		if (pl->x > (311 << 16)) {
-		    pl->x = 311 << 16;
+		if (pl->x > ((SCR_WIDTH-9) << 16)) {
+		    pl->x = (SCR_WIDTH-9) << 16;
 		    pl->dx = 0;
 		}
-		if (pl->y > (181 << 16)) {
-		    pl->y = 181 << 16;
+		if (pl->y > ((SCR_HEIGHT-19) << 16)) {
+		    pl->y = (SCR_HEIGHT-19) << 16;
 		    pl->dy = 0;
 		}
 	    } else {
@@ -539,9 +542,9 @@ static void play_game(void)
 		    pl->dy = 0;
 		}
 		while (pl->x < -(9 << 16))
-		    pl->x += 338 << 16;
-		while (pl->x > (329 << 16))
-		    pl->x -= 338 << 16;
+		    pl->x += (SCR_HEIGHT+18) << 16;
+		while (pl->x > ((SCR_HEIGHT+9) << 16))
+		    pl->x -= (SCR_HEIGHT+18) << 16;
 		pl->dx -= sign(pl->dx) * (abs(pl->dx) >> 6);
 		pl->dy -= sign(pl->dy) * (abs(pl->dy) >> 6);
 	    }
@@ -673,8 +676,6 @@ setbuf(debugfp, NULL);
     joys[1] = SDL_JoystickOpen(1);
 
     space = planet = balls = 0;	       /* FIXME: menu system */
-    space = 1;
-    planet = 1;
 
     rocket_do_palette(space);
     rocket_make_background(space, planet);
