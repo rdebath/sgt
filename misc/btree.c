@@ -2132,14 +2132,14 @@ static void set_invalid_property(nodecomponent *prop)
     prop[0].i = prop[1].i = -1;
 }
 
-int mypropmake(void *state, void *av, nodecomponent *dest)
+void mypropmake(void *state, void *av, nodecomponent *dest)
 {
     char const *a = (char const *)av;
     dest[0].i = dest[1].i = (unsigned char)*a;
 }
 
-int mypropmerge(void *state, nodecomponent *s1, nodecomponent *s2,
-		nodecomponent *dest)
+void mypropmerge(void *state, nodecomponent *s1, nodecomponent *s2,
+		 nodecomponent *dest)
 {
     assert(s2[0].i >= 0 && s2[1].i >= 0);
     assert(s1 == NULL || (s1[0].i >= 0 && s1[1].i >= 0));

@@ -38,10 +38,10 @@ typedef nodecomponent *nodeptr;
 
 typedef int (*cmpfn_t)(void *state, const bt_element_t, const bt_element_t);
 typedef bt_element_t (*copyfn_t)(void *state, const bt_element_t);
-typedef int (*propmakefn_t)(void *state, bt_element_t, nodecomponent *dest);
+typedef void (*propmakefn_t)(void *state, bt_element_t, nodecomponent *dest);
 /* s1 may be NULL (indicating copy s2 into dest). s2 is never NULL. */
-typedef int (*propmergefn_t)(void *state, nodecomponent *s1, nodecomponent *s2,
-			     nodecomponent *dest);
+typedef void (*propmergefn_t)(void *state, nodecomponent *s1,
+			      nodecomponent *s2, nodecomponent *dest);
 typedef int (*searchfn_t)(void *tstate, void *sstate, int ntrees,
 			  nodecomponent **props, int *counts,
 			  bt_element_t *elts, int *is_elt);
