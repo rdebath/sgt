@@ -1,0 +1,690 @@
+<html>
+<head>
+<title>The Infinity Machine</title>
+</head>
+<link rel="stylesheet" type="text/css" href="sitestyle.css" name="Simon Tatham's Home Page Style">
+<body><h1 align=center>The Infinity Machine</h1>
+
+<p align=center>
+an exploration of a fantasy world
+<br>
+by <a href="http://pobox.com/~anakin/">Simon Tatham</a>
+
+<p> 
+<cite>The Infinity Machine</cite> is an extended speculation. Based
+on an idea I got from a book I read once, and refined over many
+years of idle moments, it tries to imagine what the field of
+computing would be like if computers were able to run infinitely
+fast.
+
+<p> 
+This is not fiction: it has no plot, no characters, and no action.
+On the other hand, it could almost be called "science fiction" in
+the sense that it takes a premise ("what if...") and explores the
+consequences. But it isn't science fiction in the usual sense,
+because it tells no story.
+
+<p> 
+<cite>The Infinity Machine</cite> is likely to appeal mostly to
+computer programmers, and perhaps also to some mathematicians. It is
+a speculation at the <em>technical</em> level. It doesn't explore the
+social consequences of the premise, merely the technical
+implications for computer architecture, operating system and
+compiler design, networking, and cryptography. If you're a "hacker"
+type who finds these things inherently interesting, read on. If
+you're not, you will most likely be bored. You have been warned.
+
+<p> 
+I thought this idea up when I was 15 or so, and I've been taking the
+speculation further in spare moments ever since then. It's my own
+little fantasy world, and it's been so much fun exploring it that I
+thought I'd write it down in the hope that somebody else might like
+it too.
+</p>
+
+<h2>Dedication</h2>
+
+<p> 
+This work is dedicated to Ian Stewart, for writing <cite>Game, Set
+and Math</cite> which contained the inspiration for all of this.
+</p>
+
+<h2>Getting Started</h2>
+
+<p> 
+What might it even <em>mean</em> for a computer to run infinitely fast?
+
+<p> 
+In <cite>Game, Set and Math</cite> by Ian Stewart, one of the
+characters makes a throwaway remark. Imagine, he said, a light
+switch. Switch it on. After a second, switch it off. After another
+<em>half</em> second, back on again. Off after another quarter, on
+after another eighth, and so on, halving the time interval each
+time. After two seconds, any mathematician knows, you will have
+switched the switch an infinite number of times. So after those two
+seconds are up, is the light on or off?
+
+<p> 
+(Off, said another character, because you'll blow the fuse if you
+switch it that fast. So the first character hit him.)
+
+<p> 
+The book then briefly mentions that it might be fun to build a
+computer like that light switch: after the first second it makes a
+computation, after the next half second it makes another, after the
+next quarter ... and so by the time two seconds are up it will
+have made infinitely many computational steps. So you could
+<em>test</em>, rather than proving, conjectures such as Goldbach's:
+every even number is the sum of two primes. You set up the program,
+wait two seconds, and you have your answer: either "no such integer
+found", or a printout of the smallest counterexample.
+
+<p> 
+Clearly such a computer could never exist in this Universe, and
+neither could the infinite memory it would need to hold the huge
+numbers it would be working with. But let's not let mere reality
+stand in our way; suppose we did live in a world in which it was
+possible. What would life be like for the programmers in that world?
+</p>
+
+<h2>Memory Layout</h2>
+
+<p> 
+The Infinity Machine's memory, let's suppose, is an infinitely long
+line of bits, numbered from zero. For every non-negative integer
+there exists a bit. How are we to find enough structure in this long
+line to be able to encompass large numbers of infinitely long
+strings?
+
+<p>
+The old infinite-hotel puzzle (also known as "Hilbert's Hotel" after
+Hilbert the mathematician) begins to give us the answer. In a hotel
+containing infinitely many rooms, all of which are full, how do you
+find room for infinitely many new guests? Simply move every guest to
+the room with twice the number - room 1 moves to room 2, room 2 to
+room 4, 3 to 6, and so on - and then all the odd-numbered rooms are
+free.
+
+<p> 
+So we can split any infinite stream of bits into two infinite
+streams by separating the odd bits from the even bits. Each of
+<em>those</em> streams, in turn, can be split. And so on - so we can
+have a binary tree of bit streams, all of which can fit in the
+Machine's memory without interfering with one another.
+
+<p> 
+That sounds promising, but I think with a little more structure we
+can do even better. Instead of splitting a stream into two, let's
+split it into an <em>infinite</em> number of substreams, like
+this: split the stream in two, then split <em>one</em> of the
+remaining streams in two, then split one of <em>those</em> two in two,
+and so on. So for a stream <var>S</var>, we have a substream <var>S</var>[0] containing
+all the bits whose indices are 1 mod 2, a substream <var>S</var>[1] containing
+the bits whose indices are 2 mod 4, <var>S</var>[2] with indices 4 mod 8, and
+so on. So any stream of bits can quickly be separated into
+infinitely many substreams. Better still, the substreams can be
+separated into sub-substreams and so on ... <var>S</var>[2][34][22] or
+whatever. The whole system has the property that any substream, at
+any level, can be identified by a starting index and an increment -
+an arithmetic progression.
+
+<p> 
+There are better properties than that, though. <var>S</var>[0] contains all
+the bits whose index within <var>S</var> ends in a 1 when written in binary.
+<var>S</var>[1] contains the bits whose index ends in 10, <var>S</var>[2] the bits ending
+in 100, and in general <var>S</var>[<var>n</var>] contains the bits whose
+index within <var>S</var> ends in a 1 followed by <var>n</var> zeros.
+Following on from this, we find that
+<var>S</var>[<var>i</var>][<var>j</var>][<var>k</var>] contains the bits
+whose index in <var>S</var> ends in a 1, <var>i</var> zeros, a 1,
+<var>j</var> zeros, a 1, and <var>k</var> zeros. So given an "address" in
+the form of start index plus increment, we can easily compute the
+sequence of substream indices that led to that address from the root
+stream (the whole memory). In particular, we can move "up" one
+level, to the stream's parent, and then back "down" to find its
+immediate neighbours.
+
+<p> 
+This, I think, would be a good basis for the Infinity Machine's
+memory architecture. Most data types follow naturally from this: an
+array is easily implemented within a stream by placing element
+<var>i</var> in <var>S</var>[<var>i</var>] - and then the array can hold infinitely
+many elements, and each element is of infinite size and in turn can
+hold anything it likes. Array elements need not be the same type -
+so a compiler can map names to array indices, and voil&agrave;! a
+structure.
+
+<p> 
+An arbitrary integer can be stored in an infinite bit stream in a
+wide variety of ways, even ways as silly as <var>n</var> zeros
+followed by a one. It doesn't seem worth choosing one. A pointer has
+to be encoded as <em>two</em> integers, because it must specify
+a starting index and an increment in order to identify a substream.
+Because we can always find the parent stream of any substream, we
+can perform pointer arithmetic by finding S and <var>i</var> such
+that the pointer P describes <var>S</var>[<var>i</var>], and then
+constructing <var>S</var>[<var>i</var>+<var>x</var>] for integer
+<var>x</var>. (Interestingly, a pointer physically <em>can't</em> run off
+the bottom of its array - it would be meaningless to try to subtract
+from a pointer to element zero - and since the array has infinite
+extent it can't run off the top either. No more rogue dereferences
+blowing things up!)
+</p>
+
+<h2>Clocking</h2>
+
+<p> 
+My original vision of the Infinity Machine was that it would have
+a basic clock rate - perhaps 1KHz or something about as feeble - and
+in its basic mode it ticked along at 1KHz executing one instruction
+per cycle. However, one of the possible instructions would be the
+"infinity" instruction, the execution of which would cause its
+1/1000 second clock cycle to be split into a half, a quarter, an
+eighth and so on, with one instruction being run in each fragment,
+So in a single "base" clock cycle, the Machine would execute
+<em>either</em> a single instruction <em>or</em> a single
+infinite sequence of them. After an infinite sequence terminated,
+control would resume at a point specified in the initial "infinity"
+instruction. Any bit of memory modified only finitely often by the
+infinite run would have a well-defined value on exit from the
+sequence; any bit modified infinitely often, like Ian Stewart's
+light switch, would have an "unpredictable" value. (This is
+"modified" in the strong sense of having its value <em>changed</em>,
+not in the weak sense of being written to; repeatedly writing the
+same value to a bit doesn't count as modification.)
+
+<p> 
+This is an interesting architecture from a mathematician's point of
+view. It forces you to think carefully about what computations can
+be done in one infinite sequence, or maybe two or three. Computing a
+Mandelbrot set to arbitrary depth, for example, can be done happily
+in a single infinite sequence: you compute the points you need using
+increasingly high precision fixed point arithmetic, and update the
+result array repeatedly. For each point, there will be a precision
+beyond which the approximations yield the "right" answer, and so all
+subsequent computations at higher and higher precision will not
+alter the value of that pixel. So by the end of your infinite run,
+the results will have stabilised and will be predictable on routine
+exit.
+
+<p> 
+As a computer scientist, however, I have a slight horror of
+things which won't nest to arbitrary depth. If this "infinity"
+instruction can turn a 1KHz clock cycle into an infinite sequence,
+why shouldn't it be able to do the same to <em>any</em> finitely
+long clock cycle - such as the ones <em>inside</em> the original
+infinite sequence? Then you could have a single base clock cycle,
+divided into infinitely many subcycles, an infinite subset of which
+could also be divided the same way, and so on ... the machine could
+run infinitely many infinite computations within a single tick.
+
+<p> 
+Recreational mathematicians will probably see this as cheating. It
+makes it much easier to achieve a lot of things which would still
+have been possible with some contortion on the original restricted
+Machine, but robs us of the pleasure of thinking up the contortions.
+But the enhanced arbitrarily-nestable version makes for more
+interesting computer science, so I'm deliberately choosing to go
+with that. For the rest of this work I'll be assuming we have an
+extended Infinity Machine.
+
+<p> 
+As an aside, here's an example of a very useful operation on the
+extended Machine which I believe is painful on the original: testing
+whether an infinite bit stream contains finitely or infinitely many
+ones. Take one infinite run down the stream; every time you see a
+zero, set the corresponding bit in an infinite workspace to 1, and
+every time you see a one, set the whole workspace back to 0. (The
+workspace starts as all 0.) Then every bit of the workspace is
+modified at most twice and is therefore well defined on exit.
+Next, set our output variable to "infinite" and take a
+<em>second</em> infinite run, in which we examine the workspace for
+1s. If we find one, we set our output variable to "finite". At the
+end of this second run we have our answer. Now on the original
+Machine, this requires two infinite runs and thus takes two base
+cycles, but on the extended Machine it can all be done within
+another infinite run.
+</p>
+
+<h2>Instruction Set</h2>
+
+<p> 
+Speed on the Infinity Machine isn't much of an issue,
+unsurprisingly. It isn't necessary to have a massive array of
+instructions, as long as you have a few which can have the right
+effects. For a while I speculated that perhaps all you needed was a
+few simple bit operations and the "infinity" instruction, and then
+you'd be able to build addition (even of arbitrarily long integers)
+out of an "infinity" followed by a long string of bit-ops. However,
+the Machine itself must have an inherent ability to do addition at a
+level below the instruction set, since it must increment its program
+counter every time it fetches a new instruction. So I think that,
+realistically, a "successor" operator must exist in the instruction
+set.
+
+<p> 
+It's quite tempting to use the minimalist "register machine"
+instruction set: one instruction increments an integer register by
+1, and the other branches if it is zero but otherwise decrements it.
+These two instructions, together with "halt", form a machine
+equivalent to a Turing machine, so with the addition of some I/O
+primitives and the all-important "infinity" instruction they are
+sufficient. For personal taste, I'd prefer to see some elementary
+bitwise operations (AND, OR, XOR) as well, but of course you can
+<em>build</em> an AND using an "infinity" containing adds and
+subtracts.
+
+<p> 
+I'm not going to dwell much further on the Infinity Machine's
+instruction set: there is a wide range of options and I don't think
+it's very important which is chosen. One thing I would like to see,
+though, is for instructions to be infinitely long. (A program
+is an array, and the program counter steps along it.) This allows
+"load" instructions to contain their own literals, and more usefully
+it allows the "infinity" instruction to <em>contain</em> its own
+instruction substream.
+</p>
+
+<h2>Interrupt Handling</h2>
+
+<p> 
+The Infinity Machine can execute <var>n</var> instructions as
+easily as one. In any finite-length clock cycle, be it at base level
+or some distance down, the Machine might choose, instead of
+executing the instruction in its queue, to execute a notional
+"infinity" instruction within which are some number of additional
+instructions, then the one it was <em>supposed</em> to execute, and
+then an infinite sequence of NOPs to use up the remains of the
+subsequence.
+
+<p> 
+This provides a natural means by which the Machine can handle
+interrupts. At the beginning of any clock cycle, it checks to see if
+any interrupts are pending, and if so it runs a notional "infinity"
+which contains the interrupt handler(s) and the scheduled
+instruction. This achieves an arbitrary amount of processing in
+response to any interrupt, without affecting the performance of the
+interrupted code (since the scheduled instruction gets executed at
+some point during the same cycle it would otherwise have taken the
+whole of).
+
+<p> 
+This scheme means that the maximum latency of an interrupt is
+twice the base clock rate: if an interrupt arrives <em>just</em> after
+the start of a base cycle which is not an "infinity", it will be
+serviced during a notional "infinity" in the following base cycle.
+Of course, if it arrives during the execution of an "infinity", the
+response time might be much quicker.
+
+<p> 
+(It's worth noting that this interrupt scheme can be handled
+entirely in software, by having the Machine emulate itself at full
+speed. The details are left as an exercise for the reader...)
+</p>
+
+<h2>Operating System</h2>
+
+<p> 
+The obvious way to run a multi-process operating system is for the
+OS, in every base cycle, to run an "infinity" in which it lets each
+process execute instructions until the process reaches a blocking
+system call. This allows every process to run as fast as its I/O
+and IPC requirements will allow it. Of course, if the process needs
+to perform <em>infinite</em> computation rather than just doing finite
+computations arbitrarily fast, then the process can issue its own
+"infinity" instructions within the OS's.
+
+<p> 
+The Infinity Machine requires no hardware memory protection to
+implement security between processes: instead of allowing each
+process to run instructions directly, it would be just as quick to
+<em>emulate</em> the instructions in a process - and the emulation
+could provide all the memory protection and security features the OS
+required. Better still, the emulation could provide additions to the
+instruction set, and then the Machine itself wouldn't have to have a
+trap instruction for system calls (or INT, or SWI, or whatever you
+like to call it).
+
+<p> 
+Although the Infinity Machine removes a lot of the programmer's
+traditional worries such as algorithm optimisation, OS design is not
+one of them. You could emulate each process in a separate virtual
+memory spaec which the process couldn't see outside, or you could
+emulate all processes in a shared memory space and deliberately
+protect each process from reads and writes by the others. In the
+multiple address space model, you could provide a system call to set
+up shared memory between processes (easily implemented without
+special hardware, of course: whenever a process writes to a shared
+area the emulator just repeats the write in all other copies of the
+area); in the single address space model you can provide a system
+call whereby a process can allow a part of its memory to be readable
+to another. There is still more than one way to design an OS, and
+there is plenty of scope for the usual holy wars about which way is
+best.
+
+<p> 
+More frighteningly still, with the advent of inter-process
+communication, the time-slicing situation becomes more interesting.
+Suddenly it doesn't seem to be enough that a process gets one time
+slice every base clock cycle! If two processes are
+communicating, they might want to do <em>serious</em> communication -
+not just exchanging infinite amounts of data, but exchanging data
+infinitely often. One time slice per process per base cycle only
+allows a finite frequency of data exchange, and not a high frequency
+at that.
+
+<p> 
+One IPC model that seems peculiarly well suited to this sort of work
+is the message-passing model. Suppose I am a process wishing to
+communicate with another process. I send it a message - as usual, my
+message is just an infinitely long bit stream - and it processes the
+message and returns me a result. My process has effectively yielded
+a part of its time slice to the other process.
+
+<p> 
+For this to work in the Infinity Machine, the receiving process
+would have had to register the address of a message-handling
+function with the OS. The sending of a message is a system call, and
+when my process executes that system call the OS responds by running
+an "infinity" instruction in which it calls the other process's
+message handler. The result of the handler is returned to me. The
+time this takes out of my time slice is predictable - just one clock
+cycle, which itself was probably a few "infinity" sequences deep -
+and so I can pass data to another process arbitrarily often.
+
+<p> 
+More confusingly still, the other process's message handler might
+respond by formulating a reply and passing it back to <em>my</em>
+message handler - so my own process is running again, during the
+part of my time slice I have voluntarily given up to the other
+process. Indeed, there's no reason why our message handlers
+shouldn't call one another in a bottomless recursion, passing data
+back and forth rather like coroutines! It may take up infinite stack
+space, but we have that to spare ... and it'll all be over in the
+blink of an eye in any case. (This bit makes my head spin, I admit.)
+
+<p> 
+OS design in the Infinity Machine seems to me to be a fertile
+field, with plenty of design choices left which aren't rendered
+meaningless by the extra computing power. Many of the good old holy
+wars in finite OS design are still applicable, and there are new
+ones too. (I dread to even <em>think</em> about the prospect of
+infinitely many processes running at once...)
+</p>
+
+<h2>Programming Language and Compiler Design</h2>
+
+<p> The "obvious" extension to a language like C, to support the
+"infinity" instruction, is to introduce a new kind of block
+construct, <code><b>infinity</b></code>. This would surround a block
+of code and cause it to be executed within an "infinity"
+instruction. For example:
+
+<p><pre><code>true = 1;
+<b>infinity</b> {
+    <b>int</b> i, j;
+    <b>for</b> (i = 2;; i += 2) {
+        <b>for</b> (j = i-1; j &gt; 0; j--)
+            <b>if</b> (prime(j) && prime(i-j))
+                <b>break</b>;
+        <b>if</b> (j &lt;= 0) /* this even number is NOT the sum of 2 primes */
+            true = 0;
+    }
+}
+printf("Goldbach's conjecture is %s\n", true ? "TRUE" : "FALSE");</code></pre>
+
+<p> 
+This fairly simple piece of code would establish once and for all
+the truth or otherwise of Goldbach's conjecture. The infinite run
+uses the contents of the braces, and at the end of the subdivided
+clock cycle, execution resumes after the last closing brace.
+
+<p> 
+So far, so simple. After all, once we've swallowed the existence
+of an "infinity" machine instruction in the first place, it's hardly
+difficult to envisage an extra keyword in C to make use of it.
+(Although that's not the only extension to C present: notice that
+those innocent-looking "<code>int i</code>" and "<code>int j</code>"
+must be true integer variables - able to store <em>any</em> whole
+number, no matter how big. Quite where this leaves "<code>long
+int</code>" is an exercise for the reader...)
+
+<p> 
+The fun begins when we consider blocking system calls in our
+programs, such as <code>read()</code>. If our program executes
+<code>read()</code> at the top level, no problem: the call will
+block the process until data is available and then execution will
+resume. But if <code>read()</code> is executed within an "infinity"
+block, then when the process resumes, it must start another
+"infinity" run in the next time slice to finish off the block.
+Since, in general, a blocking call might be (perhaps accidentally)
+executed arbitrarily many "infinity" levels deep, a compiler for
+this variant of C must have some impressive capabilities. Perhaps
+the compiler would output a small standard interpreter module and
+translate the program itself into a form acceptable to the
+interpreter - then the interpreter might be able to have direct
+knowledge of the process's time slices and take care of resuming
+"infinity" blocks after a task switch.
+
+<p> 
+Alternatively, we could choose to disallow blocking system calls
+within an "infinity" block. This isn't terribly desirable either,
+since catching this at compile time would require a language
+attribute on all functions - and worse, on all function
+<em>pointers</em>, leading to the same chaos that happened when ANSI C
+acquried "<code>const</code>", as everybody scrabbled to update
+their programs to put the qualifiers in the right places, and
+inevitably lazy people ended up casting the "<code>const</code>"
+away instead of handling it properly. The only remaining solution is
+to forbid blocking system calls within "infinity" blocks at the OS
+level - have the call return <code>EWOULDBLOCK</code>. That's
+probably the lowest-effort solution, but hardly ideal...
+</p>
+
+<h2>Network</h2>
+
+<p> 
+Networking in the Infinity Machine has all the problems of IPC,
+without the easy availability of solutions.
+
+<p> 
+We have a choice of networking models to consider in the Infinity
+Machine world; possibly the most obvious is the one which allows us
+to transfer an infinite amount of data in an instant. We'll assume
+that the receiving Machine will place the data in a queue and
+schedule an interrupt, after which the receiving process on the
+machine will be able to access and use the data.
+
+<p> 
+The single biggest question, then, is this: is it possible for two
+processes on different Infinity Machines to exchange data
+<em>infinitely</em> often? Exchanging infinite amounts of data
+finitely often might not be enough for some applications. In the
+absence of security requirements, of course, one process could
+transfer all its data to the other, which could then perform the
+needed computation and return the results - but when the two
+processes don't trust one another, they will each want to keep some
+data private from the other and will therefore both need to perform
+parts of whatever computation is taking place. As soon as this
+computation becomes sufficiently complex, the processes will need to
+exchange data infinitely often.
+
+<p> 
+We could perhaps imagine a situation in which both Machines
+arrange to run an "infinity" cycle at about the same time, and
+then they exchange data as fast as possible within this cycle. For
+this to allow an infinite number of data exchanges, though, it is
+necessary that the "infinity" cycles end at <em>exactly</em> the same
+instant: if one cycle ends before the other, then the machine whose
+cycle ends second will only have managed to execute a finite number
+of instructions.
+
+<p> 
+It's difficult to prove this sort of result mathematically - and
+if there is one thing the Infinity Machine is it's mathematically
+well defined. However, I conjecture that in order for two Machines
+to exchange data an infinite number of times in a finite time
+span, the two Machines <em>must</em> have synchronised clocks.
+
+<p>
+(Addendum, as of 23-Jun-2001) Interestingly, there <em>is</em> a
+very useful application for two Machines exchanging data infinitely
+many times: it makes for a completely reliable <em>transaction</em>.
+In finite networking, to perform a transaction between two machines
+(in the sense that either both machines do something, or neither
+does, but never only one), you usually use an exchange of
+confirmation packets, and each machine completes the transaction if
+it detected no dropped packets in the exchange. This suffers from
+the problem that if the <em>last</em> packet in the sequence is
+dropped, the sending side will not notice, so there is always the
+chance of one side completing the transaction and the other side not
+doing so. But with two Infinity Machines, you could exchange an
+<em>infinite</em> sequence of confirmations, and each side would
+complete the transaction if and only if it had received an infinite
+number of packets. This is perfectly reliable, because at most one
+packet (the initiating one) is ever sent <em>not</em> in response to
+another; so if I have received an infinite number of packets, I know
+the other Machine must have <em>sent</em> an infinite number of
+packets; and since all but at most one of those must have been in
+response to one of my packets, I know the other Machine must also
+have received an infinite number of packets! So with 100%
+reliability, I complete my end of the transaction if, and
+<em>only</em> if, the other Machine completes its.
+</p>
+
+<h2>Cryptography</h2>
+
+<p> 
+The Infinity Machine can bring all known forms of cryptography to a
+grinding halt, except of course for the one-time pad. Any RSA public
+key can be instantly inverted to find the corresponding private key,
+allowing signature forging and decryption. Diffie-Hellman key
+exchange is no better - the Machine can listen to the key exchange,
+quickly solve the discrete logarithm problem and obtain the session
+key. Hash functions can be reversed to find other plaintexts with
+the same hash. Even symmetric algorithms with a shared secret key
+aren't safe - with an appreciable amount of ciphertext and only a
+vague idea of the nature of the data ("ASCII text" for example), the
+Machine can try all possible decryption keys and see which potential
+plaintexts fall within the description of the real plaintext. There
+will probably be few enough left that choosing the right one is a
+matter for only a moment's thought!
+
+<p> 
+One-time pads are still safe: even the Infinity Machine can't get
+around the fact that trying all possible one-time pads is equivalent
+to trying all possible messages - arbitrarily many other perfectly
+plausible answers will come up alongside the right one and there is
+no way to tell which is which.
+
+<p> 
+So having brought finite cryptography to its knees, what does the
+Infinity Machine offer as an alternative?
+
+<p> 
+Before addressing this question, I'd like to digress briefly to
+talk about random numbers. No finite key of any kind is safe from a
+listening Infinity Machine, which can try all finite keys. Therefore
+any viable infinite cryptosystem must require an
+<em>infinite</em> supply of random numbers. Where to get them
+from? Perhaps they could come from the unpredictability of any
+memory bit modified infinitely often within an "infinity" cycle.
+I said in the "Clocking" section that any such bit comes out of the
+other end of the cycle with an unpredictable value; possibly a
+good cryptographic extension to the Machine would be to have those
+bits be <em>truly random</em> rather than merely unreliable.
+
+<p> 
+So it's easy to generate an infinite one-time pad: just execute the
+simple piece of code
+
+<p><pre><code>bit x[]; /* infinite array of single bits */
+<b>infinity</b> { 
+    <b>int</b> i = 0; 
+    for (;;) { 
+        <b>infinity</b> { 
+            <b>int</b> j; 
+            <b>for</b> (j = 0;; j ++) 
+                bit[j] = i; 
+        }  
+        i = ~i;
+    }
+}</pre></code>
+
+<p> 
+and you will have filled your bit array with random numbers. (Reader
+exercise: how might a really paranoid OS detect and prohibit the
+generation and use of random numbers by an unprivileged process?)
+
+<p> 
+Assuming a secure channel to transmit this one-time pad through,
+Alice's future communications with Bob are now assured. She can
+select infinitely many infinite subsets of this one-time pad and
+never exhaust it. She need only transmit a starting position and a
+step size, just like addressing a substream of the Infinity
+Machine's memory, and Bob can pick the same substream out of his
+copy of the pad.
+
+<p> 
+So that's symmetric cryptography sorted. The key must be infinite,
+but once it's there it's just as safe as a one-time pad and never
+runs out.
+
+<p> 
+Asymmetric cryptography, then, is the hard part. We are going to
+require a function that maps an infinite bit sequence (the private
+key, or some preliminary value that will yield both keys) to another
+infinite bit sequence (the public key) non-reversibly. (For
+public-key cryptography, in fact we require more properties than
+that: we will need the transformation to be one which intrinsically
+also provides a means of using the public key to encrypt something
+that only the private key can decrypt. But let's consider the
+general idea of a trapdoor function first: it will provide us with
+secure hashing if we can manage it, and that's useful in itself.)
+
+<p> 
+The problem with non-reversibility is step-by-step analysis. If
+the output stream contains bits whose value depends on only
+<em>finitely</em> many of the input bits, then it is vulnerable:
+knowing the value of that output bit allows you to rule out a lot of
+values for the inputs. In general, any input bit which is part of a
+finite set of bits that determine an output bit is weak, and if the
+input contains weak bits then there is a problem.
+
+<p> 
+So a trapdoor function will need to be one in which each output
+bit depends on an <em>infinite</em> subset of the input bits. I can't
+think of anything of that kind which would also be bijective, or
+even close enough to bijectivity to work. Readers are invited to
+help out here!
+</p>
+
+<h2>Conclusion</h2>
+
+<p> 
+I've presented the Infinity Machine, a mathematical definition of an
+infinitely fast computer system. I've explored the effects of
+infinite storage and infinite speed on operating system design,
+language design, networking and cryptography. The Infinity Machine's
+world is a radically different one from the one we poor finite
+computer programmers live in, and yet hauntingly familiar as well.
+It still contains unanswered questions, such as whether it would be
+possible to contrive any scheme of asymmetric cryptography to
+replace the various finite public-key systems that the Machine
+renders obsolete.
+
+<p> 
+I hope you've enjoyed my tour of this fantasy world. I'd be
+fascinated to see any contributions anyone else has.
+</p>
+
+<hr>
+(comments to <a href="mailto:&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;">&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;</a>)
+<br>
+(thanks to Vicky Clarke for the title, and to
+<a href="http://www.chiark.greenend.org.uk/">chiark</a>
+for hosting this page)
+<br>
+(last modified on <!--LASTMOD-->[insert date here]<!--END-->)
+</body>
+</html>
