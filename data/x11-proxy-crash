@@ -39,3 +39,8 @@ when attempting X forwarding through a proxy.
 <p>
 It looks like an unrelated checkin I made to the proxy code on 2002-10-11
 may have cured the crashing, but the X forwarding still doesn't work.
+
+<p>
+One hypothesis we have is that proxying is too general and is being
+applied to the X connection. If so, adding `localhost' to the proxy
+exclusions should fix this.
