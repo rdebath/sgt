@@ -2,6 +2,13 @@
 
 # Todo list:
 #
+# Clare's requests:
+#  - Check for index updates on [space] or menu changes, provided a
+#    suitable time interval (60 seconds perhaps) has elapsed since
+#    the last such check.
+#  - Scans should (configurably) stop at the screen containing the
+#    file they find, rather than diving straight into that file.
+#
 # - Line editing and recall in bottom-line input.
 # - Sessions without write access: be able to start them, and know what
 #   your session is when deciding whether to allow adding.
@@ -200,10 +207,10 @@ def formatitem(item):
 	" (" + userid + ")\aa\aCA", ""]
 	list = list + j.data[j.skip:j.end] + [""]
     if item.contin:
-	list = list + ["\aR\aB\aCG" + "-" * width + "\aa\aCA", ""]
+	list = list + ["\aR\aB\aCb" + "-" * width + "\aa\aCA", ""]
 	centretext = "(Continued in " + item.contin + ")"
 	left = (width - len(centretext)) / 2
-	list = list + ["\aCR" + " "*left + centretext + "\aCA"]
+	list = list + ["\aB\aCR" + " "*left + centretext + "\aCA"]
 
     return list
 
@@ -311,6 +318,10 @@ def pageitem(indexentry, item, override):
 	    c = mylc(scr.getch())
 	    # Oddity: Return at end of item becomes Q.
 	    if (c == ord("\n") or c == ord("\r")) and h.y == h.ymax:
+		c = ord("q")
+	    # Oddity 2: Space at end of item becomes Q, configurably.
+	    if c == ord(" ") and h.y == h.ymax and \
+	    rcfile.get("space-leaves-file", "") == "yes":
 		c = ord("q")
 	    # Now process keypresses properly.
 	    if c == ord(" ") or c == ord("+") or c == ord("\n") or \
@@ -1163,6 +1174,7 @@ while len(args) > 0 and args[0][:1] == "-":
 	sys.exit(0)
     if args[0] == "-dump":
 	dump = 1
+	width = 79
 	try:
 	    c = rgtpclient.RGTPConnection(host=server, port=port, plogfile=logfile)
 	except socket.error, err:
