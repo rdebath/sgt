@@ -283,7 +283,14 @@ class output:
             self.mono_attr = self.mono_attr | ATTR_UNDER
 	if typ == PNORMAL and not self.firstpara:
 	    self.html = self.html + "<p>"
-	self.firstpara = 0
+
+	# self.firstpara is only used by the HTML back end to avoid
+	# prepending <p> to the first paragraph in the HTML; so a
+	# PTITLE paragraph shouldn't cause it to be reset because
+	# titles are done externally to the HTML part of the LJ
+	# entry.
+	if typ != PTITLE:
+	    self.firstpara = 0
 
         self.mono_words = []
 
