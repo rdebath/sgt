@@ -5,6 +5,48 @@
 ;;
 ;;   (load (concat (getenv "HOME") "/src/local/sawfish.jl") nil t t)
 
+;; Mouse actions on window title/border:
+;;
+;;  - On the title bar, dragging moves the window, unless you
+;;    double-click first in which case it resizes.
+;;  - On the window border, dragging resizes the window, unless you
+;;    double-click first in which case it moves.
+;;  - Using the left button for either of these, or just clicking
+;;    with it once, brings the window to the top.
+;;  - Using the right button for either of these, or just clicking
+;;    with it once, sends the window to the bottom.
+;;  - Using the middle button has no effect on the window's z-order.
+
+(bind-keys title-keymap
+  "Button1-Move" 'move-window-interactively
+  "Button2-Move" 'move-window-interactively
+  "Button3-Move" 'move-window-interactively
+  "Button1-Click" 'raise-window
+  "Button3-Click" 'lower-window
+  "Button1-Click2" 'resize-window-interactively
+  "Button2-Click2" 'resize-window-interactively
+  "Button3-Click2" 'resize-window-interactively
+)
+(unbind-keys title-keymap "Button2-Click")
+
+(bind-keys border-keymap
+  "Button1-Move" 'resize-window-interactively
+  "Button2-Move" 'resize-window-interactively
+  "Button3-Move" 'resize-window-interactively
+  "Button1-Click" 'raise-window
+  "Button3-Click" 'lower-window
+  "Button1-Click2" 'move-window-interactively
+  "Button2-Click2" 'move-window-interactively
+  "Button3-Click2" 'move-window-interactively
+)
+(unbind-keys border-keymap "Button2-Click")
+
+;; I like left-Windows-x to minimise windows. My usual .xsession setup
+;; tends to xmodmap that key as Hyper.
+(bind-keys window-keymap
+  "H-x" 'iconify-window
+)
+
 ;; In _general_, I approve of programs stating their own window
 ;; position. I'll override that for specific window types that
 ;; misbehave.
