@@ -1,5 +1,5 @@
 #! /usr/bin/perl
-# $Id: bugs2html,v 1.32 2004/08/03 19:07:41 simon Exp $
+# $Id: bugs2html,v 1.33 2004/08/07 15:46:15 jacob Exp $
 
 use FileHandle;
 use POSIX;
@@ -27,12 +27,13 @@ require "./config.pl";
 # be explicitly marked in the wishlist data. Obviously branch
 # releases don't go here either.)
 @releases = (
-    [ "0.55",   "2004-08-02" ],
-    [ "0.54",   "2004-02-12" ]
+    [ "0.54",   "2004-02-12" ],
+    [ "0.55",   "2004-08-02" ]
 );
 
 %classdesc =
-    ('bug'	=> "This is clearly an actual problem we want fixed.",
+    ('vulnerability' => "This is a security vulnerability.",
+     'bug'	=> "This is clearly an actual problem we want fixed.",
      'semi-bug'	=> "This might or might not be a bug, depending on your " .
                    "precise definition of what a bug is.",
      'wish'	=> "This is a request for an enhancement.");
@@ -167,6 +168,17 @@ foreach my $class (sort compareverclass_s (keys %fixedvers)) {
 EOF
 
     nest(<<EOF);
+<li>Security vulnerabilities
+<ul>
+EOF
+
+    my @tmp = grep(($bugs{$_}->{class} eq 'vulnerability'),
+                   @{$fixedvers{$class}});
+    subtractbugs(\@fullbuglist, printbugs(\@tmp, 2));
+
+    unnest("</ul>\n");
+
+    nest(<<EOF);
 <li>Bugs (and semi-bugs)
 <ul>
 EOF
@@ -201,6 +213,22 @@ These are bugs still be be fixed and features remaining to be
 implemented.
 
 EOF
+
+# If there are any of these visible, chances are that we haven't
+# considered them important enough to make a new release for.
+nest(<<EOF);
+<h3><a name="vulns">Vulnerabilities</a></h3>
+
+<p>
+These are potential or actual vulnerabilities in the code that may
+allow an attacker to gain some level of unauthorised access.
+<ul>
+EOF
+
+my @vulnlist = grep(($bugs{$_}->{class} eq 'vulnerability'), @fullbuglist);
+subtractbugs(\@fullbuglist, printbugs(\@vulnlist, 2));
+
+unnest("</ul>\n");
 
 nest(<<EOF);
 <h3><a name="bugs">Bugs</a></h3>
@@ -355,6 +383,7 @@ EOF
 
 close INDEX;
 
+# Print bugs ordered by difficulty.
 sub printbugs_diff_ordered {
     my ($buglist) = @_;
     my @tmp = @$buglist;
@@ -535,12 +564,12 @@ sub compareverclass {
 }
 
 sub printbugs {
-    my ($buglist, $bold) = @_;
-    $bold = 0 unless defined($bold);
+    my ($buglist, $emph) = @_;
+    $emph = 0 unless defined($emph);
     return unless @$buglist;
     print_hdrs();
     foreach $bug (sort @$buglist) {
-        print INDEX bugdesc($bug, $bold);
+        print INDEX bugdesc($bug, $emph);
     }
     return $buglist;
 }
@@ -554,9 +583,12 @@ sub subtractbugs {
 }
 
 sub bugdesc {
-    my ($bugname, $bold) = @_;
-    $bold = 0 unless defined($bold);
-    if ($bold) {
+    my ($bugname, $emph) = @_;
+    $emph = 0 unless defined($emph);
+    if ($emph == 2) {
+        return qq[<li><b><i><a href="$bugname.html">$bugname: ] .
+               qq[$bugs{$bugname}->{summary}</a></i></b>\n];
+    } elsif ($emph == 1) {
         return qq[<li><b><a href="$bugname.html">$bugname: ] .
                qq[$bugs{$bugname}->{summary}</a></b>\n];
     } else {

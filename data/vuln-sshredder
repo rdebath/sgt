@@ -1,5 +1,5 @@
 Summary: SSHredder test suite vulnerabilities (CERT CA-2002-36)
-Class: bug
+Class: vulnerability
 Difficulty: fun
 Priority: high
 Present-in: 0.53
