@@ -1,0 +1,54 @@
+Summary: SSH_MSG_UNIMPLEMENTED in response to SSH_MSG_KEXINIT is ignored
+Class: semi-bug
+Priority: medium
+Difficulty: tricky
+Content-type: text/plain
+
+---------------------------------------------------[Tue Jan 11 15:08:58 2005]--
+From: Not ordinarily borrowable.  (bjh:1)
+To: anakin:8
+
+Curious:  If I use PuTTY to connect to wraith.csi.cam.ac.uk, and request key
+re-exchange before typing the user name, the packet log shows PuTTY getting an
+SSH2_MSG_UNIMPLEMENTED, but PuTTY doesn't bombout(("expected key exchange
+packet from server")) as I'd expect.  Of course, it also doesn't give up on the
+key exchange, which it perhaps should.
+
+---------------------------------------------------[Tue Jan 11 15:13:37 2005]--
+From: `Wombling *freely*', dammit!  (anakin:8)
+To: bjh:1
+
+> Curious:  If I use PuTTY to connect to wraith.csi.cam.ac.uk, and request key
+> re-exchange before typing the user name, the packet log shows PuTTY getting a
+> SSH2_MSG_UNIMPLEMENTED, but PuTTY doesn't bombout(("expected key exchange
+> packet from server")) as I'd expect.
+
+Well, UNIMPLEMENTED won't be going to do_ssh2_transport(), because it's not in
+the transport layer range of message numbers [20,50). So I suppose it'd go to
+do_ssh2_authconn().
+
+My guess is that it's being swallowed in the crWaitUntilV(!pktin) at line 6076,
+which I suppose ought to be fixed somehow.
+
+Responding to the UNIMPLEMENTED by abandoning that particular key exchange
+sounds above the call of duty to me, I have to say, when the fault is obviously
+OpenSSH's.
+
+---------------------------------------------------[Tue Jan 11 15:25:54 2005]--
+From: Not ordinarily borrowable.  (bjh:1)
+To: anakin:8
+
+> Well, UNIMPLEMENTED won't be going to do_ssh2_transport(), because it's not i
+> the transport layer range of message numbers [20,50). So I suppose it'd go to
+> do_ssh2_authconn().
+
+Ah.  That would explain my confusion.
+
+> Responding to the UNIMPLEMENTED by abandoning that particular key exchange
+> sounds above the call of duty to me, I have to say, when the fault is obvious
+> OpenSSH's.
+
+I suppose so.  It's not as if we're likely to do an automatic re-exchange
+before authentication is complete, so exiting with an error at that stage would
+be reasonable.  I'll add a wishlist item, since that code scares me.
+
