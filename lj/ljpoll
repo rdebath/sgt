@@ -47,3 +47,4 @@ if ljproto.ljok(ret):
     f.close()
 else:
     sys.stderr.write(ljproto.ljerror(ret) + "\n")
+    sys.exit(1)
