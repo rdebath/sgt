@@ -197,7 +197,7 @@ int do_fetch_pascal_string(int sock, doit_ctx *ctx, char *buf)
     while (x == 0) {
         if ((ret = do_receive(sock, ctx)) <= 0) {
             if (ret == 0) {
-                fprintf(stderr, "doit: connection unexpectedly closed");
+                fprintf(stderr, "doit: connection unexpectedly closed\n");
             } else {
                 fprintf(stderr, "doit: network error: %s\n", strerror(errno));
             }
@@ -211,7 +211,7 @@ int do_fetch_pascal_string(int sock, doit_ctx *ctx, char *buf)
     while (x < len) {
         if ((ret = do_receive(sock, ctx)) <= 0) {
             if (ret == 0) {
-                fprintf(stderr, "doit: connection unexpectedly closed");
+                fprintf(stderr, "doit: connection unexpectedly closed\n");
             } else {
                 fprintf(stderr, "doit: network error: %s\n", strerror(errno));
             }
@@ -483,7 +483,7 @@ void showversion(void)
     char *v;
     extern char doitlib_revision[];
 
-    v = makeversion(versionbuf, "$Revision: 1.18 $");
+    v = makeversion(versionbuf, "$Revision: 1.19 $");
     if (v)
 	printf("doitclient revision %s", v);
     else
@@ -995,7 +995,7 @@ int main(int argc, char **argv)
         if ((ret = do_receive(sock, ctx)) <= 0) {
             close(sock);
             if (ret == 0) {
-                fprintf(stderr, "doit: connection unexpectedly closed");
+                fprintf(stderr, "doit: connection unexpectedly closed\n");
             } else {
                 fprintf(stderr, "doit: network error: %s\n", strerror(errno));
             }
