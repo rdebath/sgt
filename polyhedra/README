@@ -83,6 +83,21 @@ their usage instructions:
    folded up, this net should generate the polyhedron described in
    the input file.
 
+ - dual.py expects up to two arguments: an input file and an output
+   file. (If absent, it will read standard input and write to
+   standard output.) From its input file, it expects to read a
+   polyhedron description as output by either nfaces.py or
+   nvertices.py. To its output file, it writes another polyhedron
+   description, which is the geometric _dual_ of the input
+   polyhedron. (Roughly, this means replacing each face of the
+   original with a vertex, replacing each vertex of the original
+   with a face, and rotating each edge of the original through 90
+   degrees.)
+
+   The polyhedra output from nfaces.py and nvertices.py should
+   already be duals of each other. This program is probably most
+   useful when applied to the files in the `regular' subdirectory.
+
 In the `examples' directory I supply a set of pre-generated point
 sets and polyhedron descriptions:
 
@@ -109,6 +124,11 @@ sets and polyhedron descriptions:
  - The supplied Makefile in the `examples' directory regenerates all
    the `*.faces' and `*.vertices' files from the `*.points' inputs.
    It expects to be run under GNU make.
+
+In the `regular' subdirectory I supply a set of polyhedron
+descriptions for the well-known Platonic and Archimedean (regular
+and semi-regular) solids. Also in that directory is `mkregular.py',
+the script which generates those descriptions.
 
 In the `html' subdirectory is the source of my web page on this
 subject, and a Makefile which constructs all the supporting image
