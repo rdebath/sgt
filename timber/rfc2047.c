@@ -44,7 +44,7 @@ static int spot_encoded_word(const char *text, int length)
 		state++;
 	    break;
 	  case 4:		       /* expect any non-space */
-	    if (c <= ' ' || c > '~')
+	    if (c >= '\0' && c < ' ')
 		return 0;
 	    if (c == '?')
 		state++;
@@ -77,8 +77,6 @@ static int spot_encoded_word(const char *text, int length)
 void rfc2047(const char *text, int length, parser_output_fn_t output,
 	     void *outctx, int structured, int dequote, int default_charset)
 {
-    int quoting;
-
     while (length > 0) {
 	const char *startpoint = text;
 	int elen;
@@ -142,7 +140,7 @@ void rfc2047(const char *text, int length, parser_output_fn_t output,
 	/*
 	 * We've either finished with the encoded-word, or there
 	 * wasn't one. No encoded word here. Proceed to the next
-	 * whitespace, and past it, and then output.
+	 * potential one (= sign), and then output.
 	 * 
 	 * Special case: if we did see an encoded-word, and the
 	 * whitespace following it is immediately followed by
@@ -153,19 +151,26 @@ void rfc2047(const char *text, int length, parser_output_fn_t output,
 	 * we only skip the whitespace if it is precisely "\n ".
 	 * (This is RFC2047's way of allowing multiple separate
 	 * encoded-words to represent contiguous pieces of text.)
+	 * 
+	 * DELIBERATE DEPARTURE FROM STANDARD: RFC2047 is very
+	 * clear that a quoted string MUST NOT contain
+	 * encoded-words, and also that encoded-words MUST begin at
+	 * word boundaries. However, it is the experience of my
+	 * large and varied mail archive that both these
+	 * constraints are frequently violated, and it is my
+	 * opinion that the best indication of the email author's
+	 * intent is given by decoding them anyway. (Of course, I
+	 * wouldn't dream of _generating_ an encoded-word in such
+	 * circumstances; that would be evil on entirely another
+	 * level.)
 	 */
-	startpoint = text;
-	quoting = 0;
-	while (length > 0 &&
-	       (quoting || (*text != ' ' && *text != '\t' && *text != '\n'))) {
-	    if (*text == '"')
-		quoting = !quoting;
-	    else if (*text == '\\' && length > 1)
-		text++, length--;
+	if (text != startpoint) {
+	    startpoint = text;
+	} else {
+	    assert(length > 0);
 	    text++, length--;
 	}
-	while (length > 0 &&
-	       (*text == ' ' || *text == '\t' || *text == '\n'))
+	while (length > 0 && *text != '=')
 	    text++, length--;
 	if (elen > 0 &&
 	    (structured ||

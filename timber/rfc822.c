@@ -928,12 +928,22 @@ void parse_headers(char const *base, char const *message, int msglen,
 		 *    marker and here was an addr-spec or
 		 *    nothing at all.
 		 *
-		 *  - So now we re-scan from the marker.
-		 *    Anything in a quoted-string we pass
-		 *    through unchanged; anything in parens
-		 *    we parse as an RFC2047able comment;
-		 *    anything not in either we deal with
-		 *    _as appropriate_ given the above.
+		 *  - So now we re-scan from the marker. Anything
+		 *    in a quoted-string or in parens we parse as
+		 *    an RFC2047able string; anything not in either
+		 *    we deal with _as appropriate_ given the
+		 *    above.
+		 * 
+		 * DELIBERATE DEPARTURE FROM STANDARD: RFC2047 is
+		 * very clear that a quoted string MUST NOT contain
+		 * encoded-words. However, it is the experience of
+		 * my large and varied mail archive that it often
+		 * does, and it is my opinion that the best
+		 * indication of the email author's intent is given
+		 * by decoding them anyway. (Of course, I wouldn't
+		 * dream of _generating_ an encoded-word within a
+		 * quoted string; that would be evil on entirely
+		 * another level.)
 		 */
 		while (r < message) {
 		    int rfc2047able;
@@ -990,13 +1000,8 @@ void parse_headers(char const *base, char const *message, int msglen,
 				    q++;
 				q++;
 			    }
-			    if (end == ')')
-				rfc2047(p, q-p, output, outctx,
-					TRUE, FALSE, default_charset);
-			    else
-				output(outctx, p, q-p,
-				       TYPE_HEADER_TEXT,
-				       default_charset);
+			    rfc2047(p, q-p, output, outctx,
+				    TRUE, FALSE, default_charset);
 			    if (q == r)
 				break;
 			    output(outctx, q, 1,
