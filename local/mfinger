@@ -4,7 +4,7 @@ cols=${3-80}
 location=http://mono.org/newweb/utils/users_on.shtml
 perl -e "use LWP::Simple; print get('$location')" |
   perl -n -e '%cmap=("black"=>"K","blue"=>"B","green"=>"G","red"=>"R",' \
-          -e '"cyan"=>"C","magenta"=>"M","yellow"=>"Y","white"=>"W");' \
+       -e '"cyan"=>"C","magenta"=>"M","yellow"=>"Y","white"=>"W",""=>"A");' \
        -e 'if (/^<PRE>/) { $p=1 } elsif (/^<\/PRE/) { $p=0 } elsif ($p) {' \
        -e '  s/<A ("[^"]*"|[^">])*>//g; s/<\/A>//g;' \
        -e '  s/<FONT COLOR="([^"]*)">/"\035C".$cmap{$1}/eg;' \
