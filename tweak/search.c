@@ -4,23 +4,16 @@
 
 #include "tweak.h"
 
-static DFA dfa = NULL;
-static char *tmp = NULL;
-static int dfa_size = 0, dfa_len = 0;
-
-DFA build_dfa (char *pattern, int len) {
+static DFA build_dfa (char *pattern, int len)
+{
     int i, j, k, b;
+    char *tmp = malloc(len);
+    DFA dfa = malloc(len * sizeof(*dfa));
 
-    if (dfa_size < len) {
-	dfa_size = len;
-	dfa = (dfa ? realloc(dfa, dfa_size * sizeof(*dfa)) :
-	       malloc(dfa_size * sizeof(*dfa)));
-	if (!dfa)
-	    return NULL;
-	tmp = (tmp ? realloc(tmp, dfa_size) : malloc(dfa_size));
-	if (!tmp)
-	    return NULL;
-    }
+    if (!dfa)
+	return NULL;
+    if (!tmp)
+	return NULL;
 
     memcpy (tmp, pattern, len);
 
@@ -36,14 +29,28 @@ DFA build_dfa (char *pattern, int len) {
 	    }
 	}
     }
-    dfa_len = len;
+
     return dfa;
 }
 
-DFA last_dfa (void) {
-    return dfa;
+Search *build_search(char *pattern, int len)
+{
+    Search *ret = malloc(sizeof(Search));
+    char *revpat = malloc(len);
+    int i;
+
+    ret->len = len;
+    ret->forward = build_dfa(pattern, len);
+    for (i = 0; i < len; i++)
+	revpat[i] = pattern[len-1-i];
+    ret->reverse = build_dfa(revpat, len);
+
+    return ret;
 }
 
-int last_len (void) {
-    return dfa_len;
+void free_search(Search *s)
+{
+    free(s->forward);
+    free(s->reverse);
+    free(s);
 }

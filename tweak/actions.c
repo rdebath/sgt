@@ -31,12 +31,15 @@ static void act_susp (void);
 static void act_goto (void);
 static void act_togstat (void);
 static void act_search (void);
+static void act_search_backwards (void);
 static void act_recentre (void);
 static void act_width (void);
 static void act_offset (void);
 #ifdef TEST_BUFFER
 static void act_diagnostics (void);
 #endif
+
+static Search *last_search = NULL;
 
 keyact parse_action (char *name) {
     char *names[] = {
@@ -45,8 +48,8 @@ keyact parse_action (char *name) {
 	"move-down", "page-down", "bottom-of-file", "toggle-insert",
 	"change-mode", "delete-left", "delete-right", "mark-place",
 	"cut", "copy", "paste", "suspend", "goto-position",
-	"toggle-status", "search", "save-file", "exit-and-save",
-	"screen-recentre", "new-width", "new-offset"
+	"toggle-status", "search", "search-back", "save-file",
+	"exit-and-save", "screen-recentre", "new-width", "new-offset"
 #ifdef TEST_BUFFER
 	, "diagnostics"
 #endif
@@ -56,8 +59,8 @@ keyact parse_action (char *name) {
 	act_right, act_end, act_down, act_pgdn, act_bottom,
 	act_togins, act_chmode, act_delete, act_delch, act_mark,
 	act_cut, act_copy, act_paste, act_susp, act_goto,
-	act_togstat, act_search, act_save, act_exitsave,
-	act_recentre, act_width, act_offset
+	act_togstat, act_search, act_search_backwards, act_save,
+	act_exitsave, act_recentre, act_width, act_offset
 #ifdef TEST_BUFFER
 	, act_diagnostics
 #endif
@@ -526,35 +529,47 @@ static void act_togstat (void) {
 	statfmt = decstatus;
 }
 
-static void act_search (void) {
+static int search_prompt(char *withdef, char *withoutdef)
+{
     char buffer[80];
-    int len, posn, dfapos;
-    DFA dfa;
-    static unsigned char sblk[SEARCH_BLK];
-    static char withdef[] = "Search for (default=last): ";
-    static char withoutdef[] = "Search for: ";
+    int len;
 
-    dfa = last_dfa();
-
-    if (!get_str(dfa ? withdef : withoutdef, buffer, TRUE))
-	return;			       /* user break */
-    if (!dfa && !*buffer) {
+    if (!get_str(last_search ? withdef : withoutdef, buffer, TRUE))
+	return 0;		       /* user break */
+    if (!last_search && !*buffer) {
 	strcpy (message, "Search aborted.");
-	return;
+	return 0;
     }
 
     if (!*buffer) {
-	len = last_len();
+	len = last_search->len;
     } else {
 	len = parse_quoted (buffer);
 	if (len == -1) {
 	    display_beep();
 	    strcpy (message, "Invalid escape sequence in search string");
-	    return;
+	    return 0;
 	}
-	dfa = build_dfa (buffer, len);
+	if (last_search)
+	    free_search(last_search);
+	last_search = build_search (buffer, len);
     }
 
+    return 1;
+}
+
+static void act_search (void) {
+    int len, posn, dfapos;
+    DFA dfa;
+    static unsigned char sblk[SEARCH_BLK];
+    static char withdef[] = "Search forward (default=last): ";
+    static char withoutdef[] = "Search forward: ";
+
+    if (!search_prompt(withdef, withoutdef))
+	return;
+
+    dfa = last_search->forward;
+    len = last_search->len;
     dfapos = 0;
 
     for (posn = cur_pos+1; posn < file_size; posn++) {
@@ -576,6 +591,51 @@ static void act_search (void) {
 		new_top = cur_pos - (scrlines-1) * width;
 		new_top = begline(new_top);
 		if (top_pos < new_top)
+		    top_pos = new_top;
+		return;
+	    }
+	}
+    }
+    strcpy (message, "Not found.");
+}
+
+static void act_search_backwards (void) {
+    int len, posn, dfapos;
+    DFA dfa;
+    static unsigned char sblk[SEARCH_BLK];
+    static char withdef[] = "Search backward (default=last): ";
+    static char withoutdef[] = "Search backward: ";
+
+    if (!search_prompt(withdef, withoutdef))
+	return;
+
+    dfa = last_search->reverse;
+    len = last_search->len;
+    dfapos = 0;
+
+    posn = cur_pos + len - 1;
+    if (posn >= file_size)
+	posn = file_size;
+
+    for (; posn >= 0; posn--) {
+	unsigned char *q;
+	int size = SEARCH_BLK;
+
+	if (size > posn)
+	    size = posn;
+	buf_fetch_data (filedata, sblk, size, posn-size);
+	q = sblk + size;
+	while (size--) {
+	    posn--;
+	    dfapos = dfa[dfapos][*--q];
+	    if (dfapos == len) {
+		int new_top;
+
+		cur_pos = posn;
+		edit_type = !!edit_type;
+		new_top = cur_pos - (scrlines-1) * width;
+		new_top = begline(new_top);
+		if (top_pos > new_top)
 		    top_pos = new_top;
 		return;
 	    }

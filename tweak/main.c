@@ -46,12 +46,6 @@
  * 	 an undo chain attached; so, in particular, the cut buffer
  * 	 shouldn't be one. Sort that out.
  * 
- *  - Reverse search.
- *     + need to construct a reverse DFA.
- *     + probably should construct both every time, so that you can
- * 	 search forward for a thing and then immediately change
- * 	 your mind and search backward for the same thing.
- * 
  *  - In-place editing.
  *     + this is an extra option when running in Fix mode. It
  * 	 causes a change of semantics when saving: instead of
