@@ -121,6 +121,7 @@ void info_addr(parser_info_fn_t info, void *infoctx,
 	       int default_charset);
 char *rfc2047_to_utf8_string(const char *text, int len,
 			     int structured, int default_charset);
+int latoi(const char *text, int len);
 
 int istrlencmp(const char *s1, int l1, const char *s2, int l2);
 
@@ -140,17 +141,16 @@ int istrlencmp(const char *s1, int l1, const char *s2, int l2);
  *  - To the `info' function, it passes a sequence of pieces of
  *    information about the message. Among these are the date, the
  *    text of the Subject line (if any), all email addresses
- *    mentioned in To, From, Cc headers etc, and the Message-ID of
- *    the parent message (from In-Reply-To) if available.
+ *    mentioned in To, From, Cc headers etc, the Message-ID of the
+ *    parent message (from In-Reply-To) if available, and full
+ *    details of the type, encoding, charset and location within
+ *    the message of each MIME body part.
  */
 void parse_message(const char *message, int msglen,
 		   parser_output_fn_t output, void *outctx,
 		   parser_info_fn_t info, void *infoctx)
 {
     /*
-     * Begin at the beginning, and expect to parse headers until we
-     * see a blank line.
-     * 
      * We are not intending to be a _strict_ RFC822 parser here: if
      * we receive a malformatted mail, our goal is to make as much
      * sense of it as we still can, not to refuse to read it at
@@ -206,10 +206,16 @@ void recurse_mime_part(const char *base, struct mime_details *md,
 		       int default_charset,
 		       parser_info_fn_t info, void *infoctx)
 {
-    printf("Got MIME part: %.*s/%.*s (%d) at (%d,%d)\n",
+#ifdef DIAGNOSTICS
+    printf("Got MIME part: %.*s/%.*s (%d, cs=%d) at (%d,%d)\n"
+	   "  (%s, fn=\"%s\", b=\"%s\", desc=\"%s\")\n",
 	   md->majorlen, md->major,
 	   md->minorlen, md->minor,
-	   md->transfer_encoding, md->startpoint - base, md->length);
+	   md->transfer_encoding, md->charset,
+	   md->startpoint - base, md->length,
+	   md->cd_inline ? "inline" : "attachment",
+	   md->filename, md->boundary, md->description);
+#endif
 
     if (!istrlencmp(md->major, md->majorlen, SL("multipart")) &&
 	md->transfer_encoding == NO_ENCODING && md->boundary != NULL) {
@@ -604,10 +610,155 @@ void parse_headers(char const *message, int msglen, int full_message,
 		}
 		break;
 	      case EXTRACT_DATE:
-		/*
-		 * FIXME: Deal with this once we've decided how
-		 * to do it.
-		 */
+		{
+		    struct tm tm;
+		    time_t t;
+		    int m;
+		    const char *months="JanFebMarAprMayJunJulAugSepOctNovDec";
+
+		    /*
+		     * Skip optional day of week (signified by a
+		     * following comma).
+		     */
+		    if (lh[0].token && lh[1].token &&
+			lh[1].is_punct && lh[1].token[0] == ',')
+			lh += 2;
+
+		    /*
+		     * Day.
+		     */
+		    if (!lh[0].token || lh[0].is_punct)
+			break;
+		    tm.tm_mday = latoi(lh[0].token, lh[0].length);
+		    if (tm.tm_mday < 1 || tm.tm_mday > 31)
+			break;
+		    lh++;
+
+		    /*
+		     * Month.
+		     */
+		    if (!lh[0].token || lh[0].is_punct)
+			break;
+		    for (m = 0; m < 12; m++) {
+			if (!istrlencmp(lh[0].token, lh[0].length,
+					months+3*m, 3))
+			    break;
+		    }
+		    if (m > 11)
+			break;
+		    tm.tm_mon = m;
+		    lh++;
+
+		    /*
+		     * Year.
+		     */
+		    if (!lh[0].token || lh[0].is_punct)
+			break;
+		    if (lh[0].length == 2) {
+			/* `obs-year'. */
+			tm.tm_year = latoi(lh[0].token, lh[0].length);
+			if (tm.tm_year < 50)   /* 00-49 mean 2000-2049 */
+			    tm.tm_year += 100;
+		    } else {
+			tm.tm_year = -1900 + latoi(lh[0].token, lh[0].length);
+			if (tm.tm_year < 0)
+			    break;
+		    }
+		    lh++;
+
+		    /*
+		     * Hour, and following colon.
+		     */
+		    if (!lh[0].token || lh[0].is_punct)
+			break;
+		    tm.tm_hour = latoi(lh[0].token, lh[0].length);
+		    if (tm.tm_hour < 0 || tm.tm_hour > 23)
+			break;
+		    lh++;
+		    if (!lh[0].is_punct || lh[0].token[0] != ':')
+			break;
+		    lh++;
+
+		    /*
+		     * Minute.
+		     */
+		    if (!lh[0].token || lh[0].is_punct)
+			break;
+		    tm.tm_min = latoi(lh[0].token, lh[0].length);
+		    if (tm.tm_min < 0 || tm.tm_min > 59)
+			break;
+		    lh++;
+
+		    /*
+		     * Optional colon-plus-seconds.
+		     */
+		    if (lh[0].is_punct && lh[0].token[0] == ':') {
+			lh++;
+			if (!lh[0].token || lh[0].is_punct)
+			    break;
+			tm.tm_sec = latoi(lh[0].token, lh[0].length);
+			if (tm.tm_sec < 0 || tm.tm_hour > 61)
+			    break;
+			lh++;
+		    } else
+			tm.tm_sec = 0;
+
+		    /*
+		     * Time zone.
+		     */
+		    if (lh[0].token && !lh[0].is_punct) {
+			if (lh[0].length == 5 &&
+			    (lh[0].token[0] == '+' || lh[0].token[0] == '-')) {
+			    int sign = (lh[0].token[0] == '+' ? -1 : +1);
+			    tm.tm_hour +=
+				sign * latoi(lh[0].token+1, 2);
+			    tm.tm_min +=
+				sign * latoi(lh[0].token+3, 2);
+			} else {
+			    /*
+			     * Some obsolete time zone names are
+			     * hard-coded into RFC 2822.
+			     */
+			    static const struct {
+				const char *zone;
+				int len;
+				int hours;
+			    } zones[] = {
+				{SL("UT"), 0},
+				{SL("GMT"), 0},
+				{SL("EST"), +5},
+				{SL("EDT"), +4},
+				{SL("CST"), +6},
+				{SL("CDT"), +5},
+				{SL("MST"), +7},
+				{SL("MDT"), +6},
+				{SL("PST"), +8},
+				{SL("PDT"), +7},
+			    };
+			    int i;
+
+			    for (i = 0; i < lenof(zones); i++) {
+				if (!istrlencmp(lh[0].token, lh[0].length,
+						zones[i].zone, zones[i].len)) {
+				    tm.tm_hour += zones[i].hours;
+				    break;
+				}
+			    }
+			}
+		    }
+
+		    /*
+		     * If we're still here, we have accumulated a
+		     * complete date.
+		     */
+		    t = mktime(&tm);
+
+		    {
+			char *FIXME = ctime(&t);
+			info(infoctx, 5 /* FIXME: TYPE_DATE */,
+			     FIXME, strlen(FIXME)-1);
+		    }
+		}
 		break;
 	      case EXTRACT_SUBJECT:
 		{
@@ -879,6 +1030,7 @@ struct lexed_header *lex_header(char const *header, int length, int type)
       case EXTRACT_MESSAGE_IDS: punct = "<>"; break;
       case EXTRACT_DATE: punct = ",:"; break;
       case CONTENT_TYPE: punct = "/;="; break;
+      case CONTENT_DISPOSITION: punct = "/;="; break;
     }
 
     tok = NULL;
@@ -1275,6 +1427,21 @@ void info_addr(parser_info_fn_t info, void *infoctx,
     info(infoctx, 3 /* FIXME */, addr, addrlen);
 
     sfree(utf8name);
+}
+
+int latoi(const char *text, int len)
+{
+    int ret = 0;
+
+    while (len > 0) {
+	if (*text >= '0' && *text <= '9')
+	    ret = ret * 10 + *text - '0';
+	else
+	    break;
+	text++, len--;
+    }
+
+    return ret;
 }
 
 void null_output_fn(void *ctx, const char *text, int len,

@@ -1,6 +1,8 @@
 #ifndef TIMBER_TIMBER_H
 #define TIMBER_TIMBER_H
 
+#include <time.h>
+
 #ifdef __GNUC__
 #define NORETURN __attribute__((__noreturn__))
 #endif
@@ -139,5 +141,10 @@ void parse_for_db(const char *message, int msglen);
  */
 void rfc2047(const char *text, int length, parser_output_fn_t output,
 	     void *outctx, int structured, int default_charset);
+
+/*
+ * date.c
+ */
+time_t mktimegm(struct tm *tm);
 
 #endif
