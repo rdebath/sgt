@@ -1,0 +1,14 @@
+Release 1.01
+------------
+
+ - configure script now chooses more sensibly between curses and
+   ncurses, and also checks whether *curses.h defines attr_t. Now
+   able to compile on Solaris/gcc.
+ - Renamed config.h to settings.h to stop it being blown away by
+   make distclean.
+ - Added CHANGELOG.
+
+Release 1.0
+-----------
+
+ - Initial release.
