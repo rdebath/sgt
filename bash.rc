@@ -1,6 +1,6 @@
 # -*- mode: sh; mode: fold -*-
 # Simon Tatham's standardised chunk of .bashrc
-# $Revision: 1.43 $
+# $Revision: 1.44 $
 
 #{{{ I don't like .bash_history files. They wet their nests.
 unset HISTFILE
@@ -462,6 +462,13 @@ rfc() {
 
   wget -q -O - "http://$host/rfc/$filename" | \
     env LESSOPEN="|cat" less $filename
+}
+
+#}}}
+#{{{ `do-ssh-add': conveniently add SSH keys when no agent is running
+
+do-ssh-add() {
+  exec ssh-agent $SHELL -c 'ssh-add; exec $SHELL'
 }
 
 #}}}
