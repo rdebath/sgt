@@ -1,6 +1,6 @@
 # -*- mode: sh; mode: fold -*-
 # Simon Tatham's standardised chunk of .bashrc
-# $Revision: 1.38 $
+# $Revision: 1.39 $
 
 #{{{ I don't like .bash_history files. They wet their nests.
 unset HISTFILE
@@ -127,7 +127,7 @@ bashrc_dovars
 unset bashrc_dovars
 
 #}}}
-#{{{ shell settings and aliases
+#{{{ shell settings and simple aliases
 
 set +o ignoreeof
 set -P # disable bash's daft symlink confusion in pwd
@@ -395,6 +395,32 @@ i() {
 x() {
   perl -e 'foreach $x (@ARGV) { printf "%11d = 0x%08x\n", $x, $x }' -- "$@"
 }
+#}}}
+#{{{ experimental hideous alias hackery
+
+# For starters, here's a standard way to override _any_ weirdass
+# aliasing I might feel like doing. Alias recognition is done
+# before variable and parameter expansion, so this very simple
+# command prefix prevents any command being expanded as an alias.
+real() { "$@"; }
+
+# When I run `find' and `findgrep', I often use wildcards and
+# rarely want them quoted, so it seems sensible to disable globbing
+# for these commands only. I always have `real' if I need to do
+# things the usual way.
+
+bashrc_a_noglob() {
+  "$@"
+  case "$bashrc_a_shopts" in
+    *noglob*) ;;
+    *) set +f ;;
+  esac
+  unset bashrc_a_shopts
+}
+
+alias find='bashrc_a_shopts="$SHELLOPTS"; set -f; bashrc_a_noglob find'
+alias findgrep='bashrc_a_shopts="$SHELLOPTS"; set -f; bashrc_a_noglob findgrep'
+
 #}}}
 #{{{ `rfc' as a quick shortcut to find RFCs
 
