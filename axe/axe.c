@@ -1,16 +1,9 @@
 /*
- * TODO before `release' quality:
+ * TODO before releasable quality:
  * 
  *  - Thorough testing.
  * 
- * TODO before proper release quality:
- * 
  *  - Half decent build system.
- * 
- *  - For goodness' sake, arrange that the arguments to -w and -o
- *    can accept hex numbers in 0xXX syntax! _Default_ number base
- *    can be argued about, but there's no excuse for a _hex_ editor
- *    not at least _accepting_ hex in practically all contexts.
  * 
  * TODO possibly after that:
  * 
