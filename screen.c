@@ -419,7 +419,7 @@ int screen_saveslot_ask(char action, gamestate **saves, int defslot) {
 	if (k >= '0' && k <= '9') {
 	    defslot = (k+9-'0') % 10;
 	}
-	if (k == 'y')
+	if (k == 'y' && (action == 's' || saves[defslot]))
 	    return defslot;
 	if (k == 'n' || k == 'q')
 	    return -1;

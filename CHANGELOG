@@ -3,6 +3,9 @@ Release FIXME
 
  - We no longer repeat the game-completed screen when the user
    recompletes a level after having completed the game.
+ - Error handling improved so we don't segfault on trying to restore
+   a nonexistent save, and also so we don't segfault if we can't
+   find our level set.
 
 Release 1.01
 ------------

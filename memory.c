@@ -15,14 +15,6 @@
 
 #include "enigma.h"
 
-char *fatal_error_string;
-jmp_buf fatal_error_jmp_buf;
-
-static void fatal(char *string) {
-    fatal_error_string = string;
-    longjmp(fatal_error_jmp_buf, 1);
-}
-
 void *smalloc(size_t size) {
     void *p = malloc(size);
     if (!p)
