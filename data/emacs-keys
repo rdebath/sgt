@@ -17,3 +17,5 @@ option to emit them.  Sensible ones include:
  <tr><td>End   <td>^E
  <tr><td>Delete<td>^D
 </table>
+
+<p>Patch (unreviewed): 3FB25127.9040101@endbracket.net
