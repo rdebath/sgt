@@ -2,6 +2,7 @@ Summary: unfix.org has further IPv6 patches; integrate?
 Class: wish
 Difficulty: fun
 Priority: low
+Fixed-in: 2004-12-31
 Content-type: text/x-html-body
 
 <p>
@@ -12,3 +13,8 @@ patch level 4.
 <p>
 However, they are now up to patch level 10 (at the time of writing).
 Should we integrate their further tweaks at some point?
+
+<p>
+<b>SGT, 2004-12-30</b>: I have integrated unfix.org's latest patch
+(v10). It took some polishing, but it's done. Also it's enabled in
+the nightly builds.
