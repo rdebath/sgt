@@ -4,7 +4,7 @@ Difficulty: tricky
 Content-type: text/x-html-body
 
 <p>
-Someone on comp.security.ssh said their login banner did not appear
+Someone on comp.security.ssh <a href="http://groups.google.com/groups?selm=9b67156e.0311171247.2b0bf982%40posting.google.com">said</a> their login banner did not appear
 when PuTTY prompted for a username, but did appear when they
 specified the username ahead of time in the configuration.
 
@@ -43,3 +43,12 @@ could send the ping, get a reply back, and if the banner had been
 sent immediately on commencement of userauth then it would appear
 before the ping response, and so I'd know whether there was a banner
 to be displayed <em>before</em> beginning username input. Bah.
+
+<p>
+An alternative solution that would also work with Plink would be to
+collect all banner messages seen while the user was typing a username,
+and spit them out immediately afterward. The user wouldn't of course
+see the banner before they'd entered a username, but the protocol
+design is such that that can't be guaranteed anyway; and at least the
+banner wouldn't be dropped on the floor, which might be important for
+things like legal notices.
