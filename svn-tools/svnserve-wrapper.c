@@ -10,6 +10,8 @@
 
 #include <unistd.h>
 
+#include "tree234.h"
+
 #ifndef TRUE
 #define TRUE 1
 #endif
@@ -50,6 +52,33 @@ union svnprotocol_item {
     } num;			       /* covers NUMBER */
 };
 
+/*
+ * The Subversion protocol transmits two sets of data representing
+ * the directory path, side by side. A typical request will be
+ * something like `open-dir', which will take one argument that's
+ * the pathname of the directory relative to the original base URL
+ * specified at the start of the connection, and another argument
+ * that's a `token' (basically a handle) representing the directory
+ * one level above it.
+ * 
+ * Since we are a security application, we have to allow for the
+ * possibility that a malicious client may attempt to confuse the
+ * Subversion server by passing a token to the wrong parent
+ * directory. Therefore, we must check ourselves that the tokens
+ * and the pathnames match up and make sense. Thus, I store a
+ * tree234 of currently active dir tokens.
+ */
+struct dir_token {
+    char *token;
+    char *path;
+};
+
+struct svn_semantics {
+    char *base_path;
+    char *repository;
+    tree234 *tokens;
+};
+
 struct svnprotocol_state {
     /*
      * We don't actually need to determine the full parse tree for
@@ -84,6 +113,8 @@ struct svnprotocol_state {
      * flow, or the incoming (server->client responses) one.
      */
     int outgoing;
+
+    struct svn_semantics *sstate;
 };
 
 struct buffer {
@@ -92,6 +123,309 @@ struct buffer {
 };
 
 void buffer_add(struct buffer *buf, char *data, int len);
+
+int tokencmp(void *av, void *bv)
+{
+    struct dir_token *a = (struct dir_token *)av;
+    struct dir_token *b = (struct dir_token *)bv;
+
+    return strcmp(a->token, b->token);
+}
+
+struct svn_semantics *new_semantic_state(char *repository)
+{
+    struct svn_semantics *state = malloc(sizeof(struct svn_semantics));
+    if (!state) {
+	fprintf(stderr, "svnserve-wrapper: out of memory\n");
+	exit(1);
+    }
+
+    state->base_path = NULL;
+    state->repository = repository;
+    state->tokens = newtree234(tokencmp);
+
+    return state;
+}
+
+#define ISTYPE(x) (len > 0 && p->generic.type == (x))
+#define ISNUM(n) (ISTYPE(SVT_NUMBER) && p->num.value == (n))
+#define ISWORD(s) (ISTYPE(SVT_WORD) && \
+		   p->text.len == strlen((s)) && \
+		   !memcmp(data + p->text.datapos, s, p->text.len))
+#define ADVANCE (p++, len--)
+#define EXPECT(expr) do { \
+    if (!(expr)) { \
+	fprintf(stderr, "error parsing svnserve protocol [%d]\n", __LINE__); \
+	exit(1); \
+    } \
+    ADVANCE; \
+} while (0)
+#define ENDLIST(depth) do { \
+    int d = (depth); \
+    while (d > 0) { \
+	if (len <= 0) { \
+	    fprintf(stderr, "error parsing svnserve protocol [%d]\n", __LINE__); \
+	    exit(1); \
+	} \
+	if (ISTYPE(SVT_OPEN)) d++; \
+	else if (ISTYPE(SVT_CLOSE)) d--; \
+	p++, len--; \
+    } \
+} while (0)
+
+char *duptext(union svnprotocol_item *item, char *data)
+{
+    char *ret;
+    ret = malloc(item->text.len + 1);
+    if (!ret) {
+	fprintf(stderr, "svnserve-wrapper: out of memory\n");
+	exit(1);
+    }
+    memcpy(ret, data + item->text.datapos, item->text.len);
+    ret[item->text.len] = '\0';
+    return ret;
+}
+
+void check_access(char *base_path, char *path)
+{
+    fprintf(stderr, "check_access <%s> <%s>\n", base_path, path);
+}
+
+void add_token_path(struct svn_semantics *state, char *token, char *path)
+{
+    struct dir_token *t;
+
+    t = malloc(sizeof(struct dir_token));
+    if (!t) {
+	fprintf(stderr, "svnserve-wrapper: out of memory\n");
+	exit(1);
+    }
+
+    t->token = token;
+    t->path = malloc(1 + strlen(path));
+    if (!t->path) {
+	fprintf(stderr, "svnserve-wrapper: out of memory\n");
+	exit(1);
+    }
+    strcpy(t->path, path);
+
+    if (add234(state->tokens, t) != t) {
+	fprintf(stderr, "svnserve-wrapper: attempt to reuse an existing "
+		"dir-token\n");
+	exit(1);
+    }
+}
+
+struct dir_token *lookup_token(struct svn_semantics *state, char *token)
+{
+    struct dir_token t, *tt;
+    t.token = token;
+    t.path = NULL;
+
+    tt = find234(state->tokens, &t, NULL);
+
+    if (!tt) {
+	fprintf(stderr, "svnserve-wrapper: attempt to reference a "
+		"non-existent dir-token\n");
+	exit(1);
+    }
+
+    return tt;
+}
+
+void remove_token_path(struct svn_semantics *state, char *token)
+{
+    struct dir_token *t = lookup_token(state, token);
+
+    del234(state->tokens, t);
+
+    free(t->token);
+    free(t->path);
+    free(t);
+}
+
+void verify_token_parent_path(struct svn_semantics *state,
+			      char *token, char *path)
+{
+    char *slash;
+    struct dir_token *t;
+
+    /*
+     * Find the rightmost slash in path. If it doesn't exist,
+     * pretend it was right at the start.
+     */
+    slash = strrchr(path, '/');
+    if (!slash)
+	slash = path;
+
+    /*
+     * Now check that everything before that path is precisely
+     * equal to the path represented by token.
+     */
+    t = lookup_token(state, token);
+    if (strlen(t->path) != slash-path ||
+	memcmp(t->path, path, slash-path)) {
+	fprintf(stderr, "svnserve-wrapper: parent token did not match "
+		"directory\n");
+	exit(1);
+    }
+}
+
+void parse_svn_message(struct svn_semantics *state, char *data,
+		       union svnprotocol_item *items, int nitems)
+{
+    union svnprotocol_item *p = items;
+    int len = nitems;
+
+    if (!state->base_path) {
+	char *url;
+	/*
+	 * We expect the very first client-side message to give the
+	 * path of the Subversion repository. In fact we know quite
+	 * precisely what we expect the message to look like.
+	 */
+	EXPECT(ISTYPE(SVT_OPEN));
+	EXPECT(ISTYPE(SVT_NUMBER));
+	EXPECT(ISTYPE(SVT_OPEN));
+	ENDLIST(1);
+	EXPECT(ISTYPE(SVT_STRING));
+	url = duptext(p-1, data);
+	EXPECT(ISTYPE(SVT_CLOSE));
+
+	/*
+	 * Now parse the URL. We discard the protocol and host
+	 * parts, and head straight for the pathname. We then bomb
+	 * out if that pathname doesn't _begin_ with the prefix
+	 * given to us in argv[2], and we save everything after
+	 * that so that we know the absolute within-repository
+	 * paths to inform our access control decisions.
+	 */
+	{
+	    char *q;
+
+	    q = url;
+	    while (*q && *q != ':') q++;
+	    if (q[0] == ':' && q[1] == '/' && q[2] == '/') {
+		q += 3;
+		while (*q && *q != '/') q++;
+		if (q[0] == '/') {
+		    /*
+		     * Now we've found the pathname.
+		     */
+fprintf(stderr, "<%s> <%s>\n", q, state->repository);
+		    if (strncmp(q, state->repository,
+				strlen(state->repository)) ||
+			(q[strlen(state->repository)] != '/' &&
+			 q[strlen(state->repository)] != '\0')) {
+			fprintf(stderr, "svnserve-wrapper: attempt to "
+				"access wrong repository <%s>\n", url);
+			exit(1);
+		    }
+		    q += strlen(state->repository);
+		    state->base_path = q;
+		}
+	    }
+	}
+
+	if (!state->base_path) {
+	    fprintf(stderr,
+		    "svnserve-wrapper: unable to parse repository URL\n");
+	    exit(1);
+	}
+    } else {
+
+	/*
+	 * Otherwise, we're watching editor commands and looking
+	 * out for attempts to modify parts of the repository.
+	 */
+
+	EXPECT(ISTYPE(SVT_OPEN));
+
+	if (ISWORD("open-root")) {
+	    char *token;
+
+	    /*
+	     * This opens base_path itself. Expect a revision tuple
+	     * which we ignore, followed by a token.
+	     */
+	    check_access(state->base_path, "");
+
+	    ADVANCE;
+
+	    EXPECT(ISTYPE(SVT_OPEN));
+	    EXPECT(ISTYPE(SVT_OPEN));
+	    ENDLIST(1);
+	    EXPECT(ISTYPE(SVT_STRING));
+	    token = duptext(p-1, data);
+	    add_token_path(state, token, "");
+	} else if (ISWORD("open-dir") ||
+		   ISWORD("open-file") ||
+		   ISWORD("add-dir") ||
+		   ISWORD("add-file") ||
+		   ISWORD("delete-entry")) {
+	    char *path, *cmd, *ptoken, *ttoken;
+
+	    cmd = duptext(p, data);
+	    ADVANCE;
+
+	    /*
+	     * All of these commands start off with a pathname,
+	     * which we concatenate to the end of base_path and
+	     * check.
+	     */
+	    EXPECT(ISTYPE(SVT_OPEN));
+	    EXPECT(ISTYPE(SVT_STRING));
+
+	    path = duptext(p-1, data);
+	    check_access(state->base_path, path);
+
+	    /*
+	     * delete-entry now provides a revision tuple, which we
+	     * ignore.
+	     */
+	    if (!strcmp(cmd, "delete-entry")) {
+		EXPECT(ISTYPE(SVT_OPEN));
+		ENDLIST(1);		
+	    }
+
+	    /*
+	     * All five of these commands now provide a parent-dir
+	     * token, which we grab and verify against the path.
+	     */
+	    EXPECT(ISTYPE(SVT_STRING));
+	    ptoken = duptext(p-1, data);
+	    verify_token_parent_path(state, ptoken, path);
+	    free(ptoken);
+
+	    /*
+	     * open-dir and add-dir follow this with a child-dir
+	     * token, which we grab and install in our dir token
+	     * list.
+	     */
+	    if (!strcmp(cmd, "open-dir") || !strcmp(cmd, "add-dir")) {
+		EXPECT(ISTYPE(SVT_STRING));
+		ttoken = duptext(p-1, data);
+		add_token_path(state, ttoken, path);
+	    }
+
+	    free(path);
+	} else if (ISWORD("close-dir")) {
+	    char *token;
+
+	    ADVANCE;
+
+	    /*
+	     * Expect a dir token, which we grab and remove from
+	     * our token list.
+	     */
+	    EXPECT(ISTYPE(SVT_OPEN));
+	    EXPECT(ISTYPE(SVT_STRING));
+	    token = duptext(p-1, data);
+	    remove_token_path(state, token);
+	    free(token);
+	}
+    }
+}
 
 void svnprotocol_init(struct svnprotocol_state *state)
 {
@@ -215,9 +549,10 @@ int svnprotocol_parse(struct svnprotocol_state *state, char *data,
 	    if (state->parendepth < 0) {
 		error = TRUE;
 	    } else if (state->parendepth == 0) {
+#ifdef DEBUG_MESSAGES
 		int i;
-		fprintf(stderr, "--- start %d\n", state->outgoing);
 
+		fprintf(stderr, "--- start %d\n", state->outgoing);
 		for (i = 0; i < state->nitems; i++) {
 		    switch (state->items[i].generic.type) {
 		      case SVT_NUMBER:
@@ -239,8 +574,12 @@ int svnprotocol_parse(struct svnprotocol_state *state, char *data,
 			break;
 		    }
 		}
-
 		fprintf(stderr, "--- end\n");
+#endif
+
+		if (state->outgoing)
+		    parse_svn_message(state->sstate, data,
+				      state->items, state->nitems);
 
 		used = pos;
 
@@ -298,7 +637,7 @@ void buffer_write(struct buffer *buf, int fd, int close_afterwards)
      * think up a better way.
      */
     buffer_remove(buf, ret);
-    if (buf->len = 0 && close_afterwards)
+    if (buf->len == 0 && close_afterwards)
 	close(fd);
 }
 
@@ -394,6 +733,7 @@ int main(int argc, char **argv)
     command_state.outgoing = TRUE;
     response_state.outbuf = &buf_to_stdout;
     response_state.outgoing = FALSE;
+    command_state.sstate = new_semantic_state(repository);
 
     while (1) {
 	fd_set reads, writes;
