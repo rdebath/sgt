@@ -246,7 +246,13 @@ def formatitem(item):
     if item.contfrom:
 	list = list + ["(Continued from " + item.contfrom + ")", ""]
     for j in item.contribs:
-	list = list + ["\aR\aB\aCb" + "-" * (width-28) + \
+	minuses = width - 30
+	if j.sequence != 0:
+	    sequence = "[\ab#%x\aB]" % j.sequence
+	    minuses = minuses - (len(sequence) - 4)  # account for \ab, \aB
+	else:
+	    sequence = ""
+	list = list + ["\aR\aB\aCb" + "-" * minuses + sequence + "--" + \
 	"[\ab" + time.ctime(j.timestamp) + "\aB]--\aa\aCA"]
 	if j.userid != "":
 	    # "From: grogname (userid)"
