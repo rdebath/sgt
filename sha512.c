@@ -375,7 +375,7 @@ int main(void) {
     struct {
 	const char *teststring;
 	unsigned char digest512[64];
-	unsigned char digest384[64];
+	unsigned char digest384[48];
     } tests[] = {
 	{ "abc", {
 	    0xdd, 0xaf, 0x35, 0xa1, 0x93, 0x61, 0x7a, 0xba,
