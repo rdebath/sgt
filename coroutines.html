@@ -534,7 +534,9 @@ the problems with re-entrancy, and still hasn't impacted the
 <p>
 (Of course, if C only had Pascal's <code>with</code> statement, we
 could arrange for the macros to make this layer of indirection truly
-transparent as well. A pity.)
+transparent as well. A pity. Still, at least C++ users can manage
+this by having their coroutine be a class member, and keeping all
+its local variables in the class so that the scoping is implicit.)
 
 <p>
 Included here is a C header file that implements this coroutine
@@ -594,7 +596,7 @@ worst piece of C hackery ever seen in serious production code.
 <hr>
 
 <p>
-<i>$Id: coroutines.html,v 1.2 2001/09/24 22:10:00 simon Exp $</i>
+<i>$Id: coroutines.html,v 1.3 2004/01/10 18:00:42 simon Exp $</i>
 
 <p>
 Copyright &copy; 2000 Simon Tatham.
