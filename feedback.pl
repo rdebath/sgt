@@ -20,7 +20,7 @@ print << 'EOF';
 <a href="maillist.html">Updates</a> |
 <b>Feedback</b> |
 <a href="changes.html">Changes</a> |
-<a href="wishlist.html">Wishlist</a> |
+<a href="wishlist/">Wishlist</a> |
 <a href="team.html">Team</a></p>
 EOF
 
