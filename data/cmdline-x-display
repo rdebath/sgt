@@ -1,0 +1,15 @@
+Summary: Command-line option to set local X display
+Class: wish
+Priority: medium
+Difficulty: fun
+Content-type: text/x-html-body
+
+<p>PuTTY should probably have a command-line option to set the local X display,
+so that people who run PuTTY on multi-user machines can get the right one.
+Of course, if there's some better way to find the user's X display in Windows,
+we should support that too.
+
+<p><a href="cmdline-any-option.html">cmdline-any-option</a> might make this
+unnecessary.
+
+<p>Ref: &lt;476F91F7CFDBD41182E000D0B7E7E6930304A958@U9JM7.mgb01.telekom.de&gt;
