@@ -76,7 +76,7 @@ if verbose:
 
 if ljproto.ljok(ret):
     tryit = 0
-    interval = string.atoi(ret["interval"])
+    interval = string.atoi(ret.get("interval", 60))
     if ret["lastupdate"] == "":
 	# This appears to indicate that checkfriends is bust, and
 	# so we should retrieve the URL.
