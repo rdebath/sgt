@@ -12,11 +12,11 @@ extern char *tetris_shapes[7+1];
 extern char *pentris_shapes[18+1];
 
 /*
- * The actual game logic. You call `init_game' to set up an
+ * The actual game logic. You call `ntris_init' to set up an
  * instance of an Ntris game (passing NULL as the shapeset if you
  * just want the default). This initialises most of the game; next
- * you call `init_shape', which sets up the first shape to start
- * dropping. Now you can call the various `try' functions in
+ * you call `ntris_newshape', which sets up the first shape to
+ * start dropping. Now you can call the various `try' functions in
  * response to player controls, and call `drop' either on a timer
  * or in response to the player pressing a drop button.
  * 
@@ -26,35 +26,38 @@ extern char *pentris_shapes[18+1];
  * piece was successful (so a front end could, for instance, choose
  * what noise to make).
  * 
- * `softdrop' is a one-space soft drop, and returns TRUE if it
- * caused the piece to finish its dropping (in which case line
+ * `ntris_softdrop' is a one-space soft drop, and returns TRUE if
+ * it caused the piece to finish its dropping (in which case line
  * checking and an arena redraw will also have been done). Of
- * course, after `softdrop' returns TRUE, you will almost certainly
- * want to call `init_shape' again.
+ * course, after `ntris_softdrop' returns TRUE, you will almost
+ * certainly want to call `ntris_newshape' again.
  * 
- * `harddrop' is an all-the-way instantaneous drop, and therefore
- * it is always successful and returns nothing.
+ * `ntris_harddrop' is an all-the-way instantaneous drop, and
+ * therefore it is always successful and returns nothing.
  * 
- * `init_shape' returns FALSE if there was no space to place the
+ * `ntris_newshape' returns FALSE if there was no space to place the
  * new piece - which is of course the game-over condition.
  * 
- * `try_hold' moves a piece into the hold cell, or swaps the piece in
- * the hold cell with the current falling piece. It can never cause
- * game-over, because it will fail rather than do anything lethal;
- * like the other `try' functions, it will return TRUE if
- * successful.
+ * `ntris_try_hold' moves a piece into the hold cell, or swaps the
+ * piece in the hold cell with the current falling piece. It can
+ * never cause game-over, because it will fail rather than do
+ * anything lethal; like the other `try' functions, it will return
+ * TRUE if successful.
  */
-struct ntris_instance *init_game(struct frontend_instance *fe,
-				 int width, int height, char **shapeset);
-int init_shape(struct ntris_instance *inst);
-int try_move_left(struct ntris_instance *inst);
-int try_move_right(struct ntris_instance *inst);
-int try_anticlock(struct ntris_instance *inst);
-int try_clockwise(struct ntris_instance *inst);
-int try_reflect(struct ntris_instance *inst);
-int try_hold(struct ntris_instance *inst);
-int softdrop(struct ntris_instance *inst);
-void harddrop(struct ntris_instance *inst);
+struct ntris_instance *ntris_init(struct frontend_instance *fe,
+				  int width, int height, int shapeset);
+int ntris_newshape(struct ntris_instance *inst);
+int ntris_try_left(struct ntris_instance *inst);
+int ntris_try_right(struct ntris_instance *inst);
+int ntris_try_anticlock(struct ntris_instance *inst);
+int ntris_try_clockwise(struct ntris_instance *inst);
+int ntris_try_reflect(struct ntris_instance *inst);
+int ntris_try_hold(struct ntris_instance *inst);
+int ntris_softdrop(struct ntris_instance *inst);
+void ntris_harddrop(struct ntris_instance *inst);
+
+/* Shapeset enum used in ntris_init. */
+enum { TETRIS_SHAPES, PENTRIS_SHAPES, NSHAPESETS };
 
 /*
  * `get_score' returns some aspect of the score in the current
@@ -71,14 +74,14 @@ enum {
     SCORE_PENTRIS,		       /* lines cleared five at a time */
     NUM_SCORES			       /* (used internally in ntris.c) */
 };
-int get_score(struct ntris_instance *inst, int which);
+int ntris_get_score(struct ntris_instance *inst, int which);
 
 /*
  * This query function tells the front end the largest dimension of
  * any shape in the shapeset, for purposes such as allocating
  * enough screen space for a hold cell or next-piece display.
  */
-int shape_maxsize(struct ntris_instance *inst);
+int ntris_shape_maxsize(struct ntris_instance *inst);
 
 /*
  * The game logic will call back to this function in response to
@@ -90,8 +93,8 @@ int shape_maxsize(struct ntris_instance *inst);
  * `area' indicates which of several different drawing areas the
  * block is to be drawn in. The possible values are enumerated below.
  */
-void block(struct frontend_instance *inst, int area,
-	   int x, int y, int col, int type);
+void ntris_fe_block(struct frontend_instance *inst, int area,
+		    int x, int y, int col, int type);
 
 enum {
     AREA_MAIN,			       /* the main playing area */

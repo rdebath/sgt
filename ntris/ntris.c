@@ -88,7 +88,7 @@
  *    after it is labelled F.
  */
 
-char *tetris_shapes[7+1] = {
+static char *tetris_shapes[7+1] = {
     "X0:10011121:10011112:01112112:10111221", /* T-piece */
     "X3:01112131:10111213",	             /* long bar */
     "X4:00011121:10111202:01112122:10111220", /* reverse L */
@@ -99,7 +99,7 @@ char *tetris_shapes[7+1] = {
     NULL
 };
 
-char *pentris_shapes[18+1] = {
+static char *pentris_shapes[18+1] = {
     "Y0:0102122221:1020211222:0010200121:0010010212",  /* U */
     "X1:1101211012",                                   /* X */
     "C2:1121122232:1121122220:1121122201:1121122213",  /* P */
@@ -125,6 +125,8 @@ char *pentris_shapes[18+1] = {
 #define SHAPESET tetris_shapes
 #endif
 static char **default_shapeset = SHAPESET;
+
+static char **shapesets[NSHAPESETS] = { tetris_shapes, pentris_shapes };
 
 struct shapeset {
     void *data[4];		       /* things to free when this dies */
@@ -320,8 +322,8 @@ static void draw_shape(struct ntris_instance *inst, int shape,
 	int xy, flag;
 	xy = *p++;
 	flag = *p++;
-	block(inst->fe, area,
-	      (x + ((xy>>4) & 0xF)), (y + (xy & 0xF)), c, flag);
+	ntris_fe_block(inst->fe, area,
+		       (x + ((xy>>4) & 0xF)), (y + (xy & 0xF)), c, flag);
     }
 }
 
@@ -382,7 +384,7 @@ static void eat_nextshape(struct ntris_instance *inst)
     }
 }
 
-int init_shape(struct ntris_instance *inst)
+int ntris_newshape(struct ntris_instance *inst)
 {
     inst->shape_x = (inst->play_width - inst->ss->width[inst->currshape]) / 2;
     inst->shape_y = 0;
@@ -395,7 +397,7 @@ int init_shape(struct ntris_instance *inst)
     return TRUE;
 }
 
-int shape_maxsize(struct ntris_instance *inst)
+int ntris_shape_maxsize(struct ntris_instance *inst)
 {
     int i;
     int max = 0;
@@ -406,15 +408,18 @@ int shape_maxsize(struct ntris_instance *inst)
     return max;	
 }
 
-struct ntris_instance *init_game(struct frontend_instance *fe,
-				 int width, int height, char **shapeset)
+struct ntris_instance *ntris_init(struct frontend_instance *fe,
+				  int width, int height, int shapeid)
 {
     struct ntris_instance *inst = malloc(sizeof(struct ntris_instance));
     int nshapes;
     int i;
+    char **shapeset;
 
-    if (!shapeset)
+    if (shapeid < 0 || shapeid >= NSHAPESETS)
 	shapeset = default_shapeset;
+    else
+	shapeset = shapesets[shapeid];
 
     for (nshapes = 0; shapeset[nshapes]; nshapes++);
     inst->ss = make_shapeset(shapeset, nshapes);
@@ -438,13 +443,13 @@ struct ntris_instance *init_game(struct frontend_instance *fe,
     return inst;
 }
 
-int get_score(struct ntris_instance *inst, int which)
+int ntris_get_score(struct ntris_instance *inst, int which)
 {
     assert(which >= 0 && which < NUM_SCORES);
     return inst->scores[which];
 }
 
-int try_move_left(struct ntris_instance *inst)
+int ntris_try_left(struct ntris_instance *inst)
 {
     if (shape_fits(inst, inst->currshape, inst->shape_x-1, inst->shape_y)) {
 	draw_shape(inst, inst->currshape, AREA_MAIN,
@@ -457,7 +462,7 @@ int try_move_left(struct ntris_instance *inst)
     return FALSE;
 }
 
-int try_move_right(struct ntris_instance *inst)
+int ntris_try_right(struct ntris_instance *inst)
 {
     if (shape_fits(inst, inst->currshape, inst->shape_x+1, inst->shape_y)) {
 	draw_shape(inst, inst->currshape, AREA_MAIN,
@@ -470,7 +475,7 @@ int try_move_right(struct ntris_instance *inst)
     return FALSE;
 }
 
-int try_move_down(struct ntris_instance *inst)
+static int try_move_down(struct ntris_instance *inst)
 {
     if (shape_fits(inst, inst->currshape, inst->shape_x, inst->shape_y+1)) {
 	draw_shape(inst, inst->currshape, AREA_MAIN,
@@ -483,7 +488,7 @@ int try_move_down(struct ntris_instance *inst)
     return FALSE;
 }
 
-int try_anticlock(struct ntris_instance *inst)
+int ntris_try_anticlock(struct ntris_instance *inst)
 {
     if (shape_fits(inst, inst->ss->anticlock[inst->currshape],
 		   inst->shape_x, inst->shape_y)) {
@@ -497,7 +502,7 @@ int try_anticlock(struct ntris_instance *inst)
     return FALSE;
 }
 
-int try_clockwise(struct ntris_instance *inst)
+int ntris_try_clockwise(struct ntris_instance *inst)
 {
     if (shape_fits(inst, inst->ss->clockwise[inst->currshape],
 		   inst->shape_x, inst->shape_y)) {
@@ -511,7 +516,7 @@ int try_clockwise(struct ntris_instance *inst)
     return FALSE;
 }
 
-int try_reflect(struct ntris_instance *inst)
+int ntris_try_reflect(struct ntris_instance *inst)
 {
     if (shape_fits(inst, inst->ss->reflected[inst->currshape],
 		   inst->shape_x, inst->shape_y)) {
@@ -525,7 +530,7 @@ int try_reflect(struct ntris_instance *inst)
     return FALSE;
 }
 
-int try_hold(struct ntris_instance *inst)
+int ntris_try_hold(struct ntris_instance *inst)
 {
     int fresh_shape, fresh_x, fresh_y;
 
@@ -637,7 +642,8 @@ static void check_lines(struct ntris_instance *inst)
 	    int c, flag;
 	    c = PLAYAREA(i,targ,0);
 	    flag = PLAYAREA(i,targ,1);
-	    block(inst->fe, AREA_MAIN, i, targ, (c == 0xFF ? -1 : c), flag);
+	    ntris_fe_block(inst->fe, AREA_MAIN, i,
+			   targ, (c == 0xFF ? -1 : c), flag);
 	}
     }
 
@@ -661,7 +667,7 @@ static void postdrop(struct ntris_instance *inst)
     eat_nextshape(inst);
 }
 
-int softdrop(struct ntris_instance *inst)
+int ntris_softdrop(struct ntris_instance *inst)
 {
     if (try_move_down(inst))
 	return FALSE;
@@ -669,7 +675,7 @@ int softdrop(struct ntris_instance *inst)
     return TRUE;
 }
 
-void harddrop(struct ntris_instance *inst)
+void ntris_harddrop(struct ntris_instance *inst)
 {
     while (try_move_down(inst))
 	continue;
