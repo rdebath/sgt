@@ -9,24 +9,31 @@
 
 # Remaining serious FIXMEs are ...
 #
-# - Castability.
+#  - Castability.
 #
-# - Type unification (filling in blanks in parameter lists, adding dimension
-#   to unspecified-length arrays).
+#  - Type unification (filling in blanks in parameter lists, adding
+#    dimension to unspecified-length arrays).
 #
-# - Initialisers.
+#  - Initialisers.
 #
-# - Floats.
+#  - Floats.
 #
-# - Missing operators: sizeof, unary &, ?:.
+#  - Missing operators: sizeof, unary &, ?:.
 #
-# - Bitfields.
+#  - Bitfields.
 #
-# - Old-style (K&R) argument declarations.
+#  - Old-style (K&R) argument declarations.
 #
-# - Missing statements: goto, break, continue, do...while, switch.
+#  - Missing statements: goto, break, continue, do...while, switch.
 #
-# - Labelled statements.
+#  - Labelled statements.
+#
+#  - There seems to be some confusion about storage class
+#    qualifiers: whether they just use the lex constants
+#    (lt_static, lt_extern etc) or whether they use the sc_*
+#    constants. This should be sorted out; they should use sc_*
+#    everywhere, and be converted the moment they come in from the
+#    parser's data structures.
 
 import string
 
@@ -707,12 +714,12 @@ class semantics:
     }
 
     # Map storage class qualifier keywords to storage classes.
-    typequalmap = {
-    lt_extern: sc_extern,
-    lt_static: sc_static,
-    lt_register: sc_register,
-    lt_auto: sc_auto,
-    }
+    #stgqualmap = {
+    #lt_extern: sc_extern,
+    #lt_static: sc_static,
+    #lt_register: sc_register,
+    #lt_auto: sc_auto,
+    #}
 
     # Parse tree nodes we expect in an expression.
     exprnodes = {pt_primary_expression: 1, pt_postfix_expression: 1,
