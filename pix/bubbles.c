@@ -30,7 +30,7 @@
 #include <string.h>
 #include <time.h>
 
-#define VERSION "$Revision: 1.2 $"
+#define VERSION "$Revision: 1.3 $"
 
 #define TRUE 1
 #define FALSE 0
@@ -266,7 +266,7 @@ int plot(struct Params params) {
             r1_2 = radius * radius;
             for (j = ymin; j <= ymax; j++) for (i = xmin; i <= xmax; i++) {
                 int dist2 = (j-y)*(j-y) + (i-x)*(i-x);
-                float z1, nx, ny, nz, lx, ly, lz, ldot;
+                float z1, nx, ny, nz, lx, ly, lz, ldot, vdot;
                 int pv1, pval;
 
                 if (dist2 <= r1_2)
@@ -274,29 +274,39 @@ int plot(struct Params params) {
                 else
                     continue;          /* this pixel is outside the bubble */
 
+		/* Normalised vector giving surface normal. */
                 nx = (x-i)/(float)radius;
                 ny = (y-j)/(float)radius;
                 nz = -z1/radius;
                 pval = 0;
 
-                lx = -1/sqrt(3); ly = lx; lz = lx;
-                ldot = lx * nx + ly * ny + lz * nz;
-                pv1 = (ldot > 0 ? ldot*ldot * 224.0 : 0);
-                pval = pval + pv1;
+		/* Vector pointing from a light source. */
+                lx = 1/sqrt(3); ly = lx; lz = lx;
 
-#if 0
-                lx = 1/sqrt(2); lz = -lx; ly = 0;
+		/* Dot product between incoming light vector and
+		 * surface normal. */
                 ldot = lx * nx + ly * ny + lz * nz;
-                pv1 = (ldot > 0 ? ldot*ldot*ldot * 128.0 : 0);
-                pval = pval + pv1;
 
-                ly = 1/sqrt(2); lz = -ly; lx = 0;
-                ldot = lx * nx + ly * ny + lz * nz;
-                pv1 = (ldot > 0 ? ldot*ldot*ldot * 128.0 : 0);
-                pval = pval + pv1;
-#endif
+		/* Diffuse shading component. */
+		pv1 = -64.0 * ldot;
+		pval = pval + pv1;
 
-                pval += 32;
+		/* Vector of perfect reflection of the light source. */
+		/* lx -= 2*ldot*nx; ly -= 2*ldot*ny; */ lz -= 2*ldot*nz;
+
+		/* Dot product of viewer vector and perfect-reflection
+		 * vector. (Vector to viewer is (0,0,-1).) */
+		vdot = -lz;
+
+		if (vdot >= 0) {
+		    /* Phong's formula. Ad hoc roughness coefficient is 3. */
+		    pv1 = 111.0 * (vdot*vdot*vdot*vdot);
+
+		    pval = pval + pv1;
+		}
+
+                pval += 80;	       /* ambient light */
+
                 if (pval > 255) pval = 255;
 
                 pvals[j*w+i].r = pval;
