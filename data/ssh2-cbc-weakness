@@ -1,0 +1,19 @@
+Summary: SSH2 CBC weaknesses can be worked around
+Class: wish
+Priority: low
+Difficulty: tricky
+Content-type: text/x-html-body
+Present-in: 2005-01-17
+
+<p><a href="http://www.cs.ucsd.edu/users/tkohno/papers/SSH/index.php">Bellare
+<i>et al</i></a> describe a weakness in the use of CBC-mode ciphers in SSH2.
+Section 9.2.1 of the current secsh-architecture draft suggests emitting an
+SSH_MSG_IGNORE before each real packet, which I think converts Bellare
+<i>et al</i>'s SSH-IPC into SSH-NPC.  Bellare <i>et al</i> suggest that that
+has a weakness too, and we should pad each real packet with at least one
+cipher block of random data, which would give us something equivalent to
+SSH-$NPC.
+
+<p>Implementing this in PuTTY would be fairly easy, and would give us decent
+security until CTR modes are standardised.  It would, though, add something
+like 32 bytes of overhead to each SSH packet in CBC mode.
