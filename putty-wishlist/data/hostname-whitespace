@@ -3,6 +3,7 @@ Class: wish
 Priority: medium
 Difficulty: fun
 Content-Type: text/x-html-body
+Fixed-in: 2002-10-17
 
 <p>
 It might be generous if we skipped whitespace when parsing IP
