@@ -2,10 +2,6 @@
 
 # Todo:
 #
-#  - Clare's request: scans should (configurably) stop at the
-#    screen containing the file they find, rather than diving
-#    straight into that file.
-#
 #  - Line editing and recall in bottom-line input.
 #  - Sessions without write access: be able to start them, and know
 #    what your session is when deciding whether to allow adding.
@@ -563,6 +559,12 @@ def loadindex(filename):
 	items[i.itemid] = i
     return items, lastseq
 
+scan_id = 0L
+def new_scan():
+    global scan_id
+    scan_id = scan_id + 1
+    return scan_id
+
 class menu:
     "Class describing a Grunge menu context"
     def _fmtline(self, line):
@@ -630,6 +632,7 @@ class menu:
 	self.parent = None
 	self.scannable = (flags & 1) != 0
 	self.hasitems = (flags & 2) != 0
+	self.scan_id = -1
 	self.clear()
     def addchild(self, childmenu, key, text):
 	self.lines.append((key, "m", childmenu, text))
@@ -718,17 +721,75 @@ class menu:
 	for i in self.lines:
 	    if i[1] == "i":
 		i[2].uptodate = 1
-    def scan(self):
-	for scan in [1,2]:
-	    for i in self.lines:
-		if i[1] == "i" and not i[2].uptodate and (i[2].subscription & scan):
-		    return self, i[2].itemid
-	    for i in self.lines:
-		if i[1] == "m":
-		    m, itemid = i[2].scan()
-		    if itemid != "":
-			return m, itemid
-	return self, ""
+    def scan(self, my, myb, first_attempt):
+	# First, see if we're continuing an existing scan, and
+	# start a new one if not.
+	sys.stderr.write("scan(%s,%d,%d)\n" % (str(self), my, myb))
+	sys.stderr.write("id=%d self.id=%d\n" % (scan_id, self.scan_id))
+	if self.scan_id != scan_id:
+	    sys.stderr.write("Starting new scan\n")
+	    self.scan_id = new_scan()
+	    self.scan_pos = 0
+	    self.scan_parent = None
+	    self.scan_pass = 1
+	sys.stderr.write("id=%d pos=%d parent=%s pass=%d\n" % (self.scan_id, self.scan_pos, self.scan_parent, self.scan_pass))
+	# Now scan all the items in this menu after scan_pos.
+	for i in range(self.scan_pos, len(self.lines)):
+	    line = self.lines[i]
+	    if line[1] == "i" and not line[2].uptodate and \
+	    (line[2].subscription & self.scan_pass):
+		# We've found an item. Return a menu and
+		# y-coordinate, and also an itemid unless we've
+		# had to move to get to it and we're not
+		# configured to dive straight in.
+		if (rcfile.get("scan-straight-in", "yes") == "yes") or \
+		(first_attempt and i >= my and i < myb):
+		    self.scan_pos = i+1  # resume scan after this item
+		    return self, my, line[2].itemid
+		else:
+		    self.scan_pos = i    # resume scan _on_ this item
+		    # We adjust the y position to be an exact
+		    # number of screenfuls down the menu.
+		    return self, i - (i % (height-4)), ""
+	sys.stderr.write("Item scan completed\n")
+	# Failing that, look for a submenu and scan into that.
+	for i in range(self.scan_pos, len(self.lines)):
+	    line = self.lines[i]
+	    if line[1] == "m" and line[2].scannable:
+		# We've found a menu. Return the new menu and
+		# y-coordinate 0, and an itemid of None (meaning
+		# `continue scanning from here').
+		self.scan_pos = i+1  # resume scan after this item
+		line[2].scan_id = scan_id
+		line[2].scan_pos = 0
+		line[2].scan_parent = self
+		line[2].scan_pass = self.scan_pass
+		sys.stderr.write("Found a submenu\n")
+		return line[2], 0, None
+	# We've scanned everything in this menu, so set the scan id
+	# to -1 to ensure dead bits of the scan won't be continued
+	# here.
+	sys.stderr.write("Finished scan in this menu\n")
+	self.scan_id = -1
+	# Now see if we can move up to the parent.
+	if self.scan_parent != None:
+	    sys.stderr.write("Moving to parent\n")
+	    return self.scan_parent, self.scan_parent.scan_pos, None
+	# If none of the above, we've hit the end of the scan. If
+	# we were on pass one, reset to pass two and y-coordinate 0
+	# and go round again.
+	sys.stderr.write("Checking pass number\n")
+	if self.scan_pass == 1:
+	    self.scan_pass = 2
+	    self.scan_pos = 0
+	    self.scan_id = scan_id
+	    sys.stderr.write("Restarting on pass 2\n")
+	    return self, self.scan_pos, None
+	# No - we really _have_ reached the end of the scan. Return
+	# the top of our own menu, and an itemid of "" (meaning
+	# `don't continue scanning').
+	sys.stderr.write("Completely finished\n")
+	return self, 0, ""
 
 # We get the threshold timestamps for the various age-selected item
 # menus at initialisation time, so that repeating the index checks
@@ -865,10 +926,9 @@ def mkmenus(items):
 
     return (Mmain, Mescape)
 
-def showmenus(mainmenu, escmenu, startmenu):
+def showmenus(mainmenu, escmenu, startmenu, my):
     try:
 	m = startmenu
-	my = 0
 	while 1:
 	    myb = m.show(my)
 	    if m.scannable:
@@ -878,36 +938,44 @@ def showmenus(mainmenu, escmenu, startmenu):
 	    cc = scr.getch()
 	    c = mylc(cc)
 	    if c == ord("\033"):
-		return ("m", None, escmenu)
+		return ("m", 0, escmenu)
 	    elif c == ord("q") or c == ord("\r") or c == ord("\n"):
 		if m.parent != None:
-		    return ("m", None, m.parent)
+		    return ("m", 0, m.parent)
 		elif cc == ord("Q"):
 		    return ("s", "exit", mret)
 		else:
-		    return ("m", None, m)
+		    return ("m", 0, m)
 	    elif c == ord("+"):
 		newy = my + (height-4)
-		if m.ok(newy): my = newy
+		if m.ok(newy): return ("m", newy, m)
 	    elif c == ord("-"):
 		newy = my - (height-4)
-		if m.ok(newy): my = newy
+		if m.ok(newy): return ("m", newy, m)
 	    elif c == ord("\010") or c == ord("\177") or c == curses.KEY_BACKSPACE:
 		m.setallread()
 	    elif c == ord(" "):
 		# We always do a menu update before scanning.
 		update_menus()
+		first_attempt = 1
 		if m.scannable:
-		    m, itemid = m.scan()
+		    while 1:
+			m, my, itemid = m.scan(my, myb, first_attempt)
+			first_attempt = 0
+			sys.stderr.write("scan returned %s %d %s\n" % (str(m), my, itemid))
+			if itemid != None:
+			    break
 		    if itemid != "":
-			return ("i", itemid, m)
+			return ("i", (itemid, my), m)
+		    else:
+			return ("m", my, m)
 	    elif c == ord("="):
 		if m.itemcount > 0:
 		    prompt = ["Select key from list, [",
 		    "\aB", "=", "\ab", "]:All, [",
 		    "\aB", "Q", "\ab", "]:Quit"]		
 		    aprint(scr, height-1, 0, " "*width)
-		    aprint(scr, height-1, 0, centre(prompt, width))
+		    aprint(scr, height-1, 0, centre(prompt))
 		    scr.refresh()
 		    k = mylc(scr.getch())
 		    klookup = m.lookup(chr(k), my, myb)
@@ -933,7 +1001,7 @@ def showmenus(mainmenu, escmenu, startmenu):
 				"Skip both scans")[i] + "  ", ""]
 			b = b + ["[", "\aB", "Q", "\ab", "]"]
 			aprint(scr, height-1, 0, " "*width)
-			aprint(scr, height-1, 0, centre(b, width))
+			aprint(scr, height-1, 0, centre(b))
 			scr.refresh()
 			s = mylc(scr.getch())
 			if s >= ord("0") and s <= ord("2"):
@@ -946,9 +1014,9 @@ def showmenus(mainmenu, escmenu, startmenu):
 		result = m.lookup(chr(c), my, myb)
 		if result != None:
 		    if result[1] == "m":
-			return ("m", None, result[2])
+			return ("m", 0, result[2])
 		    elif result[1] == "i":
-			return ("i", result[2].itemid, mret)
+			return ("i", (result[2].itemid, my), mret)
 		    elif result[1] == "s":
 			return ("s", result[2], mret)
     finally:
@@ -1337,16 +1405,18 @@ index_check_interval = string.atoi(rcfile.get("index-check-interval", "60"))
 saveindex(indexpath, items, lastseq)
 mainmenu, escmenu = mkmenus(items)
 menu = mainmenu
+my = 0
 try:
     initcurses()
     while 1:
 	update_index = 0
-        t, aux, menu = showmenus(mainmenu, escmenu, menu)
+        t, aux, menu = showmenus(mainmenu, escmenu, menu, my)
         if t == "s" and aux == "exit":
 	    break
 	elif t == "m":
-	    pass  # just changing menu, nothing to see here
+	    my = aux
         elif t == "i":
+	    aux, my = aux
 	    override = 0
 	    while len(aux) > 1:
 	        itemid = aux
