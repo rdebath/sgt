@@ -21,3 +21,6 @@ overkill for what's basically a cosmetic issue).
 
 <p>Debian bug <a href="http://bugs.debian.org/167785">167785</a> would
 appear to be an instance of this problem.
+
+<p>Patch (unreviewed, incomplete): Debian bug
+<a href="http://bugs.debian.org/193352">193352</a>
