@@ -1,0 +1,50 @@
+Summary: Hard hangs on Win2000/XP
+Class: semi-bug
+Difficulty: taxing
+Content-type: text/x-html-body
+Present-in: 0.52 2002-02-24 0.53b 0.54
+
+<p>
+Apparently, for some people, PuTTY randomly hangs hard with
+Win2000/XP.
+
+<p>
+We've been getting rare but persistent reports of this for a while,
+but there seems to have been a rash of them recently (Feb 2004). None
+of us have ever seen this, so we're going to need some help if we're
+to stop it happening.
+
+<p>
+Common characteristics of the reports we've had:
+<ul>
+<li>When one PuTTY hangs, they all hang, including any new instances
+attempted (once they get to opening a terminal window), until the
+system is restarted. But other applications on the same system are
+unaffected.
+<li>When trying to close PuTTY via the task manager, one receives a
+message like "This program cannot be closed. If it is being debugged,
+please resume it or close the debugger first."
+<li>It doesn't seem to be correlated with any particular event - it
+can occur hours into an established connection.
+<li>It's claimed that the PuTTY backend is still functional (sending
+keepalives, etc).
+<li>Might only happen with SSH? (1 and 2)
+</ul>
+
+<p>
+If I had to make a guess, I'd investigate some of the trickery we use
+to get noise for random numbers. My notes also suggest that I thought
+someone thought that sound might be implicated, but I can't find any
+evidence for that now.
+
+Reports:
+<ul>
+<li>00ad01c1d996$8ed21920$0100a8c0@andrus
+<li>20020330110817.A5544@torres.ka0.zugschlus.de
+<li>000001c20e58$f34a7810$a600a8c0@local.muppets.com
+<li><a href="http://groups.google.com/groups?q=msgid%3Aacvoih$1imo$10%40innferno.news.tiscali.de">acvoih$1imo$10@innferno.news.tiscali.de</a>
+<li><a href="http://groups.google.com/groups?q=msgid%3Ae3374ad6.0402170239.2d2a3455%40posting.google.com">e3374ad6.0402170239.2d2a3455@posting.google.com</a>
+<li><a href="http://groups.google.com/groups?q=msgid%3A7bd4d50d.0402200147.5824ed62%40posting.google.com">7bd4d50d.0402200147.5824ed62@posting.google.com</a>
+<li><a href="http://groups.google.com/groups?q=msgid%3Ac925c3dc.0402191059.102caeba%40posting.google.com">c925c3dc.0402191059.102caeba@posting.google.com</a>
+<li>001c01c3f7f2$4ca5b3a0$0200a8c0@bart
+</ul>
