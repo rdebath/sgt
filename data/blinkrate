@@ -3,7 +3,11 @@ Priority: low
 Difficulty: fun
 Class: wish
 Content-type: text/x-html-body
+Fixed-in: 0.52
 
 <p>
 It's been suggested that PuTTY's blinking cursor should match the
 configured system-wide blink rate.
+
+<p>
+This appears to have been fixed long ago, in terminal.c 1.43.
