@@ -10,6 +10,8 @@ appears and would also prevent an absent DNS server from hanging
 PuTTY while a remote-to-local port forwarding times out on DNS; but
 ideally I'd like an abstraction of DNS so that we can still port
 later (since the socket API only has synchronous DNS). Porting to
-Unix will be fine (we can use adns), and any thread-capable OS won't
+Unix will be fine (we can use
+<a href="http://www.chiark.greenend.org.uk/~ian/adns/">adns</a>),
+and any thread-capable OS won't
 have a problem. Everything else will just have to degrade gracefully
 to synchronous DNS, which will be fun. :-(
