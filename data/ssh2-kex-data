@@ -15,3 +15,9 @@ connection-layer packets provided we can decrypt them, and to queue
 outgoing connection-layer packets until the key exchange is
 completed. I can't easily imagine a standards decision that would
 invalidate that behaviour.
+
+<p>
+There has been some discussion of this issue on
+<a href="ftp://ftp.ietf.org/ietf-mail-archive/secsh/">IETF SECSH</a>
+(see for instance the thread "Key Re-Exchange" starting on 4 Apr 2001),
+but no consensus appears to have been reached.
