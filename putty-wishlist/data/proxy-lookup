@@ -1,0 +1,12 @@
+Summary: Option to leave DNS lookup to proxies
+Class: wish
+Priority: low
+Content-type: text/x-html-body
+
+<p>When connecting through a proxy, there should be an option to
+leave looking up the hostname to the proxy, to cope with setups
+where the client's and proxy's views of the DNS are different
+(search paths, client has no DNS configured, etc).
+
+<p>It should be optional; I can imagine wanting to perform the
+lookup locally (for similar reasons).
