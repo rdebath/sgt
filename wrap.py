@@ -5,10 +5,21 @@
 import sys
 import string
 
-width = 72
-verbose = 0
+def wrap_greedy(list):
+    wid = -1
+    line = []
+    for w in list:
+	newwid = wid + 1 + len(w)
+	if wid >= 0 and newwid > width:
+	    sys.stdout.write(string.join(line, " ") + "\n")
+	    wid = -1
+	    line = []
+	wid = wid + 1 + len(w)
+	line.append(w)
+    if len(line) > 0:
+	sys.stdout.write(string.join(line, " ") + "\n")
 
-def wrap(list):
+def wrap_optimal(list):
     class holder:
 	"container class"
 	pass
@@ -66,13 +77,17 @@ def dofile(f):
 	k = string.split(s)
 	if len(k) == 0:
 	    if len(para) > 0:
-		wrap(para)
+		wrapfn(para)
 	    para = []
 	    sys.stdout.write(s)
 	else:
 	    para = para + k
     if len(para) > 0:
-	wrap(para)
+	wrapfn(para)
+
+width = 72
+verbose = 0
+wrapfn = wrap_optimal
 
 donefile = 0
 for arg in sys.argv[1:]:
@@ -81,9 +96,11 @@ for arg in sys.argv[1:]:
 	    width = string.atoi(arg[2:])
 	elif arg[:2] == "-v":
 	    verbose = 1
+	elif arg[:2] == "-g":
+	    wrapfn = wrap_greedy
 	else:
 	    print "wrap: unknown option " + arg[:2]
-	    print "usage: wrap [-wWIDTH] [file [file...]]"
+	    print "usage: wrap [-v] [-g] [-wWIDTH] [file [file...]]"
 	    sys.exit(0)
     else:
 	donefile = 1
