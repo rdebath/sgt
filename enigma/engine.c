@@ -34,6 +34,11 @@
 	free (pos); \
     } while (0)
 
+#define C_w ('w' & 0x1F)  /* Ctrl-W */
+#define C_x ('x' & 0x1F)  /* Ctrl-X */
+#define C_y ('y' & 0x1F)  /* Ctrl-Y */
+#define C_z ('z' & 0x1F)  /* Ctrl-Z */
+
 /*
  * Set up a game_state from a level.
  */
@@ -41,7 +46,7 @@ gamestate *init_game (level *lev) {
     gamestate *ret;
     int i, j;
 
-    ret = gamestate_new(lev->width, lev->height);
+    ret = gamestate_new(lev->width, lev->height, lev->flags);
     memcpy(ret->leveldata, lev->leveldata, lev->width * lev->height);
     ret->title = lev->title;
     ret->movenum = 0;
@@ -68,22 +73,28 @@ gamestate *init_game (level *lev) {
      ret->leveldata[w*(y)+(x)-1] != '~' && \
      ret->leveldata[w*(y)+(x)+1] != '~')
 
+#define pri(p) (ret->flags & LEVEL_REL_PRIORITY ? (p) : 1)
+
 /*
- * 'key' is h, j, k or l
+ * 'key' is h, j, k, l for movement, or x to switch player pieces
  */
 gamestate *make_move (gamestate *state, char key) {
     gamestate *ret;
-    int xfrom, yfrom, pfrom, xto, yto, pto;
+    int xfrom, yfrom, pfrom, xto, yto, pto, pdx, pdy, pdp;
     int i, j, k;
     int w, h;
     typedef struct posn posn;
     struct posn {
 	posn *next, *prev;
 	int x, y;
+	int vertical;
     };
-    posn movehead = { NULL, NULL, -1, -1 }, movetail = { NULL, NULL, -1, -1 };
-    posn nmovhead = { NULL, NULL, -1, -1 }, nmovtail = { NULL, NULL, -1, -1 };
-    posn expshead = { NULL, NULL, -1, -1 }, expstail = { NULL, NULL, -1, -1 };
+    posn movehead = { NULL, NULL, -1, -1, 0 };
+    posn movetail = { NULL, NULL, -1, -1, 0 };
+    posn nmovhead = { NULL, NULL, -1, -1, 0 };
+    posn nmovtail = { NULL, NULL, -1, -1, 0 };
+    posn expshead = { NULL, NULL, -1, -1, 0 };
+    posn expstail = { NULL, NULL, -1, -1, 0 };
     posn *pos;
 
     /*
@@ -113,6 +124,44 @@ gamestate *make_move (gamestate *state, char key) {
     }
 
     /*
+     * Handle the special `x' move. When we add this to the stored
+     * sequence, we make the marginal optimisation of removing a
+     * prior x if present rather than adding a new one, so that the
+     * stored move sequence will only ever contain a single x at a
+     * time.
+     */
+    if (key == 'x') {
+	for (i = 0; i < w; i++)
+	    for (j = 0; j < h; j++)
+		if (ret->leveldata[w*j+i] == 'O') {
+		    ret->leveldata[w*j+i] = '@';
+		    ret->leveldata[w*ret->player_y+ret->player_x] = 'O';
+		    ret->player_y = j;
+		    ret->player_x = i;
+
+		    if (ret->movenum > 0 &&
+			ret->sequence[ret->movenum-1] == 'x') {
+			ret->movenum--;
+		    } else {
+			ret->movenum++;
+
+			if (ret->movenum > ret->sequence_size) {
+			    ret->sequence_size = ret->movenum + 128;
+			    ret->sequence = srealloc(ret->sequence,
+						     ret->sequence_size);
+			}
+			ret->sequence[ret->movenum-1] = key;
+		    }
+
+		    return ret;
+		}
+	/*
+	 * Otherwise, we cannot swap at all, so do nothing.
+	 */
+	return ret;
+    }
+
+    /*
      * determine move destination
      */
     xto = xfrom = ret->player_x;
@@ -123,13 +172,71 @@ gamestate *make_move (gamestate *state, char key) {
     }
     pfrom = yfrom * w + xfrom;
     pto = yto * w + xto;
+    pdx = xto - xfrom;
+    pdy = yto - yfrom;
+    pdp = pto - pfrom;
+    i = ret->leveldata[pto];
+
+    /*
+     * process teleporters
+     */
+    if (i == '#') {
+	int x, y;
+
+	/*
+	 * First find the other teleporter.
+	 */
+	for (x = 0; x < w; x++) {
+	    for (y = 0; y < h; y++)
+		if (w*y+x != pto && ret->leveldata[w*y+x] == '#')
+		    break;
+	    if (y < h)
+		break;
+	}
+	if (x == w) {
+	    /*
+	     * Couldn't find the other teleporter at all; it must
+	     * have been destroyed or something. Disallow move.
+	     */
+	    return ret;
+	}
+
+	/*
+	 * Find a suitable emergence point around the other
+	 * teleporter. We look right, up, left then down, in that
+	 * order.
+	 */
+	if (ret->leveldata[w*y+(x+1)] == ' ') {
+	    x++;
+	} else if (ret->leveldata[w*(y-1)+x] == ' ') {
+	    y--;
+	} else if (ret->leveldata[w*y+(x-1)] == ' ') {
+	    x--;
+	} else if (ret->leveldata[w*(y+1)+x] == ' ') {
+	    y++;
+	} else
+	    return ret;		       /* no free square; disallow move */
+
+	/*
+	 * Continue with the move as usual (we must still do an
+	 * expose event on the vacated square, etc). Note that from
+	 * here on, xto and xfrom might be wildly different, but
+	 * pdx still reflects the logical direction of the move.
+	 * Ditto yto/yfrom/pdy, pto/pfrom/pdp.
+	 */
+	xto = x;
+	yto = y;
+	pto = yto * w + xto;
+	i = ret->leveldata[pto];
+    }
 
     /*
      * disallow the move if the destination isn't movable to
      */
-    i = ret->leveldata[pto];
-    if (i == '+' || i == '|' || i == '-' || i == '%' ||
-	(i == 'E' && ret->gold_got < ret->gold_total))
+    if (i == '+' || i == '|' || i == '-' || i == '%' || i == 'O' ||
+	(i == 'E' && ret->gold_got < ret->gold_total) ||
+	(i == '!' && xfrom != xto) ||
+	(i == '=' && yfrom != yto))
 	return ret;		       /* do nothing */
 
     /*
@@ -148,19 +255,21 @@ gamestate *make_move (gamestate *state, char key) {
 	 * Check the next space along to see if we can push into
 	 * it. Disallow the move otherwise.
 	 */
-	j = pto + (pto - pfrom);
+	j = pto + pdp;
 	k = ret->leveldata[j];
-	if (k != ' ' && k != '.')
+	if (k != ' ' && k != '.' &&
+	    (k != '!' || !pdy) &&
+	    (k != '=' || !pdx))
 	    return ret;		       /* do nothing */
 
 	/*
 	 * Also disallow the move if we're trying to push something
 	 * against its direction.
 	 */
-	if (((i == 'v' || i == 'X') && yto == yfrom-1) ||
-	    ((i == '>' || i == 'W') && xto == xfrom-1) ||
-	    ((i == '<' || i == 'Y') && xto == xfrom+1) ||
-	    ((i == '^' || i == 'Z') && yto == yfrom+1))
+	if (((i == 'v' || i == 'X') && pdy == -1) ||
+	    ((i == '>' || i == 'W') && pdx == -1) ||
+	    ((i == '<' || i == 'Y') && pdx == +1) ||
+	    ((i == '^' || i == 'Z') && pdy == +1))
 	    return ret;		       /* do nothing */
 
 	/*
@@ -170,14 +279,18 @@ gamestate *make_move (gamestate *state, char key) {
 	 * performed outside this conditional block.
 	 */
 	ret->leveldata[j] = ret->leveldata[pto];
-	if (((i == 'v' || i == 'X') && ret->leveldata[j+w] == ' ') ||
-	    ((i == '>' || i == 'W') && ret->leveldata[j+1] == ' ') ||
-	    ((i == '<' || i == 'Y') && ret->leveldata[j-1] == ' ') ||
-	    ((i == '^' || i == 'Z') && ret->leveldata[j-w] == ' ') ||
+	if (((i=='v' || i=='X') &&
+	     (ret->leveldata[j+w] == ' ' || ret->leveldata[j+w] == '!')) ||
+	    ((i=='>' || i=='W') &&
+	     (ret->leveldata[j+1] == ' ' || ret->leveldata[j+1] == '=')) ||
+	    ((i=='<' || i=='Y') &&
+	     (ret->leveldata[j-1] == ' ' || ret->leveldata[j-1] == '=')) ||
+	    ((i=='^' || i=='Z') &&
+	     (ret->leveldata[j-w] == ' ' || ret->leveldata[j-w] == '!')) ||
 	    i == 'o') {
 	    addlist(pos, move);
-	    pos->x = xto + (xto - xfrom);
-	    pos->y = yto + (yto - yfrom);
+	    pos->x = xto + pdx;
+	    pos->y = yto + pdy;
 	    if (ret->leveldata[j] == 'o') {
 		if (yto-yfrom == -1)
 		    ret->leveldata[j] = 'a' | 0x80;   /* a is upmoving o */
@@ -210,6 +323,7 @@ gamestate *make_move (gamestate *state, char key) {
     addlist(pos, exps);
     pos->x = xfrom;
     pos->y = yfrom;
+    pos->vertical = pri(pdy == 0);
 
     /*
      * Kill the player if he walked into a &, or flag the level as
@@ -236,53 +350,88 @@ gamestate *make_move (gamestate *state, char key) {
 	    posn *p, *q;
 	    p = expshead.next;
 	    while (p->x != -1) {
+		enum { LEFT, RIGHT, UP, DOWN } directions[4];
+		int dir;
+
 		q = p->next;
 		j = p->y * w + p->x;
-		if ((ret->leveldata[j-w] & 0x7F) == 'v' ||
-		    (ret->leveldata[j-w] & 0x7F) == 'X') {
-		    /*
-		     * Falling object above the exposed cell.
-		     */
-		    if (!(ret->leveldata[j-w] & 0x80)) {
-			addlist(pos, move);
-			pos->x = p->x;
-			pos->y = p->y-1;
-			ret->leveldata[j-w] |= 0x80;/* flag as moving */
-		    }
-		} else if ((ret->leveldata[j-1] & 0x7F) == '>' ||
-			   (ret->leveldata[j-1] & 0x7F) == 'W') {
-		    /*
-		     * Right-moving object to the left of the
-		     * exposed cell.
-		     */
-		    if (!(ret->leveldata[j-1] & 0x80)) {
-			addlist(pos, move);
-			pos->x = p->x-1;
-			pos->y = p->y;
-			ret->leveldata[j-1] |= 0x80;/* flag as moving */
-		    }
-		} else if ((ret->leveldata[j+1] & 0x7F) == '<' ||
-			   (ret->leveldata[j+1] & 0x7F) == 'Y') {
-		    /*
-		     * Left-moving object to the right of the
-		     * exposed cell.
-		     */
-		    if (!(ret->leveldata[j+1] & 0x80)) {
-			addlist(pos, move);
-			pos->x = p->x+1;
-			pos->y = p->y;
-			ret->leveldata[j+1] |= 0x80;/* flag as moving */
-		    }
-		} else if ((ret->leveldata[j+w] & 0x7F) == '^' ||
-			   (ret->leveldata[j+w] & 0x7F) == 'Z') {
-		    /*
-		     * Up-moving object below the exposed cell.
-		     */
-		    if (!(ret->leveldata[j+w] & 0x80)) {
-			addlist(pos, move);
-			pos->x = p->x;
-			pos->y = p->y+1;
-			ret->leveldata[j+w] |= 0x80;/* flag as moving */
+
+		if (p->vertical) {
+		    directions[0] = UP;
+		    directions[1] = LEFT;
+		    directions[2] = RIGHT;
+		    directions[3] = DOWN;
+		} else {
+		    directions[0] = LEFT;
+		    directions[1] = RIGHT;
+		    directions[2] = UP;
+		    directions[3] = DOWN;
+		}
+
+		for (dir = 0; dir < 4; dir++) {
+		    switch (directions[dir]) {
+		      case UP:
+			if ((ret->leveldata[j-w] & 0x7F) == 'v' ||
+			    (ret->leveldata[j-w] & 0x7F) == 'X') {
+			    /*
+			     * Falling object above the exposed cell.
+			     */
+			    if (!(ret->leveldata[j-w] & 0x80)) {
+				addlist(pos, move);
+				pos->x = p->x;
+				pos->y = p->y-1;
+				ret->leveldata[j-w] |= 0x80;/* flag as moving */
+			    }
+			    dir = 4;   /* terminate loop */
+			}
+			break;
+		      case LEFT:
+			if ((ret->leveldata[j-1] & 0x7F) == '>' ||
+			    (ret->leveldata[j-1] & 0x7F) == 'W') {
+			    /*
+			     * Right-moving object to the left of the
+			     * exposed cell.
+			     */
+			    if (!(ret->leveldata[j-1] & 0x80)) {
+				addlist(pos, move);
+				pos->x = p->x-1;
+				pos->y = p->y;
+				ret->leveldata[j-1] |= 0x80;/* flag as moving */
+			    }
+			    dir = 4;   /* terminate loop */
+			}
+			break;
+		      case RIGHT:
+			if ((ret->leveldata[j+1] & 0x7F) == '<' ||
+			    (ret->leveldata[j+1] & 0x7F) == 'Y') {
+			    /*
+			     * Left-moving object to the right of the
+			     * exposed cell.
+			     */
+			    if (!(ret->leveldata[j+1] & 0x80)) {
+				addlist(pos, move);
+				pos->x = p->x+1;
+				pos->y = p->y;
+				ret->leveldata[j+1] |= 0x80;/* flag as moving */
+			    }
+			    dir = 4;   /* terminate loop */
+			}
+			break;
+		      case DOWN:
+			if ((ret->leveldata[j+w] & 0x7F) == '^' ||
+			    (ret->leveldata[j+w] & 0x7F) == 'Z') {
+			    /*
+			     * Up-moving object below the exposed cell.
+			     */
+			    if (!(ret->leveldata[j+w] & 0x80)) {
+				addlist(pos, move);
+				pos->x = p->x;
+				pos->y = p->y+1;
+				ret->leveldata[j+w] |= 0x80;/* flag as moving */
+			    }
+			    dir = 4;   /* terminate loop */
+			}
+			break;
 		    }
 		}
 		remlist(p);
@@ -323,10 +472,10 @@ gamestate *make_move (gamestate *state, char key) {
 		  case 'W': dx = +1; dy =  0; bomb = 1; sack = 0; break;
 		  case 'Z': dx =  0; dy = -1; bomb = 1; sack = 0; break;
 		  case 'Y': dx = -1; dy =  0; bomb = 1; sack = 0; break;
-		  case 'x': dx = +1; dy =  0; bomb = 2; sack = 0; break;
-		  case 'w': dx =  0; dy = +1; bomb = 2; sack = 0; break;
-		  case 'z': dx = +1; dy =  0; bomb = 2; sack = 0; break;
-		  case 'y': dx =  0; dy = +1; bomb = 2; sack = 0; break;
+		  case C_x: dx = +1; dy =  0; bomb = 2; sack = 0; break;
+		  case C_w: dx =  0; dy = +1; bomb = 2; sack = 0; break;
+		  case C_z: dx = +1; dy =  0; bomb = 2; sack = 0; break;
+		  case C_y: dx =  0; dy = +1; bomb = 2; sack = 0; break;
 		}
 		dp = dy*w+dx;
 		if (bomb == 2) {       /* special case: exploding thing */
@@ -334,40 +483,49 @@ gamestate *make_move (gamestate *state, char key) {
 		    addlist(pos, exps);   /* and expose the vacated cell */
 		    pos->x = p->x;
 		    pos->y = p->y;
+		    pos->vertical = pri(dy == 0);
 		    if (destroyable(p->x-dx, p->y-dy)) {
 			ret->leveldata[j-dp] = ' ';  /* and the left/up cell */
 			addlist(pos, exps);  /* expose the vacated cell */
 			pos->x = p->x - dx;
 			pos->y = p->y - dy;
+			pos->vertical = pri(dy == 0);
 		    }
 		    if (destroyable(p->x+dx, p->y+dy)) {
 			ret->leveldata[j+dp] = ' ';  /* the right/down cell */
 			addlist(pos, exps);  /* expose the vacated cell */
 			pos->x = p->x + dx;
 			pos->y = p->y + dy;
+			pos->vertical = pri(dy == 0);
 		    }
 		} else {
-		    if (!bomb && !sack && (ret->leveldata[j+dp] == 'X' ||
-					   ret->leveldata[j+dp] == 'W' ||
-					   ret->leveldata[j+dp] == 'Y' ||
-					   ret->leveldata[j+dp] == 'Z')) {
+		    if ((!bomb || (ret->flags & LEVEL_FLIMSY_BOMBS)) &&
+			!sack && (ret->leveldata[j+dp] == 'X' ||
+				  ret->leveldata[j+dp] == 'W' ||
+				  ret->leveldata[j+dp] == 'Y' ||
+				  ret->leveldata[j+dp] == 'Z')) {
 			ret->leveldata[j] = ' ';   /* remove the detonator */
 			addlist(pos, exps);   /* expose the vacated cell */
 			pos->x = p->x;
 			pos->y = p->y;
-			ret->leveldata[j+dp] += 32;   /* lowercase it */
+			pos->vertical = pri(dy != 0);
+			ret->leveldata[j+dp] &= 0x1F;   /* move to Ctrl-x */
 			addlist(pos, nmov);   /* add exploding bomb to list */
 			pos->x = p->x + dx;
 			pos->y = p->y + dy;
 		    } else {
 			if (ret->leveldata[j+dp] == ' ' ||
 			    (ret->leveldata[j+dp] == '.' && !sack) ||
-			    ret->leveldata[j+dp] == '@') {
+			    (ret->leveldata[j+dp] == '!' && dy && !sack) ||
+			    (ret->leveldata[j+dp] == '=' && dx && !sack) ||
+			    (ret->leveldata[j+dp] == '@' && !sack) ||
+			    (ret->leveldata[j+dp] == 'O' && !sack)) {
 			    ret->leveldata[j+dp] = k | 0x80;   /* stay moving */
 			    ret->leveldata[j] = ' ';   /* fall */
 			    addlist(pos, exps);  /* expose the vacated cell */
 			    pos->x = p->x;
 			    pos->y = p->y;
+			    pos->vertical = pri(dy != 0);
 			    addlist(pos, nmov);   /* keep the object moving */
 			    pos->x = p->x + dx;
 			    pos->y = p->y + dy;
@@ -396,10 +554,24 @@ gamestate *make_move (gamestate *state, char key) {
     }
 
     /*
-     * If we've killed the player at any point, flag him as dead.
+     * If we've killed the player at any point, flag him as dead,
+     * unless there is still an `O' on the screen in which case we
+     * transfer to it.
      */
-    if (ret->leveldata[w*ret->player_y+ret->player_x] != '@')
+    if (ret->leveldata[w*ret->player_y+ret->player_x] != '@') {
+	for (i = 0; i < w; i++)
+	    for (j = 0; j < h; j++)
+		if (ret->leveldata[w*j+i] == 'O') {
+		    ret->leveldata[w*j+i] = '@';
+		    ret->player_y = j;
+		    ret->player_x = i;
+		    return ret;
+		}
+	/*
+	 * If we reach here, there was no O, so we really are dead.
+	 */
 	ret->status = DIED;
+    }
 
     /*
      * I think we're done!
@@ -417,8 +589,8 @@ gamestate *make_move (gamestate *state, char key) {
 
 char *validate(level *level, char *buffer, int buflen)
 {
-    int x, y, x1, y1;
-    int c, c1;
+    int x, y, x1, y1, xO = -1, yO = -1, nt = 0;
+    int c, c1, badsemiwall;
     int w = level->width, h = level->height;
     char internalbuf[256];	       /* big enough for any of our sprintfs */
 
@@ -460,19 +632,19 @@ char *validate(level *level, char *buffer, int buflen)
 	    switch (c) {
 	      case 'v': case 'X':
 		/* Down-falling piece; check below it. */
-		x1 = x; y1 = y + 1; break;
+		x1 = x; y1 = y + 1; badsemiwall = '!'; break;
 	      case '>': case 'W':
 		/* Right-falling piece; check to its right. */
-		x1 = x + 1; y1 = y; break;
+		x1 = x + 1; y1 = y; badsemiwall = '='; break;
 	      case '^': case 'Z':
 		/* Up-falling piece; check above it. */
-		x1 = x; y1 = y - 1; break;
+		x1 = x; y1 = y - 1; badsemiwall = '!'; break;
 	      case '<': case 'Y':
 		/* Left-falling piece; check to its left. */
-		x1 = x - 1; y1 = y; break;
+		x1 = x - 1; y1 = y; badsemiwall = '='; break;
 	      case '@': case '$': case '%': case '-': case '+': case '|':
 	      case '&': case 'E': case 'o': case '8': case '.': case ':':
-	      case ' ': case '~':
+	      case ' ': case '~': case '!': case '=': case 'O': case '#':
 		/* Non-falling piece; carry on. */
 		continue;
 	      default:
@@ -503,7 +675,45 @@ char *validate(level *level, char *buffer, int buflen)
 		buffer[buflen-1] = '\0';
 		return buffer;
 	    }
+	    if (c1 == badsemiwall) {
+		sprintf(internalbuf, "`%c' piece trying to rest on `%c'"
+			" at line %d column %d", c, badsemiwall, y, x);
+		strncpy(buffer, internalbuf, buflen);
+		buffer[buflen-1] = '\0';
+		return buffer;
+	    }
+
+	    /*
+	     * Ensure there is at most one secondary player
+	     * starting point.
+	     */
+	    if (c == 'O') {
+		if (xO == -1 && yO == -1)
+		    xO = x, yO = y;
+		else {
+		    sprintf(internalbuf, "multiple `O's at line %d column %d"
+			    " and line %d column %d", yO, xO, y, x);
+		    strncpy(buffer, internalbuf, buflen);
+		    buffer[buflen-1] = '\0';
+		    return buffer;
+		}
+	    }
+
+	    /*
+	     * Count teleporters.
+	     */
+	    if (c == '#') nt++;
 	}
+
+    /*
+     * There should be exactly 0 or 2 teleporters.
+     */
+    if (nt != 0 && nt != 2) {
+	sprintf(internalbuf, "%d teleporters in level (should be 0 or 2)", nt);
+	strncpy(buffer, internalbuf, buflen);
+	buffer[buflen-1] = '\0';
+	return buffer;
+    }
 
     return NULL;
 }

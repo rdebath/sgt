@@ -22,14 +22,32 @@ Release FIXME
    run-time validation of level files for errors such as this, and
    fixed the problems (in levels 2 and 8). This should also make
    designing new levels a more precise science...
- - Added the new `=' character. This shows up as a space during
+ - Added the new `~' character. This shows up as a space during
    gameplay, but it's an `outdoor' space which you're never supposed
-   to be able to get to. This means that walls next to an `=' sign
+   to be able to get to. This means that walls next to a `~' sign
    act like boundary walls and are indestructible even to bombs. The
    idea is that you can design levels with non-rectangular outlines
    by filling in the space between the exterior walls and the level
-   boundary with solid blocks of `='. It also means you can put
+   boundary with solid blocks of `~'. It also means you can put
    unreachable courtyards inside a level as well.
+ - Added `=' and `!', the Enigma equivalents of XOR's dots and waves
+   respectively (they act as walls in one direction but can be eaten
+   if you approach them from the perpendicular direction).
+ - Added `O', of which you can have at most one in a level and it
+   acts as a secondary player starting point (again as in XOR).
+   Press `x' during the game to swap the `@' and the `O'. If the `@'
+   gets killed while an `O' is present, control will revert to the
+   `O' and you can continue play. You only have to get one of
+   yourself to the exit.
+ - Added `#', the teleporter piece used in XOR. There must be either
+   0 or 2 of these on a level; walking into one brings you out to
+   the right of the other, or above it if the right is occupied,
+   then left, then below.
+ - Added per-level mode flags to make the XOR levels playable in
+   Enigma: `flimsy-bombs' (bombs blow up when hit by other bombs as
+   well as arrows) and `relative-priority' (which of two eligible
+   pieces falls into a vacated space first depends on the direction
+   of the piece which just left that space).
 
 Release 1.03
 ------------

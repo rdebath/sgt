@@ -55,7 +55,7 @@ else
 
 # The `real' makefile part.
 
-CFLAGS += -Wall -W -DTESTING -DCURSES_HDR="<ncurses.h>" -DHAS_ATTR_T
+CFLAGS += -Wall -W -DTESTING -DCURSES_HDR="<ncurses.h>" -DHAS_ATTR_T $(XFLAGS)
 LIBS += -lncurses
 
 ifdef TEST

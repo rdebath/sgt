@@ -102,7 +102,8 @@ int main(int argc, char **argv) {
 		    screen_level_display(gs, msg);
 		    k = screen_level_getmove(gs->status == PLAYING);
 		    if (gs->status == PLAYING &&
-			(k == 'h' || k == 'j' || k == 'l' || k == 'k')) {
+			(k == 'h' || k == 'j' || k == 'l' || k == 'k' ||
+			 k == 'x')) {
 			newgs = make_move(gs, k);
 			gamestate_free(gs);
 			gs = newgs;

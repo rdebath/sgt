@@ -36,6 +36,12 @@
  */
 
 /*
+ * Per-level flags for the gamestate and level structures.
+ */
+#define LEVEL_FLIMSY_BOMBS 0x0001      /* bombs blow when hit by other bombs */
+#define LEVEL_REL_PRIORITY 0x0002      /* expose priority is variable */
+
+/*
  * First, a structure describing the state of a game between two
  * moves. (At intermediate positions within one move, there is more
  * state than this: moving objects and exposed cells are held in
@@ -48,6 +54,7 @@ typedef struct {
     char *leveldata;
     char *title;
     int width, height;
+    int flags;
     int player_x, player_y;
     int gold_got, gold_total;
     int levnum, movenum;
@@ -62,6 +69,7 @@ typedef struct {
     char *title;
     char *leveldata;
     int width, height;
+    int flags;
 } level;
 
 /*
@@ -97,7 +105,7 @@ typedef struct {
  * the structures. These must be set later using level_setsize and
  * levelset_nlevels.
  */
-gamestate *gamestate_new(int width, int height);
+gamestate *gamestate_new(int width, int height, int flags);
 gamestate *gamestate_copy(gamestate *);
 void gamestate_free(gamestate *);
 

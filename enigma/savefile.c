@@ -67,7 +67,8 @@ gamestate *savepos_load(levelset *set, char *user, int savenum) {
 		return NULL;
 	    }
 	    state = gamestate_new(set->levels[levnum-1]->width,
-				  set->levels[levnum-1]->height);
+				  set->levels[levnum-1]->height,
+				  set->levels[levnum-1]->flags);
 	    state->levnum = levnum;
 	    state->title = set->levels[levnum-1]->title;
 	    state->status = PLAYING;
@@ -302,7 +303,7 @@ char *sequence_load(char *fname) {
 	    c = 'k';
 	if (c == 'R')
 	    c = 'l';
-	if (c == 'h' || c == 'j' || c == 'k' || c == 'l') {
+	if (c == 'h' || c == 'j' || c == 'k' || c == 'l' || c == 'x') {
 	    if (len >= size) {
 		size = len + 256;
 		p = (p ? realloc(p, size) : malloc(size));
