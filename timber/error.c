@@ -5,6 +5,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <string.h>
+#include <errno.h>
 #include "timber.h"
 
 /*
@@ -14,7 +16,7 @@
 
 static void do_error(int code, va_list ap) {
     char error[1024];
-    char *sp;
+    char *sp, *sp2;
     int flags;
 
     switch(code) {
@@ -32,27 +34,29 @@ static void do_error(int code, va_list ap) {
 	sprintf(error, "unrecognised option `-%.200s'", sp);
 	flags = PREFIX;
 	break;
-      case err_nodb:
-        sprintf(error,
-                "database `%.200s' does not exist; try `timber init-db'",
-                dbpath);
-        flags = PREFIX;
-        break;
-      case err_dbexists:
-        sprintf(error, "database `%.200s' already exists;"
-                " remove it before trying again", dbpath);
+      case err_direxists:
+        sprintf(error, "directory `%.200s' already exists;"
+                " remove it before trying again", dirpath);
         flags = PREFIX;
         break;
       case err_noopendb:
         sp = va_arg(ap, char *);
+        sp2 = va_arg(ap, char *);
         sprintf(error,
                 "unable to open database `%.200s': %.200s",
-                dbpath, sp);
+                sp, sp2);
         flags = PREFIX;
         break;
       case err_dberror:
         sp = va_arg(ap, char *);
         sprintf(error, "database error: %.200s", sp);
+        flags = PREFIX;
+        break;
+      case err_perror:
+        sp = va_arg(ap, char *);
+	sp2 = va_arg(ap, char *);
+        sprintf(error, "%.200s%s%.200s: %.200s",
+		sp, sp2 ? ": " : "", sp2 ? sp2 : "", strerror(errno));
         flags = PREFIX;
         break;
     }

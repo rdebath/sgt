@@ -38,7 +38,8 @@ endif
 
 SRC := ../
 
-MODULES := main malloc error help licence version sqlite
+MODULES := main malloc error help licence version sqlite mboxstore store
+MODULES += config
 
 OBJECTS := $(addsuffix .o,$(MODULES))
 DEPS := $(addsuffix .d,$(MODULES))

@@ -5,14 +5,27 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include "timber.h"
+
+char *dirpath;
 
 void run_command(int argc, char **argv)
 {
     assert(argc > 0);
 
-    if (!strcmp(argv[0], "init-db")) {
+    if (!strcmp(argv[0], "init")) {
+	int ret;
+	ret = mkdir(dirpath, 0700);
+	if (ret < 0)
+	    fatal(err_perror, dirpath, "mkdir");
 	db_init();
+	store_init();
+    }
+
+    if (!strcmp(argv[0], "import-mbox")) {
+	
     }
 }
 
@@ -31,8 +44,8 @@ int main(int argc, char **argv) {
 
     homedir = getenv("HOME");
     if (homedir == NULL) homedir = "/";
-    dbpath = smalloc(strlen(homedir) + 20);
-    sprintf(dbpath, "%s%s.timber/db", homedir,
+    dirpath = smalloc(strlen(homedir) + 20);
+    sprintf(dirpath, "%s%s.timber", homedir,
             homedir[strlen(homedir)-1] == '/' ? "" : "/");
 
     /*
@@ -127,9 +140,9 @@ int main(int argc, char **argv) {
 		     */
 		    switch (c) {
                       case 'D':
-                        sfree(dbpath);
-                        dbpath = smalloc(1+strlen(p));
-                        strcpy(dbpath, p);
+                        sfree(dirpath);
+                        dirpath = smalloc(1+strlen(p));
+                        strcpy(dirpath, p);
                         break;
 		    }
 		    p = NULL;	       /* prevent continued processing */

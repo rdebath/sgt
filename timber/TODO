@@ -1,7 +1,248 @@
 Loose ends from coding
 ----------------------
 
- - Creation of .timber directory during initialisation. This should
-   be done if it doesn't already exist, and in particular it must be
-   created with mode 700.
-  
+ - Write the actual mbox import code.
+    * read an mbox, message by message.
+    * parse the message far enough to get hold of anything we need
+      to store in the schema. Message-ID, subject, date, parent at
+      least. And, eek, starting points and types of attachments.
+       + the schema should store UTF-8, I fear. Which means we have
+	 to do the RFC 2047 parsing of headers here.
+    * feed each message to store_literal(), and stick the string
+      that comes back in the database too.
+
+ - Put message indexing into the db schema.
+
+Functions required of the back end
+----------------------------------
+
+ - Import a message into Timber's storage system. (This is an
+   internal function, but must also be available at an external
+   interface, probably as a command-line thing rather than one
+   invoked from a front end.)
+    + Must analyse the message to determine categories.
+    + Store the message in the storage back end (bunch of mboxes,
+      IMAP, something more exotic, doesn't matter what).
+    + Add the message to the various db indexes.
+
+ - Fetch incoming mail.
+    + Read /var/spool/mail, or POP3, or IMAP, or something more
+      exotic, and then run the import function on each mail that
+      comes back.
+    + NB this must be intimately linked to the import function: if
+      we're importing a message given on the command line then we
+      must somehow _upload_ it to the IMAP server, but if we're
+      importing a message received in incoming mail then it's
+      _already_ on the server and we only want to move it. (And
+      download it, of course, to see how it should be categorised.)
+
+ - Send a message, given the message on stdin.
+    + Interpret `Queue' pseudo-header by scheduling an at job which
+      re-runs Timber at a later date. (This hopefully means we can
+      Fcc it _now_ but marked as not sent yet, and mark it sent when
+      we actually do. If I'm _really_ lucky we can view it in a
+      category of `queued messages', and reschedule it if we get to
+      it before it goes out, although that's a bit advanced and
+      involves either tinkering with existing at-jobs or Timber
+      having its own cron job.)
+    + Deal with `Attach' and `Categories' pseudo-headers.
+    + Invent Message-ID and Date.
+    + Store in database.
+
+ - Generate a message-index.
+    + Jed-specific: the format of the index buffer is tailored to
+      Jed's syntax highlighting capability. DESIGN ISSUE: how to put
+      a hidden message identifier near each visible index line?
+    + Requires a folder designation as a parameter. SPEC ISSUE: what
+      folder designations exist?
+    + Optionally also specify a numeric range; by default I think we
+      list the last (say) five hundred messages in a given category,
+      but there should be some sort of `back' button that allows the
+      user to look further into the past.
+
+ - Retrieve an actual message.
+    + Given a message identifier as input.
+    + Both Jed-specific and not Jed-specific: we want to be able to
+      fetch the message in a Jed-highlighting-friendly format, but
+      _also_ we want a command-line function which retrieves the
+      transport format.
+    + In the Jed-specific format, there should be a magic MIME line
+      identifying each separate MIME part, containing enough
+      information to pass back to the back end and have it extract
+      the attachment separately.
+    + In the Jed-specific format, we optionally provide full
+      headers. (Actually, perhaps there should be an option to
+      _only_ provide full headers, so that if we hit `h' on a long
+      message which is already displayed, we can _just_ replace the
+      header section.)
+    + In the Jed-specific format, perhaps there should be some
+      Timber admin information alongside the actual message.
+      (Perhaps above the header section, with a different prefix
+      character causing a different line colour.) The most important
+      one that springs to mind is a list of what categories that
+      mail is in.
+
+ - Retrieve a MIME attachment.
+    + In non-transfer-encoded form, to be saved to a file or thrown
+      into an external viewer.
+    + In some sort of Jed-specific display form, to be shoved into a
+      message buffer after a magic MIME line. DESIGN ISSUE: what
+      display forms exist?
+
+ - Destroy a MIME attachment.
+    + Big and scary. This involves editing the message store.
+       * So if we edit an mbox file, we must also adjust the db so
+	 that the file offsets of all messages in it are corrected.
+    + QUESTION: Can we even _do_ this in all message stores? Can we
+      bugger about with message content in IMAP, for example? This
+      might have to return `operation not available' in some
+      situations.
+
+ - Delete a message.
+    + Again involves editing message store, although this operation
+      ought to be available in all of them.
+       * For mbox, involves adjusting the db again. Might not for
+	 IMAP.
+
+ - Construct a composer buffer, optionally in reply to a given
+   message (and with some quoted text passed on stdin), optionally
+   with a forwarded message attached.
+    + Jed-specific: part of the output should be an indication of
+      where the cursor wants to be left.
+    + DESIGN ISSUE: perhaps Attach-Message rather than
+      Attach-Enclosed for forwarding?
+
+Unresolved specification issues:
+
+ - What folder designations exist? How does the front end specify a
+   subset of the messages in the db to generate an index for?
+    + Obviously, any explicitly set up category.
+    + Automatic ones based on To and From addresses?
+    + Status-based ones such as unresolved, unread, unreplied?
+    + What's the actual syntax of each of these?
+
+ - Exactly how _do_ we translate explicit category specifications
+   into categories when importing a message? I find myself sorely
+   tempted to embed Python and allow the user to write a script
+   which analyses the message and automatically assigns categories.
+    + this is bad design practice, but I'll just go through my
+      current folder names and think about what it would take to
+      automatically maintain them as categories.
+
+ - Do we have the ability to store multiple copies of the same
+   Message-ID in our mail database?
+    + NO. If I send a message, Fcc it as I send, and later get it
+      back via the mailing list I sent it to, I want to keep both
+      copies. It's probably sensible for the mail system to choose
+      one to display (and I think it should be the later/larger one
+      so I can check from memory that the mailing list didn't
+      rewrite it), but it should put up a notice when displaying the
+      message `Other versions of this message are available'.
+
+Unresolved design issues:
+
+ - How to format a Jed message index buffer? The visible part should
+   be as similar to Timber 0 as possible (plus threading), but we
+   also need to hide a message ID beside each index line.
+    + we could use hidden lines after all, and alternate them with
+      real index lines? Unlike Timber 0, there will never be a
+      genuine need to manually turn a buffer RW and fiddle with it,
+      so the possibility of user buffer corruption can be ignored.
+    + but really I'd like to avoid the `...' at the end of every
+      index line. I'm quite tempted to try something trickier, such
+      as having a buffer-local variable which is an array of message
+      IDs. This also has the advantage that line numbers in the
+      index buffer roughly match message counts.
+       * having actually tested this, storing an array in a blocal
+	 var does seem to work. Not sure how you'd handle it in Jed
+	 .98.* in which you have to specify the type of a blocal on
+	 creation, but I think I can probably disregard Jed .98
+	 these days if I have to.
+       * OK, I think this will do as a decision for the moment.
+
+ - In what formats will the back end deliver a MIME attachment to
+   the front end?
+    + Transport form.
+    + Un-transfer-encoded but otherwise uninterpreted, for saving to
+      a file.
+    + Un-transfer-encoded and translated to a supplied charset, for
+      default viewing within front end.
+    + Somehow interpreted for ease of viewing. (Wrap text/plain,
+      de-HTML HTML, etc.)
+
+ - How to forward a message?
+    + `Attach-Enclosed' has always worked well enough, but I wonder
+      if `Attach-Message' might be an interesting option, containing
+      a message ID which the Timber send function can retrieve from
+      the database to form the attachment. Bit like `Attach:' only
+      the data isn't in an ordinary file.
+
+Unanswered factual questions:
+
+ - Can we implement `destroy attachment' in all message store back
+   ends? If all our mail is on an IMAP server, can we fiddle with
+   the content of a specific message?
+    + IMAP is RFC 3501, apparently.
+    + The IMAP APPEND command allows literal message data to be
+      appended to a mailbox, but only in IMAP 4 (RFC 1730) onwards.
+    + So presumably we could APPEND to create a new form of the
+      message, DELETE the old one, and adjust the database. Icky
+      (particularly in the locking dimension), but just about
+      workable.
+       * Actually the only locking problem is the one where we
+	 delete the original message. Up to that point it's easy
+	 enough: we APPEND the new message, adjust the db for that
+	 message only, and now the db reflects the modified message
+	 store state.
+
+Notes on front end implementation
+---------------------------------
+
+ - Tracking number of open Timber buffers.
+    + This is far less important than it used to be: we can always
+      safely exit a Jed with a Timber running in it (well, unless a
+      composer buffer is unsaved, but that's a job for ordinary
+      `unsaved data' warnings rather than Timber buffer-counting).
+      It's basically only there so that timber_only can exit Jed.
+    + Then perhaps the right thing is to not bother _counting_, and
+      simply go through the list of active buffers! I'm sure we can
+      invent a buffer-local variable tagging any Timber buffer.
+
+ - timber_unfold(): unfold (make visible) a message.
+    + I think in Timber 2 we should abandon the folded-buffer
+      architecture; it only slows Jed down. Instead, hitting Return
+      on a message index line should cause the retrieval of that
+      message in a separate buffer. Most of the standard Timber keys
+      need to keep working: hitting Del or Q or suchlike in that
+      buffer should return to the index buffer, hitting N and P move
+      to adjacent messages in the index we came from, etc; but it is
+      a separate buffer.
+    + This function also unfolds a MIME attachment in an existing
+      message.
+       * I suppose we can really `unfold' that if we want to.
+
+ - timber_selattach(): select the whole of an attachment (used for
+   selecting text to reply to).
+    + This is a Jed front-end operation only. We search upwards
+      until we find a MIME attachment separator line; if we hit BOB
+      without finding one, we search downwards for the end of
+      headers and then see if there's a MIME line immediately below
+      that, and if so we sit just below it, and if not we just sit
+      at the top of the message body. Then we search downwards for a
+      MIME separator or EOB, and we're done.
+
+ - timber_fold(): when DEL is pressed, we either fold up a MIME
+   attachment, or `fold' the whole message and return to the index
+   buffer.
+    + Either of these is a Jed front-end operation only: delete
+      everything between MIME lines in a message buffer, or destroy
+      a message buffer utterly.
+
+ - timber_mimedec() and timber_mimerev(): decode and revert a MIME
+   part.
+    * FIXME: need to decide what to do about this. My current
+      feeling is that MIME parts should be automatically decoded by
+      default, and reverted to the transport form only on demand.
+      This at _least_ applies to Content-Transfer-Encodings (base64
+      and QP) and conversion from loony charsets; perhaps it doesn't
+      actually apply to HTML and auto-wrapping plain text.
