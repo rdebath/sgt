@@ -213,7 +213,7 @@ sub html_to_text {
     'DEL' => 'C',
     'DFN' => 'E B',		# treat <DFN> as <B>
     'DIR' => 'E UL',		# treat <DIR> as <UL>
-    'DIV' => 'E P',		# treat <DIV> as <P>
+    'DIV' => 'C force_line_break_weak;',
     'DL' => 'C',
     'DT' => '',			# not a strict container - </DT> not required
     'EM' => 'E I',		# treat <EM> as <I>
@@ -523,13 +523,15 @@ sub html_to_text {
 
   # Force a line break if one hasn't already occurred.
   #
-  sub force_line_break {
+  sub force_line_break_internal($) {
+    my ($repeated) = @_;
     if ($opt_body == 0) {
       return if (not in_tag ("BODY"));
     } else {
       return if (in_tag ("TITLE"));
     }
-    if (($opt_br == 0) and (not in_tag('PRE'))) {	# suppress consecutive
+    if ((($opt_br == 0) and (not in_tag('PRE')))
+        or (!$repeated)) {	                        # suppress consecutive
       return if ($paragraph eq "");			# line breaks
     }
     perform_text_output ($paragraph, $on_list_item);
@@ -537,6 +539,13 @@ sub html_to_text {
     $freshpara = 0;
   }
 
+  sub force_line_break {
+    force_line_break_internal(1);
+  }
+
+  sub force_line_break_weak {
+    force_line_break_internal(0);
+  }
 
   # Force a paragraph break if one hasn't already occurred.
   #
