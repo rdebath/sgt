@@ -1,0 +1,13 @@
+Summary: Switching to full-screen doesn't always hide taskbar
+Class: bug
+Present-in: 0.53b 2003-10-23
+
+When switching to full-screen mode (e.g. with Alt-Enter), the taskbar
+is not always hidden. In some proportion of switches it stays on top.
+
+(At least, for a while. With 0.53b and Win98, it does disappear
+within a second or two if not immediately. I couldn't say for sure
+that wasn't the behaviour years ago.)
+
+I (JTN) have only noticed it on Win98 systems (2 so far), but it has
+been the case on that platform for ages.
