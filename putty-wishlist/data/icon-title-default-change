@@ -3,6 +3,7 @@ Class: wish
 Difficulty: fun
 Priority: medium
 Fixed-in: 2003-01-23 2003-01-24
+Content-type: text/x-html-body
 
 <p>
 Separate window and icon titles don't make as much sense in the
