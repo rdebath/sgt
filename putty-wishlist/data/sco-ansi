@@ -1,0 +1,48 @@
+Summary: Support for `SCO ANSI' terminal features
+Class: wish
+Difficulty: taxing
+Priority: low
+Content-type: text/x-html-body
+
+<p>
+We occasionally get asked to support `SCO-ANSI' (aka `ANSIC'?)
+features (as used by UnixWare etc).
+
+<dl>
+
+<dd>Colours</dd>
+<dt>From <code><a href="http://groups.google.com/groups?q=msgid%3Ab1dhv1$s98$1%40hyppo.gu.net">comp.security.ssh</a></code>:
+<pre>Select foreground color              \027[=PsF
+Select background color              \027[=PsG
+Select reverse color                 \027[=PsH
+Select reverse background color      \027[=PsI
+
+            SCO-ANSI Color Table
+--------------------------------------------------
+   Ps      Color             Ps      Color
+--------------------------------------------------
+   0       Black              8      Grey
+   1       Blue               9      Lt. Blue
+   2       Green             10      Lt. Green
+   3       Cyan              11      Lt. Cyan
+   4       Red               12      Lt. Red
+   5       Magenta           13      Lt. Magenta
+   6       Brown             14      Yellow
+   7       White             15      Lt. White
+--------------------------------------------------</pre>
+<p>There are various other (possibly contradictory) lists of escape
+sequences buried in the putty-bugs archives.
+<a href="http://www.chiark.greenend.org.uk/~bjharris/ftp/all-escapes/">all-escapes</a>
+also lists some sequences.
+<p>Patch: <code>342AD8A1750B844BA61AF9DFC417CCF5154D29@eciexchange.ecinet.com</code></dt>
+
+<dd>Line drawing</dd>
+<dt>(`SCO ACS'?) Setting line character set to `CP437' on the
+Translation panel <em>might</em> help with this.</dt>
+
+<dd>Function keys</dd>
+<dt>`SCO mode' function keys (and keypad top row) are already
+implemented (and possibly even do what you want). See the Keyboard
+panel.</dt>
+
+</dl>
