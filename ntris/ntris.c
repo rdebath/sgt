@@ -79,6 +79,10 @@
 
 #define lenof(x) (sizeof((x))/sizeof(*(x)))
 
+#ifndef SHAPESET
+#define SHAPESET tetris_shapes
+#endif
+
 char *tetris_shapes[7] = {
     "0:10011121:10011112:01112112:10111221", /* T-piece */
     "3:01112131:10111213",	             /* long bar */
@@ -783,7 +787,7 @@ gint key_event(GtkWidget *widget, GdkEventKey *event, gpointer data)
 	    gtk_main_quit();
 	} else {
 	    inst->state = IN_GAME;
-	    inst->ss = make_shapeset(tetris_shapes, lenof(tetris_shapes));
+	    inst->ss = make_shapeset(SHAPESET, lenof(SHAPESET));
 	    inst->leftpressed = inst->rightpressed = 0;
 	    inst->acpressed = inst->cwpressed = 0;
             inst->down_disabled = FALSE;
