@@ -1,0 +1,156 @@
+#!/usr/bin/perl
+#
+# Filter to convert Mono tribs to ANSI colour/SGR codes.
+
+$chop = -1;
+$dofile = 1;
+$bmargin = 0;
+
+while ($ARGV[0] =~ /^-(.*)$/) {
+  $_ = shift @ARGV;
+  /^-s(.*)$/ && do { $chop = length $1 ? $1 : shift @ARGV; next; };
+  /^-n$/     && do { $dofile = 0;                          next; };
+  /^-b(.*)$/ && do { $bmargin = $1;                        next; };
+}
+
+while (<>) {
+  y/\035\007/\033\033/;  # handle ^] and ^G as well as ^[
+  $chomped = chomp;
+  $_ = &do_file($_) if $dofile;
+  $_ = &do_trib($_);
+  $_ .= "\n" if $chomped;
+  print;
+}
+
+sub do_file {
+  local ($_) = @_;
+
+  s/^Subject: /Subject: \033CC\033U/;
+  s/^From: /From: \033CG\033B/;
+  s/^To: /To: \033CG/;
+
+  if (/^Message: *([0-9A-Z]{8})?/) {
+    $date = ""; $lt = $rt = "-";
+    $date = localtime(hex $1), $lt = "[", $rt = "]" if $1 ne "";
+    $_ = "\033B\033R\033Cb" .
+         "-" x (($chop != -1 ? $chop : 79) - 4 - length $date) .
+         "$lt\033b" . $date . "\033B$rt--";
+  }
+
+  if ($chop != -1) {
+    $_ = $1 if /(((\033(C.|1.|2..|3...|4....|5.....|6......|7.......|8........|9.........|[^C123456789]))*[^\033]){$chop})/;
+  }
+
+  $_;
+}
+
+# Missing features: we should add [39m and [49m support by optionally
+# changing the assignment `$prev = 0x990' to `$prev &= 0xFF0'.
+sub do_trib {
+  my ($in) = @_;
+  my $out = '';
+  my $chomped = chomp $in;
+  my @result = ();
+  my $resptr = 0;
+
+  my $b = 0;
+  my $u = 0;
+  my $r = 0;
+  my $s = 0;
+  my $f = 0;
+  my $C = 9;
+  my $c = 9;
+
+  my $prev, $curr;
+  my $trib, $esc;
+
+  $curr = 0x990; # default
+
+  while (length $in) {
+    ($ch,$in) = unpack 'Ca*',$in;
+    if ($ch == 8) {
+      $result[--$resptr] |= 0x100000 unless $resptr<=$bmargin;
+      next;
+    }
+    if ($ch == 13) {
+      $resptr = 0;
+      next;
+    }
+    if (($ch < 32 || $ch > 126) && $ch != 27) {
+      $result[$resptr] = &pretrib($result[$resptr]);
+      $result[$resptr++] |= 0x2A61C; # fluffed-trib character
+      next;
+    }
+    if ($ch >= 32 && $ch <= 126) {
+      $result[$resptr] = &pretrib($result[$resptr]);
+      $result[$resptr++] |= $curr | ($ch << 12);
+      next;
+    }
+    die "boggle?" unless $ch == 27;
+    die "internal error in regex" unless
+      $in =~ m/^(C.|1.|2..|3...|4....|5.....|6......|7.......|8........|9.........|[^C123456789])(.*)$/;
+    $in = $2;
+    $trib = $1;
+    if ($trib =~ /^[0-9][^BbUuRrSsFfAa]*([BbUuRrSsFfAa])?/) {
+      $trib = $1;
+    }
+    SWITCH: {
+      if ($trib eq "B") { $b = 1; last SWITCH; }
+      if ($trib eq "b") { $b = 0; last SWITCH; }
+      if ($trib eq "U") { $u = 1; last SWITCH; }
+      if ($trib eq "u") { $u = 0; last SWITCH; }
+      if ($trib eq "R") { $r = 1; last SWITCH; }
+      if ($trib eq "r") { $r = 0; last SWITCH; }
+      if ($trib eq "S") { $s = 1; last SWITCH; }
+      if ($trib eq "s") { $s = 0; last SWITCH; }
+      if ($trib eq "F") { $f = 1; last SWITCH; }
+      if ($trib eq "f") { $f = 0; last SWITCH; }
+      if ($trib eq "A") { $b = $u = $r = $s = $f = 1; last SWITCH; }
+      if ($trib eq "a") { $b = $u = $r = $s = $f = 0; last SWITCH; }
+      if ($trib =~ /^C([A-Z])/) { ($trib = $1) =~ y/KRGYBMCWA/012345677/;
+                                  $C = 0+$trib; last SWITCH; }
+      if ($trib =~ /^C([a-z])/) { ($trib = $1) =~ y/krgybmcwa/012345670/;
+                                  $c = 0+$trib; last SWITCH; }
+    }
+    $curr = $b | ($u<<1) | (($r||$s)<<2) | ($f<<3) | ($C<<4) | ($c<<8);
+  }
+
+  $curr = 0x990; # default again - start of line
+
+  for ($i=0; $i <= $#result+1; $i++) {
+    $prev = $curr;
+    if ($i > $#result) {
+      $curr = 0x990;
+    } else {
+      $curr = $result[$i] & 0xFFF;
+    }
+    $C = ($curr >> 4) & 0xF;
+    $c = ($curr >> 8) & 0xF;
+    if ($prev != $curr) {
+      $esc = $semi = "";
+      $semi = ";", $prev = 0x990 if (($prev & ~$curr) & 0xF ||
+                                     ($c == 9 && ($prev & 0xF00) != 0x900) ||
+                                     ($C == 9 && ($prev & 0x0F0) != 0x090));
+      $esc .= $semi . "1", $semi = ";" if ($curr & ~$prev) & 1;
+      $esc .= $semi . "4", $semi = ";" if ($curr & ~$prev) & 2;
+      $esc .= $semi . "7", $semi = ";" if ($curr & ~$prev) & 4;
+      $esc .= $semi . "5", $semi = ";" if ($curr & ~$prev) & 8;
+      $esc .= $semi . "3$C", $semi = ";"
+          if ($curr & 0x0F0) != ($prev & 0x0F0);
+      $esc .= $semi . "4$c", $semi = ";"
+          if ($curr & 0xF00) != ($prev & 0xF00);
+      $out .= "\033[" . $esc . 'm';
+    }
+    $out .= pack 'c',($result[$i] >> 12) if $i <= $#result;
+  }
+  $out;
+}
+
+sub pretrib {
+  my ($code) = @_;
+  my $result = 0;
+
+  $result = 1 if ($code & 0x100000);
+  $result = 2 if ($code & 0x1FF000) == 0x15F000;  # overprint on underscore
+  $result;
+}
