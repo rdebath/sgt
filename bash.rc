@@ -1,26 +1,38 @@
 # -*- mode: sh; mode: fold -*-
 # Simon Tatham's standardised chunk of .bashrc
-# $Revision: 1.14 $
+# $Revision: 1.15 $
 
 #{{{ I don't like .bash_history files. They wet their nests.
 unset HISTFILE
 rm -f ~/.bash_history
 #}}}
-#{{{ addpath and addpathback, for idempotent $PATH management
+#{{{ addpath and addpathback, for idempotent path management
 
 addpath() {
-  case $PATH in
-    '') export PATH=$1 ;;
+  local a b
+  # Be able to accept a second argument which is an envvar name.
+  # Otherwise, default to managing PATH.
+  a=${2:-PATH}
+  # Retrieve the value of the variable whose name is given in $a.
+  b=${!a}
+  case "$b" in
+    '') export $a=$1 ;;
     *:$1:* | $1:* | *:$1 | $1) ;;
-    *) export PATH=$1:$PATH ;;
+    *) export $a=$1:$b ;;
   esac
 }
 
 addpathback() {
-  case $PATH in
-    '') export PATH=$1 ;;
+  local a b
+  # Be able to accept a second argument which is an envvar name
+  # Otherwise, default to managing PATH.
+  a=${2:-PATH}
+  # Retrieve the value of the variable whose name is given in $a.
+  b=${!a}
+  case $b in
+    '') export $a=$1 ;;
     *:$1:* | $1:* | *:$1 | $1) ;;
-    *) export PATH=$PATH:$1 ;;
+    *) export $a=$b:$1 ;;
   esac
 }
 
