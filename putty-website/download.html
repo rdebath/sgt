@@ -81,6 +81,8 @@ This will generally be a version I think is reasonably likely to
 work well. If you have a problem with the release version, it might
 be worth trying out the latest development snapshot (below) to see
 if I've already fixed the bug, before reporting it to me.
+</p>
+
 <table border=0>
 <tr>
 <td colspan=4><b>For Windows 95, 98, ME, NT, 2000 and XP on Intel x86</b></td>
@@ -235,6 +237,8 @@ you need a fix for a particularly crippling bug, you may well be
 able to find a fixed PuTTY here well before the fix makes it into
 the release version above. On the other hand, these snapshots might
 sometimes be unstable.
+</p>
+
 <table>
 <tr>
 <td colspan=4><b>For Windows 95, 98, ME, NT, 2000 and XP on Intel x86</b></td>
@@ -374,20 +378,24 @@ PuTTYtel), and also the help files</b></td>
 </tr>
 </table>
 
-<h2>Unix source</h2>
+<h2>Unix source code</h2>
 
 <p>
-This <code>.tar.gz</code> source archive should build the latest
-release version of PuTTY for Unix. (We currently do not supply
-development snapshots in this format; see below for instructions on
-accessing our Subversion repository if you need up-to-date Unix
-source.)
+These <code>.tar.gz</code> source archives should build the latest
+release version, and latest development snapshot, of PuTTY for Unix.
 
 <p>
-To build the source, you will need to unpack this archive, change
-into the "<code>unix</code>" subdirectory, and type "<code>make -f
-Makefile.gtk</code>". (Sorry, no autoconf as yet either.) See the
-file "<code>README</code>" for more information.
+To build the source, you will need to unpack one of these archives,
+change into the "<code>unix</code>" subdirectory, and type
+"<code>make -f Makefile.gtk</code>". (Sorry, no autoconf as yet
+either.) See the file "<code>README</code>" for more information.
+
+<p>
+(The filename of the development snapshot source archive contains
+the snapshot date, so it will change every night. It is not offered
+by FTP, because FTP does not support the redirect mechanism that
+implements this.)
+</p>
 
 <table>
 <tr>
@@ -400,9 +408,19 @@ file "<code>README</code>" for more information.
 <td><a href="http://the.earth.li/~sgtatham/putty/latest/putty-0.56.tar.gz.RSA">(RSA sig)</a></td>
 <td><a href="http://the.earth.li/~sgtatham/putty/latest/putty-0.56.tar.gz.DSA">(DSA sig)</a></td>
 </tr>
+<tr>
+<td colspan=4><b>Development snapshot source code for Unix</b></td>
+</tr>
+<tr>
+<td>Source:</td>
+<td><a href="http://www.tartarus.org/~simon/putty-unix/putty-snapshot.tar.gz">putty-&lt;version&gt;.tar.gz</a></td>
+<td></td>
+<td><a href="http://the.earth.li/~sgtatham/putty/latest/putty-snapshot.tar.gz.RSA">(RSA sig)</a></td>
+<td><a href="http://the.earth.li/~sgtatham/putty/latest/putty-snapshot.tar.gz.DSA">(DSA sig)</a></td>
+</tr>
 </table>
 
-<h2>Source Code</h2>
+<h2>Windows source code</h2>
 
 <p>
 If you want to do any PuTTY development work, we <em>strongly</em>
@@ -413,6 +431,7 @@ current release will be hard for us to use.
 <p>
 See the file "<code>README</code>" for more information on building
 PuTTY from source.
+</p>
 
 <table>
 <tr>
