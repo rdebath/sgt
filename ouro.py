@@ -23,19 +23,15 @@ k = int(args[1])
 list = [0] * k + [n-1] * k
 used = {}
 
-print "start", list
 for i in range(k+1):
-    print "crossout", tuple(list[i:i+k])
     used[tuple(list[i:i+k])] = 1
 
 while 1:
     prefix = tuple(list[-(k-1):])   # last k-1 elements of the list
     next = -1
     for j in range(n-1,-1,-1):
-        print "check", prefix + (j,)
         if used.get(prefix + (j,), 0) == 0:
             next = j
-            print "got", next
             break
     if next == -1:
         assert len(list) == n ** k + k - 1
