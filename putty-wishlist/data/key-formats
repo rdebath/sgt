@@ -1,0 +1,53 @@
+Summary: Support for OpenSSH and ssh.com SSH2 private key formats
+Class: wish
+Difficulty: fun
+Priority: medium
+Content-type: text/x-html-body
+
+<p>
+Although PuTTY shares the same SSH1 private key file format as
+OpenSSH and ssh.com's product, all the SSH2 formats are different.
+Of course, we believe PuTTY's is the best, because it shows the
+public key unencrypted (so it's easy to check by eye that a
+particular private key matches a particular public key) and because
+it's fully tamperproofed to protect against any attacks that involve
+tampering with the key to reveal information about it.
+
+<p>
+However, a lot of people want to be able to use their OpenSSH or
+ssh.com private keys (usually OpenSSH) with PuTTY. So we probably
+need at least PuTTYgen to be able to load and save those formats. (I
+think if we build the conversion capability into PuTTYgen, there
+will be no need to bloat PuTTY itself with the same code.)
+
+<p>
+In the meantime, other people have written separate programs to
+convert OpenSSH format to PuTTY. These programs read OpenSSH keys by
+using the existing OpenSSL key management library, which means we
+can't conveniently make use of them when we do the same work
+ourselves. However, in case they're useful, they are:
+
+<ul>
+<li>
+The one at
+<a href="http://www.thule.no/~troels/code/pem2putty.c">www.thule.no</a>
+will only write out unencrypted keys, and recommends you immediately
+load the resulting key into PuTTYgen and re-save it with a
+passphrase. It is supplied in C source form only.
+
+<li>
+The one at
+<a href="http://anchor.net.au/openssh2putty.php">anchor.net.au</a>
+will only write out encrypted keys (ones stored with a passphrase),
+though a comment in the code suggests it would be easy to extend to
+deal with unencrypted keys too. A binary is supplied as well as
+source (though of course you should be wary of trusting somebody
+else's binary with your private key - as the web page itself warns
+you!).
+
+</ul>
+
+<p>
+Note that we are not responsible for these programs and cannot
+guarantee their correct functionality or even their trustworthiness.
+You use them at your own risk. Check the source code.
