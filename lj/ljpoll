@@ -49,8 +49,9 @@ try:
     f.close()
     now = time.time()
     if now < then and not force:
-	sys.stderr.write("Please do not press this button again for " +
-	"%d seconds.\n" % int(then-now))
+	sys.stderr.write("LJ polling discouraged for " +
+	"%d seconds (until %s).\n" % \
+	(int(then-now), time.strftime("%H:%M:%S", time.localtime(then))))
 	sys.exit(0)
 except IOError:
     lastupdate = ""
@@ -72,14 +73,15 @@ if ljproto.ljok(ret):
 	tryit = 1
 	if interval <= 0 or interval > 300:
 	    interval = 300 # in this case, we don't trust the interval either
+	new = 1 # means we don't know if there's new stuff or not
     if ret["new"] == "1":
 	# The checkfriends protocol tells us there is something
 	# new. If we have date delimiters, we now check the real
 	# friends page to see if it's actually correct or not.
 	nonemsg = "no visible change, although checkfriends reported one"
 	tryit = 1
+	new = 2 # means quite likely to be new stuff, but uncertain
     if tryit:
-	new = 1
 	urlguts = "www.livejournal.com/users/"+ljproto.ljusername()+"/friends"
 	if date_start != "" and date_stop != "":
 	    url = "http://" + urlguts + "/"
@@ -101,13 +103,31 @@ if ljproto.ljok(ret):
 			date = s[a1:a2]
 			break
 	    f.close()
-	    if date != "" and date == lastrealdate:
-		print nonemsg
-		new = 0
+	    if date != "":
+		if date == lastrealdate:
+		    print nonemsg
+		    new = 0
+		else:
+		    new = 3 # a _definite_ change
+		    olddate = lastrealdate
+		    newdate = date
 	    if date != "": lastrealdate = date
 	if new:
-	    print "New entries at www.livejournal.com/users/" + \
+	    explain = None
+	    if new == 1:
+		newstr = "No information available on"
+		explain = "(checkfriends was unhelpful, and retrieval of" + \
+		" friends page itself failed)"
+	    elif new == 2:
+		newstr = "Possibly new"
+		explain = "(checkfriends said so, but retrieval of friends "+ \
+		"page itself failed)"
+	    else:
+		newstr = "New"
+		explain = "([%s] -> [%s])" % (olddate, newdate)
+	    print newstr, "entries at www.livejournal.com/users/" + \
 	    ljproto.ljusername() + "/friends"
+	    if explain != None: print explain
     f = open(cfg, "w")
     if date_start != "\n":
 	f.write("date-start " + date_start + "\n") 
