@@ -29,6 +29,7 @@ void error (char *fmt, ...);
 
 /* set from command-line parameters */
 char *display = NULL;
+int utf8 = 0;
 
 /* selection data */
 char *seltext;
@@ -54,6 +55,8 @@ int main(int ac, char **av) {
 	    display = *++av, --ac;
         } else if (!strcmp(p, "-r")) {
             reading = True;
+        } else if (!strcmp(p, "-u")) {
+            utf8 = 1;
 	} else if (*p=='-') {
 	    error ("unrecognised option `%s'", p);
 	} else {
@@ -137,6 +140,8 @@ Window ourwin = None;
 Atom compound_text_atom;
 int screen, wwidth, wheight;
 
+Atom strtype = XA_STRING;
+
 /*
  * Returns TRUE if we need to enter an event loop, FALSE otherwise.
  */
@@ -154,6 +159,12 @@ int init_X(void) {
     disp = XOpenDisplay (display);
     if (!disp)
 	error ("unable to open display");
+
+    if (utf8) {
+	strtype = XInternAtom(disp, "UTF8_STRING", False);
+	if (!strtype)
+	    error ("unable to get UTF8_STRING property");
+    }
 
     /* get the screen and root-window */
     screen = DefaultScreen (disp);
@@ -183,7 +194,7 @@ int init_X(void) {
             return False;
         } else {
             Atom sel_property = XInternAtom(disp, "VT_SELECTION", False);
-            XConvertSelection(disp, XA_PRIMARY, XA_STRING,
+            XConvertSelection(disp, XA_PRIMARY, strtype,
                               sel_property, ourwin, CurrentTime);
             return True;
         }
@@ -198,7 +209,7 @@ int init_X(void) {
             error ("unable to obtain primary X selection\n");
         compound_text_atom = XInternAtom(disp, "COMPOUND_TEXT", False);
 	XChangeProperty(disp, DefaultRootWindow(disp), XA_CUT_BUFFER0,
-			XA_STRING, 8, PropModeReplace, seltext, sellen);
+			strtype, 8, PropModeReplace, seltext, sellen);
         return True;
     }
 }
@@ -227,9 +238,9 @@ void run_X(void) {
                 e2.xselection.selection = ev.xselectionrequest.selection;
                 e2.xselection.target = ev.xselectionrequest.target;
                 e2.xselection.time = ev.xselectionrequest.time;
-                if (ev.xselectionrequest.target == XA_STRING) {
+                if (ev.xselectionrequest.target == strtype) {
                     XChangeProperty (disp, ev.xselectionrequest.requestor,
-                                     ev.xselectionrequest.property, XA_STRING,
+                                     ev.xselectionrequest.property, strtype,
                                      8, PropModeReplace, seltext, sellen);
                     e2.xselection.property = ev.xselectionrequest.property;
                 } else if (ev.xselectionrequest.target == compound_text_atom) {
@@ -271,14 +282,29 @@ void do_paste(Window window, Atom property, int Delete) {
                               Delete, AnyPropertyType, &actual_type,
                               &actual_format, &nitems, &bytes_after,
                               (unsigned char **) &data) == Success) {
-        if (actual_type == XA_STRING && nitems > 0) {
+	/*
+	 * We expect all returned chunks of data to be multiples of
+	 * 4 bytes (because we can only request the subsequent
+	 * starting offset in 4-byte increments). Of course you can
+	 * store an odd number of bytes in a selection, so this
+	 * can't be the case every time XGetWindowProperty returns;
+	 * but it should be the case every time it returns _and
+	 * there is more data to come_.
+	 * 
+	 * Hence, whenever XGetWindowProperty returns, we verify
+	 * that the size of the data returned _last_ time was
+	 * divisible by 4.
+	 */
+	if (nitems > 0)
+	    assert((nread & 3) == 0);
+
+        if (actual_type == strtype && nitems > 0) {
             assert(actual_format == 8);
             fwrite(data, 1, nitems, stdout);
             nread += nitems;
-            assert((nread & 3) == 0);
         }
         XFree(data);
-        if (actual_type != XA_STRING || nitems == 0)
+        if (actual_type != strtype || nitems == 0)
             break;
     }
 }
