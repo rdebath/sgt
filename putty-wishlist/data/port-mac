@@ -7,5 +7,5 @@ Content-type: text/x-html-body
 <p>
 There is a port to the Mac OS in progress.  It's just about usable, but has
 an awful lot of gaps and rough edges that will need cleaning up before
-release.  See <a href="http://cvs.tartarus.org/putty/mac/README.mac?rev=HEAD">
+release.  See <a href="http://cvs.tartarus.org/putty/mac/README.mac?rev=HEAD&content-type=text/vnd.viewcvs-markup">
 README.mac</a> in the sources for the current state of the world.
