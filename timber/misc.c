@@ -7,7 +7,7 @@
 #include "timber.h"
 
 /*
- * At some point these two functions will require inverses.
+ * At some point these functions will require inverses.
  */
 const char *header_name(int header_id)
 {
@@ -43,6 +43,13 @@ const char *encoding_name(int encoding)
     if (encoding == BASE64) return "base64";
     if (encoding == UUENCODE) return "uuencode";
     return "clear";
+}
+
+const char *disposition_name(int disposition)
+{
+    if (disposition == INLINE) return "inline";
+    if (disposition == ATTACHMENT) return "attachment";
+    return "unspecified-disposition";
 }
 
 /*

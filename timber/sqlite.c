@@ -349,7 +349,7 @@ void db_info_fn(void *vctx, struct message_parse_info *info)
 			   info->u.md.major, info->u.md.minor,
 			   charset_to_localenc(info->u.md.charset),
 			   encoding_name(info->u.md.transfer_encoding),
-			   info->u.md.cd_inline ? "inline" : "attachment",
+			   disposition_name(info->u.md.disposition),
 			   info->u.md.filename ? info->u.md.filename : "",
 			   info->u.md.description ? info->u.md.description:"",
 			   info->u.md.offset, info->u.md.length);
