@@ -1,14 +1,15 @@
-Summary: Enhanced flexibility in SSH host key policy
+Summary: Enhanced flexibility in SSH host key lookup policy
 Class: wish
 Priority: medium
 Difficulty: tricky
 Content-type: text/x-html-body
 
 <p>
-PuTTY's host key policy is extremely simple at the moment. The name
-under which a host key is filed in the Registry is exactly the name
-you typed into the Hostname box. This avoids ever trusting the DNS
-for anything.
+PuTTY's host key lookup policy is extremely simple at the moment. The
+name under which a host key is filed in the Registry is exactly the
+name you typed into the Hostname box. This avoids ever trusting the
+DNS for anything. The choice of which key to use is also very simple -
+we have a fixed preference order of RSA, DSS (for SSH-2).
 
 <p>
 Recent versions of OpenSSH appear to file keys under IP addresses as
@@ -29,3 +30,12 @@ already stored. You almost certainly <em>don't</em> want to
 permanently associate that host key with the temporary port number
 on your local machine which you've chosen for the forwarding.)
 
+<p>
+When there's a choice of host keys available for a host, perhaps PuTTY
+should adjust its stated preferences so that the ones it has cached
+come first. Need to think about that a bit. At the very least, when a
+new host key prompt is given, PuTTY should mention if it already has
+host keys for a host in other formats - particularly important when
+the <a href="ssh2-default.html">default protocol changes to SSH-2</a>,
+or a server that previously offered DSS keys starts supporting RSA
+too.
