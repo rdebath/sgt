@@ -10,9 +10,6 @@
  *  - Might be nice to have some alternative arena shapes
  *    available, if we aren't going to support the command-line
  *    full configuration.
- *  - We are really suffering from lack of double-buffering. I
- *    wonder if SDL (or indeed the Linux kernel at all) can be
- *    persuaded to do some for us.
  */
 
 #include <stdio.h>
@@ -440,6 +437,26 @@ static int play_game(void)
 	if (dying[0]>0 && dying[0]<dead) done = FALSE;
 	else if (dying[1]>0 && dying[1]<dead) done = FALSE;
 	else done = (gameover>=50 && (d1 || d2)) || (d1 && d2);
+
+	/*
+	 * Hideous, _hideous_ hackery to try to work around the
+	 * lack of double buffering in SDL's management of the PS2
+	 * video hardware. Compiling with TIME_DEBUG defined will
+	 * print diagnostics to fd 3 suggesting that scr_done()
+	 * (which copies the internal frame buffer to the real
+	 * screen) takes roughly 5290 microseconds, while vsync()
+	 * ends up waiting about 14250 microseconds. Hence, we
+	 * expect to be able to wait for about 8960 microseconds at
+	 * the end of our frame before starting our scr_done()
+	 * copy. I'm going to cut that to 8000 for safety, but with
+	 * any luck that should move the nasty flickery line where
+	 * the memory copy overtakes the electron beam well down
+	 * into the dead area at the bottom of the screen.
+	 * 
+	 * (Actually, I don't see why we can't wait for 13000 us or
+	 * so, but it doesn't seem to work when I try it. Bah.)
+	 */
+	usleep(8000);
 
 #ifdef TIME_DEBUG
 	before = bigclock();
