@@ -12,3 +12,7 @@ right-hand ends of lines. (Like NiftyTelnet-SSH on the Mac.)
 <p>
 This should be relatively easy (it's already the case for the
 scrollback).
+
+<p>
+(cf. <a href="resize-scroll-effects.html">`resize-scroll-effects'</a>
+for the case where the number of rows is changed.)
