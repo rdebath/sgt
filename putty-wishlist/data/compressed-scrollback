@@ -2,6 +2,7 @@ Summary: Compress scrollback contents to reduce memory usage
 Class: wish
 Difficulty: tricky
 Priority: medium
+Fixed-in: 2004-10-14
 Content-type: text/x-html-body
 
 <p>
@@ -32,3 +33,6 @@ That way, the chances are that the average user will experience a
 up smaller than it is right now), and yet the terminal emulator will
 acquire extra flexibility to have features added to it without
 impacting memory usage for people who don't use them.
+
+<p>
+<b>SGT, 2004-10-13</b>: I've now done the initial work for this.
