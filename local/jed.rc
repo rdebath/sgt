@@ -1,5 +1,5 @@
 % -*- mode: slang; mode: fold -*-
-% Simon Tatham: version $Revision: 1.61 $
+% Simon Tatham: version $Revision$
 
 %{{{ load Emacs keybindings to start with
 
@@ -1217,6 +1217,14 @@ define jedrc_parsep(prefix) {
 	    return 1;
 	}
     }
+    if (looking_at("-- "))
+	go_right(3);
+    else if (looking_at("--This line, and those below, will be ignored--") and
+	     whatbuf() == "svn-commit.tmp")
+	go_right(47);
+    else if (looking_at("CVS: ----------------------------------------------------------------------") and
+	     substr(whatbuf(), 1, 3) == "cvs")
+	go_right(75);
     eolp();
     pop_spot();
 }
