@@ -1,0 +1,452 @@
+\cfg{xhtml-leaf-level}{0}
+
+\cfg{chapter}{Section}
+
+\cfg{text-title-align}{left}
+
+\cfg{text-indent}{0}
+
+\cfg{text-chapter-numeric}{no}
+
+\cfg{text-chapter-underline}{-}
+
+\cfg{text-section-numeric}{0}{no}
+
+\cfg{text-section-underline}{0}{-}
+
+\cfg{xhtml-address-start}{Copyright &copy; 1999 Simon Tatham.
+<br>This document is
+<a href="http://www.opencontent.org/">OpenContent</a>.
+<br>You may copy and use the text under the terms of the
+<a href="http://www.opencontent.org/opl.shtml">OpenContent
+Licence</a>.
+<br>Please send comments and criticism on this article to
+<a href="mailto:anakin@pobox.com">anakin@pobox.com</a>.}
+
+\title Guidelines for Software-to-Software Interface Design
+
+\preamble by \W{http://pobox.com/~anakin/}{Simon Tatham},
+professional and free-software programmer
+
+\C{intro} Introduction
+
+Interfaces between pieces of software are ubiquitous in programming.
+Most large programs are composed of reasonably well-separated
+pieces, with well-defined function call interfaces in place between
+those pieces; and many pieces of software communicate with one
+another using well-defined network protocols.
+
+Interface and protocol design is a fundamental programming technique
+for making the complexity of a large project manageable, and also
+for allowing diverse programs from widely differing backgrounds to
+communicate usefully. They can help in debugging, help in management
+of teams of programmers, help flexibility of software by making
+parts interchangeable, and much more. So with all these advantages,
+it's no wonder there are a lot of interfaces about: within
+individual programs, between programs and their supporting
+libraries, between cooperating programs, on the same computer or
+across a network. Interfaces are everywhere.
+
+They're not easy to design well, however. There are a lot of
+subtleties involved in interface design which may well only become
+obvious once your interface is in widespread use, and once it's
+difficult and costly to try to change it. In this article I try to
+address some of the common interface design issues, both in network
+protocols and in function-call interfaces inside a program.
+
+Everything I say in this article is a \e{guideline}. Nothing stated
+here is an absolute rule. If you have a good reason to ignore any or
+all of the guidelines in this document, you should feel free to go
+ahead and do so. But it's better to have considered a design
+criterion and decided consciously that you don't need or want to
+meet it, than to finish coding and then realise you hadn't even
+thought of it in the first place.
+
+\C{whether} Is an interface necessary?
+
+The first question of interface design is so obvious it's easy to
+miss: should you separate a program (or part of a program) into two
+or more pieces with interfaces between them, or should you just
+leave it all as one lump? (This question doesn't really apply to
+network protocols, of course: if you have two separate programs that need to
+communicate, you have a network protocol almost by definition.)
+
+Certainly, if you are ever going to need an interface, you should
+try to have it in place from the start. It costs a lot of time and
+effort to put an interface into existing code if there wasn't
+already one there. You have to go through the code and carefully
+separate it out, often moving functionality long distances to make
+sure it ends up on the right side of the interface. Sometimes,
+depending on why you're needing to put the interface in, you might
+find that a simple piece of computation needs to be divided down the
+middle, which is really inconvenient.
+
+On the other hand, designing an interface properly could well take
+significant time and effort in itself. So while you certainly don't
+want to discover three years later that you should have created an
+interface and didn't, you also don't really want to spend lots of
+time and effort on an interface you'll never need.
+
+Sometimes the decision is easy. For example, if your program needs
+to contain interchangeable parts, you are almost guaranteed to need
+a well-defined interface between the main program and those parts. A
+document formatter which can output in several formats, for example,
+or a network communications program able to speak several different
+network protocols, both \e{need} a clear interface to dictate how
+the rest of the program talks to any of the interchangeable
+sections. There's no other practical way to be sure that swapping
+one back end for another one will continue to work sensibly.
+
+Alternatively, suppose a particular part of the program is not
+particularly related to the program's main function: for example, in
+a network utility, you might have a set of functions which deal with
+gradually collecting data and accumulating it into a string. This
+might be a good piece of code to define a clear interface to,
+because that would make it easier to copy the whole set of functions
+out of that program and re-use it in another one. (You could see
+this as the interchangeability criterion in reverse: instead of
+leaving the main program fixed and switching around small sections
+of code, you're leaving a small section of code fixed and switching
+the rest of the program!)
+
+Apart from these clear practical advantages of defining an
+interface, the main benefit of splitting code into small sections
+and defining interfaces between them is in debugging and testing.
+Many bugs can be localised into a particular section simply by
+examining the data flowing over the interfaces between sections, and
+checking whether that data is legal according to the interface
+definitions. When you find a section taking in valid data and giving
+out invalid data, there's the bug. Better still, you can write a
+test suite for each section based on the interface to it, and test
+each statement made in the interface design. If the design says
+passing a null pointer to a function is valid, for example, you can
+write a test which does pass it a null pointer, and make sure it
+doesn't crash. That way you can do a lot of your testing on a small
+part of the program at a time, and cut down the number of bugs you
+have to hunt for in the program as a whole.
+
+Ultimately, though, the decision about whether to define an
+interface is one of cost versus benefit. Carefully specifying an
+interface takes time and effort (particularly if you carefully
+consider all the guidelines in this article!), and it might be that
+the time you'll spend doing this is more than the time you'd save in
+debugging and testing.
+
+\C{where} Where should I put my interface?
+
+Once you've decided you need an interface, the next big question is
+exactly where it goes. Given a piece of functionality that could
+plausibly be placed on either side of the interface, how do you
+decide which side you put it on?
+
+There are a variety of criteria you might use to decide this
+question. In this section I examine some of them.
+
+\H{where-interchangeability} Interchangeability
+
+If the purpose of your interface is to allow several sections of a
+program to be interchangeable, this often makes it easy to decide
+where a particular piece of functionality belongs. If the
+functionality is never going to need to be different depending on
+which of the interchangeable parts you're using, it might be good to
+put it on the main-program side of the interface and keep your code
+maintainable by avoiding duplication. On the other hand, if the
+functionality will need to work differently for different back ends,
+it should probably be on the back-end side of the interface so that
+each back end can supply its own version of it.
+
+These aren't the only options, of course. If the ways in which the
+functionality will need to work differently can be easily described
+by a few parameters, then another alternative would be to put the
+main implementation of the functionality on the main-program side of
+the interface, and arrange for each back end to supply a function
+the main program can call to retrieve the correct values for those
+parameters. Alternatively, if the functionality is always the same
+but each back end will need it to be performed at a different stage
+of the program, it could be provided in a function defined in the
+main program and each back end could call that function when it was
+ready.
+
+\H{where-dataflow} The orange-segment model: minimum data flow
+
+If there are no particularly clear reasons to put an interface in a
+particular place, one general guideline that often gives a sensible
+way to divide a program into parts is what I call the
+\q{orange-segment model}. In this model, the aim is to divide your
+program into parts in such a way that the minimum amount of data
+flows between the parts.
+
+(I call this the orange-segment model because an orange is something
+with a natural way to divide it into pieces. Divide an orange the
+right way, and it comes apart cleanly; divide it the wrong way, by
+cutting it indiscriminately with a sharp knife, and you will get
+covered in juice. The correct way to divide up an orange is in such
+a way as to minimise the flow of juice between the pieces.)
+
+For example, suppose you need your program to look a word up in a
+dictionary and check that it's a real word; and suppose that you've
+decided to put an interface between most of the program and the part
+that deals with the dictionary file, so that you can change the file
+format easily later. One option might be to have the dictionary
+module supply a function \cw{GetNthWord()} which accepts a number N,
+and returns the Nth word in the dictionary; then the routine
+\cw{DoesWordExist()} which tests for the presence of a particular
+word can be on the main-program side of the interface, and work by
+calling \cw{GetNthWord()} repeatedly and doing a binary search. But
+the orange-segment model suggests that a better way would be for
+\cw{DoesWordExist()} to be \e{part of} the interface rather than a
+client of it, and for it to be implemented \e{inside} the dictionary
+module. That way, less data flows over the interface: instead of ten
+or twenty requests each returning a word, there is one single
+request which sends a word and receives a boolean response.
+
+This guideline doesn't make sense all the time. In fact, in the
+above example, it might easily \e{conflict} with other design
+principles: if you needed to deal with dictionaries in a large
+number of formats, you would probably want to minimise the amount of
+functionality provided by each dictionary driver, to save programmer
+time and make it easier to add a new driver. So any routine such as
+\cw{DoesWordExist()}, which could be built up from simpler functions
+such as \cw{GetNthWord()}, would be considered non-essential and
+implemented in the main program.
+
+However, the orange-segment model makes a lot of sense in network
+protocols, where the computers at each end are likely to be a lot
+faster than the connection between them; so that if you want
+efficiency, it's more important to minimise data flow over the
+network than to minimise calculation at each end. (See \#{FIXME:
+round-trip times versus simple bandwidth} for more detail on this.)
+It might also make sense in a situation where the inside of a
+particular module dealt with data in a very different format from
+the program calling it - so that every time you call a function in
+the interface, you incur an overhead for translating the data
+between formats.
+
+If neither of these situations apply, the orange-segment model is
+probably not what you want to use to make the final decisions about
+what goes where in your program. But it often gives a good initial
+idea of some rough divisions of the code, and then other design
+principles can be used to fill in the details.
+
+\H{where-trust} Trust boundaries
+
+If your interface is a network protocol between programs that don't
+fully trust one another, then sometimes a piece of functionality
+\e{needs} to go on a particular side of an interface to avoid
+requiring that trust.
+
+To illustrate this I'm going to use a case study: wildcard handling
+in SCP and SFTP. Both of these are file transfer protocols which run
+over SSH, but they are very different in design. In particular, if
+the user asks to retrieve all files from the server which match a
+particular wildcard (such as \q{\c{*.txt}}), then the two protocols
+handle it in completely different ways:
+
+\b An SCP client sends the wildcard straight to the server, in
+exactly the form the user specified it. The server then searches for
+file names that match the wildcard, under whatever wildcard matching
+rules make sense for that particular server, and it returns the
+names and contents of the files that matched.
+
+\b An SFTP client cannot send the wildcard to the server, because
+there is no way to do that in SFTP. Instead, the client must ask the
+server for a list of \e{all} the files in the source directory, and
+the wildcard matching must be done at the client end. Then, once the
+client has decided which file names match the wild card, it sends a
+separate request to the server for each individual file.
+
+At first sight, the SCP approach looks more efficient, particularly
+in terms of minimising data flow over the network (see
+\k{where-dataflow}). After all, if there are ten thousand files in a
+directory and only three of them match the wildcard, the SFTP client
+will have to retrieve all ten thousand file names before it can
+start transferring files!
+
+However, SCP has a fatal flaw: because the wildcard matching is
+performed by the server's local wildcard matching rules, the client
+doesn't have enough information to know what filenames legitimately
+match that wildcard or not. On a Unix system, for example,
+\c{[ab]*.dat} would match only file names beginning with \q{a} or
+\q{b}; but on a VMS system, \c{[ab]} is a directory specifier, and
+so the same wildcard could legitimately match \e{any} file name
+ending in \c{.dat}. So if the client sends a request for
+\c{[ab]*.dat} and the server sends back a file called
+\c{passwords.dat}, the client can't be sure that that wasn't exactly
+what the user wanted. In fact a malicious server could send back a
+more damaging file name such as \c{.ssh/authorized_keys}, in the
+hope that the client would trust it and allow the server to
+overwrite a sensitive file.
+
+By doing wildcard matching at the client end and therefore by the
+client's choice of rules, SFTP avoids this problem completely;
+there's no way the server can attempt to write to a file which the
+user hadn't explicitly agreed to. So SFTP would be more suitable for
+use on servers offering files for general download, where a lot of
+users don't personally know the sysadmin of the server.
+
+Again, these aren't the only options. A third possibility could be
+that the protocol could precisely define a set of wildcard matching
+rules. Then the server could do the matching in accordance with
+those rules, and the client would be able to use the same rules to
+validate each filename sent back, to make sure it really did match
+the pattern the user had provided. This would have the trust
+advantage of SFTP's method, together with the minimum-data-flow
+advantage of SCP's method. However, with this approach the user has
+even less configurability - not only can the server not choose an
+appropriate set of wildcard rules, but now the \e{client} can't
+choose a rule set either. Everybody everywhere must use the One True
+Ruleset defined in the protocol standard.
+
+\# original notes follow
+\#
+\#  - When to use an interface
+\#    + do pieces _need_ to be separate?
+\#    + do some pieces need to be interchangeable?
+\#    + will it aid debugging / development / analysis?
+\#    + will it cost more to invent and test the interface than just to
+\#      write the code as one lump?
+\#
+\#  - Where to put interfaces
+\#    + interchangeability is a very strong condition for interface
+\#      placement
+\#      * for virtually any question about which side of the interface
+\#        something should fall on, there is a strong argument for
+\#        deciding the question according to whether it needs to change
+\#        when the interchangeable side is switched
+\#    + minimum-data-flow (orange segments) model
+\#    + obviously physical separation (into different programs, on
+\#      different computers, etc) is a strong indicator
+\#    + trust in computation
+\#      * for example, scp versus sftp in server-side wildcards. Orange
+\#        segment analysis says the server should glob its own
+\#        wildcards rather than transmitting the whole directory; but
+\#        trust analysis says the client needs to be able to verify the
+\#        server has done it right. Conclusion: of the two protocols
+\#        sftp is superior _even though_ less efficient. Better still
+\#        for this purpose would have been to standardise a wildcard
+\#        syntax, so that the server can do the globbing
+\#        (orange-segment compliant) and the client can verify the
+\#        responses (secure). But note that this doubles the amount of
+\#        computation! Trust requires a tradeoff between computation
+\#        and network transfer. Such is life.
+\#
+\#  - Types of interface
+\#    + client/server
+\#    + bidirectional
+\#      * as network - requests and responses flow in both directions
+\#        + asynchronous - either side may make a request at any time
+\#          - ensure the protocol isn't thrown by race conditions if
+\# 	   both sides initiate a transaction at once and they cross
+\# 	   en route.
+\#        + synchronous - the server will only make a request if extra
+\#          information is needed to fulfill a request from the client
+\#      * as function calls - need _callbacks_
+\#        - vital question: _when_ might these callbacks be called?
+\#          Constantly, on signals or timers? In a separate thread? At
+\#          defined points (eg a Windows window procedure is only
+\#          called as a result of DispatchMessage, but almost no
+\#          Windows programmers actually know that!)
+\#        - in OO, between two communicating objects, this issue is
+\# 	 rather more extensive. Both objects can call methods of the
+\# 	 other, either of which can call back to methods in the
+\# 	 first before returning. It's not clear _exactly_ how much
+\# 	 the interface needs to document about what callbacks might
+\# 	 and might not happen, but there certainly needs to be
+\# 	 enough specified to ensure one method call can't kick off
+\# 	 an unbounded chain of mutual recursion between the objects.
+\#
+\#  - Specifying requests and responses
+\#    + obviously, specify the range of allowables in each request and
+\#      each response
+\#    + also - this is vital and frequently neglected - specify the
+\#      _ordering_ constraints on requests and responses.
+\#    + in non-GC languages, what about memory management?
+\#      * if one side passes a piece of memory to the other, has it
+\#        been passed for reference only, or has _ownership_ (in the
+\#        sense of responsibility for freeing it) been passed?
+\#      * if one side passes a piece of memory to the other but retains
+\#        ownership, for how long can the other side expect to continue
+\#        to refer to it? Can it keep the pointer and refer to it in
+\#        subsequent calls, and rely on it not being freed until some
+\#        well-defined future moment? Going the other way, can it rely
+\#        on it not being freed, frobbed or fiddled with if it's forced
+\#        to make a call back to the first side in the course of
+\#        answering the original request?
+\#
+\#  - Protocol-level state
+\#    + state not directly relevant to either party, introduced solely
+\#      for the purpose of the protocol, as a common language
+\#      * security advantage: this avoids revealing any details of
+\#        either side's implementation to the other
+\#        - though even in a less enlightened protocol, a decently
+\# 	 paranoid implementation can of course preserve its secrets
+\# 	 by lying
+\#        - but it had better be sure the other guy isn't _relying_ on
+\# 	 aspects of the fictions it invents
+\#        - protocol-level identifiers are by definition content-free
+\# 	 pure names, so neither side is in any danger of thinking
+\# 	 they can get anything out of it.
+\#      * neutrality: if one side invents descriptors for objects based
+\#        on its own criteria, then the other side is prohibited from
+\#        ever initiating any such object. Protocol-level descriptors
+\#        are neutral and can be invented by either side.
+\#    + in a network protocol: protocol-level state can be `owned' by
+\#      one side or the other, removing race conditions when inventing
+\#      a new instance. cf channel numbers in SSH2.
+\#    + much simpler things than this, e.g. sequence numbers
+\#    + there is of course implicit state in any protocol with ordering
+\#      constraints; the client and server must both be keeping track
+\#      of ordering issues. The information is never explicitly
+\#      exchanged but both sides' representations of it must keep in
+\#      step.
+\#    + is state necessary? E.g. FTP has a current directory but SFTP
+\#      doesn't. Result: SFTP is less network-efficient but much easier
+\#      to interleave several threads of operation in a single
+\#      protocol. See also strtok, in the multithreading section.
+\#
+\#  - Compatibility
+\#    + is each party designed to cope with older parties (backward
+\#      compatibility)?
+\#    + is each party designed to make it easy for newer parties to
+\#      cope with it (forward compatibility)?
+\#    + can the protocol deal with client being older than server?
+\#    + can the protocol deal with server being older than client?
+\#    + version negotiation, with backwards compatibility to older
+\#      versions of a protocol
+\#    + optional features negotiated before use
+\#      * perhaps with expandable namespaces
+\#      * inherent extensibility; if this is done properly, it largely
+\#        _removes_ the requirement for version negotiation.
+\#    + proxyability.
+\#      * consider NNTP: some responses say `please send an article',
+\#        others say `command complete'. It isn't obvious which! The
+\#        NNTP RFC defines a few response codes to which the user is
+\#        expected to respond by sending an article, but doesn't rule
+\#        out the introduction of others in future. This makes it hard
+\#        to write a futureproof NNTP proxy. Better would have been a
+\#        basic division of response codes into categories, and a
+\#        decree that future response codes must be allocated from the
+\#        correct category.
+\#
+\#  - Multithreading
+\#    + in function call interfaces, which interface functions are
+\#      re-entrant?
+\#      * at all?
+\#      * when called on the same interface-level object (if the
+\#        interface defines independent objects within its definition)
+\#    + in network-style interfaces, how easy is it to write a
+\#      multithreaded client (or server) multiplexing down the same
+\#      connection?
+\#      * for example, numbering all requests and responses so the
+\#        responses can arrive out of order makes it easier to write a
+\#        multithreaded server
+\#    + how much protocol state is implicit?
+\#      * implicit state can inhibit multiple threads making
+\#        independent uses of the interface. cf strtok. See also FTP
+\#        versus SFTP, in the protocol state section.
+\#
+\#  - Speed considerations
+\#    + in a network: quantity of data flowing across the interface is
+\#      not the only issue. Number of round trips is also worth
+\#      designing to reduce; modern networks are increasingly high-
+\#      bandwidth-high-latency.
