@@ -108,7 +108,7 @@ for i in range(n-1):
 	# ... and construct a matrix which first rotates by -theta
 	# about the z-axis, thus bringing the point to the
 	# meridian, and then rotates by pi/2-phi about the y-axis
-	# to bring the point to (1,0,0).
+	# to bring the point to (0,0,1).
 	#
 	# That matrix is therefore
 	#
