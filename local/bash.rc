@@ -1,6 +1,6 @@
 # -*- mode: sh; mode: fold -*-
 # Simon Tatham's standardised chunk of .bashrc
-# $Revision: 1.47 $
+# $Revision: 1.48 $
 
 #{{{ I don't like .bash_history files. They wet their nests.
 unset HISTFILE
@@ -479,4 +479,21 @@ do-ssh-add() {
 case $SHELL in
   -*) export SHELL=`echo $SHELL | sed s/^-//` ;;
 esac
+#}}}
+#{{{ shell function wrapper on `less' which transforms it into `ls' on dirs
+
+# Annoyingly, I can't bypass shell function expansion in order to
+# find the real `less', so I can't simply define `less' to be a
+# shell function. Instead, I define my shell function under another
+# name and then define `less' itself as an alias to it, because
+# it's easy to inhibit alias expansion.
+bashrc_less_wrapper() {
+  if test "$#" = 1 && test -d "$1"; then
+    ls "$@"
+  else
+    \less "$@"
+  fi
+}
+alias less=bashrc_less_wrapper
+
 #}}}
