@@ -3,9 +3,6 @@
  * 
  *  - Thorough testing.
  * 
- *  - _Option_ to load a file longhand rather than do the reference
- *    trick. (Current code is a regression from 2.1 in some ways.)
- * 
  * TODO possibly after that:
  * 
  *  - Need to handle >2Gb files! A major limiting factor here is
@@ -47,6 +44,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <assert.h>
 
 #if defined(unix) && !defined(GO32)
 #include <signal.h>
@@ -84,6 +82,7 @@ char *filename = NULL;
 buffer *filedata, *cutbuffer = NULL;
 int fix_mode = FALSE;
 int look_mode = FALSE;
+int eager_mode = FALSE;
 int insert_mode = FALSE;
 int edit_type = 1;		       /* 1,2 are hex digits, 0=ascii */
 int finished = FALSE;
@@ -112,7 +111,7 @@ int main(int argc, char **argv) {
     pname = *argv;		       /* program name */
     if (argc < 2) {
 	fprintf(stderr,
-		"usage: %s [-f] [-l] filename\n"
+		"usage: %s [-f] [-l] [-e] filename\n"
 		"    or %s -D to write default axe.rc to stdout\n",
 		pname, pname);
 	return 0;
@@ -152,6 +151,9 @@ int main(int argc, char **argv) {
 		break;
 	      case 'l': case 'L':
 		look_mode = TRUE;
+		break;
+	      case 'e': case 'E':
+		eager_mode = TRUE;
 		break;
 	      case 'D':
 		write_default_rc();
@@ -264,10 +266,31 @@ static void load_file (char *fname) {
 
     file_size = 0;
     if ( (fp = fopen (fname, "rb")) ) {
-	filedata = buf_new_from_file(fp);
-	file_size = buf_length(filedata);
-	sprintf(message, "loaded %s (size %ld == 0x%lX).",
-		fname, file_size, file_size);
+	if (eager_mode) {
+	    long len;
+	    static char buffer[4096];
+
+	    filedata = buf_new_empty();
+
+	    file_size = 0;
+
+	    /*
+	     * We've opened the file. Load it.
+	     */
+	    while ( (len = fread (buffer, 1, sizeof(buffer), fp)) > 0 ) {
+		buf_insert_data (filedata, buffer, len, file_size);
+		file_size += len;
+	    }
+	    fclose (fp);
+	    assert(file_size == buf_length(filedata));
+	    sprintf(message, "loaded %s (size %ld == 0x%lX).",
+		    fname, file_size, file_size);
+	} else {
+	    filedata = buf_new_from_file(fp);
+	    file_size = buf_length(filedata);
+	    sprintf(message, "opened %s (size %ld == 0x%lX).",
+		    fname, file_size, file_size);
+	}
 	new_file = FALSE;
     } else {
 	if (look_mode || fix_mode) {
