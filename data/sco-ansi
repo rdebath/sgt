@@ -6,19 +6,19 @@ Content-type: text/x-html-body
 
 <p>
 We occasionally get asked to support `SCO-ANSI' (aka `ANSIC'?)
-features (as used by UnixWare etc).
+features (as used by UnixWare etc).  Some of these are supported by PuTTY now.
 
-<dl>
-
-<dt>Colours</dt>
-<dd>From <code><a href="http://groups.google.com/groups?q=msgid%3Ab1dhv1$s98$1%40hyppo.gu.net">comp.security.ssh</a></code>:
+<h2>Colours</h2>
+There are various escape sequences which set the default colours used for
+various kinds of text  PuTTY currently only supports the one for setting the
+default foreground and background (as of 2003-06-16), and gets even that wrong
+(it interprets it as setting the <em>current</em> forground and background).
+From <code><a href="http://groups.google.com/groups?q=msgid%3Ab1dhv1$s98$1%40hyppo.gu.net">comp.security.ssh</a></code>:
 <pre>Select foreground color              \027[=PsF
-Select background color              \027[=PsG</pre>
-These two are supported by PuTTY
-<pre>Select reverse color                 \027[=PsH
-Select reverse background color      \027[=PsI</pre>
-These two aren't yet supported.
-<pre>
+Select background color              \027[=PsG
+Select reverse color                 \027[=PsH
+Select reverse background color      \027[=PsI
+
             SCO-ANSI Color Table
 --------------------------------------------------
    Ps      Color             Ps      Color
@@ -36,6 +36,10 @@ These two aren't yet supported.
 sequences buried in the putty-bugs archives.
 <a href="http://www.chiark.greenend.org.uk/~bjharris/ftp/all-escapes/">all-escapes</a>
 also lists some sequences.
+<p>Probably the most autoritative definition is in the SCO Open Server 
+manual page
+<a href="http://osr5doc.ca.caldera.com:457/cgi-bin/man/man?screen+HW">
+screen(HW)</a>.
 <p>Patch: <code>342AD8A1750B844BA61AF9DFC417CCF5154D29@eciexchange.ecinet.com</code></dd>
 
 <dt>Line drawing</dt>
