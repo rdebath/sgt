@@ -101,7 +101,7 @@ extern void display_moveto(int y, int x);
 extern void display_refresh(void);
 extern void display_write_str(char *str);
 extern void display_write_chars(char *str, int len);
-extern void display_define_colour(int colour, int fg, int bg);
+extern void display_define_colour(int colour, int fg, int bg, int reverse);
 extern void display_set_colour(int colour);
 extern void display_clear_to_eol(void);
 extern int display_getkey(void);
