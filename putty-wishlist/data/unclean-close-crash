@@ -1,0 +1,68 @@
+Summary: Reports of crashes on unclean close (related to port forwarding?)
+Class: bug
+Present-in: 0.55 0.56 2004-11-29 2005-01-16 2005-01-24
+Content-type: text/x-html-body
+
+<p>
+We are getting persistent reports of PuTTY crashing when a session is
+closed uncleanly, for instance by a network error such as "software
+caused connection abort". This limits the usefulness of the ability to
+<a href="reuse-windows.html">restart dead sessions</a> that was
+introduced in recent releases.
+
+<p>
+(Some people are apparently in the habit of hibernating their machines
+with active PuTTY connections. When the machines come back up, the
+network connections are likely to be invalid, so PuTTY throws a
+network error and gives the same problem.)
+
+<p>
+Many (all?) of the reports indicate that port-forwarding is in use.
+We've not yet been able to reproduce it.
+
+<p>
+Reports:
+
+<ul>
+
+<li>OF9474F5EC.6EF0B984-ON80256E55.00617997-80256E55.0061B13F@plasmon.co.uk
+<br>0.53b; pfd; NULL ptr ref?
+
+<li>4073CD52.8090404@attunity.co.il
+<br>0.53+(0.53b, 0.54?); pfd; SCCA
+<br><em>debug info</em> -- apparent use of bogus <code>ssh</code>
+
+<li>6.1.2.0.2.20040922120006.01a98a18@imap.hut.fi
+<br>0.55; pfd; network error; sending on port causes crash
+
+<li>20041117185616.1516.qmail@web41502.mail.yahoo.com
+<br>0.56; pfd; SCCA; PuTTY using excessive CPU
+
+<li>E1CYwFK-0003zT-00@ixion.tartarus.org
+<br>0.56, r4918(2004-11-29); pfd; SCCA
+<br>also assertion ssh.c:3365 ssh-&gt;state == SSH_STATE_CLOSED
+
+<li>200501090053.j090roW0028426@q7.q7.com
+<br>0.56, 2005-01-16; pfd; SCCA; tunnels still open; <em>Dr Watson</em>
+
+<li>41F4C327.20905@hybrid.fi
+<br>0.56 and 2005-01-24; pfd; SCCA; <em>stack backtrace</em>
+(apparent use of bogus <tt>ssh</tt>)
+<br>also sees assertion ssh.c:3365 ssh-&gt;state == SSH_STATE_CLOSED with 0.56
+
+<li>20050128171423.GB719@firebyte.bytnar.net
+<br>0.55/0.56; pfd; SCCA
+<br>also SOCKS connections not killed (fixed in 2005-02-18)
+
+<li>200411010710.iA17AJAW014641@smtp.hispeed.ch
+<br>0.56; XPSP1; SSH server disconnect ("connection timed out" is fine!)
+
+</ul>
+
+<p>
+Possibly related code activity:
+<ul>
+<li>access of freed ssh-&gt;channels fixed r4946, s/s 2004-12-03
+<li>leaving channels/listening sockets lying around fixed r5325, s/s
+2005-02-18
+</ul>
