@@ -108,7 +108,7 @@ class output:
         lt = time.localtime(self.timestamp)
         self.timestamp = self.timestamp + 1
         self.mono_blankline()
-	if len(self.mono) - self.mono_last_edit_start >= 48:
+	if len(self.mono) - self.mono_last_edit_start >= 98:
 	    msg = "Mono edit at line %d is too long!" % (self.mono_last_edit_start+1)
 	    self.warnings.append(msg)
 	self.mono_last_edit_start = len(self.mono)
