@@ -27,3 +27,19 @@ the System Tray (or press Windows-W), and have the URL automatically
 launched for you.
 It's not quite as good as a one-click launch, but it's a lot better
 than pasting into a browser window by hand.
+
+<p>
+There is a third-party patch to PuTTY to add this feature, called
+<a href="http://www.groehn.net/nutty/">Nutty</a>.
+We won't be incorporating it into PuTTY as it doesn't take account of
+several of our
+<a href="http://www.tartarus.org/~simon/puttydoc/AppendixD.htm">design principles</a>:
+<ul>
+<li>it isn't cross-OS portable (Windows-specific URL launching and
+platform-independent URL finding are entangled in the same source
+module)
+<li>it uses global variables for per-session data
+<li>it's written in C++
+<li>it incorporates a regular expression matcher and hence increases
+code size excessively
+</ul>
