@@ -452,7 +452,7 @@ void showversion(void)
     char *v;
     extern char doitlib_revision[];
 
-    v = makeversion(versionbuf, "$Revision: 1.10 $");
+    v = makeversion(versionbuf, "$Revision: 1.11 $");
     if (v)
 	printf("doitclient revision %s", v);
     else
@@ -1032,7 +1032,7 @@ int main(int argc, char **argv)
         do_doit_send_str(sock, ctx, "\n");
 	if (verbose)
 	    fprintf(stderr,
-		    "doit: >>> CreateProcessWithOutput\ndoit: >>> %s\n", path);
+		    "doit: >>> CreateProcessWithOutput\ndoit: >>> cmd /c %s\n", path);
         while ( (len = do_fetch_pascal_string(sock, ctx, pbuf)) > 0) {
             fwrite(pbuf, 1, len, stdout);
         }
