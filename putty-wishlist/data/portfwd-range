@@ -10,6 +10,17 @@ ranges of ports (e.g., source port 5000-5030, destination
 192.168.0.10:5000-5030).
 
 <p>
+Another suggestion is a port of '*' for unrestricted forwarding to a
+given host. (Although, if you're heading in this direction, you might
+want to investigate
+<a href="portfwd-dynamic.html">dynamic port forwarding</a>.)
+
+<p>
+We might want to be cautious about allowing this for remote-to-local
+forwarding, as we'd have to send a request for every port in the range
+at startup. (I think we'd certainly disallow '*'!)
+
+<p>
 This is slightly more necessary than it could be because of the
 limitations on the number of forwarded ports (see 
 <a href="portfwd-space.html">`portfwd-space'</a>).
