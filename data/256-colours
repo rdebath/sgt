@@ -2,6 +2,7 @@ Summary: Support for more colours
 Class: wish
 Priority: low
 Difficulty: fun
+Fixed-in: 2004-11-29
 Depends: compressed-scrollback
 Content-type: text/x-html-body
 
@@ -24,3 +25,7 @@ this, I'll probably just go ahead and do it.
 <p>
 (&lt;1042233614.1153.15.camel@evilmagic.org&gt; contains a patch
 to implement this, but it's very out of date.)
+
+<p>
+<b>SGT, 2004-11-28</b>: this is now done, and I don't <em>think</em>
+I've broken anything else en route.
