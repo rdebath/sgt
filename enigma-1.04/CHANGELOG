@@ -1,0 +1,90 @@
+Release 1.04
+------------
+
+ - Makefile adjustments: ensure bogus stuff left in `levels'
+   directory doesn't get hit by `make install', and ensure it
+   doesn't get hit by tarball generator either. The `CVS' directory,
+   for example.
+ - Introduced loading and saving of move sequences. You can press
+   `w' during the game to save the sequence of moves that have got
+   you to that point; pressing `m' during the game lets you load a
+   sequence of moves, and then goes into `movie mode' in which you
+   can step back and forth through the process of playing those
+   moves, and finally hit `q' to enact the whole lot and return to
+   normal playing mode. Hence players can swap their best or
+   weirdest solutions to a particular level.
+ - Everyone's favourite interface change: you can now hit `r' to
+   restore a saved position on the `you have died' screen just as
+   you can within the game, so you don't have to go back round via
+   the main menu.
+ - The levels contained a couple of pieces resting on thin air,
+   which the original designer hadn't noticed. I've now introduced
+   run-time validation of level files for errors such as this, and
+   fixed the problems (in levels 2 and 8). This should also make
+   designing new levels a more precise science...
+ - Added the new `~' character. This shows up as a space during
+   gameplay, but it's an `outdoor' space which you're never supposed
+   to be able to get to. This means that walls next to a `~' sign
+   act like boundary walls and are indestructible even to bombs. The
+   idea is that you can design levels with non-rectangular outlines
+   by filling in the space between the exterior walls and the level
+   boundary with solid blocks of `~'. It also means you can put
+   unreachable courtyards inside a level as well.
+ - Added `=' and `!', the Enigma equivalents of XOR's dots and waves
+   respectively (they act as walls in one direction but can be eaten
+   if you approach them from the perpendicular direction).
+ - Added `O', of which you can have at most one in a level and it
+   acts as a secondary player starting point (again as in XOR).
+   Press `x' during the game to swap the `@' and the `O'. If the `@'
+   gets killed while an `O' is present, control will revert to the
+   `O' and you can continue play. You only have to get one of
+   yourself to the exit.
+ - Added `#', the teleporter piece used in XOR. There must be either
+   0 or 2 of these on a level; walking into one brings you out to
+   the right of the other, or above it if the right is occupied,
+   then left, then below.
+ - Added per-level mode flags to make the XOR levels playable in
+   Enigma: `flimsy-bombs' (bombs blow up when hit by other bombs as
+   well as arrows) and `relative-priority' (which of two eligible
+   pieces falls into a vacated space first depends on the direction
+   of the piece which just left that space).
+
+Release 1.03
+------------
+
+ - Ensure save files are written with perms 0600 (only the saving
+   user can read or write them, despite setgid on the enigma
+   binary), and ensure progress files are written 0640 (the games
+   group can read them, so enigma can build a Hall of Fame when I
+   implement that).
+ - Disallow periods and slashes in level set names, to confine
+   Enigma to reading and writing files _only_ in its designated
+   level and save directories. Might just have been a security hole,
+   although I can't immediately see a way.
+
+Release 1.02
+------------
+
+ - We no longer repeat the game-completed screen when the user
+   recompletes a level after having completed the game.
+ - Error handling improved so we don't segfault on trying to restore
+   a nonexistent save, and also so we don't segfault if we can't
+   find our level set.
+ - Fixed various bugs in the level-titles list box on the main menu,
+   which don't show up in the standard level set but might if people
+   start designing longer ones.
+
+Release 1.01
+------------
+
+ - configure script now chooses more sensibly between curses and
+   ncurses, and also checks whether *curses.h defines attr_t. Now
+   able to compile on Solaris/gcc.
+ - Renamed config.h to settings.h to stop it being blown away by
+   make distclean.
+ - Added CHANGELOG.
+
+Release 1.0
+-----------
+
+ - Initial release.
