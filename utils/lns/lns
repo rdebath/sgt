@@ -219,6 +219,13 @@ sub relname {
 
   while (1) {
 
+    # If $target is _precisely_ $source, we are done.
+    if ($target eq $source) {
+      return "." if $prefix eq "";
+      $prefix =~ s/\/$//;
+      return $prefix;
+    }
+
     # If $target is a prefix of $source, we are done. (No matter what
     # symlinks may exist on the shared common pathname, if we are
     # linking `a/b/c/foo' to `foo' then a simple relative link will
