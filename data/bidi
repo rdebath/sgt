@@ -33,10 +33,10 @@ really does look like that. This won't be easy either.)
 <p>
 <b>JTN, 2002-06-07:</b>
 Some time ago, we came to the conclusion that 
-<a href="http://www.ecma.ch/ecma1/STAND/ECMA-048.HTM">ECMA-48</a>,
+<a href="http://www.ecma-international.org/publications/standards/ECMA-048.HTM">ECMA-48</a>,
 in the course of defining VT-series-ish terminals, defines how such
 terminals should support bi-directional text, while
-<a href="http://www.ecma.ch/ecma1/TECHREP/E-TR-053.HTM">ECMA TR/53</a>
+<a href="http://www.ecma-international.org/publications/techreports/E-TR-053.HTM">ECMA TR/53</a>
 nicely encapsulates all the bidi-specific bits in a (more)
 understandable format, gives examples, etc. Of course, we don't know
 whether anyone <em>really</em> implements it this way.
