@@ -1010,6 +1010,8 @@ void setup_game(void)
 			/*
 			 * Assign this button to this action.
 			 */
+			if (button < 0 || button > 7)
+			    break;     /* Start or Select do nothing here */
 			players[p].buttons[button] = act;
 			for (i = 0; i < 8; i++)
 			    if (button != i && players[p].buttons[i] == act)
