@@ -1,3 +1,9 @@
+Release FIXME
+-------------
+
+ - We no longer repeat the game-completed screen when the user
+   recompletes a level after having completed the game.
+
 Release 1.01
 ------------
 

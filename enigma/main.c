@@ -94,6 +94,7 @@ int main(int argc, char **argv) {
 		    }
 		}
 		if (gs->status != PLAYING) {
+		    int increased_level = FALSE;
 		    char *msg;
 		    if (gs->status == DIED) {
 			msg = "GAME OVER";
@@ -103,13 +104,14 @@ int main(int argc, char **argv) {
 			    p.levnum = gs->levnum;
 			    p.date = time(NULL);
 			    progress_save(set, user, p);
+			    increased_level = TRUE;
 			}
 		    } else {
 			msg = "!INTERNAL ERROR!";
 		    }
 		    screen_level_display(gs, msg);
 		    screen_level_finish();
-		    if (gs->status == COMPLETED && p.levnum == set->nlevels) {
+		    if (increased_level && p.levnum == set->nlevels) {
 			screen_completed_game();
 		    }
 		}
