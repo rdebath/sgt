@@ -4,8 +4,9 @@ from gtk import *
 import GDK
 import random
 import math
+import string
 
-SQUARESIZE = 40
+SQUARESIZE = 50
 NSQUARES = 4
 ISOMETRIC = 0.3  # scale z by this before subtracting from x and y
 
@@ -29,22 +30,43 @@ facecoords = [
 [(0,0,1),(0,0,0),(1,0,0),(1,0,1)],
 [(0,1,1),(1,1,1),(1,1,0),(0,1,0)]]
 
+def validate(game):
+    pos = game >> (NSQUARES * NSQUARES)
+    if pos >= (NSQUARES * NSQUARES): return 0 # must be in range
+    if game & (1L << pos): return 0 # must start on non-blue square
+    n = 0
+    for i in range(NSQUARES * NSQUARES):
+        if game & (1L << i):
+            n = n + 1
+    if n != 6: return 0 # must have exactly six blue squares
+    return 1
+
 class CubeGame:
-    def __init__(self):
+    def __init__(self, game):
+        if game == None:
+            game = 0L
+            list = range(NSQUARES * NSQUARES)
+            # Pick six squares to be blue.
+            for i in range(6):
+                pos = random.choice(list)
+                game = game | (1L << pos)
+                list.remove(pos)
+            # And a final non-blue square to be the cube's starting point.
+            pos = random.choice(list)
+            game = game | (long(pos) << (NSQUARES*NSQUARES))
+        self.currgame = game
+
         self.cube = [0, 0, 0, 0, 0, 0]
         self.arena = []
         for i in range(NSQUARES):
             self.arena.append([0] * NSQUARES)
-        list = range(NSQUARES * NSQUARES)
-        # Pick six squares to be blue.
-        for i in range(6):
-            pos = random.choice(list)
-            x, y = divmod(pos, NSQUARES)
-            list.remove(pos)
-            self.arena[x][y] = 1
-        # And a final non-blue square to be the cube's starting point.
-        pos = random.choice(list)
-        self.cubex, self.cubey = divmod(pos, NSQUARES)
+        for pos in range(NSQUARES*NSQUARES):
+            if game & (1L << pos):
+                x, y = divmod(pos, NSQUARES)
+                self.arena[x][y] = 1
+        self.cubex, self.cubey = \
+        divmod(int(game >> (NSQUARES*NSQUARES)), NSQUARES)
+
         self.moveinprogress = FALSE
         self.moves = []
         self.completed = FALSE
@@ -268,6 +290,20 @@ def small_redraw():
         redraw(darea, [min(bbox0[0],bbox1[0]), min(bbox0[1],bbox1[1]),
         max(bbox0[2],bbox1[2]), max(bbox0[3],bbox1[3])])
 
+def undo_move(menuitem=None):
+    global timer_inst
+
+    if game.moveinprogress:
+        game.finish_move()
+        small_redraw()
+
+    game.undo()
+    game.status(statusbar)
+
+    if timer_inst != None:
+        timeout_remove(timer_inst)
+    timer_inst = timeout_add(20, timer, win)
+
 def key_event(win, event=None):
     global timer_inst
 
@@ -276,7 +312,7 @@ def key_event(win, event=None):
         return
 
     if event.string == '\016':
-        new_game(None)
+        new_game()
         return
 
     # Hurry up an existing move if one is still being animated.
@@ -316,14 +352,67 @@ def timer(win):
     small_redraw()
     return ret
 
-def new_game(menuitem):
+def new_game(menuitem=None, seed=None):
     global game
-    game = CubeGame()
+    game = CubeGame(seed)
     game.draw(pix)
     game.status(statusbar)
+    win.set_title("Cube (%d)" % game.currgame)
     redraw(darea)
 
-def expose(darea, event=None):
+def restart_game(menuitem=None):
+    new_game(seed=game.currgame)
+
+def input_game(menuitem=None):
+    class container:
+        pass
+    cont = container()
+    def enddlg(win, value, cont=cont):
+        if value == 1:
+            try:
+                cont.game = string.atol(cont.editbox.get_text())
+            except ValueError:
+                cont.game = 0
+            if not validate(cont.game):
+                gdk_beep()
+                return
+        cont.value = value
+        cont.dlg.destroy()
+    def key_event(win, event, cont=cont, enddlg=enddlg):
+        if event.keyval == GDK.Escape:
+            enddlg(cont.dlg, 0)
+            return
+        elif event.keyval == GDK.Return:
+            enddlg(cont.dlg, 1)
+            return
+    def destroy(win):
+        mainquit()
+    cont.dlg = dlg = GtkDialog()
+    cont.value = 0
+    dlg.set_title("Cube")
+    label = GtkLabel("Enter game seed")
+    dlg.vbox.pack_start(label)
+    label.show()
+    cont.editbox = editbox = GtkEntry()
+    dlg.vbox.pack_start(editbox)
+    editbox.show()
+    ok = GtkButton("OK")
+    dlg.action_area.pack_start(ok)
+    ok.show()
+    cancel = GtkButton("Cancel")
+    dlg.action_area.pack_start(cancel)
+    cancel.show()
+    ok.connect("clicked", enddlg, 1)
+    cancel.connect("clicked", enddlg, 0)
+    dlg.connect("destroy", destroy)
+    dlg.connect("key_press_event", key_event)
+    dlg.show()
+    editbox.grab_focus()
+    mainloop()
+    if cont.value:
+        new_game(seed=cont.game)
+
+def expose(darea, event):
     gc = darea.get_style().white_gc
     x, y, w, h = event.area
     darea.draw_pixmap(gc, pix, x, y, x, y, w, h)
@@ -354,6 +443,21 @@ gameitem.show()
 newitem = GtkMenuItem("New")
 gamemenu.append(newitem)
 newitem.show()
+restitem = GtkMenuItem("Restart")
+gamemenu.append(restitem)
+restitem.show()
+specitem = GtkMenuItem("Specific")
+gamemenu.append(specitem)
+specitem.show()
+separator = GtkMenuItem()
+gamemenu.append(separator)
+separator.show()
+undoitem = GtkMenuItem("Undo Move")
+gamemenu.append(undoitem)
+undoitem.show()
+separator = GtkMenuItem()
+gamemenu.append(separator)
+separator.show()
 quititem = GtkMenuItem("Exit")
 gamemenu.append(quititem)
 quititem.show()
@@ -371,13 +475,16 @@ vbox.show()
 timer_inst = None
 
 newitem.connect("activate", new_game)
+restitem.connect("activate", restart_game)
+specitem.connect("activate", input_game)
+undoitem.connect("activate", undo_move)
 quititem.connect("activate", delete_event)
 darea.connect("expose_event", expose)
 win.connect("key_press_event", key_event)
 win.connect("delete_event", delete_event)
 win.connect("destroy", destroy_event)
 
-new_game(None)
+new_game()
 
 win.show()
 
