@@ -16,3 +16,7 @@ section), pscp and psftp use the proxy correctly:
 
 pscp sessionname:path localpath
 psftp sessionname
+
+Original report:
+<20030909012544.7544BDF297@swordfish.cs.caltech.edu>
+<20031216034329.A48BFDF28D@swordfish.cs.caltech.edu>
