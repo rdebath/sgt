@@ -311,16 +311,16 @@ def key_event(win, event=None):
         win.destroy()
         return
 
-    if event.string == '\016':
-        new_game()
-        return
-
     # Hurry up an existing move if one is still being animated.
     if game.moveinprogress:
         game.finish_move()
         small_redraw()
 
-    if event.string in ['\032', 'u', 'U']:
+    if event.string in ['\016', 'n', 'N']:
+        new_game()
+    elif event.string in ['\022', 'r', 'R']:
+        restart_game()
+    elif event.string in ['\032', 'u', 'U']:
         game.undo()
     elif event.keyval == GDK.Up or event.keyval == GDK.KP_Up:
         game.move(0, -1)
