@@ -737,7 +737,6 @@ define timber_enbuf() {
     push_mark();
     eob();
     file = timber_tmpnam();
-    message(timber_enbuf_prog + " " + file);
     pipe_region(timber_enbuf_prog + " " + file);
     del_region();
     insert_file(file);
