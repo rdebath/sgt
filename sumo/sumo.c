@@ -78,6 +78,37 @@ static void make_text(void);
 FILE *debugfp;
 #endif
 
+/*
+ * Square root of an integer, rounded to the _nearest_ integer.
+ */
+static unsigned long squarert(unsigned long n) {
+    unsigned long d, a, b, di;
+
+    d = n;
+    a = 0;
+    b = 1 << 30;		       /* largest available power of 4 */
+    do {
+        a >>= 1;
+        di = 2*a + b;
+        if (di <= d) {
+            d -= di;
+            a += b;
+        }
+        b >>= 2;
+    } while (b);
+
+    /*
+     * a is now the greatest number whose square is <= n. Because
+     * we are rounding to nearest, we may need to return a+1
+     * instead of a. This will happen iff n exceeds (a+0.5)^2 =
+     * a^2+a+0.25, i.e. iff n is strictly greater than a*(a+1).
+     */
+    if (n > a*(a+1))
+	a++;
+
+    return a;
+}
+
 /* ----------------------------------------------------------------------
  * Arena handling code. To add a new arena, we need to add a new
  * case to the following functions, and that should be all that's
@@ -240,7 +271,7 @@ static int collide(int sx, int sy, int *u1x, int *u1y, int *u2x, int *u2y)
 {
     int l1x,l1y,l1l,l2x,l2y,l2l,sl;
 
-    sl = (int) (0.5 + sqrt(sx*sx+sy*sy));
+    sl = squarert(sx*sx+sy*sy);
     l1l = (*u1x*sx+*u1y*sy) / sl;  l2l = (*u2x*sx+*u2y*sy) / sl;
     l1x = (l1l*sx) / sl;           l2x = (l2l*sx) / sl;
     l1y = (l1l*sy) / sl;           l2y = (l2l*sy) / sl;
@@ -433,7 +464,7 @@ static int play_game(void)
 		    if (dx<10 && dy<10) {
 			dvx = dx*dx+dy*dy;
 			if (dvx<100) {
-			    dvx = (int) (0.5 + sqrt(dvx));
+			    dvx = squarert(dvx);
 			    vx[i] = vx[i]+(dx << 14) / dvx;
 			    vy[i] = vy[i]+(dy << 14) / dvx;
 			    ba[1-i][j] = FALSE;
