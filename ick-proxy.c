@@ -549,9 +549,64 @@ void run_daemon(char **daemon_words, int port)
     }
 }
 
-void help(void)
-{
-    fprintf(stderr, "FIXME\n");
+const char usagemsg[] =
+    "usage: ick-proxy [-p port] [-c config.js] [subcommand]\n"
+    "   or: ick-proxy [-c config.js] -t test-url\n"
+    " with: --debug                          output diagnostics on fd 3\n"
+    " also: ick-proxy --version              report version number\n"
+    "       ick-proxy --help                 display this help text\n"
+    "       ick-proxy --licence              display the (MIT) licence text\n"
+    ;
+
+void usage(void) {
+    fputs(usagemsg, stdout);
+}
+
+const char licencemsg[] =
+    "ick-proxy is copyright 2004-5 Simon Tatham.\n"
+    "\n"
+    "Permission is hereby granted, free of charge, to any person\n"
+    "obtaining a copy of this software and associated documentation files\n"
+    "(the \"Software\"), to deal in the Software without restriction,\n"
+    "including without limitation the rights to use, copy, modify, merge,\n"
+    "publish, distribute, sublicense, and/or sell copies of the Software,\n"
+    "and to permit persons to whom the Software is furnished to do so,\n"
+    "subject to the following conditions:\n"
+    "\n"
+    "The above copyright notice and this permission notice shall be\n"
+    "included in all copies or substantial portions of the Software.\n"
+    "\n"
+    "THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND,\n"
+    "EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF\n"
+    "MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND\n"
+    "NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS\n"
+    "BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN\n"
+    "ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN\n"
+    "CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\n"
+    "SOFTWARE.\n"
+    ;
+
+void licence(void) {
+    fputs(licencemsg, stdout);
+}
+
+void version(void) {
+#define SVN_REV "$Revision$"
+    char rev[sizeof(SVN_REV)];
+    char *p, *q;
+
+    strcpy(rev, SVN_REV);
+
+    for (p = rev; *p && *p != ':'; p++);
+    if (*p) {
+        p++;
+        while (*p && isspace(*p)) p++;
+        for (q = p; *q && *q != '$'; q++);
+        if (*q) *q = '\0';
+        printf("ick-proxy revision %s\n", p);
+    } else {
+        printf("ick-proxy: unknown version\n");
+    }
 }
 
 int main(int argc, char **argv)
@@ -599,14 +654,20 @@ int main(int argc, char **argv)
             } else if (!strcmp(p, "--help") || !strcmp(p, "-help") ||
                        !strcmp(p, "-?") || !strcmp(p, "-h")) {
                 /* Valid help request. */
-                help();
+                usage();
+                return 0;
+            } else if (!strcmp(p, "--licence") || !strcmp(p, "--license")) {
+                licence();
+                return 0;
+            } else if (!strcmp(p, "--version")) {
+                version();
                 return 0;
             } else if (!strcmp(p, "--")) {
                 doing_opts = 0;
             } else {
                 /* Invalid option; give help as well as whining. */
                 fprintf(stderr, "ick-proxy: unrecognised option '%s'\n", p);
-                help();
+                usage();
                 return 1;
             }
         } else {
