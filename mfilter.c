@@ -2,17 +2,26 @@
  * mfilter.c   filter on a Mono connection, to automatically log in
  */
 
+#define _GNU_SOURCE
+#include <features.h>
+
 #include <assert.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
 #include <stdlib.h>
+#include <signal.h>
+#include <errno.h>
 
 #include <unistd.h>
 #include <fcntl.h>
 #include <termios.h>
+#include <sys/time.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <sys/ioctl.h>
+#include <sys/signal.h>
 
 #define lenof(x) ( sizeof((x)) / sizeof(*(x)) )
 
@@ -29,6 +38,7 @@ static void wstring (char *);
 static void wdata(int, void *, int);
 static int readconn(void *, int);
 static void acquire_password(void);
+static void (*sane_signal(int sig, void (*func)(int)))(int);
 
 FILE *dfp;
 
@@ -37,6 +47,8 @@ int cnargs = 0;
 
 char *passprogs[10];
 int npassprogs = 0;
+
+int use_pipes = 0;
 
 struct termios oldattrs, newattrs;
 void termios_cleanup(void)
@@ -83,6 +95,9 @@ int main(int ac, char **av) {
 		    passprogs[npassprogs++] = v;
 		    break;
 		}
+		break;
+	      case 'p':
+		use_pipes = 1;
 		break;
 	      default:
 		fprintf(stderr, "mfilter: unrecognised option `-%c'\n", *p);
@@ -221,17 +236,33 @@ static void acquire_password(void)
     memset(passfrags, 0, sizeof(passfrags));
 }
 
+static void sigwinch_handler(int sig)
+{
+    struct winsize size;
+    if (ioctl(0, TIOCGWINSZ, (void *)&size) >= 0)
+	ioctl(rfd, TIOCSWINSZ, (void *)&size);
+}
+
 static void run_connection(void) {
     int r[2], w[2];
     int pid;
+    char slavename[FILENAME_MAX];
 
-    if (pipe(r) < 0 || pipe(w) < 0) {
-	perror("mfilter: pipe");
-	exit(1);
+    if (use_pipes) {
+
+	if (pipe(r) < 0 || pipe(w) < 0) {
+	    perror("mfilter: pipe");
+	    exit(1);
+	}
+
+	rfd = r[0];
+	wfd = w[1];
+
+    } else {
+
+	rfd = wfd = pty_get(slavename);
+
     }
-
-    rfd = r[0];
-    wfd = w[1];
 
     pid = fork();
     if (pid < 0) {
@@ -244,19 +275,42 @@ static void run_connection(void) {
 	 */
 	close(0);
 	close(1);
-	close(r[0]);
-	close(w[1]);
-	dup2 (r[1], 1);
-	dup2 (w[0], 0);
-	close(r[1]);
-	close(w[0]);
+	if (use_pipes) {
+	    close(r[0]);
+	    close(w[1]);
+	    dup2 (r[1], 1);
+	    dup2 (w[0], 0);
+	    close(r[1]);
+	    close(w[0]);
+	} else {
+	    int slavefd = open(slavename, O_RDWR);
+	    int i;
+
+	    if (slavefd < 0) {
+		perror("slave pty: open");
+		_exit(1);
+	    }
+	    close(rfd);
+	    fcntl(slavefd, F_SETFD, 0);    /* don't close on exec */
+	    dup2(slavefd, 0);
+	    dup2(slavefd, 1);
+	    setsid();
+	    ioctl(slavefd, TIOCSCTTY, 1);
+	    /* Close everything _else_, for tidiness. */
+	    for (i = 3; i < 1024; i++)
+		close(i);
+	}
 	cargs[cnargs] = NULL;
 	execvp(cargs[0], cargs);
 	perror("mfilter: exec");
 	exit(1);
     }
-    close(r[1]);
-    close(w[0]);
+
+    if (use_pipes) {
+	close(r[1]);
+	close(w[0]);
+    }
+    sane_signal(SIGWINCH, sigwinch_handler);
 }
 
 /*
@@ -277,18 +331,32 @@ static int readconn(void *buf, int len)
 	FD_SET(rfd, &rfds);
 	FD_SET(0, &rfds);
 
-	ret = select(rfd+1, &rfds, NULL, NULL, NULL);
+	do {
+	    ret = select(rfd+1, &rfds, NULL, NULL, NULL);
+	} while (ret < 0 && errno == EINTR);
+
 	if (ret < 0) {
 	    perror("mfilter: select");
 	    exit(1);
 	}
 
 	if (FD_ISSET(0, &rfds)) {
-	    ret = read(0, buf, len);
+
+	    do {
+		ret = read(0, buf, len);
+	    } while (ret < 0 && errno == EINTR);
+
 	    wdata(wfd, buf, ret);
 	}
 	if (FD_ISSET(rfd, &rfds)) {
-	    ret = read(rfd, buf, ret);
+	    do {
+		ret = read(rfd, buf, ret);
+	    } while (ret < 0 && errno == EINTR);
+
+	    if (!use_pipes && ret < 0 && errno == EIO) {
+		/* For some reason EIO is returned from ptys on clean exit. */
+		ret = 0;
+	    }
 	    wdata(0, buf, ret);
 	    return ret;
 	}
@@ -363,4 +431,61 @@ static void wdata(int fd, void *sv, int len)
 
 static void wstring (char *s) {
     wdata(wfd, s, strlen(s));
+}
+
+/*
+ * Allocate a pty. Returns a file handle to the master end of the
+ * pty, and stores the full pathname to the slave end into `name'.
+ * `name' is a buffer of size at least FILENAME_MAX.
+ * 
+ * Does not return on error.
+ */
+int pty_get(char *name)
+{
+    int fd;
+
+    fd = open("/dev/ptmx", O_RDWR);
+
+    if (fd < 0) {
+	perror("/dev/ptmx: open");
+	exit(1);
+    }
+
+    if (grantpt(fd) < 0) {
+	perror("grantpt");
+	exit(1);
+    }
+    
+    if (unlockpt(fd) < 0) {
+	perror("unlockpt");
+	exit(1);
+    }
+
+    name[FILENAME_MAX-1] = '\0';
+    strncpy(name, ptsname(fd), FILENAME_MAX-1);
+
+    return fd;
+}
+
+/*
+ * Calling signal() is a non-portable, as it varies in meaning between
+ * platforms and depending on feature macros, and has stupid semantics
+ * at least some of the time.
+ *
+ * This function provides the same interface as the libc function, but
+ * provides consistent semantics.  It assumes POSIX semantics for
+ * sigaction() (so you might need to do some more work if you port to
+ * something ancient like SunOS 4)
+ */
+static void (*sane_signal(int sig, void (*func)(int)))(int) {
+    struct sigaction sa;
+    struct sigaction old;
+    
+    sa.sa_handler = func;
+    if(sigemptyset(&sa.sa_mask) < 0)
+	return SIG_ERR;
+    sa.sa_flags = SA_RESTART;
+    if(sigaction(sig, &sa, &old) < 0)
+	return SIG_ERR;
+    return old.sa_handler;
 }
