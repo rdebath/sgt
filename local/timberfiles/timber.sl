@@ -1180,7 +1180,8 @@ define timber_get_mimepart(use_decoded) {
     % Now move down to the end of the message text.
     while (((use_decoded and what_char() == leadchr) or
 	    ((not use_decoded) and (what_char() != topchr or
-				    nestlevel != timber_pling_nestlevel())))
+				    (topchr == '!' and
+                                     nestlevel != timber_pling_nestlevel()))))
 	   and not eolp()) {
 	eol();
 	go_right_1();
