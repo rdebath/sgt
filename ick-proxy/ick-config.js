@@ -28,11 +28,3 @@ function RewriteURL(url)
 
     return url;
 }
-
-function FindProxyForURL(url, host)
-{
-    if (RewriteURL(url) != url)
-        return "PROXY localhost:18768";
-
-    return "DIRECT";
-}
