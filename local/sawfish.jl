@@ -29,7 +29,10 @@
   "Button2-Click2" 'resize-window-interactively
   "Button3-Click2" 'resize-window-interactively
 )
-(unbind-keys title-keymap "Button2-Click")
+(unbind-keys title-keymap
+  "Button1-Off" "Button2-Off" "Button3-Off"
+  "Button2-Click"
+)
 
 (bind-keys border-keymap
   "Button1-Move" 'resize-window-interactively
@@ -41,7 +44,10 @@
   "Button2-Click2" 'move-window-interactively
   "Button3-Click2" 'move-window-interactively
 )
-(unbind-keys border-keymap "Button2-Click")
+(unbind-keys border-keymap
+  "Button1-Off" "Button2-Off" "Button3-Off"
+  "Button2-Click"
+)
 
 ;; }}}
 ;; Left-Windows + x to minimise windows {{{
