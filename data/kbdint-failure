@@ -22,5 +22,5 @@ these days, and not enabling PasswordAuthentication at all by default.
 As of 2005-01-08, PuTTY will continue to attempt keyboard-interactive
 authentication as long as the server continues to offer it, in
 preference to password authentication, unless the server refuses it
-outright. (If this is a problem for you, you can disable attempts to
+outright. (If you need to get past k-i, you can disable attempts to
 use keyboard-interactive entirely on the "Auth" panel.)
