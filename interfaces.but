@@ -806,7 +806,7 @@ same request again once it has supplied the required extra data. (An
 additional advantage of this is that if the client does not \e{have}
 the extra data available, it can easily abandon the request and do
 something else instead.) An example of this approach is the \q{480
-Authentication required} response in NNTP. \#{FIXME: reference}.
+Authentication required} response in NNTP. \#{FIXME: reference}
 
 \H{bidi-sharedstate} Managing shared state in the protocol
 
