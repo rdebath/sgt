@@ -1,0 +1,15 @@
+Summary: PSFTP should have a "prompt" command
+Class: wish
+Difficulty: fun
+Priority: low
+Present-in: 2005-02-07
+Content-type: text/plain
+
+From an e-mail:
+
+One helpful feature of the "classic" ftp client is the
+"prompt" command, which toggles interactive prompting
+on multiple commands. I.e. while it is sometimes to simply
+send all of *.pl, it is sometimes useful to only send a few,
+but easier to just type "mput *.pl" and then answer "yes"
+for those few that should be sent.
