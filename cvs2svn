@@ -46,6 +46,22 @@ if sys.hexversion < 0x2000000:
                    "see www.python.org.\n" % error_prefix)
   sys.exit(1)
 
+# SGT HACK: replacement for os.path.walk which follows symlinks.
+def ospathwalk(top, func, arg):
+    try:
+        names = os.listdir(top)
+    except os.error:
+        return
+    func(arg, top, names)
+    for name in names:
+        name = os.path.join(top, name)
+        try:
+            st = os.stat(name)
+        except os.error:
+            continue
+        if stat.S_ISDIR(st[stat.ST_MODE]):
+            ospathwalk(name, func, arg)
+
 # Pretend we have true booleans on older python versions
 try:
   True
@@ -3039,6 +3055,7 @@ class SVNRepositoryMirror:
         #
         # ...we create the branch by copying trunk from the our
         # current revision number minus 1
+	raise "SGT HACK: if we never get here I don't need to bother fixing it"
         source_path = Ctx().trunk_base
         entries = self._copy_path(source_path, dest_path,
                                   svn_commit.revnum - 1)[1]
@@ -3894,7 +3911,7 @@ def pass1():
         Log().write(LOG_WARN, "Exception occurred while parsing %s" % pathname)
         raise
 
-  os.path.walk(Ctx().cvsroot, visit_file, cd)
+  ospathwalk(Ctx().cvsroot, visit_file, cd)
   Log().write(LOG_VERBOSE, 'Processed', cd.num_files, 'files')
 
   cd.write_symbol_db()
