@@ -15,8 +15,7 @@ my $tomono_path = $script_path . "tomono";
 # Run golem
 system ($golem_path,
 	"-C", $script_path . "connect.ssh.el",
-	$script_path . "retrieve.loew")
-or die "Error running golem: $!\n";
+	$script_path . "retrieve.loew");
 
 open(SAVEOUT, ">&STDOUT");
 1 if eof(SAVEOUT); # To suppress warning about only one use of SAVEOUT...
@@ -31,4 +30,6 @@ open(STDOUT, ">&SAVEOUT");
 rename($dataroot . "messages/allmessages.tmp." . $username,
        $dataroot . "messages/allmessages." . $username)
        || die "Can't rename messages file\n";
+unlink($dataroot . "messages/allmessages.new." . $username)
+       || warn "Couldn't delete new messages file after processing\n";
 print "Hello\n";
