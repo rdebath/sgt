@@ -599,13 +599,11 @@ work:
 
 \c hostname:~/src$ svn commit foo/foo.txt bar/bar/txt
 \e                 bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
-\c [commit succeeds]
+z\c [commit succeeds]
 \e iiiiiiiiiiiiiiiii
 
 I don't fully understand why this works and none of the other
 options didn't. But it's certainly worth knowing!
-
-\c hostname:~/src$ svn co svn+ssh+userv://host/repos/emptydir .
 
 \H{using-svn-externals} \c{svn:externals} isn't what I wanted
 
