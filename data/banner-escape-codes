@@ -1,0 +1,24 @@
+Summary: Interpret escape codes in pre-login banner
+Class: wish
+Difficulty: fun
+Priority: never
+Content-type: text/x-html-body
+
+<p>
+People occasionally ask for PuTTY to interpret escape codes in the
+banner some SSH servers send prior to authentication.
+
+<p>
+The current SSH-2 authentication draft
+<a href="http://www.ietf.org/internet-drafts/draft-ietf-secsh-userauth-17.txt">draft-ietf-secsh-userauth-17</a>
+states, in the section about <code>SSH_MSG_USERAUTH_BANNER</code>:
+
+<blockquote>
+      If the message string is displayed, control character filtering
+      discussed in [SSH-ARCH] SHOULD be used to avoid attacks by sending
+      terminal control characters.
+</blockquote>
+
+<p>
+This is what PuTTY does, and as such, terminal-control sequences won't
+work.
