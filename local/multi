@@ -1,0 +1,43 @@
+#!/usr/bin/env perl
+
+# Perform multiple moves/copies.
+
+# Usage:    multi mv 's/$/.old/' *.c
+#           multi cp 's:/tmp/(.*):$1:' *
+
+$__quiet = $__donothing = 0;
+
+while ($ARGV[0] =~ /^-(.*)$/) {
+  shift @ARGV;
+  $__quiet = 1, next if $1 eq "q";
+  $__quiet = 0, $__donothing = 1, next if $1 eq "n";
+}
+
+die "usage: multi <cmd> <action> <files>\n" .
+    "  e.g. multi mv 'tr/A-Z/a-z/' *\n" if $#ARGV < 2;
+
+$__cmd = shift @ARGV;
+$__action = shift @ARGV;
+
+while (@ARGV) {
+  $_ = $__origfile = shift @ARGV;
+  eval $__action;
+  $__newfile = $_;
+  &pcmd($__cmd, $__origfile, $__newfile) if !$__quiet;
+  system $__cmd, $__origfile, $__newfile if !$__donothing;
+}
+
+sub pcmd {
+  my ($cmd, $orig, $new) = @_;
+  printf "%s %s %s\n", &fmt($cmd), &fmt($orig), &fmt($new);
+}
+
+sub fmt {
+  local ($_) = @_;
+  if (/[!"#$&'()*;<>?\\`|~]/) {
+    s/'/'\\''/g;
+    "'$_'";
+  } else {
+    $_;
+  }
+}
