@@ -5,6 +5,8 @@ import sys
 import socket
 import string
 
+debug = 0
+
 server = sys.argv[1]
 secretfile = sys.argv[2]
 cmd = sys.argv[3]
@@ -14,6 +16,7 @@ s.connect(server, 17481)
 sf = s.makefile("r")
 
 greet = sf.readline()
+if debug: sys.stderr.write("<<< "+greet)
 
 nonce = greet[1:string.find(greet, "\r")]
 
@@ -25,11 +28,27 @@ auth = shaobj.hexdigest()
 
 ourline = auth + cmd + "\r\n"
 s.send(ourline)
+if debug: sys.stderr.write(">>> "+ourline)
 
 status = sf.readline()
-if status[0] != "+":
-    sys.stderr.write("error: " + status)
+if debug: sys.stderr.write("<<< "+status)
+while status[:1] == "=":
+    b = ""
+    h = status[1:string.find(status, "\r")]
+    while len(h) >= 2:
+        b = b + chr(string.atoi(h[0:2], 16))
+        h = h[2:]
+    sys.stdout.write(b)
+    status = sf.readline()
+    if debug: sys.stderr.write("<<< "+status)
+
+sys.stdout.flush()
+
+if status[:1] != "+":
+    if status == "":
+        sys.stderr.write("connection closed unexpectedly")
+    else:
+        sys.stderr.write("error: " + status)
     sys.exit(1)
 
 sys.exit(0)
-

@@ -72,7 +72,8 @@ int listener_newthread(SOCKET sock, int port, SOCKADDR_IN remoteaddr) {
         cmdline[cmdlen+len] = '\0';
         cmdlen += len;
         newlen = strcspn(cmdline, "\r\n");
-        if (newlen < cmdlen) {
+        if (newlen == cmdlen-2 &&
+            cmdline[newlen] == '\r' && cmdline[newlen+1] == '\n') {
             cmdline[newlen] = '\0';
             break;
         }
@@ -83,30 +84,92 @@ int listener_newthread(SOCKET sock, int port, SOCKADDR_IN remoteaddr) {
         /*
          * Things beginning 's' get passed to ShellExecute; things
          * beginning with 'p' go to CreateProcess; things beginning
-         * with 'w' go to CreateProcess and wait.
+         * with 'w' go to CreateProcess and wait; things beginning
+         * with 'r' go to CreateProcess with redirected output, and
+         * wait, and have the output sent back to the client.
+         * (Input is null.)
          */
         char *p = cmdline + ret;
-        if (*p == 'p' || *p == 'w') {
+        char *msg = "+ok\r\n";
+        char buf[40];
+        if (*p == 'p' || *p == 'w' || *p == 'r') {
             STARTUPINFO si;
             PROCESS_INFORMATION pi;
+            DWORD exitcode;
+            HANDLE fromchild, tochild;
+            HANDLE childout, parentout, childin, parentin;
+            int inherit = FALSE;
             memset(&si, 0, sizeof(si));
             si.cb = sizeof(si);
             si.wShowWindow = SW_SHOWNORMAL;
             si.dwFlags = STARTF_USESHOWWINDOW;
-            success = CreateProcess(NULL, p+1, NULL, NULL, FALSE,
-                                    CREATE_NEW_CONSOLE | NORMAL_PRIORITY_CLASS,
-                                    NULL, NULL, &si, &pi) != 0;
-            if (success && *p == 'w')
+            if (*p == 'r') {
+                SECURITY_ATTRIBUTES sa;
+                sa.nLength = sizeof(sa);
+                sa.bInheritHandle = TRUE;
+                sa.lpSecurityDescriptor = NULL;
+                if (!CreatePipe(&parentout, &childout, &sa, 0) ||
+                    !CreatePipe(&childin, &parentin, &sa, 0)) {
+                    msg = "-CreatePipe failed"; goto doneexec;
+                }
+                if (!DuplicateHandle(GetCurrentProcess(), parentin,
+                                     GetCurrentProcess(), &tochild,
+                                     0, FALSE, DUPLICATE_SAME_ACCESS)) {
+                    msg = "-DuplicateHandle failed"; goto doneexec;
+                }
+                CloseHandle(parentin);
+                if (!DuplicateHandle(GetCurrentProcess(), parentout,
+                                     GetCurrentProcess(), &fromchild,
+                                     0, FALSE, DUPLICATE_SAME_ACCESS)) {
+                    msg = "-DuplicateHandle failed"; goto doneexec;
+                }
+                CloseHandle(parentout);
+                si.hStdInput = childin;
+                si.hStdOutput = si.hStdError = childout;
+                si.dwFlags |= STARTF_USESTDHANDLES;
+                si.wShowWindow = SW_HIDE;
+                inherit = TRUE;
+            }
+            if (CreateProcess(NULL, p+1, NULL, NULL, inherit,
+                              CREATE_NEW_CONSOLE | NORMAL_PRIORITY_CLASS,
+                              NULL, NULL, &si, &pi) == 0) {
+                msg = "-CreateProcess failed\r\n"; goto doneexec;
+            }
+            if (*p == 'r') {
+                CloseHandle(childin);
+                CloseHandle(childout);
+            }
+            if (*p == 'w' || *p == 'r') {
+                if (*p == 'r') {
+                    unsigned char rdbuf[32];
+                    DWORD got;
+                    CloseHandle(tochild);
+                    while (ReadFile(fromchild, rdbuf, sizeof(rdbuf),
+                                    &got, NULL) && got > 0) {
+                        DWORD i;
+                        char anotherbuf[80];
+                        anotherbuf[0] = '=';
+                        for (i = 0; i < got; i++)
+                            sprintf(anotherbuf+i*2+1, "%02X", rdbuf[i]);
+                        strcat(anotherbuf, "\r\n");
+                        send(sock, anotherbuf, strlen(anotherbuf), 0);
+                    }
+                }
                 WaitForSingleObject(pi.hProcess, INFINITE);
+                if (!GetExitCodeProcess(pi.hProcess, &exitcode))
+                    msg = "-GetExitCodeProcess failed\r\n";
+                else if (exitcode != 0) {
+                    msg = buf;
+                    sprintf(buf, "-exit code %d\r\n", exitcode);
+                }
+            }
         } else if (*p == 's') {
-            success = 32 <
-                (int)ShellExecute(listener_hwnd, NULL, p+1, NULL,
-                                  NULL, SW_SHOWNORMAL);
+            if (32 >= (int)ShellExecute(listener_hwnd, NULL, p+1, NULL,
+                                        NULL, SW_SHOWNORMAL))
+                msg = "-ShellExecute failed\r\n";
         }
-        if (success)
-            send(sock, "+ok\r\n", 5, 0);
-        else
-            send(sock, "-execute failed\r\n", 17, 0);
+        doneexec:
+        send(sock, msg, strlen(msg), 0);
     } else {
         send(sock, "-auth failed\r\n", 14, 0);
     }
