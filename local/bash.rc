@@ -1,6 +1,6 @@
 # -*- mode: sh; mode: fold -*-
 # Simon Tatham's standardised chunk of .bashrc
-# $Revision: 1.9 $
+# $Revision: 1.10 $
 
 #{{{ I don't like .bash_history files. They wet their nests.
 unset HISTFILE
@@ -125,6 +125,8 @@ bashrc_do_bindings() {
   set -- '"\\C-xm": "\001\013timber '\'\''\n"'
   bind "`echo -e "$1"`"
 }
+bashrc_do_bindings
+unset bashrc_do_bindings
 
 #}}}
 #{{{ prompt configuration
