@@ -13,23 +13,7 @@ if (BATCH == 0) {
 setkey("help_prefix", "^H");
 
 %}}}
-%{{{ force instant syntax-highlighting update
-
-% Force full screen update on insert/delete keys.
-% Unpleasant, but seems to work: "dummy" seems to be the best way I can
-% find to do nothing and trigger screen updating...
-define dummy() {
-    insert(".");
-    deln(left(1));
-}
-define jedrc_self_insert() {
-    dummy();
-    call("self_insert_cmd");
-}
-for ($1 = 33; $1 < 127; $1++) {
-    setkey("jedrc_self_insert", char($1));
-}
-setkey (".1 deln", "^D");
+%{{{ make Backspace work more sensibly in overwrite mode
 
 define jedrc_backspace() {
     if (is_overwrite_mode()) {
@@ -37,13 +21,14 @@ define jedrc_backspace() {
             error("Cannot backspace past start of line in overwrite mode.");
         } else {
             deln(left(1));
-            insert(" ");
-            go_left_1();
+            !if (eolp()) {
+                insert(" ");
+                go_left_1();
+            }
         }
     } else {
         call("backward_delete_char_untabify");
     }
-    dummy();
 }
 setkey("jedrc_backspace", "^?");
 
@@ -59,7 +44,7 @@ define jedrc_ro_internal_alternate(command, char) {
     if (flags & 8)
         call(command);
     else
-        jedrc_self_insert();
+        call("self_insert_cmd");
 }
 
 define jedrc_ro_slang_alternate(command, char) {
@@ -68,7 +53,7 @@ define jedrc_ro_slang_alternate(command, char) {
     if (flags & 8)
         @command();
     else
-        jedrc_self_insert();
+        call("self_insert_cmd");
 }
 
 setkey (".\"page_down\" \" \" jedrc_ro_internal_alternate", " ");
