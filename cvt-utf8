@@ -3,7 +3,7 @@
 import sys
 import string
 import os
-import dbm
+import anydbm
 
 def hexstr(x):
     s = hex(x)
@@ -18,8 +18,11 @@ def charname(x):
 	key = hexstr(x)
 	while len(key) < 4: key = "0" + key
 	key = string.upper(key)
-	value = db.get(key, "<no name available>")
-	return string.split(value, ";")[1]
+	try:
+	    value = db[key]
+	    return string.split(value, ";")[1]
+	except KeyError:
+	    return "<no name available>"
     else:
 	return ""
 
@@ -159,7 +162,7 @@ if sys.argv[1] == "--build" or sys.argv[1] == "--fetch-build":
 	outfile = outfile[:-3]
     else:
 	print "cvt-utf8: db name does not end in .db: dbm will append .db"
-    db = dbm.open(outfile, "n")
+    db = anydbm.open(outfile, "n")
     while 1:
 	s = infile.readline()
 	if s == "": break
@@ -178,10 +181,10 @@ locations.append(os.environ["HOME"] + "/lib/unicode/unicode")
 
 for loc in locations:
     try:
-	db = dbm.open(loc, "r")
+	db = anydbm.open(loc, "r")
     except IOError:
 	db = None
-    except dbm.error:
+    except anydbm.error:
 	db = None
     if db != None:
 	break
