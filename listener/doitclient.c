@@ -483,7 +483,7 @@ void showversion(void)
     char *v;
     extern char doitlib_revision[];
 
-    v = makeversion(versionbuf, "$Revision: 1.21 $");
+    v = makeversion(versionbuf, "$Revision: 1.22 $");
     if (v)
 	printf("doitclient revision %s", v);
     else
@@ -920,7 +920,7 @@ int main(int argc, char **argv)
              * potentially die.
              */
             if (!gotaddr || !servername) {
-                char *err = hstrerror(h_errno);
+                char const *err = hstrerror(h_errno);
                 if (verbose)
                     fprintf(stderr, "doit: DNS lookup failed: %s\n", err);
                 /*
