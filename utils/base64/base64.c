@@ -84,7 +84,8 @@ const char usagemsg[] =
     "usage: base64 [-d] [filename]        decode from a file or from stdin\n"
     "   or: base64 -e [-cNNN] [filename]  encode from a file or from stdin\n"
     " also: base64 --version              report version number\n"
-    "  and: base64 --help                 display this help text\n"
+    "       base64 --help                 display this help text\n"
+    "       base64 --licence              display the (MIT) licence text\n"
     "where: -d     decode mode (default)\n"
     "       -e     encode mode\n"
     "       -cNNN  set number of chars per line for encoded output\n"
@@ -92,6 +93,34 @@ const char usagemsg[] =
 
 void usage(void) {
     fputs(usagemsg, stdout);
+}
+
+const char licencemsg[] =
+    "base64 is copyright 2001,2004 Simon Tatham.\n"
+    "\n"
+    "Permission is hereby granted, free of charge, to any person\n"
+    "obtaining a copy of this software and associated documentation files\n"
+    "(the \"Software\"), to deal in the Software without restriction,\n"
+    "including without limitation the rights to use, copy, modify, merge,\n"
+    "publish, distribute, sublicense, and/or sell copies of the Software,\n"
+    "and to permit persons to whom the Software is furnished to do so,\n"
+    "subject to the following conditions:\n"
+    "\n"
+    "The above copyright notice and this permission notice shall be\n"
+    "included in all copies or substantial portions of the Software.\n"
+    "\n"
+    "THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND,\n"
+    "EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF\n"
+    "MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND\n"
+    "NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS\n"
+    "BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN\n"
+    "ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN\n"
+    "CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\n"
+    "SOFTWARE.\n"
+    ;
+
+void licence(void) {
+    fputs(licencemsg, stdout);
 }
 
 void version(void) {
@@ -129,14 +158,22 @@ int main(int ac, char **av) {
                 char c = *++p;
                 switch (c) {
                   case '-':
+		    p++;
                     if (!strcmp(p, "version")) {
                         version();
                         exit(0);
-                    }
-                    if (!strcmp(p, "help")) {
+                    } else if (!strcmp(p, "help")) {
                         usage();
                         exit(0);
-                    }
+                    } else if (!strcmp(p, "licence") ||
+			!strcmp(p, "license")) {
+                        licence();
+                        exit(0);
+                    } else {
+                        fprintf(stderr, "base64: unknown long option '--%s'\n",
+				p);
+			exit(1);
+		    }
                     break;
                   case 'v':
                   case 'V':
