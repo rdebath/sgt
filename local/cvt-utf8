@@ -117,7 +117,7 @@ def process_utf8(list):
 def do(args):
     list = []
     for arg in args:
-	if arg[0] == "U":
+	if string.upper(arg[0]) == "U":
 	    if len(list) > 0:
 		process_utf8(list)
 		list = []
@@ -137,10 +137,10 @@ if sys.argv[1:] == []:
     print ""
     print "Also:  cvt-utf8 --test    run Markus Kuhn's decoder stress tests"
     print "       cvt-utf8 --build <infile> <outfile>"
-    print "                          convert UnicodeData.txt to unicode.db"
+    print "                          convert UnicodeData.txt to unicode db"
     print "       cvt-utf8 --fetch-build <outfile>"
     print "                          "+\
-    "build unicode.db by download from unicode.org"
+    "build unicode db by download from unicode.org"
     sys.exit(0)
 
 if sys.argv[1] == "--build" or sys.argv[1] == "--fetch-build":
@@ -159,9 +159,8 @@ if sys.argv[1] == "--build" or sys.argv[1] == "--fetch-build":
 	outfile = sys.argv[2]
     # Now build the database.
     if outfile[-3:] == ".db":
-	outfile = outfile[:-3]
-    else:
-	print "cvt-utf8: db name does not end in .db: dbm will append .db"
+	print "cvt-utf8: warning: you should not append .db to db name"
+
     db = anydbm.open(outfile, "n")
     while 1:
 	s = infile.readline()
