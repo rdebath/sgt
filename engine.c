@@ -61,6 +61,13 @@ gamestate *init_game (level *lev) {
     return ret;
 }
 
+#define destroyable(x,y) \
+    ((x) > 0 && (x) < w-1 && (y) > 0 && (y) < h-1 && \
+     ret->leveldata[w*((y)-1)+(x)] != '=' && \
+     ret->leveldata[w*((y)+1)+(x)] != '=' && \
+     ret->leveldata[w*(y)+(x)-1] != '=' && \
+     ret->leveldata[w*(y)+(x)+1] != '=')
+
 /*
  * 'key' is h, j, k or l
  */
@@ -68,7 +75,7 @@ gamestate *make_move (gamestate *state, char key) {
     gamestate *ret;
     int xfrom, yfrom, pfrom, xto, yto, pto;
     int i, j, k;
-    int w;
+    int w, h;
     typedef struct posn posn;
     struct posn {
 	posn *next, *prev;
@@ -92,9 +99,10 @@ gamestate *make_move (gamestate *state, char key) {
     ret = gamestate_copy(state);
 
     /*
-     * get the level width
+     * get the level dimensions
      */
     w = ret->width;
+    h = ret->height;
 
     /*
      * sanity check the state
@@ -326,13 +334,13 @@ gamestate *make_move (gamestate *state, char key) {
 		    addlist(pos, exps);   /* and expose the vacated cell */
 		    pos->x = p->x;
 		    pos->y = p->y;
-		    if (p->x-dx > 0 && p->y-dy > 0) {
+		    if (destroyable(p->x-dx, p->y-dy)) {
 			ret->leveldata[j-dp] = ' ';  /* and the left/up cell */
 			addlist(pos, exps);  /* expose the vacated cell */
 			pos->x = p->x - dx;
 			pos->y = p->y - dy;
 		    }
-		    if (p->x+dx < w-1 && p->y+dy < 20-1) {
+		    if (destroyable(p->x+dx, p->y+dy)) {
 			ret->leveldata[j+dp] = ' ';  /* the right/down cell */
 			addlist(pos, exps);  /* expose the vacated cell */
 			pos->x = p->x + dx;
@@ -403,6 +411,10 @@ gamestate *make_move (gamestate *state, char key) {
  * Validate a level structure to ensure it contains no obvious
  * mistakes. Returns an error message in `buffer', or NULL.
  */
+#define iswalloroutdoors(c) \
+    ((c) == '+' || (c) == '-' || (c) == '|' || \
+	 (c) == '%' || (c) == '&' || (c) == '=')
+
 char *validate(level *level, char *buffer, int buflen)
 {
     int x, y, x1, y1;
@@ -416,15 +428,33 @@ char *validate(level *level, char *buffer, int buflen)
 	    c = level->leveldata[w*y+x];
 
 	    /*
-	     * Check that the boundary of the level is solid wall.
+	     * Check that the boundary of the level is either solid
+	     * wall or the `=' outdoors character.
 	     */
 	    if ((x == 0 || y == 0 || x == w-1 || y == h-1) &&
-		(c != '+' && c != '-' && c != '|' && c != '%' && c != '&')) {
-		sprintf(internalbuf, "level boundary is not solid at line %d"
-			" column %d", y, x);
+		!iswalloroutdoors(c)) {
+		sprintf(internalbuf, "level boundary is not wall or `=' at"
+			" line %d column %d", y, x);
 		strncpy(buffer, internalbuf, buflen);
 		buffer[buflen-1] = '\0';
 		return buffer;
+	    }
+
+	    /*
+	     * Check that any `=' outdoors character is adjacent
+	     * only to walls and other `='.
+	     */
+	    if (c == '=' &&
+		((x > 0 && !iswalloroutdoors(level->leveldata[w*y+(x-1)])) ||
+		 (x < w-1 && !iswalloroutdoors(level->leveldata[w*y+(x+1)])) ||
+		 (y > 0 && !iswalloroutdoors(level->leveldata[w*(y-1)+x])) ||
+		 (y < h-1 && !iswalloroutdoors(level->leveldata[w*(y+1)+x]))))
+	    {
+		sprintf(internalbuf, "`=' is adjacent to something other than"
+			" wall or `=' at line %d column %d", y, x);
+		strncpy(buffer, internalbuf, buflen);
+		buffer[buflen-1] = '\0';
+		return buffer;		
 	    }
 
 	    switch (c) {
@@ -442,7 +472,7 @@ char *validate(level *level, char *buffer, int buflen)
 		x1 = x - 1; y1 = y; break;
 	      case '@': case '$': case '%': case '-': case '+': case '|':
 	      case '&': case 'E': case 'o': case '8': case '.': case ':':
-	      case ' ':
+	      case ' ': case '=':
 		/* Non-falling piece; carry on. */
 		continue;
 	      default:
