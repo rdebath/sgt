@@ -1,0 +1,15 @@
+Summary: PSFTP and PSCP ignore the -load option
+Class: bug
+Difficulty: fun
+Priority: high
+Present-in: 0.54 2004-07-21
+Content-type: text/x-html-body
+
+<p>
+The PSFTP and PSCP tools more or less entirely ignore the
+<code>-load <i>session</i></code> option.
+
+<p>
+They unconditionally clobber the loaded details with
+<code>do_defaults()</code>, either from another session or Default
+Settings.
