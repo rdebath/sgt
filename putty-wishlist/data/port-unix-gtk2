@@ -1,0 +1,12 @@
+Summary: Port to Gtk+-2 toolkit on Unix
+Class: wish
+Difficulty: tricky
+Priority: low
+
+Currently, the Unix port of PuTTY uses the Gtk+-1.2 UI toolkit. It
+would be nice if it could also support Gtk+-2.
+
+We would require that the source still be compilable against Gtk+-1.2.
+
+Someone is working on this.
+<20040602051221.GA17584@dumbterm.net>
