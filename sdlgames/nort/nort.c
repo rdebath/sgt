@@ -9,6 +9,7 @@
 
 #include "sdlstuff.h"
 #include "beebfont.h"
+#include "utils.h"
 
 #define ABSOLUTE_MAX_SPEED 25
 #define JOY_THRESHOLD 4096
@@ -49,64 +50,51 @@ static int centretext(int y, int c, char const *text)
     puttext(160-4*(strlen(text)), y, c, text);
 }
 
+struct linectx {
+    int c, dot, dotting;
+};
+
+static void lineplot(void *ctx, int x, int y)
+{
+    struct linectx *lc = (struct linectx *)ctx;
+    if (lc->dot == 0)
+	plotc(x, y, lc->c);
+    lc->dot ^= lc->dotting;
+}
+
 static int drawline(int x1, int y1, int x2, int y2, int c)
 {
-    int dx, dy, lx, ly, sx, sy, dl, ds, d, i;
-    int dot, dotting;
+    struct linectx linectx;
 
     /*
      * Setting bit 8 in `c' causes the line to be dotted
      * alternately on and off.
      */
-    dotting = c & 256;
-    c &= 255;
+    linectx.dotting = c & 256;
+    linectx.dot = 0;
+    linectx.c = c & 255;
 
-    /*
-     * Simple Bresenham's line drawing should be adequate here.
-     * First sort out what octant we're in.
-     */
-    dx = x2 - x1; dy = y2 - y1;
+    line(x1, y1, x2, y2, lineplot, &linectx);
+}
 
-    if (dx < 0 || (dx == 0 && dy < 0)) {
-	int tmp;
-	/*
-	 * Canonify the order of the endpoints, so that drawing a
-	 * line from point A to point B and then drawing in a
-	 * different colour from B back to A can't ever leave any
-	 * pixels of the first colour.
-	 */
-	tmp = x1; x1 = x2; x2 = tmp; dx = -dx;
-	tmp = y1; y1 = y2; y2 = tmp; dy = -dy;
+struct circlectx {
+    int cx, cy, c;
+};
+
+static void circleplot(void *ctx, int x, int y)
+{
+    struct circlectx *cc = (struct circlectx *)ctx;
+    int i;
+
+#define doplot(Dy,Dx) ( plotc(cc->cx+(Dx),cc->cy+(Dy), \
+				  cc->c|pixelc(cc->cx+(Dx),cc->cy+(Dy))) )
+    for (i = 0; i < y; i++) {
+	doplot(+i,+x); doplot(+i,-x);
+	doplot(-i,+x); doplot(-i,-x);
+	doplot(+x,+i); doplot(-x,+i);
+	doplot(+x,-i); doplot(-x,-i);
     }
-
-    if (abs(dx) > abs(dy)) {
-	lx = sign(dx); ly = 0;	       /* independent variable on x axis */
-	sx = 0; sy = sign(dy);	       /* dependent variable on y axis */
-	dl = abs(dx); ds = abs(dy);
-    } else {
-	lx = 0; ly = sign(dy);	       /* independent variable on y axis */
-	sx = sign(dx); sy = 0;	       /* dependent variable on x axis */
-	dl = abs(dy); ds = abs(dx);
-    }
-
-    /*
-     * Now we've normalised the octants, draw the line. Decision
-     * variable starts at dl, decrements by 2*ds, and we add on
-     * 2*dl and move up one pixel when it's gone past zero.
-     */
-    d = dl;
-    plotc(x1, y1, c);
-    dot = 256;
-    for (i = 0; i < dl; i++) {
-	dot ^= dotting;
-	d -= 2*ds;
-	if (d < 0) {
-	    d += 2*dl;
-	    x1 += sx; y1 += sy;
-	}
-	x1 += lx; y1 += ly;
-	if (dot) plotc(x1, y1, c);
-    }
+#undef doplot
 }
 
 /*
@@ -115,35 +103,13 @@ static int drawline(int x1, int y1, int x2, int y2, int c)
  */
 static int fillcircle(int x, int y, int r, int c)
 {
-    int dx, dy, d, d2, i;
+    struct circlectx cc;
 
-    /*
-     * Bresenham's again.
-     */
+    cc.cx = x;
+    cc.cy = y;
+    cc.c = c;
 
-    dy = r;
-    dx = 0;
-    d = 0;
-    while (dy >= dx) {
-
-	/* Plot at (dy,dx) in all eight octants. */
-#define doplot(Dy,Dx) ( plotc(x+(Dx),y+(Dy),c|pixelc(x+(Dx),y+(Dy))) )
-	for (i = 0; i < dy; i++) {
-	    doplot(+i,+dx); doplot(+i,-dx);
-	    doplot(-i,+dx); doplot(-i,-dx);
-	    doplot(+dx,+i); doplot(-dx,+i);
-	    doplot(+dx,-i); doplot(-dx,-i);
-	}
-#undef doplot
-
-	d += 2*dx + 1;
-	d2 = d - (2*dy - 1);
-	if (abs(d2) < abs(d)) {
-	    d = d2;
-	    dy--;
-	}
-	dx++;
-    }
+    circle(r, circleplot, &cc);
 }
 
 /*
