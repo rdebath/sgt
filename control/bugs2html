@@ -1,5 +1,5 @@
 #! /usr/bin/perl
-# $Id: bugs2html,v 1.7 2002/07/18 13:18:12 ben Exp $
+# $Id: bugs2html,v 1.8 2002/08/22 19:31:40 ben Exp $
 
 use FileHandle;
 use POSIX;
@@ -71,8 +71,14 @@ foreach $bugfile (glob("$bugdir/*")) {
     @hdrs = split /\n/, $hdr;
     %hdrs = map { /^(\S*?):\s*(.*)$/; (lc $1, $2) } @hdrs;
     bug2html($bugname, \%hdrs, $body);
-    $index{$hdrs{class}} .=
-	qq[<li><a href="$bugname.html">$bugname: $hdrs{summary}</a>\n];
+    if ($hdrs{priority} eq 'high') {
+	$index{$hdrs{class}} .=
+	    qq[<li><b><a href="$bugname.html">$bugname: $hdrs{summary}] .
+	    qq[</a></b>\n];
+    } else {
+	$index{$hdrs{class}} .=
+	    qq[<li><a href="$bugname.html">$bugname: $hdrs{summary}</a>\n];
+    }
 }
 
 print INDEX <<EOF if $index{'bug'};
