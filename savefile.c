@@ -103,6 +103,24 @@ gamestate *savepos_load(levelset *set, char *user, int savenum) {
     return state;
 }
 
+void savepos_del(levelset *set, char *user, int savenum) {
+    char buf[FILENAME_MAX+10];
+    char fname[FILENAME_MAX];
+
+    fname[sizeof(fname)-1] = '\0';
+    strncpy(fname, SAVEDIR, sizeof(fname));
+    strncpy(fname + strlen(fname), set->name, sizeof(fname)-strlen(fname));
+    strncpy(fname + strlen(fname), ".", sizeof(fname)-strlen(fname));
+    strncpy(fname + strlen(fname), user, sizeof(fname)-strlen(fname));
+    sprintf(buf, ".%d", savenum+1);
+    strncpy(fname + strlen(fname), buf, sizeof(fname)-strlen(fname));
+    if (fname[sizeof(fname)-1] != '\0') {
+	fatal_error_string = "File name length overflow";
+	return NULL;
+    }
+    unlink(fname);
+}
+
 void savepos_save(levelset *set, char *user, int savenum, gamestate *state) {
     FILE *fp;
     char buf[FILENAME_MAX+10];
