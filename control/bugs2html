@@ -202,7 +202,7 @@ EOF
     my @tmp = grep(($bugs{$_}->{hdrs}->{class} eq 'bug' ||
                     $bugs{$_}->{hdrs}->{class} eq 'semi-bug'),
                    @{$fixedvers{$class}});
-    subtractbugs(\@fullbuglist, printbugs_diff_ordered(\@tmp));
+    subtractbugs(\@fullbuglist, printbugs_imp_ordered(\@tmp));
 
     unnest("</ul>\n");
 
@@ -213,7 +213,7 @@ EOF
 
     my @tmp = grep(($bugs{$_}->{hdrs}->{class} eq 'wish'),
                    @{$fixedvers{$class}});
-    subtractbugs(\@fullbuglist, printbugs_diff_ordered(\@tmp));
+    subtractbugs(\@fullbuglist, printbugs_imp_ordered(\@tmp));
 
     unnest("</ul>\n");
 
@@ -403,13 +403,15 @@ EOF
 
 close INDEX;
 
-# Print bugs ordered by difficulty.
-sub printbugs_diff_ordered {
+# Print fixed bugs ordered by importance
+sub printbugs_imp_ordered {
     my ($buglist) = @_;
     my @tmp = @$buglist;
-    my @hardbugs = grep((defined($bugs{$_}->{hdrs}->{difficulty}) && 
-                         $bugs{$_}->{hdrs}->{difficulty} ne "fun"), @tmp);
-    subtractbugs(\@tmp, printbugs(\@hardbugs, 1));
+    my @impbugs = grep(((defined($bugs{$_}->{hdrs}->{difficulty}) && 
+                         $bugs{$_}->{hdrs}->{difficulty} ne "fun") ||
+                        (defined($bugs{$_}->{hdrs}->{priority}) && 
+                         $bugs{$_}->{hdrs}->{priority} eq "high")), @tmp);
+    subtractbugs(\@tmp, printbugs(\@impbugs, 1));
     printbugs(\@tmp);
     return $buglist;
 }
