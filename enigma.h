@@ -14,7 +14,7 @@
 
 #include <setjmp.h>
 #include <time.h>
-#include "config.h"
+#include "settings.h"
 
 /* ----------------------------------------------------------------------
  * Standard useful macros.
