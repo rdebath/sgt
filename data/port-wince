@@ -9,3 +9,9 @@ Despite sharing large parts of the Windows API, WinCE doesn't appear
 to be significantly easier to port to than a totally different
 operating system.  A port is in the pipeline, although it's only in
 its early stages yet.
+
+<p>
+There's a third-party port at <a
+href="http://pocketputty.aleq.cz/">pocketputty.aleq.cz</a>. At the
+time of writing, I don't think any of us have tried it, it's in an
+early stage of development, and there's no source yet.
