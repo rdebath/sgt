@@ -1,0 +1,14 @@
+Summary: PuTTY doesn't support the BINARY option
+Class: bug
+Priority: medium
+Difficulty: fun
+Present-in: 0.53b 2002-12-29
+Content-type: text/x-html-body
+
+<p>
+PuTTY doesn't support the TELNET
+<a href="ftp://ftp.rfc-editor.org/in-notes/rfc856.txt">BINARY</a> option.
+<a href="ftp://ftp.rfc-editor.org/in-notes/rfc1123.txt">RFC 1123</a>
+(section 3.3.3)
+states that TELNET implementations MUST support it, so its absence is
+a bug.
