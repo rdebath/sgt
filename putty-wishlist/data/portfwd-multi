@@ -20,3 +20,12 @@ port is already in use by the first PuTTY. Running the Windows 2000
 
 <p>
 Therefore, there's probably nothing we can do about this.
+
+<p>
+<em>Update:</em> It's been suggested that it could be down to the
+<code>setsockopt(SO_REUSEADDR)</code> in <code>winnet.c:sk_newlistener()</code>.
+(Not verified.) Could we remove this, or even use
+<code><a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/winsock/winsock/using_so_exclusiveaddruse.asp">SO_EXCLUSIVEADDRUSE</a></code>?
+(Although this
+<a href="http://msdn.microsoft.com/library/en-us/winsock/winsock/socket_options.asp">isn't available on 95/98/Me</a>.)
+<br>More info: <code>OF46EEC8F3.5421D245-ON85256D7A.00644BCA-85256D7A.00669819@tisny.com</code>
