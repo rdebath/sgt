@@ -205,5 +205,7 @@ int main(int argc, char **argv) {
 	break;
     }
 
+    db_close();
+
     return 0;
 }

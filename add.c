@@ -4,13 +4,16 @@
 
 #include <stdio.h>
 #include <assert.h>
+#include <string.h>
+#include <unistd.h>
 #include "caltrap.h"
 
-int caltrap_add(int nargs, char **args, int nphysargs)
+void caltrap_add(int nargs, char **args, int nphysargs)
 {
     Date d;
     Time t;
     char msg[512];
+    struct entry ent;
 
     if (nargs < 1 || nargs > 2)
 	fatal(err_addargno);
@@ -35,7 +38,7 @@ int caltrap_add(int nargs, char **args, int nphysargs)
 	sfree(dfmt);
 	sfree(tfmt);
 	printf("Existing entries in the surrounding week:\n");
-	list_entries(d - 3, d + 4);
+	list_entries(d - 3, 0, d + 4, 0);
 	printf("Now enter message, on a single line,\n"
 	       "or just press Return to cancel the operation.\n"
 	       "> ");
@@ -48,5 +51,20 @@ int caltrap_add(int nargs, char **args, int nphysargs)
     if (!msg[0])
 	return;
 
-    db_add_entry(d, t, msg);
+    /*
+     * FIXME: Faff egregiously with this routine so as to work with
+     * the generality of the new entry structure.
+     */
+
+    ent.id = -1;		       /* cause a new id to be allocated */
+    ent.sd = ent.ed = d;
+    ent.st = ent.et = t;
+    if (t == NO_TIME) {
+	ent.ed++;
+	ent.st = ent.et = 0;
+    }
+    ent.length = ent.period = 0;
+    ent.type = T_EVENT;
+    ent.description = msg;
+    db_add_entry(&ent);
 }

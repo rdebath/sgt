@@ -4,6 +4,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <stdarg.h>
 #include <errno.h>
 #include "caltrap.h"
@@ -65,6 +66,11 @@ static void do_error(int code, va_list ap) {
       case err_time:
 	sp = va_arg(ap, char *);
 	sprintf(error, "unable to parse time `%.200s'", sp);
+	flags = PREFIX;
+	break;
+      case err_duration:
+	sp = va_arg(ap, char *);
+	sprintf(error, "unable to parse duration `%.200s'", sp);
 	flags = PREFIX;
 	break;
       case err_nodb:

@@ -1,118 +1,34 @@
 Caltrap wish list
 -----------------
 
-Immediate things that need doing:
-
- - Invent a better notation for time intervals (3d4h5m springs to
-   mind) and use it in cron.c.
-
- - Sort out how timeless all-day events fit into cron. And how they
-   fit into list - I suspect I broke them when I adapted
-   db_list_entries.
-
-Longer-term things I'd like:
-
  - TODO tracking
-    + TODOs have a start date (they will need doing after that time,
-      but aren't required yet)
+    + we have type TODO in the db schema; start using it.
+    + TODOs have a start date
     + And some have an end date (i.e. a deadline)
        * perhaps listing TODOs in order of _urgency_, i.e. closeness
 	 of deadline, might be an interesting experiment.
+    + NB some TODOs have no start date. We might need some sort of
+      special date meaning `since the dawn of time'. Hmmm.
 
- - Multiple-day events such as holidays.
+ - Multiple-day events.
+    + the db schema now supports these and we can hack them in using
+      --load, but we can't enter them and they don't show up on the
+      listing except as a start date.
+
+ - Use of the holiday types.
+    + these should highlight throughout their run.
 
  - Regular events (so that pub, pizza, Calling show up on my leisure
    calendar).
-    + These need to be easily cancelled, rearranged etc when
-      exceptions are made.
-       * In particular, I wonder what would happen if the Calling
-	 suddenly switched to the _other_ coset of Tuesdays? I think
-	 ideally the past should remain unchanged, and the future
-	 should shift. Which probably means regular events should
-	 have a start and an end date, or some such.
-    + Public holidays! Obviously those ought to be listed on any
-      self-respecting calendar.
+    + the db schema now supports these and we can hack them in using
+      --load, but we can't enter them.
+
+ - Concoct a script to set up UK public holidays for a given year.
+   This should be separate from Caltrap proper; probably a shell
+   script would be fine.
 
  - Coloured output via terminfo?
     + background colour highlights weekends?
     + something to highlight holidays?
     + simply colouring dates, times and entry text differently would
       do wonders for immediate legibility.
-
- - Improve the database schema.
-    + Changes and additional fields will be required to work with
-      some of the above features.
-    + Also some form of ID number per entry would be very useful, so
-      that entries can be conveniently deleted and modified.
-       * this doesn't want to be shown in the usual calendar
-	 displays; probably a `-v' flag makes it appear.
-       * aha, I think I've just figured out how to allocate IDs. We
-	 maintain a second database table containing ranges of used
-	 IDs. Then allocating a new one is a matter of finding the
-	 first unused ID, using it, and adjusting the table;
-	 reclaiming an ID is slightly more fiddly because you have
-	 to work out whether to merge into the previous entry, into
-	 the next, or both, but is still doable. Note that this
-	 depends critically on the fact that SQLite supports
-	 transactions, so it's a good job it does :-)
-
-----------------
-
-So. Proposed db schema:
-
-Table `ENTRIES' now contains a whole load of columns:
-
- - start date & time (may not be null)
- - end date & time (may be null)
- - length and repeat period (may be null)
- - description
- - type (event, various types of holiday, todo)
- - id
-
-Table `FREEIDS' contains columns:
-
- - first
- - last
-
-This solves a variety of current problems:
-
- - `timeless' all-day events are now events running from midnight to
-   midnight, which means they Just Work with all date&time formatted
-   stuff.
-
- - TODOs have a start date&time (default is when they were entered)
-   and a potential end.
-
- - Multiday events are supported.
-
- - Regular events are supported through the length and repeat
-   period. The Calling, for example, would be deemed to start on a
-   Tuesday at 9pm, have a length of 5 hours and a repeat period of
-   14 days. Should timing change in future, we can simply assign it
-   an end date and start a new Calling item from a later point.
-    * Weekend itself should be a regular event!
-
- - ID numbers allow the modification and deletion of existing
-   events.
-
-Other things that need doing along with this:
-
- - Holidays need to come in several varieties so that the colours
-   can override one another: weekends and bank holidays override
-   booked holidays.
-
- - Figuring out what's going on during a particular time period is
-   now much more fun due to lengthy and repeated events. We need
-   some fairly hefty post-db-query processing.
-
- - Being forced to enter an end date/time is going to be a pest.
-    + Meetings actually have end times.
-    + Appointments (eg dentist) should probably be considered
-      zero-length, since I get there at the right time and they go
-      on as long as they need.
-    + Parties ideally want to end at midnight, although actually
-      there's no reason they can't be zero-length as well.
-    + I think the default should be to make end time equal start
-      time. In general this feature won't be used anyway, since it's
-      mostly for multiday events. Might come in handy for meetings
-      too though.

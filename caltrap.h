@@ -31,10 +31,13 @@ enum {
     err_loadfmt,		       /* error parsing dump file */
     err_date,		               /* unable to parse date `%s' */
     err_time,		               /* unable to parse time `%s' */
+    err_duration,		       /* unable to parse duration `%s' */
     err_nodb,		               /* db doesn't exist, try --init */
     err_dbexists,		       /* db _does_ exist, danger for --init */
     err_noopendb,		       /* unable to open db */
     err_dberror,		       /* generic db error */
+    err_dbconsist,		       /* db consistency error */
+    err_dbfull,			       /* db out of entry IDs */
     err_cronpipe,		       /* error opening pipe for -C */
 };
 
@@ -43,15 +46,24 @@ enum {
  */
 typedef long Date;
 typedef long Time;
+typedef long long Duration;
 #define INVALID_DATE ((Date)-2)
 #define NO_DATE ((Date)-1)
 #define INVALID_TIME ((Time)-2)
 #define NO_TIME ((Time)-1)
+#define INVALID_DURATION ((Duration)-2)
 Date parse_date(char *str);
 Time parse_time(char *str);
+int parse_datetime(char *str, Date *d, Time *t);  /* returns zero on failure */
+Duration parse_duration(char *str);
+void add_to_datetime(Date *d, Time *t, Duration dur);
+Duration datetime_diff(Date d1, Time t1, Date d2, Time t2);
+int datetime_cmp(Date d1, Time t1, Date d2, Time t2);
 char *format_date(Date d);
 char *format_date_full(Date d);
 char *format_time(Time t);
+char *format_datetime(Date d, Time t);
+char *format_duration(Duration d);
 void now(Date *dd, Time *tt);
 Date today(void);
 
@@ -82,24 +94,24 @@ const char *const version;
 /*
  * add.c
  */
-int caltrap_add(int nargs, char **args, int nphysargs);
+void caltrap_add(int nargs, char **args, int nphysargs);
 
 /*
  * list.c
  */
-int list_entries(Date sd, Date ed);
-int caltrap_list(int nargs, char **args, int nphysargs);
+void list_entries(Date sd, Time st, Date ed, Time et);
+void caltrap_list(int nargs, char **args, int nphysargs);
 
 /*
  * cron.c
  */
-int caltrap_cron(int nargs, char **args, int nphysargs);
+void caltrap_cron(int nargs, char **args, int nphysargs);
 
 /*
  * dump.c
  */
-int caltrap_dump(int nargs, char **args, int nphysargs);
-int caltrap_load(int nargs, char **args, int nphysargs);
+void caltrap_dump(int nargs, char **args, int nphysargs);
+void caltrap_load(int nargs, char **args, int nphysargs);
 
 /*
  * main.c
@@ -107,15 +119,34 @@ int caltrap_load(int nargs, char **args, int nphysargs);
 char *dbpath;
 
 /*
+ * misc.c
+ */
+int name_to_type(const char *name);
+const char *type_to_name(int type);
+
+/*
  * Interface to database (sqlite.c, but potentially other back ends
  * some day).
  */
+struct entry {
+    int id;
+    Date sd, ed;
+    Time st, et;
+    Duration length;
+    Duration period;
+    int type;
+    char *description;
+};
+enum {
+    T_EVENT, T_HOL1, T_HOL2, T_HOL3, T_HOL4, T_TODO
+};
+
 void db_init(void);
-void db_add_entry(Date d, Time t, char *msg);
-typedef void (*list_callback_fn_t)(void *, Date, Time, char *);
-void db_list_entries(Date start, Time starttime,
-                     Date end, Time endtime,
+void db_add_entry(struct entry *);
+typedef void (*list_callback_fn_t)(void *, struct entry *);
+void db_list_entries(Date sd, Time st, Date ed, Time et,
                      list_callback_fn_t fn, void *ctx);
 void db_dump_entries(list_callback_fn_t fn, void *ctx);
+void db_close(void);
 
 #endif
