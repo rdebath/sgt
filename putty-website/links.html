@@ -60,14 +60,11 @@ we can't vouch for either its quality or its security.
   PowTTY</a>, a MUD client
 <li><a href="http://unfix.org/projects/ipv6/">
   PuTTY IPv6 build</a>
-<li><a href="http://js.ofasoft.com/amd64/putty_amd64.zip">
-  AMD64 Windows build</a> (and the
-  <a href="http://js.ofasoft.com/amd64/putty_diff.txt">diff</a> to 0.55)
 <li><a href="http://gecko.gc.maricopa.edu/~medgar/puttycyg/">
   PuTTYcyg</a>, to use PuTTY as a terminal for
   <a href="http://www.cygwin.com">Cygwin</a>
 <li><a href="http://kputty.sourceforge.net/">KPuTTY</a> and
-  <a href="http://www.defora.org/index.php?page=gputty">GPuTTY</a>,
+  <a href="http://www.defora.org/index.php?page=projects&project=GPuTTY">GPuTTY</a>,
   PuTTY-lookalike frontends for Unix
 <li><a href="http://bart.eu.org/putty-polish/">
   Polish localised version of PuTTY</a> (no source)
@@ -177,10 +174,10 @@ PuTTY attempts to conform to many specifications.  These include:
 
 <h3>Terminal specifications</h3>
 <ul>
-<li><a href="http://www.ecma-international.org/publications/standards/Ecma-035.htm">
+<li><a href="http://www.ecma-international.org/publications/standards/ECMA-035.htm">
   ECMA-35: Character Code Structure and Extension Techniques</a>
   (equivalent to ISO 2022)
-<li><a href="http://www.ecma-international.org/publications/standards/Ecma-048.htm">
+<li><a href="http://www.ecma-international.org/publications/standards/ECMA-048.HTM">
   ECMA-48: Control Functions for Coded Character Sets</a>
   (equivalent to ISO 6429)
 </ul>
@@ -193,6 +190,33 @@ PuTTY attempts to conform to many specifications.  These include:
 <li><a href="http://www.ietf.org/rfc/rfc1951.txt">
   RFC 1951: DEFLATE Compressed Data Format Specification</a>
   (this contains the details of the actual compressed data)
+</ul>
+
+<h3>Cryptographic algorithms</h3>
+<ul>
+<li><a href="http://csrc.nist.gov/publications/fips/fips46-3/fips46-3.pdf">
+  NIST FIPS 46-3</a> defines the DES block cipher.
+<li><a href="http://www.schneier.com/blowfish.html">
+  Bruce Schneier's page on the Blowfish block cipher</a>.
+<li><a href="http://csrc.nist.gov/publications/fips/fips197/fips-197.pdf">
+  NIST FIPS 197</a> defines the AES block cipher.
+<li><a href="http://www.ietf.org/rfc/rfc1321.txt">
+  RFC 1321</a> defines the MD5 hash function.
+<li><a href="http://csrc.nist.gov/publications/fips/fips180-2/fips180-2.pdf">
+  NIST FIPS 180-2</a> defines secure hash functions SHA-1 and SHA-512.
+<li><a href="http://www.ietf.org/rfc/rfc2104.txt">
+  RFC 2104</a> defines HMAC, a generic wrapper mechanism that
+  converts a hash function such as MD5 or SHA-1 into a secure MAC.
+<li><a href="http://csrc.nist.gov/publications/fips/fips186-2/fips186-2-change1.pdf">
+  NIST FIPS 186-2</a> defines the digital signature algorithm DSA
+  (also known as DSS).
+<li><a href="http://www.ietf.org/rfc/rfc3447.txt">
+  RFC 3447 (PKCS #1)</a> defines the basic RSA encryption algorithm
+  as well as a specific padding scheme to turn it into a set of well
+  defined operations on byte strings.
+<li>The precise form of Diffie-Hellman key exchange used in SSH-2 is
+  defined in the SSH-2 transport layer specification: see the SSH-2
+  section above.
 </ul>
 
 <p><hr>If you want to comment on this web site, see the
