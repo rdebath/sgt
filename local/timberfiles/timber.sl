@@ -1215,17 +1215,31 @@ define timber_fold() {
     % Otherwise, search backwards for the nearest ! or * line, and fold
     % whatever we hit first.
     if (what_char() == '!') {
+	timber_la("! [end]");
 	push_spot();
 	eol();
 	go_right_1();
 	attach = 0;
-	while (what_char() != '!' and what_char() != '*' and not eobp()) {
-	    !if (is_line_hidden()) {
-		attach = 1;
-		break;
+	if (()) {
+	    % Special case: for the `! [end]' line, only consider
+	    % headers after it to be potential-fold-stuff.
+	    while (what_char() == '+' and not eobp()) {
+		!if (is_line_hidden()) {
+		    attach = 1;
+		    break;
+		}
+		eol();
+		go_right_1();
 	    }
-	    eol();
-	    go_right_1();
+	} else {
+	    while (what_char() != '!' and what_char() != '*' and not eobp()) {
+		!if (is_line_hidden()) {
+		    attach = 1;
+		    break;
+		}
+		eol();
+		go_right_1();
+	    }
 	}
 	pop_spot();
 	!if (attach) {
@@ -1259,6 +1273,42 @@ define timber_fold() {
     push_spot();
     go_down_1();
     while (what_char() != c and not eobp()) {
+	set_line_hidden(1);
+	eol();
+	go_right_1();
+    }
+    pop_spot();
+}
+
+%}}}
+%{{{ timber_fold_msg(): fold up the current message
+
+% Fold up the message under the cursor.
+define timber_fold_msg() {
+    variable attach, c;
+
+    push_spot();
+    bol();
+
+    if (what_char() == 'F') {
+        pop_spot();
+        error("Not on a message");
+        return;
+    } else {
+        pop_spot();
+        bol();
+    }
+
+    % Search backwards for the nearest * line.
+    while (what_char() != '*' and not bobp()) {
+	go_up_1();
+	bol();
+    }
+
+    % Fold the message.
+    push_spot();
+    go_down_1();
+    while (what_char() != '*' and not eobp()) {
 	set_line_hidden(1);
 	eol();
 	go_right_1();
@@ -1724,8 +1774,8 @@ define timber_movemsgup() {
     variable here, top, bot, fbuf, tbuf;
 
     here = create_user_mark();
-    ERROR_BLOCK { goto_user_mark(here); }
-    EXIT_BLOCK { goto_user_mark(here); }
+    %ERROR_BLOCK { goto_user_mark(here); }
+    %EXIT_BLOCK { goto_user_mark(here); }
     % Mark the current message.
     bol();
     while (what_char != '*' and not bobp()) { go_up_1(); bol(); }
@@ -1767,7 +1817,7 @@ define timber_movemsgup() {
 
     % Fold the message we have just moved.
     go_up_1();
-    timber_fold();
+    timber_fold_msg();
 }
 
 %}}}
@@ -1824,7 +1874,7 @@ define timber_movemsgdown() {
 
     % Fold the message we have just moved.
     go_up_1();
-    timber_fold();
+    timber_fold_msg();
 }
 
 %}}}
