@@ -12,4 +12,4 @@ protocol which we have not yet got round to supporting.
 <p>
 <b>SGT</b>: The initial IETF draft of the ssh.com agent
 protocol is available here:
-<a href="http://www.ietf.org/internet-drafts/draft-ietf-secsh-agent-02.txt">draft-ietf-secsh-agent-02.txt</a>
+<a href="http://tools.ietf.org/wg/secsh/draft-ietf-secsh-agent/">draft-ietf-secsh-agent</a>

@@ -21,7 +21,8 @@ have not taken into account PuTTY's cross-platform nature.
 In SSH-2, Kerberos is supported through
 <a href="http://www.faqs.org/faqs/kerberos-faq/general/section-84.html">
 GSSAPI</a>; there is an expired Internet-Draft
-(<tt>draft-ietf-secsh-gsskeyex-08</tt>) describing GSSAPI key exchange
+(<tt><a href="http://tools.ietf.org/wg/secsh/draft-ietf-secsh-gsskeyex/">draft-ietf-secsh-gsskeyex</a></tt>)
+describing GSSAPI key exchange
 and user authentication. (Some of the patches here appear to be based
 on earlier versions of this specification, for instance the userauth
 method "gssapi".)
