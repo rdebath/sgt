@@ -68,4 +68,10 @@ conversation is:
 ... encrypted, successful connection ....
 </pre>
 
-
+<p>Another user has experimented with this, and concluded that the problem is
+that the proxy insists that the authentication scheme be "<code>Basic</code>"
+rather than "<code>basic</code>".
+<a href="ftp://ftp.rfc-editor.org/in-notes/rfc2617.txt">RFC 2617</a>
+states that the scheme token is case-insensitive, but in the interests of
+being conservative in what we send, PuTTY should probably use
+"<code>Basic</code>".
