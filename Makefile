@@ -3,7 +3,7 @@ COMPILE = $(CC) $(PS2) $(CFLAGS) -I. -MD -c -o $@ $<
 sdlgames: selector.o linuxrc.o nort.o sumo.o \
           sdlstuff.o game256.o swash.o beebfont.o data.o utils.o \
 	  ntris.o ntrissdl.o rocket.o rgraph.o
-	$(CC) $(LFLAGS) -o $@ $^ -lSDL -lpthread
+	$(CC) $(LFLAGS) -o $@ $^ -lSDL -lpthread -lm
 
 selector.o: selector.c; $(COMPILE)
 sumo.o: sumo/sumo.c; $(COMPILE) -Dmain=sumo_main
