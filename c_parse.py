@@ -416,8 +416,11 @@ def parse(lex, errfunc=defaulterrfunc):
                 self.eat(lt_lbrace)
                 n.append(self.struct_declaration_list())
                 self.eat(lt_rbrace)
-            elif bracemandatory:
-                self.error(err_expected_token(lt_lbrace))
+            else:
+                if bracemandatory:
+                    self.error(err_expected_token(lt_lbrace))
+                else:
+                    n.append(None)
             return n
 
         def struct_declaration_list(self):
@@ -836,8 +839,7 @@ def parse(lex, errfunc=defaulterrfunc):
                     self.eat(lt_lparen)
                     m = self.node(pt_postfix_expression)
                     m.append(n)
-                    if self.peektype() != lt_rparen:
-                        m.append(self.argument_expression_list())
+                    m.append(self.argument_expression_list())
                     self.eat(lt_rparen)
                     n = m
                 elif t == lt_dot or t == lt_arrow:
@@ -857,6 +859,8 @@ def parse(lex, errfunc=defaulterrfunc):
         
         def argument_expression_list(self):
             n = self.node(pt_argument_expression_list)
+            if self.peektype() == lt_rparen:
+                return n # empty list
             n.append(self.assignment_expression())
             while self.peektype() == lt_comma:
                 self.eat(lt_comma)
@@ -867,7 +871,7 @@ def parse(lex, errfunc=defaulterrfunc):
             t = self.peektype()
             if t == lt_increment or t == lt_decrement:
                 n = self.node(pt_unary_expression)
-                n.append(t)
+                n.append(self.get())
                 n.append(self.unary_expression())
                 return n
             elif t == lt_sizeof:

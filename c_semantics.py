@@ -9,19 +9,10 @@
 
 # Big remaining FIXMEs are ...
 #
-# - Collecting variables. Nested scopes; find previous declaration and
-#   warn/diagnose if it's redeclared; parse a primary_expression/identifier
-#   by looking up the variable in the relevant scope. (NB we can't just
-#   complain immediately if it's undeclared; we have to faff because it might
-#   be an implicitly declared external function.) Careful of default storage
-#   classes (different inside a function) and tentative definitions at
-#   top level.
+# - Castability.
 #
-# - Structure and union declarations.
-#
-# - Postfix expressions. Array dereferences are easy (we can already do
-#   binary+ and unary*), but function calls and struct/union member lookups
-#   are more fun.
+# - Type unification (filling in blanks in parameter lists, adding dimension
+#   to unspecified-length arrays).
 
 import string
 
@@ -87,6 +78,7 @@ sc_global = _enum()
 sc_static = _enum()
 sc_auto = _enum()
 sc_register = _enum()
+sc_none = _enum()
 
 # Special array dimensions.
 array_unspecified = -1
@@ -106,6 +98,12 @@ op_deref = _enum() # (operand)
 op_if = _enum() # (condition, thenclause, elseclause)
 op_while = _enum() # (condition, loopbody)
 op_for = _enum() # (initialiser, test, increment, loopbody)
+op_preinc = _enum()
+op_postinc = _enum()
+op_predec = _enum()
+op_postdec = _enum()
+op_structmember = _enum() # (operand, uid, s_or_u, membernumber)
+op_funcall = _enum() # (function, argumenttuple)
 op_END = _enum()
 
 def _sortt(list):
@@ -130,10 +128,12 @@ class typesystem:
     #                 may be (0,t_ellipsis). Argument types may also be
     #                 (0,t_unknown); the number of arguments itself may also
     #                 be func_unspecified.)
+    #   - t_struct (followed by a structure uid)
+    #   - t_union (followed by a union uid)
 
     def __init__(self, target):
         self.uniqueid = 0
-        self.typedefs = {}
+        self.structures = {}
         self.target = target
 
     def basictype(self, t, quals):
@@ -152,6 +152,25 @@ class typesystem:
         return (0, t_function, returntype, len(args), tuple(args))
     def ellipsis(self):
         return (0, t_ellipsis)
+    structunionmap = { lt_struct: t_struct, lt_union: t_union }
+    structunionbackmap = { t_struct: lt_struct, t_union: lt_union }
+    def structtype(self, s_or_u, uid):
+        return (0, self.structunionmap[s_or_u], uid)
+
+    def mkuid(self):
+        self.uniqueid = self.uniqueid + 1
+        return self.uniqueid
+    def mkstruct(self, uid, s_or_u, members):
+        self.structures[(s_or_u,uid)] = members
+    def findstruct(self, uid, s_or_u):
+        if self.structures.has_key((s_or_u,uid)):
+            return self.structures[(s_or_u,uid)]
+        else:
+            return None
+    def structfromtype(self, type):
+        if self.structunionbackmap.has_key(type[1]):
+            return self.findstruct(type[2], self.structunionbackmap[type[1]])
+        return None
 
     typenames = {
     t_void: "void",
@@ -178,6 +197,8 @@ class typesystem:
     t_idouble: "imaginary double",
     t_ildouble: "imaginary long double",
     t_ellipsis: "ellipsis",
+    t_struct: "struct",
+    t_union: "union",
     t_unknown: "unknown type"}
 
     def str(self, type):
@@ -208,17 +229,33 @@ class typesystem:
                     s = s + self.str(i)
                     comma = 1
             s = s + ") returning " + self.str(type[2])
+        elif type[1] == t_struct or type[1] == t_union:
+            s = s + self.typenames[type[1]] + "(" + str(type[2]) + ")"
+            members = self.findstruct(self.structunionbackmap[type[1]],type[2])
         else:
             s = s + self.typenames[type[1]]
         return s
 
-    def addtypedef(self, name, type):
-        self.typedefs[name] = type
-    def findtypedef(self, name, quals):
-        tuple = self.typedefs[name]
-        # Add in the extra type qualifiers
-        tuple2 = (tuple[0] | quals,) + tuple[1:]
-        return tuple2
+    def display(self):
+        for i in self.structures.keys():
+            print self.typenames[self.structunionmap[i[0]]], i[1], ":",
+            members = self.structures[i]
+            if members:
+                print "{",
+                comma = 0
+                for i in members:
+                    if comma: print ",",
+                    print i[1], ":", self.str(i[0]),
+                    comma = 1
+                print "}"
+            else:
+                print "incomplete"
+
+
+    def qualify(self, type, quals):
+        # Add in extra type qualifiers
+        ret = (type[0] | quals,) + type[1:]
+        return ret
 
     inttypes = [t_char, t_schar, t_uchar, t_short, t_ushort, t_bfint, t_int,
     t_uint, t_long, t_ulong, t_longlong, t_ulonglong, t_bool]
@@ -252,6 +289,13 @@ class typesystem:
     def isunsigned(self, type):
         "Determine whether a type is unsigned."
         return self.unsignedtypes.has_key(type[1])
+    def isfunction(self, type):
+        "Determine whether a type is a function."
+        return type[1] == t_function
+
+    def isarray(self, type):
+        "Determine whether a type is a function."
+        return type[1] == t_array
 
     def referenced(self, type):
         "Return the referenced type of a pointer, or None if not a pointer."
@@ -259,6 +303,47 @@ class typesystem:
             return type[2]
         else:
             return None
+
+    def transmogrify(self, type):
+        "Transmogrify function types into function pointer types, and\n"\
+        "turn array types into pointers to their element type."
+        if type[1] == t_array:
+            # Merge qualifiers in from the original type.
+            elttype = (type[0] | type[2][0],) + type[2][1:]
+            # Now make a pointer to that.
+            return self.ptrtype(elttype, 0)
+        elif type[1] == t_function:
+            # Just make a pointer.
+            return self.ptrtype(type, 0)
+        # Neither an array nor a function. Do nothing.
+        return type
+
+    def returned(self, type):
+        "Return the returned type of a function, or None if not a function."
+        if type[1] == t_function:
+            return type[2]
+        else:
+            return None
+    def isvariadic(self, type):
+        "Determine whether a function type is explicitly variadic."
+        return type[3] != func_unspecified and type[4][type[3]-1][1] == t_ellipsis
+    def nargs(self, type):
+        "Return the number of arguments of a function, or\n"\
+        "func_unspecified. Can return None if not a function.\n"\
+        "For variadic functions, returns the _minimum_ argument count."
+        if type[1] == t_function:
+            return type[3] - self.isvariadic(type)
+        else:
+            return None
+    def argument(self, type, n):
+        "Return an argument type of a function, or None if not a function."
+        if type[1] == t_function:
+            return type[4][n]
+        else:
+            return None
+    def isunknown(self, type):
+        "Determine whether a type (e.g. of a function argument) is unknown."
+        return type[1] == t_unknown
 
     def intcontains(self, type1, type2):
         "Determine whether integer type2 can hold all the values of type1."
@@ -341,6 +426,24 @@ class err_generic_semantic_error:
 class err_deref_nonpointer(err_generic_semantic_error):
     def __init__(self):
         self.message = "attempt to dereference a non-pointer"
+class err_arrow_nonpointer(err_generic_semantic_error):
+    def __init__(self):
+        self.message = "attempt to apply `->' operator to a non-pointer"
+class err_call_nonfnptr(err_generic_semantic_error):
+    def __init__(self):
+        self.message = "attempt to make a function call to a non-function-pointer"
+class err_structure_nosuchmember(err_generic_semantic_error):
+    def __init__(self, membername):
+        self.message = "structure type has no field called `"+membername+"'"
+class err_narg_mismatch(err_generic_semantic_error):
+    def __init__(self, variadic, funccount, callcount):
+        self.message = "function of " + "%d"%funccount
+        if variadic:
+            self.message = self.message + " or more"
+        self.message = self.message + " arguments called with " + "%d"%callcount
+class err_undecl_ident(err_generic_semantic_error):
+    def __init__(self, membername):
+        self.message = "undeclared identifier `"+membername+"'"
 class err_assign_nonlval(err_generic_semantic_error):
     def __init__(self):
         self.message = "attempt to assign to a non-lvalue"
@@ -366,15 +469,23 @@ class err_multi_scq(err_generic_semantic_error):
 def defaulterrfunc(err):
     sys.stderr.write("<input>:" + "%d:%d: " % (err.line, err.col) + err.message + "\n")
 
-# Scopes for variables.
+# Scopes for variables, typedefs, struct and union tags, etc.
 
 class scope:
     "Holding class to store variable declarations/definitions."
-    def __init__(self, defsc, sclist, parent):
+    def __init__(self, defsc, sclist, parent, types=None):
         self.defaultsc = defsc # default storage class
         self.allowedsc = sclist # allowed storage classes
         self.parent = parent # containing scope
+        if parent != None:
+            self.types = parent.types
+        else:
+            self.types = types # type system
         self.dict = {}
+        self.typedefs = {}
+        self.structdict = {}
+        self.uniondict = {}
+        self.sudict = {lt_struct: self.structdict, lt_union: self.uniondict}
     def findvar(self, varname):
         if self.dict.has_key(varname):
             return self, self.dict[varname]
@@ -383,20 +494,71 @@ class scope:
         else:
             return self.parent.findvar(varname)
     def addvar(self, varname, stg, type):
-        # FIXME: merge duplicate declarations
+        if self.dict.has_key(varname):
+            FIXME() # merge duplicate declarations
         self.dict[varname] = (stg, type)
+
+    def addtypedef(self, name, type):
+        self.typedefs[name] = type
+    def findtypedef(self, name, quals):
+        if self.typedefs.has_key(name):
+            type = self.typedefs[name]
+            return self.types.qualify(type, quals)
+        elif self.parent != None:
+            return self.parent.findtypedef(name, quals)
+        else:
+            return None
+
+    def defstructtag(self, s_or_u, name, members):
+        d = self.sudict[s_or_u]
+        if d.has_key(name):
+            uid = d[name]
+            if self.types.findstruct(uid, s_or_u):
+                return 0 # failure
+        else:
+            uid = self.types.mkuid()
+            d[name] = uid
+        self.types.mkstruct(uid, s_or_u, members)
+        return 1
+    def findstructtag(self, s_or_u, name, create=1):
+        d = self.sudict[s_or_u]
+        if d.has_key(name):
+            return self.types.structtype(s_or_u, d[name])
+        else:
+            if self.parent != None:
+                ret = self.parent.findstructtag(s_or_u, name, 0)
+            else:
+                ret = None
+            if ret != None:
+                return ret
+            elif create:
+                uid = self.types.mkuid()
+                d[name] = uid
+                return self.types.structtype(s_or_u, d[name])
+            else:
+                return None # failure
+
+    def display(self):
+        for i in self.dict.keys():
+            print "decl", i,
+            j = self.dict[i]
+            if j[0] == None:
+                print "(no-storage)",
+            else:
+                print lex_names[j[0]],
+            print self.types.str(j[1])
 
 # The actual semantic analysis phase.
 
 class semantics:
     "Class to perform, and hold the results of, semantic analysis of a C\n"\
     "translation unit."
-    
+
     def __init__(self, parsetree, target, errfunc=defaulterrfunc):
         self.functions = []
-        self.topdecls = scope(sc_extern, [sc_extern,sc_global,sc_static], None)
 	self.target = target
         self.types = typesystem(target)
+        self.topdecls = scope(sc_extern, [sc_extern,sc_global,sc_static], None, self.types)
         self.errfunc = errfunc
         try:
             self.do_tran_unit(parsetree)
@@ -409,13 +571,8 @@ class semantics:
         raise error
 
     def display(self):
-        for i in self.topdecls:
-            print "topdecl", i[0],
-            if i[1] == None:
-                print "(no-storage)",
-            else:
-                print lex_names[i[1]],
-            print self.types.str(i[2])
+        self.types.display()
+        self.topdecls.display()
 
     def do_tran_unit(self, parsetree):
         # Proceed through a translation_unit.
@@ -489,7 +646,7 @@ class semantics:
     pt_unary_expression: 1, pt_cast_expression: 1, pt_binary_expression: 1,
     pt_conditional_expression: 1, pt_assignment_expression: 1}
 
-    def expr(self, scope, exp):
+    def expr(self, scope, exp, funccontext=0, wholevarcontext=0):
 	# Process an expression.
 	# Return a tuple (type, value, lvalue, tree).
 	# `type' describes the intrinsic type of the expression (there will
@@ -535,30 +692,117 @@ class semantics:
 	    elif exp.list[0].type == lt_ident:
                 s, v = scope.findvar(exp.list[0].text)
                 if v == None:
-                    # Undeclared identifiers are bad news. Normally they're
-                    # simply outright illegal. In a function call context,
-                    # though, they cause an implicit declaration of the
-                    # identifier as an unprototyped int-returning extern
-                    # function.
-                    raise "FIXME: undeclared identifier, should handle sanely"
-                return v[1], None, 1, optree(op_variable, s, exp.list[0].text)
-	    elif exp.list[0].type == pt_charconst:
+                    # Undeclared identifiers are normally simply outright
+                    # illegal. In a function call context, though, they
+                    # cause an implicit declaration of the identifier as
+                    # an unprototyped int-returning extern function.
+                    if funccontext:
+                        FIXME() # implicit declaration of function
+                    else:
+                        self.error(exp, err_undecl_ident(exp.list[0].text))
+                # Fix up types. Functions and arrays must become pointers
+                # unless we're in whole-variable context.
+                type = v[1]
+                if not wholevarcontext:
+                    type = self.types.transmogrify(type)
+                return type, None, 1, optree(op_variable, s, exp.list[0].text)
+	    elif exp.list[0].type == lt_charconst:
                 raise "FIXME: can't parse char constants yet"
-	    elif exp.list[0].type == pt_stringconst:
+	    elif exp.list[0].type == lt_stringconst:
                 raise "FIXME: can't parse string constants yet"
-	    elif exp.list[0].type == pt_floatconst:
+	    elif exp.list[0].type == lt_floatconst:
                 raise "FIXME: can't parse float constants yet"
 	    else:
                 assert 0, "unexpected node in primary_expression"
 	elif exp.type == pt_postfix_expression:
-            raise "FIXME: can't handle postfix expressions yet"
+            if exp.list[0].type == pt_type_name:
+                operand = self.expr(scope, exp.list[0])
+                raise "FIXME: C9X (type_name){initializer_list} NYI"
+            elif exp.list[1].type in [lt_increment, lt_decrement]:
+                operand = self.expr(scope, exp.list[0])
+                if exp.list[1].type == lt_increment:
+                    op = op_postinc
+                else:
+                    op = op_postdec
+                if not operand[2]:
+                    self.error(exp, err_assign_nonlval())
+                lt, rt, outt = self.types.usualarith(operand[0], operand[0])
+                if outt == None:
+                    raise "Arrgh, usualarith died! Shouldn't happen."
+                if operand[0] != outt: operand = self.typecvt(operand, outt)
+                return operand[0], None, 0, optree(op, operand[0], operand)
+            elif exp.list[1].type == pt_argument_expression_list:
+                # For _this_ recursive call to expr, we set the `funccontext'
+                # parameter, because a pure identifier at the next level down
+                # gets special treatment if it's undeclared: any other
+                # undeclared identifier is shot on sight, but this one is
+                # implicitly declared as an unprototyped extern function
+                # returning int.
+                operand = self.expr(scope, exp.list[0], funccontext=1)
+                # Now we must look up the type of the function, and perform
+                # type conversions on each argument before constructing the
+                # final optree.
+                functype = self.types.referenced(operand[0])
+                if functype == None or not self.types.isfunction(functype):
+                    self.error(exp, err_call_nonfnptr())
+                rettype = self.types.returned(functype)
+                nargs = self.types.nargs(functype)
+                npar = len(exp.list[1].list)
+                variad = self.types.isvariadic(functype)
+                # If the function is prototyped, check the argument count.
+                if nargs != func_unspecified:
+                    if npar != nargs and (npar < nargs or not variad):
+                        self.error(exp, err_narg_mismatch(variad, nargs, npar))
+                # Evaluate each argument and convert to a sensible type.
+                # (For arguments whose type is given in the prototype, this
+                # is a simple implicit cast. For others, FIXME, we must be
+                # a bit more flexible.)
+                argexprs = ()
+                for i in range(npar):
+                    arg = self.expr(scope, exp.list[1].list[i])
+                    if i >= nargs:
+                        FIXME() # Argument to a variadic function.
+                    elif nargs == func_unspecified:
+                        FIXME() # Argument to an unprototyped function.
+                    else:
+                        type = self.types.argument(functype, i)
+                        if not self.types.isunknown(type):
+                            arg = self.typecvt(arg, type, 0)
+                        else:
+                            FIXME() # Argument to a partially prototyped func
+                return rettype, None, 0, optree(op_funcall, operand, argexprs)
+            elif exp.list[1].type in [lt_dot, lt_arrow]:
+                operand = self.expr(scope, exp.list[0])
+                structtype = operand[0]
+                if exp.list[1].type == lt_arrow:
+                    structtype = self.types.referenced(structtype)
+                    if structtype == None:
+                        self.error(exp, err_arrow_nonpointer())
+                    operand = (structtype, None, 1, optree(op_deref, operand))
+                structure = self.types.structfromtype(structtype)
+                for i in range(len(structure)):
+                    member = structure[i]
+                    if member[1] == exp.list[2].text:
+                        break
+                else:
+                    self.error(exp, err_structure_nosuchmember(exp.list[2].text))
+                ret = member[0], None, operand[2], \
+                optree(op_structmember, operand, structure, i)
+                return ret
+            else:
+                operand = self.expr(scope, exp.list[0])
+                raise "FIXME: can't handle array dereferences yet"
 	elif exp.type == pt_unary_expression:
             if exp.list[0].type == lt_times:
                 operand = self.expr(scope, exp.list[1])
                 desttype = self.types.referenced(operand[0])
                 if desttype == None:
                     self.error(exp, err_deref_nonpointer())
-                return desttype, None, 1, optree(operand)
+                # Transmogrify types: function -> function ptr, and
+                # array -> ptr to element type.
+                if not wholevarcontext:
+                    desttype = self.types.transmogrify(desttype)
+                return desttype, None, 1, optree(op_deref, operand)
             else:
                 #  increment decrement
                 #  sizeof
@@ -592,7 +836,7 @@ class semantics:
 	    assert 0, "unexpected node in expression"
 
     def typename(self, tn, scope):
-        stg, fnspecs, basetype = self.do_declspecs(tn.list[0])
+        stg, fnspecs, basetype = self.do_declspecs(tn.list[0], scope)
         t, id = self.do_declarator(tn.list[1], scope, basetype)
         assert stg == None and fnspecs == {}
         assert id == None # this must be an abstract declarator
@@ -638,9 +882,13 @@ class semantics:
         # qualifiers. It's illegal to have them on nonfunctions.
         specs = decl.list[0]
         assert specs.type == pt_declaration_specifiers
-        stg, fnspecs, basetype = self.do_declspecs(specs)
+        stg, fnspecs, basetype = self.do_declspecs(specs, scope)
         # We now have our base type. Go through the declarators processing
         # each one to create derived variants from the base type.
+        if len(decl.list) < 2:
+            # FIXME: absence of declarations is OK when it's `struct Foo;'
+            # but not OK when it's just `int;'. The former has an effect.
+            return # there were no declarations
         assert decl.list[1].type == pt_init_declarator_list
         for i in decl.list[1].list:
             assert i.type == pt_init_declarator
@@ -649,11 +897,11 @@ class semantics:
             t, id = self.do_declarator(dcl, scope, basetype)
             assert id != None # this declarator may not be abstract
             if stg == lt_typedef:
-                self.types.addtypedef(id.text, t);
+                scope.addtypedef(id.text, t);
             else:
                 scope.addvar(id.text, stg, t)
 
-    def do_declspecs(self, specs):
+    def do_declspecs(self, specs, scope):
         stg = None
         typequals = 0
         fnspecs = {}
@@ -683,16 +931,46 @@ class semantics:
             if which == t_bfint: which = t_int
             basetype = self.types.basictype(which, typequals)
         elif sts == (pt_struct_or_union_specifier,):
-            basetype = self.structuniontype(tspec)
+            basetype = self.structuniontype(tspec, scope)
         elif sts == (pt_enum_specifier,):
             basetype = self.enumtype(tspec)
         elif sts == (lt_typedefname,):
-            basetype = self.types.findtypedef(tspec.text, typequals)
+            basetype = scope.findtypedef(tspec.text, typequals)
         else:
             self.error(specs, err_invalid_type(typespecs))
         return stg, fnspecs, basetype
 
-    def do_declarator(self, dcl, scope, t):
+    def structuniontype(self, typespec, vscope):
+        # Convert a pt_struct_or_union_specifier into a structure type.
+        if typespec.list[1] == None:
+            # Name is left blank, so a list must be specified. This
+            # type is unique to the declaration: contrive a unique name.
+            name = "+" + str(self.uniqueids)
+            self.uniqueids = self.uniqueids + 1
+        else:
+            name = typespec.list[1].text
+        # We have the structure name. See if the structure is defined.
+        if typespec.list[2] != None:
+            # Create the structure tag, to ensure that structure types
+            # can self-refer.
+            vscope.findstructtag(typespec.list[0].type, name)
+            # Process the list of structure members, in a subscope.
+            subscope = scope(sc_none, [sc_none], vscope)
+            decls = typespec.list[2]
+            members = ()
+            for decl in decls.list:
+                stg, fnspecs, basetype = self.do_declspecs(decl.list[0], subscope)
+                for dcl in decl.list[1].list:
+                    if len(dcl.list) > 1:
+                        FIXME() # bitfields not yet supported
+                    t, id = self.do_declarator(dcl.list[0], subscope, basetype)
+                    members = members + ((t, id.text),)
+            if not vscope.defstructtag(typespec.list[0].type, name, members):
+                FIXME() # attempted to redefine structure in same scope
+        type = vscope.findstructtag(typespec.list[0].type, name)
+        return type
+
+    def do_declarator(self, dcl, vscope, t, argscope=None):
         while 1:
             # Process a declarator
             if dcl.list[0].type == pt_pointer:
@@ -727,11 +1005,15 @@ class semantics:
                     elif i.type == pt_parameter_type_list:
                         # Function with genuine prototype.
                         args = []
+                        if argscope == None:
+                            argscope = scope(sc_auto, [sc_auto,sc_register], vscope)
                         for j in i.list:
                             if j.type == pt_parameter_declaration:
-                                argstg, argfnspecs, argbasetype = self.do_declspecs(j.list[0])
+                                argstg, argfnspecs, argbasetype = self.do_declspecs(j.list[0], argscope)
                                 if len(j.list) > 1:
-                                    argtype, argid = self.do_declarator(j.list[1], argbasetype)
+                                    argtype, argid = self.do_declarator(j.list[1], argscope, argbasetype)
+                                    if argid != None:
+                                        argscope.addvar(argid.text, argstg, argtype)
                                 else:
                                     argtype = argbasetype
                                 assert argstg == None and argfnspecs == {}
@@ -752,7 +1034,7 @@ class semantics:
                     else:
                         # Attempt to parse i as a constant expression with
                         # integer type.
-                        type, value, lvalue, tree = self.expr(scope, i)
+                        type, value, lvalue, tree = self.expr(vscope, i)
                         if value != None:
                             # We have a constant which is our array dimension.
                             # Cast it to type size_t and use it.
@@ -772,17 +1054,18 @@ class semantics:
 
     def do_function(self, funcdef):
 	assert funcdef.type == pt_function_definition
-	# funcdef.list gives declaration_specifiers, declarator,
-	# optional list of declarations of argument types, and
-	# finally a compound statement.
-        # FIXME: need a scope contained by topdecls, which will
-        # hold the arguments. Then pass _that_ scope to do_block
-        # instead of topdecls itself.
-	blk = self.do_block(self.topdecls, funcdef.list[3])
+        stg, fnspecs, basetype = self.do_declspecs(funcdef.list[0], self.topdecls)
+        assert funcdef.list[1].type == pt_declarator
+        argscope = scope(sc_auto, [sc_auto,sc_register], self.topdecls)
+        t, id = self.do_declarator(funcdef.list[1], self.topdecls, basetype, argscope)
+        if not self.types.isfunction(t):
+            FIXME() # function declaration with non-function declarator
+        # FIXME: go through potential list-of-oldstyle-argument-decls
+	blk = self.do_block(argscope, funcdef.list[3])
+        # FIXME: assign `value' of function
 
     def do_block(self, outerscope, blk):
 	assert blk.type == pt_compound_statement
-	decls = []
 	stmts = []
         blkscope = scope(sc_auto, [sc_auto,sc_register,sc_static], outerscope)
 	for i in blk.list:
@@ -790,7 +1073,7 @@ class semantics:
 		self.do_declaration(blkscope, i)
 	    else:
 		stmts.extend(self.do_statement(blkscope, i))
-	return optree(op_blk, decls, stmts)
+	return optree(op_blk, blkscope, stmts)
     
     def do_statement(self, blkscope, stmt):
         ret = []
