@@ -2,7 +2,7 @@ Summary: do_text() is mad in a Unicode world
 Class: wish
 Priority: medium
 Difficulty: tricky
-Content-type: text/h-html-body
+Content-type: text/x-html-body
 
 <p>
 The current internal interface used to draw text on screen, <code>do_text()
