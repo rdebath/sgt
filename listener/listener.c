@@ -26,6 +26,16 @@
  *  - `listener_cmdline' is a function called at startup with the
  *    program's command line.
  *
+ *  - `listener_init' is a function called just before setting up
+ *    the listening sockets.
+ *
+ *  - `listener_shutdown' is a function called just after closing
+ *    down the listening sockets.
+ *
+ *  - `listener_wndproc' is a function called to give the listener
+ *    a chance to see (and handle) messages sent to the hidden
+ *    window.
+ *
  *  - resource 200 should be an icon.
  */
 
@@ -41,6 +51,10 @@ extern char const *listener_appname;
 extern int listener_nports;
 extern int const *listener_ports;
 extern void listener_cmdline(char *cmdline);
+extern int listener_init(void);
+extern void listener_shutdown(void);
+extern int listener_wndproc(HWND hwnd, UINT message,
+                            WPARAM wParam, LPARAM lParam);
 extern int listener_newthread(SOCKET sock, int port, SOCKADDR_IN remoteaddr);
 
 HINSTANCE listener_instance;
@@ -121,6 +135,9 @@ DWORD WINAPI newthread(LPVOID param) {
 
 static LRESULT CALLBACK WndProc (HWND hwnd, UINT message,
                                  WPARAM wParam, LPARAM lParam) {
+    if (!listener_wndproc(hwnd, message, wParam, lParam))
+        return 0;                      /* pre-empt */
+
     switch (message) {
       case WM_DESTROY:
 	PostQuitMessage (0);
@@ -223,16 +240,22 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int show) {
                                   CW_USEDEFAULT, CW_USEDEFAULT,
                                   100, 100, NULL, NULL, inst, NULL);
 
-    setup_sockets();
+    if (listener_init()) {
 
-    ShowWindow (listener_hwnd, SW_HIDE);
+        setup_sockets();
 
-    while (GetMessage (&msg, NULL, 0, 0) == 1) {
-        TranslateMessage (&msg);
-        DispatchMessage (&msg);
+        ShowWindow (listener_hwnd, SW_HIDE);
+
+        while (GetMessage (&msg, NULL, 0, 0) == 1) {
+            TranslateMessage (&msg);
+            DispatchMessage (&msg);
+        }
+
+        cleanup_sockets();
+
+        listener_shutdown();
     }
 
-    cleanup_sockets();
     WSACleanup();
     return msg.wParam;
 }
