@@ -1,0 +1,9 @@
+Summary: Pass-through printing: option to go with Windows default printer
+Class: wish
+Difficulty: fun
+Priority: medium
+Content-type: text/x-html-body
+
+<p>
+It's been pointed out that having an option to go with the Windows default
+printer in Terminal &gt; Remote-controlled printing would be nice.

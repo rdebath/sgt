@@ -4,6 +4,7 @@ Difficulty: taxing
 Content-type: text/x-html-body
 Absent-in: 0.52
 Present-in: 2002-05-09
+Fixed-in: 2002-09-03
 
 <p>
 The magic we use to get a drop-down list of printers for our raw ANSI
@@ -14,14 +15,4 @@ them thoroughly yet. (The behaviour seems to depend on the version of
 Windows, so we need to test any proposed fix on a range of versions.)
 
 <p>
-Suggested fixes on the mailing list (that we've not already tried):
-<ul>
-<li><tt>007101c1d3ef$bcb24a10$32b0a8c0@eolo</tt>
-<li><tt>C705668A7052D411BB310000F803745D43673C@wendy.tarragon-et.co.uk</tt>
-  (<a href="http://www.mvps.org/windev/ptk/enumprint.html">referenced link</a>)
-<li><tt>38386625.1019686694@[192.168.0.100]</tt>
-</ul>
-
-<p>
-(While we're looking at this, it's been pointed out that having an
-option to go with the Windows default printer would be nice.)
+<em>Update:</em> fixed as of 2002-09-03.
