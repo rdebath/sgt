@@ -70,30 +70,41 @@ sub a_test ($@) {
 
 sub run_test {
     my $test = shift;
-    my $line;
-    for (@{$test->{cmd}}) {
-	$line++ and sleep 1;
-	my @wrong = run_cmd $test->{name}, $_;
-	return join ("",
-		     SEP ("Failed $test->{name} at line $line: '$_->{line}'"),
-		     map { sep } @wrong)
-	    if @wrong;
-    }
+    local $_ = shift @{$test->{cmd}} or return;
+    ++$test->{lineno};
+    my @wrong = run_cmd $test->{name}, $_;
+    return join ("",
+		 SEP ("Failed $test->{name} at line $test->{lineno}:"
+		      . " '$_->{line}'"),
+		 map { sep } @wrong)
+	if @wrong;
+    return $test if @{$test->{cmd}};
     return;
 }
 
 
-my @test;
+BEGIN {
+    my @test;
 
-sub test ($@) {
-    my $name = shift;
-    my @cmd = map { &a_cmd (@$_) } @_;
-    push @test, a_test $name, @cmd;
-}
+    sub test ($@) {
+	my $name = shift;
+	my @cmd = map { &a_cmd (@$_) } @_;
+	push @test, a_test $name, @cmd;
+    }
 
-END {
-    my @failure = map { run_test($_) } @test;
-    print @failure, SEP summary @failure, @test;
+    END {
+	my $ntests = @test;
+	my $nfailures = 0;
+	while (@test) {
+	    @test = map { run_test($_) } @test;
+	    my @failure = grep { not ref } @test;
+	    @test = grep { ref } @test;
+	    print @failure;
+	    $nfailures += @failure;
+	    sleep 1 if @test;
+	}
+	print SEP summary $nfailures, $ntests;
+    }
 }
 
 
