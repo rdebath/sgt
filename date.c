@@ -89,15 +89,13 @@ time_t unfmt_date(const char *buf)
 {
     struct tm tm;
 
-    if (6 == sscanf(buf, "%d-%d-%d %d:%d:%d",
+    if (6 != sscanf(buf, "%d-%d-%d %d:%d:%d",
 		    &tm.tm_year, &tm.tm_mon, &tm.tm_mday,
 		    &tm.tm_hour, &tm.tm_min, &tm.tm_sec)) {
-	tm.tm_year -= 1900;
-	tm.tm_mon--;
-    } else {
-	tm.tm_year = 1970;
-	tm.tm_mon = tm.tm_mday = tm.tm_hour = tm.tm_min = tm.tm_sec = 0;
+	return (time_t) (-1);  /* same error return as mktime() */
     }
 
+    tm.tm_year -= 1900;
+    tm.tm_mon--;
     return mktimegm(&tm);
 }
