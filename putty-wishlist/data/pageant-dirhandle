@@ -1,0 +1,33 @@
+Summary: Pageant keeps open handles on removeable media
+Class: semi-bug
+Content-type: text/x-html-body
+
+<p>
+We've had a couple of reports (e.g. on
+<a href="http://groups.google.co.uk/groups?selm=c3k42q%242936ve%241%40ID-30312.news.uni-berlin.de">comp.security.ssh</a>)
+that the Pageant process tends to keep hold of a directory handle to
+the directory of the last key loaded via the file selection GUI.
+
+<p>
+This causes trouble for people who keep keys on removeable media such
+as USB memory sticks, as Windows won't let them unmount and remove the
+device.
+
+<p>
+The following workarounds are said to work:
+<ul>
+<li>Load, or attempt to load, a second (dummy) key from somewhere else
+such as a fixed drive using the file selection GUI.
+<li>Don't use the file selection GUI at all - pass the path to the key
+on the Pageant command line.
+</ul>
+
+<p>
+We don't believe that the Pageant code itself keeps handles on
+anything particularly, so we suspect that the file selection GUI is
+keeping a handle behind our backs. The workarounds above bear out this
+hypothesis.
+
+<p>
+Suggestions for ways in which we could stop this being a problem
+welcome.
