@@ -1,0 +1,30 @@
+Summary: Option to use GUI dialogs for authentication
+Class: wish
+Priority: low
+Content-Type: text/x-html-body
+
+<p>
+Several people have asked for password/passphrase prompts etc to
+appear in dialogue boxes in Plink and/or PuTTY, rather than inlined
+into the terminal output. There are a couple of good reasons you might
+want to do this.
+
+<p>
+For instance, if you're using Plink with CVS but not using
+passphraseless keys or Pageant, the interface for typing your password
+is less than ideal (you have to find the relevant command window and
+type blind into it, apparently).
+
+<p>
+Similarly if we ever get a Plink/PuTTY mode where no terminal session
+is required (e.g. it's used for forwarding only).
+
+<p>
+Also, GUI popups provide some degree of assurance against spoofing
+attacks; with password/passphrase prompts in the same terminal window
+as everything else, it's not always easy to be sure that your password
+is going where you expect, whereas a dialog box is somewhat harder
+to spoof.
+
+<p>
+All optional, of course.
