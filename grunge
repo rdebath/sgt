@@ -16,8 +16,6 @@
 #  - Set Your Options (grogname and maybe others)
 #  - View MOTD.
 #  - View Edit Log.
-#  - Avoid a user's own contributions (or new items) being marked
-#    unread by default.
 #  - Graceful (naive-newbie-friendly) handling of nonexistence of
 #    config files.
 #  - Ability to use an external editor.
@@ -417,6 +415,11 @@ def pageitem(indexentry, item, override):
 class item:
     "holding class"
 
+our_seq_nos = {}
+
+def our_seq_no(seq):
+    our_seq_nos[seq] = 1
+
 def parseindex(index, items):
     contseq = -1
     conttime = -1
@@ -447,7 +450,11 @@ def parseindex(index, items):
 		contseq = e.sequence
 		conttime = e.timestamp
 		contitem = i
-	    i.uptodate = 0
+	    if our_seq_nos.has_key(e.sequence) == 1:
+		i.uptodate = 1
+		del our_seq_nos[e.sequence]
+	    else:
+		i.uptodate = 0
 	    i.newtext = 1
 	elif e.type == "C": # new continuation
 	    i.timestamp = e.timestamp
@@ -461,15 +468,25 @@ def parseindex(index, items):
 		conttime = e.timestamp
 		contin = i
 	    i.newtext = 1
+	    if our_seq_nos.has_key(e.sequence) == 1:
+		i.uptodate = 1
+		del our_seq_nos[e.sequence]
 	elif e.type == "R" or e.type == "E": # reply or edit
 	    i.timestamp = e.timestamp
-	    i.uptodate = 0
 	    i.newtext = 1
-	    if e.type == "E":
-		i.fileptr = 0 # effectively new
+	    if our_seq_nos.has_key(e.sequence) == 1:
+		i.uptodate = 1
+		del our_seq_nos[e.sequence]
+	    else:
+		i.uptodate = 0
+		if e.type == "E":
+		    i.fileptr = 0 # effectively new
 	elif e.type == "I": # new item
 	    i.timestamp = e.timestamp
 	    i.newtext = 1
+	    if our_seq_nos.has_key(e.sequence) == 1:
+		i.uptodate = 1
+		del our_seq_nos[e.sequence]
     return items
 
 def saveindex(filename, items, lastseq):
@@ -1286,7 +1303,8 @@ except socket.error, err:
     print "Socket error:", err[1]
     sys.exit(1)
 c.setsecret(secretpath)
-c.login(rcfile["userid"])
+userid = rcfile["userid"]
+c.login(userid)
 
 items, lastseq = loadindex(indexpath)
 items, lastseq = indexupdate(c, items, lastseq)
@@ -1327,12 +1345,12 @@ try:
 		        err = c.senddata([grogname] + text)
 		        if err != "":
 			    FIXME() # let's have an error page
-		        status = c.reply(itemid)
+		        status = c.reply(itemid, seqfn=our_seq_no)
 		    elif action[:4] == "cont":
 		        err = c.senddata([grogname] + text)
 		        if err != "":
 			    FIXME() # let's have an error page
-		        status = c.cont(itemid, subj)
+		        status = c.cont(itemid, subj, seqfn=our_seq_no)
 		    if status == "ok":
 			update_index = 1
 		        break
@@ -1362,7 +1380,7 @@ try:
 		    err = c.senddata([grogname] + text)
 		    if err != "":
 			FIXME() # let's have an error page
-		    status = c.newi(subject)
+		    status = c.newi(subject, seqfn=our_seq_no)
 		if status == "ok":
 		    update_index = 1
 		    break
