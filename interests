@@ -23,6 +23,7 @@ it through Perl on itself (`perl interests interests').
        + cryptography
        + security
        + algorithms
+          + true global optimisers
        + portability
        + protocol design
        + modularity
