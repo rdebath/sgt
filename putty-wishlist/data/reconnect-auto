@@ -1,0 +1,21 @@
+Summary: Reconnect automatically if connection goes down
+Class: wish
+Priority: low
+Depends: reuse-windows
+Depends: disconnect
+Difficulty: fun
+Content-type: text/x-html-body
+
+<p>
+Some people would like for PuTTY to have an option to automatically
+attempt to re-establish a session if it goes does unexpectedly.
+
+<p>
+We probably need to be able to <a href="disconnect.html">reliably
+detect</a> when disconnections were clean or not first. We'd probably
+also want to <a href="reuse-windows.html">re-use the same window</a>.
+
+<p>
+(Some people would like for us to
+<a href="reconnect-remember-password.html">remember the password</a> so
+they don't have to type it again, but we <em>won't</em> be doing that.)

@@ -8,3 +8,12 @@ Content-Type: text/x-html-body
 <p>
 Perhaps an inactive window should have a menu option to reactivate
 the session (like Duplicate Session but in the same window).
+
+<p>
+We've had one request for a "Duplicate + Kill" option. Perhaps this
+would be a sensible behaviour if the new "reconnect" option were
+invoked on a live session. (With suitable prompting, of course.)
+
+<p>
+(Some people would like this to happen
+<a href="reconnect-auto.html">automatically</a>.)
