@@ -1,0 +1,43 @@
+Summary: Support for Mazovia character set
+Class: wish
+Difficulty: taxing
+Priority: low
+Content-type: text/x-html-body
+
+<p>
+We've had a few requests to add a Polish character set called
+"Mazovia" to the available translations.
+
+<p>
+It's also known as CP620, but Polish versions of Windows don't appear
+to recognise this, so we'll have to add native support to PuTTY.
+
+<p>
+In order to do this we need a translation table from Mazovia code
+points to Unicode. We're almost in a position to do this now based on
+the <code>mazovia</code> translation table in
+<a href="http://mikolajj.republika.pl/files/ConvertCharset/Full_ConvertCharset.zip">this ZIP file</a>, but
+there are a couple of questions still to be answered:
+
+<ul>
+
+<li>Code point <code>0x9B</code>: corresponds to Polish currency
+zloty, symbol "z&#0142;", for which a single code point does not
+exist in Unicode. Plan to map this to U+FFFD REPLACEMENT CHARACTER
+(we're assured it's not very important).
+
+<li>Code point <code>0xA8</code>: the character table above indicates
+it's U+00BD INVERTED QUESTION MARK, but another table we've seen shows
+a glyph like U+00A7 SECTION SIGN. Which is correct?
+
+</ul>
+
+<p>
+More info: <a href="http://www.jastra.com.pl/klub/ogonki.htm">http://www.jastra.com.pl/klub/ogonki.htm</a>
+
+<p>
+References:
+<ul>
+<li>4090B793.9090502@talex.pl
+<li>000a01c3f0a9$3d701240$4501a8c0@waza.com.pl
+</ul>
