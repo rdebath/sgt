@@ -7,3 +7,8 @@ Content-type: text/plain
 If PuTTY starts up with its window unselected, something slightly
 odd can happen with the cursor: it doesn't revert from box to block
 when the window gains focus.
+
+JTN, 2003-01-23: Possibly related: I've also noticed that if PuTTY
+starts up without focus as a result of being run from `wf' (DoIt),
+on Win2K, it doesn't get a taskbar entry until it received focus
+(although it's visible on Alt-Tab).
