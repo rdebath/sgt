@@ -83,9 +83,11 @@ their usage instructions:
    folded up, this net should generate the polyhedron described in
    the input file.
 
-   This program is not yet terribly advanced. Its output quality is
-   low, and it does not automatically generate tabs for gluing the
-   faces together.
+   This program is not quite complete: although it draws tabs on the
+   net and ensures they do not overlap real faces, it does not yet
+   ensure that tabs do not overlap one another. It should be obvious
+   what to do if this happens, but it would be nicer if the program
+   prevented it.
 
 In the `examples' directory I supply a set of pre-generated point
 sets and polyhedron descriptions:
