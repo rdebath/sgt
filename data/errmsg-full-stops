@@ -8,4 +8,4 @@ Content-type: text/x-html-body
 It's been suggested that PuTTY's error messages should end in full stops,
 which they currently don't.
 <p>
-Patch: <20020927034005.GA2983@mailhaven.com>
+Patch: &lt;20020927034005.GA2983@mailhaven.com&gt;
