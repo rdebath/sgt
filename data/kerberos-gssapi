@@ -28,3 +28,7 @@ Patch (unreviewed): 1067597353.3fa23e29bf70c@webmail.technion.ac.il
 <p>
 Another patch <a href="http://sweb.cz/v_t_m/">here</a> (reviewed and found
 wanting).
+
+<p>
+Yet another patch, for "SSPI / GSS-API"
+<a href="http://rc.vintela.com/topics/putty/downloads/putty-0.56vrc0.1-2.patch">here</a> (new-BSD licence; unreviewed as yet).
