@@ -3,6 +3,7 @@ Class: bug
 Difficulty: fun
 Priority: medium
 Present-in: 2005-01-19
+Fixed-in: 2005-01-23
 Content-type: text/plain
 
 Within ssh.c, PuTTY uses a server channel number of (unsigned)(-1) to
