@@ -3,7 +3,7 @@ static unsigned long cubert(unsigned long N) {
     int as;
 
     x = T1 = T2 = 0;
-    as = 10;
+    as = 10;			       /* largest available power of 8 */
     T0 = 1 << (3*as);
     R = N;
 
