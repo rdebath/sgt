@@ -24,3 +24,8 @@ the desktop but that might break in the presence of multiple monitors.
 Further update: it's been suggested that GetWindowDC(NULL) should be
 fine in 99% of cases.
 <12250972734.20040408170548@kanargh.force9.co.uk>
+
+2004-Jul-25: I've experimentally committed this change to the
+snapshots. It does appear to basically work on Win98SE, to not
+obviously break anything, and to improve window placement. If it
+breaks your weird configuration, please let us know.
