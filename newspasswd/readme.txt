@@ -38,14 +38,15 @@ To install:
    /usr/local/lib/news then you will need to alter the pathname in
    the newspasswd-validate service file.
 
- - Install newspasswd-validator somewhere where all users can get at
-   it. (It's referenced by absolute pathname from the
-   newspasswd-validate service file, so it doesn't need to be on the
-   typical user's PATH.)
+ - Install newspasswd-validator somewhere where all users can read
+   and execute it, such as /usr/local/lib/news. (It's referenced by
+   absolute pathname from the newspasswd-validate service file, so
+   it doesn't need to be on the typical user's PATH.)
 
- - Install newspasswd-proxy where inetd can see it. Edit it so that
-   it mentions the right news server instead of the one I've
-   hardcoded into it.
+ - Install newspasswd-proxy somewhere where inetd can run it (so
+   it'll need to be readable and executable); /usr/local/lib/news
+   might be a good place, again. Edit it so that it mentions the
+   right news server instead of the one I've hardcoded into it.
 
  - Install `newspasswd' itself somewhere on the typical user's PATH.
 
