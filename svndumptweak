@@ -489,9 +489,10 @@ while revhdr != None:
     # Log the CVS revision numbers and revision log message.
     checker.log(revhdr, contents, fl)
     # Write out revision.
-    write_lump(fw, revhdr)
-    for lump in contents:
-	write_lump(fw, lump)
+    if len(contents) > 0:
+	write_lump(fw, revhdr)
+	for lump in contents:
+	    write_lump(fw, lump)
     # And loop round again.
     revhdr = newrevhdr
 
