@@ -46,8 +46,8 @@ Depends:
   implemented) before this one.  Space-separated list of filenames.
 
 Content-type:
-  The MIME content-type of the body of the message.  text/plain and text/html
-  are supported.
+  The MIME content-type of the body of the message.  text/plain and
+  text/x-html-body are supported.
 
 The body of the message contains a fragment of HTML that explains the bug
 in more detail.
