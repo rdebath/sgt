@@ -34,3 +34,57 @@ effect of unlocking nearby regions.
 
 <p>
 Message-Id: <code>&lt;200305240418.h4O4I6t19012@medusa01.cs.auckland.ac.nz&gt;</code>
+
+Bryan Kadzban adds:
+
+<blockquote><pre>
+But I found an entry in a blogs.msdn.com blog (yes, I know... ;-)) that
+points to a way to accomplish the same goals.  It says you can use the
+AWE APIs (Address Windowing Extensions) to get a page of physical memory
+that the kernel will never page to the swap file.
+
+There are a couple downsides, though.  Number one, it's only supported
+on Windows 2000 and up (2K Pro/Server, XP, and Server 2003).
+
+Number two, the user has to have the "Lock pages into memory" privilege
+enabled on their account on the local machine.  By default (on 2K Pro at
+least), the user list on this privilege is blank, which means that
+*nobody* has the needed privileges.  Admins would have to assign the
+privilege at install time, or pageant (or the ssh backend itself,
+actually... I wonder if that would be useful?) would not be able to
+allocate these pages.  It could still fall back to normal allocation in
+that case, though.
+
+Number three, you have to go and manually enable the SE_LOCK_MEMORY_NAME
+privilege in your code before using AllocatedUserPhysicalPages.  But
+that's not too difficult, and there's actually a sample that shows how
+to do it all.
+
+The API reference is available online at MSDN:
+
+http://msdn.microsoft.com/library/default.asp?url=/library/en-us/memory/base/add
+ress_windowing_extensions.asp
+
+and the sample is available also:
+
+http://msdn.microsoft.com/library/default.asp?url=/library/en-us/memory/base/awe
+_example.asp
+
+I might be able to provide a patch to implement this, if I reread both
+winpgnt.c and its supporting files a lot between now and when I hear
+back from you.  Right now, there's no obvious (to me) place in there
+where this method of allocating memory should go.
+
+Maybe what's needed is a generic "void *alloc_locked_pages(count)"
+function, that would be implemented in the various OS specific backends?
+Unix would malloc(count*sysconf(_SC_PAGESIZE)), then mlock().  Windows
+would go through all these contortions (on 2K and higher) or just malloc
+(on 9x or NT4).
+
+Of course this would have to be documented also, so that callers know
+that if they're running on 9x or NT4, the memory may not be locked.
+Which means that it may not be worth doing it, either.
+
+And obviously a different free()-type function would be required too.
+</pre></blockquote>
+<p>Message-ID: <42436579.9020707@kadzban.is-a-geek.net>
