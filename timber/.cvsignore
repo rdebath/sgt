@@ -1,1 +1,1 @@
-build timber *.notes
+build timber *.notes test*
