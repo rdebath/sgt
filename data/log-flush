@@ -6,7 +6,7 @@ Present-in: 0.55
 Fixed-in: 2004-08-13
 
 Perhaps we should occasionally flush the session log during a session
-`printable output only' and `all session output' logging modes, so
+in `printable output only' and `all session output' logging modes, so
 that the file on disc is at least vaguely up-to-date.
 
 This is done as of 2004-08-13. It incurs some performance overhead, of
