@@ -1,6 +1,6 @@
 # -*- mode: sh; mode: fold -*-
 # Simon Tatham's standardised chunk of .bashrc
-# $Revision: 1.22 $
+# $Revision: 1.23 $
 
 #{{{ I don't like .bash_history files. They wet their nests.
 unset HISTFILE
@@ -318,6 +318,19 @@ i() {
 x() {
   perl -e 'foreach $x (@ARGV) { printf "%11d = 0x%08x\n", $x, $x }' -- "$@"
 }
+#}}}
+#{{{ `rfc' as a quick shortcut to find RFCs
+
+rfc() {
+  local filename
+  if test "$1" = "index"; then
+    filename=rfc-index.txt
+  else
+    filename=rfc$1.txt
+  fi
+  wget -q -O - http://sunsite.org.uk/rfc/$filename | less
+}
+
 #}}}
 #{{{ screen has a bug about shells beginning with -. Work around it
 case $SHELL in
