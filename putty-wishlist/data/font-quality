@@ -1,0 +1,10 @@
+Summary: Ability to configure font quality (and support ClearType)
+Class: wish
+Priority: medium
+Difficulty: fun
+Content-Type: text/x-html-body
+
+<p>
+Ability to configure font quality (the fdwQuality parameter to
+CreateFont). Choices should include "antialiased",
+"non-antialiased", "ClearType", "default".

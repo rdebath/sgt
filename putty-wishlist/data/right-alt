@@ -1,0 +1,16 @@
+Summary: Support for Right Alt on keyboards which don't call it AltGr
+Class: wish
+Priority: medium
+Difficulty: tricky
+Content-Type: text/x-html-body
+
+<p>
+Users from countries (is it <em>only</em> the US?) that don't need
+the AltGr key might like to have an option that makes it work the
+same way as the left Alt key.
+
+<p>
+This would be easy to implement by means of a configuration option,
+but it would be nicer if we could somehow detect this property of
+the active keymap and automatically switch between that key being
+Right Alt and being AltGr.

@@ -1,0 +1,9 @@
+Summary: Ignore whitespace in the Host Name box
+Class: wish
+Priority: medium
+Difficulty: fun
+Content-Type: text/x-html-body
+
+<p>
+It might be generous if we skipped whitespace when parsing IP
+addresses or host names in the Host Name box.

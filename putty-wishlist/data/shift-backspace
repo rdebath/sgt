@@ -1,0 +1,13 @@
+Summary: Shift-Backspace should do the other of ^H and ^?
+Class: wish
+Priority: medium
+Difficulty: fun
+Content-Type: text/x-html-body
+
+<p>
+Perhaps Shift-Backspace could do whichever of ^H and ^? normal
+Backspace <em>isn't</em> doing. Apart from anything else this would make
+documentation of the Backspace functionality switch easier (we could
+invite users to try Shift-Backspace if just Backspace doesn't work,
+and this would be a clear indication that they needed to frob that
+switch).

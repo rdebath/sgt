@@ -1,0 +1,10 @@
+Summary: Make PSCP optionally log to stdout instead of stderr
+Class: wish
+Priority: medium
+Difficulty: fun
+Content-Type: text/x-html-body
+
+<p>
+PSCP should be able to send its log messages to stdout instead of
+stderr, since Windows doesn't provide any easy way to redirect
+stderr.

@@ -1,0 +1,9 @@
+Summary: Allow saving scrollback to a file
+Class: wish
+Priority: medium
+Difficulty: fun
+Content-Type: text/x-html-body
+
+<p>
+Allow saving of the current screen+scrollback state to a file. Or
+printing it, possibly.

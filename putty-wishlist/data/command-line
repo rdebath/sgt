@@ -1,0 +1,23 @@
+Summary: Better command line options
+Class: wish
+Priority: high
+Difficulty: tricky
+Content-type: text/x-html-body
+
+<p> The PuTTY tools have a pathetic set of command-line options.
+Among the things we should support but don't are:
+
+<ul>
+<li>
+Unified command-line handling between all the tools, including the
+GUI ones. (This is moderately tricky in itself, because we'd have to
+split up the single command line received by WinMain() into argc and
+argv.)
+<li>
+Command-line control of at least ciphers, SSH protocol, compression,
+port forwarding, and public-key authentication. Perhaps more.
+<li>
+As many of these options as possible should be command-line
+compatible with OpenSSH's corresponding options. The last thing we
+want to do is make life deliberately harder for people.
+</ul>

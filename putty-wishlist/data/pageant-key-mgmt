@@ -1,0 +1,28 @@
+Summary: Better key management in Pageant
+Class: wish
+Priority: medium
+Difficulty: tricky
+Depends: pageant-async
+Content-type: text/plain
+
+Pageant should offer a wider range of key management options.
+
+For a start, it should be possible to load a key but defer
+decrypting it. Pageant would report the existence of the key, but
+only when it was first actually used would it bother asking for the
+passphrase. Then the key would be decrypted, and subsequent requests
+could be fulfilled immediately.
+
+Once that's possible, it would also allow a key to expire after
+being present for a certain time (or perhaps after being unused for
+a certain time).
+
+It might be useful for Pageant to be able to remember which keys it
+has loaded and reload them automatically on restart (though, again,
+this is probably only useful once we can defer decryption).
+
+It might be handy to have special command-line options for Pageant
+which would cause to start up, send commands to the primary Pageant,
+and shut down again. We can already add keys to the primary Pageant,
+but it might be good to be able to delete keys or shut it down as
+well.

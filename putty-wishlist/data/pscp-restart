@@ -1,0 +1,16 @@
+Summary: Restart capability in PSCP
+Class: wish
+Priority: low
+Difficulty: tricky
+Content-type: text/plain
+
+Now that PSCP supports SFTP as a back end, it might be quite nice to
+implement the restart capability when retrying a half-finished file
+transfer ("reget" / "reput" in PSFTP).
+
+It's relatively obvious how this should work for single-file
+transfer (it would have to be explicitly enabled using a
+command-line option), but the design will need some thought for
+multi-file and recursive transfers. Also the whole thing will have
+to fail, or degrade gracefully, if PSCP ends up using the original
+SCP1 protocol instead of SFTP.

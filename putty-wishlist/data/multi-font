@@ -1,0 +1,14 @@
+Summary: Multiple font selections
+Class: wish
+Priority: medium
+Difficulty: fun
+Content-Type: text/x-html-body
+
+<p>
+It would be nice to be able to select a second font to be used for
+132-column mode.
+
+<p>
+More generally, perhaps, it might be nice to be able to select
+multiple fonts and switch between them quickly on a hotkey or
+similar? rxvt already supports this.

@@ -1,0 +1,12 @@
+Summary: Control of file permissions in PSCP
+Class: wish
+Priority: medium
+Difficulty: fun
+Content-type: text/plain
+
+It would be nice if PSCP could allow user control of the file
+permissions it sends to the remote side when uploading files. I'm
+not entirely sure what the user interface for this should be, but
+whatever it is I think it would have to be a blanket option covering
+all files transferred in a single connection - it would just be too
+fiddly to give fine-grained control when copying many files.
