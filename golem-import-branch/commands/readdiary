@@ -1,0 +1,21 @@
+var line var lines var text
+
+'quirka =username
+
+#'Edit "MLYD" 'Keypath 'eh 'Edithook addtask
+
+function readmessages {
+  'Messages "all.messages.new." username . 'Filename addtask
+}
+
+readmessages
+
+function eh {
+  =line =lines =text
+  lines 'Goto suspend =line =lines =text
+  loop
+    line 1 - ! if-break
+    'Up suspend =line =lines =text
+  endloop
+  'Quit                                                                     
+}

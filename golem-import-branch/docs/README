@@ -1,0 +1,42 @@
+Note: RJB Nov 1998 - this file is very out of date.
+
+The command syntax, as advertised in HHMT, is
+
+   :!username loew-code
+
+such as
+
+[1m   anakin[m !golem 'amf revoke
+
+
+----------------
+
+To do:
+
+  Ensure deferred messages are counted on login, to avoid them
+    being seen as recent when live messages arrive
+  Watch All Users
+  Sit on Users On
+  Sit in talker
+  Sit in Main Menu
+  Deal with talker wakes
+  Examine users
+
+  Debug Loew
+  Integrate Loew
+
+  Become able to receive Loew commands in the talker, in messages,
+    and from the local machine
+
+  Create a talker personality
+
+  Rationalise the logging and diagnostic mechanisms
+
+  Repeatedly revoke Amf's security descriptor when he starts trying
+    to hack it, until he gets pissed off
+
+  Maybe send messages
+
+  Maybe add edits to things
+
+  Maybe be able to assume blank namelines
