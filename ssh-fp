@@ -1,0 +1,19 @@
+#!/bin/sh
+
+tmpfile=/tmp/ssh-fp-$$
+
+fingerprints() {
+  while { IFS= read z; }; do
+    echo "$z" > $tmpfile
+    ssh-keygen -l -f $tmpfile
+    rm -f $tmpfile
+  done
+}
+
+if [ $# = 0 ]; then
+  fingerprints
+else
+  for i in "$@"; do
+    fingerprints < $i
+  done
+fi
