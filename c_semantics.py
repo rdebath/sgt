@@ -7,6 +7,8 @@
 # arithmetic operations are between correct (and explicitly specified) types
 # and all implicit type conversions are made explicit.
 
+import string
+
 from c_lex import *
 from c_parse import *
 
@@ -64,6 +66,13 @@ tq_restrict = 1 << _enum()
 array_unspecified = -1
 array_variable = -2
 
+# Optree node types. Optree constant nodes have type constants as their
+# node type, so the op_* constants must not overlap the t_* constants.
+# The tuple expected in each node type is given in a comment.
+op_BEGIN = _enum(t_END)
+op_cast = _enum(t_END) # (srctype, desttype, operand)
+op_END = _enum()
+
 def _sortt(list):
     "Internal function that sorts a list and tuples it."
     newlist = list[:] # copy it
@@ -84,7 +93,7 @@ class typesystem:
     def array(self, elementtype, dimension):
         return (elementtype[0], t_array, elementtype, dimension)
     def function(self, returntype, args, quals):
-        return (quals, t_function, elementtype, dimension)
+        return (quals, t_function, returntype, args)
 
     def addtypedef(self, name, type):
         self.typedefs[name] = type
@@ -105,16 +114,23 @@ class typesystem:
     # Operations required on arithmetic types are
     #  - perform usual arithmetic conversions
 
+class optree:
+    "Class to hold the operation-tree output from semantic analysis."
+    def __init__(self, type, *extras):
+	self.type = type
+	self.tuple = extras
+
 # The actual semantic analysis phase.
 
 class semantics:
     "Class to perform, and hold the results of, semantic analysis of a C\n"\
     "translation unit."
     
-    def __init__(self, parsetree):
+    def __init__(self, parsetree, target):
         self.functions = []
         self.topdecls = []
         self.types = typesystem()
+	self.target = target
         self.do_tran_unit(parsetree)
 
     def display(self):
@@ -179,6 +195,84 @@ class semantics:
     lt_volatile: tq_volatile,
     lt_restrict: tq_restrict
     }
+
+    # Parse tree nodes we expect in an expression.
+    exprnodes = {pt_primary_expression: 1, pt_postfix_expression: 1,
+    pt_unary_expression: 1, pt_cast_expression: 1, pt_binary_expression: 1,
+    pt_conditional_expression: 1, pt_assignment_expression: 1}
+
+    def expr(self, exp):
+	# Process an expression.
+	# Return a tuple (type, value, lvalue, tree).
+	# `type' describes the intrinsic type of the expression (there will
+	# probably be another type we want to assign it to later).
+	# `value' describes the constant value of the expression, or None
+	# if the expression is non-constant.
+	# `lvalue' is true if the expression is an lvalue.
+	# `tree' gives the output optree form of the expression.
+	#
+	# The optree does not extend into constant parts of the parse tree.
+	if exp.type == pt_primary_expression:
+	    if exp.list[0].type == lt_intconst:
+		# Strip off Ls and Us from the end until we know what
+		# integer type we're dealing with. Then parse the actual
+		# integer, and then pass to the target module for trimming.
+		t = 0
+		text = string.upper(exp.list[0].text)
+		while text[-1:] in "LU":
+		    c = text[-1]
+		    text = text[:-1]
+		    if c == "L":
+			t = t + 2
+		    else:
+			t = t | 1
+		type = (t_int,t_uint,t_long,t_ulong,t_longlong,t_ulonglong)[t]
+		val = 0L
+		if text[0:2] == "0X":
+		    base = 16
+		    text = text[2:]
+		elif text[:1] == "0":
+		    base = 8
+		    text = text[1:]
+		else:
+		    base = 10
+		while len(text) > 0:
+		    cval = ord(text[0]) - ord('0')
+		    text = text[1:]
+		    if cval > 9: cval = cval - 7
+		    val = val * base + cval
+		val = self.target.intconst(type, val)
+		return type, val, 0, optree(type, val)
+	    elif exp.list[0].type == pt_ident:
+		pass # FIXME
+	    elif exp.list[0].type == pt_charconst:
+		pass # FIXME
+	    elif exp.list[0].type == pt_stringconst:
+		pass # FIXME
+	    elif exp.list[0].type == pt_floatconst:
+		pass # FIXME
+	    else:
+		FIXME()
+	    pass
+	elif exp.type == pt_postfix_expression:
+	    pass
+	elif exp.type == pt_unary_expression:
+	    pass
+	elif exp.type == pt_cast_expression:
+	    pass
+	elif exp.type == pt_binary_expression:
+	    pass
+	elif exp.type == pt_conditional_expression:
+	    pass
+	elif exp.type == pt_assignment_expression:
+	    pass
+	elif exp.type == pt_constant_expression:
+	    type, value, lvalue, tree = self.expr(exp.list[0])
+	    if value == None:
+		ERROR() # non-constant constant expression
+	    return type, value, lvalue, tree
+	else:
+	    assert 0, "unexpected node in expression"
 
     def do_declaration(self, decl):
         # The declaration specifiers can contain storage class qualifiers,
@@ -260,15 +354,19 @@ class semantics:
                     if i == None:
                         t = self.types.array(t, array_unspecified)
                     elif i.type == pt_identifier_list or i.type == pt_parameter_type_list:
-                        # FIXME: function type
-                        pass
+			pass # FIXME: function type
                     else:
-                        # FIXME: array dimension. Attempt to parse i as a 
-                        # constant expression with integer type. If successful,
-                        # that's the array dimension. If not, the array
-                        # dimension is variable and we must return the
-                        # expression somehow.
-                        pass
+                        # Attempt to parse i as a constant expression with
+			# integer type.
+			type, value, lvalue, tree = self.expr(i)
+			if value != None:
+			    # We have a constant which is our array dimension.
+			    # Cast it to type size_t and use it.
+			    value = self.target.intconst(self.target.size_t(), value)
+			    # WIBNI: see if `value' has changed, and warn if so
+			    t = self.types.array(t, value)
+			else:
+			    t = self.types.vla(t, tree)
                 if dirdcl.list[0].type == pt_declarator:
                     dcl = dirdcl.list[0]
                     continue
@@ -281,3 +379,32 @@ class semantics:
             else:
                 defs = defs + [[id.text, stg, t]]
         return defs
+
+    def do_function(self, funcdef):
+	assert funcdef.type == pt_function_definition
+	# funcdef.list gives declaration_specifiers, declarator,
+	# optional list of declarations of argument types, and
+	# finally a compound statement.
+	
+	blk = self.do_block(funcdef.list[3])
+
+    def do_block(self, blk):
+	assert blk.type == pt_compound_statement
+	decls = []
+	stmts = []
+	for i in blk.list:
+	    if i.type == pt_declaration:
+		decls.extend(self.do_declaration(i))
+	    else:
+		stmts.extend(self.do_statement(i))
+	return [decls, stmts]
+    
+    def do_statement(self, stmt):
+	while stmt.type == pt_labeled_statement:
+	    # FIXME: deal with label
+	    stmt = stmt.list[1]
+	if self.exprnodes.has_key(stmt.type):
+	    type, value, lvalue, tree = self.expr(stmt)
+	    return tree
+	else:
+	    FIXME()

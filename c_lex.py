@@ -204,7 +204,7 @@ class lexer:
 
     def pushtypedef(self):
         "Push the list of typedef identifiers on a stack."
-        self.typedefs[:0] = self.typedefs[0].copy()
+        self.typedefs[:0] = [self.typedefs[0].copy()]
 
     def poptypedef(self):
         "Pop the list of typedef identifiers from the stack."
