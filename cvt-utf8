@@ -173,7 +173,7 @@ if args == []:
     print "Flag:  -o or --output     just output well-formed UTF-8 instead of"
     print "                          an analysis of the input data"
     print ""
-    print "Also:  cvt-utf8 --test    run Markus Kuhn's decoder stress tests"
+    print "Also:  cvt-utf8 --test    run Markus Kuhn's decoder stress tests" #'
     print "       cvt-utf8 --input (or -i)"
     print "                          read, analyse and decode UTF-8 from stdin"
     print "       cvt-utf8 --build <infile> <outfile>"
