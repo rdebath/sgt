@@ -3,49 +3,30 @@
 </HEAD><BODY>
 <h2>How to Report Bugs Effectively</h2>
 
-<p><i>an essay by
-<a href="http://www.chiark.greenend.org.uk/~sgtatham/">Simon
+<p><i>by
+<a href="http://pobox.com/~anakin/">Simon
 Tatham</a>, professional and free-software programmer</i>
-
-<p>
-<a href="#showme">"Show me."</a>
-<br>
-<a href="#showmehow">"Show me how to show myself."</a>
-<br>
-<a href="#describe">"Works for me. So what goes wrong?"</a>
-<br>
-<a href="#antelope">"So then I tried . . ."</a>
-<br>
-<a href="#symptoms">"I think the tachyon modulation must be wrongly
-polarised."</a>
-<br>
-<a href="#intermittent">"That's funny, it did it a moment ago."</a>
-<br>
-<a href="#clarity">"So I loaded the disk on to my Windows . . ."</a>
-<br>
-<a href="#respect">"It doesn't work."</a>
-<br>
-<a href="#summary">Summary</a>
-</p>
 
 <!-- begin essay -->
 
+<a name="intro"><h3>Introduction</h3></a>
+
 <p>
-Anybody who has written software for a less capable computer user
-will probably have received at least one bad bug report. Reports
-which say nothing ("It doesn't work!"); reports which make no sense;
-reports which don't give enough information; reports which give
-<em>wrong</em> information. Reports of problems which turn out to
-be user error; reports of problems which turn out to be the fault of
-somebody else's program; reports of problems which turn out to be
-network failures.
+Anybody who has written software for public use will probably have
+received at least one bad bug report. Reports which say nothing ("It
+doesn't work!"); reports which make no sense; reports which don't
+give enough information; reports which give <em>wrong</em>
+information. Reports of problems which turn out to be user error;
+reports of problems which turn out to be the fault of somebody
+else's program; reports of problems which turn out to be network
+failures.
 
 <p>
 There's a reason why technical support is seen as a horrible job to
-be in, and bad bug reports like these are it. But not all of them
-are: I maintain free software, when I'm not earning my living, and
-sometimes I receive wonderfully clear, helpful, <em>informative</em>
-bug reports. It can be done; very few people do it.
+be in, and bad bug reports like these are it. However, not all bug
+reports are unpleasant: I maintain free software, when I'm not
+earning my living, and sometimes I receive wonderfully clear,
+helpful, <em>informative</em> bug reports.
 
 <p>
 In this essay I'll try to state clearly what makes a good bug
@@ -54,12 +35,68 @@ essay before reporting any bugs to anybody. Certainly I would like
 everybody who reports bugs to <em>me</em> to have read it.
 
 <p>
-When you report a bug, you are doing so because <em>you</em> want
-the bug fixed. There is no point in swearing at the programmer or
-being deliberately unhelpful: it may be their fault and your
-problem, and you might be right to be angry with them, but the bug
-<em>will</em> get fixed faster if you supply all the information they
-need.
+In a nutshell, the aim of a bug report is to enable the programmer
+to see the program failing in front of them. You can either show
+them in person, or give them careful and detailed instructions on
+how to make it fail. If they can make it fail, they will try to
+gather extra information until they know why it fails. If they can't
+make it fail, they will have to gather that information by asking
+you to collect it for them.
+
+<p>
+In bug reports, try to make it very clear which things you say are
+actual facts ("I was at the computer and this happened") and which
+things are speculations ("I <em>think</em> the problem might be
+this"). Leave out speculations if you want to, but don't leave out
+facts.
+
+<p>
+When you report a bug, you are doing so because you want the bug
+fixed. There is no point in swearing at the programmer or being
+deliberately unhelpful: it may be their fault and your problem, and
+you might be right to be angry with them, but the bug will get fixed
+faster if you help them by supplying all the information they need.
+Remember also that if the program is free, then the author is
+providing it out of kindness, so if you are rude to them then they
+will probably just stop feeling kind.
+</p>
+
+<a name="respect"><h3>"It doesn't work."</h3></a>
+
+<p>
+Give the programmer some credit for basic intelligence. If the
+program really didn't work at all, they would probably have noticed.
+Since they haven't noticed, it must be working for them. Therefore,
+either you are doing something differently to them, or your
+environment is different from theirs. They need information;
+providing this information is the purpose of a bug report. More
+information, almost always, is better than less.
+
+<p>
+Many programs, particularly free ones, publish their list of known
+bugs. If you can find a list of known bugs, it's worth reading it to
+see if the bug you've just found is already known or not. If it's
+already known, it probably isn't worth reporting again. If you think
+you have more information than the report in the bug list, though,
+you might want to contact the programmer anyway, because if you can
+give them information they didn't already have, they might be able
+to fix the bug more easily.
+
+<p>
+This essay is full of guidelines. None of them is an absolute rule.
+Particular programmers have particular ways they like bugs to be
+reported. If the program comes with its own set of bug reporting
+guidelines, read those. If the guidelines that come with the program
+contradict the guidelines in this essay, obey the ones that come
+with the program!
+
+<p>
+If you are not reporting a bug but just asking for help using the
+program, you should state where you have already looked for the
+answer to your question. ("I looked in chapter 4 and section 5.2 but
+couldn't find anything that told me if this is possible.") This will
+let the programmer know where people will expect to find the answer,
+so they can make the manual easier to use.
 </p>
 
 <a name="showme"><h3>"Show me."</h3></a>
@@ -67,34 +104,34 @@ need.
 <p>
 One of the very best ways you can report a bug is by showing it to
 the programmer. Stand them in front of your computer, fire up their
-software, and <em>demonstrate</em> the thing that goes wrong. Let
-them watch you start the machine, watch you run the software, watch
-how you interact with the software, and watch what the software does
-in response to your inputs.
+software, and demonstrate the thing that goes wrong. Let them watch
+you start the machine, watch you run the software, watch how you
+interact with the software, and watch what the software does in
+response to your inputs.
 
 <p>
-They <em>know</em> that software like the back of their hand. They know
-which parts they trust, and they know which parts are likely to have
+They know that software like the back of their hand. They know which
+parts they trust, and they know which parts are likely to have
 faults. They know intuitively what to watch for. By the time the
 software does something obviously wrong, they might well already
 have noticed something <em>subtly</em> wrong earlier which might
-give them a clue. They get to observe <em>everything</em> the
-computer does during the test run, and they can pick out the
-important bits for themselves.
+give them a clue. They get to observe everything the computer does
+during the test run, and they can pick out the important bits for
+themselves.
 
 <p>
 It might not be enough. They might decide they need more
-information. They might ask you to show him the same thing again.
-They might ask you to talk <em>them</em> through the procedure, so
-that they can reproduce the bug for themselves as many times as they
-want. They might try varying the procedure a few times, to see
-whether the problem occurs in only one case or in a family of
-related cases. If you're unlucky, they might need to sit down for a
-couple of hours with a set of development tools and <em>really</em>
-start investigating. But the most important thing is to get the
-programmer to be looking at the computer when it goes wrong. Once
-they can <em>see</em> the problem happening, they can take it from
-there and start trying to fix it.
+information. They might ask you to show them the same thing again.
+They might ask you to talk them through the procedure, so that they
+can reproduce the bug for themselves as many times as they want.
+They might try varying the procedure a few times, to see whether the
+problem occurs in only one case or in a family of related cases. If
+you're unlucky, they might need to sit down for a couple of hours
+with a set of development tools and <em>really</em> start
+investigating. But the most important thing is to get the programmer
+to be looking at the computer when it goes wrong. Once they can see
+the problem happening, they can take it from there and start trying
+to fix it.
 </p>
 
 <a name="showmehow"><h3>"Show me how to show myself."</h3></a>
@@ -116,10 +153,12 @@ Then they can see the problem happening in front of their eyes, and
 then they can deal with it.
 
 <p>
-So tell them <em>exactly what you did</em>. If it's a graphical
-program, tell them which buttons you pressed and what order you
-pressed them in. If it's a program you run by typing a command, show
-them precisely what command you typed.
+So tell them exactly what you did. If it's a graphical program, tell
+them which buttons you pressed and what order you pressed them in.
+If it's a program you run by typing a command, show them precisely
+what command you typed. If you can provide a transcript of the
+session, showing what commands you typed and what the computer
+output in response, you should do so.
 
 <p>
 Give them all the input you can think of. If the program reads from
@@ -142,20 +181,20 @@ supposed to do, and you are both looking at exactly the same display
 but you think it's wrong and they know it's right.
 
 <p>
-So <em>describe</em> what happened. Tell them exactly what you saw.
-Tell them why you think what you saw is wrong; better still, tell
-them exactly what you expected to see. If you say "and then it went
-wrong", you have left out some very important information.
+So describe what happened. Tell them exactly what you saw. Tell them
+why you think what you saw is wrong; better still, tell them exactly
+what you expected to see. If you say "and then it went wrong", you
+have left out some very important information.
 
 <p>
 Tell the programmer, carefully and precisely, any error messages you
 got. They <em>are</em> important! At this stage, the programmer is
-not trying to <em>fix</em> the problem: they're trying to <em>find</em>
-it. They need to know what has gone wrong, and those error messages
-are the computer's best effort to <em>say</em> what has gone wrong.
-Write the errors down if you have no other easy way to remember
-them, but don't report that the program generated an error if you're
-not also able to report what the error message was.
+not trying to fix the problem: they're just trying to find it. They
+need to know what has gone wrong, and those error messages are the
+computer's best effort to tell you that. Write the errors down if
+you have no other easy way to remember them, but don't report that
+the program generated an error if you're not also able to report
+what the error message was.
 
 <p>
 In particular, if the error message has numbers in it, <em>do</em>
@@ -163,16 +202,28 @@ let the programmer have those numbers. Just because you can't see
 any meaning in them doesn't mean there isn't any. Numbers contain
 all kinds of information that can be read by programmers, and they
 are likely to contain vital clues. Numbers in error messages are
-like a message in a bottle. They are the information the computer
-throws out when everything has gone too wrong for it to recover.
+there because the computer is too confused to report a more sensible
+error message, and is doing the best it can to get the important
+information to you even if it can't do it in words.
 
 <p>
-At this stage, the programmer is doing <em>detective work</em>. They
-don't know what's happened, and they can't get close enough to watch
-it happening for himself, so they are searching for clues that might
-give it away. Error messages, incomprehensible strings of numbers,
-and even unexplained delays are all just as important as
+At this stage, the programmer is effectively doing detective work.
+They don't know what's happened, and they can't get close enough to
+watch it happening for themselves, so they are searching for clues
+that might give it away. Error messages, incomprehensible strings of
+numbers, and even unexplained delays are all just as important as
 fingerprints at the scene of a crime. Don't throw them away.
+
+<p>
+If you are using Unix, the program may have produced a core dump.
+Core dumps are a particularly good source of clues, so don't throw
+them away. On the other hand, most programmers don't like to receive
+huge core files by e-mail without warning, so ask before mailing a
+core file to anybody. Also, be aware that the core file contains a
+record of the complete state of the program, so if there are any
+"secrets" involved (maybe the program was handling a personal
+message, or dealing with company confidential data) then they may be
+contained in the core file.
 </p>
 
 <a name="antelope"><h3>"So then I tried . . ."</h3></a>
@@ -190,10 +241,10 @@ have had a chance.
 
 <p>
 Users like this are like a mongoose backed into a corner: with its
-back to the wall and seeing certain death staring it in the
-face, it attacks rabidly because doing something <em>has</em> to be
-better than doing nothing. This is not well adapted to the type of
-problems computers produce.
+back to the wall and seeing certain death staring it in the face, it
+attacks rabidly, because doing something has to be better than doing
+nothing. This is not well adapted to the type of problems computers
+produce.
 
 <p>
 Instead of being a mongoose, be an antelope. When an antelope is
@@ -207,10 +258,10 @@ safest thing to do is, it does it.
 <p>
 When something goes wrong, stop doing <em>anything</em>. Don't touch
 any buttons at all. Look at the screen and notice everything out of
-the ordinary, and remember it or write it down. <em>Then</em>
-perhaps start cautiously pressing "OK" or "Cancel", whichever seems
-safest. Try to make this reflexive: if a computer does anything
-unexpected, your first reaction should be to freeze.
+the ordinary, and remember it or write it down. Then perhaps start
+cautiously pressing "OK" or "Cancel", whichever seems safest. Try to
+make this reflexive: if a computer does anything unexpected, your
+first reaction should be to freeze.
 
 <p>
 If you manage to get out of the problem, whether by closing down the
@@ -226,7 +277,7 @@ wrongly polarised."</h3></a>
 <p>
 It isn't only non-programmers who produce bad bug reports. Some of
 the worst bug reports I've ever seen come from programmers, and even
-from <em>good</em> programmers.
+from good programmers.
 
 <p>
 I worked with another programmer once, who kept finding bugs in his
@@ -241,44 +292,44 @@ already done half the work and we were able to finish the job
 together. It was efficient and useful.
 
 <p>
-But quite often he was <em>wrong</em>. We would work for some time
-trying to figure out why some particular part of the program was
-producing incorrect data, and eventually we would discover that it
-wasn't, that we'd been investigating a perfectly good piece of code
-for half an hour, and that the actual problem was somewhere else.
+But quite often he was wrong. We would work for some time trying to
+figure out why some particular part of the program was producing
+incorrect data, and eventually we would discover that it wasn't,
+that we'd been investigating a perfectly good piece of code for half
+an hour, and that the actual problem was somewhere else.
 
 <p>
 I'm sure he wouldn't do that to a doctor. "Doctor, I think I've got
-Perkin's disease." People <em>know</em> not to say that to a doctor:
-you describe the symptoms, the actual discomforts and aches and
-pains and rashes and fevers, and you let the doctor make their own
+Perkin's disease." People know not to say that to a doctor: you
+describe the symptoms, the actual discomforts and aches and pains
+and rashes and fevers, and you let the doctor make their own
 diagnosis of what caused the problem. Otherwise the doctor dismisses
 you as a hypochondriac or crackpot, and quite rightly so.
 
 <p>
 It's the same with programmers. Providing your own diagnosis might
-be helpful sometimes, but <em>always</em> state the symptoms. The
-diagnosis is an optional extra, and not an alternative to giving the
-symptoms. Equally, sending a modification to the code which fixes
-the problem is a useful addition to a bug report but not an adequate
-substitute for one.
+be helpful sometimes, but always state the symptoms. The diagnosis
+is an optional extra, and not an alternative to giving the symptoms.
+Equally, sending a modification to the code which fixes the problem
+is a useful addition to a bug report but not an adequate substitute
+for one.
 
 <p>
 If a programmer asks you for extra information, don't make it up!
 Somebody reported a bug to me once, and I asked him to try a command
-which I <em>knew</em> would not work. The reason I asked him to try
-it was that I wanted to know which of two different error messages
-it would give. Knowing which error message came back was a vital
-clue. But he didn't actually try it - he just mailed me back and
-said "No, that won't work". It took me some time to persuade him to
-try it for real.
+which I knew wouldn't work. The reason I asked him to try it was
+that I wanted to know which of two different error messages it would
+give. Knowing which error message came back was a vital clue. But he
+didn't actually try it - he just mailed me back and said "No, that
+won't work". It took me some time to persuade him to try it for
+real.
 
 <p>
 Using your intelligence to help the programmer is fine. Even if your
 deductions are wrong, the programmer should be grateful to you for
 having at least <em>tried</em> to make their life easier. But report
-the symptoms <em>as well</em>, or you run the risk of making their
-life much more difficult.
+the symptoms as well, or you run the risk of making their life much
+more difficult instead.
 </p>
 
 <a name="intermittent"><h3>"That's funny, it did it a moment
@@ -317,10 +368,10 @@ times and see how often it fails. If it goes wrong when you're doing
 serious work but not when you're trying to demonstrate it, it might
 be long running times or large files that make it fall over. Try to
 remember as much detail as you can about what you were doing to it
-when it <em>did</em> fall over, and if you see any patterns, mention
-them. Anything you can provide has got to be some help. Even if it's
-only probabilistic (such as "it tends to crash more often when Emacs
-is running"), it might not provide direct clues to the cause of the
+when it did fall over, and if you see any patterns, mention them.
+Anything you can provide has got to be some help. Even if it's only
+probabilistic (such as "it tends to crash more often when Emacs is
+running"), it might not provide direct clues to the cause of the
 problem, but it might help the programmer reproduce it.
 
 <p>
@@ -329,8 +380,8 @@ with a true intermittent fault or a machine-specific fault. They
 will want to know lots of details about your computer, so they can
 work out how it differs from theirs. A lot of these details will
 depend on the particular program, but one thing you should
-<em>definitely</em> be ready to provide is version numbers. The
-version number of the program itself, and the version number of the
+definitely be ready to provide is version numbers. The version
+number of the program itself, and the version number of the
 operating system, and probably the version numbers of any other
 programs that are involved in the problem.
 </p>
@@ -347,17 +398,19 @@ I get bug reports from all around the world. Many of them are from
 non-native English speakers, and a lot of those apologise for their
 poor English. In general, the bug reports which apologise for their
 poor English are actually very clear and useful. All the most
-unclear reports come from <em>native</em> English speakers who
-assume that I will understand them even if they don't make any
-effort to be clear or precise.
+unclear reports come from native English speakers who assume that I
+will understand them even if they don't make any effort to be clear
+or precise.
+</p>
 
-<p>
+<ul>
+<li>
 <em>Be specific</em>. When you describe what you did, if you can do
 the same thing two different ways, state which one you used. "I
 selected Load" might mean "I clicked on Load" or "I pressed Alt-L".
 Say which one you did. Sometimes it matters.
 
-<p>
+<li>
 <em>Be verbose</em>. Give more information rather than less. If you
 say too much, the programmer has to ignore some of it. If you say
 too little, they have to come back and ask you more questions. One
@@ -366,91 +419,64 @@ for more information the reporter would reply with another single
 sentence. It took me several weeks to get a useful amount of
 information, because it turned up one short sentence at a time.
 
-<p>
+<li>
 <em>Be careful of pronouns</em>. Don't use words like "it", or
 references like "the window", when it's unclear what they mean.
 Consider this: "I started FooApp. It put up a warning window. I
 tried to close it and it crashed." It isn't clear what the user
 tried to close. Did they try to close the warning window, or the
-whole of FooApp? It makes a difference. When it isn't clear,
-<em>make</em> it clear by saying it in full. A bug report that says
-"the FooApp main window" three times in every sentence is often more
-useful than a bug report that says "it" most of the time, because
-the longer version <em>cannot be misunderstood</em>.
+whole of FooApp? It makes a difference. Instead, you could say "I
+started FooApp, which put up a warning window. I tried to close the
+warning window, and FooApp crashed." This is longer and more
+repetitive, but also clearer and less easy to misunderstand.
 
-<p>
+<li>
 <em>Read what you wrote</em>. Read the report back to yourself, and
 see if <em>you</em> think it's clear. If you have listed a set of
 instructions on how to produce the failure, try following those
 instructions yourself, to see if you missed a step.
-</p>
-
-<a name="respect"><h3>"It doesn't work."</h3></a>
-
-<p>
-Give the programmer some credit for basic intelligence. If the
-program really didn't work <em>at all</em>, they would probably have
-noticed. Since they haven't noticed, it must be working for them.
-Therefore, either you are doing something differently to them, or
-your environment is different from theirs. They need information.
-
-<p>
-Many programs, particularly free ones, publish their list of known
-bugs. If you can find a list of known bugs, it's worth reading it to
-see if the bug you've just found is already known or not. If it's
-already known, it <em>probably</em> isn't worth reporting again. If
-you think you have more information than the report in the bug list,
-though, you might want to contact the programmer anyway, because if
-you can give them information they didn't already have, they might
-be able to fix the bug more easily.
-
-<p>
-This essay is full of guidelines. None of them is an absolute rule.
-Particular programmers have particular ways they like bugs to be
-reported. If the program comes with its own set of bug reporting
-guidelines, read those. If the guidelines that come with the program
-contradict the guidelines in this essay, obey the ones that come
-with the program!
-</p>
+</ul>
 
 <a name="summary"><h3>Summary</h3></a>
 
-<p>
+<ul>
+
+<li>
 The first aim of a bug report is to let the programmer see the
 failure with their own eyes. If you can't make it fail in front of
 them, give them detailed instructions so that they can make it fail
 for themselves.
 
-<p>
+<li>
 If the first aim doesn't succeed: the second aim of a bug report is
 to describe what went wrong, so that the programmer doesn't have to
 see it failing themselves. Describe everything in detail. State what
-you saw <em>and</em> what you expected to see. Write down the error
-messages, <em>especially</em> if they have numbers in.
+you saw, and also state what you expected to see. Write down the
+error messages, <em>especially</em> if they have numbers in.
 
-<p>
+<li>
 When your computer does something unexpected, <em>freeze</em>. Do
 nothing until you're calm, and don't do anything that you think
 might be dangerous.
 
-<p>
+<li>
 By all means try to diagnose the fault yourself if you think you
-can, but don't use that as an <em>alternative</em> to reporting the
-symptoms.
+can, but if you do, you should still report the symptoms as well.
 
-<p>
+<li>
 Be ready to provide extra information if the programmer needs it. If
 they didn't need it, they wouldn't be asking you for it. They aren't
 being deliberately awkward. Have version numbers at your fingertips,
 because they will probably be needed.
 
-<p>
+<li>
 Write clearly. Say what you mean, and make sure it's impossible to
 mistake what you mean.
 
-<p>
+<li>
 Above all, <em>be precise</em>. Programmers like precision.
-</p>
+
+</ul>
 
 <!-- end essay -->
 
@@ -460,7 +486,7 @@ Above all, <em>be precise</em>. Programmers like precision.
 antelope. My zoology may be inaccurate.
 
 <p>
-<i>$Id: bugs.html,v 1.11 1999/12/03 16:48:44 simon Exp $</i>
+<i>$Id: bugs.html,v 1.12 1999/12/08 17:11:36 simon Exp $</i>
 
 <p>
 Copyright &copy; 1999 Simon Tatham.
