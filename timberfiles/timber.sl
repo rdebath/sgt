@@ -1220,7 +1220,7 @@ define timber_selattach() {
 
 % Fold up the message or attachment under the cursor.
 define timber_fold() {
-    variable attach, c;
+    variable attach, c, c2;
 
     push_spot();
     bol();
@@ -1295,9 +1295,10 @@ define timber_fold() {
     }
 
     c = what_char();
+    if (c == '!') { c2 = ':'; } else { c2 = c; }
     push_spot();
     go_down_1();
-    while (what_char() != c and not eobp()) {
+    while (what_char() != c and what_char() != c2 and not eobp()) {
 	set_line_hidden(1);
 	eol();
 	go_right_1();
