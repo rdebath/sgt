@@ -9,7 +9,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#include <time.h>
 
 #ifdef TESTMODE
 #define debug(x) ( printf x )
@@ -91,7 +90,7 @@ static struct punct punctuation[] = {
     {{4,12,12,0x1e,0x3f,0x30,0x3e,0x1f,0x03,0x03,0x3f,0x1e,12,12,8},6,ALL4,0},
     {{0,0,0,0x33,0x33,0x03,0x06,0x0c,0x18,0x30,0x33,0x33,0,0,0},6,ALL4,0},
     {{0,0,0,0x1c,0x36,0x36,0x1c,0x1b,0x37,0x36,0x3f,0x1b,0,0,0},6,ALL4,0},
-    {{0,0,0,0x03,0x03,0x02,0x00,0x00,0x00,0x00,0x00,0x1b,0,0,0},6,TL|TR,0},
+    {{0,0,0,0x03,0x03,0x02,0x00,0x00,0x00,0x00,0x00,0x00,0,0,0},2,TL|TR,0},
     {{1,3,6,0x0c,0x0c,0x0c,0x0c,0x0c,0x0c,0x0c,0x0c,0x0c,6,3,1},4,ALL4,TR|BR,0,2},
     {{8,12,6,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,6,12,8},4,ALL4,TL|BL,2,0},
     {{0,0,0,0x00,0x00,0x33,0x1e,0x3f,0x3f,0x1e,0x33,0x00,0,0,0},6,ALL4,0},
@@ -123,7 +122,7 @@ static struct punct punctuation[] = {
     {{15,15,3,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,3,15,15},4,ALL4,TL|BL,2,0},
     {{0,0,0,0x0c,0x1e,0x33,0x00,0x00,0x00,0x00,0x00,0x00,0,0,0},6,TL|TR,0},
     {{0,0,0,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x3f,0x3f,0,0,0},6,BL|BR,0},
-    {{0,0,0,0x03,0x03,0x01,0x00,0x00,0x00,0x00,0x00,0x1b,0,0,0},2,TL|TR,0},
+    {{0,0,0,0x03,0x03,0x01,0x00,0x00,0x00,0x00,0x00,0x00,0,0,0},2,TL|TR,0},
     /* here we have a gap for the 26 lower-case alphabetics */
     {{7,15,12,0x0c,0x0c,0x0c,0x38,0x38,0x0c,0x0c,0x0c,0x0c,12,15,7},6,ALL4,TR|BR,0,2},
     {{0,0,3,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,0x03,3,0,0},2,ALL4,0},
@@ -142,6 +141,44 @@ static int popcount(unsigned int word)
     word = ((word & 0xFF00FF00) >>  8) + (word & 0x00FF00FF);
     word = ((word & 0xFFFF0000) >> 16) + (word & 0x0000FFFF);
     return word;
+}
+
+/*
+ * Simple PRNG for deciding which way to slant vertical extensions.
+ * The deal with this thing is that it's seeded entirely off the
+ * input string, so displaying exactly the same string twice gives
+ * exactly the same output - the same guarantee you get from the
+ * global optimiser.
+ * 
+ * The random number generator we use is simply the CRC32 linear
+ * feedback shift register.
+ */
+static void swash_srand(unsigned *seed, char *text)
+{
+    int c, i, newbit, x32term, crcword;
+
+    crcword = 0;
+
+    while (*text) {
+	c = 0xFF & *text++;
+
+	for (i = 0; i < 8; i++) {
+	    newbit = c & 1;
+	    c >>= 1;
+	    x32term = (crcword & 1) ^ newbit;
+	    crcword = (crcword >> 1) ^ (x32term * 0xEDB88320);
+	}
+    }
+
+    *seed = crcword;
+}
+static int swash_random_bit(unsigned *seed)
+{
+    int crcword = *seed;
+    int x32term = (crcword & 1);
+    crcword = (crcword >> 1) ^ (x32term * 0xEDB88320);
+    *seed = crcword;
+    return crcword & 1;
 }
 
 int swash_text(int x, int y, char *text,
@@ -209,6 +246,9 @@ int swash_text(int x, int y, char *text,
     int bestscore;
     struct option *nextbest;
     int left, right, rf;
+    int seed;
+
+    swash_srand(&seed, text);
 
     len = strlen(text);
 
@@ -595,7 +635,7 @@ int swash_text(int x, int y, char *text,
 		    plot(plotctx, sx+1,sy);
 		    sy += dy;
 		}
-		plot(plotctx, sx + (rand() > RAND_MAX/2), sy);
+		plot(plotctx, sx + swash_random_bit(&seed), sy);
 	    }
 
 	    /* Plot the left extension, if any. */
@@ -660,8 +700,6 @@ void plot(void *ignored, int x, int y)
 int main(int argc, char **argv)
 {
     int i;
-
-    srand(time(NULL));
 
     memset(buffer, '.', sizeof(buffer));
     minx = MAXWIDTH+1;
