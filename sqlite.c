@@ -240,10 +240,15 @@ static const char *db_schema[] = {
 
 static const char *const ab_schema[] = {
     "CREATE TABLE contacts ("
-    "  contact_id INTEGER PRIMARY KEY,"
-    "  name VARCHAR"
+    "  contact_id INTEGER PRIMARY KEY"
     ");",
-    "INSERT INTO contacts VALUES (0, NULL);",
+    "INSERT INTO contacts VALUES (0);",
+
+    "CREATE TABLE attributes ("
+    "  contact_id INTEGER,"
+    "  type VARCHAR NOT NULL,"
+    "  value VARCHAR NOT NULL"
+    ");"
 };
 
 
@@ -522,16 +527,20 @@ struct mime_details *find_mime_parts(const char *ego, int *nparts)
  *  Address book database.
  */
 
-static char *ab_get_name (int contact_id)
+static char *ab_get_attr (int contact_id,
+			  const char *attr_type)
 {
     char **table;
     int rows, cols;
     char *ans = NULL;
 
+    assert (attr_type);
+
     sql_open(ab);
     sql_get_table_printf (ab,
-			  "SELECT name FROM contacts WHERE contact_id = %d",
-			  &table, &rows, &cols, contact_id);
+			  "SELECT value FROM attributes "
+			  "WHERE contact_id = %d AND type = '%q'",
+			  &table, &rows, &cols, contact_id, attr_type);
     if (0 < rows) {
 	assert (1 == cols);
 	assert (1 == rows);
@@ -541,27 +550,31 @@ static char *ab_get_name (int contact_id)
     return ans;
 }
 
-static void ab_set_name (int contact_id,
-			 const char *new_name)
+static void ab_set_attr (int contact_id,
+			 const char *attr_type,
+			 const char *new_value)
 {
+    assert (attr_type);
+
     sql_open(ab);
-    if (new_name) {
+    sql_transact (ab, begin_transaction);
+    sql_exec_printf (ab,
+		     "DELETE FROM attributes "
+		     "WHERE contact_id = %i AND type = '%q'",
+		     contact_id, attr_type);
+    if (new_value) {
 	sql_exec_printf (ab,
-			 "UPDATE contacts SET name = '%q' "
-			 "WHERE contact_id = %i",
-			 new_name, contact_id);
-    } else {
-	sql_exec_printf (ab,
-			 "UPDATE contacts SET name = NULL "
-			 "WHERE contact_id = %i",
-			 contact_id);
+			 "INSERT INTO attributes (contact_id, type, value) "
+			 "VALUES (%i, '%q', '%q')",
+			 contact_id, attr_type, new_value);
     }
+    sql_transact (ab, commit_transaction);
 }
 
 void ab_display_name (/*const*/ char *contact_id)
 {
     const int cid = atoi(contact_id);
-    char *name = ab_get_name (cid);
+    char *name = ab_get_attr (cid, "name");
     printf (name ? "%d:%s\n" : "%d\n", cid, name);
     sfree(name);
 }
@@ -569,6 +582,6 @@ void ab_display_name (/*const*/ char *contact_id)
 void ab_change_name (const char *contact_id,
 		     const char *new_name)
 {
-    ab_set_name (atoi(contact_id), new_name);
+    ab_set_attr (atoi(contact_id), "name", new_name);
 }
 
