@@ -7,7 +7,8 @@ and access the Windows clipboard.
 
 DoIt assumes you have _already_ solved the key-distribution problem;
 it relies on a binary shared secret between the two sides. This can
-be of any size (authentication is performed using HMAC).
+be of any size (encryption and MAC keys are derived from the secret
+by cryptographic hashing, so the size of the secret doesn't matter).
 
 At the beginning of the connection, each side sends a nonce to the
 other, in SSH2 string form (a 32-bit big-endian integer giving the
@@ -72,4 +73,4 @@ data:
 because the nonces are used the other way round.)
 
 The maximum packet data length is 1024 bytes (to aid verification of
-decryption).
+decryption). This is also the maximum length of a nonce.
