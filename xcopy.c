@@ -183,12 +183,15 @@ void init_X(void) {
     } else {
         /*
          * We are writing to the selection, so we establish
-         * ourselves as selection owner.
+         * ourselves as selection owner. Also place the data in
+         * CUT_BUFFER0.
          */
         XSetSelectionOwner (disp, XA_PRIMARY, ourwin, CurrentTime);
         if (XGetSelectionOwner (disp, XA_PRIMARY) != ourwin)
             error ("unable to obtain primary X selection\n");
         compound_text_atom = XInternAtom(disp, "COMPOUND_TEXT", False);
+	XChangeProperty(disp, DefaultRootWindow(disp), XA_CUT_BUFFER0,
+			XA_STRING, 8, PropModeReplace, seltext, sellen);
     }
 }
 
