@@ -1,0 +1,43 @@
+#!/usr/bin/python 
+
+import urllib
+import string
+import os
+import ljproto
+import getpass
+
+def getcookies(headers):
+    cookies = {}
+    for i in headers.getallmatchingheaders("Set-Cookie"):
+	assert i[:12] == "Set-Cookie: "
+	cookie = i[12:]
+	j = string.find(cookie, ";")
+	if j >= 0:
+	    cookie = cookie[:j]
+	    if cookie[-1:] != "=":
+		cookies[cookie] = 1
+    return "Cookie: " + string.join(cookies.keys(), "; ")
+
+dict = { "mode": "login" }
+dict["user"] = user = ljproto.ljusername()
+dict["password"] = getpass.getpass("Password for LJ account \""+user+"\": ")
+
+postdata = urllib.urlencode(dict)
+f = urllib.urlopen("http://www.livejournal.com/login.bml", postdata)
+cookiehdr = getcookies(f.info())
+f.read()
+f.close()
+
+urllib._urlopener.addheader(cookiehdr)
+dict = {"expire": "never", "bindip": "no", "action:change": "Change Options"}
+postdata = urllib.urlencode(dict)
+f = urllib.urlopen("http://www.livejournal.com/login.bml", postdata)
+
+cookiehdr = getcookies(f.info())
+f.read()
+f.close()
+
+cfg = os.environ["HOME"] + "/.ljscan/ljsession"
+file = open(cfg, "w")
+file.write(cookiehdr + "\n")
+file.close()
