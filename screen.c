@@ -243,13 +243,13 @@ void saveslot_fmt(char *buf, int slotnum, gamestate *gs) {
 int screen_main_menu(levelset *set, gamestate **saves,
 		     int maxlev, int startlev) {
     const int colwidth = 26, colgap = 8;
-    const int height = 21, llines = height-5;
+    const int height = 21, llines = height-6;
     int sx, sy, dx, dy, dx2;
     int save = 0;
     int level;
     int levtop = 0;
     int i, k;
-    int unseen = 0;
+    int unseen;
 
     getmaxyx(stdscr, sy, sx);
 
@@ -263,6 +263,12 @@ int screen_main_menu(levelset *set, gamestate **saves,
 	startlev = 0;
     }
     level = startlev;
+    if (level == set->nlevels-1)
+	levtop = level - (llines-1);
+    else
+	levtop = level - (llines-2);
+    if (levtop < 0)
+	levtop = 0;
 
     dx = (sx - 2*colwidth - colgap) / 2;
     dy = (sy - height) / 2;
@@ -304,6 +310,7 @@ int screen_main_menu(levelset *set, gamestate **saves,
 	for (i = 1; i < height-5; i++) {
 	    char buf[50];
 	    int attr = T_LIST_ELEMENT;
+	    unseen = FALSE;
 	    if (i == 1 && levtop > 0) {
 		sprintf(buf, "(more)");
 		attr = T_LIST_ADMIN;
@@ -313,7 +320,7 @@ int screen_main_menu(levelset *set, gamestate **saves,
 			set->nlevels - maxlev == 1 ? "s" : "");
 		unseen = TRUE;
 		attr = T_LIST_ADMIN;
-	    } else if (i == height-6 && i+levtop-1 < maxlev && !unseen) {
+	    } else if (i == llines && i+levtop-1 < maxlev-1 && !unseen) {
 		sprintf(buf, "(more)");
 		attr = T_LIST_ADMIN;
 	    } else {
@@ -355,8 +362,8 @@ int screen_main_menu(levelset *set, gamestate **saves,
 	if ((k == 'j' || k == KEY_DOWN) && level < maxlev-1) {
 	    level++;
 	    if (!(level < levtop+llines-1 || (level == levtop+llines-1 &&
-					      level == set->nlevels))) {
-		if (level == set->nlevels)
+					      level == set->nlevels-1))) {
+		if (level == set->nlevels-1)
 		    levtop = level - (llines-1);
 		else
 		    levtop = level - (llines-2);
