@@ -1,15 +1,58 @@
-#!/usr/bin/perl 
+#!/usr/bin/perl
+
+# Script for automatically launching URLs.
+#
+#  - Will read data from the command line (if a URL argument is
+#    supplied) or from the X selection via `xcopy -r' (if not).
+#  - Will process that data into a plausible URL, by means of
+#    stripping newlines and whitespace, prepending `http://' if it
+#    looks like a good idea, or prepending `file://' if the data
+#    begins with a single leading slash.
+#  - If passed `-g', it will instead use the data to construct a
+#    Google search URL.
+#  - Will then launch the URL.
+#
+# Configuration files:
+#
+#  - `~/.urllaunch' is an optional piece of Perl which configures
+#    the browser to use. It should define two variables, $try1 and
+#    $try2. Each of them should be a piece of Perl which evaluates
+#    to a list of strings suitable for passing to `exec' or
+#    `system'. See the default definitions below for an example.
+#
+#  - `~/.urlrewrite' is an optional executable script. Once the
+#    final URL has been constructed, it is piped through this
+#    script if it exists. The script may produce no output if it
+#    does not wish to rewrite the URL, or else it may output a
+#    different URL (which must be fully formed).
+
+$try1 = '"mozilla", "-remote", "openurl($url,new-window)"';
+$try2 = '"mozilla", $url';
+
+if (-f "$ENV{'HOME'}/.urllaunch") {
+    open RC, "$ENV{'HOME'}/.urllaunch";
+    $rc = "";
+    $rc .= $_ while <RC>;
+    close RC;
+    eval $rc;
+}
 
 $google = 0;
 $rewrite = 1;
+$opts = 1;
+$url = undef;
 while (scalar @ARGV) {
     $arg = shift @ARGV;
-    if ($arg eq "-g") { $google = 1; next; }
-    if ($arg eq "-R") { $rewrite = 0; next; }
-    print STDERR "unknown argument '$arg'\n"; next;
+    if ($opts) {
+        if ($arg eq "-g") { $google = 1; next; }
+        if ($arg eq "-R") { $rewrite = 0; next; }
+        if ($arg eq "--") { $opts = 0; next; }
+        if ($arg =~ /^-/) { print STDERR "unknown option '$arg'\n"; next; }
+    }
+    $url = $arg;
 }
 
-$url = `xcopy -r`;
+$url = `xcopy -r` unless defined $url;
 
 if ($google) {
     # Construct a Google search URL.
@@ -47,7 +90,6 @@ if ($rewrite and -x "$ENV{'HOME'}/.urlrewrite") {
     $cmd = "$ENV{'HOME'}/.urlrewrite '$cmd'";
     $newurl = `$cmd`;
     $newurl =~ s/\n//gs;
-    print ":$cmd:$newurl:\n";
     $url = $newurl if $newurl =~ /\/\//;
 }
 
@@ -59,8 +101,8 @@ if ($rewrite and -x "$ENV{'HOME'}/.urlrewrite") {
 # failure return and launch `mozilla $url' if we see one.
 
 open(STDERR, ">/dev/null");
-system "mozilla", "-remote", "openurl($url,new-window)";
+eval "system $try1";
 
 if ($? != 0) {
-    exec "mozilla", $url;
+    eval "exec $try2";
 }
