@@ -1,0 +1,107 @@
+Summary: Scroll-optimisation for pterm
+Class: wish
+Difficulty: tame
+Priority: medium
+Content-type: text/plain
+
+From Richard:
+[ NB: this depends on a platform-independent patch which I intend to commit
+  any moment now... ]
+
+Index: unix/pterm.c
+===================================================================
+RCS file: /home/cvs/putty/unix/pterm.c,v
+retrieving revision 1.91
+diff -u -r1.91 pterm.c
+--- unix/pterm.c	25 Jan 2003 16:23:48 -0000	1.91
++++ unix/pterm.c	27 Jan 2003 10:58:25 -0000
+@@ -102,6 +102,61 @@
+     return def;
+ }
+ 
++#ifdef OPTIMISE_SCROLL
++/*
++ * Scroll a displayed region on the screen.
++ * (`lines' is +ve for scrolling forward, -ve for backward.)
++ */
++void do_scroll(Context ctx, int topline, int botline, int lines)
++{
++    struct draw_ctx *dctx = (struct draw_ctx *)ctx;
++    struct gui_data *inst = dctx->inst;
++    GdkGC *gc = dctx->gc;
++    int scrollarea_lines;
++
++    if (lines > 0) {
++	scrollarea_lines = botline - topline + 1 - lines;
++    } else {
++	scrollarea_lines = botline - topline + 1 + lines;
++    }
++
++    if (lines == 0 || scrollarea_lines <= 0) return;
++    if (lines > 0) {
++	gdk_window_copy_area(inst->area->window, gc,
++	    0,
++	    (topline * inst->font_height + inst->cfg.window_border),
++	    inst->area->window,
++	    0,
++	    ((topline + lines) * inst->font_height + inst->cfg.window_border),
++	    (inst->cfg.width * inst->font_width + 2*inst->cfg.window_border),
++	    scrollarea_lines * inst->font_height);
++	gdk_draw_pixmap(inst->pixmap, gc, inst->pixmap,
++	    0,
++	    ((topline + lines) * inst->font_height + inst->cfg.window_border),
++	    0,
++	    (topline * inst->font_height + inst->cfg.window_border),
++	    (inst->cfg.width * inst->font_width + 2*inst->cfg.window_border),
++	    scrollarea_lines * inst->font_height);
++    } else {
++	gdk_window_copy_area(inst->area->window, gc,
++	    0,
++	    ((topline - lines) * inst->font_height + inst->cfg.window_border),
++	    inst->area->window,
++	    0,
++	    (topline * inst->font_height + inst->cfg.window_border),
++	    (inst->cfg.width * inst->font_width + 2*inst->cfg.window_border),
++	    scrollarea_lines * inst->font_height);
++	gdk_draw_pixmap(inst->pixmap, gc, inst->pixmap,
++	    0,
++	    (topline * inst->font_height + inst->cfg.window_border),
++	    0,
++	    ((topline - lines) * inst->font_height + inst->cfg.window_border),
++	    (inst->cfg.width * inst->font_width + 2*inst->cfg.window_border),
++	    scrollarea_lines * inst->font_height);
++    }
++}
++#endif /* OPTIMISE_SCROLL */
++
+ void ldisc_update(void *frontend, int echo, int edit)
+ {
+     /*
+@@ -1515,6 +1570,10 @@
+     dctx = smalloc(sizeof(*dctx));
+     dctx->inst = inst;
+     dctx->gc = gdk_gc_new(inst->area->window);
++
++    /* Make gdk_window_copy_area() generate expose events if neccessary. */
++    gdk_gc_set_exposures(dctx->gc, TRUE);
++
+     return dctx;
+ }
+ 
+Index: unix/unix.h
+===================================================================
+RCS file: /home/cvs/putty/unix/unix.h,v
+retrieving revision 1.22
+diff -u -r1.22 unix.h
+--- unix/unix.h	14 Jan 2003 18:43:45 -0000	1.22
++++ unix/unix.h	27 Jan 2003 10:58:25 -0000
+@@ -78,4 +78,9 @@
+  */
+ int sk_getxdmdata(void *sock, unsigned long *ip, int *port);
+ 
++/*
++ * Uncomment to enable the scroll optimisation code.
++ */
++/* #define OPTIMISE_SCROLL */
++
+ #endif
