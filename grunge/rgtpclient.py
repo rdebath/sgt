@@ -423,23 +423,27 @@ class RGTPConnection:
 	    return s
 	return ""
 
-    def newi(self, subject):
+    def newi(self, subject, seqfn=None):
 	"Create a new item. Uses previously sent data."
 	self._putline("NEWI "+subject)
 	s = self._getline()
 	while s[0:1] == "1":
 	    s = self._getline()
 	if s[0:3] == "220":
+	    if seqfn != None:
+		seqfn(string.atol(s[4:12], 16))
 	    return "ok"
 	else:
 	    return "error"
 
-    def reply(self, itemid):
+    def reply(self, itemid, seqfn=None):
 	"Reply to an item. Uses previously sent data."
 	self._putline("REPL "+itemid)
 	s = self._getline()
 	# FIXME: would be nice to try STAT first and return `mod'
 	if s[0:3] == "220":
+	    if seqfn != None:
+		seqfn(string.atol(s[4:12], 16))
 	    return "ok"
 	elif s[0:3] == "421":
 	    return "full"
@@ -451,7 +455,7 @@ class RGTPConnection:
 	else:
 	    return "error"
 
-    def cont(self, itemid, subj):
+    def cont(self, itemid, subj, seqfn=None):
 	"Continue an item. Uses previously sent data."
 	self._putline("CONT "+subj)
 	s = self._getline()
@@ -466,6 +470,8 @@ class RGTPConnection:
 	    s2 = self._getline()
 	    if s2[0:3] != "220":
 		FIXME()
+	    if seqfn != None:
+		seqfn(string.atol(s[4:12], 16))
 	    return "ok"
 	elif s[0:3] == "122":
 	    s2 = self._getline()
