@@ -125,5 +125,5 @@ test get_history => (["init"],
 		     ["set-contact name 0 Dave"],
 		     ["set-contact name 0 Eric"],
 		     ["contact-history name 0",
-		      stdout => ("0:<DATETIME>::Eric\n"
-				 . "0:<DATETIME>:<DATETIME>:Dave\n")]);
+		      stdout => ("0;<DATETIME>;;Eric\n"
+				 . "0;<DATETIME>;<DATETIME>;Dave\n")]);
