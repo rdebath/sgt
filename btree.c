@@ -93,6 +93,7 @@ struct btree {
     node_addr root;
     cmpfn_t cmp;
     copyfn_t copy;
+    freefn_t freeelt;
     int nprops;
     propmakefn_t propmake;
     propmergefn_t propmerge;
@@ -776,7 +777,8 @@ static int bt_cmp_less(void *state,
  * User-visible administration routines.
  */
 
-btree *bt_new(cmpfn_t cmp, copyfn_t copy, int nprops, propmakefn_t propmake,
+btree *bt_new(cmpfn_t cmp, copyfn_t copy, freefn_t freeelt,
+	      int nprops, propmakefn_t propmake,
 	      propmergefn_t propmerge, void *state, int mindegree)
 {
     btree *ret;
@@ -788,6 +790,7 @@ btree *bt_new(cmpfn_t cmp, copyfn_t copy, int nprops, propmakefn_t propmake,
     ret->root = NODE_ADDR_NULL;
     ret->cmp = cmp;
     ret->copy = copy;
+    ret->freeelt = freeelt;
     ret->nprops = nprops;
     ret->propmake = propmake;
     ret->propmerge = propmerge;
@@ -811,6 +814,11 @@ static void bt_free_node(btree *bt, nodeptr n)
 	}
     }
 
+    if (bt->freeelt) {
+	for (i = 0; i < bt_subtrees(bt, n)-1; i++)
+	    bt->freeelt(bt->userstate, bt_element(bt, n, i));
+    }
+
     bt_destroy_node(bt, n);
 }
 
@@ -830,8 +838,8 @@ btree *bt_clone(btree *bt)
 {
     btree *bt2;
 
-    bt2 = bt_new(bt->cmp, bt->copy, bt->nprops, bt->propmake, bt->propmerge,
-		 bt->userstate, bt->mindegree);
+    bt2 = bt_new(bt->cmp, bt->copy, bt->freeelt, bt->nprops, bt->propmake,
+		 bt->propmerge, bt->userstate, bt->mindegree);
     bt2->depth = bt->depth;
     bt2->root = bt_ref_node(bt, bt->root);
     return bt2;
@@ -1796,7 +1804,7 @@ static btree *bt_split_internal(btree *bt1, int index)
     nodeptr n1, n2, n;
     int nnodes, child;
 
-    bt2 = bt_new(bt1->cmp, bt1->copy, bt1->nprops, bt1->propmake,
+    bt2 = bt_new(bt1->cmp, bt1->copy, bt1->freeelt, bt1->nprops, bt1->propmake,
 		 bt1->propmerge, bt1->userstate, bt1->mindegree);
     bt2->depth = bt1->depth;
 
@@ -1975,8 +1983,8 @@ btree *bt_copy(btree *bt)
     nodeptr n;
     btree *bt2;
 
-    bt2 = bt_new(bt->cmp, bt->copy, bt->nprops, bt->propmake, bt->propmerge,
-		 bt->userstate, bt->mindegree);
+    bt2 = bt_new(bt->cmp, bt->copy, bt->freeelt, bt->nprops, bt->propmake,
+		 bt->propmerge, bt->userstate, bt->mindegree);
     bt2->depth = bt->depth;
 
     n = bt_read_lock_root(bt);
@@ -2431,7 +2439,8 @@ int main(void) {
     for (i = 0; i < (int)NSTR; i++) in[i] = 0;
     array = newn(bt_element_t, MAXTREESIZE);
     arraylen = 0;
-    tree = bt_new(mycmp, NULL, 2, mypropmake, mypropmerge, NULL, TEST_DEGREE);
+    tree = bt_new(mycmp, NULL, NULL, 2, mypropmake, mypropmerge,
+		  NULL, TEST_DEGREE);
 
     verifytree(tree, array, arraylen);
     for (i = 0; i < 10000; i++) {
@@ -2480,7 +2489,8 @@ int main(void) {
      * completeness we'll use it to tear down our unsorted tree
      * once we've built it.
      */
-    tree = bt_new(NULL, NULL, 2, mypropmake, mypropmerge, NULL, TEST_DEGREE);
+    tree = bt_new(NULL, NULL, NULL, 2, mypropmake, mypropmerge,
+		  NULL, TEST_DEGREE);
     verifytree(tree, array, arraylen);
     for (i = 0; i < 1000; i++) {
 	printf("trial: %d\n", i);
@@ -2546,7 +2556,8 @@ int main(void) {
      * Finally, do some testing on split/join on _sorted_ trees. At
      * the same time, we'll be testing split on very small trees.
      */
-    tree = bt_new(mycmp, NULL, 2, mypropmake, mypropmerge, NULL, TEST_DEGREE);
+    tree = bt_new(mycmp, NULL, NULL, 2, mypropmake, mypropmerge,
+		  NULL, TEST_DEGREE);
     arraylen = 0;
     for (i = 0; i < 16; i++) {
 	array_add(array, &arraylen, strings[i]);
@@ -2568,10 +2579,14 @@ int main(void) {
      * also ensure join correctly spots when sorted trees fail the
      * ordering constraint.
      */
-    tree = bt_new(mycmp, NULL, 2, mypropmake, mypropmerge, NULL, TEST_DEGREE);
-    tree2 = bt_new(mycmp, NULL, 2, mypropmake, mypropmerge, NULL, TEST_DEGREE);
-    tree3 = bt_new(mycmp, NULL, 2, mypropmake, mypropmerge, NULL, TEST_DEGREE);
-    tree4 = bt_new(mycmp, NULL, 2, mypropmake, mypropmerge, NULL, TEST_DEGREE);
+    tree = bt_new(mycmp, NULL, NULL, 2, mypropmake, mypropmerge,
+		  NULL, TEST_DEGREE);
+    tree2 = bt_new(mycmp, NULL, NULL, 2, mypropmake, mypropmerge,
+		   NULL, TEST_DEGREE);
+    tree3 = bt_new(mycmp, NULL, NULL, 2, mypropmake, mypropmerge,
+		   NULL, TEST_DEGREE);
+    tree4 = bt_new(mycmp, NULL, NULL, 2, mypropmake, mypropmerge,
+		   NULL, TEST_DEGREE);
     assert(mycmp(NULL, strings[0], strings[1]) < 0);   /* just in case :-) */
     bt_add(tree2, strings[1]);
     testlock(-1, 0, NULL);
