@@ -14,5 +14,6 @@ causes the action not to occur.  xterm does something slightly different, in
 that it pastes on button-up, but doesn't seem to cancel if the pointer moves
 outside the window. (We've had one request for the cancelling behaviour.)
 
-<p><em>Update:</em> In fact, (Windows) PuTTY used to behave like this, and it
-doesn't appear to be a deliberate change. Semi-bug?
+<p><em>Update:</em> In fact, (Windows) PuTTY used to paste on release, and
+it doesn't appear to be a deliberate change. Semi-bug? (It didn't have
+the "cancel" behaviour, though.)
