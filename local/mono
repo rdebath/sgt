@@ -11,7 +11,7 @@ SCREEN=
 MACH=
 CONNECT='exec telnet -l mono'
 unset CEND
-stty quit undef
+stty quit ^^
 while [ $# -gt 0 ]; do
   case "$1" in
     -screen) SCREEN='screen -ln';;
