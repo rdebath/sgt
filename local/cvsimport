@@ -1,0 +1,11 @@
+#!/bin/sh
+tdir=/tmp/cvsimport.script.$$
+cdir=$PWD
+name=`basename $cdir`
+mkdir $tdir
+cd $tdir
+cvs "$@" import -m"Import of $name under CVS" $name \
+  dummy-vendor-tag dummy-release-tag
+cd $cdir/..
+rmdir $tdir
+cvs "$@" co $name
