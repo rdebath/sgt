@@ -1,0 +1,84 @@
+#!/usr/bin/perl -w
+
+# Simple symmetric two-way communication tool over a shared Unix socket.
+
+# Simple usage: both parties run `usock /path/to/socket'.
+# The first usock to run will bind the socket address and listen.
+# The second will fail to bind, realise the socket already exists,
+# and connect to it. Thereafter, they can exchange two-way data until
+# both send EOF. If one side sends EOF, it can still receive from the
+# other until the other sends EOF too.
+#
+# Since the designed simple usage of this program is to create a
+# socket in a shared area such as /tmp, the socket is created by
+# default with a umask of 0 (ie permissions 0777, rwxrwxrwx). An
+# alternative umask such as 077 can be specified (in octal) as a
+# second command line option.
+#
+# Whichever side is doing the listening will unlink the socket filename
+# immediately after accepting a connection, so it can be reused.
+
+use Socket;
+use FileHandle;
+
+$fname = shift @ARGV;
+$sun = sockaddr_un($fname);
+$umask = 0;
+$umask = oct shift @ARGV if defined ($ARGV[0]);
+umask $umask;
+
+$proto = 0;
+# If the socket can be bound, then bind it, listen, get a connection,
+# and unlink it. If not, connect to it.
+$sock = new FileHandle;
+socket($sock, PF_UNIX, SOCK_STREAM, $proto) or die "socket: $!\n";
+if (bind($sock,$sun)) {
+  listen($sock,1) or die "listen: $!\n";
+  $newsock = new FileHandle;
+  accept($newsock, $sock) or die "accept: $!\n";
+  close($sock);
+  $sock = $newsock;
+  unlink($fname);
+} else {
+  $binderr = $!;
+  connect($sock,$sun) or die "bind: $binderr\nconnect: $!\n";
+}
+
+$sockbuf = $stdbuf = '';
+$stdclosed = $sockclosed = 0;
+while (1) {
+  $r = $w = $e = '';
+  vec($r, fileno(STDIN), 1) = 1 unless $stdclosed;
+  vec($r, fileno($sock), 1) = 1 unless $sockclosed;
+  vec($w, fileno(STDOUT), 1) = 1 if length $stdbuf;
+  vec($w, fileno($sock), 1) = 1 if length $sockbuf;
+  select($r,$w,$e,undef);
+  if (vec($r, fileno(STDIN), 1)) {
+    $a=''; $n = sysread STDIN, $a, 4096; $sockbuf .= $a;
+    if ($n == 0) { $stdclosed = 1; }
+  }
+  if (vec($r, fileno($sock), 1)) {
+    $a=''; $n = sysread $sock, $a, 4096; $stdbuf .= $a;
+    if ($n == 0) { $sockclosed = 1; }
+  }
+  if (vec($w, fileno(STDOUT), 1)) {
+    $n = syswrite STDOUT, $stdbuf, 4096;
+    $stdbuf = substr($stdbuf, $n) if defined $stdbuf;
+    if ($n <= 0) {
+      $stdbuf = ''; $stdclosed = 1;
+      $err = ($n < 0 ? $! : "unexpectedly closed");
+      warn "stdout: $err\n";
+    }
+  }
+  if (vec($w, fileno($sock), 1)) {
+    $n = syswrite $sock, $sockbuf, 4096;
+    $sockbuf = substr($sockbuf, $n) if defined $sockbuf;
+    if ($n <= 0) {
+      $sockbuf = ''; $sockclosed = 1;
+      $err = ($n < 0 ? $! : "unexpectedly closed");
+      warn "socket: $err\n";
+    }
+  }
+  if ($stdclosed and $sockbuf eq "") { shutdown $sock, 1; }
+  last if $stdclosed and $sockclosed and $stdbuf eq '' and $sockbuf eq '';
+}
