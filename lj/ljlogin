@@ -38,6 +38,7 @@ f.read()
 f.close()
 
 cfg = os.environ["HOME"] + "/.ljscan/ljsession"
-file = open(cfg, "w")
+fd = os.open(cfg, os.O_TRUNC | os.O_CREAT | os.O_WRONLY, 0600)
+file = os.fdopen(fd, "w")
 file.write(cookiehdr + "\n")
 file.close()
