@@ -1,6 +1,6 @@
 # -*- mode: sh; mode: fold -*-
 # Simon Tatham's standardised chunk of .bashrc
-# $Revision: 1.27 $
+# $Revision: 1.28 $
 
 #{{{ I don't like .bash_history files. They wet their nests.
 unset HISTFILE
@@ -185,7 +185,7 @@ unset bashrc_do_bindings
 #{{{ prompt configuration
 
 doPSn() {
-  local hostname=`hostname`
+  local hostname=`hostname | tr A-Z a-z`
   local spaces=`echo -n $hostname | sed 's/./ /g'`
   local bold=`tput bold | sed 's/\[1m/\[0;3${promptcolour}m/'`
   local sgr0=`tput sgr0`
