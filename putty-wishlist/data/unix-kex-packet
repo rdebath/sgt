@@ -14,6 +14,11 @@ through fine. The fault doesn't appear to happen with the Windows
 version, nor with Unix plink (so could be a GUI concurrency problem
 due to the blocking caused by the host key verification dialog?).
 
+What might be special about these connections is that the server
+sends NEWKEYS immediately after sending KEXDH_REPLY, whereas (say)
+OpenSSH appears to wait for the client to send NEWKEYS before sending
+its NEWKEYS. (Based on PuTTY's packet logs.)
+
 Workaround: add the host key to the database first. (Apparently
 this can be done by setting "close window on exit" to "never" in
 the first session, or use contrib/kh2reg.py in PuTTY CVS.)
