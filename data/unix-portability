@@ -1,26 +1,80 @@
 Summary: Extra portability in the Unix port
 Class: wish
 Priority: low
+Content-type: text/x-html-body
 
+<p>
 People occasionally send us patches to make the Unix port more portable.
 
-   * FreeBSD 4.7-STABLE
-     wwvn0lvct6s.fsf@rjk.greenend.org.uk
+<p>
+We should probably work out a mechanism for dealing with Unix portability.
+autoconf seems likely.
 
-   * FreeBSD 5.1
-     20031029224803.GK30375@earth.li
+<p>
+Here are some of the patches we've received:
 
-   * NetBSD with gcc-3.x
-     20031126022610.GA13294@babymeat.com
+<ul>
 
-   * FreeBSD-5.2-RELEASE
-     1075418510.724.16.camel@localhost
-     20040213160319.GA565@scimitar.noc.nl.demon.net (with commentary)
+<li>FreeBSD 4.7-STABLE
+<br><tt>wwvn0lvct6s.fsf@rjk.greenend.org.uk</tt>
 
-   * Solaris
-     20040217181156.GM17353@granzeau.com
+<li>FreeBSD 5.1
+<br><tt>20031029224803.GK30375@earth.li</tt>
 
-   * Mac OS X
-     dhbecker-0uHkTAZ3waS4IzZ253W5cgjfAlrQMYu@mailblocks.com
+<li>NetBSD with gcc-3.x
+<br><tt>20031126022610.GA13294@babymeat.com</tt>
 
-Apparently PuTTY is now in the FreeBSD ports tree.
+<li>FreeBSD-5.2-RELEASE
+<br><tt>1075418510.724.16.camel@localhost</tt>
+<br><tt>20040213160319.GA565@scimitar.noc.nl.demon.net</tt> (with commentary)
+
+<li>Solaris
+<br><tt>20040217181156.GM17353@granzeau.com</tt> -
+see <a href="#solaris">below</a>
+
+<li>Mac OS X
+<br><tt>dhbecker-0uHkTAZ3waS4IzZ253W5cgjfAlrQMYu@mailblocks.com</tt>
+
+<li>Apparently PuTTY is now in the FreeBSD ports tree.
+
+</ul>
+
+<hr>
+
+<a name="solaris"></a>Solaris patch (for use with GNU tools) follows:
+
+<pre>diff -c unixold/Makefile.gtk unix/Makefile.gtk
+*** unixold/Makefile.gtk        Thu Feb 12 12:43:43 2004
+--- unix/Makefile.gtk   Tue Feb 17 12:11:31 2004
+***************
+*** 83,88 ****
+--- 83,90 ----
+  CFLAGS = -O2 -Wall -Werror -g -I. -I.. -I../charset `gtk-config --cflags`
+  XLDFLAGS = `gtk-config --libs`
+  ULDFLAGS =#
++ # Uncomment for Solaris
++ # ULDFLAGS = -lsocket -lnsl
+  INSTALL=install
+  INSTALL_PROGRAM=$(INSTALL)
+  INSTALL_DATA=$(INSTALL)
+diff -c unixold/uxnet.c unix/uxnet.c
+*** unixold/uxnet.c     Tue Feb  3 08:47:43 2004
+--- unix/uxnet.c        Tue Feb 17 12:10:58 2004
+***************
+*** 15,20 ****
+--- 15,28 ----
+  #include &lt;netinet/in.h&gt;
+  #include &lt;netinet/tcp.h&gt;
+  #include &lt;netdb.h&gt;
++ /* This is a hack for solaris, it keeps SIOCATMARK here. */
++ #ifndef SIOCATMARK
++ #include &lt;sys/sockio.h&gt;
++ #endif
++ /* For Unix flavors that don't define INADDR_NONE */
++ #ifndef INADDR_NONE
++ #define       INADDR_NONE     0xffffffff
++ #endif
+
+  #define DEFINE_PLUG_METHOD_MACROS
+  #include "putty.h"
+**************</pre>
