@@ -4,13 +4,11 @@ import sys
 import os
 import tempfile
 import string
+import re
 import time
 import ljproto
 
 # Here's the TODO list for potential future enhancements.
-#
-#  - Mono formatting: prefix ]a to lines beginning `Word:'. Need to
-#    watch out for this in wrapping algorithm!
 #
 #  - Configurably pass the Mono text to xcopy instead of shoving it
 #    in diary.data, for ease of diarying at home.
@@ -69,124 +67,6 @@ def isint(s):
     except ValueError:
 	return 0
 
-# Read input.
-
-TSIMPLE = 0
-TOPEN = 1
-TCLOSE = 2
-WORD = 3
-WHITE = 4
-NL = 5
-PARA = 6
-EOF = 7
-
-# Tokenise. Potential tokens are
-#
-#  - A simple tag, such as {Q}. Return is (TCLOSED,"Q").
-#  - An opening tag, such as {q. Return is (TOPEN,"q").
-#  - A closing tag (}). Return is (TCLOSE,).
-#  - A word. Return is (WORD,"word").
-#  - Some whitespace. Return is (WHITE," ").
-#  - A lone newline. Return is (NL,).
-#  - A paragraph separator. Return is (PARA,).
-#  - EOF. Return is (EOF,).
-
-class tokeniser:
-    def __init__(self, file):
-	self.file = file
-	self.currchar = ""
-	self.pushback = ""
-	self.token = None
-
-    def char(self):
-	if self.currchar == "":
-	    if self.pushback != "":
-		self.currchar = self.pushback
-		self.pushback = ""
-	    else:
-		self.currchar = self.file.read(1)
-		if self.currchar == "{":
-		    c = self.file.read(1)
-		    if c != "{":
-			self.pushback = c
-			self.currchar = "{{"
-		elif self.currchar == "}":
-		    c = self.file.read(1)
-		    if c != "}":
-			self.pushback = c
-			self.currchar = "}}"
-	return self.currchar
-
-    def nextchar(self):
-	self.currchar = ""
-	return self.char()
-
-    def readtoken(self):
-	c = self.char()
-	if c == "":
-	    return (EOF,)
-	if c == "\n":
-	    if self.nextchar() == "\n":
-		self.nextchar()
-		return (PARA,)
-	    return (NL,)
-	if c == "}}":
-	    self.nextchar()
-	    return (TCLOSE,)
-	if c == "{{":
-	    ret = ""
-	    while 1:
-		c = self.nextchar()
-		if len(c) == 1 and not (c in string.whitespace):
-		    ret = ret + c
-		else:
-		    break
-	    if c == "}}":
-		self.nextchar()
-		return (TSIMPLE, ret)
-	    else:
-		if (len(c) == 1 and c in string.whitespace):
-		    self.nextchar()
-		return (TOPEN, ret)
-	if c in string.whitespace:
-	    ret = c
-	    while 1:
-		c = self.nextchar()
-		if len(c) != 1 or not (c in string.whitespace):
-		    break
-		ret = ret + c
-	    return (WHITE, ret)
-	# Anything remaining is WORD.
-	ret = c
-	while 1:
-	    c = self.nextchar()
-	    if len(c) == 1 and not (c in string.whitespace):
-		ret = ret + c
-	    else:
-		break
-	    if c == "-":
-		# A hyphen breaks, but only _after_ adding it to the word.
-		self.nextchar() # eat the hyphen
-		break
-	return (WORD, ret)
-
-    def curr(self):
-	if self.token == None:
-	    self.token = self.readtoken()
-	return self.token
-    
-    def next(self):
-	self.token = None
-	return self.curr()
-
-    def expect(self, list):
-	t = self.curr()
-	if not (t[0] in list):
-	    sys.stderr.write("unexpected token type\n")
-	    return 0
-	else:
-	    return 1
-
 # Paragraph states are:
 #  - PNORMAL is a normal wrapped paragraph.
 #  - PPRE is a preformatted paragraph (<pre> in HTML).
@@ -208,6 +88,8 @@ ATTR_FOOTNOTE = 0x90
 ATTR_QUOTED = 0xB0
 # Mono (text,attr,break) combinations for quote prefixes.
 monoquotes = [("", 0, 0), ("  ", ATTR_QUOTED, 0), ("> ", ATTR_QUOTED, 0)]
+# Regexp matching dangerous things to put at the start of a line.
+monodanger = re.compile(r'^[A-Z][A-Za-z]*:')
 class output:
     def __init__(self):
 	self.mono = []
@@ -246,7 +128,7 @@ class output:
     def mono_add_word(self, text, attrs, isbreak):
         self.mono_words.append((text, attrs, isbreak))
 
-    def mono_append(self, attr, word):
+    def mono_append(self, attr, currwid, word):
         text = word[0]
         sw = len(text)
         if (word[1] & ATTR_FG) != (attr & ATTR_FG):
@@ -256,28 +138,30 @@ class output:
             text = ["\007u","\007U"][(word[1] & ATTR_UNDER) != 0] + text
         if (word[1] & ATTR_BOLD) != (attr & ATTR_BOLD):
             text = ["\007b","\007B"][(word[1] & ATTR_BOLD) != 0] + text
+	# Mono `feature'. If the first thing on a line is a capital
+	# letter, followed by some number of capital and small
+	# letters, followed by a colon, it will be indented by one
+	# unless we prefix it with a ]a trib.
+	if currwid == 0 and monodanger.search(text):
+	    text = "\007a" + text
         return word[1], len(text), sw, text
 
-    def mono_wrap_optimal(self, list, i1, i2, width=79, owidth=72):
+    def mono_wrap_optimal(self, list, i1, i2, width=79, opt_width=72):
         class holder:
 	    "container class"
 	    pass
         n = len(list)
         z = []
-        if owidth != None:
-	    opt_width = owidth
-        else:
-	    opt_width = width
         for i in range(n-1, -1, -1):
             if i == 0:
-                attr, realwid, scrwid, text = self.mono_append(0, i1)
+                attr, realwid, scrwid, text = self.mono_append(0, 0, i1)
             else:
-                attr, realwid, scrwid, text = self.mono_append(0, i2)
+                attr, realwid, scrwid, text = self.mono_append(0, 0, i2)
 	    best = None
 	    bestcost = None
 	    z = [holder()] + z
 	    for j in range(1, n-i+1):
-                attr, rw, sw, text = self.mono_append(attr, list[i+j-1])
+                attr, rw, sw, text = self.mono_append(attr,realwid,list[i+j-1])
                 realwid = realwid + rw
                 scrwid = scrwid + sw
                 if i+j < n and list[i+j][2] == 0:
@@ -309,11 +193,12 @@ class output:
         while i < len(list):
 	    n = z[i].n
             if i == 0:
-                attr, rw, sw, text = self.mono_append(0, i1)
+                attr, rw, sw, text = self.mono_append(0, 0, i1)
             else:
-                attr, rw, sw, text = self.mono_append(0, i2)
+                attr, rw, sw, text = self.mono_append(0, 0, i2)
             for word in list[i:i+n]:
-                attr, rw, sw, extratext = self.mono_append(attr, word)
+                attr, rwi, sw, extratext = self.mono_append(attr, rw, word)
+		rw = rw + rwi
                 text = text + extratext
             ret.append(text)
 	    i = i + n
@@ -486,6 +371,124 @@ class output:
 	    self.subj = self.subj + text
         if self.mono_ok:
             self.mono_add_word(text, self.mono_attr, 1)
+
+# Read input.
+
+TSIMPLE = 0
+TOPEN = 1
+TCLOSE = 2
+WORD = 3
+WHITE = 4
+NL = 5
+PARA = 6
+EOF = 7
+
+# Tokenise. Potential tokens are
+#
+#  - A simple tag, such as {Q}. Return is (TCLOSED,"Q").
+#  - An opening tag, such as {q. Return is (TOPEN,"q").
+#  - A closing tag (}). Return is (TCLOSE,).
+#  - A word. Return is (WORD,"word").
+#  - Some whitespace. Return is (WHITE," ").
+#  - A lone newline. Return is (NL,).
+#  - A paragraph separator. Return is (PARA,).
+#  - EOF. Return is (EOF,).
+
+class tokeniser:
+    def __init__(self, file):
+	self.file = file
+	self.currchar = ""
+	self.pushback = ""
+	self.token = None
+
+    def char(self):
+	if self.currchar == "":
+	    if self.pushback != "":
+		self.currchar = self.pushback
+		self.pushback = ""
+	    else:
+		self.currchar = self.file.read(1)
+		if self.currchar == "{":
+		    c = self.file.read(1)
+		    if c != "{":
+			self.pushback = c
+			self.currchar = "{{"
+		elif self.currchar == "}":
+		    c = self.file.read(1)
+		    if c != "}":
+			self.pushback = c
+			self.currchar = "}}"
+	return self.currchar
+
+    def nextchar(self):
+	self.currchar = ""
+	return self.char()
+
+    def readtoken(self):
+	c = self.char()
+	if c == "":
+	    return (EOF,)
+	if c == "\n":
+	    if self.nextchar() == "\n":
+		self.nextchar()
+		return (PARA,)
+	    return (NL,)
+	if c == "}}":
+	    self.nextchar()
+	    return (TCLOSE,)
+	if c == "{{":
+	    ret = ""
+	    while 1:
+		c = self.nextchar()
+		if len(c) == 1 and not (c in string.whitespace):
+		    ret = ret + c
+		else:
+		    break
+	    if c == "}}":
+		self.nextchar()
+		return (TSIMPLE, ret)
+	    else:
+		if (len(c) == 1 and c in string.whitespace):
+		    self.nextchar()
+		return (TOPEN, ret)
+	if c in string.whitespace:
+	    ret = c
+	    while 1:
+		c = self.nextchar()
+		if len(c) != 1 or not (c in string.whitespace):
+		    break
+		ret = ret + c
+	    return (WHITE, ret)
+	# Anything remaining is WORD.
+	ret = c
+	while 1:
+	    c = self.nextchar()
+	    if len(c) == 1 and not (c in string.whitespace):
+		ret = ret + c
+	    else:
+		break
+	    if c == "-":
+		# A hyphen breaks, but only _after_ adding it to the word.
+		self.nextchar() # eat the hyphen
+		break
+	return (WORD, ret)
+
+    def curr(self):
+	if self.token == None:
+	    self.token = self.readtoken()
+	return self.token
+    
+    def next(self):
+	self.token = None
+	return self.curr()
+
+    def expect(self, list):
+	t = self.curr()
+	if not (t[0] in list):
+	    sys.stderr.write("unexpected token type\n")
+	    return 0
+	else:
+	    return 1
 
 # Now actually read the markup.
 
