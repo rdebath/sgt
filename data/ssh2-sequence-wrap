@@ -4,6 +4,7 @@ Priority: low
 Difficulty: tricky
 Content-type: text/x-html-body
 Present-in: 2005-01-17
+Fixed-in: 2005-01-29
 
 <p><a href="http://doi.acm.org/10.1145/996943.996945">Bellare
 <i>et al</i></a> note that if the sequence number for SSH2 MACs repeats
