@@ -950,7 +950,7 @@ int main(int argc, char **argv)
     /*
      * Usage: svnserve-wrapper <username> <repository>
      */
-    char *username, *repository;
+    char *username, *repository, *svnserve;
     int fromchild[2], tochild[2];
     int fromchild_closed, stdin_closed;
     int pid;
@@ -958,13 +958,18 @@ int main(int argc, char **argv)
     struct buffer buf_to_child = { NULL,0,0 }, buf_to_stdout = { NULL,0,0 };
     struct svnprotocol_state command_state, response_state;
 
-    if (argc != 3) {
-	fprintf(stderr, "usage: svnserve-wrapper <username> <repository>\n");
+    if (argc != 3 && argc != 4) {
+	fprintf(stderr, "usage: svnserve-wrapper <username> <repository>"
+		" [<svnserve-path>]\n");
 	return 1;
     }
 
     username = argv[1];
     repository = argv[2];
+    if (argc == 4)
+	svnserve = argv[3];
+    else
+	svnserve = NULL;
 
     if (pipe(fromchild) < 0 || pipe(tochild) < 0) {
 	perror("svnserve-wrapper: pipe");
@@ -988,9 +993,9 @@ int main(int argc, char **argv)
 	dup2(tochild[0], 0);
 	close(fromchild[1]);
 	close(tochild[0]);
-	/* FIXME: Silly pathname. */
-	execlp("/home/simon/src/svn-research/svn/subversion/svnserve/svnserve",
-	       "svnserve", "-t", "--tunnel-user", username, NULL);
+	(svnserve ? execl : execlp)
+	    (svnserve ? svnserve : "svnserve",
+	     "svnserve", "-t", "--tunnel-user", username, NULL);
 	perror("svnserve-wrapper: exec");
 	return 127;
     }
