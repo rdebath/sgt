@@ -4,6 +4,10 @@ LINK := gcc
 LFLAGS :=
 LIBS := 
 
+PREFIX=/usr/local
+BINDIR=$(PREFIX)/bin
+MANDIR=$(PREFIX)/man/man1
+
 TWEAK := main.o keytab.o actions.o search.o rcfile.o buffer.o btree.o
 
 ifeq ($(SLANG),yes)
@@ -39,6 +43,12 @@ release: tweak.1 btree.html
 	done
 	(cd reltmp; tar chzvf ../tweak-$(VERSION).tar.gz tweak-$(VERSION))
 	rm -rf reltmp
+
+install: tweak tweak.1
+	mkdir -p $(BINDIR)
+	install tweak $(BINDIR)/tweak
+	mkdir -p $(MANDIR)
+	install -m 0644 tweak.1 $(MANDIR)/tweak.1
 
 clean:
 	rm -f *.o tweak tweak.1 btree.html
