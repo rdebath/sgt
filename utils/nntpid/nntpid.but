@@ -1,0 +1,54 @@
+\cfg{man-identity}{nntpid}{1}{2004-11-21}{Simon Tatham}{Simon Tatham}
+
+\title Man page for \cw{nntpid}
+
+\U NAME
+
+\cw{nntpid} - retrieve a single article from a news server
+
+\U SYNOPSIS
+
+\c nntpid [ -v ] message-id
+\e bbbbbb   bb   iiiiiiiiii
+\c nntpid [ -v ] newsgroup-name article-number
+\e bbbbbb   bb   iiiiiiiiiiiiii iiiiiiiiiiiiii
+
+\U DESCRIPTION
+
+\cw{nntpid} makes a connection to a news server, retrieves a single
+article, and displays it.
+
+You can specify the article you want by either:
+
+\b giving its Message-ID. Message-IDs are globally unique, so you
+don't need to know which newsgroup the article was in. Also, they do
+not vary between news servers.
+
+\b giving a newsgroup name and an article number within that
+newsgroup. Article numbers are assigned internally by a particular
+news server, so they will be different on other servers carrying the
+same group.
+
+\U ARGUMENTS
+
+If you specify one argument, \cw{nntpid} assumes it is a Message-ID.
+The angle brackets that usually delimit Message-IDs are optional;
+\cw{nntpid} will strip them off if it sees them, and will not
+complain if it does not.
+
+If you specify two arguments, \cw{nntpid} will interpret the first
+as a newsgroup name, and the second as an article number.
+
+\U OPTIONS
+
+\dt \cw{-v}
+
+\dd Verbose mode. In this mode, \cw{nntpid} will log its entire
+conversation with the news server on standard error.
+
+\U LICENCE
+
+\cw{nntpid} is free software, distributed under the MIT licence.
+Type \cw{nntpid --licence} to see the full licence text.
+
+\versionid $Id$

@@ -1,4 +1,4 @@
-SUBDIRS = base64 cvt-utf8 multi xcopy
+SUBDIRS = base64 cvt-utf8 multi nntpid xcopy
 
 # for `make html' and `make release'; should be a relative path
 DESTDIR = .
