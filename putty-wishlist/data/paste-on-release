@@ -2,6 +2,8 @@ Summary: PuTTY should paste when the paste button is released
 Class: wish
 Priority: low
 Difficulty: fun
+Absent-in: 0.53b 2003-03-27
+Present-in: 2003-03-31 2004-01-19
 Content-type: text/x-html-body
 
 <p>At present, PuTTY pastes text when it receives a button-down event for
@@ -10,4 +12,7 @@ that are triggered by a click happen on the button-up event instead, and
 moving the pointer out of the control being clicked on before the button-up
 causes the action not to occur.  xterm does something slightly different, in
 that it pastes on button-up, but doesn't seem to cancel if the pointer moves
-outside the window.
+outside the window. (We've had one request for the cancelling behaviour.)
+
+<p><em>Update:</em> In fact, (Windows) PuTTY used to behave like this, and it
+doesn't appear to be a deliberate change. Semi-bug?
