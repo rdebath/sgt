@@ -48,6 +48,7 @@ class CubeGame:
         self.moveinprogress = FALSE
         self.moves = []
         self.completed = FALSE
+        self.fullredraw = FALSE
 
     def draw(self, pixmap):
 
@@ -177,8 +178,8 @@ class CubeGame:
         # If this is an undo move, we do the swap _first_.
         self.moveisundo = undo
         if undo:
-            self.arena[self.newx][self.newy], self.newcube[B] = \
-            self.newcube[B], self.arena[self.newx][self.newy]
+            self.arena[self.cubex][self.cubey], self.newcube[B] = \
+            self.newcube[B], self.arena[self.cubex][self.cubey]
 
         # Make a move on the grid.
         if self.cubex + dx < 0 or self.cubex + dx >= NSQUARES:
@@ -225,17 +226,21 @@ class CubeGame:
 
         self.moveinprogress = FALSE
 
-        complete = TRUE
-        for i in self.cube:
-            if not i:
-                complete = FALSE
-        self.completed = complete
+        if not self.completed:
+            complete = TRUE
+            for i in self.cube:
+                if not i:
+                    complete = FALSE
+            if complete:
+                self.completed = TRUE
+                self.completex, self.completey = self.cubex, self.cubey
 
     def undo(self):
-        if self.completed:
-            return # undo only works within the game
         if len(self.moves) == 0:
             return # nothing to undo
+        if self.completed:
+            self.cubex, self.cubey = self.completex, self.completey
+            self.completed = FALSE
         dx, dy = self.moves.pop()
         self.move(-dx, -dy, undo=TRUE)
 
@@ -255,9 +260,12 @@ def small_redraw():
     bbox0 = game.bbox
     game.draw(pix)
     bbox1 = game.bbox
-    #print "progress=", game.moveprogress, "ret=", ret
-    redraw(darea, [min(bbox0[0],bbox1[0]), min(bbox0[1],bbox1[1]),
-    max(bbox0[2],bbox1[2]), max(bbox0[3],bbox1[3])])
+    if game.fullredraw:
+        redraw(darea)
+        game.fullredraw = FALSE
+    else:
+        redraw(darea, [min(bbox0[0],bbox1[0]), min(bbox0[1],bbox1[1]),
+        max(bbox0[2],bbox1[2]), max(bbox0[3],bbox1[3])])
 
 def key_event(win, event=None):
     global timer_inst
