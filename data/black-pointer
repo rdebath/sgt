@@ -1,0 +1,25 @@
+Summary: Mouse pointer appears black on some systems
+Class: semi-bug
+Priority: low
+Difficulty: taxing
+Present-in: 0.52
+Content-type: text/x-html-body
+
+<p>
+Some people have reported that PuTTY's default mouse pointer (the Windows
+I-beam) appears black-on-black, and is hence invisible.  It usually consists
+entirely of inverted pixels, and hence should appear white on PuTTY's default
+black background.  Reports so far:
+</p>
+<ul>
+<li> &lt;Pine.OSF.4.50.0212281329190.12205-100000@kosh.hut.fi&gt;:<br>
+Windows 98.  No other details
+<li> &lt;5.2.0.9.2.20030101131051.00a1b8f0@pop.telekabel.at&gt; et seq.:<br>
+PuTTY 0.52.  No other details
+</ul>
+<p>
+I (BJH) have some memory of Simon mentioning having seen this problem before,
+and it having turned out to be a bug in the video card/driver.  At present,
+I think we need more information on systems where this problem occurs, and
+in particular what operating system, video card, driver version and colour
+depth are being used.
