@@ -234,12 +234,16 @@ class output:
 
     def quote_state(self, n):
 	if self.quotestate != n:
-	    if self.quotestate != 0:
+	    if self.quotestate == 1 or self.quotestate == 2:
 		self.html = self.html + "</blockquote>"
+	    elif self.quotestate == 3:
+		self.html = self.html + "</span>"
 	    if n == 1:
 		self.html = self.html + "<blockquote style=\"padding-left: 1.2em; margin-left: 1em\">"
 	    elif n == 2:
 		self.html = self.html + "<blockquote style=\"border-left: 0.2em solid; padding-left: 1em; margin-left: 1em\">"
+	    elif n == 3:
+		self.html = self.html + "<span class=\"fiction\">"
 	    self.quotestate = n
             self.monoquote = monoquotes[n]
 
