@@ -6,7 +6,7 @@ Content-type: text/x-html-body
 
 <p>
 It's
-<a href="http://www.chiark.greenend.org.uk/~sgtatham/putty/faq.html#A.6.20">well known</a>
+<a href="http://www.chiark.greenend.org.uk/~sgtatham/putty/faq.html#A.7.18">well known</a>
 that Red Hat 8 boxes start up in UTF-8 by default,
 and hence that PuTTY must be set into UTF-8 mode or else commands
 such as man(1) will Do The Wrong Thing.
