@@ -1,0 +1,34 @@
+Summary: Compress scrollback contents to reduce memory usage
+Class: wish
+Difficulty: tricky
+Priority: medium
+Content-type: text/x-html-body
+
+<p>
+PuTTY's current terminal emulator stores 32 bits per character in both
+the active terminal screen and the scrollback, and practically all of
+those bits are full. If we want to add more state (such as
+<a href="256-colours.html">more colours</a> or
+<a href="unicode-combining.html">Unicode combining characters</a>), we
+need to expand the data structure. But expanding the data structure
+<em>throughout</em> the terminal code will seriously increase the size
+of the (potentially very large amount of) scrollback stored in memory,
+so we don't like that approach.
+
+<p>
+What we want to do instead is to separate scrollback from the active
+terminal screen by inventing a <em>compressed</em> format. So the
+active terminal screen will use a small <code>struct</code> per
+character (making it easy in future to add new fields), but each row
+of <code>struct</code>s will be compressed into a compact format for
+storing in the scrollback, which will not waste space on any elements
+of the per-character <code>struct</code> which aren't actually used.
+Since a scrollback line is never modified, the compressed format need
+not be easy to change individual characters in.
+
+<p>
+That way, the chances are that the average user will experience a
+<em>drop</em> in memory footprint (since all their scrollback will end
+up smaller than it is right now), and yet the terminal emulator will
+acquire extra flexibility to have features added to it without
+impacting memory usage for people who don't use them.

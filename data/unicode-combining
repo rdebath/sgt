@@ -2,6 +2,7 @@ Summary: Support Unicode combining characters
 Class: wish
 Priority: medium
 Difficulty: tricky
+Depends: compressed-scrollback
 Content-type: text/x-html-body
 
 <p>

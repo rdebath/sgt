@@ -2,6 +2,7 @@ Summary: Support for more colours
 Class: wish
 Priority: low
 Difficulty: tricky
+Depends: compressed-scrollback
 Content-type: text/x-html-body
 
 <p>It's been suggested that PuTTY could usefully support xterm's 256-colour
