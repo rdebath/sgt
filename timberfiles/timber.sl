@@ -169,48 +169,9 @@ variable timber_bcc_addr = "";
 % the \n on the end of each header!
 variable timber_custom_headers = "";
 
-% This variable may be reassigned in `.timberrc'. It gives
-% the command used to send mail. This should have the following
-% properties:
-% (1) Not require further command line arguments (eg addresses)
-% because it won't be given them. `sendmail -t' does this, by
-% making Sendmail read the headers for its addresses.
-% (2) Not fall over when it sees a dot at the beginning of a line.
-% `sendmail -oi' does this.
-% (3) Not produce anything on stdout/stderr that might be
-% important, because we can't get it back. `sendmail -oem' makes
-% Sendmail mail-bounce instead of printing errors.
-% (4) Filter through the Timber attachment processing script
-% before doing anything else. (This converts Attach: headers and
-% Attach-Enclosed: headers into proper MIME encapsulation, and
-% deals with Queue: headers.)
-variable timber_sendmail = "perl " + dircat(JED_ROOT,"bin/timbera.pl");
-
-% This variable may be reassigned in `.timberrc'. It gives
-% the full pathname of the program which fetches the user's new mail
-% into a file specified on the command line.
-variable timber_fetch_prog = "perl " + dircat(JED_ROOT,"bin/timber.pl");
-
-% This variable may be reassigned in `.timberrc'. It gives
-% the full pathname of the program which sets up Timber buffers.
-variable timber_enbuf_prog = "perl " + dircat(JED_ROOT,"bin/timberb.pl");
-
-% This variable may be reassigned in `.timberrc'. It gives
-% the full pathname of the program which decodes MIME encodings.
-variable timber_mime_prog = "perl " + dircat(JED_ROOT,"bin/timberm.pl");
-
-% This variable may be reassigned in `.timberrc'. It gives
-% the full pathname of the program which adds line prefixes.
-variable timber_prefix_prog = "perl " + dircat(JED_ROOT,"bin/timbere.pl");
-
-% This variable may be reassigned in `.timberrc'. It gives
-% the full pathname of the program which looks up MIME types.
-variable timber_mimetype_prog = "perl " + dircat(JED_ROOT,"bin/timbert.pl");
-
-% The directory containing Timber scripts.
-#ifexists putenv
-putenv("TIMBER_SCRIPTS=" + dircat(JED_ROOT, "bin"));
-#endif
+% This variable may be reassigned in `.timberrc'. It provides the
+% location of the Timber scripts directory.
+variable timber_scripts_dir = dircat(getenv("HOME"), "lib/timber");
 
 % This variable may, and almost certainly should, be reassigned
 % in `.timberrc'. It gives a comma-separated list of e-mail
@@ -253,6 +214,14 @@ variable timber_version = "v0.2";
 % This is used in a couple of places so it's kept here for reusability.
 variable timber_headerline =
 "Flags Lin  Size  Date  From                 Subject\n";
+
+% These variables get set up again, properly, at the end of this file.
+variable timber_sendmail = "notsetupyet";
+variable timber_fetch_prog = "notsetupyet";
+variable timber_enbuf_prog = "notsetupyet";
+variable timber_mime_prog = "notsetupyet";
+variable timber_prefix_prog = "notsetupyet";
+variable timber_mimetype_prog = "notsetupyet";
 
 %}}}
 
@@ -417,6 +386,8 @@ $1 = "Timber";
     % M-up and M-down move the current message about.
     definekey("timber_movemsgup", "^[^[[A", $1);
     definekey("timber_movemsgdown", "^[^[[B", $1);
+    definekey("timber_movemsgup", "^[^[OA", $1);
+    definekey("timber_movemsgdown", "^[^[OB", $1);
 
     % We'll make / a search function, just because it is in so many
     % readonly text viewing applications.
@@ -2504,6 +2475,52 @@ define timber_only() {
 if (file_status(expand_filename("~/.timberrc")) == 1) {
     () = evalfile(expand_filename("~/.timberrc"));
 }
+%}}}
+%{{{ Then set up all the script commands properly
+
+% This variable may be reassigned in `.timberrc'. It gives
+% the command used to send mail. This should have the following
+% properties:
+% (1) Not require further command line arguments (eg addresses)
+% because it won't be given them. `sendmail -t' does this, by
+% making Sendmail read the headers for its addresses.
+% (2) Not fall over when it sees a dot at the beginning of a line.
+% `sendmail -oi' does this.
+% (3) Not produce anything on stdout/stderr that might be
+% important, because we can't get it back. `sendmail -oem' makes
+% Sendmail mail-bounce instead of printing errors.
+% (4) Filter through the Timber attachment processing script
+% before doing anything else. (This converts Attach: headers and
+% Attach-Enclosed: headers into proper MIME encapsulation, and
+% deals with Queue: headers.)
+variable timber_sendmail = "perl " + dircat(timber_scripts_dir,"timbera.pl");
+
+% This variable may be reassigned in `.timberrc'. It gives
+% the full pathname of the program which fetches the user's new mail
+% into a file specified on the command line.
+variable timber_fetch_prog = "perl " + dircat(timber_scripts_dir,"timber.pl");
+
+% This variable may be reassigned in `.timberrc'. It gives
+% the full pathname of the program which sets up Timber buffers.
+variable timber_enbuf_prog = "perl " + dircat(timber_scripts_dir,"timberb.pl");
+
+% This variable may be reassigned in `.timberrc'. It gives
+% the full pathname of the program which decodes MIME encodings.
+variable timber_mime_prog = "perl " + dircat(timber_scripts_dir,"timberm.pl");
+
+% This variable may be reassigned in `.timberrc'. It gives
+% the full pathname of the program which adds line prefixes.
+variable timber_prefix_prog = "perl " + dircat(timber_scripts_dir,"timbere.pl");
+
+% This variable may be reassigned in `.timberrc'. It gives
+% the full pathname of the program which looks up MIME types.
+variable timber_mimetype_prog = "perl " + dircat(timber_scripts_dir,"timbert.pl");
+
+% The directory containing Timber scripts.
+#ifexists putenv
+putenv("TIMBER_SCRIPTS=" + timber_scripts_dir);
+#endif
+
 %}}}
 
 %{{{ Miscellaneous notes
