@@ -14,7 +14,6 @@
 #    you click straight past the finished state and don't realise
 #    you actually finished!
 #  - Indication of how many lights are lit up.
-#  - Rotating bodies for the power supply and the lights.
 
 from gtk import *
 import GDK
@@ -253,17 +252,24 @@ class NetGame:
 			    gc.foreground = powered
 			else:
 			    gc.foreground = blue
-			draw_rectangle(pix, gc, TRUE, \
-			xmid-PWRSIZ, ymid-PWRSIZ, PWRSIZ*2, PWRSIZ*2)
+			ex, ey = PWRSIZ, PWRSIZ
+			ex, ey = int(matrix[0][0] * ex + matrix[0][1] * ey), \
+			int(matrix[1][0] * ex + matrix[1][1] * ey)
+			points = [(xmid+ex, ymid+ey), (xmid+ey, ymid-ex), \
+			(xmid-ex, ymid-ey), (xmid-ey, ymid+ex)]
+			draw_polygon(pix, gc, TRUE, points)
 			gc.foreground = lines
-			draw_rectangle(pix, gc, FALSE, \
-			xmid-PWRSIZ, ymid-PWRSIZ, PWRSIZ*2, PWRSIZ*2)
+			draw_polygon(pix, gc, FALSE, points)
 		    if cont.phase == 2 and (k & PWR):
 			gc.foreground = lines # the power source is black
-			draw_rectangle(pix, gc, TRUE, \
-			xmid-PWRSIZ, ymid-PWRSIZ, PWRSIZ*2, PWRSIZ*2)
-			draw_rectangle(pix, gc, FALSE, \
-			xmid-PWRSIZ, ymid-PWRSIZ, PWRSIZ*2, PWRSIZ*2)
+			ex, ey = PWRSIZ, PWRSIZ
+			ex, ey = int(matrix[0][0] * ex + matrix[0][1] * ey), \
+			int(matrix[1][0] * ex + matrix[1][1] * ey)
+			points = [(xmid+ex, ymid+ey), (xmid+ey, ymid-ex), \
+			(xmid-ex, ymid-ey), (xmid-ey, ymid+ex)]
+			draw_polygon(pix, gc, TRUE, points)
+			gc.foreground = lines
+			draw_polygon(pix, gc, FALSE, points)
 
     def move(self, x, y, action, undo=FALSE):
         assert(not self.moveinprogress)
