@@ -1,5 +1,5 @@
 % -*- mode: slang; mode: fold -*-
-% Simon Tatham: version $Revision: 1.40 $
+% Simon Tatham: version $Revision: 1.41 $
 
 %{{{ load Emacs keybindings to start with
 
@@ -313,10 +313,17 @@ define c_mode_hook() %{{{
 %}}}
 
 %}}}
-%{{{ ensure bash scripts are edited in sh mode
+%{{{ ensure bash scripts are edited in sh mode, and fiddle with sh mode
 
 define bash_mode() {
     sh_mode();
+}
+
+define sh_mode_hook() {
+    variable keymap;
+    keymap = what_keymap();
+    definekey(".\"# \" jedrc_format_paragraph", "^[Q", keymap);
+    definekey(".\"# \" jedrc_format_paragraph", "^[q", keymap);
 }
 
 %}}}
