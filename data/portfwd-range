@@ -8,3 +8,8 @@ Content-type: text/x-html-body
 We've had a couple of requests for the port forwarding UI to allow
 ranges of ports (e.g., source port 5000-5030, destination
 192.168.0.10:5000-5030).
+
+<p>
+This is slightly more necessary than it could be because of the
+limitations on the number of forwarded ports (see 
+<a href="portfwd-space.html">`portfwd-space'</a>).
