@@ -1,5 +1,5 @@
 % -*- mode: slang; mode: fold -*-
-% Simon Tatham: version $Revision: 1.38 $
+% Simon Tatham: version $Revision: 1.39 $
 
 %{{{ load Emacs keybindings to start with
 
@@ -357,6 +357,9 @@ C_BRA_NEWLINE   = 0;                   % don't insert a newline before '{'
 C_Colon_Offset  = 2;                   % indent case statements by two
 C_CONTINUED_OFFSET = 4;                % indent for unbraced then-clauses
 C_Preprocess_Indent = 0;               % indent for nested #if/#endifs
+#ifexists C_Class_Offset
+C_Class_Offset  = 4;                   % still indent by 4 in a C++ class
+#endif
 
 #ifdef UNIX
 variable UCB_Mailer; UCB_Mailer = "/usr/ucb/mail";
