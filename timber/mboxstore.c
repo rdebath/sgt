@@ -123,7 +123,7 @@ static int write_mbox(int fd, char *data, int length, int beginning)
 		 * this line.
 		 */
 		queue = data;
-		qlen = length;
+		qlen = 0;
 	    }
 	}
 	beginning = FALSE;
