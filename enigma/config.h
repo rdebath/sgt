@@ -13,7 +13,7 @@
  * and progress details, and the Hall of Fame.
  */
 #define SAVEDIR "/var/games/enigma/"
-#define SAVEDIR "./newsaves/"
+#define SAVEDIR "./saves/"
 
 /*
  * The name of the level set Enigma should attempt to load on
