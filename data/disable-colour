@@ -1,0 +1,10 @@
+Summary: Features panel -- disable ANSI colour escape sequences
+Class: wish
+Priority: low
+Difficulty: fun
+Content-Type: text/plain
+
+Make it possible to disable ANSI colour escape sequences, so that the
+terminal becomes just two colour (Default Foreground and Default
+Background).
+
