@@ -28,7 +28,7 @@
 #include <stdlib.h>
 #include <math.h>
 
-#define VERSION "$Revision: 1.1 $"
+#define VERSION "$Revision: 1.2 $"
 
 #define TRUE 1
 #define FALSE 0
@@ -633,7 +633,7 @@ int main(int ac, char **av) {
 			    double *cp, *op;
 			    coords[i][j] *= distance;
 			    if (cuboid)
-				coords[i][j] /= scale[i];
+				coords[i][j] /= scale[j];
 
 			    if (j == 0)
 				cp = &par.c[i].r, op = &centre.r;
