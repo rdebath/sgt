@@ -50,6 +50,13 @@ typedef struct {
 const Complex czero = { 0.0, 0.0 };
 const Complex cone = { 1.0, 0.0 };
 
+Complex cfromreal(double r) {
+    Complex ret;
+    ret.r = r;
+    ret.i = 0.0;
+    return ret;
+}
+
 Complex cadd(Complex a, Complex b) {
     Complex ret;
     ret.r = a.r + b.r;
@@ -173,6 +180,7 @@ struct Params {
     ComplexList roots;
     struct Colours *colours;
     int nfade, limit;
+    double overpower;
     double minfade;                    /* minimum colour intensity for fade */
     int cyclic;                        /* do colours cycle, or asymptote? */
     int blur;                          /* are iteration boundaries blurred? */
@@ -189,10 +197,13 @@ static int toint(double d) {
 int plot(struct Params params) {
     int i, j, k;
     Complex z, w, d, prevz;
+    Complex overpower;
     struct Bitmap *bm;
     int icount, root;
     double iflt, fade;
     const double tolerance = 1e-10;
+
+    overpower = cfromreal(params.overpower);
 
     bm = bmpinit(params.outfile, params.width, params.height);
 
@@ -263,9 +274,27 @@ int plot(struct Params params) {
                  * So we compute that, and then subtract its
                  * reciprocal from z, and we're done!
                  */
+		
+		/*
+		 * If we are raising the entire function to an
+		 * overall power, this only changes the result very
+		 * slightly. Suppose our new function g is equal to
+		 * f^k for some k. Then
+		 * 
+		 *   g         f^k         1 f
+		 *   -- = -------------- = - --
+		 *   g'   k f^(k-1) . f'   k f'
+		 * 
+		 * In other words, the _only_ difference it makes
+		 * to the iteration is to multiply a constant
+		 * factor into the value subtracted from each
+		 * approximation to produce the next. So it simply
+		 * slows down (or speeds up) convergence.
+		 */
                 d = czero;
                 for (k = 0; k < params.roots.n; k++)
-                    d = cadd(d, cdiv(cone, csub(z, params.roots.list[k])));
+                    d = cadd(d, cdiv(overpower,
+				     csub(z, params.roots.list[k])));
                 z = csub(z, cdiv(cone, d));
                 icount++;
                 if (icount > params.limit) {
@@ -409,8 +438,9 @@ int main(int argc, char **argv) {
     int verbose = FALSE;
     char *outfile = NULL;
     struct Size imagesize = {0,0};
-    double xcentre, ycentre, xrange, yrange, scale, minfade;
-    int gotxcentre, gotycentre, gotxrange, gotyrange, gotscale, gotminfade;
+    double xcentre, ycentre, xrange, yrange, scale, minfade, overpower;
+    int gotxcentre, gotycentre, gotxrange, gotyrange, gotscale, gotminfade,
+        gotoverpower;
     int cyclic = -1, blur = -1;
     struct Colours *colours = NULL;
     int fade = -1, limit = -1;
@@ -444,6 +474,8 @@ int main(int argc, char **argv) {
 		"cyclic setting", parsebool, &cyclic, NULL},
 	{1, "--blur", 'B', "no", "blur out iteration boundaries",
 		"blur setting", parsebool, &blur, NULL},
+        {1, "--power", 'p', "1", "raise entire function to a power",
+                "overall power", parseflt, &overpower, &gotoverpower},
 	{2, "--colours\0--colors", 'c', "1,0,0:0,1,0", "colours for roots",
 		"colour specification", parsecols, &colours, NULL},
 	{1, "--verbose", 'v', NULL, "report details of what is done",
@@ -587,6 +619,11 @@ int main(int argc, char **argv) {
      * If no minfade given, default to 0.4.
      */
     par.minfade = gotminfade ? minfade : 0.4;
+
+    /*
+     * If no overall power given, default to 1.
+     */
+    par.overpower = gotoverpower ? overpower : 1.0;
 
     /*
      * cyclic and blur default to true and false respectively.
