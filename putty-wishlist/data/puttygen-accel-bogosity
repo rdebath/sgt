@@ -3,7 +3,7 @@ Class: bug
 Difficulty: fun
 Priority: medium
 Content-type: text/x-html-body
-Present-in: 2003-01-30
+Present-in: 2003-01-30 2003-05-24
 
 <p>
 There appears to be some bogosity in the way keyboard accelerators
@@ -16,6 +16,10 @@ First, there's an outright clash between the accelerators for the
 latter isn't visible unless a key is loaded.) Bizarrely, typing Alt+C
 when no key is loaded causes a key to be generated (perhaps the
 `<b>G</b>enerate' button is the next available control?).
+<ul>
+<li>Fixed the clash for the 2003-05-25 snapshot. Non-intuitive
+shortcut behaviour pre-generation remains.</li>
+</ul>
 
 <p>
 Keyboard accelerators don't appear to work as expected during <em>and
