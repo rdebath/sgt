@@ -17,16 +17,10 @@ argv. Interestingly shell32.dll provides a function called
 CommandLineToArgvW() which does this for Unicode strings, but
 appears to provide no equivalent for ordinary strings.)
 <li>
-Command-line control of at least ciphers, SSH protocol, compression,
+Command-line control of at least SSH protocol, compression,
 port forwarding, and public-key authentication. Perhaps more.
 <li>
 As many of these options as possible should be command-line
 compatible with OpenSSH's corresponding options. The last thing we
 want to do is make life deliberately harder for people.
-<li>
-As a final fallback, ability to tweak any option via something like
-OpenSSH's `-o Name=Value' option. Need to think about how to deal
-with complex options like colour selection. Also, some of the existing
-names for options in the Registry are inappropriate - e.g., 
-`LinuxFunctionKeys'. Seems dependent on wishlist item `config-locations'.
 </ul>
