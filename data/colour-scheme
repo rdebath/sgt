@@ -1,0 +1,14 @@
+Summary: Predefined colour schemes
+Difficulty: tricky
+Priority: low
+Class: wish
+Content-type: text/plain
+
+A couple of people would like to have a bunch of pre-defined colour schemes
+shipped with PuTTY and some means of switching between them.  One person
+specifically requested on where blue and red are lighter than the default to
+make them more readable on a black background.
+
+It's not entirely clear to me why colours are different from any other
+configuration option in this regard, though I suppose the fact that all the
+colour settings go together might have something to do with it.
