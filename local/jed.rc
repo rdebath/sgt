@@ -1,5 +1,5 @@
 % -*- mode: slang; mode: fold -*-
-% Simon Tatham: version $Revision: 1.27 $
+% Simon Tatham: version $Revision: 1.28 $
 
 %{{{ load Emacs keybindings to start with
 
@@ -1118,21 +1118,33 @@ add_completion("cvs_annotate");
 %}}}
 %{{{ M-x rot13
 
+#ifexists TRANSLATE_ARRAY
 variable jedrc_rot13_string = char(255);
 for ($1 = 1; $1 < 65; $1++) jedrc_rot13_string += char($1);
 for ($1 = 0; $1 < 26; $1++) jedrc_rot13_string += char(65+((13+$1) mod 26));
 for ($1 = 91; $1 < 97; $1++) jedrc_rot13_string += char($1);
 for ($1 = 0; $1 < 26; $1++) jedrc_rot13_string += char(97+((13+$1) mod 26));
 for ($1 = 123; $1 < 255; $1++) jedrc_rot13_string += char($1);
-
 define rot13() {
-    variable i;
     % Apparently we can only initialise a char array from a string, and
     % S-Lang strings can't contain NULs; so we are unable to construct
     % TRANSLATE_ARRAY in such a way that it is happy with NULs. :-((
     init_char_array(TRANSLATE_ARRAY, jedrc_rot13_string);
     translate_region ();
 }
+#else
+variable jedrc_rot13_array = String_Type[256];
+for ($1 = 0; $1 < 256; $1++) {
+    $2 = $1;
+    if ($2 >= 65 and $2 < 65+26) $2 = 65 + ($2+13-65) mod 26;
+    if ($2 >= 97 and $2 < 97+26) $2 = 97 + ($2+13-97) mod 26;
+    jedrc_rot13_array[$1] = char($2);
+}
+
+define rot13() {
+    translate_region (jedrc_rot13_array);
+}
+#endif
 add_completion("rot13");
 
 %}}}
