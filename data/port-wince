@@ -1,0 +1,13 @@
+Summary: Port to Windows CE (alias PocketPC)
+Class: wish
+Priority: medium
+Difficulty: tricky
+Content-type: text/x-html-body
+
+There will Probably not be a Windows CE port in the particularly near
+future. Despite sharing large parts of the Windows API, in practice
+WinCE doesn't appear to be significantly easier to port to than a
+totally different operating system.
+
+However, PuTTY on portable devices would clearly be a useful thing,
+so in the long term I hope there will be a WinCE port.

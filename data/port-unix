@@ -1,0 +1,20 @@
+Summary: Port to Unix
+Class: wish
+Priority: medium
+Difficulty: tricky
+Content-type: text/x-html-body
+
+<p>
+It's currently being worked on. If you look at the nightly source
+snapshots, you should find a <code>unix</code> subdirectory, which should
+build you a Unix port of Plink, and also <code>pterm</code> - an
+<code>xterm</code>-type program which supports the same terminal emulation
+as PuTTY.
+
+<p>
+It isn't yet clear whether we will bother combining the terminal
+emulator and network back end into the same process, to provide a
+Unix port of the full GUI form of PuTTY. It wouldn't be as useful a
+thing on Unix as it would be on Windows; its major value would
+probably be as a pathfinding effort for other ports. If anyone
+really wants it, we'd be interested to know why :-)
