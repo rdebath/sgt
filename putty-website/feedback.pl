@@ -45,7 +45,6 @@ while (<FILE>) {
 
 print << 'EOF';
 
-<p><hr>If you want to comment on this web site, see the above guidelines.
 <br>
 (last modified on <!--LASTMOD-->[insert date here]<!--END-->)
 </BODY></HTML>
