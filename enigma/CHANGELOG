@@ -17,6 +17,11 @@ Release FIXME
    restore a saved position on the `you have died' screen just as
    you can within the game, so you don't have to go back round via
    the main menu.
+ - The levels contained a couple of pieces resting on thin air,
+   which the original designer hadn't noticed. I've now introduced
+   run-time validation of level files for errors such as this, and
+   fixed the problems (in levels 2 and 8). This should also make
+   designing new levels a more precise science...
 
 Release 1.03
 ------------

@@ -80,6 +80,17 @@ static level *level_load(char *filename) {
 
     fclose(fp);
 
+    {
+	char buf[256], buf2[384];
+	char *err;
+
+	err = validate(level, buf, sizeof(buf));
+	if (err) {
+	    sprintf(buf2, "Error in level file '%.64s': %s", filename, err);
+	    fatal(buf2);
+	}
+    }
+
     return level;
 }
 
