@@ -48,6 +48,11 @@ def initcurses():
     scrheight, scrwidth = scr.getmaxyx()
     height, width = scrheight, scrwidth - 1
 
+def endcurses():
+    scr.erase()
+    scr.refresh()
+    curses.endwin()
+
 def aprint(scr, y, x, str):
     attr = 0
     while str != "":
@@ -80,17 +85,17 @@ def formatheader(texts):
     left = (tildelen - centrelen) / 2
     right = (tildelen - centrelen) - left
 
-    line = "\aB\aCb <| \aCa\aCC\ab "
+    line = "\aB\aR\aCB\aCw <| \aCa\aCC\aa "
     line = line + " " * left
     for i in texts:
 	line = line + i
     line = line + " " * right
-    line = line + " \aB\aCA\aCb <| \aa"
+    line = line + " \aB\aR\aCB\aCw <| \aa"
     list = [line]
     
-    line = "\aB\aCb _/ \aCa\aCC\ab "
+    line = "\aB\aR\aCB\aCw _/ \aCa\aCC\aa "
     line = line + "~" * tildelen
-    line = line + " \aB\aCA\aCb _/ \aa"
+    line = line + " \aB\aR\aCB\aCw _/ \aa"
     list = list + [line]
     return list
 
@@ -550,7 +555,7 @@ class menu:
 	scr.erase()
 	sy = 0
 	for i in hdr:
-	    aprint(scr, sy, 0, i+"\n")
+	    aprint(scr, sy, 0, i)
 	    sy = sy + 1
 	sy = sy + 1
 	y = ytop
@@ -803,7 +808,7 @@ def editor(title, inittext):
 	hdr = formatheader(title)
 	sy = 0
 	for i in hdr:
-	    aprint(scr, sy, 0, i+"\n")
+	    aprint(scr, sy, 0, i)
 	    sy = sy + 1
 	aprint(scr, sy, 0, centre(["Enter '", "\aB", ".", "\ab",
 	"' on a line to finish, '", "\aB", ".quit", "\ab", "' or [",
@@ -812,8 +817,8 @@ def editor(title, inittext):
 	aprint(scr, sy, 0, centre(["[", "\aB", "^O", "\ab", "] for options ([",
 	"\aB", "CTRL", "\ab", "] + [", "\aB", "O","\ab","])"]))
 	sy = sy + 1
-	aprint(scr, sy, 0, "\aCB\aCc" + "-"*(lwidth-1) + "|" +
-	"-"*(width-lwidth) + "\aCA\aCa\n")
+	aprint(scr, sy, 0, "\aR\aCB\aCc" + "-"*(lwidth-1) + "|" +
+	"-"*(width-lwidth) + "\aa\aCA\aCa")
 	yoff = 5
 	ynum = height - yoff
 	content = [" " * lwidth] * ynum
@@ -1030,7 +1035,7 @@ def addpage(pagetype, grogname, itemid):
     subj = ""
     while 1:
 	aprint(scr, y, 0, "        [\aBN\ab] - Grogname \""+grogname+"\"")
-	aprint(scr, height-1, 0, centre(["======== Please select an option ========"], width))
+	aprint(scr, height-1, 0, centre(["======== Please select an option ========"]))
 	scr.refresh()
 	c = mylc(scr.getch())
 	if c == ord(" "):
@@ -1063,7 +1068,7 @@ while len(args) > 0 and args[0][:1] == "-":
 	    initcurses()
 	    text = editor(["Editor Test [", "\aB", "grunge -e", "\ab", "]"], [])
 	finally:
-	    curses.endwin()
+	    endcurses()
 	for i in text:
 	    print ">", i, "<"
 	sys.exit(0)
@@ -1178,6 +1183,6 @@ try:
 	    curses.beep() # NYI specials
         # FIXME: youropts, motd and editlog
 finally:
-    curses.endwin()
+    endcurses()
 saveindex(indexpath, items, lastseq)
 c.close()
