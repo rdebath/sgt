@@ -1,6 +1,6 @@
 # -*- mode: sh; mode: fold -*-
 # Simon Tatham's standardised chunk of .bashrc
-# $Revision: 1.34 $
+# $Revision: 1.35 $
 
 #{{{ I don't like .bash_history files. They wet their nests.
 unset HISTFILE
@@ -226,9 +226,18 @@ export TERM
 doPSn() {
   local hostname=`hostname | sed 's/\..*$//' | tr A-Z a-z`
   local spaces=`echo -n $hostname | sed 's/./ /g'`
-  local bold=`_bashrc_tput bold | sed 's/\[1m/\[0;3${promptcolour}m/'`
+  # I used to pipe the result of _bashrc_tput straight through sed.
+  # This turned out to work badly on CUS, where tput stops doing
+  # anything useful if its output is a pipe to sed. (Though oddly
+  # enough, it worked fine when its output was a pipe to _cat_; I
+  # have no idea what sed was doing differently to cause that!)
+  #
+  # Hence I now save the output of tput immediately, and then
+  # re-echo it before piping through sed.
+  local bold=`_bashrc_tput bold`
+  local colour=`echo "$bold" | sed 's/\[1m/\[0;3${promptcolour}m/'`
   local sgr0=`_bashrc_tput sgr0`
-  PS1='\['$bold'\]:$prompttext '$hostname';\['$sgr0'\] '
+  PS1='\['$colour'\]:$prompttext '$hostname';\['$sgr0'\] '
   PS2='$promptspaces    '"$spaces"
   promptcolour=2 # green prompt by default
 }
