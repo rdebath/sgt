@@ -93,7 +93,7 @@ void usage(void) {
 }
 
 void version(void) {
-#define CVS_REV "$Revision: 1.1 $"
+#define CVS_REV "$Revision: 1.2 $"
     char rev[sizeof(CVS_REV)];
     char *p, *q;
 
@@ -227,7 +227,7 @@ int main(int ac, char **av) {
                     while (i < 4) in[i++] = '=';
                 }
                 n = base64_decode_atom(in, out);
-                fwrite(out, 1, 3, stdout);
+                fwrite(out, 1, n, stdout);
             }
         } while (!eof);
     }
