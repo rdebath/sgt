@@ -1,0 +1,84 @@
+Summary: SSH client packaged as a DLL for use in other programs
+Class: wish
+Difficulty: tricky
+Priority: low
+Content-type: text/plain
+
+A lot of people ask for a DLL that implements an SSH client, so that
+they can include it in their own programs and automatically get
+securely in touch with other systems and issue commands.
+
+I'm not entirely sure when (or whether) we'll have the energy to get
+round to this, but I've thought about the design aspects a fair bit,
+and this is what I've come up with.
+
+When I hear `DLL for PuTTY' I tend to think of something very much
+like Plink, but using a very simple sort of function-call interface
+rather than reading from stdin and writing to stdout. Something like
+this:
+
+  SSH_Session mysess;
+  SSH_Channel mychan;
+  
+  mysess = puttydll_open("myhost.example.com", 22);
+  mychan = puttydll_start_command(mysess, "cvs server");
+  puttydll_send_data(mychan, cvs_auth_data, len);
+  len = puttydll_read_data(mychan, buffer, sizeof(buffer));
+  
+... and so on. So you'd end up with `SSH_Channel' handles which
+worked a little like file handles - you could do a blocking read on
+a particular one of them, for example, or wait until one of a
+selection of them became ready. (If you wanted to wait for data from
+either an SSH channel or a Windows-side object, interfacing between
+this sort of select() and the Windows equivalents might be fun, but
+I'm sure it could be worked out. Perhaps an API function which would
+hand you a Windows event object that would get set when one of the
+channels was active.)
+
+The biggest immediate problems I see with it are:
+
+ - PuTTY isn't currently able to manage more than one connection at
+   a time (although it can manage multiple channels within a
+   connection). This is because most of its variables are global,
+   rather than allocated dynamically per session. A decent DLL would
+   need to have this fixed; fortunately it's a source cleanup I plan
+   to do in any case.
+
+ - PuTTY needs its own event loop, so that it can respond to server-
+   side requests (such as repeat key exchange and server-side pings)
+   in the SSH connection it's managing. This might not be easy to
+   integrate with whatever kind of event loop the calling program is
+   using - if indeed it's using an event loop at all; the kind of
+   code I quote above would probably much rather stay sequential
+   than become event-driven with explicit state. Hence I think the
+   simplest way to arrange this is to have the DLL spawn a thread to
+   manage PuTTY's own network event loop, which can then run without
+   interfering with what the rest of the program is doing. That way,
+   the calling program could call the send-data function, go off and
+   do its own thing for a while, and then come back and see if data
+   had come back for it to read yet.
+
+   (On the other hand, if the caller _did_ want to integrate PuTTY
+   into their own event loop so that they received immediate
+   notification when data came in, that would be another thing we'd
+   want to allow them to do. Perhaps allowing them to provide an
+   event object which we could set when particular things happened
+   might be a useful approach.)
+
+ - The DLL interface would need careful design. In particular, what
+   should happen about interactive prompts - passwords, passphrases,
+   host key verification, and so on? Should all of those things be
+   fatal errors (limiting the DLL to being used in a context where
+   unattended login is possible), or what? I think it would be a
+   mistake to have this sort of prompt go directly to the user; it
+   would probably be better to notify the calling program in some
+   way, and leave it to decide how to handle it. (Although perhaps
+   providing helper routines that gave standard dialog boxes for
+   these prompts might also be an interesting option.)
+
+However, none of those issues is insurmountable - the nastiest of
+them is the code cleanup to make variables non-global, and this will
+have to be done at some point in any case - and once these issues
+are taken care of I don't see why a DLL providing an API like the
+one above shouldn't be perfectly possible to write just by
+implementing a single front-end module to replace (say) plink.c.
