@@ -16,7 +16,7 @@ important to us.
 
 <p>
 We are therefore unlikely to add support for wildly different forms of
-terminal emulation such as IBM 3270 to the core of PuTTY.
+terminal emulation such as IBM 3270 or 5250 to the core of PuTTY.
 
 <p>
 This probably also goes for extra non-character-cell emulations such
