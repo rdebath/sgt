@@ -50,4 +50,9 @@ What I did to solve this myself was to design my own replacement
 I-beam mouse pointer, which was white with a black outline so as to
 show up on any kind of background. The video driver was quite happy
 with that one.
+<p>
+If anybody else has this problem, they should try reconfiguring
+their PuTTY colour scheme so that black is RGB 1,1,1 instead of RGB
+0,0,0. I <em>suspect</em> that that will make the problem go away;
+if so, that would confirm my theory about its cause.
 </blockquote>
