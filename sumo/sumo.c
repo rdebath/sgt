@@ -61,6 +61,8 @@ static int sx1 = 40, sy1 = 80, sx2 = 140, sy2 = 100;
 
 #define MAX_BULLETS 3
 
+static int no_quit_option = 0;
+
 static int sc1, sc2;
 
 static unsigned char fire[40008];
@@ -111,23 +113,21 @@ static int game_screen(void)
 
 static void plotpoint(void *ctx, int x, int y)
 {
-    scrdata[640*y+2*x] = scrdata[640*y+2*x+1] = *(int *)ctx;
+    scrdata[640*y+2*x] = scrdata[640*y+2*x+1] = (int)ctx;
 }
 
 static int score(int sc, int x, int y)
 {
-    int colour, i, j;
+    int i, j;
     char buf[4];
-    colour = 128;
     for (i = 0; i < 7*3; i++)
 	for (j = 0; j < 9; j++)
-	    plotpoint(&colour, x+i, y+j);
+	    plotpoint((void *)128, x+i, y+j);
     buf[2] = '0' + sc % 10; sc /= 10;
     buf[1] = '0' + sc % 10; sc /= 10;
     buf[0] = '0' + sc % 10;
     buf[3] = '\0';
-    colour = 137;
-    swash_text(x, y, buf, plotpoint, &colour);
+    swash_text(x, y, buf, plotpoint, (void *)137);
 }
 
 static int show_scores(void)
@@ -466,10 +466,195 @@ static int play_game(void)
 
 }
 
+static int adjust_screen(int which)
+{
+    int border = (which == 0 ? 130 : 134);
+    int highlight = (which == 0 ? 27 : 28);
+    Image img;
+
+    struct {
+	char *text;
+	enum { RETURN, QUIT, ADJUST } action;
+    } menu[3];
+    int nmenu = 0;
+    int h, y, prevval[2];
+    int dx, dy;
+
+    h = 39 + 16*2;
+    y = (200 - h) / 2;
+
+    img = makeimage(120, h, 0, 0);
+    pickimage(img, 100, y);
+
+    scr_prep();
+    bar(100, y, 219, y+h-1, border);
+    bar(102, y+2, 217, y+h-3, 0);
+    
+    swash_centre(100, 219, y+7, "ADJUST SCREEN", plotpoint, (void *)26);
+
+    prevval[0] = prevval[1] = 0;
+
+    dx = get_dx();
+    dy = get_dy();
+
+    scr_done();
+
+    while (1) {
+	SDL_Event event;
+	int pushed = 0;
+	int redraw = 0;
+	char buf[20];
+
+	scr_prep();
+	bar(105, y+34, 214, y+64, 0);
+	sprintf(buf, "DX =%4d", dx);
+	swash_centre(100, 219, y+37, buf, plotpoint, (void *)26);
+	sprintf(buf, "DY =%4d", dy);
+	swash_centre(100, 219, y+53, buf, plotpoint, (void *)26);
+	scr_done();
+
+	while (SDL_WaitEvent(&event)) {
+	    int action;
+
+	    switch(event.type) {
+	      case SDL_KEYDOWN:
+		/* Standard catch-all quit-on-escape clause. */
+		if (event.key.keysym.sym == SDLK_ESCAPE)
+		    exit(1);
+		break;
+	      case SDL_JOYAXISMOTION:
+		if (event.jaxis.which == which &&
+		    (event.jaxis.axis | 1) == 1) {
+		    int val = event.jaxis.value / JOY_THRESHOLD;
+		    int axis = event.jaxis.axis;
+
+		    if (val < 0 && prevval[axis] >= 0) {
+			if (axis == 0) dx--; else dy--;
+			redraw = 1;
+		    } else if (val > 0 && prevval[axis] <= 0) {
+			if (axis == 0) dx++; else dy++;
+			redraw = 1;
+		    }
+		    prevval[axis] = val;
+		}
+		break;
+	      case SDL_JOYBUTTONDOWN:
+		if (event.jbutton.which == which) {
+		    pushed = 1;
+		}
+		break;
+	    }
+	    if (pushed || redraw) break;
+	}
+
+	if (pushed) break;
+	set_dx(dx); set_dy(dy);
+    }
+
+    scr_prep();
+    drawimage(img, 100, y, -1);
+    scr_done();
+
+    free(img);
+}
+
+static int options_menu(int which)
+{
+    int border = (which == 0 ? 130 : 134);
+    int highlight = (which == 0 ? 27 : 28);
+    Image img;
+
+    struct {
+	char *text;
+	enum { RETURN, QUIT, ADJUST } action;
+    } menu[3];
+    int nmenu = 0;
+    int h, y, i, mpos, prevval;
+
+    menu[nmenu].text = "RETURN TO GAME"; menu[nmenu++].action = RETURN;
+    menu[nmenu].text = "ADJUST SCREEN"; menu[nmenu++].action = ADJUST;
+    if (!no_quit_option) {
+	menu[nmenu].text = "EXIT SUMO"; menu[nmenu++].action = QUIT;
+    }
+
+    h = 39 + 16*nmenu;
+    y = (200 - h) / 2;
+
+    img = makeimage(120, h, 0, 0);
+    pickimage(img, 100, y);
+
+    scr_prep();
+    bar(100, y, 219, y+h-1, border);
+    bar(102, y+2, 217, y+h-3, 0);
+    
+    swash_centre(100, 219, y+7, "OPTIONS MENU", plotpoint, (void *)26);
+
+    mpos = 0;
+    prevval = 0;
+
+    scr_done();
+
+    while (1) {
+	SDL_Event event;
+	int pushed = 0;
+	int redraw = 0;
+
+	scr_prep();
+	for (i = 0; i < nmenu; i++) {
+	    bar(105, y+34+i*16, 214, y+48+i*16,
+		i==mpos ? highlight : 0);
+	    swash_centre(100, 219, y+37+i*16, menu[i].text,
+			 plotpoint, (void *)26);
+	}
+	scr_done();
+
+	while (SDL_WaitEvent(&event)) {
+	    int action;
+
+	    switch(event.type) {
+	      case SDL_KEYDOWN:
+		/* Standard catch-all quit-on-escape clause. */
+		if (event.key.keysym.sym == SDLK_ESCAPE)
+		    exit(1);
+		break;
+	      case SDL_JOYAXISMOTION:
+		if (event.jaxis.which == which && event.jaxis.axis == 1) {
+		    int val = event.jaxis.value / JOY_THRESHOLD;
+
+		    if (val < 0 && prevval >= 0) {
+			mpos = (mpos+nmenu-1) % nmenu;
+			redraw = 1;
+		    } else if (val > 0 && prevval <= 0) {
+			mpos = (mpos+1) % nmenu;
+			redraw = 1;
+		    }
+		    prevval = val;
+		}
+		break;
+	      case SDL_JOYBUTTONDOWN:
+		if (event.jbutton.which == which) {
+		    pushed = 1;
+		}
+		break;
+	    }
+	    if (pushed || redraw) break;
+	}
+
+	if (pushed && menu[mpos].action == QUIT) exit(1);
+	if (pushed && menu[mpos].action == RETURN) break;
+	if (pushed && menu[mpos].action == ADJUST) adjust_screen(which);
+    }
+
+    scr_prep();
+    drawimage(img, 100, y, -1);
+    scr_done();
+
+    free(img);
+}
+
 int main(int argc, char **argv)
 {
     int p;
-    int no_quit_option;
 
     if (argc > 1 && !strcmp(argv[1], "-n"))
 	no_quit_option = 1;
@@ -527,7 +712,16 @@ setbuf(debugfp, NULL);
 			    exit(1);
 			break;
 		      case SDL_JOYBUTTONDOWN:
-			pushed = 1;
+			if (event.jbutton.button == 8) {
+			    /*
+			     * Pressing Select displays the options
+			     * menu, under the control of whoever
+			     * pressed it.
+			     */
+			    options_menu(event.jbutton.which);
+			} else {
+			    pushed = 1;
+			}
 			break;
 		    }
 		}
@@ -951,10 +1145,7 @@ static void make_text(void)
 	w = mm.xmax - mm.xmin + 3;
 	h = mm.ymax - mm.ymin + 3;
 
-	img = malloc(8 + w*h);
-	img[0] = img[1] = img[2] = img[3] = 0;
-	img[4] = w%256; img[5] = w/256;
-	img[6] = h%256; img[7] = h/256;
+	img = makeimage(w, h, 0, 0);
 	memset(img+8, 129, w*h);       /* mask value */
 
 	p.image = img;
@@ -968,24 +1159,11 @@ static void make_text(void)
     }
 }
 
-static void swash_centre(int xmin, int xmax, int y, char *text,
-			 void (*plot)(void *ctx, int x, int y), void *plotctx)
-{
-    int w;
-    w = swash_width(text);
-    swash_text((xmin + xmax - w)/2, y, text, plot, plotctx);
-}
-
 static void expand_title(void)
 {
     struct imageplot p;
 
-    title = malloc(8+120*200);
-    if (!title) { fprintf(stderr, "out of memory!\n"); exit(0); }
-
-    memset(title, 0, 8+120*200);
-    title[4] = 120;
-    title[6] = 200;
+    title = makeimage(120, 200, 0, 0);
 
     /*
      * Now we want to draw a set of glowing blue lines inside which
@@ -1027,9 +1205,8 @@ static void expand_title(void)
     swash_centre(0, 120, 30, "(C) 1994, 2002", plot_on_image, &p);
     swash_centre(0, 120, 46, "BY SIMON TATHAM", plot_on_image, &p);
 
-    /* FIXME: Put this back in when I write an options menu :-) */
-    //swash_centre(0, 120, 168, "PRESS SELECT", plot_on_image, &p);
-    //swash_centre(0, 120, 184, "FOR OPTIONS MENU", plot_on_image, &p);
+    swash_centre(0, 120, 168, "PRESS SELECT", plot_on_image, &p);
+    swash_centre(0, 120, 184, "FOR OPTIONS MENU", plot_on_image, &p);
 
     p.fg = 130;
     swash_centre(12, 60, 81, "PLAYER", plot_on_image, &p);
@@ -1038,4 +1215,5 @@ static void expand_title(void)
     p.fg = 134;
     swash_centre(66, 114, 81, "PLAYER", plot_on_image, &p);
     swash_centre(66, 114, 97, "TWO", plot_on_image, &p);
+
 }
