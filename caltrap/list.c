@@ -212,11 +212,29 @@ static void list_upto(struct list_ctx *ctx, Date ed, Time et)
     }
 }
 
+static struct entry *dup_entry(struct entry *ent)
+{
+    struct entry *dupent;
+    int desclen;
+
+    if (ent->description)
+	desclen = 1 + strlen(ent->description);
+    else
+	desclen = 0;
+    dupent = smalloc(sizeof(struct entry) + desclen);
+    *dupent = *ent;		       /* structure copy */
+    if (ent->description) {
+	dupent->description = (char *)dupent + sizeof(struct entry);
+	strcpy(dupent->description, ent->description);
+    } else
+	dupent->description = NULL;
+
+    return dupent;
+}
+
 static void list_callback(void *vctx, struct entry *ent)
 {
     struct list_ctx *ctx = (struct list_ctx *)vctx;
-    struct entry *dupent;
-    int desclen;
 
     /*
      * If this is a repeating event, or a holiday event, which
@@ -225,7 +243,54 @@ static void list_callback(void *vctx, struct entry *ent)
      */
     if (datetime_cmp(ent->sd, ent->st, ctx->cd, ctx->ct) < 0) {
 	if (ent->period > 0) {
-	    Duration d = datetime_diff(ctx->cd, ctx->ct, ent->sd, ent->st);
+	    Duration d;
+
+	    /*
+	     * If this is a repeating _holiday_ event, we might
+	     * also require its first occurrence whose _end_ date
+	     * falls within the list period. For example, starting
+	     * a calendar listing on a Sunday should certainly
+	     * highlight it as being weekend.
+	     */
+	    if (is_hol(ent->type)) {
+		struct entry *hol = dup_entry(ent);
+		d = datetime_diff(ctx->cd, ctx->ct, hol->sd, hol->st);
+		d -= hol->length;
+		d = ((d + hol->period - 1) / hol->period) * hol->period;
+		add_to_datetime(&hol->sd, &hol->st, d);
+
+		/*
+		 * Now de-repeatify it.
+		 */
+		hol->period = 0;
+		hol->ed = hol->sd;
+		hol->et = hol->st;
+		add_to_datetime(&hol->ed, &hol->et, hol->length);
+		hol->length = 0;
+
+		/*
+		 * Now if this entry's end date is strictly within
+		 * the list period (i.e. not merely coincident with
+		 * its beginning), and its start date is _before_
+		 * the start of the list period, we need to nudge
+		 * this duplicate entry's start point up to the
+		 * list period beginning and add it into our queue.
+		 */
+		if (datetime_cmp(hol->sd, hol->st, ctx->cd, ctx->ct) < 0 &&
+		    datetime_cmp(hol->ed, hol->et, ctx->cd, ctx->ct) > 0) {
+		    hol->sd = ctx->cd;
+		    hol->st = ctx->ct;
+		    hol->description = NULL;/* prevent recurring text entry */
+		    add234(ctx->future, hol);
+		} else
+		    sfree(hol);
+	    }
+
+	    /*
+	     * Find the first occurrence of the repeating event
+	     * whose start date falls within the list period.
+	     */
+	    d = datetime_diff(ctx->cd, ctx->ct, ent->sd, ent->st);
 	    d = ((d + ent->period - 1) / ent->period) * ent->period;
 	    add_to_datetime(&ent->sd, &ent->st, d);
 	    assert(datetime_cmp(ent->sd, ent->st, ctx->cd, ctx->ct) >= 0);
@@ -245,18 +310,7 @@ static void list_callback(void *vctx, struct entry *ent)
     /*
      * Now add this to the list of future events.
      */
-    if (ent->description)
-	desclen = 1 + strlen(ent->description);
-    else
-	desclen = 0;
-    dupent = smalloc(sizeof(struct entry) + desclen);
-    *dupent = *ent;		       /* structure copy */
-    if (ent->description) {
-	dupent->description = (char *)dupent + sizeof(struct entry);
-	strcpy(dupent->description, ent->description);
-    } else
-	dupent->description = NULL;
-    add234(ctx->future, dupent);
+    add234(ctx->future, dup_entry(ent));
 }
 
 static void real_list_entries(Date sd, Time st, Date ed, Time et, int verbose)
