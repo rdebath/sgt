@@ -260,6 +260,7 @@ def fetchobj(f, xrefoff, number, gen, printout=0):
     f.seek(offset)
     d = ""
     lexed = []
+    donestream = 0
     while 1:
         s = f.readline()
         if s == "": break
@@ -267,7 +268,8 @@ def fetchobj(f, xrefoff, number, gen, printout=0):
         dn = pdflex(d, lexed)
         if printout: sys.stdout.write(d[:len(d)-len(dn)])
         d = dn
-        if lexed[-1] == "stream":
+        if lexed[-1] == "stream" and not donestream:
+            donestream = 1
             if printout: sys.stdout.write("\n")
             parsed = pdfparse(lexed)
             assert parsed[-1] == "stream"
