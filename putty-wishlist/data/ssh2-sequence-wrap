@@ -1,4 +1,4 @@
-Summary: SSH2 replay attacks should be avoided
+Summary: SSH-2 replay attacks should be avoided
 Class: wish
 Priority: low
 Difficulty: tricky
@@ -7,7 +7,7 @@ Present-in: 2005-01-17
 Fixed-in: 2005-01-29
 
 <p><a href="http://doi.acm.org/10.1145/996943.996945">Bellare
-<i>et al</i></a> note that if the sequence number for SSH2 MACs repeats
+<i>et al</i></a> note that if the sequence number for SSH-2 MACs repeats
 itself without an intervening rekey, all sorts of attacks become possible.
 If PuTTY were particularly paranoid, it could force a re-key before this
 happens, and even kill the connection if the sequence number did wrap around.

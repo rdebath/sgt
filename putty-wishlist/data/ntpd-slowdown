@@ -7,7 +7,7 @@ Content-type: text/x-html-body
 Fixed-in: 2004-03-18
 
 <p>
-It's been reported that running an SSH2 session through PuTTY causes ntpd
+It's been reported that running an SSH-2 session through PuTTY causes ntpd
 to lose time in 10ms steps, as if 100Hz interrupts are being lost.  The
 same problem doesn't affect Telnet connections, though.  Ref
 &lt;C5EA7C1F01A7D311A44700508B95196C0730D8AB@004-h00028.wugo.intranet.wegener.nl&gt;

@@ -18,7 +18,7 @@ to be even considered for inclusion. In particular, some submissions
 have not taken into account PuTTY's cross-platform nature.
 
 <p>
-In SSH2, Kerberos is supported through
+In SSH-2, Kerberos is supported through
 <a href="http://www.faqs.org/faqs/kerberos-faq/general/section-84.html">
 GSSAPI</a>; there is an expired Internet-Draft
 (<tt>draft-ietf-secsh-gsskeyex-08</tt>) describing GSSAPI key exchange

@@ -16,7 +16,7 @@ are being opened and closed (tunnelling HTTP or POP/SMTP for example).
 
 <p>
 All reports so far that have mentioned the protocol version have been
-against SSH2, with local-to-remote tunnelling. There are suggestions
+against SSH-2, with local-to-remote tunnelling. There are suggestions
 that this is correlated specifically with user input rather than just
 any terminal activity.
 

@@ -1,4 +1,4 @@
-Summary: Ability to initiate SSH2 key re-exchange
+Summary: Ability to initiate SSH-2 key re-exchange
 Class: semi-bug
 Priority: medium
 Difficulty: tricky
@@ -7,7 +7,7 @@ Content-type: text/x-html-body
 Fixed-in: 2004-11-28
 
 <p>
-Either side of an SSH2 connection may initiate a key re-exchange.
+Either side of an SSH-2 connection may initiate a key re-exchange.
 Not all servers bother to do this, although I suspect most are happy
 to accept a re-exchange initiated by the client.
 

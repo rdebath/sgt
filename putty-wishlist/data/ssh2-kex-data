@@ -1,11 +1,11 @@
-Summary: Data transfer during SSH2 KEX causes confusion
+Summary: Data transfer during SSH-2 KEX causes confusion
 Class: bug
 Priority: medium
 Difficulty: tricky
 Fixed-in: 2004-11-25
 Content-type: text/x-html-body
 
-<p>If there is data being transferred through PuTTY while the SSH2
+<p>If there is data being transferred through PuTTY while the SSH-2
 repeat key exchange is taking place, it can confuse some servers.
 
 <p>In the current SSH-2 protocol drafts, it's not entirely clear to
