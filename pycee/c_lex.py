@@ -2,6 +2,7 @@
 
 import re
 import sys
+import string
 
 # Base code so I can declare a bunch of enumerations
 _enumval = 0
@@ -13,102 +14,104 @@ def _enum(init=-1):
         _enumval = _enumval + 1
     return _enumval
 
+lex_names = {}
+
 # Enumeration of lexeme types
 lt_BEGIN = _enum(0)
-lt_comment = _enum()
-lt_white = _enum()
-lt_ident = _enum()
-lt_typedefname = _enum()
-lt_charconst = _enum()
-lt_stringconst = _enum()
-lt_intconst = _enum()
-lt_floatconst = _enum()
-lt_pragma = _enum()
-lt_lbracket = _enum()
-lt_rbracket = _enum()
-lt_lparen = _enum()
-lt_rparen = _enum()
-lt_lbrace = _enum()
-lt_rbrace = _enum()
-lt_dot = _enum()
-lt_arrow = _enum()
-lt_increment = _enum()
-lt_decrement = _enum()
-lt_bitand = _enum()
-lt_times = _enum()
-lt_plus = _enum()
-lt_minus = _enum()
-lt_bitnot = _enum()
-lt_lognot = _enum()
-lt_slash = _enum()
-lt_modulo = _enum()
-lt_lshift = _enum()
-lt_rshift = _enum()
-lt_less = _enum()
-lt_greater = _enum()
-lt_lesseq = _enum()
-lt_greateq = _enum()
-lt_equality = _enum()
-lt_notequal = _enum()
-lt_bitxor = _enum()
-lt_bitor = _enum()
-lt_logand = _enum()
-lt_logor = _enum()
-lt_query = _enum()
-lt_colon = _enum()
-lt_semi = _enum()
-lt_ellipsis = _enum()
-lt_assign = _enum()
-lt_timeseq = _enum()
-lt_slasheq = _enum()
-lt_moduloeq = _enum()
-lt_pluseq = _enum()
-lt_minuseq = _enum()
-lt_lshifteq = _enum()
-lt_rshifteq = _enum()
-lt_bitandeq = _enum()
-lt_bitxoreq = _enum()
-lt_bitoreq = _enum()
-lt_comma = _enum()
-lt_hash = _enum()
-lt_hashhash = _enum()
-lt_auto = _enum()
-lt_break = _enum()
-lt_case = _enum()
-lt_char = _enum()
-lt_const = _enum()
-lt_continue = _enum()
-lt_default = _enum()
-lt_do = _enum()
-lt_double = _enum()
-lt_else = _enum()
-lt_enum = _enum()
-lt_extern = _enum()
-lt_float = _enum()
-lt_for = _enum()
-lt_goto = _enum()
-lt_if = _enum()
-lt_inline = _enum()
-lt_int = _enum()
-lt_long = _enum()
-lt_register = _enum()
-lt_restrict = _enum()
-lt_return = _enum()
-lt_short = _enum()
-lt_signed = _enum()
-lt_sizeof = _enum()
-lt_static = _enum()
-lt_struct = _enum()
-lt_switch = _enum()
-lt_typedef = _enum()
-lt_union = _enum()
-lt_unsigned = _enum()
-lt_void = _enum()
-lt_volatile = _enum()
-lt_while = _enum()
-lt__Bool = _enum()
-lt__Complex = _enum()
-lt__Imaginary = _enum()
+lt_comment = _enum()          ; lex_names[lt_comment] = "comment"
+lt_white = _enum()            ; lex_names[lt_white] = "whitespace"
+lt_ident = _enum()            ; lex_names[lt_ident] = "identifier"
+lt_typedefname = _enum()      ; lex_names[lt_typedefname] = "typedef name"
+lt_charconst = _enum()        ; lex_names[lt_charconst] = "char constant"
+lt_stringconst = _enum()      ; lex_names[lt_stringconst] = "string constant"
+lt_intconst = _enum()         ; lex_names[lt_intconst] = "int constant"
+lt_floatconst = _enum()       ; lex_names[lt_floatconst] = "float constant"
+lt_pragma = _enum()           ; lex_names[lt_pragma] = "pragma"
+lt_lbracket = _enum()         ; lex_names[lt_lbracket] = "`['"
+lt_rbracket = _enum()         ; lex_names[lt_rbracket] = "`]'"
+lt_lparen = _enum()           ; lex_names[lt_lparen] = "`('"
+lt_rparen = _enum()           ; lex_names[lt_rparen] = "`)'"
+lt_lbrace = _enum()           ; lex_names[lt_lbrace] = "`{'"
+lt_rbrace = _enum()           ; lex_names[lt_rbrace] = "`}'"
+lt_dot = _enum()              ; lex_names[lt_dot] = "`,'"
+lt_arrow = _enum()            ; lex_names[lt_arrow] = "`->'"
+lt_increment = _enum()        ; lex_names[lt_increment] = "`++'"
+lt_decrement = _enum()        ; lex_names[lt_decrement] = "`--'"
+lt_bitand = _enum()           ; lex_names[lt_bitand] = "`&'"
+lt_times = _enum()            ; lex_names[lt_times] = "`*'"
+lt_plus = _enum()             ; lex_names[lt_plus] = "`+'"
+lt_minus = _enum()            ; lex_names[lt_minus] = "`-'"
+lt_bitnot = _enum()           ; lex_names[lt_bitnot] = "`~'"
+lt_lognot = _enum()           ; lex_names[lt_lognot] = "`!'"
+lt_slash = _enum()            ; lex_names[lt_slash] = "`/'"
+lt_modulo = _enum()           ; lex_names[lt_modulo] = "`%'"
+lt_lshift = _enum()           ; lex_names[lt_lshift] = "`<<'"
+lt_rshift = _enum()           ; lex_names[lt_rshift] = "`>>'"
+lt_less = _enum()             ; lex_names[lt_less] = "`<'"
+lt_greater = _enum()          ; lex_names[lt_greater] = "`>'"
+lt_lesseq = _enum()           ; lex_names[lt_lesseq] = "`<='"
+lt_greateq = _enum()          ; lex_names[lt_greateq] = "`>='"
+lt_equality = _enum()         ; lex_names[lt_equality] = "`=='"
+lt_notequal = _enum()         ; lex_names[lt_notequal] = "`!='"
+lt_bitxor = _enum()           ; lex_names[lt_bitxor] = "`^'"
+lt_bitor = _enum()            ; lex_names[lt_bitor] = "`|'"
+lt_logand = _enum()           ; lex_names[lt_logand] = "`&&'"
+lt_logor = _enum()            ; lex_names[lt_logor] = "`||'"
+lt_query = _enum()            ; lex_names[lt_query] = "`?'"
+lt_colon = _enum()            ; lex_names[lt_colon] = "`:'"
+lt_semi = _enum()             ; lex_names[lt_semi] = "`;'"
+lt_ellipsis = _enum()         ; lex_names[lt_ellipsis] = "`...'"
+lt_assign = _enum()           ; lex_names[lt_assign] = "`='"
+lt_timeseq = _enum()          ; lex_names[lt_timeseq] = "`*='"
+lt_slasheq = _enum()          ; lex_names[lt_slasheq] = "`/='"
+lt_moduloeq = _enum()         ; lex_names[lt_moduloeq] = "`%='"
+lt_pluseq = _enum()           ; lex_names[lt_pluseq] = "`+='"
+lt_minuseq = _enum()          ; lex_names[lt_minuseq] = "`-='"
+lt_lshifteq = _enum()         ; lex_names[lt_lshifteq] = "`<<='"
+lt_rshifteq = _enum()         ; lex_names[lt_rshifteq] = "`>>='"
+lt_bitandeq = _enum()         ; lex_names[lt_bitandeq] = "`&='"
+lt_bitxoreq = _enum()         ; lex_names[lt_bitxoreq] = "`^='"
+lt_bitoreq = _enum()          ; lex_names[lt_bitoreq] = "`|='"
+lt_comma = _enum()            ; lex_names[lt_comma] = "`,'"
+lt_hash = _enum()             ; lex_names[lt_hash] = "`#'"
+lt_hashhash = _enum()         ; lex_names[lt_hashhash] = "`##'"
+lt_auto = _enum()             ; lex_names[lt_auto] = "`auto'"
+lt_break = _enum()            ; lex_names[lt_break] = "`break'"
+lt_case = _enum()             ; lex_names[lt_case] = "`case'"
+lt_char = _enum()             ; lex_names[lt_char] = "`char'"
+lt_const = _enum()            ; lex_names[lt_const] = "`const'"
+lt_continue = _enum()         ; lex_names[lt_continue] = "`continue'"
+lt_default = _enum()          ; lex_names[lt_default] = "`default'"
+lt_do = _enum()               ; lex_names[lt_do] = "`do'"
+lt_double = _enum()           ; lex_names[lt_double] = "`double'"
+lt_else = _enum()             ; lex_names[lt_else] = "`else'"
+lt_enum = _enum()             ; lex_names[lt_enum] = "`enum'"
+lt_extern = _enum()           ; lex_names[lt_extern] = "`extern'"
+lt_float = _enum()            ; lex_names[lt_float] = "`float'"
+lt_for = _enum()              ; lex_names[lt_for] = "`for'"
+lt_goto = _enum()             ; lex_names[lt_goto] = "`goto'"
+lt_if = _enum()               ; lex_names[lt_if] = "`if'"
+lt_inline = _enum()           ; lex_names[lt_inline] = "`inline'"
+lt_int = _enum()              ; lex_names[lt_int] = "`int'"
+lt_long = _enum()             ; lex_names[lt_long] = "`long'"
+lt_register = _enum()         ; lex_names[lt_register] = "`register'"
+lt_restrict = _enum()         ; lex_names[lt_restrict] = "`restrict'"
+lt_return = _enum()           ; lex_names[lt_return] = "`return'"
+lt_short = _enum()            ; lex_names[lt_short] = "`short'"
+lt_signed = _enum()           ; lex_names[lt_signed] = "`signed'"
+lt_sizeof = _enum()           ; lex_names[lt_sizeof] = "`sizeof'"
+lt_static = _enum()           ; lex_names[lt_static] = "`static'"
+lt_struct = _enum()           ; lex_names[lt_struct] = "`struct'"
+lt_switch = _enum()           ; lex_names[lt_switch] = "`switch'"
+lt_typedef = _enum()          ; lex_names[lt_typedef] = "`typedef'"
+lt_union = _enum()            ; lex_names[lt_union] = "`union'"
+lt_unsigned = _enum()         ; lex_names[lt_unsigned] = "`unsigned'"
+lt_void = _enum()             ; lex_names[lt_void] = "`void'"
+lt_volatile = _enum()         ; lex_names[lt_volatile] = "`volatile'"
+lt_while = _enum()            ; lex_names[lt_while] = "`while'"
+lt__Bool = _enum()            ; lex_names[lt__Bool] = "`_Bool'"
+lt__Complex = _enum()         ; lex_names[lt__Complex] = "`_Complex'"
+lt__Imaginary = _enum()       ; lex_names[lt__Imaginary] = "`_Imaginary'"
 lt_END = _enum()
 
 # Keywords
@@ -228,7 +231,20 @@ class lexer:
     def seen(self, text):
         "Called after removing text from the input buffer. Should update\n"\
         "the line and column specifiers."
-        # FIXME: do this bit
+        while 1:
+            i = string.find(text, "\n")
+            if i == -1: break
+            self.line = self.line + 1
+            self.col = 1
+            text = text[i+1:]
+        while 1:
+            i = string.find(text, "\t")
+            if i == -1:
+                self.col = self.col + len(text)
+                break
+            else:
+                self.col = self.col + i
+                self.col = ((self.col - 1) &~ 7) + 8
 
     def unget(self, lexeme):
         "Return a lexeme to the input."
