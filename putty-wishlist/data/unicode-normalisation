@@ -1,0 +1,29 @@
+Summary: Apply Unicode normalisation to combining characters
+Class: wish
+Priority: low
+Difficulty: tricky
+Depends: mdpi
+Content-type: text/x-html-body
+
+<p>
+The bug
+<a href="unicode-combining.html">unicode-combining</a>
+is marked as fixed. However, it mentioned that the sequence of code
+points occupying a character cell ought to be maintained in Normalisation
+Form C (see
+<a href="http://www.unicode.org/unicode/reports/tr15/">UAX #15</a>).
+This has not yet been done, although combining character support is
+complete in all other respects.
+
+<p>
+I was originally convinced of the need for normalisation simply
+because it was what <code>xterm</code> did. I'm now less certain,
+and I wonder if it ought to be configurable (and if so whether the
+particular normalisation form in use ought to be configurable too).
+
+<p>
+Regardless, this is a big job, and in particular it will require
+considerable code size increase since normalisation is a job needing
+large tables. Therefore, I fear it will have to wait until we have
+<a href="mdpi.html">mdpi</a>
+done.
