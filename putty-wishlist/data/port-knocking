@@ -50,7 +50,7 @@ to apply it to almost any application.
 Also on Unix, you could write a small command-line application which
 performed the port knock and then made the connection (a
 port-knocking enabled equivalent
-of <a href="http://netcat.sourceforge.net/"><code>nc</code>(1)</a>),
+of <a href="http://www.atstake.com/research/tools/network_utilities/"><code>nc</code>(1)</a>),
 and then invoke that using the "Local" proxy setting in PuTTY. At
 some point we would like to implement this proxy setting in Windows
 PuTTY as well (see <a href="proxy-command.html">proxy-command</a>),
