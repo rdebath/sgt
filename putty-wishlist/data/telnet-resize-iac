@@ -1,0 +1,15 @@
+Summary: PuTTY doesn't correctly encode 255x255 NAWS messages
+Class: bug
+Difficulty: fun
+Present-in: 0.53
+
+From Thomas Thurman:
+
+| When the telnet option NAWS is enabled, and the width or height of the
+| screen is exactly 255 characters, PuTTY fails to double up the 0xFF
+| byte in the subnegotiation, as required by RFC1073.
+
+(in telnet.c:telnet_size())
+
+| Linux telnet servers don't seem to be fazed by this, but it crashed a
+| Python telnet server I was testing it on.
