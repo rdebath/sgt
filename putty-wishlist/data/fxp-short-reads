@@ -1,0 +1,28 @@
+Summary: Support short reads in SFTP
+Class: semi-bug
+Content-type: text/x-html-body
+
+<p>
+In the SSH file transfer protocol (SFTP), there is the possibility of
+the server returning less data than we asked for in response to a read
+request (SSH_FXP_READ).
+
+<p>
+Currently, the SFTP implementation in PSFTP/PSCP will barf if this
+happens other than at EOF ("error while reading: received a short
+buffer from FXP_READ, but not at EOF"). The filexfer draft at the time
+seemed to indicate that this was an exceptional condition that only
+applied to "special" files. However, on closer examination, its
+"guarantee" of no short reads appears not to be reliable.
+
+<p>
+We've had one report of this causing trouble with an OpenVMS server
+that likes to return ZIP files in 512-byte chunks due to the nature of
+the underlying filesystem (whereas we ask for 4k chunks).
+
+<p>
+Since PSFTP/PSCP usually
+<a href="sftp-slow.html">has several requests outstanding</a>
+at any one time, dealing with this properly requires a strategy for
+dealing with fragmentation and reassembly. (But this shouldn't be too
+bad as we already deal with out-of-order responses.)
