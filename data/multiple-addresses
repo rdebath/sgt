@@ -1,0 +1,13 @@
+Summary: PuTTY mishandles machines with multiple addresses
+Class: bug
+Priority: medium
+Difficulty: tricky
+Content-type: text/x-html-body
+
+<p>At present, if a host has multiple addresses, PuTTY merely connects to the
+first one it gets.  This is arguably incorrect behaviour, and PuTTY should
+try each address in turn until it gets one that works.  My feeling is that a
+Socket_Addr should be able to contain multiple addresses, and sk_new should
+handle the retries, but I haven't thought out how proxying would work.
+
+<p>Ref: &lt;3E1AE612.6060308@magdalen.oxford.ac.uk&gt;
