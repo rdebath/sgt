@@ -2146,10 +2146,9 @@ define timber_savetobuf(buffer) {
 }
 
 %}}}
-%{{{ timber_appendmsg(): append the message under the cursor to a file
+%{{{ timber_extractmsg(): extract the message under the cursor as text
 
-% Write a message, in non-Timber-buffer form, to the end of a file.
-define timber_appendmsg(file) {
+define timber_extractmsg(func, param) {
     variable from, to, fbuf, tbuf, c, text;
 
     from = create_user_mark();
@@ -2182,10 +2181,23 @@ define timber_appendmsg(file) {
     }
     setbuf(tbuf);
     bob(); push_mark(); eob();
-    append_region_to_file(file);
+    @func(param);
     setbuf_info(getbuf_info & ~1); % clear modified bit to make delbuf silent
     setbuf(fbuf);
     delbuf(tbuf);
+    
+}
+
+%}}}
+%{{{ timber_appendmsg(): append the message under the cursor to a file
+
+define timber_appendmsg_callback(param) {
+    append_region_to_file(param);
+}
+
+% Write a message, in non-Timber-buffer form, to the end of a file.
+define timber_appendmsg(file) {
+    timber_extractmsg(&timber_appendmsg_callback, file);
 }
 
 %}}}
@@ -2193,14 +2205,12 @@ define timber_appendmsg(file) {
 
 % Save a message to another Timber folder. Will check whether the folder
 % is already open in another buffer.
-define timber_save() {
-    variable file;
+define timber_save_core(file) {
     variable buffer;
     variable lock_required = 1;
 
     push_spot();
 
-    file = timber_readfolder("Folder to save to:");
     !if (strlen (extract_filename(file))) return;
     buffer = strcat("[T] ", file);
     if (bufferp(buffer)) {
@@ -2229,6 +2239,14 @@ define timber_save() {
 
     timber_delete();
     message(Sprintf("Saved message to folder %s.", file, 1));
+}
+
+define timber_save() {
+    variable file;
+
+    file = timber_readfolder("Folder to save to:");
+
+    timber_save_core(file);
 }
 
 %}}}
