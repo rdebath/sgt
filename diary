@@ -81,6 +81,7 @@ ATTR_FGSHIFT = 4
 ATTR_FOOTNOTE = 0x90
 ATTR_QUOTED = 0xB0
 ATTR_STORY = 0xA0
+ATTR_URL = 0xC3
 # Mono (text,attr,break) combinations for quote prefixes and
 # story-mode text.
 monoquotes = [("", 0, 0), ("  ", ATTR_QUOTED, 0),
@@ -443,22 +444,25 @@ class output:
 	else:
             self.mono_attr = self.mono_attr & ~ATTR_BOLD
 
-    def url(self, text):
+    def url(self, text, inline):
 	if self.html_ok:
 	    self.html = self.html + "<a href=\"" + text + "\">" + self.htmlsafe(text) + "</a>"
 	elif self.html_title:
 	    self.subj = self.subj + "<a href=\"" + text + "\">" + self.htmlsafe(text) + "</a>"
-        self.mono_show_para()
-        if self.mono_bullet_wid:
-            self.mono_bullet_txt = ""
-        self.mono_blankline()
-        monotext = "\007B\007U\007CB" + text
-        spaces = (79 - len(text)) / 2
-        if spaces > 79 - len(monotext):
-            spaces = 79 - len(monotext)
-        self.mono.append(" " * spaces + monotext)
-        self.mono_blankline()
-        self.mono_words = []
+	if not inline:
+	    self.mono_show_para()
+	    if self.mono_bullet_wid:
+		self.mono_bullet_txt = ""
+	    self.mono_blankline()
+	    monotext = "\007B\007U\007CB" + text
+	    spaces = (79 - len(text)) / 2
+	    if spaces > 79 - len(monotext):
+		spaces = 79 - len(monotext)
+	    self.mono.append(" " * spaces + monotext)
+	    self.mono_blankline()
+	    self.mono_words = []
+	else:
+	    self.mono_add_word(text, ATTR_URL, 0)
 
     def name(self, text):
 	if self.html_ok:
@@ -808,12 +812,16 @@ def rdinput(file):
 		    tok = t.next()
 		    url = ""
 		    mode = 1
-		    while tok != (EOF,) and tok != (TCLOSE,):
+		    while tok != (EOF,):
 			if mode == 1 and tok[0] == WORD:
 			    url = url + tok[1]
 			    tok = t.next()
 			elif mode == 1:
-			    o.url(url)
+			    if tok == (TCLOSE,):
+				o.url(url, 1)
+				t.next()
+				break
+			    o.url(url, 0)
 			    if tok[0] == WHITE or tok[0] == NL:
 				t.next()
 			    o.posturlmode(1)
