@@ -2,6 +2,7 @@ Summary: Occasional `Access denied' / `RSA_verify failed'
 Class: wish
 Difficulty: fun
 Content-type: text/x-html-body
+Fixed-in: 2002-06-01
 
 <p>
 With SSH2, OpenSSH (various versions), RSA public key, key
@@ -23,7 +24,8 @@ disagreement between PuTTY and OpenSSH about the correct way to pad
 RSA signatures in SSH2. It appears that the draft RFC is on our
 side, so this is a bug in OpenSSH, apparently caused by their
 RSA-for-SSH2 implementation being done before the specification was
-finalised. They will hopefully fix it for OpenSSH 3.3. However,
-PuTTY should detect OpenSSH versions which have the bug and pad its
-signatures appropriately for those versions; hence I've reclassified
-this as a nice easy feature addition rather than a hard bug.
+finalised. They say they'll fix it for OpenSSH 3.3.
+
+<p>
+As of 2002 Jun 1, PuTTY will detect OpenSSH versions which have the
+bug and pad its signatures appropriately for those versions.
