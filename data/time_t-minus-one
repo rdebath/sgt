@@ -1,0 +1,14 @@
+Summary: time() returning (time_t)-1 is mishandled
+Class: bug
+Difficulty: fun
+Priority: medium
+Present-in: 2003-02-09
+Content-type: text/plain
+
+In various places, PuTTY calls time() and passes the result straight to
+localtime() without checking whether the result was (time_t)-1, which
+indicates that time() couldn't return the correct answer.  Doing this
+invokes undefined behaviour (a GPF on Windows), which is Bad.  PuTTY
+should do something more sensible when presented with (time_t)-1.
+
+Ref: <001f01c2d091$74f19560$af00a8c0@dual>
