@@ -16,6 +16,27 @@ int nosync = FALSE;
 
 void run_command(int argc, char **argv)
 {
+    int j;
+
+    static const struct {
+	const char *name;
+	void (*fn) (char *);
+    } simple[] = {
+	{ "import-mbox", import_mbox_folder },
+	{ "export", export_message },
+	{ "export-mbox", export_as_mbox },
+	{ "contact-names", ab_display_name }
+    };
+
+    for (j = 0; j < lenof(simple); ++j) {
+	int i;
+	if (strcmp (argv[0], simple[j].name)) continue;
+	for (i = 1; i < argc; ++i) {
+	    simple[j].fn(argv[i]);
+	}
+	return;
+    }
+
     assert(argc > 0);
 
     if (!strcmp(argv[0], "init")) {
@@ -25,23 +46,6 @@ void run_command(int argc, char **argv)
 	    fatal(err_perror, dirpath, "mkdir");
 	sql_init_all();
 	store_init();
-    }
-
-    if (!strcmp(argv[0], "import-mbox")) {
-	int i;
-	for (i = 1; i < argc; i++)
-	    import_mbox_folder(argv[i]);
-    }
-
-    if (!strcmp(argv[0], "export") ||
-	!strcmp(argv[0], "export-mbox")) {
-	int i;
-	for (i = 1; i < argc; i++) {
-	    if (!strcmp(argv[0], "export"))
-		export_message(argv[i]);
-	    else
-		export_as_mbox(argv[i]);
-	}
     }
 
     if (!strcmp(argv[0], "display") ||
@@ -63,15 +67,9 @@ void run_command(int argc, char **argv)
 	send_from_stdin(charset);
     }
 
-    if (!strcmp(argv[0], "contact-names")) {
-	int i;
-	for (i = 1; i < argc; i++)
-	    ab_display_name(atoi(argv[i]));
-    }
-
     if (!strcmp (argv[0], "set-contact-name")) {
 	if (1 < argc) {
-	    ab_set_name (atoi(argv[1]), (2 < argc) ? argv[2] : NULL);
+	    ab_change_name (argv[1], (2 < argc) ? argv[2] : NULL);
 	}
     }
 }
