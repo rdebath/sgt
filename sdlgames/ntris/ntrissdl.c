@@ -12,17 +12,6 @@
 
 #include "ntris.h"
 
-#define JOY_THRESHOLD 4096
-
-#define lenof(x) ( sizeof((x)) / sizeof(*(x)) )
-
-#define sign(x) ( (x) < 0 ? -1 : (x) > 0 ? +1 : 0 )
-
-#define plot(x,y,c) ( scrdata[(y)*640+(x)*2] = scrdata[(y)*640+(x)*2+1] = c )
-#define plotc(x,y,c) ( (x)<0||(x)>319||(y)<0||(y)>239 ? 0 : plot(x,y,c) )
-
-#define SCR_WIDTH 320
-#define SCR_HEIGHT 240
 #define SQUARE_SIDE 8
 #define HIGHLIGHT 2
 #define PLAY_HEIGHT (SCR_HEIGHT / SQUARE_SIDE - 1)

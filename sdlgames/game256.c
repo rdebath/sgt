@@ -11,9 +11,6 @@
 #include "sdlstuff.h"
 #include "game256.h"
 
-#define SCRWIDTH 320		       /* we pretend it's 320 not 640 */
-#define SCRHEIGHT 240
-
 Sprite makesprite(int max_width, int max_height, int mask)
 {
     Sprite ret;
@@ -83,7 +80,7 @@ static struct image_stuff prep_image(Image image, int x, int y)
 
     /* Clip hard if the image is right off the screen. */
     if (ret.x+ret.w <= 0 || ret.y+ret.h <= 0 ||
-	ret.x > SCRWIDTH || ret.y > SCRHEIGHT) {
+	ret.x > SCR_WIDTH || ret.y > SCR_HEIGHT) {
 	ret.scrptr = NULL;
 	return ret;
     }
@@ -96,8 +93,8 @@ static struct image_stuff prep_image(Image image, int x, int y)
 	ret.imgptr += clip;
 	ret.x += clip;
     }
-    if (ret.x + ret.w > SCRWIDTH) {
-	int clip = ret.x + ret.w - SCRWIDTH;
+    if (ret.x + ret.w > SCR_WIDTH) {
+	int clip = ret.x + ret.w - SCR_WIDTH;
 	ret.w -= clip;
 	ret.imgmod += clip;
     }
@@ -107,14 +104,14 @@ static struct image_stuff prep_image(Image image, int x, int y)
 	ret.y += clip;
 	ret.h -= clip;
     }
-    if (ret.y + ret.h > SCRHEIGHT) {
-	int clip = ret.y + ret.h - SCRHEIGHT;
+    if (ret.y + ret.h > SCR_HEIGHT) {
+	int clip = ret.y + ret.h - SCR_HEIGHT;
 	ret.h -= clip;
     }
 
     /* Now set up scrptr and scrmod. */
-    ret.scrptr = scrdata + 640 * ret.y + 2 * ret.x;
-    ret.scrmod = 640 - 2*ret.w;
+    ret.scrptr = scrdata + SCR_WIDTH*XMULT*YMULT * ret.y + XMULT * ret.x;
+    ret.scrmod = SCR_WIDTH*XMULT*YMULT - XMULT*ret.w;
 
     return ret;
 }
@@ -122,7 +119,7 @@ static struct image_stuff prep_image(Image image, int x, int y)
 void drawimage(Image image, int x, int y, int mask)
 {
     struct image_stuff stuff = prep_image(image, x, y);
-    int ix, iy;
+    int ix, iy, iymult;
 
     if (stuff.scrptr == NULL)
 	return;
@@ -130,9 +127,21 @@ void drawimage(Image image, int x, int y, int mask)
     for (iy = 0; iy < stuff.h; iy++) {
 	for (ix = 0; ix < stuff.w; ix++) {
 	    int c = *stuff.imgptr++;
-	    if (c != mask)
+	    if (c != mask) {
+#if XMULT==2
 		stuff.scrptr[0] = stuff.scrptr[1] = c;
-	    stuff.scrptr += 2;
+# if YMULT==2
+		stuff.scrptr[SCR_WIDTH*XMULT] =
+		    stuff.scrptr[SCR_WIDTH*XMULT+1] = c;
+# endif
+#else
+		stuff.scrptr[0] = c;
+# if YMULT==2
+		stuff.scrptr[SCR_WIDTH*XMULT] = c;
+# endif
+#endif
+	    }
+	    stuff.scrptr += XMULT;
 	}
 	stuff.scrptr += stuff.scrmod;
 	stuff.imgptr += stuff.imgmod;
@@ -150,7 +159,7 @@ void pickimage(Image image, int x, int y)
     for (iy = 0; iy < stuff.h; iy++) {
 	for (ix = 0; ix < stuff.w; ix++) {
 	    *stuff.imgptr++ = *stuff.scrptr;
-	    stuff.scrptr += 2;
+	    stuff.scrptr += XMULT;
 	}
 	stuff.scrptr += stuff.scrmod;
 	stuff.imgptr += stuff.imgmod;
@@ -227,12 +236,16 @@ void bar(int x1, int y1, int x2, int y2, int c)
 
     if (x2 < x1) { int tmp = x1; x1 = x2; x2 = tmp; }
     if (y2 < y1) { int tmp = y1; y1 = y2; y2 = tmp; }
-    if (x2 < 0 || x1 >= SCRWIDTH || y2 < 0 || y1 >= SCRHEIGHT) return;
+    if (x2 < 0 || x1 >= SCR_WIDTH || y2 < 0 || y1 >= SCR_HEIGHT) return;
     if (x1 < 0) x1 = 0;
     if (y1 < 0) y1 = 0;
-    if (x2 > SCRWIDTH-1) x2 = SCRWIDTH-1;
-    if (y2 > SCRHEIGHT-1) y2 = SCRHEIGHT-1;
+    if (x2 > SCR_WIDTH-1) x2 = SCR_WIDTH-1;
+    if (y2 > SCR_HEIGHT-1) y2 = SCR_HEIGHT-1;
 
-    for (y = y1; y <= y2; y++)
-	memset(scrdata+SCRWIDTH*2*y+2*x1, c, 2*(x2+1-x1));
+    for (y = y1; y <= y2; y++) {
+	memset(scrdata+SCR_WIDTH*XMULT*YMULT*y+XMULT*x1, c, XMULT*(x2+1-x1));
+#if YMULT==2
+	memset(scrdata+SCR_WIDTH*XMULT*(YMULT*y+1)+XMULT*x1,c,XMULT*(x2+1-x1));
+#endif
+    }
 }

@@ -12,19 +12,8 @@
 #include "utils.h"
 
 #define ABSOLUTE_MAX_SPEED 25
-#define JOY_THRESHOLD 4096
 
 #define WEAPON_COLOUR 255
-
-#define lenof(x) ( sizeof((x)) / sizeof(*(x)) )
-
-#define sign(x) ( (x) < 0 ? -1 : (x) > 0 ? +1 : 0 )
-
-#define plot(x,y,c) ( scrdata[(y)*640+(x)*2] = scrdata[(y)*640+(x)*2+1] = c )
-#define pixel(x,y) ( scrdata[(y)*640+(x)*2] )
-
-#define plotc(x,y,c) ( (x)<0||(x)>319||(y)<0||(y)>239 ? 0 : plot(x,y,c) )
-#define pixelc(x,y) ( (x)<0||(x)>319||(y)<0||(y)>239 ? 0 : pixel(x,y) )
 
 static int no_quit_option = 0;
 
@@ -664,7 +653,10 @@ static int play_game(void)
 static int game_setup_done = 0;
 
 enum {
-    MM_GAME, MM_RESET, MM_SETUP, MM_QUIT, MM_SCR_ADJUST
+    MM_GAME, MM_RESET, MM_SETUP, MM_QUIT
+#ifdef PS2
+    , MM_SCR_ADJUST
+#endif /* PS2 */
 };
 
 static int main_menu(void)
@@ -677,8 +669,12 @@ static int main_menu(void)
 	{110, "Play Game", MM_GAME},
 	{124, "Reset Scores", MM_RESET},
 	{138, "Game Setup", MM_SETUP},
+#ifdef PS2
 	{152, "Adjust Screen", MM_SCR_ADJUST},
 	{166, "Exit NORT", MM_QUIT},
+#else /* PS2 */
+	{152, "Exit NORT", MM_QUIT},
+#endif /* PS2 */
     };
 
     int menumin, j, flags = 0, prevval = 0, redraw;
@@ -1045,6 +1041,7 @@ static void reset_scores(void)
     scores.games = scores.draws = 0;
 }
 
+#ifdef PS2
 static void screen_adjust(void)
 {
     SDL_Event event;
@@ -1131,6 +1128,7 @@ static void screen_adjust(void)
 	scr_done();
     }
 }
+#endif /* PS2 */
 
 int main(int argc, char **argv)
 {
@@ -1221,9 +1219,11 @@ int main(int argc, char **argv)
 	    setup_game();
 	    reset_scores();
 	    break;
+#ifdef PS2
 	  case MM_SCR_ADJUST:
 	    screen_adjust();
 	    break;
+#endif /* PS2 */
 	  case MM_RESET:
 	    reset_scores();
 	    break;
