@@ -78,7 +78,7 @@ static struct chr alphabet[] = {
     {{0x33,0x33,0x33,0x33,0x33,0x33,0x33,0x1e,0x0c},6,TL|TR,0,{TL,TR,0}},
     {{0xc3,0xc3,0xc3,0xc3,0xdb,0xdb,0xdb,0xff,0x7e},8,TL|TR,0,{TL,TR,0}},
     {{0x33,0x33,0x33,0x1e,0x0c,0x1e,0x33,0x33,0x33},6,ALL4,0,{BL|TR,TL|BR,0}},
-    {{0x63,0x63,0x63,0x3e,0x0c,0x0c,0x0c,0x0c,0x0c},7,TL|TR,0,{TL|BM,TR|BM,0}},
+    {{0x63,0x63,0x63,0x7f,0x3e,0x0c,0x0c,0x0c,0x0c},7,TL|TR,0,{TL|BM,TR|BM,0}},
     {{0x3f,0x3f,0x03,0x06,0x0c,0x18,0x30,0x3f,0x3f},6,TL|BR,TL|BR,{0}},
 };
 
@@ -624,9 +624,12 @@ void swash_text(int x, int y, char *text,
 		else {
 		    /* For TM/BM, we search for the stem we're extending. */
 		    sx = 1;
-		    while (sx < opt->chr->width+2 &&
-			   ((opt->chr->bitpattern[j] >> sx) & 3) != 3)
+		    debug(("looking for stem in row %d = 0x%02x\n",
+			   sy-y, opt->chr->bitpattern[sy-y]));
+		    while (sx < opt->chr->width-2 &&
+			   ((opt->chr->bitpattern[sy-y] >> sx) & 3) != 3)
 			sx++;
+		    debug(("found sx = %d\n", sx));
 		    sx = x + opt->chr->width-2-sx;
 		}
 
@@ -682,6 +685,48 @@ void swash_text(int x, int y, char *text,
 
 	opt = opt->next;
     }
+}
+
+int swash_width(char *text)
+{
+    int i, width;
+
+    width = 0;
+
+    for (i = 0; text[i]; i++) {
+	if ((text[i] >= 'A' && text[i] <= 'Z') ||
+	    (text[i] >= 'a' && text[i] <= 'z')) {
+	    struct chr *chr;
+
+	    if (text[i] >= 'a')
+		chr = &alphabet[text[i] - 'a'];
+	    else
+		chr = &alphabet[text[i] - 'A'];
+
+	    width += chr->width+1;
+	} else {
+	    struct punct *punct;
+	    int c = text[i];
+
+	    /* Everything we really don't understand defaults to space. */
+	    if (c < ' ' || c > '\x7F')
+		c = ' ';
+
+	    if (c >= ' ' && c < 'A')
+		punct = &punctuation[c-' '];
+	    else if (c > 'Z' && c < 'a')
+		punct = &punctuation[c-26-' '];
+	    else /* if (c > 'z') */
+		punct = &punctuation[c-52-' '];
+
+	    assert(punct != NULL);
+
+	    if (punct->width)	       /* width-0 chars are special case */
+		width += punct->width+1;
+	}
+    }
+
+    return width;
 }
 
 #ifdef TESTMODE
