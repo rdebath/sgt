@@ -1,0 +1,26 @@
+Summary: first_kex_packet_follows is ignored
+Class: bug
+Priority: medium
+Difficulty: fun
+Content-type: text/plain
+Present-in: 2005-01-11
+
+The current SECSH transport draft, draft-ietf-secsh-transport-22.txt,
+specifies a boolean in the KEXINIT packet defined as:
+
+      first_kex_packet_follows
+         Indicates whether a guessed key exchange packet follows.  If a
+         guessed packet will be sent, this MUST be TRUE.  If no guessed
+         packet will be sent, this MUST be FALSE.
+
+         After receiving the SSH_MSG_KEXINIT packet from the other side,
+         each party will know whether their guess was right.  If the
+         other party's guess was wrong, and this field was TRUE, the
+         next packet MUST be silently ignored, and both sides MUST then
+         act as determined by the negotiated key exchange method.  If
+         the guess was right, key exchange MUST continue using the
+         guessed packet.
+
+From code inspection, I think PuTTY currently ignores this field, which means
+that if it encounters a server that sets it to true and doesn't share PuTTY's
+preferred key-exchange method, it'll get horribly confused.
