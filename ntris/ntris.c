@@ -83,35 +83,56 @@
 #define SHAPESET tetris_shapes
 #endif
 
+/*
+ * Prefix on each shape string is:
+ * 
+ *  - X means this piece cannot be reflected (it would make Tetris
+ *    too easy).
+ *  - Y means this piece reflects to a rotation of itself, mapping
+ *    0123 -> 0321.
+ *  - Z means this piece reflects to a rotation of itself, mapping
+ *    0123 -> 2103.
+ *  - W means this piece reflects to a rotation of itself, mapping
+ *    0123 -> 1032.
+ *  - A means the piece is the first of two 2-shapelet shapes which
+ *    reflects to the one after it. The one after it is labelled B.
+ *  - C means the piece is the first of two 4-shapelet shapes which
+ *    reflects to the one after it, mapping 0123 -> 0321. The one
+ *    after it is labelled D.
+ *  - E means the piece is the first of two 4-shapelet shapes which
+ *    reflects to the one after it, mapping 0123 -> 2103. The one
+ *    after it is labelled F.
+ */
+
 char *tetris_shapes[7] = {
-    "0:10011121:10011112:01112112:10111221", /* T-piece */
-    "3:01112131:10111213",	             /* long bar */
-    "4:00011121:10111202:01112122:10111220", /* reverse L */
-    "7:01111222:11122021",	             /* Z skew */
-    "8:02121121:10112122",	             /* S skew */
-    "10:01112120:00101112:02011121:10111222", /* forward L */
-    "17:00011011",		             /* square */
+    "X0:10011121:10011112:01112112:10111221", /* T-piece */
+    "X3:01112131:10111213",	             /* long bar */
+    "X4:00011121:10111202:01112122:10111220", /* reverse L */
+    "X7:01111222:11122021",	             /* Z skew */
+    "X8:02121121:10112122",	             /* S skew */
+    "X10:01112120:00101112:02011121:10111222", /* forward L */
+    "X17:00011011",		             /* square */
 };
 
 char *pentris_shapes[18] = {
-    "0:0102122221:1020211222:0010200121:0010010212",  /* U */
-    "1:1101211012",                                   /* X */
-    "2:1121122232:1121122220:1121122201:1121122213",  /* P */
-    "3:1121122202:1121122223:1121122231:1121122210",  /* reverse P */
-    "4:0212223242:2021222324",                        /* I */
-    "5:0212223231:2423222111:4232221213:2021222333",  /* L */
-    "6:4232221211:2021222313:0212223233:2423222131",  /* reverse L */
-    "7:0111122232:1312222120:3222211101:2021111213",  /* N */
-    "8:0212112131:2322121110:3121221202:1011212223",  /* reverse N */
-    "9:0001112112:0212111021:2221110110:2010111201", /* F */
-    "10:2021110112:0010111221:0201112110:2212111001", /* reverse F */
-    "11:0010201112:0001021121:0212221110:2021221101", /* T */
-    "12:0001111222:0212112120:2221111000:2010110102", /* W */
-    "13:2102122232:1221222324:2312223242:3220212223", /* Y */
-    "14:2112223242:1220212223:2302122232:3221222324", /* reverse Y */
-    "15:0201112120:2212111000",                       /* Z */
-    "16:2221110100:2010111202",                       /* reverse Z */
-    "17:0001021222:0212222120:2221201000:2010000102", /* V */
+    "Y0:0102122221:1020211222:0010200121:0010010212",  /* U */
+    "X1:1101211012",                                   /* X */
+    "C2:1121122232:1121122220:1121122201:1121122213",  /* P */
+    "D3:1121122202:1121122223:1121122231:1121122210",  /* reverse P */
+    "X4:0212223242:2021222324",                        /* I */
+    "C5:0212223231:2423222111:4232221213:2021222333",  /* L */
+    "D6:4232221211:2021222313:0212223233:2423222131",  /* reverse L */
+    "E7:0111122232:1312222120:3222211101:2021111213",  /* N */
+    "F8:0212112131:2322121110:3121221202:1011212223",  /* reverse N */
+    "C9:0001112112:0212111021:2221110110:2010111201",  /* F */
+    "D10:2021110112:0010111221:0201112110:2212111001", /* reverse F */
+    "Y11:0010201112:0001021121:0212221110:2021221101", /* T */
+    "W12:0001111222:0212112120:2221111000:2010110102", /* W */
+    "C13:2102122232:1221222324:2312223242:3220212223", /* Y */
+    "D14:2112223242:1220212223:2302122232:3221222324", /* reverse Y */
+    "A15:0201112120:2212111000",                       /* Z */
+    "B16:2221110100:2010111202",                       /* reverse Z */
+    "W17:0001021222:0212222120:2221201000:2010000102", /* V */
 };
 
 struct shapeset {
@@ -119,6 +140,7 @@ struct shapeset {
     guint8 **shapes;		       /* shapelet -> (coords,flags) pairs */
     guint8 *anticlock;		       /* shapelet -> nextshapelet */
     guint8 *clockwise;		       /* shapelet -> prevshapelet */
+    guint8 *reflected;		       /* shapelet -> mirrorshapelet */
     guint8 *width;		       /* shapelet -> width */
     guint8 *start;		       /* starting shapes */
     guint8 *colours;		       /* shape colours */
@@ -159,12 +181,13 @@ struct shapeset *make_shapeset(char **shapes, int nshapes)
      * Now allocate the storage for everything.
      */
     ss->data[0] = (guint8 **)g_malloc(nshapelets * sizeof(guint8 *));
-    ss->data[1] = (guint8 *)g_malloc((4*nshapelets+nshapes) * sizeof(guint8));
+    ss->data[1] = (guint8 *)g_malloc((5*nshapelets+nshapes) * sizeof(guint8));
     ss->data[2] = shapedata = (guint8 *)g_malloc(2*nsquares * sizeof(guint8));
     ss->shapes = ss->data[0];
     ss->anticlock = ss->data[1];
     ss->clockwise = ss->anticlock + nshapelets;
-    ss->width = ss->clockwise + nshapelets;
+    ss->reflected = ss->clockwise + nshapelets;
+    ss->width = ss->reflected + nshapelets;
     ss->start = ss->width + nshapelets;
     ss->colours = ss->start + nshapes;
 
@@ -175,7 +198,9 @@ struct shapeset *make_shapeset(char **shapes, int nshapes)
     k = 0;
     for (i = 0; i < nshapes; i++) {
 	char *p = shapes[i];
+	char reflecttype = *p++;
 	int colour = atoi(p);
+	int shapeindex = 0;
 	ss->start[i] = j;
 	p += strcspn(p, ":");
 	while (*p) {
@@ -223,9 +248,41 @@ struct shapeset *make_shapeset(char **shapes, int nshapes)
 	    else
 		ss->anticlock[j] = ss->start[i];
 	    ss->clockwise[ss->anticlock[j]] = j;
+
+	    switch (reflecttype) {
+	      default:
+		ss->reflected[j] = j; break;   /* reflection does nothing */
+	      case 'A':
+		ss->reflected[j] = j+2; break;
+	      case 'B':
+		ss->reflected[j] = j-2; break;
+	      case 'C':
+		ss->reflected[j] = (j-shapeindex) + 4 + ((-shapeindex)&3);
+		break;
+	      case 'D':
+		ss->reflected[j] = (j-shapeindex) - 4 + ((-shapeindex)&3);
+		break;
+	      case 'E':
+		ss->reflected[j] = (j-shapeindex) + 4 + ((2-shapeindex)&3);
+		break;
+	      case 'F':
+		ss->reflected[j] = (j-shapeindex) - 4 + ((2-shapeindex)&3);
+		break;
+	      case 'Y':
+		ss->reflected[j] = (j-shapeindex) + ((-shapeindex)&3);
+		break;
+	      case 'Z':
+		ss->reflected[j] = (j-shapeindex) + ((2-shapeindex)&3);
+		break;
+	      case 'W':
+		ss->reflected[j] = (j-shapeindex) + (shapeindex^1);
+		break;
+	    }
+
 	    ss->width[j] = w;
 
 	    j++;
+	    shapeindex++;
 	}
     }
 
@@ -243,8 +300,8 @@ struct game_instance {
     enum { TITLESCR, IN_GAME } state;
     struct shapeset *ss;
     guint8 playarea[PLAY_WIDTH*PLAY_HEIGHT][2];
-    int currshape, nextshape, shape_x, shape_y;
-    int leftpressed, rightpressed, acpressed, cwpressed;
+    int currshape, nextshape, shapecolour, shape_x, shape_y;
+    int leftpressed, rightpressed, acpressed, cwpressed, rpressed;
     int down_disabled;
     int update_minx, update_maxx, update_miny, update_maxy;
 };
@@ -325,16 +382,11 @@ void playarea(struct game_instance *inst)
 		       SQUARE_SIDE*PLAY_WIDTH+2, SQUARE_SIDE*PLAY_HEIGHT+1);
 }
 
-void draw_shape(struct game_instance *inst, int shape, int x, int y, int erase)
+void draw_shape(struct game_instance *inst, int shape, int x, int y, int c)
 {
     guint8 *p;
-    int c;
 
     p = inst->ss->shapes[shape];
-    if (erase)
-	c = -1;
-    else
-	c = inst->ss->colours[shape];
     while (*p != 0xFF) {
 	int xy, flag;
 	xy = *p++;
@@ -370,7 +422,7 @@ void write_shape(struct game_instance *inst, int shape, int x, int y)
     int c;
 
     p = inst->ss->shapes[shape];
-    c = inst->ss->colours[shape];
+    c = inst->shapecolour;
     while (*p != 0xFF) {
 	int xy, xx, yy, flag;
 	xy = *p++;
@@ -388,8 +440,10 @@ int init_shape(struct game_instance *inst)
     inst->shape_y = 0;
     if (!shape_fits(inst, inst->currshape, inst->shape_x, inst->shape_y))
 	return FALSE;
-    draw_shape(inst, inst->currshape, inst->shape_x+1, inst->shape_y, FALSE);
-    draw_shape(inst, inst->nextshape, PLAY_WIDTH+3, 1, FALSE);
+    draw_shape(inst, inst->currshape, inst->shape_x+1, inst->shape_y,
+	       inst->shapecolour);
+    draw_shape(inst, inst->nextshape, PLAY_WIDTH+3, 1, 
+	       inst->ss->colours[inst->nextshape]);
 }
 
 void init_game(struct game_instance *inst)
@@ -397,6 +451,7 @@ void init_game(struct game_instance *inst)
     memset(inst->playarea, 0xFF, sizeof(inst->playarea));
     srand(time(NULL));
     inst->currshape = rand_shape(inst);
+    inst->shapecolour = inst->ss->colours[inst->currshape];
     inst->nextshape = rand_shape(inst);
     init_shape(inst);
 }
@@ -405,10 +460,10 @@ int try_move_left(struct game_instance *inst)
 {
     if (shape_fits(inst, inst->currshape, inst->shape_x-1, inst->shape_y)) {
 	draw_shape(inst, inst->currshape,
-		   inst->shape_x+1, inst->shape_y, TRUE);
+		   inst->shape_x+1, inst->shape_y, -1);
 	inst->shape_x--;
 	draw_shape(inst, inst->currshape,
-		   inst->shape_x+1, inst->shape_y, FALSE);
+		   inst->shape_x+1, inst->shape_y, inst->shapecolour);
 	return TRUE;
     }
     return FALSE;
@@ -418,10 +473,10 @@ int try_move_right(struct game_instance *inst)
 {
     if (shape_fits(inst, inst->currshape, inst->shape_x+1, inst->shape_y)) {
 	draw_shape(inst, inst->currshape,
-		   inst->shape_x+1, inst->shape_y, TRUE);
+		   inst->shape_x+1, inst->shape_y, -1);
 	inst->shape_x++;
 	draw_shape(inst, inst->currshape,
-		   inst->shape_x+1, inst->shape_y, FALSE);
+		   inst->shape_x+1, inst->shape_y, inst->shapecolour);
 	return TRUE;
     }
     return FALSE;
@@ -431,10 +486,10 @@ int try_move_down(struct game_instance *inst)
 {
     if (shape_fits(inst, inst->currshape, inst->shape_x, inst->shape_y+1)) {
 	draw_shape(inst, inst->currshape,
-		   inst->shape_x+1, inst->shape_y, TRUE);
+		   inst->shape_x+1, inst->shape_y, -1);
 	inst->shape_y++;
 	draw_shape(inst, inst->currshape,
-		   inst->shape_x+1, inst->shape_y, FALSE);
+		   inst->shape_x+1, inst->shape_y, inst->shapecolour);
 	return TRUE;
     }
     return FALSE;
@@ -445,10 +500,10 @@ int try_anticlock(struct game_instance *inst)
     if (shape_fits(inst, inst->ss->anticlock[inst->currshape],
 		   inst->shape_x, inst->shape_y)) {
 	draw_shape(inst, inst->currshape,
-		   inst->shape_x+1, inst->shape_y, TRUE);
+		   inst->shape_x+1, inst->shape_y, -1);
 	inst->currshape = inst->ss->anticlock[inst->currshape];
 	draw_shape(inst, inst->currshape,
-		   inst->shape_x+1, inst->shape_y, FALSE);
+		   inst->shape_x+1, inst->shape_y, inst->shapecolour);
 	return TRUE;
     }
     return FALSE;
@@ -459,10 +514,24 @@ int try_clockwise(struct game_instance *inst)
     if (shape_fits(inst, inst->ss->clockwise[inst->currshape],
 		   inst->shape_x, inst->shape_y)) {
 	draw_shape(inst, inst->currshape,
-		   inst->shape_x+1, inst->shape_y, TRUE);
+		   inst->shape_x+1, inst->shape_y, -1);
 	inst->currshape = inst->ss->clockwise[inst->currshape];
 	draw_shape(inst, inst->currshape,
-		   inst->shape_x+1, inst->shape_y, FALSE);
+		   inst->shape_x+1, inst->shape_y, inst->shapecolour);
+	return TRUE;
+    }
+    return FALSE;
+}
+
+int try_reflect(struct game_instance *inst)
+{
+    if (shape_fits(inst, inst->ss->reflected[inst->currshape],
+		   inst->shape_x, inst->shape_y)) {
+	draw_shape(inst, inst->currshape,
+		   inst->shape_x+1, inst->shape_y, -1);
+	inst->currshape = inst->ss->reflected[inst->currshape];
+	draw_shape(inst, inst->currshape,
+		   inst->shape_x+1, inst->shape_y, inst->shapecolour);
 	return TRUE;
     }
     return FALSE;
@@ -535,9 +604,10 @@ int drop(struct game_instance *inst)
     if (try_move_down(inst))
 	return FALSE;
     write_shape(inst, inst->currshape, inst->shape_x, inst->shape_y);
-    draw_shape(inst, inst->nextshape, PLAY_WIDTH+3, 1, TRUE);
+    draw_shape(inst, inst->nextshape, PLAY_WIDTH+3, 1, -1);
     check_lines(inst);
     inst->currshape = inst->nextshape;
+    inst->shapecolour = inst->ss->colours[inst->currshape];
     inst->nextshape = rand_shape(inst);
     init_shape(inst);
     inst->down_disabled = TRUE;
@@ -789,7 +859,7 @@ gint key_event(GtkWidget *widget, GdkEventKey *event, gpointer data)
 	    inst->state = IN_GAME;
 	    inst->ss = make_shapeset(SHAPESET, lenof(SHAPESET));
 	    inst->leftpressed = inst->rightpressed = 0;
-	    inst->acpressed = inst->cwpressed = 0;
+	    inst->acpressed = inst->cwpressed = inst->rpressed = 0;
             inst->down_disabled = FALSE;
 	    playarea(inst);
 	    init_game(inst);
@@ -828,6 +898,12 @@ gint timer_func(gpointer data)
 	    update_minimal(inst);
     }
     inst->cwpressed = KEY_PRESSED(';');
+
+    if (KEY_PRESSED(' ') && !inst->rpressed) {
+	if (try_reflect(inst))
+	    update_minimal(inst);
+    }
+    inst->rpressed = KEY_PRESSED(' ');
 
     if (KEY_PRESSED('/') && !inst->down_disabled) {
 	drop(inst);
