@@ -602,6 +602,7 @@ int main(void)
 	static const int charsets[] = { CS_ASCII, CS_ISO8859_1, CS_UTF8 };
 	static const int charsets2[] = { CS_ASCII, CS_ISO8859_1,
 		CS_ISO2022_JP, CS_UTF8 };
+	static const int charsets3[] = { CS_ISO2022_KR, CS_UTF8 };
 	ETEST("hello world!", CS_ASCII, charsets);
 	ETEST("hello, world", CS_ASCII, charsets);
 	ETEST("J\xc3\xb8rgen Fischer", CS_UTF8, charsets);
@@ -623,6 +624,10 @@ int main(void)
 	      "\xE3\x82\xA2\xE3\x83\x83\xE3\x83\x97\xEF\xBC\x81\xE6\xA5\xAD"
 	      "\xE7\x95\x8C\xE6\x9C\x80\xE5\xAE\x89\xE5\x80\xA4\xEF\xBC\x81"
 	      "\xEF\xBC\x81", CS_UTF8, charsets2);
+	ETEST("This is another deliberately long line which is going to go "
+	      "over the limit. This time I'm testing to see whether "
+	      "ISO-2022-KR text gets the initial sequence everywhere.",
+	      CS_UTF8, charsets3);
     }
 
     return 0;
