@@ -1,0 +1,327 @@
+#!/usr/bin/env python
+# (Be in -*- python -*- mode.)
+
+import sys
+import string
+import types
+
+# Transform pathnames to be the way I like them. Returns `None' if
+# the pathname is an unnecessary parent and should be removed.
+def trans(path):
+    def match(path, pattern, replace):
+	starpos = string.find(pattern, '*')
+	if starpos >= 0:
+	    if path[:starpos] != pattern[:starpos]:
+		return path
+	    if pattern[starpos+1:] == "":
+		afterpos = len(path)
+	    else:
+		afterpos = string.find(path, pattern[starpos+1:], starpos)
+	    if afterpos < 0:
+		return path
+	    startext = path[starpos:afterpos]
+	    print path, pattern, replace, startext
+	    if string.find(startext, '/') >= 0:
+		return path
+	    aftertext = path[afterpos + len(pattern)-(starpos+1):]
+	else:
+	    if path[:len(pattern)] != pattern:
+		return path
+	    startext = ""
+	    aftertext = path[len(pattern):]
+	# Now we know there's a match.
+	if replace == None:
+	    # This only matches _exactly_, so aftertext must be empty.
+	    if aftertext == "":
+		return replace
+	    else:
+		return path
+	starpos = string.find(replace, '*')
+	if starpos >= 0:
+	    replace = replace[:starpos] + startext + replace[starpos+1:]
+	return replace + aftertext
+    replacements = [
+    ('branches', None),
+    ('tags', None),
+    ('trunk', None),
+    ('trunk/', ''),
+    ('tags/beta-0-*/putty', 'putty-0.*'),
+    ('tags/beta-0-*', None),
+    ('tags/release-0-9/halibut', 'halibut-0.9'),
+    ('tags/release-0-9', None),
+    ('tags/release-1-*/enigma', 'enigma-1.*'),
+    ('tags/release-1-*', None),
+    ('branches/branch-0-*/putty', 'putty-branch-0.*'),
+    ('branches/branch-0-*', None),
+    ('branches/ben-mac-port/putty', 'putty-ben-mac-port'),
+    ('branches/ben-mac-port', None),
+    ('branches/ben-early-mac-port/putty', 'putty-ben-early-mac-port'),
+    ('branches/ben-early-mac-port', None),
+    ('branches/zlib-dll/putty', 'putty-zlib-dll'),
+    ('branches/zlib-dll', None),
+    ('tags/asilver/html/bugs.html', 'html-misc/bugs-asilver.html'),
+    ('tags/asilver/html', None),
+    ('tags/asilver', None),
+    ('tags/freshmeat-published/html/bugs.html', 'html-misc/bugs-freshmeat-published.html'),
+    ('tags/freshmeat-published/html', None),
+    ('tags/freshmeat-published', None),
+    ('tags/second-review/html/bugs.html', 'html-misc/bugs-review2.html'),
+    ('tags/second-review/html', None),
+    ('tags/second-review', None),
+    ('branches/freshmeat/html/bugs.html', 'html-misc/bugs-freshmeat-branch.html'),
+    ('branches/freshmeat/html', None),
+    ('branches/freshmeat', None),
+    ('tags/ben-hacked-terminal/putty', 'putty-ben-hacked-terminal'),
+    ('tags/ben-hacked-terminal', None),
+    ('tags/ben-scrollopt-for-simon/putty', 'putty-ben-scrollopt-for-simon'),
+    ('tags/ben-scrollopt-for-simon', None),
+    ('tags/pre-blowfish/putty', 'putty-pre-blowfish'),
+    ('tags/pre-blowfish', None),
+    ('tags/experimental/golem', 'golem-import-tag'),
+    ('tags/experimental', None),
+    ('branches/richard/golem', 'golem-import-branch'),
+    ('branches/richard', None),
+    ]
+    if path[:1] == "/":
+	leadslash = "/"
+	path = path[1:]
+    else:
+	leadslash = ""
+    orig = path
+    for p, m in replacements:
+	path = match(path, p, m)
+	if path == None or path != orig:
+	    break
+    if path != None:
+	path = leadslash + path
+    return path
+
+# Start by learning to read the dump file.
+
+class Lump:
+    def __init__(self):
+	self.hdrlist = []
+	self.hdrdict = {}
+	self.data = ""
+	self.extant = 1
+    def sethdr(self, key, val):
+	if not self.hdrdict.has_key(key):
+	    self.hdrlist.append(key)
+	self.hdrdict[key] = val
+
+def read_rfc822_headers(f):
+    ret = Lump()
+    while 1:
+	s = f.readline()
+	if s == "":
+	    return None # end of file
+	if s == "\n":
+	    if len(ret.hdrlist) > 0:
+		break # newline after headers ends them
+	    else:
+		continue # newline before headers is simply ignored
+	if s[-1:] == "\n": s = s[:-1]
+	colon = string.find(s, ":")
+	assert colon > 0
+	assert s[colon:colon+2] == ": "
+	key = s[:colon]
+	val = s[colon+2:]
+	ret.sethdr(key, val)
+    return ret
+
+def read_lump(f):
+    lump = read_rfc822_headers(f)
+    if lump == None:
+	return None
+    pcl = string.atoi(lump.hdrdict.get("Prop-content-length", "0"))
+    tcl = string.atoi(lump.hdrdict.get("Text-content-length", "0"))
+    if pcl + tcl > 0:
+	lump.data = f.read(pcl + tcl)
+    return lump
+
+def write_lump(f, lump):
+    if not lump.extant:
+	return
+    for key in lump.hdrlist:
+	val = lump.hdrdict[key]
+	f.write(key + ": " + val + "\n")
+    f.write("\n")
+    f.write(lump.data)
+    if lump.hdrdict.has_key("Prop-content-length") or \
+    lump.hdrdict.has_key("Text-content-length") or \
+    lump.hdrdict.has_key("Content-length"):
+	f.write("\n")
+
+# Copy a tree of dictionaries.
+def copy(tree):
+    if type(tree) != types.DictType:
+	return tree
+    ret = {}
+    for key, val in tree.items():
+	ret[key] = copy(val)
+    return ret
+
+class RevTweaker:
+    def __init__(self, name, trans=lambda x:x):
+	self.tree = {}
+	self.trans = trans
+	self.name = name
+    def pathfind(self, path, action, typ=None):
+	tree = self.tree
+	#print "find:", path, action, typ
+	if path[:1] == "/":
+	    path = path[1:] # strip off leading slash
+	while 1:
+	    n = string.find(path, '/')
+	    if n < 0:
+		first = path
+		rest = None
+	    else:
+		first = path[:n]
+		rest = path[n+1:]
+	    if not tree.has_key(first):
+		assert action == "add"
+		if type(typ) == types.TupleType:
+		    assert len(typ) == 1
+		    tree[first] = copy(typ[0])
+		elif typ == "dir":
+		    tree[first] = {}
+		else:
+		    tree[first] = 0
+		return None
+	    val = tree[first]
+	    if rest == None:
+		break
+	    else:
+		assert type(val) == types.DictType
+		tree = val
+		path = rest
+	if action == "delete":
+	    del tree[first]
+	return val
+
+    def tweak(self, revhdr, contents):
+	print self.name, "revision:", revhdr.hdrdict["Revision-number"]
+	created = {}
+	# Pass 1: convert a copy from or to a moribund path into a
+	# mkdir plus a set of subcopies.
+	contents2 = []
+	stack = contents[:]
+	while len(stack) > 0:
+	    lump = stack[0]
+	    stack = stack[1:]
+	    path = lump.hdrdict["Node-path"]
+	    action = lump.hdrdict["Node-action"]
+	    print self.name, "tweak:", path, action
+	    if action == "add":
+		if lump.hdrdict.has_key("Node-copyfrom-path"):
+		    srcpath = lump.hdrdict["Node-copyfrom-path"]
+		    srcnode = self.pathfind(srcpath, "find")
+		    if self.trans(path) == None or self.trans(srcpath) == None:
+			newlist = []
+			assert type(srcnode) == types.DictType
+			newlump = Lump()
+			newlump.sethdr("Node-path", path)
+			newlump.sethdr("Node-kind", "dir")
+			newlump.sethdr("Node-action", "add")
+			#self.pathfind(path, "add", "dir")
+			newlist.append(newlump)
+			created[path] = newlump
+			for key in srcnode.keys():
+			    newlump = Lump()
+			    newlump.sethdr("Node-path", path + "/" + key)
+			    newlump.sethdr("Node-action", "add")
+			    newlump.sethdr("Node-copyfrom-rev", \
+			    lump.hdrdict["Node-copyfrom-rev"])
+			    newlump.sethdr("Node-copyfrom-path", \
+			    srcpath + "/" + key)
+			    newlist.append(newlump)
+			    srcsub = self.pathfind(srcpath+"/"+key, "find")
+			    #self.pathfind(path+"/"+key, action, (srcsub,))
+			    created[path+"/"+key] = newlump
+			stack = newlist + stack
+		    else:
+			self.pathfind(path, action, (srcnode,))
+			contents2.append(lump)
+			created[path] = lump
+		else:
+		    typ = lump.hdrdict["Node-kind"]
+		    self.pathfind(path, action, typ)
+		    contents2.append(lump)
+		    created[path] = lump
+	    elif action == "delete" and created.has_key(path):
+		self.pathfind(path, action)
+		created[path].extant = 0
+		lump.extant = 0
+	    else:
+		self.pathfind(path, action)
+		contents2.append(lump)
+
+	# Pass 2: actually rename nodes, and remove non-extant
+	# ones.
+	contents3 = []
+	for lump in contents2:
+	    if not lump.extant:
+		continue
+	    path = self.trans(lump.hdrdict["Node-path"])
+	    if path == None:
+		lump.extant = 0
+		continue
+	    lump.hdrdict["Node-path"] = path
+	    if lump.hdrdict.has_key("Node-copyfrom-path"):
+		path = self.trans(lump.hdrdict["Node-copyfrom-path"])
+		if path == None:
+		    lump.extant = 0
+		    continue
+		lump.hdrdict["Node-copyfrom-path"] = path
+	    contents3.append(lump)
+
+	# Cheesy hack which I can't be bothered to sort out a
+	# general mechanism for: create html-misc if html has been
+	# created.
+	if created.has_key("trunk/html"):
+	    newlump = Lump()
+	    newlump.sethdr("Node-path", "html-misc")
+	    newlump.sethdr("Node-kind", "dir")
+	    newlump.sethdr("Node-action", "add")
+	    self.pathfind("html-misc", "add", "dir")
+	    contents3.append(newlump)	    
+
+	contents[:] = contents3
+
+fr = open("svn.dump", "r")
+fw = open("svn-tweaked.dump", "w")
+
+# Dump file header.
+lump = read_lump(fr)
+assert lump != None
+write_lump(fw, lump)
+
+tweaker = RevTweaker("tweaker", trans)
+checker = RevTweaker("checker")
+revhdr = read_lump(fr)
+
+while revhdr != None:
+    # Read revision header.
+    assert revhdr.hdrdict.has_key("Revision-number")
+    contents = []
+    # Read revision contents.
+    while 1:
+	lump = read_lump(fr)
+	if lump == None or lump.hdrdict.has_key("Revision-number"):
+	    newrevhdr = lump
+	    break
+	contents.append(lump)
+    # Tweak revision.
+    tweaker.tweak(revhdr, contents)
+    # Now double-check.
+    checker.tweak(revhdr, contents)
+    # Write out revision.
+    write_lump(fw, revhdr)
+    for lump in contents:
+	write_lump(fw, lump)
+    # And loop round again.
+    revhdr = newrevhdr
+
+fr.close()
+fw.close()
