@@ -1,5 +1,5 @@
 % -*- mode: slang; mode: fold -*-
-% Simon Tatham: version $Revision: 1.32 $
+% Simon Tatham: version $Revision: 1.33 $
 
 %{{{ load Emacs keybindings to start with
 
@@ -214,6 +214,20 @@ setkey("goto_bookmark", "^[OS");
 setkey("set_bookmark", "^[[[C");
 setkey("goto_bookmark", "^[[[D");
 #endif
+%}}}
+%{{{ F6 to indent a line, trim whitespace from the end, and go to next line
+define indent_trim_goto_next() {
+    call("indent_line");
+    eol();
+    trim();
+    go_right_1();
+}
+#ifdef MSDOS MSWINDOWS
+setkey("indent_trim_goto_next", "^@@");
+#else
+setkey("indent_trim_goto_next", "^[[17~");
+#endif
+
 %}}}
 %{{{ shell grep_goto function: F9
 
