@@ -1,0 +1,17 @@
+# -*- makefile -*-
+# 
+# This file describes which binaries are made up from which object
+# and resource files. It is processed into the various Makefiles by
+# means of a Perl script. Makefile changes should really be made by
+# editing this file and/or the Perl script, not by editing the
+# actual Makefiles.
+
+!name pix
+
+!makefile unix Makefile
+
+bubbles  : [U] bubbles bmpwrite
+filigram : [U] filigram bmpwrite
+greyblur : [U] greyblur bmpwrite
+newton   : [U] newton bmpwrite -lm
+tetra    : [U] tetra bmpwrite -lm
