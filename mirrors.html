@@ -270,73 +270,67 @@ in the UK.
 <h2><a name="guidelines">Mirroring guidelines</a></h2>
 
 <p>
-The PuTTY web site is not available through rsync or any organised
-mirroring mechanism. If you want to mirror the web site, we
-recommend you do it using
+The simplest way to mirror the PuTTY website is to use
+<code>rsync</code>. We provide a version of the website content
+intended for use as a standalone mirror, at
+<code>rsync://rsync.chiark.greenend.org.uk/ftp/users/sgtatham/putty-website-mirror</code>.
+So you could set up a mirror by running a <code>cron</code> job which
+issued a command something like this every day:
+
+<pre><code>rsync -r rsync://rsync.chiark.greenend.org.uk/ftp/users/sgtatham/putty-website-mirror/ .</code></pre>
+
+<p>
+You should run this command <em>inside</em> the directory where you
+plan to put the mirror; when that command is run, it will fill the
+current directory with HTML files and subdirectories.
+
+<p>
+If you use the above command to fetch our pre-packaged mirror site,
+it will only work as designed if your web server is Apache: the site
+contains a <code>.htaccess</code> file which handles a couple of
+non-obvious MIME types and deals with making the virtual
+subdirectory "<code>latest</code>" redirect to the current latest
+release. If you do not use Apache, you will have to reproduce this
+behaviour in some other way suitable for your own web server.
+
+<p>
+Alternatively, you can mirror our web site using
 <a href="http://www.gnu.org/software/wget/wget.html">GNU wget</a>.
-
-<p>
-We normally suggest that mirrors are updated around once a week, and
-no less often than once a month. You can also subscribe to our
-<a href="maillist.html">mailing list</a> to receive notification of
-new releases.
-
-<p>
-When mirroring our web site, you will need to be careful of the
-binary downloads. They are hosted on a different server, for
-bandwidth reasons, so a conventional "<code>wget -r</code>" will not
-fetch them at all (which rather defeats the point of having a mirror
-in the first place). Instead, you will need at least two invocations
-of wget. Also, the release binaries are stored under a directory
-called "<code>latest</code>", but this actually returns an HTTP
-temporary redirect to a numbered directory such as
+This is more difficult, because our binary downloads are hosted on a
+different server for bandwidth reasons, so a conventional
+"<code>wget -r</code>" will not fetch them at all. Instead, you will
+need at least two invocations of <code>wget</code>. Also, as
+mentioned above, the release binaries appear to be stored in a
+virtual directory called "<code>latest</code>", but this actually
+returns an HTTP temporary redirect to a numbered directory such as
 "<code>0.53</code>". Ideally a mirror should reproduce this
-behaviour as well. (Please check that the binaries are accessible
-from your Download page <em>before</em> notifying us of your
-mirror!)
+behaviour as well.
 
 <p>
-Here is a sample shell script to create a working PuTTY mirror site
-with the binaries in the right place and the HTTP redirect set up
-correctly. This script requires sed, perl and GNU wget, and it also
-assumes your web server is Apache (you'll need to replace the
-"<code>.htaccess</code>" file with your server's equivalent if not).
+Here is a sample Bourne shell script to create a working PuTTY
+mirror site with the binaries in the right place and the HTTP
+redirect set up correctly. This script requires <code>sed</code>,
+<code>perl</code> and GNU <code>wget</code>, and it also assumes
+your web server is Apache (as above). Unlike the above
+<code>rsync</code> command, this script will create a subdirectory
+called "<code>putty</code>" in the current directory, and place all
+the PuTTY web site files inside that subdirectory.
 
-<pre style="margin-left: 3em;">
-#!/bin/sh 
+<ul><li>
+<a href="mirror-wget.sh"><code>mirror-wget.sh</code></a>
+</li></ul>
 
-# Fetch the main web site.
-wget --no-parent -l0 -r --cut-dirs=1 -nH \
-	http://www.chiark.greenend.org.uk/~sgtatham/putty/
+<p>
+Before notifying us of your mirror, please test that it works:
 
-# Fetch the .htaccess file from the download site, in order to find the
-# version number of the latest release.
-cd putty
-wget http://the.earth.li/~sgtatham/putty/htaccess
-version=`sed -n 's!.*http://the.earth.li/~sgtatham/putty/\(.*\)/!\1!p' htaccess`
-echo Latest version is $version
-
-# Retrieve the binaries directory for that version from the binaries
-# server.
-wget --no-parent -l0 -r --cut-dirs=3 -P $version -nH \
-	http://the.earth.li/~sgtatham/putty/$version/
-
-# Fix the hyperlinks in the download and docs pages so that they point
-# to the local mirror of the binaries instead of the primary binaries
-# server. Without this there's barely any point in doing the mirror at
-# all.
-perl -i~ -pe 's!http://the.earth.li/~sgtatham/putty/!!' download.html docs.html
-
-# Create a .htaccess file that supplies the redirection from "latest"
-# to a numbered version directory. Note that you will need to replace
-# MY_PATH and MY_URL with appropriate values for your own mirror site.
-echo "Redirect temp /<b><i>MY_PATH</i></b>/latest/ http://<b><i>MY_URL</i></b>/$version/" &gt; .htaccess
-
-# The .htaccess file should also ensure the Windows Help files are not
-# given any strange MIME types by the web server.
-echo "AddType application/octet-stream .hlp" &gt;&gt; .htaccess
-echo "AddType application/octet-stream .cnt" &gt;&gt; .htaccess
-</pre>
+<ul>
+<li>Check that the binary download links work.
+<li>Check that the binary download links point at your site, not
+ours. If they point straight back to our own binary downloads, there
+is not much point in having the mirror site in the first place!
+<li>Check that the on-line documentation for the latest release
+works, and points at your site not ours.
+</ul>
 
 <p><hr>If you want to comment on this web site, see the
 <a href="feedback.html">Feedback page</a>.
