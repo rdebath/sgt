@@ -1,0 +1,17 @@
+Summary: Spurious pageant error message with -i switch
+Content-type: text/plain
+Class: bug
+Priority: medium
+Present-in: 0.53 2002-10-07
+
+pageant can be invoked as pageant -i <private key file> to have it 
+automatically load a key on start up. When this is done, a message box with 
+the text "Couldn't load this key (unable to open file)" appears. When this 
+message box is dismissed, a dialog prompts for the passphrase for the key. 
+Pageant then starts normally with the specified key loaded.
+
+Expected behavior:
+Since there seems to be no problem loading the key, there should be no 
+error message.
+
+<4.2.0.58.20021007004352.00b67b90@rescomp.stanford.edu>
