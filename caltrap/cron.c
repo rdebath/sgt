@@ -8,6 +8,8 @@
 
 struct cron_ctx {
     char *cmd, *tfmt, *d1fmt, *t1fmt, *d2fmt, *t2fmt;
+    Date sd, ed;
+    Time st, et;
     FILE *fp;
 };
 
@@ -15,6 +17,34 @@ static void cron_callback(void *vctx, struct entry *ent)
 {
     struct cron_ctx *ctx = (struct cron_ctx *)vctx;
     char *dfmt, *tfmt;
+
+    if (ent->type != T_EVENT)
+        return;                        /* only EVENTs need cron reminders */
+
+    if (datetime_cmp(ent->sd, ent->st, ctx->sd, ctx->st) < 0) {
+        Duration d;
+
+        /*
+         * This event started before the beginning of the reminder
+         * period. So if it isn't repeating, we should ignore it.
+         */
+        if (ent->period == 0)
+            return;
+        /*
+         * Otherwise, find its first occurrence after the beginning
+         * of the reminder period...
+         */
+        d = datetime_diff(ctx->sd, ctx->st, ent->sd, ent->st);
+        d = ((d + ent->period - 1) / ent->period) * ent->period;
+        add_to_datetime(&ent->sd, &ent->st, d);
+        assert(datetime_cmp(ent->sd, ent->st, ctx->sd, ctx->st) >= 0);
+        /*
+         * ... and see whether that comes before the _end_ of the
+         * reminder period.
+         */
+        if (datetime_cmp(ent->sd, ent->st, ctx->ed, ctx->et) >= 0)
+            return;
+    }
 
     if (ctx->fp == NULL) {
         ctx->fp = popen(ctx->cmd, "w");
@@ -58,6 +88,10 @@ void caltrap_cron(int nargs, char **args, int nphysargs)
     add_to_datetime(&d2, &t2, diff);
 
     ctx.fp = NULL;
+    ctx.sd = d;
+    ctx.st = t;
+    ctx.ed = d2;
+    ctx.et = t2;
     ctx.cmd = args[1];
     ctx.tfmt = format_duration(diff);
     ctx.d1fmt = format_date_full(d);
