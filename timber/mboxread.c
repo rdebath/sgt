@@ -59,6 +59,7 @@ int import_message(char *message, int msglen)
     assert(msglen > 0 && message[msglen-1] == '\n');
     if (!store_literal(message, msglen))
 	return FALSE;
+    parse_for_db(message, msglen);
     /*
      * Diagnostic now removed:
      *

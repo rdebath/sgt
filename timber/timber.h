@@ -94,4 +94,48 @@ char *cfg_default_str(char *key);
  */
 void import_mbox_folder(char *folder);
 
+/*
+ * base64.c
+ */
+int base64_decode_length(int input_length);
+int base64_encode_length(int input_length);
+int base64_decode(const char *input, int length, unsigned char *output);
+int base64_encode(const unsigned char *input, int length,
+		  char *output, int multiline);
+
+/*
+ * qp.c
+ */
+int qp_decode(const char *input, int length, char *output, int rfc2047);
+
+/*
+ * rfc822.c
+ */
+typedef void (*parser_output_fn_t)(const char *text, int len,
+				   int type, int charset);
+enum {				       /* values for above `type' argument */
+    TYPE_HEADER_NAME,
+    TYPE_HEADER_TEXT,
+    TYPE_BODY_TEXT
+};
+typedef void (*parser_info_fn_t)(int type, const char *text, int len);
+enum {				       /* values for above `type' argument */
+    TYPE_SUBJECT,
+    TYPE_FROM_ADDR,
+    /* FIXME: fill in the rest of these... */
+};
+void null_output_fn(const char *text, int len, int type, int charset);
+void null_info_fn(int type, const char *text, int len);
+void parse_message(const char *message, int msglen,
+		   parser_output_fn_t output, parser_info_fn_t info);
+
+void parse_for_db(const char *message, int msglen);
+
+/*
+ * rfc2047.c
+ */
+void rfc2047(const char *text, int length, parser_output_fn_t output,
+	     int structured, int default_charset);
+
+
 #endif
