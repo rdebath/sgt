@@ -1,0 +1,24 @@
+Summary: Visual Studio project files (.DSP/.DSW)
+Class: wish
+Difficulty: taxing
+Priority: low
+Content-type: text/x-html-body
+
+<p>
+People occasionally ask us for project/workspace (.DSP/.DSW) files to
+compile PuTTY with Visual C++, or offer to contribute them.
+
+<p>
+All of our Makefiles are derived from a single upstream source
+(<code>Recipe</code>) by a script (<code>mkfiles.pl</code>), so that
+we don't have to maintain N slightly different Makefiles. Therefore,
+any contribution would have to take the form of an update to
+<code>mkfiles.pl</code> and/or <code>Recipe</code>. We won't be able
+to make use of a .DSP/.DSW file per se, because that brings with it
+precisely the maintenance burden we're trying to avoid.
+
+<p>
+Also, we already supply a Visual C Makefile
+(<code>Makefile.vc</code>), for use with <code>nmake</code>. We're
+unlikely to add .DSP/.DSW support ourselves because we don't have much
+use for it.
