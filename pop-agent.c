@@ -63,13 +63,14 @@ void cleanup(void)
     rmdir(dirname);
 }
 
+int oneatatime = 1;
 int debugging;
 FILE *debugfp;
 
 enum { UNIXFD, INETFD };
 
 struct Connection {
-    struct Connection *next, *prev;
+    struct Connection *next, *prev, *nextinline;
     enum {
         INITIAL, SENT_USER, SENT_PASS,
         UNAUTH, UNAUTH_SENT_USER, UNAUTH_WANT_PASS, UNAUTH_SENT_PASS,
@@ -77,6 +78,7 @@ struct Connection {
     } state;
     char *pending_cmd;
     int multiline, save_stat, unixfd_eof;
+    int frozen;
     struct fd {
         int fd;
         char *buf;
@@ -105,6 +107,10 @@ char *statenames[] = {
     if ((c)->fds[UNIXFD].buf) free((c)->fds[UNIXFD].buf); \
     if ((c)->fds[INETFD].buf) free((c)->fds[INETFD].buf); \
     if ((c)->pending_cmd) free((c)->pending_cmd); \
+    if (oneatatime && current_open == (c)) { \
+        current_open = current_open->nextinline; \
+        if (current_open) current_open->frozen = 0; \
+    } \
     if (debugging) fprintf(debugfp, "*** connection terminated\n"); \
     free(c); \
 } while (0)
@@ -516,6 +522,7 @@ void run_daemon(char *daemon_cmd)
     struct hostent *h;
 
     struct Connection *chead = NULL;
+    struct Connection *current_open = NULL;
 
     got_password = 0;
     strcpy(statdata, "0 0");
@@ -629,9 +636,11 @@ void run_daemon(char *daemon_cmd)
         FD_SET_MAX(master_sock, &rfds, maxfd);
 
         for (c = chead; c; c = c->next) {
-            if (!c->unixfd_eof)
-                FD_SET_MAX(c->fds[UNIXFD].fd, &rfds, maxfd);
-            FD_SET_MAX(c->fds[INETFD].fd, &rfds, maxfd);
+            if (!c->frozen) {
+                if (!c->unixfd_eof)
+                    FD_SET_MAX(c->fds[UNIXFD].fd, &rfds, maxfd);
+                FD_SET_MAX(c->fds[INETFD].fd, &rfds, maxfd);
+            }
         }
 
         if (timeout > 0) {
@@ -695,16 +704,33 @@ void run_daemon(char *daemon_cmd)
                     conn->pending_cmd = NULL;
                     conn->save_stat = conn->multiline = conn->unixfd_eof = 0;
 
-                    conn->fds[INETFD].fd = inetsock;
-                    conn->next = chead;
-                    conn->prev = NULL;
-                    if (chead) chead->prev = conn;
-                    chead = conn;
-
                     if (debugging) {
                         fprintf(debugfp, "*** new connection in state %s\n",
                                 statenames[conn->state]);
                     }
+
+                    conn->fds[INETFD].fd = inetsock;
+                    conn->next = chead;
+                    conn->prev = NULL;
+                    if (oneatatime) {
+                        if (current_open) {
+                            struct Connection *c = current_open;
+                            conn->frozen = 1;
+                            while (c->nextinline)
+                                c = c->nextinline;
+                            c->nextinline = conn;
+                            if (debugging)
+                                fprintf(debugfp,
+                                        "*** new connection is frozen\n");
+                        } else {
+                            conn->frozen = 0;
+                            current_open = conn;
+                        }
+                        conn->nextinline = NULL;
+                    } else
+                        conn->frozen = 0;
+                    if (chead) chead->prev = conn;
+                    chead = conn;
                 }
             }
             for (c = chead; c; c = next) {
@@ -1058,6 +1084,8 @@ int main(int argc, char **argv)
         char *p = *++argv;
         if (!strcmp(p, "-p")) {
             mode = MODE_PASSWORD;
+        } else if (!strcmp(p, "-m")) {
+            oneatatime = 0;
         } else if (!strcmp(p, "-debug")) {
             debugfp = fdopen(3, "w");
             if (!debugfp) {
