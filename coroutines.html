@@ -1,13 +1,15 @@
 <HTML><HEAD>
 <TITLE>Coroutines in C</TITLE>
-</HEAD><BODY>
-<h2>Coroutines in C</h2>
+</HEAD>
+<link rel="stylesheet" type="text/css" href="sitestyle.css" name="Simon Tatham's Home Page Style">
+<BODY>
+<h1>Coroutines in C</h1>
 
 <p><i>by <a href="http://pobox.com/~anakin/">Simon Tatham</a></i>
 
 <!-- begin essay -->
 
-<a name="intro"><h3>Introduction</h3></a>
+<a name="intro"><h2>Introduction</h2></a>
 
 <p>
 Structuring a large program is always a difficult job. One of the
@@ -79,7 +81,7 @@ In this article I offer a creative solution to this sort of
 structure problem.
 </p>
 
-<a name="rewrite"><h3>Rewriting</h3></a>
+<a name="rewrite"><h2>Rewriting</h2></a>
 
 <p>
 The conventional answer is to rewrite one of the ends of the
@@ -159,7 +161,7 @@ reading the code, and you will find that both the originals are
 clear and both the rewritten forms are less clear. It would be much
 nicer if we didn't have to turn either piece of code inside out.
 
-<a name="knuth"><h3>Knuth's coroutines</h3></a>
+<a name="knuth"><h2>Knuth's coroutines</h2></a>
 
 <p>
 In <cite>The Art of Computer Programming</cite>, Donald Knuth
@@ -189,7 +191,7 @@ from any function to any other, one must be the caller and the other
 must be the callee. So if you want to write portable code, this
 technique is at least as impractical as the Unix pipe solution.
 
-<a name="knuth"><h3>Stack-based coroutines</h3></a>
+<a name="knuth"><h2>Stack-based coroutines</h2></a>
 
 <p>
 So what we would <em>really</em> like is the ability to mimic
@@ -257,7 +259,7 @@ we remove a return statement, we must remove its corresponding
 label. We've just increased our maintenance workload by a factor of
 two.
 
-<a name="duff"><h3>Duff's device</h3></a>
+<a name="duff"><h2>Duff's device</h2></a>
 
 <p>
 The famous "Duff's device" in C makes use of the fact that a
@@ -303,7 +305,7 @@ few well chosen macros, and we can hide the gory details in
 something plausible-looking:
 
 <p>
-<pre><code>#define crBegin static int state=0; switch(state) case 0:
+<pre><code>#define crBegin static int state=0; switch(state) { case 0:
 #define crReturn(i,x) do { state=i; return x; case i:; } while (0)
 #define crFinish }
 int function(void) {
@@ -353,7 +355,7 @@ and then we no longer have to worry about those state parameters at
 all, provided we obey a fourth ground rule (never put two
 <code>crReturn</code> statements on the same line).
 
-<a name="evaluation"><h3>Evaluation</h3></a>
+<a name="evaluation"><h2>Evaluation</h2></a>
 
 <p>
 So now we have this monstrosity, let's rewrite our original code
@@ -378,7 +380,7 @@ fragments using it.
         } else
 	    crReturn(c);
     }
-    emit(EOF);
+    crReturn(EOF);
     crFinish;
 }</code></pre>
 </td>
@@ -441,7 +443,7 @@ combining the C preprocessor with a little-used feature of the
 <code>switch</code> statement to create an <em>implicit</em> state
 machine.
 
-<a name="standards"><h3>Coding Standards</h3></a>
+<a name="standards"><h2>Coding Standards</h2></a>
 
 <p>
 Of course, this trick violates every coding standard in the book.
@@ -504,7 +506,7 @@ expense of algorithmic clarity should be rewritten. If your employer
 fires you for using this trick, tell them that repeatedly as the
 security staff drag you out of the building.
 
-<a name="code"><h3>Refinements and Code</h3></a>
+<a name="code"><h2>Refinements and Code</h2></a>
 
 <p>
 In a serious application, this toy coroutine implementation is
@@ -544,6 +546,15 @@ the <code>ccr</code> macros provide the advanced re-entrant form.
 Full documentation is given in a comment in the header file itself.
 
 <p>
+Note that Visual C++ version 6 doesn't like this coroutine trick,
+because its default debug state (Program Database for Edit and
+Continue) does something strange to the <code>__LINE__</code> macro.
+To compile a coroutine-using program with VC++ 6, you must turn off
+Edit and Continue. (In the project settings, go to the "C/C++" tab,
+category "General", setting "Debug info". Select any option
+<em>other</em> than "Program Database for Edit and Continue".)
+
+<p>
 (The header file is MIT-licensed, so you can use it in anything you
 like without restriction. If you do find something the MIT licence
 doesn't permit you to do,
@@ -556,7 +567,7 @@ and I'll probably give you explicit permission to do it anyway.)
 <p>
 Thanks for reading. Share and enjoy!
 
-<a name="references"><h3>References</h3></a>
+<a name="references"><h2>References</h2></a>
 
 <ul>
 
@@ -583,7 +594,7 @@ worst piece of C hackery ever seen in serious production code.
 <hr>
 
 <p>
-<i>$Id: coroutines.html,v 1.1 2000/10/04 08:43:43 simon Exp $</i>
+<i>$Id: coroutines.html,v 1.2 2001/09/24 22:10:00 simon Exp $</i>
 
 <p>
 Copyright &copy; 2000 Simon Tatham.
