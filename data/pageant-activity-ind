@@ -1,0 +1,22 @@
+Summary: Visual/aural indication of Pageant activity
+Class: wish
+Difficulty: fun
+Priority: low
+Content-type: text/x-html-body
+
+<p>
+When Pageant performs an action such as signing something, perhaps we
+should indicate this is going on in some way - by tweaking its icon in
+the system tray, or playing a sound, or something. That way, attentive
+users might stand a chance of noticing unexpected activity, and could
+then check an <a href="pageant-logging.html">event log</a> for
+potential abuse of agent forwardings.
+
+<p>
+Not sure how exactly to animate the icon, whether it should be
+different for different operations, and so on.
+
+<p>
+Some people would undoubtedly find this annoying and intrusive and
+place lots of trust in their servers, so it should be configurable
+off.
