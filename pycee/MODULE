@@ -1,0 +1,3 @@
+Module: pycee
+Author: Simon Tatham <anakin@pobox.com>
+Description: Pycee is a simple (non-optimising) ANSI C compiler written in Python. Aims include targetting it at a weird bytecode in order to write PC bootloaders, and also adapting it into source analysis tools.
