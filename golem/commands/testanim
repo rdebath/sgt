@@ -1,0 +1,56 @@
+var line var lines var text
+var count var sourcefh
+
+var animfile
+var animkeypath
+
+"/tmp/tmp2.an" =animfile
+"MT7UT" =animkeypath
+'quirka =username
+
+# Queue tasks
+'Edit animkeypath 'Keypath 'copyfile 'Edithook addtask
+ 
+# Add lots of lines to get around max lines problem
+function addlines {
+  10 =count
+  loop
+    count 1 - =count
+    count ! if-break
+    'InsertAfter suspend
+  endloop
+  'Save
+}
+
+# Delete all the old lines, and then add lots of our own
+function copyfile {
+  =line =lines =text
+
+  # Delete old file contents
+  loop
+    lines 1 - ! if-break
+    'Delete suspend =line =lines =text
+  endloop
+  lines 'Goto suspend =line =lines =text
+
+  # Open input file
+  animfile					# Filename
+  "r"						# Mode (readonly)
+  fileopen
+  =sourcefh					# Remember filehandle
+ 
+  # Insert new contents
+  6000 =count
+  loop
+    count ! if-break
+    count 1 - =count
+    sourcefh fileeof if-break
+    sourcefh fileread
+    'Replace suspend =line =lines =text
+    'InsertAfter suspend =line =lines =text
+  endloop
+
+  sourcefh fileclose
+
+  'Save
+}

@@ -1,0 +1,21 @@
+var fh
+
+function initialise {
+  "quirka" =username
+
+  username ".passwd" . "r" fileopen =fh
+  fh filegood if
+    fh fileread =password
+    fh fileclose
+  endif
+}
+
+initialise
+
+#'Messages "dump/messages." username . ".dump" . 'Filename addtask
+#'Read "RGRIS" 'Keypath "manim/.an" 'Filename addtask
+'Read "RGRT4DS" 'Keypath "manim/connect4.an" 'Filename addtask
+'Read "RGRSSDS" 'Keypath "manim/sokoban.an" 'Filename addtask
+'Read "RGRSSDG" 'Keypath "manim/sokoban.levels.an" 'Filename addtask
+'Read "RGRSSDF" 'Keypath "manim/sokoban.highscore.an" 'Filename addtask
+'Read "RGRSSDI" 'Keypath "manim/sokoban.title.an" 'Filename addtask

@@ -1,0 +1,341 @@
+var room var user var text var type
+var count
+
+var parts var command
+
+var userlist
+
+# Count of results from a search which was run
+var resultscount
+
+# A file handle.  Used for reading password file.
+var fh
+
+# File handle of logfile: we write to this
+var logfh
+
+# A username.  If this is set, we attempt to follow this user around
+var followuser "" =followuser
+
+# A variable to throw junk into to get rid of it.
+var junk
+
+function initialise {
+  'l =username
+
+  "l.passwd" "r" fileopen =fh
+  fh filegood if
+    fh fileread =password
+    fh fileclose
+  endif
+}
+
+initialise
+
+# Queue tasks
+'Talker 'personality 'Edithook addtask
+
+# Read messages
+function readmessages {
+  'Setname "Performing animal" 'Nameline addtask
+#  'Read "MLN@UIRKA!" 'Keypath "dump/diaries/quirka.dump" 'Filename addtask
+  'Messages "data/messages." username . 'Filename addtask
+  'Setname "Confused. And worried.  Maybe automated." 'Nameline addtask
+}
+
+# Give help
+function givehelp {
+# Disabled - since I've left muscat.  For a while, at least. ;-)
+#  "search <parameters> - search a database of mono for given words" user 'Tell
+  "nofollow - cause me to stop following anyone" user 'Tell
+  "follow <username> - cause me to follow a named user" user 'Tell
+  "status - display my current status" user 'Tell
+  "help - print this help" user 'Tell
+  "Currently available commands are:" user 'Tell
+  ".tell " username . " <command> [<parameters>]" . user 'Tell
+  "You can give me a command by doing:" user 'Tell
+}
+
+# Give status
+var hadstatus
+function givestatus {
+  0 =hadstatus
+  followuser "" cmp if
+    "I'm trying to follow " followuser . "." . user 'Tell
+    "I'm a dog." user 'Tell
+    1 =hadstatus
+  endif
+  
+  hadstatus if
+    "My current status is:" user 'Tell
+  else
+    "There's nothing much to say about my status." user 'Tell
+  endif
+}
+
+# Tell a user the results of a search
+function giveresults {
+  =resultscount
+  resultscount if
+    loop
+      user 'Tell
+      resultscount 1 - =resultscount
+      resultscount ! if-break
+      suspend =room =room =room =room
+      # Fixme - don't just ignore these return values
+    endloop
+  else
+    "No results from search"
+  endif
+}
+
+function realitycheck {
+  "Checking reality" 'Say suspend =room =user =type =text
+
+  1 2 cmp ! if
+    "1 == 2  That's unusual!"
+  else
+    "1 != 2  Phew."
+  endif
+  'Say suspend =room =user =type =text
+
+  2 2 cmp ! if
+    "2 == 2  Nice to know."
+  else
+    "2 != 2  Erm, yeah right..."
+  endif
+  'Say suspend =room =user =type =text
+
+  "Hi" "Ho" cmp ! if
+    "Hi == Ho.  Make it stop..."
+  else
+    "Hi != Ho.  Great!"
+  endif
+  'Say suspend =room =user =type =text
+
+  "Hi" "Hi" cmp ! if
+    "Hi == Hi.  As if we didn't know that"
+  else
+    "Hi != Hi.  I think I should give up now."
+  endif
+  'Say suspend =room =user =type =text
+
+  "A cmp B is " "A" "B" cmp itos10 . 'Say suspend =room =user =type =text
+  "1 cmp 2 is " 1 2 cmp itos10 . 'Say suspend =room =user =type =text
+  "3 cmp -3 is " 3 0 3 - cmp itos10 . 'Say suspend =room =user =type =text
+
+  "`Ee' followed by `p!' is: " "Ee" "p!" . . 'Say suspend =room =user =type =text
+
+  "*pop*" 'Emote suspend =room =user =type =text
+}
+
+# Start following a user
+function startfollow {
+  =followuser
+  "join " followuser . 'Command
+}
+
+# Stop following a user
+function stopfollow {
+  "" =followuser
+}
+
+# Behave like a dog
+function dodog {
+  100 random =junk
+  junk 90 cmp 1 cmp ! if
+    "Woof!" 'Say
+  else
+  junk 80 cmp 1 cmp ! if
+    "growls" 'Emote
+  else
+  junk 75 cmp 1 cmp ! if
+    "Yap!" 'Say
+  else
+  junk 65 cmp 1 cmp ! if
+    "bounds" 'Emote
+  endif
+  endif
+  endif
+  endif
+}
+
+# Attempt to join the user we're following, if that user has just left our current room.
+function dofollow {
+  followuser "" cmp if
+    user followuser cmp ! if
+      dodog
+      type 26 cmp ! if
+	"barks" 'Emote
+	"join " followuser . 'Command
+      endif
+    endif
+  endif
+}
+
+# Write a line with timestamp into the talker logfile
+function writelog {
+  =junk
+  logfh filegood if 
+    "Time:" rawtime itos10 .
+    " " . junk .
+    logfh filewrite
+  endif
+}
+
+# Open logfiles
+function openlogs {
+  "logfiles/talkerlog" "a" fileopen =logfh
+  "Entered talker" writelog
+}
+
+# Close logfiles
+function closelogs {
+  "Left talker" writelog
+  logfh fileclose
+}
+
+# Write a talker event into the talker logfile
+function writetalkerlog {
+  " Event:" type itos10 .
+  " User:" . user .
+  " Text:" . text .
+  " Room:" . room .
+  writelog
+}
+
+# Control behaviour in the talker
+function personality {
+  =room =user =type =text
+
+  "lock" 'Command suspend =room =user =type =text
+  "tell quirka Here I come!" 'Command suspend =room =user =type =text
+
+  "Talker personality initialising..." 'Say suspend =room =user =type =text
+  realitycheck
+  openlogs
+  "Howdy all - I'm here and feeling, oh, usual" 'Say suspend =room =user =type =text
+
+  100 =count
+  loop
+    count ! if-break
+    type 1 - ! if
+      # Someone said something
+      #"Hi" 'Say
+      count 1 - =count
+    endif
+    type 2 - ! if
+      # Someone emoted
+      100 random 80 cmp 1 cmp ! if
+        "Absolutely" 'Say
+      endif
+    endif
+    type 3 cmp ! if
+      # Someone did a tell
+      text 2 split =parts
+      parts if =command else "" =command endif
+      parts 2 cmp ! if =text else "" =text endif
+      
+      # Redraw my screen - to test what happens in this situation
+      command "redraw" cmp ! if
+	"redr\014awn" user 'Tell
+      endif
+      
+      # Read my messages file
+      command "messages" cmp ! if
+        "Reading messages" user 'Tell
+        suspend =junk =junk =junk =junk
+
+	readmessages
+	"Read messages" user 'Tell
+      endif
+      
+#      command "search" cmp ! if
+#	text 2 split =parts
+#        parts 0 cmp ! if
+#	  "Expected index name followed by search string" user 'Tell
+#	else parts 1 cmp ! if
+#	  "Search string missing" user 'Tell
+#	else
+#          search
+#	  giveresults
+#	  user startfollow
+#	endif endif
+#      endif
+      
+      command "follow" cmp ! if
+        text 2 split =parts
+	parts 1 cmp ! if
+	  startfollow
+	else parts 2 cmp ! if
+	  =junk =junk
+	  "I can only follow one person at a time!" user 'Tell
+	else
+	  "Expected the name of a user that you want me to follow" user 'Tell
+	endif endif
+      endif
+      
+      command "nofollow" cmp ! if
+        stopfollow
+      endif
+      
+      command "status" cmp ! if
+        givestatus
+      endif
+      
+      command "help" cmp ! if
+        givehelp
+      endif
+      
+      command "Rosebud?" cmp ! if
+        "Cakes and enthusiasm for silliness by Catt.  Mmmm."	user 'Tell
+        "Based on code by Simon Tatham, 1997/8"                 user 'Tell
+        "Golemdog - hacked together by Richard Boulton, 1998"	user 'Tell
+      endif
+      
+      user "quirka" cmp ! if
+	command "do" cmp ! if
+	  text 'Command
+	endif
+	command "say" cmp ! if
+	  text 'Say
+	endif
+	command "emote" cmp ! if
+	  text 'Emote
+	endif
+	command "send" cmp ! if
+	  text 2 split =parts
+	  parts 0 cmp ! if "" "" endif
+	  parts 1 cmp ! if "" endif
+	  'Send
+	endif
+	command "tell" cmp ! if
+	  text 2 split =parts
+	  parts 0 cmp ! if "" "" endif
+	  parts 1 cmp ! if "" endif
+	  'Tell
+	endif
+	command "quit" cmp ! if
+	  break
+	endif
+      endif
+    endif
+    type 21 cmp ! if
+      # User entered talker at this room
+      # (Therefore must be returning, or l)
+      "Welcome back, " user "." . . user 'Tell
+    endif
+    type 22 cmp ! if
+      # User entered room from elsewhere
+      "Do `.tell " username . " help' for a helpful message." . user 'Tell
+      "Hello.  I'm a talker robot." user 'Tell
+    endif
+    
+    dofollow
+    suspend =room =user =type =text
+    writetalkerlog
+  endloop
+  "Bye for now..." 'Say suspend =room =user =type =text
+  closelogs
+  'Quit
+}

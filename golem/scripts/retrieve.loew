@@ -1,0 +1,117 @@
+# Loew script to read some files, if they've been updated since last being
+# read.
+
+# Notes on loew:
+
+# all whitespace (including newlines) is equivalent.
+# Text after a # is ignored until the end of the line. (Assuming the # isn't
+# somehow inside a token.)
+
+# Strings are either quoted with leading and trailing "s, in which case
+# sequences such as \n are interpreted as you'd expect, or quoted with an
+# initial ' and finish at the next piece of whitespace.
+
+# Full list of character sequences recognised in ""s: \n \r \e
+# \x followed by up to 2 hex digits
+# \ followed by up to 3 octal digits
+
+# Loew is stack based - so for example the arguments to a function appear
+# before the name of the function in the code.
+
+# declare variables - all variables are global
+var cffh
+var parts
+var monopath
+var filepath
+var fh
+
+var dataroot # Root that data gets stored beneath.
+             # Must contains two directories - files for files, and messages
+	     # for messages.
+	     # Should also contain a files.cf file, to say what files to get.
+
+	     # May also contain a .<username>.passwd file, which should
+	     # contain (solely) the password of the user specified to log in
+	     # as (in the username function.)
+	     # Warning: if this is done, passwords may
+	     # appear in the diagnostics log, which should therefore probably
+	     # be a symlink to /dev/null, and the unix permissions on the
+	     # file should (obviously) be carefully checked.  I wouldn't
+	     # recommend doing this with an "important", eg staff, account.
+	     # Your call, of course.
+
+	     # If the password is wrong, or the file is not there, it will be
+	     # prompted for on the stdin (and not displayed as it is typed,
+	     # if this is a terminal.)
+
+function initialise {
+  # Initialise some variables...
+
+  # Username to run as.  (=foo assigns item on top of stack to variable foo)
+  "l" =username # Needs to match that in retrieve.pl, if you're going to use
+                # that.
+
+  # Location of top of directory structure to keep files in (as previously
+  # specified.)
+  "/home/richard/Data/monofiles/" =dataroot  # This needs to match retrieve.pl.
+
+  # Reads the password file if it's there.
+  dataroot "." . username . ".passwd" . "r" fileopen =fh
+  fh filegood if
+    fh fileread =password
+    fh fileclose
+  endif
+}
+
+function readmessages {
+  # Read our messages, into the file messages/allmessages.new.<username>
+  'Messages
+  dataroot "messages/allmessages.new." . username .
+  'Filename
+  addtask
+
+  # Step by step explanation of this:
+  # 'Messages pushes the string Messages onto the stack
+  # dataroot pushes the contents of variable dataroot onto the stack
+  # "messages/allmessages.new." pushes that onto the stack
+  # . concatenates the two strings on the top of the stack
+  # username . similarly puts the contents of variable username onto the end
+  # of the item on the top of the stack
+  # 'Filename pushes Filename onto the stack
+  # addtask adds a task to the queue of things to be done.  This task has the
+  # parameter Filename (top of the stack) which has value <next item on stack>
+  # The type of the task is Messages - read our messages into the file
+  # specified in the parameter Filename.
+}
+
+function getfile {
+  monopath "#" cmp if
+    'Read monopath
+    'Keypath dataroot "files/" . filepath . ".new.cm" .
+    'Filename addtask
+  endif
+}
+
+function parseline {
+  2 split =parts
+  parts 2 cmp ! if
+    =monopath =filepath
+    getfile
+  endif
+  parts 1 cmp ! if
+    =monopath # Clear stack
+  endif
+}
+
+function getfiles {
+  dataroot "files.cf" . "r" fileopen =cffh
+  loop
+    cffh fileeof if-break
+    cffh fileread parseline
+  endloop
+  cffh fileclose
+}
+
+initialise
+readmessages
+getfiles

@@ -1,0 +1,56 @@
+Good example, with comments, is scripts/retrieve.loew, with
+scripts/retrieve.pl which calls it.
+
+Other examples exist in commands/, but are more experimental and uncommented.
+
+> Have you any example loew files / even some documentation / that I could have
+
+The standard one I usually put in from the command line (`golem -') looks
+vaguely like
+
+  'Read "MLYD" 'Keypath "my-diary.dump" 'Filename addtask
+
+For a slightly bigger one which does something useful (it's already been run,
+with the parameters as shown, so don't run it again 'cos that would be silly):
+
+  var keypath
+  "MLNSCRUPLE!" =keypath
+  
+  'Setname "      _                           " 'Nameline addtask             
+  'Visit keypath 'Keypath addtask                                             
+  'Setname "__/\\_| |__  _   _  __ _ ___ __/\\__" 'Nameline addtask           
+  'Visit keypath 'Keypath addtask                                             
+  'Setname "\\    / '_ \\| | | |/ _` / __|\\    /" 'Nameline addtask          
+  'Visit keypath 'Keypath addtask                                             
+  'Setname "/_  _\\ | | | |_| | (_| \\__ \\/_  _\\" 'Nameline addtask         
+  'Visit keypath 'Keypath addtask                                             
+  'Visit keypath 'Keypath addtask
+  'Setname "  \\/ |_| |_|\\__,_|\\__, |___/  \\/  " 'Nameline addtask
+  'Visit keypath 'Keypath addtask                                             
+  'Setname "                  |___/           " 'Nameline addtask
+  'Visit keypath 'Keypath addtask
+  'Setname "golem: learning conformity" 'Nameline addtask
+
+And for something which defines a function (thus demonstrating the use of edit
+hooks):
+
+  var line var lines var text
+  
+  'anakin =username
+  
+  'Edit "MLYD" 'Keypath 'eh 'Edithook addtask
+  
+  function eh {
+    =line =lines =text
+    lines 'Goto suspend =line =lines =text
+    loop
+      line 1 - ! if-break
+      'Up suspend =line =lines =text
+    endloop
+    'Quit                                                                     
+  }
+
+(that one just loads my diary into the raw editor and runs through it from
+bottom to top. In theory, by extracting the relevant lines from `diagnostics'
+and using `tac' to reverse them, I should get my diary back in pure raw form.
+Sadly it misses a line due to the bug.)

@@ -1,0 +1,196 @@
+#!/usr/bin/perl
+use strict;
+use Time::Local;
+use IO::File;
+
+# =========================================================================
+# ==================== Start of program ===================================
+# =========================================================================
+
+my $my_name = $0;
+$my_name =~ s#^.*/##;
+
+if($#ARGV < 0) {
+    readfile();
+} else {
+    die "Syntax: $0 inputfile(s)\n" if $ARGV[0] =~ /^(--help|-h)$/;
+
+    my $file_in;
+    while(defined($file_in = shift())) {
+	readfile($file_in);
+    }
+}
+
+exit(0);
+# =========================================================================
+# ====================== End of program ===================================
+# =========================================================================
+
+sub readfile($) {
+    my $filename = shift();
+    my $filehandle = new IO::File;
+
+    if(defined($filename)) {
+	unless($filehandle->open("$filename", "r")) {
+	    warn "Can't access input file \"$filename\" ($!)\n";
+	    return;
+	}
+    } else {
+	unless($filehandle->fdopen(fileno(STDIN), "r")) {
+	    warn "Can't access standard input ($!)\n";
+	    return;
+	}
+    }
+
+    my $line;
+    while(defined($line = $filehandle->getline)) {
+	# Sort out weird characters, and convert 's to 's
+	$line =~ s/\007|\035/\033/g;
+
+	if($line =~ /^Message:/) {
+	    $line =~ /^Message:.\s*([0-9A-Fa-f]{1,8})/;
+	    if($1) {
+		$line = "\033\[;1;7;44m" . ("-" x 51) . "\[\033\[;7;44m" .
+			gmtime(hex($1)) . 
+			"\033\[;1;7;44m\]--\033\[m\n";
+		} else {
+	            $line = "\033\[;1;7;44m" . ("-" x 79) . "\033\[m\n";
+		}
+	} elsif($line =~ /^From: *(.*)\n$/) {
+	    $line = "From: \033\[;1;32m$1\033\[m\n";
+	} elsif($line =~ /^Subject: *(.*)\n$/) {
+	    $line = "Subject: \033\[;4;36m$1\033\[m\n";
+	} elsif($line =~ /^To: *(.*)\n$/) {
+	    $line = "To: \033\[;32m$1\033\[m\n";
+	} else {
+	    $line = mono2ansiline($line);
+	}
+
+	print $line;
+    }
+}
+
+# Convert a line from mono attribute format to ansi attribute format
+# Can be applied to a line already in attribute format and shouldn't change
+# it.
+sub mono2ansiline($) {
+  my $line = shift();
+  my $done = "";
+  my %state = ();
+  
+  while($line ne '') {
+    my %oldstate = %state;
+    if($line =~ s/\033//) {
+	my $trib = '';
+	$done .= $`;
+	$line = $';
+
+	if($line =~ /^([1-9])/) {
+	    $trib = substr($line, 0, 1);
+	    if($trib eq "C") {
+		$trib = substr($line, 0, 2);
+	    }
+	    substr($line, 0, $1) = "";
+	} elsif($line =~ /^([BbDdUuFfRrSs])/) {
+	    $trib = $1;
+	    substr($line, 0, 1) = "";
+	} elsif($line =~ /^C/) {
+	    $trib = substr($line, 0, 2);
+	    substr($line, 0, 2) = "";
+	}
+
+	if($trib eq 'B') {
+	    $state{"BOLD"} = 1;
+	} elsif($trib eq 'b') {
+	    $state{"BOLD"} = 0;
+	} elsif($trib eq 'D') {
+	    $state{"DIM"} = 1;
+	} elsif($trib eq 'd') {
+	    $state{"DIM"} = 0;
+	} elsif($trib eq 'U') {
+	    $state{"UL"} = 1;
+	} elsif($trib eq 'u') {
+	    $state{"UL"} = 0;
+	} elsif($trib eq 'F') {
+	    $state{"BLINK"} = 1;
+	} elsif($trib eq 'f') {
+	    $state{"BLINK"} = 0;
+	} elsif($trib eq 'R') {
+	    $state{"REV"} = 1;
+	} elsif($trib eq 'r') {
+	    $state{"REV"} = 0;
+	} elsif($trib eq 'S') {
+	    $state{"STANDOUT"} = 1;
+	} elsif($trib eq 's') {
+	    $state{"STANDOUT"} = 0;
+	} elsif($trib =~ /^C([AKRGYBMCW])/) {
+	    $state{"FG"} = mono2ansicolour($1);
+	} elsif($trib =~ /^C([akrgybmcw])/) {
+	    $state{"BG"} = mono2ansicolour($1);
+	} else {
+	    warn "Unknown 'trib '" . substr($line, 0, 1) . "'\n";
+	}
+    } else {
+	$done .= $line;
+	$line = '';
+	%state = ();
+    }
+
+    if($state{"BOLD"} != $oldstate{"BOLD"}) {
+      if($state{"BOLD"}) { $done .= "\e\[1m"; } else {
+        if($state{"DIM"}) {
+          $done .= "\e\[22;2m";
+	} else {
+          $done .= "\e\[22m";
+	}
+      }
+    }
+    if($state{"DIM"} != $oldstate{"DIM"}) {
+      if($state{"DIM"}) { $done .= "\e\[2m"; } else {
+        if($state{"BOLD"}) {
+          $done .= "\e\[22;1m";
+	} else {
+          $done .= "\e\[22m";
+	}
+      }
+    }
+    if($state{"BLINK"} != $oldstate{"BLINK"}) {
+      if($state{"BLINK"}) { $done .= "\e\[5m"; } else { $done .= "\e\[25m"; }
+    }
+    if($state{"UL"} != $oldstate{"UL"}) {
+      if($state{"UL"}) { $done .= "\e\[4m"; } else { $done .= "\e\[24m"; }
+    }
+    if($state{"REV"} != $oldstate{"REV"}) {
+      if($state{"REV"}) { $done .= "\e\[7m"; } else { $done .= "\e\[27m"; }
+    }
+    if($state{"STANDOUT"} != $oldstate{"STANDOUT"}) {
+      if($state{"STANDOUT"}) { $done .= "\e\[7m"; } else { $done .= "\e\[27m"; }
+    }
+    if($state{"FG"} != $oldstate{"FG"}) {
+      $state{"FG"} = 7 if !defined($state{"FG"});
+      $done .= "\e\[" . ($state{"FG"} + 30) . "m";
+    }
+    if($state{"BG"} != $oldstate{"BG"}) {
+      $state{"BG"} = 0 if !defined($state{"BG"});
+      $done .= "\e\[" . ($state{"BG"} + 40) . "m";
+    }
+  }
+  $done .= $line;
+  return $done;
+}
+
+# Return the attribute letter associated with an ansi colour.
+sub mono2ansicolour($) {
+  my $mono = shift();
+  if($mono eq 'A') { return 7; }
+  if($mono eq 'a') { return 0; }
+  $mono = uc($mono);
+  if($mono eq 'K') { return 0; }
+  elsif($mono eq 'R') { return 1; }
+  elsif($mono eq 'G') { return 2; }
+  elsif($mono eq 'Y') { return 3; }
+  elsif($mono eq 'B') { return 4; }
+  elsif($mono eq 'M') { return 5; }
+  elsif($mono eq 'C') { return 6; }
+  elsif($mono eq 'W') { return 7; }
+}
