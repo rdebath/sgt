@@ -43,11 +43,12 @@ personal \cw{.bashrc}. Until November 2004, all these projects were
 stored in CVS, along with probably 90% of the other free software in
 the world. 
 
-Then I migrated to Subversion. This took a fair amount of thought
-and effort to do well, and shortly afterwards I was asked by a
-colleague if I could write something about my experiences. He was
-probably expecting something more like a couple of paragraphs, but I
-thought, hey, why not do the job right? :-)
+Then I migrated to \W{http://subversion.tigris.org}{Subversion}.
+This took a fair amount of thought and effort to do well, and
+shortly afterwards I was asked by a colleague if I could write
+something about my experiences. He was probably expecting something
+more like a couple of paragraphs, but I thought, hey, why not do the
+job right? :-)
 
 This article is not a rant. In general, I have found Subversion to
 be linearly superior to CVS and I certainly don't regret migrating
@@ -242,7 +243,12 @@ FSFS, for me, is the read-only access.
 (FSFS is supposedly a bit slower at the common operation of checking
 out the latest version. But at the time of writing, I've got a
 5000-commit FSFS repository and I'm having no speed problems with it
-at all, so it's easily worth it for the benefits.)
+at all, so it's easily worth it for the benefits. Also, when I
+actually tried importing my entire version history into a BDB
+repository, the import process ran \e{so slowly} that I gave up
+waiting for it to finish. I'm inclined to feel that any speed
+disadvantages FSFS might possess are overwhelmingly outweighed by
+its \e{speed} benefits alone!)
 
 \C{anon} Anonymous access
 
@@ -488,8 +494,12 @@ ask for more information.
 You ask for more information using \c{svn ls -v}. Not \c{ls -l}, as
 I'm sure \e{everybody} instinctively typed.
 
-(This one annoyed me enough \dash and is easy enough to fix \dash
-that I may yet submit a patch...)
+(This one annoyed me enough \dash and seemed easy enough to fix
+\dash that I considered submitting a patch. However, it's not as
+simple as it looked: it turns out that all command-line options
+supported by the Subversion client program are parsed centrally
+across all subcommands; so adding an alias \c{-l} which only applied
+to the \c{ls} command would be a nasty wart. Oh well.)
 
 \H{using-log} \c{svn log} acts on current revision
 
@@ -594,10 +604,7 @@ directory:
 
 Now I still can't commit using the command \cq{svn commit foo bar}.
 However, if I also specify the precise file names of the files I've
-changed (which can admittedly be fiddly if there are lots of them
-\dash in complex cases I've been known to \cw{perl} the output of
-\c{svn status} to work out the file list automatically), it \e{does}
-work:
+changed, it \e{does} work:
 
 \c hostname:~/src$ svn commit foo/foo.txt bar/bar/txt
 \e                 bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
@@ -605,7 +612,15 @@ work:
 \e iiiiiiiiiiiiiiiii
 
 I don't fully understand why this works and none of the other
-options didn't. But it's certainly worth knowing!
+options did. But it's certainly worth knowing!
+
+Explicitly specifying the set of file names to commit can
+admittedly be fiddly if there are lots of them. In fact I ended up
+writing a Perl script called
+\W{http://www.tartarus.org/~simon-anonsvn/viewcvs.cgi/local/svn-commit?rev=5036&view=markup}\c{svn-commit}
+for use in this sort of situation, which automatically processes the
+output of \c{svn status} to work out the file list and then passes
+that list to \c{svn commit}.
 
 \H{using-svn-externals} \c{svn:externals} isn't what I wanted
 
