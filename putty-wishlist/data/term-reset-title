@@ -1,0 +1,16 @@
+Summary: Perhaps terminal resets should reset window title(s)
+Class: wish
+Difficulty: fun
+Priority: low
+Content-type: text/x-html-body
+
+<p>
+It might be nice if terminal resets (such as <tt>ESC c</tt>) caused
+the window and icon titles to revert to some default (whatever was
+configured in the session?). This might be generous to people who
+<a href="http://www.chiark.greenend.org.uk/~sgtatham/putty/faq.html#A.6.15">trash
+their terminal</a>.
+
+<p>
+<tt>xterm</tt> doesn't do this, but it probably isn't going to upset
+any applications.
