@@ -29,10 +29,10 @@
 #  - Implement missing features in editor. In particular, for ^V
 #    and ^Z to work we need to turn off ISIG on the terminal, which
 #    will be a laugh.
-#  - Set Your Options (grogname and maybe others)
-#  - View Edit Log.
+#  - Set Your Options (everything in the config, I think)
 #  - Graceful (naive-newbie-friendly) handling of nonexistence of
 #    config files.
+#  - Multiple servers?
 #  - Ability to use an external editor.
 #  - Documentation :-)
 
@@ -261,7 +261,7 @@ def getinput(prompt, inittext):
 	else:
 	    ret = ret + "<%d>" % c
 
-def pageitem(indexentry, item, override):
+def pageitem(indexentry, item, override, formatitem=formatitem):
     "Page through an item. Might return an itemid to go to instead."
     class holder:
 	"Holding class"
@@ -1289,12 +1289,8 @@ def addpage(pagetype, grogname, itemid, subj=""):
 	    aprint(scr, subjy, 0,\
 	    "        [\aBS\ab] - Subject \""+subj+"\"")
 
-server = "rgtp-serv.groggs.group.cam.ac.uk"
-port = 1431
-if rcfile.has_key("server"):
-    server = rcfile["server"]
-if rcfile.has_key("port"):
-    port = string.atoi(rcfile["port"])
+server = rcfile.get("server", "rgtp-serv.groggs.group.cam.ac.uk")
+port = string.atoi(rcfile.get("port", "1431"))
 
 args = sys.argv[1:]
 logfile = None
@@ -1471,18 +1467,51 @@ try:
 		else:
 		    action, grogname, subject = addpage(4, grogname, "", subject)
 	elif t == "s" and aux == "motd":
-	    override = 0
-	    while len(aux) > 1:
-		motd = item()
-		motd.contribs = [c.motd()]
-		motd.subject = "Message of the Day"
-		motd.itemid = "MOTD"
-		motd.contfrom = motd.contin = ""
-	        aux, override = pageitem(None, motd, 1)
-		assert aux != "a"
+	    motd = item()
+	    motd.contribs = [c.motd()]
+	    motd.subject = "Message of the Day"
+	    motd.itemid = "MOTD"
+	    motd.contfrom = motd.contin = ""
+	    aux, override = pageitem(None, motd, 1)
+	    assert aux != "a"
+	elif t == "s" and aux == "editlog":
+	    def formatedlg(item):
+		"Format Edit Log. Return similarly to formatitem()."
+		list = formatheader(["Edit Log <", "\aB", "^LLE", "\ab", ">"])
+		for j in item.index:
+		    if j.type == "C":
+			new_itemid = j.itemid
+			continue
+		    text = time.strftime("%Y-%m-%d %H:%M:%S", \
+		    time.localtime(j.timestamp))
+		    text = text + " " + j.userid + " <\aB"
+		    if j.type == "I":
+			text = text + "new " + j.itemid + "\ab> " + j.subject
+		    elif j.type == "F":
+			text = text + "cont " + j.itemid + \
+			" in " + new_itemid + "\ab> " + j.subject
+		    elif j.type == "E":
+			text = text + "edit " + j.itemid + "\ab> " + j.subject
+		    elif j.type == "R":
+			text = text + "" + j.itemid + "\ab> " + j.subject
+		    elif j.type == "M":
+			text = text + "edit MOTD\ab>"
+		    # Now trim to screen width. Every line has the
+		    # same four non-printing characters (\aB and \ab).
+		    text = text[:width+4]
+		    list.append(text)
+		return list
+	    edlg = item()
+	    edlg.index = c.index(sequence=0)
+	    edlg.subject = "Edit Log"
+	    edlg.itemid = "INDX"
+	    edlg.contfrom = edlg.contin = ""
+	    aux, override = pageitem(None, edlg, 1, \
+	    formatitem=formatedlg)
+	    assert aux != "a"
         else:
 	    curses.beep() # NYI specials
-        # FIXME: youropts, motd and editlog
+        # FIXME: set your options?
 
 	# Update the index, if it's been more than 60 seconds since
 	# the last index update or if we've forced an update by
