@@ -1,0 +1,103 @@
+#!/usr/bin/env perl
+
+# Generate a CVS annotation of a local version of a file.
+
+sub Trace(@);
+$trace = 0;
+
+while ($ARGV[0] =~ /^-/) {
+  $arg = shift @ARGV;
+  $trace++ if $arg eq "-t";
+  open STDERR, ">&STDOUT" if $arg eq "-o";
+}
+
+$prefix = "------------ [ locally modified ]: ";
+
+foreach $file (@ARGV) {
+  open STATUS, "cvs status $file |";
+  while (<STATUS>) {
+    /^\s+Working revision:\s+(\S+)/ and do { $rev = $1; }
+  }
+  close STATUS;
+  open DIFF, "cvs -f -Q diff -r$rev $file |";
+  $d = <DIFF>; # cause something to happen to this
+  open ANNOTATE, "cvs -Q annotate -r$rev $file 2>/dev/null |";
+
+  $inline = $outline = 1;
+  while (1) {
+    # Find a diff in file DIFF.
+    while ($d) {
+      chomp $d;
+      last if $d =~ /^[\d,]+[acd][\d,]+$/;
+      $d = <DIFF>;
+    }
+    Trace "--- Diff is :$d:\n";
+    last if !defined $d;  # end of diffs
+    # We're now holding the line that is in one of the following forms:
+    #    PaX,Y      after input line P, add output lines X-Y
+    #    P,QcX,Y    replace input lines P-Q with output lines X-Y
+    #    P,QdX      delete input lines P-Q, after which output
+    #                 line number will be X
+    if ($d =~ /(\d+)a(\d+)(,(\d+))?/) {
+      # Addition.
+      ($P, $X, $Y) = ($1, $2, $4);
+      $Y = $X unless defined $Y;
+      Trace "Reading to after inline $P (now $inline)\n";
+      $inline++, $outline++, $_ = <ANNOTATE>, print $_ while $inline <= $P;
+      Trace "Got there\n";
+      while (1) {
+        $d = <DIFF>;
+        if ($d =~ /^> /) {
+          print $prefix, substr($d, 2);
+          $outline++;
+        } else {
+          last;
+        }
+      }
+      $O = $Y+1;
+      warn "consistency failure (outline: $outline != $O)\n" if $outline != $O;
+    } elsif ($d =~ /(\d+)(,(\d+))?d(\d+)/) {
+      # Deletion is about as easy as addition. We have to track the output
+      # line number coming up to the deleted fragment.
+      ($P, $Q, $X) = ($1, $3, $4);
+      $Q = $P unless defined $Q;
+      Trace "Reading to after outline $X (now $outline)\n";
+      $inline++, $outline++, $_ = <ANNOTATE>, print $_ while $outline <= $X;
+      Trace "Got there\n";
+      $inline++, $_ = <ANNOTATE> while $inline <= $Q;
+      $d = <DIFF>; # move on
+    } elsif ($d =~ /(\d+)(,(\d+))?c(\d+)(,(\d+))?/) {
+      # Changing.
+      ($P, $Q, $X, $Y) = ($1, $3, $4, $6);
+      $Q = $P unless defined $Q;
+      $Y = $X unless defined $Y;
+      Trace "Reading to before inline $P (now $inline)\n";
+      $inline++, $outline++, $_ = <ANNOTATE>, print $_ while $inline < $P;
+      Trace "Got there\n";
+      warn "consistency failure (outline: $outline != $X)\n" if $outline != $X;
+      while (1) {
+        $d = <DIFF>;
+        if ($d =~ /^> /) {
+          print $prefix, substr($d, 2);
+          $outline++;
+        } elsif ($d =~ /^< /) {
+          $_ = <ANNOTATE>;
+          $inline++;
+        } elsif ($d =~ /^---/) {
+          # do nothing
+        } else {
+          last;
+        }
+      }      
+      warn "consistency failure!\n" if $outline != $Y+1 or $inline != $Q+1;
+    }
+  }
+  # We're out of diffs; spew the rest of the annotation.
+  close DIFF;
+  print while <ANNOTATE>;
+  close ANNOTATE;
+}
+
+sub Trace(@) {
+  print STDERR @_ if $trace;
+}
