@@ -5,6 +5,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "enigma.h"
 
@@ -65,7 +66,7 @@ gamestate *savepos_load(levelset *set, char *user, int savenum) {
 		fatal_error_string = "Map before size in save file";
 		return NULL;
 	    }
-	    if (strlen(buf + 5) != state->width) {
+	    if ((int)strlen(buf + 5) != state->width) {
 		fatal_error_string = "Wrong length map line in save file";
 		return NULL;
 	    }
@@ -116,9 +117,9 @@ void savepos_del(levelset *set, char *user, int savenum) {
     strncpy(fname + strlen(fname), buf, sizeof(fname)-strlen(fname));
     if (fname[sizeof(fname)-1] != '\0') {
 	fatal_error_string = "File name length overflow";
-	return NULL;
+	return;
     }
-    unlink(fname);
+    remove(fname);
 }
 
 void savepos_save(levelset *set, char *user, int savenum, gamestate *state) {
@@ -205,10 +206,8 @@ progress progress_load(levelset *set, char *user) {
 
 void progress_save(levelset *set, char *user, progress p) {
     FILE *fp;
-    char buf[FILENAME_MAX+10];
     char fname[FILENAME_MAX];
     char datebuf[40];
-    int nlines, levnum;
 
     fname[sizeof(fname)-1] = '\0';
     strncpy(fname, SAVEDIR, sizeof(fname));

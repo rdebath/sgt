@@ -77,7 +77,7 @@ void screen_init(void) {
     refresh();
     if (has_colors()) {
 	start_color();
-	for (i = 0; i < lenof(attrs); i++) {
+	for (i = 0; i < (int)lenof(attrs); i++) {
 	    init_pair(i+1, attrs[i].fg, attrs[i].bg);
 	    attrs[i].attrs |= COLOR_PAIR(i+1);
 	}
@@ -312,7 +312,7 @@ int screen_main_menu(levelset *set, gamestate **saves,
 		if (i+levtop-1 == level)
 		    attr = T_LIST_SELECTED;
 	    }
-	    if (strlen(buf) < colwidth)
+	    if ((int)strlen(buf) < colwidth)
 		sprintf(buf+strlen(buf), "%*s", colwidth-strlen(buf), "");
 	    buf[colwidth] = '\0';
 	    screen_prints(dx+1, dy+i, attr, buf);

@@ -16,7 +16,7 @@ int main(int argc, char **argv) {
 	level *l;
 	gamestate *gs;
 	progress p;
-	int i, action, n, saveslot;
+	int i, action, n, saveslot = 0;
 	gamestate *saves[10];
 
 	get_user(user, sizeof(user));

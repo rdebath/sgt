@@ -285,6 +285,7 @@ gamestate *make_move (gamestate *state, char key) {
 		q = p->next;
 		j = p->y * w + p->x;
 		k = ret->leveldata[j] & 0x7F;
+		dx = dy = bomb = sack = 0;
 		switch (k) {
 		  case 'a': dx =  0; dy = -1; bomb = 0; sack = 1; break;
 		  case 'b': dx =  0; dy = +1; bomb = 0; sack = 1; break;

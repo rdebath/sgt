@@ -5,15 +5,17 @@
 /*
  * Where to put Enigma's static files: the levels and level sets.
  */
-#define LEVELDIR "/usr/local/share/enigma-levels/"
+#ifdef TESTING
 #define LEVELDIR "./levels/"
+#endif
 
 /*
  * Where to put Enigma's variable files: the users' saved positions
  * and progress details, and the Hall of Fame.
  */
-#define SAVEDIR "/var/games/enigma/"
+#ifdef TESTING
 #define SAVEDIR "./saves/"
+#endif
 
 /*
  * The name of the level set Enigma should attempt to load on

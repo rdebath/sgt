@@ -117,6 +117,7 @@ levelset *levelset_load(char *);
  * saved positions.
  */
 gamestate *savepos_load(levelset *set, char *user, int savenum);
+void savepos_del(levelset *set, char *user, int savenum);
 void savepos_save(levelset *set, char *user, int savenum, gamestate *state);
 progress progress_load(levelset *set, char *user);
 void progress_save(levelset *set, char *user, progress p);
@@ -128,6 +129,20 @@ int ishdr(char *line, char *header);
 void get_user(char *buf, int buflen);
 time_t parse_date(char *buf);
 void fmt_date(char *buf, time_t);
+
+/*
+ * From screen.c, screen handling routines.
+ */
+void screen_init(void);
+void screen_finish(void);
+void screen_level_init(void);
+void screen_level_finish(void);
+void screen_level_display(gamestate *s, char *message);
+int screen_level_getmove(void);
+int screen_main_menu(levelset *set, gamestate **saves,
+		     int maxlev, int startlev);
+int screen_saveslot_ask(char action, gamestate **saves, int defslot);
+void screen_completed_game(void);
 
 /* ----------------------------------------------------------------------
  * Global data.
