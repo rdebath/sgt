@@ -7,3 +7,18 @@ Content-Type: text/x-html-body
 <p>
 Allow saving of the current screen+scrollback state to a file. Or
 printing it, possibly.
+
+<p>
+Related: someone suggested that it might be useful to be able to log
+stuff to a file as it goes into the scrollback; this would avoid the
+problem with `Log printable output only' that characters backspaced
+over, etc, are logged. However, lines can in theory be pulled out of
+the scrollback and modified, when the window is expanded vertically.
+
+<p>
+The right solution to this is to log lines when they're about to fall
+off the <em>top</em> of the scrollback. Obviously this will usually
+leave rather a lag between things happening and finally being written
+to disc; and when the log file is closed, the entire screen and
+scrollback state would have to be written to the log to bring it up to
+date, which is a rather similar operation to this wish.
