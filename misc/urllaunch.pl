@@ -1,8 +1,17 @@
 #!/usr/bin/perl 
 
+$google = 0;
+$rewrite = 1;
+while (scalar @ARGV) {
+    $arg = shift @ARGV;
+    if ($arg eq "-g") { $google = 1; next; }
+    if ($arg eq "-R") { $rewrite = 0; next; }
+    print STDERR "unknown argument '$arg'\n"; next;
+}
+
 $url = `xcopy -r`;
 
-if ($ARGV[0] eq "-g") {
+if ($google) {
     # Construct a Google search URL.
     $url =~ s/\n/ /gs;
     $url =~ s/[\s\240]+/ /g;
@@ -25,6 +34,21 @@ if ($ARGV[0] eq "-g") {
     } else {
         $url = "http://" . $url;
     }
+}
+
+# URL transformation.
+if ($rewrite and -x "$ENV{'HOME'}/.urlrewrite") {
+    # ~/.urlrewrite should be an executable program (or script)
+    # which accepts a URL as its sole argument, and either produces
+    # nothing on stdout (if the URL doesn't need rewriting) or
+    # produces a rewritten one.
+    $cmd = $url;
+    $cmd =~ s/'/'\\''/g;
+    $cmd = "$ENV{'HOME'}/.urlrewrite '$cmd'";
+    $newurl = `$cmd`;
+    $newurl =~ s/\n//gs;
+    print ":$cmd:$newurl:\n";
+    $url = $newurl if $newurl =~ /\/\//;
 }
 
 # Mozilla is a bit weird about launching URLs. If we just run
