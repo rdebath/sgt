@@ -13,9 +13,7 @@ well with this. Each <em>string</em> passed to
 <code>do_text()</code> is clipped to the rectangle it should be in;
 but <em>within</em> that string there's still scope for overlap
 between character cells. If half the string is then updated then
-there will be artefacts left on the screen; I can't see any obvious
-fix except to always draw one character at a time, which is just
-ghastly.
+there will be artefacts left on the screen.
 <li>
 Secondly, the resize-by-changing-font code has a tendency to choose
 fonts that cause this problem a lot. For bitmap fonts I think this
@@ -28,3 +26,12 @@ general - if we ask for a smaller width than we really want, then
 (a) we penalise well-behaved fonts, and (b) the spacing when drawing
 a large string will come out wrong.
 </ul>
+<p>
+Simon has a cunning idea for dealing with this.  The plan is
+that whenever we paint a string on the screen, we clip it to its bounding
+rectangle (this should happen already), and then whenever we change the 
+contents of the rectangle, we always re-paint the whole thing, splitting
+it into smaller rectangles, or joining rectangles together as appropriate.
+This way, we never leave droppings behind, because whenever a character is
+erased, the entire clipping box that was in force when it was painted is
+cleared as well.
