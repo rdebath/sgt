@@ -9,7 +9,7 @@ Content-type: text/x-html-body
 implementation-independent subsystem <code>publickey</code>
 (previously <code>publickey@vandyke.com</code>)
 for the distribution of public keys over SSH-2 connections. See
-<a href="http://www.ietf.org/internet-drafts/draft-ietf-secsh-publickey-subsystem-00.txt">draft-ietf-secsh-publickey-subsystem-00</a>
+<a href="http://www.ietf.org/internet-drafts/draft-ietf-secsh-publickey-subsystem-01.txt">draft-ietf-secsh-publickey-subsystem-01</a>
 (current at time of writing).
 
 <p>
