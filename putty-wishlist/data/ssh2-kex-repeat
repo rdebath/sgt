@@ -14,8 +14,9 @@ to accept a re-exchange initiated by the client.
 PuTTY currently never initiates a re-exchange; it relies on the
 server to do so, and responds to it when it does. This doesn't
 always happen - at least some versions of the OpenSSH server follow
-the same policy, which means a re-exchange never occurs. We really
-ought to initiate re-exchange ourselves if the server doesn't.
+the same policy, which means a re-exchange never occurs. We
+<a href="http://www.ietf.org/internet-drafts/draft-ietf-secsh-newmodes-01.txt">really ought</a>
+to initiate re-exchange ourselves if the server doesn't.
 
 <p>
 Before this can be done, we need to fix <a
