@@ -14,3 +14,4 @@ If we do this, we should probably include a means of distinguishing
 that sort of error output from <em>anything</em> the remote site can
 possibly send. This is potentially a hard problem, so it requires
 some design work.
+(See also discussion in <a href="gui-auth.html">gui-auth</a>.)
