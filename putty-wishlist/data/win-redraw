@@ -1,0 +1,41 @@
+Summary: Window redraw problems on Windows
+Class: bug
+Difficulty: taxing
+Priority: medium
+Present-in: 0.56 2005-01-13
+
+<p>
+We get occasional reports of failure to redraw parts of the PuTTY
+terminal window, typically when another window is opaquely dragged
+over the PuTTY window, leaving white areas on the window which can
+usually be filled in by dragging another window over the PuTTY window
+again. Two of us have managed to reproduce this ourselves with
+vigorous window-waving.
+
+<p>
+This could be a PuTTY bug or a Windows bug. We're assured that this
+probably isn't a function of the video card driver (which isn't
+responsible for calculating what to redraw, just for doing what it's
+told), but it may be a function of the Windows version (all reports so
+far are on NT-series OSs, and my (JTN) attempts to reproduce on 98SE
+didn't show anything).
+
+<p>
+Reports:
+
+<ul>
+
+<li>0.56, WinXP SP2, nVidia card
+<br><tt>8E5ACAE05E6B9E44A2903C693A5D4E8A04C48633@hqemmail02.nvidia.com</tt>
+
+<li>0.56?, WinXP pre-SP2, Matrox Millennium G550 (OSD)
+<br><tt>831xebsg1z.fsf@chiark.greenend.org.uk</tt>
+
+<li>2005-01-13, Win2K SP4, ATI RAGE 128 PRO II (JTN), 1.4GHz
+<br>(I can also trigger partial redraw failures on the configuration
+dialog by the same method! -- the background
+<a href="http://www.tartarus.org/~jacob/junk/20050118/putty-2005-01-13-noredraw-config.png">becomes green</a>,
+bizarrely. Also 0.56.)
+<br><tt>20050117101008.GI7859@chiark.greenend.org.uk</tt>
+
+</ul>
