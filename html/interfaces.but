@@ -504,6 +504,240 @@ easily be overwritten by another call to \cw{asctime()} in another
 thread before the first thread has even had a chance to read the
 data out of it. (See \#{FIXME} for more on thread-safety.)
 
+\C{bidi} Bidirectional interfaces
+
+A lot of interfaces have a clear client side and a clear server
+side. Many function-call interfaces are like this: one module
+provides a collection of functions, and another module calls them
+when it wants things done. Most network protocols work this way too:
+things like POP-3, NNTP, HTTP and so on all contain one party which
+makes requests, and another party which responds to them. The server
+never makes requests back to the client; occasionally it will return
+response codes (such as NNTP's 480 Authentication Required) which
+suggest to the client that it might like to try giving some
+information to the server before attempting a request again, but
+these are more like error returns from a request than requests in
+themselves.
+
+There are more complex interfaces in which \e{both} sides need to
+make requests of the other side. In this section I describe some
+points to watch out for when designing a bidirectional interface.
+
+\H{bidi-callbacks} Preventing uncontrolled recursion
+
+In function-call interfaces, bidirectionality means that each side
+of the interface provides some functions which the other side can
+call.
+
+Some interfaces of this type are still \e{basically} one-way: the
+\q{server} side does make calls to the \q{client} side, but only in
+direct response to a request the client made of the server. A good
+example of this is \cw{qsort()} in the C library, which is a
+function the client program calls when it wants some data sorted. It
+just so happens that the easiest way for the client to tell the
+library how to decide on what order to sort the data into is to
+provide a comparison function which \cw{qsort()} can call back to to
+ask the client which way round two items should be sorted; but this
+information is conceptually part of the parameters to the
+\cw{qsort()} call, and if there had been a sensible way to make it
+\e{physically} entirely one of the parameters then it would be.
+
+More general two-way interfaces tend to be found in object-oriented
+code; it's quite likely that you might have two (or more) objects,
+each of which can call methods of the other. These method calls
+between the objects might happen in response to method calls from
+outside both objects, or one object might call the other in the
+course of responding to a call \e{from} that other object.
+
+In both of these cases, the important thing to ensure is that you
+never recurse without limit. If one side of an interface makes a
+call to the other, and the other must call back to the first side in
+the course of processing that call, then the first side must be very
+careful about calling across the interface \e{again}. More
+particularly, the interface design must specify exactly how much
+recursion of this type is allowable.
+
+An example in an object-oriented environment might be two objects
+which each have a method called \cw{HandleEvent()}. A variety of
+events (perhaps user-interface events) can take place, and when an
+event requires action from an object, the object's
+\cw{HandleEvent()} method can be called to take that action.
+
+It might seem perfectly reasonable to implement an object which
+responds to a particular event by inventing other events and
+dispatching them to other objects' \cw{HandleEvent()} methods. (For
+example, one object might be a \q{Select All} button which causes a
+whole row of other objects to become selected.) If this happens, the
+designer must be careful to ensure that none of the objects which
+receive the artificial events respond to them by sending further
+events back to the first object; or that, if they do, the
+third-level events are not of a type which will cause the recursion
+to continue.
+
+\H{bidi-deadlock} Preventing deadlock
+
+In a network protocol, bidirectionality means that each side will be
+sending requests to the other. This means that both sides have to be
+quite flexible: once a request has been sent, the client (or server)
+cannot simply assume that the next piece of data coming back from
+the network will be the response. It must be aware that the next
+piece of data coming back might be a request from the other party,
+and be prepared to respond to that while it is waiting for the
+response to its own request.
+
+Similarly to the function-call case described in \k{bidi-callbacks},
+each side of the interface must be careful about making a request of
+the other side in the process of constructing a response to a
+request it has received. If each side has sent a request to the
+other, and each side is unwilling to respond to the other side's
+request until its own has been answered, then the protocol will
+deadlock. Worse than that, if each side sends a fresh request in the
+process of trying to answer the previous one, an endless sequence of
+requests will fly back and forth, and both sides will run out of
+memory in a manner very similar to an infinite recursion between the
+two sides of a function-call interface.
+
+(If the protocol does not number requests and responses, instead
+relying on responses being sent in the same order as the requests
+they answer, then disaster will strike sooner than that. Side A
+sends request A1; side B sends back request B1; side A needs to send
+request A2 in order to work out the answer to B1. But if responses
+must be sent in the same order as requests, then this is already a
+disaster: side A cannot possibly receive response A2 before it has
+received response A1, yet this is exactly what needs to happen to
+unblock the protocol.)
+
+\H{bidi-racecond} Preventing race conditions
+
+Another difficulty arises if a network protocol is written in terms
+of objects which both sides can manipulate. I'll illustrate this
+with an example from SSH: the channel architecture.
+
+SSH is able to multiplex a potentially large number of \q{channels}
+- two-way communications pathways - over a single encrypted TCP
+connection. So any data flowing over the SSH connection must be
+tagged with an identifying number so that the recipient knows which
+channel it was part of, and knows where to send it on to. Either
+side of the connection (server or client) can request the creation
+of a channel; the protocol is symmetric at this level, so the \q{new
+channel} request sent looks the same in both directions, and the
+\q{success} and \q{failure} responses sent back are identical as
+well.
+
+The question is: how are channel numbers allocated? The obvious
+answer is that when either side requests a new channel, it invents a
+channel number and sends that as part of its request. But this leads
+to a fundamental problem - what happens if both sides request a
+channel at the same moment, and both decide to allocate the same
+channel number? The requests will pass each other in the network,
+each side will receive a request that uses what it thinks is an
+already-allocated channel number, and both sides will therefore
+reject the other's request. A better scheme is needed.
+
+SSH solves this by means of having two sets of channel numbers: one
+set is managed by the client, and the other one by the server. Every
+channel has a number assigned at each end. So when the client wants
+to open a channel, it allocates a number from its own number space,
+and sends a \q{new channel} request quoting that number. If the
+server is willing to open the channel, it allocates a number from
+\e{its} number space, and sends back a response saying something
+like \q{Your channel 123 is open; my number for it is 456}. Then
+whenever the client sends data to the server for that channel, it
+quotes the server's reference number (456); and when the server
+sends data to the client for the same channel, it quotes the
+client's reference (123). So each side of the connection has sole
+authority over its own number space, and can choose any way it likes
+to allocate numbers within that space.
+
+This isn't the only way to solve the problem. Another approach might
+have been to partition the channel numbers (into odd and even,
+perhaps, or into a first half and a second half), and rule that each
+side had to allocate channel numbers from a particular half. That
+way the two sides could never simultaneously allocate the same
+number, and the race condition would be prevented. However, SSH's
+approach has two advantages:
+
+\b In SSH, each side of the connection is always told \e{its own}
+reference number for a channel, so it never has to look a channel up
+using the other side's number. So if a particular implementation
+wants to make life easy for itself by having a hard limit of (say)
+ten channels, keeping them in a ten-element array, and choosing a
+number for a new channel simply by scanning the array for a free
+slot, then it can do that with no difficulty. Whenever it needs to
+look up a channel by number, the number will always be its own
+reference, so it need only do a quick array-index operation. By
+contrast, if half the channel numbers it was dealing with were
+allocated by the other side, it would be forced to have a general
+means of storing a set of arbitrary integers: perhaps a B-tree, or a
+hash table. This would introduce more complexity than simple
+implementations would want to deal with.
+
+\b Partitioning the available channel numbers in half limits the
+number of channels which can be allocated by a particular side to
+half of the total number of possible channels. SSH's method allows
+one side to allocate \e{all} the available channels if it happens to
+want to. (In SSH this is academic, since no known application would
+ever need 2^32 channels! But if the channel numbers were shorter,
+this might be a practical concern.)
+
+\C{compatibility} Compatibility
+
+\#    + is each party designed to cope with older parties (backward
+\#      compatibility)?
+\#    + is each party designed to make it easy for newer parties to
+\#      cope with it (forward compatibility)?
+\#    + can the protocol deal with client being older than server?
+\#    + can the protocol deal with server being older than client?
+\#    + version negotiation, with backwards compatibility to older
+\#      versions of a protocol
+\#    + optional features negotiated before use
+\#      * perhaps with expandable namespaces
+\#      * inherent extensibility; if this is done properly, it largely
+\#        _removes_ the requirement for version negotiation.
+\#    + proxyability.
+\#      * consider NNTP: some responses say `please send an article',
+\#        others say `command complete'. It isn't obvious which! The
+\#        NNTP RFC defines a few response codes to which the user is
+\#        expected to respond by sending an article, but doesn't rule
+\#        out the introduction of others in future. This makes it hard
+\#        to write a future-proof NNTP proxy. Better would have been a
+\#        basic division of response codes into categories, and a
+\#        decree that future response codes must be allocated from the
+\#        correct category.
+
+\C{threading} Multithreading and thread-safety
+
+\#    + in function call interfaces, which interface functions are
+\#      re-entrant?
+\#      * at all?
+\#      * when called on the same interface-level object (if the
+\#        interface defines independent objects within its definition)
+\#    + in network-style interfaces, how easy is it to write a
+\#      multithreaded client (or server) multiplexing down the same
+\#      connection?
+\#      * for example, numbering all requests and responses so the
+\#        responses can arrive out of order makes it easier to write a
+\#        multithreaded server
+\#    + how much protocol state is implicit?
+\#      * implicit state can inhibit multiple threads making
+\#        independent uses of the interface. cf strtok. See also FTP
+\#        versus SFTP, in the protocol state section.
+
+\# is the protocol-level state section plausible? Will it hang
+\# together as a whole or should I scatter bits of it throughout
+\# other sections wherever they happen to be relevant?
+
+\# speed considerations seem a little small for a whole section of
+\# its own. Not sure what to do about that.
+
+\# another important point: Thou Shalt (Wherever Feasible) Allow
+\# Latitude For Multiple Implementations To Do Things Completely
+\# Differently. SSH's channel numbers leave a _lot_ of latitude like
+\# this. Perhaps also cite GIF/LZW as an algorithm-specific
+\# interface? Or is that too political?
+
+\# ------------------------------------------------------------
+
 \# original notes follow
 \#
 \#  - When to use an interface
@@ -657,3 +891,6 @@ data out of it. (See \#{FIXME} for more on thread-safety.)
 \#      not the only issue. Number of round trips is also worth
 \#      designing to reduce; modern networks are increasingly high-
 \#      bandwidth-high-latency.
+\#    + in a function-call interface: this is why we have fread() as
+\#      well as fgetc(). Avoiding _too_ many function-call overheads
+\#      is generally helpful.
