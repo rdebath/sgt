@@ -160,6 +160,10 @@ class Lump:
 	if not self.props[1].has_key(key):
 	    self.props[0].append(key)
 	self.props[1][key] = val
+    def delprop(self, key):
+	if self.props[1].has_key(key):
+	    del self.props[1][key]
+	    self.props[0].remove(key)
     def correct_headers(self):
 	# First reconstitute the properties block.
 	self.prop = ""
@@ -248,7 +252,7 @@ class Filter:
 	# If the destination directory is uninteresting, we don't
 	# need to write anything to `contents' ever.
 	if contents != None and not self.paths.interesting(dpath):
-	    sys.stderr.write("%s->%s: copy to uninteresting location\n" % (spath, dpath));
+	    #sys.stderr.write("%s->%s: copy to uninteresting location\n" % (spath, dpath));
 	    contents = None
 
 	# Simple case: a copy from an interesting directory is done
@@ -256,7 +260,7 @@ class Filter:
 	# because there's no need to log the subsidiary copies
 	# explicitly.
 	if contents != None and self.paths.interesting(spath):
-	    sys.stderr.write("%s->%s: copy between interesting locations\n" % (spath, dpath));
+	    #sys.stderr.write("%s->%s: copy between interesting locations\n" % (spath, dpath));
 	    lump = Lump()
 	    lump.sethdr("Node-path", dpath)
 	    lump.sethdr("Node-action", "add")
@@ -270,7 +274,7 @@ class Filter:
 	    dtree.mkfile(dpath)
 	    # Difficult case: we must copy this file explicitly.
 	    if contents != None:
-		sys.stderr.write("%s->%s: file copy needing full data\n" % (spath, dpath));
+		#sys.stderr.write("%s->%s: file copy needing full data\n" % (spath, dpath));
 		lump = Lump()
 		lump.sethdr("Node-path", dpath)
 		lump.sethdr("Node-kind", "file")
@@ -285,7 +289,7 @@ class Filter:
 	    dtree.mkdir(dpath)
 	    # Difficult case: we must create this directory explicitly.
 	    if contents != None:
-		sys.stderr.write("%s->%s: dir copy needing explicit mkdir\n" % (spath, dpath));
+		#sys.stderr.write("%s->%s: dir copy needing explicit mkdir\n" % (spath, dpath));
 		lump = Lump()
 		lump.sethdr("Node-path", dpath)
 		lump.sethdr("Node-kind", "dir")
@@ -302,7 +306,7 @@ class Filter:
 	for lump in contents:
 	    action = lump.hdrdict["Node-action"]
 	    path = lump.hdrdict["Node-path"]
-	    sys.stderr.write("%s %s\n" % (action, path))
+	    #sys.stderr.write("%s %s\n" % (action, path))
 	    if action == "add":
 		if lump.hdrdict.has_key("Node-copyfrom-path"):
 		    srcrev = string.atoi(lump.hdrdict["Node-copyfrom-rev"])
@@ -338,6 +342,13 @@ class Filter:
 
 	# Change the contents array.
 	contents[:] = contents2
+
+	# If we've just removed everything in this revision, leave
+	# out some revision properties as well.
+	if (len(contents) == 0):
+	    revhdr.delprop("svn:log")
+	    revhdr.delprop("svn:author")
+	    revhdr.delprop("svn:date")
 
 fr = sys.stdin
 fw = sys.stdout
