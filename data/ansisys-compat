@@ -1,0 +1,19 @@
+Summary: Better compatibility with DOS's ANSI.SYS
+Class: wish
+Difficulty: fun
+Priority: low
+Content-type: text/x-html-body
+
+<p>
+I've had a report that MS-DOS's old ANSI.SYS behaves differently
+from PuTTY in two important respects: firstly, ESC[2J homes the
+cursor as well as clearing the screen, and secondly, auto-wrap wraps
+<em>immediately</em> when a character is displayed in the rightmost
+column, whereas PuTTY delays the wrapping until the next character
+is printed. More importantly, apparently old ANSI.SYS-using
+applications depend on both of these behaviours.
+
+<p>
+Neither of these should be PuTTY's default - they would break plenty
+of more modern applications - but setting them as configurable
+options would be nice.
