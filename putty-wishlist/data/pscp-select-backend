@@ -3,6 +3,7 @@ Class: wish
 Difficulty: fun
 Priority: medium
 Content-type: text/x-html-body
+Fixed-in: 2004-04-26
 
 <p>
 It would sometimes be useful for users to be able to explicitly select
