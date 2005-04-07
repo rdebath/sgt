@@ -1,0 +1,38 @@
+Summary: Windows Unicode font linking broken
+Class: bug
+Difficulty: tricky
+Priority: medium
+Absent-in: 0.56 0.57
+Present-in: 0.58
+Content-type: text/x-html-body
+
+<p>
+We've had one report that 0.58 breaks Windows' "font linking". This is
+a mechanism provided by vaguely modern Windows (by "Uniscribe/MLang",
+apparently) to transparently use multiple fonts as fallbacks to
+provide the best coverage of the vast Unicode space.
+
+<p>
+The symptom is that some Unicode characters that were correctly
+displayed in 0.57 will be displayed as blank spaces in 0.58. If those
+spaces are copied and pasted elsewhere, the original text will be
+recovered. Only characters that are actually in the currently font
+will be displayed correctly.
+
+<p>
+This is likely a side-effect of the <a href="bidi.html">bidirectional
+and Arabic shaping</a> changes. One of the first changes to support
+this was the creation of <code>exact_textout()</code>, which stops
+Windows from doing its own bidi/shaping transformations, so that we
+can do them ourselves. It looks like font linking is a casualty of
+this.
+
+<p>
+Suggestions for how to modify <code>exact_textout()</code> to allow
+font linking (and any other advanced rendering features we may have
+inadvertently clobbered) while preserving the properties we need would
+be most welcome.
+
+<p>
+A workaround is to use a fixed-width font that directly supports all
+the characters you need, if you can find one.
