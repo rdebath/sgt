@@ -30,9 +30,8 @@ indicates that the problem is with older, unpatched versions of XP.
 <p>
 I believe this is likely due to a trim I (JTN) made to the
 <a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/sbscs/setup/application_manifests.asp">application manifests</a>;
-we tested it on one XP install but it seems not all XP installs are
-born equal, although we're not sure what the discriminating factor is
-yet.
+we tested it on one XP install (SP1), but it seems not all XP installs
+are born equal in this regard.
 
 <p>
 If so, it will affect the graphical utilities only (PuTTY, PuTTYtel,
@@ -57,7 +56,6 @@ rename to <tt>putty.exe.manifest</tt> (or
 <tt>puttytel.exe.manifest</tt>)
 <li><tt><a href="http://www.tartarus.org/~simon-anonsvn/viewcvs.cgi/*checkout*/putty/windows/puttygen.mft?rev=5604">puttygen.mft</a></tt>:
 rename to <tt>puttygen.exe.manifest</tt>
-<li>
 <li><tt><a href="http://www.tartarus.org/~simon-anonsvn/viewcvs.cgi/*checkout*/putty/windows/pageant.mft?rev=5604">pageant.mft</a></tt>:
 rename to <tt>pageant.exe.manifest</tt>
 </ul>
