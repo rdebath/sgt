@@ -8,8 +8,9 @@ Fixed-in: 2005-04-07 r5604
 Content-type: text/x-html-body
 
 <p>
-We've had some reports that PuTTY utterly fails to run on at least
-some versions of Windows XP, with the following error message:
+We've had a few reports that PuTTY 0.58 utterly fails to run on some
+(but not all) versions of Windows XP, with the following error
+message:
 
 <p>
 <blockquote>
@@ -17,6 +18,14 @@ The application has failed to start because the
 application configuration is incorrect. Reinstalling the
 application may fix this problem.
 </blockquote>
+
+<p>
+(Reinstalling PuTTY does not fix the problem.)
+
+<p>
+It's not clear to us precisely which variants of XP are affected.
+We've only had four reports so far; the information we've seen
+indicates that the problem is with older, unpatched versions of XP.
 
 <p>
 I believe this is likely due to a trim I (JTN) made to the
@@ -28,3 +37,34 @@ yet.
 <p>
 If so, it will affect the graphical utilities only (PuTTY, PuTTYtel,
 PuTTYgen, and Pageant).
+
+<p>
+If you run into this, please try one of the workarounds below, which
+have worked for everyone so far. If that doesn't work for you,
+<em>please</em> tell us, or it will likely continue to be broken.
+
+<p><ul>
+
+<li>A separate manifest file. If you download the following files,
+rename them as indicated, and put them in the same directory as the
+relevant 0.58 executable, they should override the application
+manifests and allow them to run.
+<br>(Note that this is only a temporary workaround; faffing with extra
+files will not be required in the long term.)
+<ul>
+<li><tt><a href="http://www.tartarus.org/~simon-anonsvn/viewcvs.cgi/*checkout*/putty/windows/putty.mft?rev=5604">putty.mft</a></tt>:
+rename to <tt>putty.exe.manifest</tt> (or
+<tt>puttytel.exe.manifest</tt>)
+<li><tt><a href="http://www.tartarus.org/~simon-anonsvn/viewcvs.cgi/*checkout*/putty/windows/puttygen.mft?rev=5604">puttygen.mft</a></tt>:
+rename to <tt>puttygen.exe.manifest</tt>
+<li>
+<li><tt><a href="http://www.tartarus.org/~simon-anonsvn/viewcvs.cgi/*checkout*/putty/windows/pageant.mft?rev=5604">pageant.mft</a></tt>:
+rename to <tt>pageant.exe.manifest</tt>
+</ul>
+
+<li>A development snapshot with updated application manifests.
+(Although note that we're likely to do destabilising things to the
+snapshots soon, so this may not be a good long-term solution,
+depending on what state they're in.)
+
+</ul>
