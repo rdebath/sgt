@@ -263,6 +263,11 @@ class output:
 	    self.html = self.html + "<lj-cut text=\"" + self.htmlsafe(strtext) + "\">"
 
     def finish(self):
+	# Strip off a trailing </p>, which is not required by LJ
+	# and occasionally messes things up.
+	if self.html[-4:] == "</p>":
+	    self.html = self.html[:-4]
+
 	self.mono_blankline()
 	if len(self.mono) - self.mono_last_edit_start >= MONO_EDIT_MAX:
 	    msg = "Mono edit at line %d is too long!" % (self.mono_last_edit_start+1)
