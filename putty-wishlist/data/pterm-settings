@@ -1,0 +1,22 @@
+Summary: pterm's relationship to saved sessions should be clarified
+Class: semi-bug
+Present-in: 0.55 0.56 0.57 0.58
+Content-type: text/x-html-body
+
+<p>
+The documented way to configure <tt>pterm</tt> is by using
+command-line arguments and/or X resources.
+
+<p>
+However, <tt>pterm</tt> also currently takes notice of PuTTY saved
+sessions in <tt>~/.putty</tt>, including Default Settings, and
+responds to the <tt>-load</tt> command-line option. Since 0.58, the
+saved sessions have also been visible on the Change Settings dialog.
+
+<p>
+This semi-support is more or less by accident. It's not clear that
+it's the right thing to do, it may be buggy or broken in various
+regards, and it may go away in future.
+
+<p>
+We should either support this properly and document it, or remove it.
