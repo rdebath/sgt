@@ -34,5 +34,12 @@ inadvertently clobbered) while preserving the properties we need would
 be most welcome.
 
 <p>
+Ben suggests another approach to defusing <code>ExtTextOut()</code>:
+feed it Arabic presentation forms (which we do already) and also
+explicit Unicode directional overrides to force LTR rendering. (This
+does commit us to potentially having to find workarounds for any other
+cleverness that Windows' font engine might choose to impose on us.)
+
+<p>
 A workaround is to use a fixed-width font that directly supports all
 the characters you need, if you can find one.
