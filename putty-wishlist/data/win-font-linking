@@ -16,7 +16,7 @@ provide the best coverage of the vast Unicode space.
 The symptom is that some Unicode characters that were correctly
 displayed in 0.57 will be displayed as blank spaces in 0.58. If those
 spaces are copied and pasted elsewhere, the original text will be
-recovered. Only characters that are actually in the currently font
+recovered. Only characters that are actually in the current font
 will be displayed correctly.
 
 <p>
