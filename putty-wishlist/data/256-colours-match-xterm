@@ -1,0 +1,13 @@
+Summary: 256 colour mode does not match xterm's colours exactly
+Class: semi-bug
+Priority: low
+Difficulty: fun
+Present-in: 0.58
+Content-type: text/plain
+
+The RGB values of the colours used by the xterm 256 colour sequences
+are not exactly the same as those used by xterm itself.  They probably
+should be.
+
+The 256colres.pl script in the xterm distribution generates the
+relevant RGB values.
