@@ -11,3 +11,6 @@ should be.
 
 The 256colres.pl script in the xterm distribution generates the
 relevant RGB values.
+
+(I believe the values we use were originally from xterm; xterm's values
+probably changed in patch #166, 2002/03/25.)
