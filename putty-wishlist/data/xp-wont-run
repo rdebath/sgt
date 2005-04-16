@@ -24,8 +24,9 @@ application may fix this problem.
 
 <p>
 It's not clear to us precisely which variants of XP are affected.
-We've only had five reports so far; the information we've seen
-indicates that the problem is with older, unpatched versions of XP.
+We've only had six reports so far; the information we've seen
+indicates that the problem is with older, unpatched versions of XP
+(one report indicated it went away upon upgrade to SP2).
 
 <p>
 I believe this is likely due to a trim I (JTN) made to the
