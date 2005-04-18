@@ -1,0 +1,23 @@
+Summary: Canonical hostname (in title bar) uses reverse lookup on Windows
+Class: semi-bug
+Difficulty: fun
+Absent-in: 0.57
+Present-in: 0.58
+Fixed-in: r5614 2005-04-08
+Content-type: text/x-html-body
+
+<p>
+As a side-effect of <a href="ipv6.html">IPv6 support</a>, on modern
+versions of Windows, the hostname displayed in the title bar has
+changed - it is now the result of a forward and reverse lookup,
+whereas before it was whatever the OS regarded as a "canonical name"
+(usually the input hostname resolution of CNAMEs/search paths).
+
+<p>
+This seems overenthusiastic, and bugs some people, so it's been
+reverted to the previous behaviour.
+
+<p>
+The title bar is the main use of the canonical name, so this is
+largely a cosmetic change. (It may also be used for some other things
+such as proxy exclusions.)
