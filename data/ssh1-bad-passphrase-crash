@@ -1,0 +1,25 @@
+Summary: Entering wrong SSH-1 key passphrase causes PuTTY crash
+Class: bug
+Difficulty: fun
+Priority: high
+Absent-in: 0.57
+Present-in: 0.58
+Content-type: text/x-html-body
+
+<p>
+When using public-key authentication in SSH-1, entering an incorrect
+passphrase in the PuTTY window will cause PuTTY to crash. Correct
+passphrases or Pageant authentication are fine, as is SSH-2.
+
+<p>
+I believe this is caused by <code>do_ssh1_login()</code> using its
+argument <code>pktin</code> in the auth loop condition. When prompting
+for a password in GUI PuTTY, that argument can become
+<code>NULL</code> due to coroutine mechanics. Prior to 0.58 we didn't
+use the argument. If so, this was probably introduced around r4898,
+and won't affect Plink/PSCP/PSFTP.
+
+<p>
+This looks similar to a problem blocking
+<a href="ssh2-password-expiry.html">`ssh2-password-expiry'</a>, so
+should probably be looked into at the same time.
