@@ -29,6 +29,10 @@ facility would allow PuTTY to do things like this automatically.
 Remembering your password for you. (Obviously we don't recommend you
 do this, on security grounds; but in one or two situations it might
 be helpful.)
+<li>
+Implementing <a href="key-mapping.html">key-mapping</a> fully generally.
+<li>
+Performing arbitrary transformations on clipboard contents.
 </ul>
 
 <p>
@@ -40,3 +44,10 @@ A scripting language is liable to be a fairly big piece of code, so
 the language interpreter might end up having to be implemented as a
 DLL plugin. Hence this feature is dependent on us creating a DLL
 plugin interface first.
+
+<p>
+It's been suggested by several people that using the underlying OS's
+built-in scripting mechanisms might help.  A problem with this is that
+it prevents PuTTY scripts being portable between OSes, which in turn
+means that we can't use the scripting language to implement any of PuTTY
+itself.
