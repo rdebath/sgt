@@ -18,6 +18,15 @@ options for everyone's favourite key mapping (perhaps we should
 move to a drop-down list?).
 
 <p>
+In particular, we have no way of knowing whether removing any of
+our existing options will break people's worlds, even if the thing
+they claim to emulate (e.g., <tt>xterm</tt>, <tt>rxvt</tt> has
+since changed its mind about its key sequences. So we can't just
+update the existing mappings to reflect the bleeding-edge versions
+of emulated software; we need to retain the capability to use the
+old mappings in some form.
+
+<p>
 If the function keys don't emit the sequence you want, you'll have to
 tell us what you think they <em>should</em> do. See the
 <a href="../faq.html#faq-keyboard">FAQ</a>.
