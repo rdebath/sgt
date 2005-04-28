@@ -3,9 +3,10 @@ Difficulty: fun
 Class: wish
 Priority: medium
 Content-type: text/plain
+Fixed-in: 2005-04-29
 
 The Internet Draft, draft-ietf-secsh-newmodes-03.txt,
 specifies a new symmetric-encryption mode for SSH that doesn't suffer
-from the flaws described in ssh2-cbc-weakness.  The AES modes are now
-implemented in PuTTY (as of 2005-04-07), but 3des-ctr and blowfish-ctr
-await successful interoperability testing.
+from the flaws described in ssh2-cbc-weakness.  The relevant ones
+(3des-ctr, aes128-ctr, aes192-ctr, aes256-ctr, blowfish-ctr) are now
+implemented in PuTTY.
