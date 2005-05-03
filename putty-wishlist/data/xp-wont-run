@@ -31,6 +31,7 @@ indicates that the problem is with older, unpatched versions of XP
 <p>
 I believe this is likely due to a trim I (JTN) made to the
 <a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/sbscs/setup/application_manifests.asp">application manifests</a>;
+the trimmed version conformed to Microsoft's specifications, and
 we tested it on one XP install (SP1), but it seems not all XP installs
 are born equal in this regard.
 
@@ -67,3 +68,5 @@ snapshots soon, so this may not be a good long-term solution,
 depending on what state they're in.)
 
 </ul>
+<p>
+Alternatively, PuTTY 0.57 doesn't suffer from this problem.
