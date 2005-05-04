@@ -4,6 +4,7 @@ all: points60.png \
      faces13.png \
      vertices13.png \
      vertices4.png \
+     faces4.png \
      faces6.png \
      vertices6.png \
      faces8.png \
