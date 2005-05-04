@@ -2,9 +2,10 @@ Summary: The "arcfour" cipher isn't supported
 Class: wish
 Difficulty: fun
 Priority: low
-Content-type: text/plain
+Content-type: text/x-html-body
 Fixed-in: 2005-04-22
 
+<p>
 PuTTY doesn't support the "arcfour" (RC4) cipher in SSH-2.  Arcfour is
 notable for being sunstantially faster than any cipher that PuTTY
 currently supports.  Unfortunately, the way it's specified for SSH-2,
@@ -13,9 +14,11 @@ weaker than it could be (though not dangerously so).  On the other
 hand, not being a CBC-mode block cipher, it doesn't suffer from the
 problems described in ssh2-cbc-weakness.
 
+<p>
 Using arcfour (or any other stream cipher) in SSH-1 would be a very bad
 idea.  The lack of a MAC makes it very easy for an attacker to modify
 the data stream.
 
+<p>
 <b>Update:</b> Ben Harris has written an Internet-Draft describing a way of
 using Arcfour reasonably securely with SSH-2, and PuTTY now implements this.
