@@ -8,6 +8,8 @@ Content-Type: text/x-html-body
 Perhaps, for people who don't like dialog boxes, messages like
 "connection closed" and fatal errors should be configurable to
 appear inside the window instead of popping up sudden message boxes.
+(For instance, if a network connection dies, apparently the message
+boxes get in the way of WinXP's "close group" feature.)
 
 <p>
 If we do this, we should probably include a means of distinguishing
