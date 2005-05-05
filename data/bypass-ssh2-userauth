@@ -2,6 +2,7 @@ Summary: Ability to bypass user authentication in SSH-2
 Class: wish
 Difficulty: fun
 Priority: low
+Fixed-in: 2005-05-06
 Content-type: text/x-html-body
 
 <p>
