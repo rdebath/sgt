@@ -9,6 +9,8 @@
 #include <string.h>
 #include <ctype.h>
 
+#define lenof(x) ( sizeof(x) / sizeof(*(x)) )
+
 /*
  * This structure describes a group type. It can expect to be the
  * first element of a larger structure containing parameters.
@@ -522,6 +524,60 @@ struct otwid otwiddle3x3 = {
 };
 
 /* ----------------------------------------------------------------------
+ * Command-line processing.
+ */
+
+struct namedgroup {
+    char *name;
+    struct group *gp;
+} groups[] = {
+    {"twiddle3x3", &twiddle3x3.vtable},
+    {"otwiddle3x3", &otwiddle3x3.vtable},
+};
+
+struct cmdline {
+    struct group *gp;
+    char *gpname;
+    int save;
+    int load;
+};
+
+void proc_cmdline(int argc, char **argv, struct cmdline *cl)
+{
+    int opts = 1;
+
+    cl->save = cl->load = 0;
+    cl->gp = groups[0].gp;
+    cl->gpname = groups[0].name;
+
+    while (--argc > 0) {
+        char *p = *++argv;
+
+        if (opts && *p == '-') {
+            if (!strcmp(p, "-s"))
+                cl->save = 1;
+            else if (!strcmp(p, "-l"))
+                cl->load = 1;
+            else if (!strcmp(p, "--"))
+                opts = 0;
+            else
+                fprintf(stderr, "unrecognised option '%s'\n", p);
+        } else {
+            int i;
+            for (i = 0; i < lenof(groups); i++)
+                if (!strcmp(p, groups[i].name)) {
+                    cl->gp = groups[i].gp;
+                    cl->gpname = groups[i].name;
+                    break;
+                }
+            if (i == lenof(groups)) {
+                fprintf(stderr, "unrecognised group name '%s'\n", p);
+            }
+        }
+    }
+}
+
+/* ----------------------------------------------------------------------
  * Small test subprograms.
  */
 
@@ -579,16 +635,18 @@ int main(void)
 #define GOT_MAIN
 #endif
 
-#ifdef TEST_TWIDDLE_MOVES
+#ifdef TEST_MOVES
 
-int main(void)
+int main(int argc, char **argv)
 {
     void *elt;
     int eltsize;
     int i;
     struct group *gp;
+    struct cmdline cl;
 
-    gp = &otwiddle3x3.vtable;
+    proc_cmdline(argc, argv, &cl);
+    gp = cl.gp;
 
     eltsize = gp->eltsize(gp);
     elt = malloc(eltsize);
@@ -613,6 +671,11 @@ int main(void)
 
 #ifndef GOT_MAIN
 
+#include <unistd.h>
+#include <fcntl.h>
+#include <errno.h>
+#include <sys/mman.h>
+
 /* ----------------------------------------------------------------------
  * The real main program, containing the meat of the group-mapping
  * algorithm.
@@ -634,7 +697,7 @@ void update_todo(int **todos, int granularity, int ntodos, int i, int inc)
     }
 }
 
-int main(void)
+int main(int argc, char **argv)
 {
     struct group *gp;
     dist_t *dists;
@@ -645,52 +708,10 @@ int main(void)
     void *elt, *elt2;
     int nmoves, eltsize, currdist, size;
     char buf[512];
+    struct cmdline cl;
 
-    gp = &otwiddle3x3.vtable;
-
-    /*
-     * Set up big array for group.
-     */
-    ndists = gp->maxindex(gp);
-    dists = (dist_t *)malloc(ndists * sizeof(dist_t));
-    assert(sizeof(dist_t) == 1);       /* FIXME: memset is wrong if not */
-    memset(dists, DIST_UNSEEN, ndists * sizeof(dist_t));
-
-    /*
-     * Set up a bunch of smaller arrays of int, counting number of
-     * todo elements in subregions of the array. We'll need two of
-     * these, since we switch back and forth every time we finish
-     * processing the elements at a given distance.
-     * 
-     * We'd like to use not more than 1/4 of the space taken up by
-     * the dists array itself. This means that:
-     * 
-     * 	- one complete set of index arrays comes to about twice the
-     * 	  size of the finest-grained one (sum of powers of two)
-     * 
-     *  - thus two of them come to four times that size
-     * 
-     * 	- so we want 4 * sizeof(int) * length / granularity to be
-     * 	  at most one quarter of length * sizeof(dist_t).
-     */
-    granularity = 16 * sizeof(int) / sizeof(dist_t);
-    assert((granularity & (granularity-1)) == 0);   /* must be power of two */
-    ntodos = 1;
-    while ((granularity << (ntodos-1)) < ndists)
-	ntodos++;
-
-    for (whichtodo = 0; whichtodo < 2; whichtodo++) {
-	int i;
-
-	todos[whichtodo] = (int **)malloc(ntodos * sizeof(int *));
-
-	for (i = 0; i < ntodos; i++) {
-	    int g = granularity << i;
-	    int size = (ndists + g - 1) / g;
-	    todos[whichtodo][i] = (int *)malloc(size * sizeof(int));
-	    memset(todos[whichtodo][i], 0, size * sizeof(int));
-	}
-    }
+    proc_cmdline(argc, argv, &cl);
+    gp = cl.gp;
 
     /*
      * Allocate space to store elements in.
@@ -699,109 +720,218 @@ int main(void)
     elt = malloc(eltsize);
     elt2 = malloc(eltsize);
 
-    /*
-     * Find the initial element and add it to the array marked as
-     * todo.
-     */
-    gp->identity(gp, elt);
-    {
-	int i = gp->index(gp, elt);
-	dists[i] = DIST_TODO | 0;
-	update_todo(todos[0], granularity, ntodos, i, +1);
-    }
-    whichtodo = 0;
+    ndists = gp->maxindex(gp);
+    nmoves = gp->moves(gp);            /* cache to avoid recomputation */
 
     /*
-     * Set up miscellaneous stuff.
+     * Load an existing group map rather than recreating this one,
+     * if asked to.
      */
-    nmoves = gp->moves(gp);	       /* cache to avoid recomputation */
-    currdist = 0;
-    size = 1;                          /* must count the identity element! */
+    if (cl.load) {
+        int fd;
+        char buf[256];
 
-    while (todos[whichtodo][ntodos-1][0] > 0) {
-        printf("%d elements at distance %d\n", todos[whichtodo][ntodos-1][0],
-               currdist);
+        sprintf(buf, "groupmap.%s", cl.gpname);
 
-	/*
-	 * Process a distance level by emptying one todo tree into
-	 * the other.
-	 */
-	while (todos[whichtodo][ntodos-1][0] > 0) {
-	    /*
-	     * Search down the todo tree to find the next element
-	     * that needs processing.
-	     */
-	    int i, j;
+        /*
+         * This is Unix-specific, because using mmap is just _so_
+         * much more efficient.
+         */
+        fd = open(buf, O_RDONLY);
+        if (fd < 0) {
+            fprintf(stderr, "%s: open: %s\n", buf, strerror(errno));
+            return 1;
+        }
 
-	    i = 0;
-	    for (j = ntodos-2; j >= 0; j--) {
-		i *= 2;
-                if (todos[whichtodo][j][i] == 0)
-		    i++;
-	    }
-            assert(todos[whichtodo][0][i] > 0);
+        dists = mmap(NULL, ndists * sizeof(dist_t),
+                     PROT_READ, MAP_PRIVATE, fd, 0);
+        if (!dists) {
+            fprintf(stderr, "%s: mmap: %s\n", buf, strerror(errno));
+            return 1;
+        }
 
-	    /*
-	     * Now i is the index of the lowest non-empty entry in
-	     * the finest-grained todo table. Search the actual
-	     * distance array to find the element itself.
-	     */
-            j = i * granularity;
-	    for (i = j; i < j + granularity && i < ndists; i++)
-		if (dists[i] == (DIST_TODO | currdist))
-		    break;
-	    assert(i < j + granularity && i < ndists);
+    } else {
 
-	    gp->fromindex(gp, elt, i);
+        /*
+         * Set up big array for group.
+         */
+        dists = (dist_t *)malloc(ndists * sizeof(dist_t));
+        assert(sizeof(dist_t) == 1);   /* FIXME: memset is wrong if not */
+        memset(dists, DIST_UNSEEN, ndists * sizeof(dist_t));
+
+        /*
+         * Set up a bunch of smaller arrays of int, counting number of
+         * todo elements in subregions of the array. We'll need two of
+         * these, since we switch back and forth every time we finish
+         * processing the elements at a given distance.
+         *
+         * We'd like to use not more than 1/4 of the space taken up by
+         * the dists array itself. This means that:
+         *
+         *  - one complete set of index arrays comes to about twice
+         *    the size of the finest-grained one (sum of powers of
+         *    two)
+         *
+         *  - thus two of them come to four times that size
+         *
+         *  - so we want 4 * sizeof(int) * length / granularity to
+         *    be at most one quarter of length * sizeof(dist_t).
+         */
+        granularity = 16 * sizeof(int) / sizeof(dist_t);
+        assert((granularity & (granularity-1)) == 0);  /* must be power of 2 */
+        ntodos = 1;
+        while ((granularity << (ntodos-1)) < ndists)
+            ntodos++;
+
+        for (whichtodo = 0; whichtodo < 2; whichtodo++) {
+            int i;
+
+            todos[whichtodo] = (int **)malloc(ntodos * sizeof(int *));
+
+            for (i = 0; i < ntodos; i++) {
+                int g = granularity << i;
+                int size = (ndists + g - 1) / g;
+                todos[whichtodo][i] = (int *)malloc(size * sizeof(int));
+                memset(todos[whichtodo][i], 0, size * sizeof(int));
+            }
+        }
+
+        /*
+         * Find the initial element and add it to the array marked as
+         * todo.
+         */
+        gp->identity(gp, elt);
+        {
+            int i = gp->index(gp, elt);
+            dists[i] = DIST_TODO | 0;
+            update_todo(todos[0], granularity, ntodos, i, +1);
+        }
+        whichtodo = 0;
+
+        /*
+         * Set up miscellaneous stuff.
+         */
+        currdist = 0;
+        size = 1;                      /* must count the identity element! */
+
+        while (todos[whichtodo][ntodos-1][0] > 0) {
+            printf("%d elements at distance %d\n", todos[whichtodo][ntodos-1][0],
+                   currdist);
+
+            /*
+             * Process a distance level by emptying one todo tree into
+             * the other.
+             */
+            while (todos[whichtodo][ntodos-1][0] > 0) {
+                /*
+                 * Search down the todo tree to find the next element
+                 * that needs processing.
+                 */
+                int i, j;
+
+                i = 0;
+                for (j = ntodos-2; j >= 0; j--) {
+                    i *= 2;
+                    if (todos[whichtodo][j][i] == 0)
+                        i++;
+                }
+                assert(todos[whichtodo][0][i] > 0);
+
+                /*
+                 * Now i is the index of the lowest non-empty entry in
+                 * the finest-grained todo table. Search the actual
+                 * distance array to find the element itself.
+                 */
+                j = i * granularity;
+                for (i = j; i < j + granularity && i < ndists; i++)
+                    if (dists[i] == (DIST_TODO | currdist))
+                        break;
+                assert(i < j + granularity && i < ndists);
+
+                gp->fromindex(gp, elt, i);
 #ifdef DEBUG_SEARCH
-            printf("todo=%d; processing element ", todos[whichtodo][ntodos-1][0]);
-            gp->printelt(gp, elt);
-            printf(" (%d)\n", i);
+                printf("todo=%d; processing element ", todos[whichtodo][ntodos-1][0]);
+                gp->printelt(gp, elt);
+                printf(" (%d)\n", i);
 #endif
 
-	    /*
-	     * Process the element by applying every possible move
-	     * to it.
-	     */
-	    for (j = 0; j < nmoves; j++) {
-		int newi;
-		memcpy(elt2, elt, eltsize);
-		gp->makemove(gp, elt2, j);
-		newi = gp->index(gp, elt2);
+                /*
+                 * Process the element by applying every possible move
+                 * to it.
+                 */
+                for (j = 0; j < nmoves; j++) {
+                    int newi;
+                    memcpy(elt2, elt, eltsize);
+                    gp->makemove(gp, elt2, j);
+                    newi = gp->index(gp, elt2);
 
-		if (dists[newi] == DIST_UNSEEN) {
-		    dists[newi] = DIST_TODO | (currdist+1);
-		    update_todo(todos[whichtodo ^ 1], granularity, ntodos,
-				newi, +1);
-                    size++;
+                    if (dists[newi] == DIST_UNSEEN) {
+                        dists[newi] = DIST_TODO | (currdist+1);
+                        update_todo(todos[whichtodo ^ 1], granularity, ntodos,
+                                    newi, +1);
+                        size++;
 #ifdef DEBUG_SEARCH
-                    printf("found element at dist %d: ", currdist+1);
-                    gp->printelt(gp, elt2);
-                    printf(" (%d)\n", newi);
+                        printf("found element at dist %d: ", currdist+1);
+                        gp->printelt(gp, elt2);
+                        printf(" (%d)\n", newi);
 #endif
-		}
-	    }
+                    }
+                }
 
-	    /*
-	     * Mark this element as done.
-	     */
-	    dists[i] &= ~DIST_TODO;
-	    update_todo(todos[whichtodo], granularity, ntodos, i, -1);
-	}
+                /*
+                 * Mark this element as done.
+                 */
+                dists[i] &= ~DIST_TODO;
+                update_todo(todos[whichtodo], granularity, ntodos, i, -1);
+            }
 
-	/*
-	 * Now switch todo lists.
-	 */
-	assert(todos[whichtodo][ntodos-1][0] == 0);
-	whichtodo ^= 1;
-        currdist++;
+            /*
+             * Now switch todo lists.
+             */
+            assert(todos[whichtodo][ntodos-1][0] == 0);
+            whichtodo ^= 1;
+            currdist++;
+        }
+
+        /*
+         * The group is mapped. Report its total size.
+         */
+        printf("Total group size is %d\n", size);
     }
 
     /*
-     * The group is mapped. Report its total size, and then enter
-     * interactive mode.
+     * If we were asked to on the command line, save a dump of the
+     * group map rather than entering interactive mode.
      */
-    printf("Total group size is %d\n", size);
+    if (cl.save) {
+        FILE *fp;
+        int offset, max;
+        char buf[256];
+
+        sprintf(buf, "groupmap.%s", cl.gpname);
+
+        fp = fopen(buf, "wb");
+        if (!fp) {
+            fprintf(stderr, "%s: fopen: %s\n", buf, strerror(errno));
+            return 1;
+        }
+        max = ndists * sizeof(dist_t);
+        offset = 0;
+        while (offset < max) {
+            int len = max - offset;
+            if (len > 16384)
+                len = 16384;
+            len = fwrite((char *)dists + offset, 1, len, fp);
+            if (len < 0) {
+                fprintf(stderr, "%s: fopen: %s\n", buf, strerror(errno));
+                return 1;
+            }
+            offset += len;
+        }
+        fclose(fp);
+
+        return 0;
+    }
 
     while (fgets(buf, sizeof(buf), stdin)) {
         char *err;
