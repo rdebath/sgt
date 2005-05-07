@@ -686,6 +686,36 @@ typedef unsigned char dist_t;
 #define DIST_MASK (DIST_TODO - 1)
 #define DIST_UNSEEN DIST_MASK
 
+#ifdef TWO_BIT_METHOD
+/*
+ * If the group map is really big, we drop down to storing only two
+ * bits per element. 00 means totally unseen; 01 means finished
+ * with; 10 and 11 alternate between meaning `to do now' and `to do
+ * next', and on each pass through the group we wipe out all
+ * instances of one and convert them into the other.
+ */
+#define SET_STATE(index, todo, dist) do { \
+    int v = (todo) + (todo) + (((dist) & 1) | !(todo)); \
+    int idx = (index) >> 2; \
+    int shift = 2 * ((index) & 3); \
+    twobit[idx] = (twobit[idx] &~ (3 << shift)) | (v << shift); \
+} while (0)
+#define STATE_UNSEEN(index) ( \
+    ((twobit[(index)>>2] >> (2*((index)&3))) & 3) == 0)
+#define STATE_TODO(index, currdist) ( \
+    ((twobit[(index)>>2] >> (2*((index)&3))) & 3) == 2 + ((currdist)&1))
+#else
+/*
+ * At one byte per group element, we have the luxury of storing the
+ * entire group map in memory at once.
+ */
+#define SET_STATE(index, todo, dist) do { \
+    dists[index] = ((todo) * DIST_TODO) + (dist); \
+} while (0)
+#define STATE_UNSEEN(index) (dists[index] == DIST_UNSEEN)
+#define STATE_TODO(index, currdist) (dists[index] == (DIST_TODO | (currdist)))
+#endif
+
 void update_todo(int **todos, int granularity, int ntodos, int i, int inc)
 {
     int j;
@@ -700,6 +730,9 @@ void update_todo(int **todos, int granularity, int ntodos, int i, int inc)
 int main(int argc, char **argv)
 {
     struct group *gp;
+#ifdef TWO_BIT_METHOD
+    unsigned char *twobit;
+#endif
     dist_t *dists;
     int ndists;
     int granularity;
@@ -744,7 +777,7 @@ int main(int argc, char **argv)
         }
 
         dists = mmap(NULL, ndists * sizeof(dist_t),
-                     PROT_READ, MAP_PRIVATE, fd, 0);
+                     PROT_READ, MAP_SHARED, fd, 0);
         if (!dists) {
             fprintf(stderr, "%s: mmap: %s\n", buf, strerror(errno));
             return 1;
@@ -755,9 +788,69 @@ int main(int argc, char **argv)
         /*
          * Set up big array for group.
          */
+#ifdef TWO_BIT_METHOD
+	/*
+	 * The state array (whether each element is unseen, done,
+	 * to do now or to do later) is stored at two bits per
+	 * element. We need a separate `dists' array for the actual
+	 * resulting group map (i.e. distances from start), which
+	 * we'll create via mmap so that it isn't taking up main
+	 * memory.
+	 */
+        twobit = (unsigned char *)malloc(ndists / 4);/* 2 bits per element */
+        memset(twobit, 0, ndists / 4);
+
+	/* Create a dists file. */
+	{
+	    FILE *fp;
+	    int offset, max, fd;
+	    char buf[256];
+	    dist_t bigbuf[16384];
+
+	    assert(sizeof(dist_t) == 1);   /* FIXME: memset is wrong if not */
+	    memset(bigbuf, DIST_UNSEEN, 16384 * sizeof(dist_t));
+
+	    sprintf(buf, "groupmap.%s", cl.gpname);
+
+	    fp = fopen(buf, "wb");
+	    if (!fp) {
+		fprintf(stderr, "%s: fopen: %s\n", buf, strerror(errno));
+		return 1;
+	    }
+	    max = ndists * sizeof(dist_t);
+	    offset = 0;
+	    while (offset < max) {
+		int len = max - offset;
+		if (len > 16384 * sizeof(dist_t))
+		    len = 16384 * sizeof(dist_t);
+		len = fwrite((char *)bigbuf, 1, len, fp);
+		if (len < 0) {
+		    fprintf(stderr, "%s: fopen: %s\n", buf, strerror(errno));
+		    return 1;
+		}
+		offset += len;
+	    }
+	    fclose(fp);
+
+	    fd = open(buf, O_RDWR);
+	    if (fd < 0) {
+		fprintf(stderr, "%s: open: %s\n", buf, strerror(errno));
+		return 1;
+	    }
+
+	    dists = mmap(NULL, ndists * sizeof(dist_t),
+			 PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+	    if (!dists) {
+		fprintf(stderr, "%s: mmap: %s\n", buf, strerror(errno));
+		return 1;
+	    }
+	}
+
+#else
         dists = (dist_t *)malloc(ndists * sizeof(dist_t));
         assert(sizeof(dist_t) == 1);   /* FIXME: memset is wrong if not */
         memset(dists, DIST_UNSEEN, ndists * sizeof(dist_t));
+#endif
 
         /*
          * Set up a bunch of smaller arrays of int, counting number of
@@ -766,7 +859,7 @@ int main(int argc, char **argv)
          * processing the elements at a given distance.
          *
          * We'd like to use not more than 1/4 of the space taken up by
-         * the dists array itself. This means that:
+         * the dists/twobit array itself. This means that:
          *
          *  - one complete set of index arrays comes to about twice
          *    the size of the finest-grained one (sum of powers of
@@ -777,7 +870,11 @@ int main(int argc, char **argv)
          *  - so we want 4 * sizeof(int) * length / granularity to
          *    be at most one quarter of length * sizeof(dist_t).
          */
+#ifdef TWO_BIT_METHOD
+        granularity = 16 * sizeof(int) * 4;
+#else
         granularity = 16 * sizeof(int) / sizeof(dist_t);
+#endif
         assert((granularity & (granularity-1)) == 0);  /* must be power of 2 */
         ntodos = 1;
         while ((granularity << (ntodos-1)) < ndists)
@@ -803,7 +900,7 @@ int main(int argc, char **argv)
         gp->identity(gp, elt);
         {
             int i = gp->index(gp, elt);
-            dists[i] = DIST_TODO | 0;
+	    SET_STATE(i, 1, 0);
             update_todo(todos[0], granularity, ntodos, i, +1);
         }
         whichtodo = 0;
@@ -844,7 +941,7 @@ int main(int argc, char **argv)
                  */
                 j = i * granularity;
                 for (i = j; i < j + granularity && i < ndists; i++)
-                    if (dists[i] == (DIST_TODO | currdist))
+                    if (STATE_TODO(i, currdist))
                         break;
                 assert(i < j + granularity && i < ndists);
 
@@ -865,8 +962,8 @@ int main(int argc, char **argv)
                     gp->makemove(gp, elt2, j);
                     newi = gp->index(gp, elt2);
 
-                    if (dists[newi] == DIST_UNSEEN) {
-                        dists[newi] = DIST_TODO | (currdist+1);
+                    if (STATE_UNSEEN(newi)) {
+                        SET_STATE(newi, 1, currdist+1);
                         update_todo(todos[whichtodo ^ 1], granularity, ntodos,
                                     newi, +1);
                         size++;
@@ -881,8 +978,15 @@ int main(int argc, char **argv)
                 /*
                  * Mark this element as done.
                  */
-                dists[i] &= ~DIST_TODO;
+                SET_STATE(i, 0, currdist);
                 update_todo(todos[whichtodo], granularity, ntodos, i, -1);
+#ifdef TWO_BIT_METHOD
+		/*
+		 * This is also where we set each element in the
+		 * real dists file.
+		 */
+		dists[i] = currdist;
+#endif
             }
 
             /*
@@ -899,6 +1003,14 @@ int main(int argc, char **argv)
         printf("Total group size is %d\n", size);
     }
 
+#ifdef TWO_BIT_METHOD
+    /*
+     * In this mode, cl.save simply means we exit now, since we've
+     * already written out everything we wanted to disk.
+     */
+    if (cl.save)
+	return 0;
+#else
     /*
      * If we were asked to on the command line, save a dump of the
      * group map rather than entering interactive mode.
@@ -932,6 +1044,7 @@ int main(int argc, char **argv)
 
         return 0;
     }
+#endif
 
     while (fgets(buf, sizeof(buf), stdin)) {
         char *err;
