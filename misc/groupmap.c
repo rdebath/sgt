@@ -8,6 +8,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <errno.h>
+#include <sys/mman.h>
 
 #define lenof(x) ( sizeof(x) / sizeof(*(x)) )
 
@@ -121,9 +125,8 @@ void perm_fromindex(struct group *gctx, void *velt, int index)
 {
     struct perm *ctx = (struct perm *)gctx;
     int *elt = (int *)velt;
-    int i, j, mult, ret;
+    int i, j, mult;
 
-    ret = 0;
     elt[ctx->n-1] = 0;
     mult = 2;
     for (i = ctx->n-1; i-- ;) {
@@ -248,6 +251,199 @@ struct perm twiddle3x3 = {
      perm_printelt, perm_parseelt, perm_moves, perm_makemove, perm_movename},
     9,
     8, "a\0b\0c\0d\0A\0B\0C\0D", twiddle3x3_moves
+};
+
+/* ----------------------------------------------------------------------
+ * Group parameter structure which deals with 4x4 Twiddle (which
+ * has strong parity invariants and so is worth indexing in a more
+ * efficient manner than the naive 16! approach).
+ * 
+ * The invariants for 4x4 Twiddle are:
+ * 
+ *  - every tile stays on its original chessboard colour. Thus
+ *    1,3,6,8,9,11,14,16 and 2,4,5,7,10,12,13,15 are disjoint at
+ *    all times. This reduces the number of permutations from 16!
+ *    to 8!^2.
+ * 
+ *  - the permutation parity of each half must always be the same,
+ *    which loses another factor of 2.
+ */
+
+static const int twiddle4x4_white[8] = { 0,2,5,7,8,10,13,15 };
+static const int twiddle4x4_black[8] = { 1,3,4,6,9,11,12,14 };
+#define CHESS4x4(x) ( (((x)>>2) ^ (x)) & 1 )
+#define CHESSINDEX(x) ( (x)>>1 )
+
+int twiddle4x4_index(struct group *gctx, void *velt)
+{
+    struct perm *ctx = (struct perm *)gctx;
+    int *elt = (int *)velt;
+    int i, j, mult, ret;
+
+    ret = 0;
+
+    /*
+     * Index the permutations of the white squares.
+     */
+    mult = 8;
+    for (i = 0; i < 7; i++) {
+	int k = 0;
+	for (j = 0; j < i; j++)
+	    if (elt[twiddle4x4_white[j]] < elt[twiddle4x4_white[i]])
+		k++;
+	ret = ret * mult + CHESSINDEX(elt[twiddle4x4_white[i]]) - k;
+	mult--;
+    }
+
+    /*
+     * Now index the black squares, but stop short of the final
+     * multiplication by two because that's deducible from the
+     * rest.
+     */
+    mult = 8;
+    for (i = 0; i < 6; i++) {
+	int k = 0;
+	for (j = 0; j < i; j++)
+	    if (elt[twiddle4x4_black[j]] < elt[twiddle4x4_black[i]])
+		k++;
+	ret = ret * mult + CHESSINDEX(elt[twiddle4x4_black[i]]) - k;
+	mult--;
+    }
+
+    return ret;
+}
+
+void twiddle4x4_fromindex(struct group *gctx, void *velt, int index)
+{
+    struct perm *ctx = (struct perm *)gctx;
+    int *elt = (int *)velt;
+    int i, j, mult, bperm, wperm;
+
+    /*
+     * Start by putting on the implicit final bit. We'll work out
+     * what it _should_ have said later.
+     */
+    index *= 2;
+
+    /*
+     * Now unwind the permutation of the black squares.
+     */
+    elt[twiddle4x4_black[7]] = 0;
+    mult = 2;
+    bperm = 0;
+    for (i = 7; i-- ;) {
+	elt[twiddle4x4_black[i]] = index % mult;
+	index /= mult;
+	for (j = i+1; j < 8; j++)
+	    if (elt[twiddle4x4_black[j]] >= elt[twiddle4x4_black[i]])
+		elt[twiddle4x4_black[j]]++, bperm ^= 1;
+	mult++;
+    }
+    /*
+     * And then the white squares.
+     */
+    elt[twiddle4x4_white[7]] = 0;
+    mult = 2;
+    wperm = 0;
+    for (i = 7; i-- ;) {
+	elt[twiddle4x4_white[i]] = index % mult;
+	index /= mult;
+	for (j = i+1; j < 8; j++)
+	    if (elt[twiddle4x4_white[j]] >= elt[twiddle4x4_white[i]])
+		elt[twiddle4x4_white[j]]++, wperm ^= 1;
+	mult++;
+    }
+
+    /*
+     * If the permutations were of different parity, swap the last
+     * two black squares.
+     */
+    if (wperm != bperm) {
+	j = elt[twiddle4x4_black[6]];
+	elt[twiddle4x4_black[6]] = elt[twiddle4x4_black[7]];
+	elt[twiddle4x4_black[7]] = j;
+    }
+
+    /*
+     * And finally, map everything back to real number values.
+     */
+    for (i = 0; i < 8; i++) {
+	elt[twiddle4x4_white[i]] = twiddle4x4_white[elt[twiddle4x4_white[i]]];
+	elt[twiddle4x4_black[i]] = twiddle4x4_black[elt[twiddle4x4_black[i]]];
+    }
+}
+
+int twiddle4x4_maxindex(struct group *gctx)
+{
+    struct perm *ctx = (struct perm *)gctx;
+    int f, i;
+
+    f = 1;
+    for (i = 1; i <= 8; i++)
+	f *= i;
+
+    return f * f / 2;
+}
+
+char *twiddle4x4_parseelt(struct group *gctx, void *velt, char *s)
+{
+    struct perm *ctx = (struct perm *)gctx;
+    int *elt = (int *)velt;
+    char *ret;
+    int i, j, bp, wp;
+
+    ret = perm_parseelt(gctx, velt, s);
+    if (ret)
+	return ret;
+
+    /*
+     * Check the chessboard property and permutation parity.
+     */
+    for (i = 0; i < 16; i++)
+	if (CHESS4x4(i) != CHESS4x4(elt[i]))
+	    return "Chessboard separation violated";
+    bp = wp = 0;
+    for (i = 0; i < 7; i++)
+	for (j = i+1; j < 8; j++) {
+	    if (elt[twiddle4x4_black[i]] > elt[twiddle4x4_black[j]])
+		bp ^= 1;
+	    if (elt[twiddle4x4_white[i]] > elt[twiddle4x4_white[j]])
+		wp ^= 1;
+	}
+    if (bp != wp)
+	return "Parity constraint violated";
+
+    return NULL;
+}
+
+int twiddle4x4_movedata[] = {
+    0,2,10,8,-1,1,6,9,4,-1,-1,
+    1,3,11,9,-1,2,7,10,5,-1,-1,
+    4,6,14,12,-1,5,10,13,8,-1,-1,
+    5,7,15,13,-1,6,11,14,9,-1,-1,
+    0,8,10,2,-1,1,4,9,6,-1,-1,
+    1,9,11,3,-1,2,5,10,7,-1,-1,
+    4,12,14,6,-1,5,8,13,10,-1,-1,
+    5,13,15,7,-1,6,9,14,11,-1,-1,
+};
+
+int *twiddle4x4_moves[] = {
+    twiddle4x4_movedata + 0 * 11,
+    twiddle4x4_movedata + 1 * 11,
+    twiddle4x4_movedata + 2 * 11,
+    twiddle4x4_movedata + 3 * 11,
+    twiddle4x4_movedata + 4 * 11,
+    twiddle4x4_movedata + 5 * 11,
+    twiddle4x4_movedata + 6 * 11,
+    twiddle4x4_movedata + 7 * 11,
+};
+
+struct perm twiddle4x4 = {
+    {perm_eltsize, perm_identity, twiddle4x4_index, twiddle4x4_fromindex,
+     twiddle4x4_maxindex, perm_printelt, twiddle4x4_parseelt, perm_moves,
+     perm_makemove, perm_movename},
+    16,
+    8, "a\0b\0c\0d\0A\0B\0C\0D", twiddle4x4_moves
 };
 
 /* ----------------------------------------------------------------------
@@ -532,23 +728,36 @@ struct namedgroup {
     struct group *gp;
 } groups[] = {
     {"twiddle3x3", &twiddle3x3.vtable},
+    {"twiddle4x4", &twiddle4x4.vtable},
     {"otwiddle3x3", &otwiddle3x3.vtable},
 };
 
 struct cmdline {
     struct group *gp;
     char *gpname;
+    char *arg2;
+    char **rest;
+    int nrest;
     int save;
     int load;
+    int special;
 };
+
+enum { SPECIAL_NONE, SPECIAL_INDEX, SPECIAL_FROMINDEX, SPECIAL_MAXINDEX,
+       SPECIAL_TRYMOVES };
 
 void proc_cmdline(int argc, char **argv, struct cmdline *cl)
 {
     int opts = 1;
+    int gotgroup = 0;
 
     cl->save = cl->load = 0;
+    cl->special = SPECIAL_NONE;
     cl->gp = groups[0].gp;
     cl->gpname = groups[0].name;
+    cl->arg2 = NULL;
+    cl->rest = NULL;
+    cl->nrest = 0;
 
     while (--argc > 0) {
         char *p = *++argv;
@@ -558,11 +767,19 @@ void proc_cmdline(int argc, char **argv, struct cmdline *cl)
                 cl->save = 1;
             else if (!strcmp(p, "-l"))
                 cl->load = 1;
+            else if (!strcmp(p, "-i"))
+                cl->special = SPECIAL_INDEX;
+            else if (!strcmp(p, "-f"))
+                cl->special = SPECIAL_FROMINDEX;
+            else if (!strcmp(p, "-m"))
+                cl->special = SPECIAL_MAXINDEX;
+            else if (!strcmp(p, "-t"))
+                cl->special = SPECIAL_TRYMOVES;
             else if (!strcmp(p, "--"))
                 opts = 0;
             else
                 fprintf(stderr, "unrecognised option '%s'\n", p);
-        } else {
+        } else if (!gotgroup) {
             int i;
             for (i = 0; i < lenof(groups); i++)
                 if (!strcmp(p, groups[i].name)) {
@@ -573,111 +790,19 @@ void proc_cmdline(int argc, char **argv, struct cmdline *cl)
             if (i == lenof(groups)) {
                 fprintf(stderr, "unrecognised group name '%s'\n", p);
             }
-        }
+	    gotgroup = 1;
+        } else if (!cl->arg2) {
+	    cl->arg2 = p;
+	} else {
+	    if (!cl->rest)
+		cl->rest = (char **)malloc((argc+1) * sizeof(char *));
+	    cl->rest[cl->nrest++] = p;
+	}
     }
 }
 
 /* ----------------------------------------------------------------------
- * Small test subprograms.
- */
-
-#ifdef TEST_PERMUTATION_INDEX
-
-struct perm perm4 = {
-    {perm_index, perm_fromindex},
-    4
-};
-
-int main(void)
-{
-    int ia[24][4] = {
-	{0,1,2,3},
-	{0,1,3,2},
-	{0,2,1,3},
-	{0,2,3,1},
-	{0,3,1,2},
-	{0,3,2,1},
-	{1,0,2,3},
-	{1,0,3,2},
-	{1,2,0,3},
-	{1,2,3,0},
-	{1,3,0,2},
-	{1,3,2,0},
-	{2,0,1,3},
-	{2,0,3,1},
-	{2,1,0,3},
-	{2,1,3,0},
-	{2,3,0,1},
-	{2,3,1,0},
-	{3,0,1,2},
-	{3,0,2,1},
-	{3,1,0,2},
-	{3,1,2,0},
-	{3,2,0,1},
-	{3,2,1,0},
-    };
-    int i;
-    int io[4];
-
-    for (i = 0; i < 24; i++) {
-	int index = perm_index(&perm2x2.vtable, ia[i]);
-	perm_fromindex(&perm2x2.vtable, io, index);
-	assert(ia[i][0] == io[0]);
-	assert(ia[i][1] == io[1]);
-	assert(ia[i][2] == io[2]);
-	assert(ia[i][3] == io[3]);
-	assert(index == i);
-	printf("%d %d%d%d%d\n", index, io[0], io[1], io[2], io[3]);
-    }
-
-    return 0;
-}
-#define GOT_MAIN
-#endif
-
-#ifdef TEST_MOVES
-
-int main(int argc, char **argv)
-{
-    void *elt;
-    int eltsize;
-    int i;
-    struct group *gp;
-    struct cmdline cl;
-
-    proc_cmdline(argc, argv, &cl);
-    gp = cl.gp;
-
-    eltsize = gp->eltsize(gp);
-    elt = malloc(eltsize);
-
-    for (i = 0; i < gp->moves(gp); i++) {
-        printf("%s: ", gp->movename(gp, i));
-        gp->identity(gp, elt);
-        gp->printelt(gp, elt);
-        printf(" (%d)", gp->index(gp, elt));
-	gp->makemove(gp, elt, i);
-        printf(" -> ");
-        gp->printelt(gp, elt);
-        printf(" (%d)", gp->index(gp, elt));
-        printf("\n");
-    }
-
-    return 0;
-}
-#define GOT_MAIN
-
-#endif
-
-#ifndef GOT_MAIN
-
-#include <unistd.h>
-#include <fcntl.h>
-#include <errno.h>
-#include <sys/mman.h>
-
-/* ----------------------------------------------------------------------
- * The real main program, containing the meat of the group-mapping
+ * The main program, containing the meat of the group-mapping
  * algorithm.
  */
 
@@ -755,6 +880,49 @@ int main(int argc, char **argv)
 
     ndists = gp->maxindex(gp);
     nmoves = gp->moves(gp);            /* cache to avoid recomputation */
+
+    /*
+     * Special command-line-enabled modes.
+     */
+    if (cl.special == SPECIAL_MAXINDEX) {
+	printf("%d\n", ndists);
+	return 0;
+    } else if (cl.special == SPECIAL_INDEX) {
+	char *err;
+        if ((err = gp->parseelt(gp, elt, cl.arg2)) != NULL) {
+            printf("%s: parse error: %s\n", cl.arg2, err);
+	    return 1;
+        }
+	printf("%d\n", gp->index(gp, elt));
+	return 0;
+    } else if (cl.special == SPECIAL_FROMINDEX) {
+	gp->fromindex(gp, elt, atoi(cl.arg2));
+	gp->printelt(gp, elt);
+	printf("\n");
+	return 0;
+    } else if (cl.special == SPECIAL_TRYMOVES) {
+	char *err;
+	int i, j;
+
+        if ((err = gp->parseelt(gp, elt, cl.arg2)) != NULL) {
+            fprintf(stderr, "%s: parse error: %s\n", cl.arg2, err);
+	    return 1;
+        }
+	for (i = 0; i < cl.nrest; i++) {
+	    for (j = 0; j < nmoves; j++)
+		if (!strcmp(gp->movename(gp, j), cl.rest[i]))
+		    break;
+	    if (j == nmoves) {
+		fprintf(stderr, "%s: unrecognised move name\n", cl.rest[i]);
+		return 1;
+	    }
+	    gp->makemove(gp, elt, j);
+	    printf("%s -> ", cl.rest[i]);
+	    gp->printelt(gp, elt);
+	    printf("\n");
+	}
+	return 0;
+    }
 
     /*
      * Load an existing group map rather than recreating this one,
@@ -1103,5 +1271,3 @@ int main(int argc, char **argv)
 
     return 0;
 }
-
-#endif
