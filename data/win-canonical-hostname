@@ -7,9 +7,9 @@ Fixed-in: r5614 2005-04-08
 Content-type: text/x-html-body
 
 <p>
-As a side-effect of <a href="ipv6.html">IPv6 support</a>, on modern
-versions of Windows, the hostname displayed in the title bar has
-changed - it is now the result of a forward and reverse lookup,
+As a side-effect of <a href="ipv6-build.html">IPv6 support</a>, on
+modern versions of Windows, the hostname displayed in the title bar
+has changed - it is now the result of a forward and reverse lookup,
 whereas before it was whatever the OS regarded as a "canonical name"
 (usually the input hostname resolution of CNAMEs/search paths).
 
