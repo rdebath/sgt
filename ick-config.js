@@ -13,6 +13,7 @@ function RewriteURL(url)
     style = false;
 
     if (strprefix(url, "http://www.livejournal.com/users/") ||
+        strprefix(url, "http://www.livejournal.com/~") ||
         strprefix(url, "http://www.livejournal.com/community/")) {
 	if (!strprefix(url, "http://www.livejournal.com/users/simont/"))
 	    style = true;
