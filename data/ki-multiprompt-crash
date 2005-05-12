@@ -1,0 +1,18 @@
+Summary: Crash with SSH keyboard-interactive packet with multiple prompts
+Class: bug
+Difficulty: tricky
+Priority: high
+Absent-in: 0.57
+Present-in: 0.58 2005-05-11
+Content-type: text/x-html-body
+
+<p>
+In an SSH-2 session, if PuTTY is presented with a single
+`keyboard-interactive' packet containing multiple prompts, it will
+crash after the first prompt. This only affects PuTTY proper; the
+non-GUI tools (PSCP, PSFTP, Plink) should work fine.
+
+<p>
+This problem has the same root cause as
+<a href="ssh1-bad-passphrase-crash.html">`ssh1-bad-passphrase-crash'</a>,
+and should be fixed by the same rearrangement.
