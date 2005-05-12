@@ -3,6 +3,7 @@ Class: bug
 Difficulty: tricky
 Content-type: text/x-html-body
 Present-in: 0.53b
+Fixed-in: 2005-05-13
 
 <p>
 Someone on comp.security.ssh <a href="http://groups.google.com/groups?selm=9b67156e.0311171247.2b0bf982%40posting.google.com">said</a> their login banner did not appear
@@ -53,3 +54,11 @@ see the banner before they'd entered a username, but the protocol
 design is such that that can't be guaranteed anyway; and at least the
 banner wouldn't be dropped on the floor, which might be important for
 things like legal notices.
+
+<p>
+<em>Update:</em> this should now be fixed (using the "alternative
+solution" above). I've not got access to a server that I can actually
+test against, however. The original problem report was against
+<a href="http://www.bitvise.com/winsshd.html">WinSSHD</a>; if someone
+can confirm that the problem still exists with 0.58 but is fixed in
+the snapshots, that'd be useful.
