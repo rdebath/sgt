@@ -1,0 +1,59 @@
+#!/usr/bin/perl 
+
+# Utility to untangle the `eexec' encryption used in PostScript
+# Type 1 fonts.
+
+# Options:
+#  -k <integer>     use <integer> as decryption key (default 55665, as used
+#                   for the main encrypted container in a Type 1 font)
+#  -i <integer>     ignore <integer> bytes at start of encryption (default
+#                   4, as used in both the Type 1 main encrypted part and
+#                   in the charstrings)
+#  -c               charstring mode (equivalent to -k 4330)
+#  -b               binary mode (expect binary data on stdin, rather than hex)
+
+$k = 55665;
+$init = 4;
+$hex = 1;
+
+while ($_=shift @ARGV) {
+    last if /^--$/;
+    unshift (@ARGV, $_), last unless /^-(.*)/;
+    $arg = $1;
+    if ($arg =~ /^k(.*)$/) {
+	$k = $1;
+	$k = shift @ARGV if $k eq "";
+	die "eexec: expected key after '-k'\n" if $k eq "";
+    } elsif ($arg =~ /^i(.*)$/) {
+	$init = $1;
+	$init = shift @ARGV if $init eq "";
+	die "eexec: expected key after '-init'\n" if $init eq "";
+    } elsif ($arg eq "c") {
+	$k = 4330;
+    } elsif ($arg eq "b") {
+	$hex = 0;
+    } else {
+	die "eexec: unrecognised option '-$arg'\n";
+    }
+}
+
+sub decrypt($) {
+    my ($cipher) = shift @_;
+    my $plain = $cipher ^ ($k >> 8);
+    $k = ($cipher + $k) * 52845 + 22719;
+    $k &= 65535;
+    $plain;
+}
+
+while (<>) {
+    if ($hex) {
+	@chars = ();
+	push @chars, hex $1 while s/([0-9a-fA-F]{2})//;
+    } else {
+	@chars = unpack "C*", $_;
+    }
+    foreach $ch (@chars) {
+      $c = chr(&decrypt($ch));
+      if ($init > 0) { $init-- } else { print $c };
+    }
+}
