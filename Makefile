@@ -1,4 +1,4 @@
-SUBDIRS = base64 cvt-utf8 lns multi nntpid xcopy
+SUBDIRS = base64 cvt-utf8 lns multi nntpid reservoir xcopy
 
 # for `make html' and `make release'; should be a relative path
 DESTDIR = .
