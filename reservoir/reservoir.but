@@ -1,0 +1,102 @@
+\cfg{man-identity}{reservoir}{1}{2005-05-13}{Simon Tatham}{Simon Tatham}
+
+\title Man page for \cw{reservoir}
+
+\U NAME
+
+\cw{reservoir} - delay stage in a pipeline
+
+\U SYNOPSIS
+
+\c reservoir [ -o filename ]
+\e bbbbbbbbb   bb iiiiiiii
+
+\U DESCRIPTION
+
+\cw{reservoir}'s function is to read from its standard input until
+it sees end-of-file, then to write everything it has seen to its
+standard output.
+
+It behaves exactly like \cw{cat} with no arguments, except that it
+writes none of its outgoing data until all of its input has arrived.
+
+\U OPTIONS
+
+\dt \cw{-o} \e{filename}
+
+\dd Causes the output to be written to \e{filename} rather than to
+standard output. \e{filename} is not opened until after
+\cw{reservoir} detects end of file on its input.
+
+\U EXAMPLES
+
+If you have a program which filters its input in some way (for
+example, a base-64 decoder, or a \cw{tr}(1) command performing
+rot13), and you wish to copy a small amount of data into that
+program using a terminal emulator's paste function, it can be
+inconvenient to have the output interspersed with the echoed input
+so that you cannot select and copy the output as a whole.
+
+For example:
+
+\c $ tr a-zA-Z n-za-mN-ZA-M
+\e   bbbbbbbbbbbbbbbbbbbbbb
+\c Hello, world.
+\e bbbbbbbbbbbbb
+\c Uryyb, jbeyq.
+\c This is a test.
+\e bbbbbbbbbbbbbbb
+\c Guvf vf n grfg.
+
+If your terminal emulator pastes the text line by line, then to copy
+the transformed output requires you to separately select each line
+of the output. If the terminal pastes in larger chunks, you may not
+see the problem quite so quickly, but it will still appear
+eventually.
+
+You can solve this using \cw{reservoir}:
+
+\c $ tr a-zA-Z n-za-mN-ZA-M | reservoir
+\e   bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+\c Hello, world.
+\e bbbbbbbbbbbbb
+\c This is a test.
+\e bbbbbbbbbbbbbbb
+\c (now the user presses ^D)
+\e iiiiiiiiiiiiiiiiiiiiiiiii
+\c Uryyb, jbeyq.
+\c Guvf vf n grfg.
+
+A common reason why you might want to buffer data in a pipeline is
+in order to transform a file in place. For example, you cannot write
+
+\c $ tr a-zA-Z n-za-mN-ZA-M < temp.txt > temp.txt
+
+because the output redirection will destroy the contents of the file
+before its original contents can be read. \cw{reservoir} can help,
+because it does not begin writing output until after the input has
+all been read.
+
+You still cannot use output redirection, because the presence of the
+\cw{>} operator on your command line will cause the output file to
+be truncated to zero length \e{before} running \cw{reservoir}, so
+there is nothing \cw{reservoir} can do about this. Instead, you can
+use the \cw{-o} option provided by \cw{reservoir}:
+
+\c $ tr a-zA-Z n-za-mN-ZA-M < temp.txt | reservoir -o temp.txt
+
+Now \cw{reservoir} will not open \cw{temp.txt} for output until
+\e{after} the rest of the pipeline has finished reading data from it.
+
+(This is not a reliable means of editing files in place. If
+something goes wrong half way through writing the output, part of
+your data will be lost. Also, the file is not replaced atomically.
+This method is very convenient in non-critical situations, but is
+not recommended for critical or automated use.)
+
+\U LICENCE
+
+\cw{reservoir} is free software, distributed under the MIT licence. Type
+\cw{reservoir --licence} to see the full licence text.
+
+\versionid $Id$
