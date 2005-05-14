@@ -1,0 +1,22 @@
+Summary: When stdout and stderr are ttys, plink's messages stair-step
+Class: bug
+Absent-in: 0.58
+Present-in: 2005-04-27
+Difficulty: tricky
+Priority: medium
+Content-type: text/plain
+
+When running in a terminal and requesting a pty on the server, the
+Unix port of Plink turns off OPOST.  It does this to ensure that if an
+application on the server turns off OPOST in its pty and sends a bare
+LF, that will make it all the way to Plink's terminal.  This, though,
+causes the problem that if Plink's stderr goes to the same terminal as
+its stout (the usual situation), Plink's own messages, sent to stderr,
+won't get their '\n's translated to CRLF.
+
+The fix for this is to turn on OPOST around any internally-generated
+writes to stderr.  This is easier said than done since there are many
+writes to stderr in uxcons.c, and at least one in logging.c.  In
+addition, the writes from (e.g.) ssh.c of application data should
+probably not be affected.
+
