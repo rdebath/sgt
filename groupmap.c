@@ -29,9 +29,10 @@ struct group {
     int (*eltsize)(struct group *gctx);
     /*
      * Return the natural form of the starting (usually identity)
-     * group element.
+     * group element(s). Returns 1 if an element was returned, 0 if
+     * not (because i was too big).
      */
-    void (*identity)(struct group *gctx, void *velt);
+    int (*identity)(struct group *gctx, void *velt, int i);
     /*
      * Give an integer index for the natural form of a group
      * element.
@@ -62,9 +63,11 @@ struct group {
      */
     int (*moves)(struct group *gctx);
     /*
-     * Make move number n on a given element.
+     * Make move number n on a given element. `out' is true if
+     * we're making outward moves (while mapping the group) and
+     * false for inward ones (solving using the resulting map).
      */
-    void (*makemove)(struct group *gctx, void *velt, int n);
+    void (*makemove)(struct group *gctx, void *velt, int n, int out);
     /*
      * Return the name of move number n.
      */
@@ -91,14 +94,18 @@ int perm_eltsize(struct group *gctx)
     return ctx->n * sizeof(int);
 }
 
-void perm_identity(struct group *gctx, void *velt)
+int perm_identity(struct group *gctx, void *velt, int index)
 {
     struct perm *ctx = (struct perm *)gctx;
     int *elt = (int *)velt;
     int i;
 
+    if (index > 0) return 0;
+
     for (i = 0; i < ctx->n; i++)
 	elt[i] = i;
+
+    return 1;
 }
 
 int perm_index(struct group *gctx, void *velt)
@@ -192,7 +199,7 @@ int perm_moves(struct group *gctx)
     return ctx->nmoves;
 }
 
-void perm_makemove(struct group *gctx, void *velt, int n)
+void perm_makemove(struct group *gctx, void *velt, int n, int out)
 {
     struct perm *ctx = (struct perm *)gctx;
     int *elt = (int *)velt;
@@ -276,7 +283,6 @@ static const int twiddle4x4_black[8] = { 1,3,4,6,9,11,12,14 };
 
 int twiddle4x4_index(struct group *gctx, void *velt)
 {
-    struct perm *ctx = (struct perm *)gctx;
     int *elt = (int *)velt;
     int i, j, mult, ret;
 
@@ -315,7 +321,6 @@ int twiddle4x4_index(struct group *gctx, void *velt)
 
 void twiddle4x4_fromindex(struct group *gctx, void *velt, int index)
 {
-    struct perm *ctx = (struct perm *)gctx;
     int *elt = (int *)velt;
     int i, j, mult, bperm, wperm;
 
@@ -375,7 +380,6 @@ void twiddle4x4_fromindex(struct group *gctx, void *velt, int index)
 
 int twiddle4x4_maxindex(struct group *gctx)
 {
-    struct perm *ctx = (struct perm *)gctx;
     int f, i;
 
     f = 1;
@@ -387,7 +391,6 @@ int twiddle4x4_maxindex(struct group *gctx)
 
 char *twiddle4x4_parseelt(struct group *gctx, void *velt, char *s)
 {
-    struct perm *ctx = (struct perm *)gctx;
     int *elt = (int *)velt;
     char *ret;
     int i, j, bp, wp;
@@ -465,14 +468,18 @@ int otwid_eltsize(struct group *gctx)
     return ctx->n * sizeof(int);
 }
 
-void otwid_identity(struct group *gctx, void *velt)
+int otwid_identity(struct group *gctx, void *velt, int index)
 {
     struct otwid *ctx = (struct otwid *)gctx;
     int *elt = (int *)velt;
     int i;
 
+    if (index > 0) return 0;
+
     for (i = 0; i < ctx->n; i++)
 	elt[i] = i*4;
+
+    return 1;
 }
 
 int otwid_index(struct group *gctx, void *velt)
@@ -655,7 +662,7 @@ int otwid_moves(struct group *gctx)
     return ctx->nmoves;
 }
 
-void otwid_makemove(struct group *gctx, void *velt, int n)
+void otwid_makemove(struct group *gctx, void *velt, int n, int out)
 {
     struct otwid *ctx = (struct otwid *)gctx;
     int *elt = (int *)velt;
@@ -720,6 +727,239 @@ struct otwid otwiddle3x3 = {
 };
 
 /* ----------------------------------------------------------------------
+ * Cube. Not actually a group, but should be mappable by the same means.
+ */
+
+struct cube {
+    struct group vtable;
+    int w, h;
+};
+
+int cube_eltsize(struct group *gctx)
+{
+    struct cube *ctx = (struct cube *)gctx;
+    /* cube x,y; then cube faces (lrudtb); then grid */
+    return 2 + 6 + (ctx->w * ctx->h);
+}
+
+int cube_identity(struct group *gctx, void *velt, int i)
+{
+    struct cube *ctx = (struct cube *)gctx;
+    unsigned char *elt = (unsigned char *)velt;
+
+    if (i >= ctx->w * ctx->h)
+	return 0;
+
+    memset(elt+2, 1, 6);
+    memset(elt+8, 0, ctx->w * ctx->h);
+    elt[0] = i % ctx->w;
+    elt[1] = i / ctx->w;
+
+    return 1;
+}
+
+int cube_index(struct group *gctx, void *velt)
+{
+    struct cube *ctx = (struct cube *)gctx;
+    unsigned char *elt = (unsigned char *)velt;
+    int i, ret;
+
+    ret = 0;
+
+    for (i = 6; i-- ;)
+	ret = ret * 2 + (elt[i+2] != 0);
+
+    for (i = ctx->w * ctx->h; i-- ;)
+	ret = ret * 2 + (elt[i+8] != 0);
+
+    ret = ret * ctx->h + elt[1];
+    ret = ret * ctx->w + elt[0];
+
+    return ret;
+}
+
+void cube_fromindex(struct group *gctx, void *velt, int index)
+{
+    struct cube *ctx = (struct cube *)gctx;
+    unsigned char *elt = (unsigned char *)velt;
+    int i;
+
+    elt[0] = index % ctx->w; index /= ctx->w;
+    elt[1] = index % ctx->h; index /= ctx->h;
+
+    for (i = 0; i < ctx->w * ctx->h; i++) {
+	elt[i+8] = index & 1; index >>= 1;
+    }
+
+    for (i = 0; i < 6; i++) {
+	elt[i+2] = index & 1; index >>= 1;
+    }
+}
+
+int cube_maxindex(struct group *gctx)
+{
+    struct cube *ctx = (struct cube *)gctx;
+
+    return (ctx->h * ctx->w) << (6 + ctx->h * ctx->w);
+}
+
+void cube_printelt(struct group *gctx, void *velt)
+{
+    struct cube *ctx = (struct cube *)gctx;
+    unsigned char *elt = (unsigned char *)velt;
+    int i, faces;
+
+    for (i = 0; i < ctx->h * ctx->w; i += 4) {
+	int j, k, digit = 0;
+	for (j = 8, k = 0; j != 0 && i+k < ctx->h * ctx->w; k++, j >>= 1)
+	    if (elt[8+i+k])
+		digit |= j;
+	putchar("0123456789ABCDEF"[digit]);
+    }
+    putchar(',');
+    printf("%d", elt[1] * ctx->w + elt[0]);
+
+    faces = 0;
+    for (i = 0; i < 6; i++)
+	if (elt[2+i])
+	    faces |= 32 >> i;
+    if (faces)
+	printf(",%02x", faces);
+}
+
+char *cube_parseelt(struct group *gctx, void *velt, char *text)
+{
+    struct cube *ctx = (struct cube *)gctx;
+    unsigned char *elt = (unsigned char *)velt;
+    int n;
+
+    memset(elt+2, 0, 6 + ctx->w * ctx->h);
+    elt[0] = 0;
+    elt[1] = 0;
+
+    n = 0;
+    while (*text && *text != ',') {
+	char buf[2];
+	int i, j;
+	buf[0] = *text++;
+	buf[1] = '\0';
+	i = 0;
+	sscanf(buf, "%x", &i);
+	for (j = 0; j < 4; j++) {
+	    int bit = (i & (8 >> j)) ? 1 : 0;
+	    if (n + j < ctx->w * ctx->h)
+		elt[8 + n + j] = bit;
+	}
+	n += 4;
+    }
+    if (*text) {
+	int ret, pos, faces;
+
+	text++;
+	ret = sscanf(text, "%d,%x", &pos, &faces);
+	if (ret >= 1) {
+	    elt[0] = pos % ctx->w;
+	    elt[1] = pos / ctx->w;
+	}
+
+	if (ret >= 2) {
+	    int i;
+	    for (i = 0; i < 6; i++)
+		if (faces & (32 >> i))
+		    elt[2+i] = 1;
+	}
+    }
+
+    return NULL;
+}
+
+int cube_moves(struct group *gctx)
+{
+    return 4;
+}
+
+void cube_makemove(struct group *gctx, void *velt, int n, int out)
+{
+    struct cube *ctx = (struct cube *)gctx;
+    unsigned char *elt = (unsigned char *)velt;
+    int t;
+
+    /* Validate. */
+    switch (n) {
+      case 0:			       /* L */
+	if (elt[0] <= 0) return;
+	break;
+      case 1:			       /* R */
+	if (elt[0] >= ctx->w - 1) return;
+	break;
+      case 2:			       /* U */
+	if (elt[1] <= 0) return;
+	break;
+      case 3:			       /* D */
+	if (elt[1] >= ctx->h - 1) return;
+	break;
+    }
+
+    if (out) {
+	/* Interchange _before_ moving. */
+	int p = 8 + (elt[1] * ctx->w + elt[0]);
+
+	t = elt[p];
+	elt[p] = elt[7];
+	elt[7] = t;
+    }
+
+    /* Roll. */
+    			       /* 234567 */
+    /* cube x,y; then cube faces (lrudtb); then grid */
+    switch (n) {
+      case 0:			       /* L */
+	elt[0]--;
+	t=elt[7]; elt[7]=elt[2]; elt[2]=elt[6]; elt[6]=elt[3]; elt[3]=t;
+	break;
+      case 1:			       /* R */
+	elt[0]++;
+	t=elt[7]; elt[7]=elt[3]; elt[3]=elt[6]; elt[6]=elt[2]; elt[2]=t;
+	break;
+      case 2:			       /* U */
+	elt[1]--;
+	t=elt[7]; elt[7]=elt[4]; elt[4]=elt[6]; elt[6]=elt[5]; elt[5]=t;
+	break;
+      case 3:			       /* D */
+	elt[1]++;
+	t=elt[7]; elt[7]=elt[5]; elt[5]=elt[6]; elt[6]=elt[4]; elt[4]=t;
+	break;
+    }
+
+    if (!out) {
+	/* Interchange _after_ moving. */
+	int p = 8 + (elt[1] * ctx->w + elt[0]);
+	int t;
+
+	t = elt[p];
+	elt[p] = elt[7];
+	elt[7] = t;
+    }
+}
+
+char *cube_movename(struct group *gctx, int n)
+{
+    return "L\0R\0U\0D" + 2*n;
+}
+
+struct cube cube3x3 = {
+    {cube_eltsize, cube_identity, cube_index, cube_fromindex, cube_maxindex,
+     cube_printelt, cube_parseelt, cube_moves, cube_makemove, cube_movename},
+    3, 3
+};
+
+struct cube cube4x4 = {
+    {cube_eltsize, cube_identity, cube_index, cube_fromindex, cube_maxindex,
+     cube_printelt, cube_parseelt, cube_moves, cube_makemove, cube_movename},
+    4, 4
+};
+
+/* ----------------------------------------------------------------------
  * Command-line processing.
  */
 
@@ -730,6 +970,8 @@ struct namedgroup {
     {"twiddle3x3", &twiddle3x3.vtable},
     {"twiddle4x4", &twiddle4x4.vtable},
     {"otwiddle3x3", &otwiddle3x3.vtable},
+    {"cube3x3", &cube3x3.vtable},
+    {"cube4x4", &cube4x4.vtable},
 };
 
 struct cmdline {
@@ -744,7 +986,7 @@ struct cmdline {
 };
 
 enum { SPECIAL_NONE, SPECIAL_INDEX, SPECIAL_FROMINDEX, SPECIAL_MAXINDEX,
-       SPECIAL_TRYMOVES };
+       SPECIAL_TRYMOVES_OUT, SPECIAL_TRYMOVES_IN };
 
 void proc_cmdline(int argc, char **argv, struct cmdline *cl)
 {
@@ -774,7 +1016,9 @@ void proc_cmdline(int argc, char **argv, struct cmdline *cl)
             else if (!strcmp(p, "-m"))
                 cl->special = SPECIAL_MAXINDEX;
             else if (!strcmp(p, "-t"))
-                cl->special = SPECIAL_TRYMOVES;
+                cl->special = SPECIAL_TRYMOVES_IN;
+            else if (!strcmp(p, "-T"))
+                cl->special = SPECIAL_TRYMOVES_OUT;
             else if (!strcmp(p, "--"))
                 opts = 0;
             else
@@ -900,7 +1144,8 @@ int main(int argc, char **argv)
 	gp->printelt(gp, elt);
 	printf("\n");
 	return 0;
-    } else if (cl.special == SPECIAL_TRYMOVES) {
+    } else if (cl.special == SPECIAL_TRYMOVES_IN ||
+	       cl.special == SPECIAL_TRYMOVES_OUT) {
 	char *err;
 	int i, j;
 
@@ -916,7 +1161,7 @@ int main(int argc, char **argv)
 		fprintf(stderr, "%s: unrecognised move name\n", cl.rest[i]);
 		return 1;
 	    }
-	    gp->makemove(gp, elt, j);
+	    gp->makemove(gp, elt, j, cl.special == SPECIAL_TRYMOVES_OUT);
 	    printf("%s -> ", cl.rest[i]);
 	    gp->printelt(gp, elt);
 	    printf("\n");
@@ -1062,22 +1307,24 @@ int main(int argc, char **argv)
         }
 
         /*
-         * Find the initial element and add it to the array marked as
-         * todo.
+         * Find the initial element(s) and add them to the array
+         * marked as todo.
          */
-        gp->identity(gp, elt);
-        {
-            int i = gp->index(gp, elt);
-	    SET_STATE(i, 1, 0);
-            update_todo(todos[0], granularity, ntodos, i, +1);
-        }
-        whichtodo = 0;
+	{
+	    int n = 0;
 
-        /*
-         * Set up miscellaneous stuff.
-         */
+	    while (gp->identity(gp, elt, n)) {
+		int i = gp->index(gp, elt);
+		SET_STATE(i, 1, 0);
+		update_todo(todos[0], granularity, ntodos, i, +1);
+		n++;
+	    }
+	    whichtodo = 0;
+
+	    size = n;
+	}
+
         currdist = 0;
-        size = 1;                      /* must count the identity element! */
 
         while (todos[whichtodo][ntodos-1][0] > 0) {
             printf("%d elements at distance %d\n", todos[whichtodo][ntodos-1][0],
@@ -1127,7 +1374,7 @@ int main(int argc, char **argv)
                 for (j = 0; j < nmoves; j++) {
                     int newi;
                     memcpy(elt2, elt, eltsize);
-                    gp->makemove(gp, elt2, j);
+                    gp->makemove(gp, elt2, j, 1);
                     newi = gp->index(gp, elt2);
 
                     if (STATE_UNSEEN(newi)) {
@@ -1253,7 +1500,7 @@ int main(int argc, char **argv)
 		int newi;
 
 		memcpy(elt2, elt, eltsize);
-		gp->makemove(gp, elt2, j);
+		gp->makemove(gp, elt2, j, 0);
 		newi = gp->index(gp, elt2);
 		if (dists[newi] < dist)
                     break;
