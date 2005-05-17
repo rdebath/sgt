@@ -492,7 +492,8 @@ EOH
 	} elsif (defined($desc)) {
 	    print HTML "<i>@{[$hdrs->{$h}]}:</i> $desc";
 	} else {
-	    print HTML $hdrs->{$h};
+            my $txt = html_escape($hdrs->{$h});
+	    print HTML $txt;
 	}
 	print HTML qq"<br>\n";
     }
@@ -500,9 +501,7 @@ EOH
     if ($hdrs->{'content-type'} =~ "^text/x-html-body") {
 	print HTML $body;
     } else {
-	$body =~ s/&/&amp;/g;
-	$body =~ s/</&lt;/g;
-	$body =~ s/>/&gt;/g;
+        $body = html_escape($body);
 	print HTML qq[<p><pre>$body</pre>];
     }
 
@@ -635,14 +634,23 @@ sub subtractbugs {
 sub bugdesc {
     my ($bugname, $emph) = @_;
     $emph = 0 unless defined($emph);
+    my $summary = html_escape($bugs{$bugname}->{hdrs}->{summary});
     if ($emph == 2) {
         return qq[<li><b><i><a href="$bugname.html">$bugname: ] .
-               qq[$bugs{$bugname}->{hdrs}->{summary}</a></i></b>\n];
+               qq[$summary</a></i></b>\n];
     } elsif ($emph == 1) {
         return qq[<li><b><a href="$bugname.html">$bugname: ] .
-               qq[$bugs{$bugname}->{hdrs}->{summary}</a></b>\n];
+               qq[$summary</a></b>\n];
     } else {
         return qq[<li><a href="$bugname.html">$bugname: ] .
-               qq[$bugs{$bugname}->{hdrs}->{summary}</a>\n];
+               qq[$summary</a>\n];
     }
+}
+
+sub html_escape {
+    my ($s) = @_;
+    $s =~ s/&/&amp;/g;
+    $s =~ s/</&lt;/g;
+    $s =~ s/>/&gt;/g;
+    return $s;
 }
