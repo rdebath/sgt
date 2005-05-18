@@ -10,6 +10,8 @@ quoted text}, and {e emphasis}, and {b boldness}. All of these
 things should be rendered appropriately in both formats. Oh, and
 there's a footnote{1} as well.
 
+Special characters: {L}12.99.
+
 {talker}
 {tl}Users in faff: none
 {tb}
