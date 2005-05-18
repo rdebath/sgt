@@ -104,7 +104,6 @@ class output:
         self.mono_new_edit()
         self.mono_bullet_wid = 0
 	self.mono_bullet_txt = ""
-	self.firstpara = 1
 	self.warnings = []
 	self.mono_title = []
 	pass
@@ -309,20 +308,12 @@ class output:
 		self.mono_attr = self.mono_attr | ATTR_UNDER
 	    elif typ == PTITLELJ:
 		self.mono_ok = 0
-	if typ == PNORMAL and not self.firstpara:
+	if typ == PNORMAL:
 	    self.html = self.html + "<p>"
 	if typ == PTALKER:
 	    self.html = self.html + "<table cellspacing=\"0\" cellpadding="
 	    self.html = self.html + "\"0\" border=\"0\">"
 	    self.talker = 0 # no <tr> open, no <td> open
-
-	# self.firstpara is only used by the HTML back end to avoid
-	# prepending <p> to the first paragraph in the HTML; so a
-	# PTITLE paragraph shouldn't cause it to be reset because
-	# titles are done externally to the HTML part of the LJ
-	# entry.
-	if not is_title(typ):
-	    self.firstpara = 0
 
         self.mono_words = []
 
@@ -510,6 +501,11 @@ class output:
 		self.html = self.html + htmltext
         if self.mono_ok:
             self.mono_add_word(text, self.mono_attr, 0)
+
+    def special(self, keyword):
+	if keyword == "pound":
+	    self.html = self.html + "&#163;"
+	    self.mono_add_word("L", self.mono_attr, 0)
 
     def whitespace(self, text):
 	if self.html_ok:
@@ -796,6 +792,8 @@ def rdinput(file):
 		t.next()
 		if isint(tok[1]):
 		    o.footnote(tok[1])
+		elif tok[1] == "L":
+		    o.special("pound")
 		elif tok[1] == "br":
 		    tok2 = t.curr()
 		    # Skip line break just before end of paragraph.
