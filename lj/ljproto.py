@@ -35,7 +35,7 @@ def ljbasiccall(dict):
 	if s2 == "":
 	    break
 	s = chomp(s)
-	s2 = chomp(s2)
+	s2 = urllib.unquote_plus(chomp(s2))
 	results[s] = s2
     f.close()
     return results
