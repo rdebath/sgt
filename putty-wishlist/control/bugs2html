@@ -102,6 +102,7 @@ nest(<<EOF);
 </HEAD>
 <BODY>
 <h1 align=center>PuTTY Known Bugs and Wish List</h1>
+<!--MIRRORWARNING-->
 
 <p align=center>
 <a href="$baseurl/">Home</a> |
@@ -456,6 +457,7 @@ sub bug2html {
 </HEAD>
 <BODY>
 <h1 align=center>PuTTY $class $bugname</h1>
+<!--MIRRORWARNING-->
 
 <p align=center>
 <a href="$baseurl/">Home</a> |
