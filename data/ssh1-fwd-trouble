@@ -1,0 +1,32 @@
+Summary: Reports of SSH-1 trouble with port/X11 forwarding
+Absent-in: 0.55 0.57
+Present-in: 0.58 2005-05-19
+Content-type: text/x-html-body
+
+<p>
+We've had several reports of SSH-1 connections in PuTTY 0.58 bombing
+out with various error messages when port- or X11 forwarding is in
+use. The problems do not show up with SSH-2.
+
+<p>
+We haven't reproduced this ourselves yet, and don't know where the
+problem might lie.
+
+<p>
+Error messages reported include:
+<ul>
+<li>"Incorrect CRC received on packet"
+<li>"Extremely large packet length from server suggests data stream
+corruption"
+<li>"Out of memory"
+<ul>
+
+<p>
+Reports:
+<ul>
+<li><tt>42551C05.3060504@ecs.soton.ac.uk</tt>
+<br>"redhat 8"/OpenSSH_3.4p1, "redhat enterpise 3"/OpenSSH_3.6.1p2
+<li><tt>200505121422.j4CEMaqj012603@r2d2.charthouse.co.uk</tt>
+<li><tt>A4EC8EBB0E93C5458D3039EB62A66D917069B3@pscdalpexch02.perotsystems.net</tt>
+<br>HP-UX 11.0/OpenSSH_3.5p1, Solaris 8/OpenSSH_3.6.1p1
+</ul>
