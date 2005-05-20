@@ -1,18 +1,25 @@
 Summary: Occasional "server's host key did not match the signature supplied"
 Difficulty: tricky
-Present-in: 0.55 0.56 2005-01-31 0.57
+Present-in: 0.55 0.56 2005-01-31 0.57 0.58
 Content-type: text/x-html-body
 
 <p>
 We've had a couple of as-yet-unexplained reports of this (SSH-2
 specific) error message, which may represent a bug in PuTTY or in an
-SSH server. They've been difficult to reproduce.
+SSH server, or perhaps data corruption in between. They've been
+difficult to reproduce.
+
+<p>
+To determine for sure whether the problem lies in PuTTY or not, we
+need extra information from a diagnostic build which we can provide,
+as well as the ordinary SSH packet log.
 
 <ul>
 <li><tt>&lt;20040827195154.GE20058@eggnog.rc-comp.com&gt;</tt>
   <br>WinXP, 0.55, "OpenSSH_3.6.1p2 Debian 1:3.6.1p2-9" &amp;
   "OpenSSH_3.8.1p1 Debian 1:3.8.1p1-8"; problem went away on its own
   after a while
+  <br>Depended on where session was run from (firewall/proxy probs?)
   <br>With packet log
 <li><tt>&lt;<a href="http://groups-beta.google.com/group/comp.security.ssh/msg/8b535d56a3f40158">1107146212.080831.145250@z14g2000cwz.googlegroups.com</a>&gt;</tt>
   <br>WinXP, 2005-01-31:r5331 and "older versions"; unknown server; appears
@@ -20,5 +27,14 @@ SSH server. They've been difficult to reproduce.
 <li><tt>&lt;200503171416120713.0B297B13@mail.liveplaylearn.com&gt;</tt>
   <br>0.56/0.57, "OpenSSH_3.4p1"
   <br><tt>&lt;200503181604010835.10B29C1C@mail.liveplaylearn.com&gt;</tt>:
-  <br>Packet log and exchange hash, as yet not analysed
+  <br>Packet log and exchange hash (unfortunately this was the wrong
+  diagnostic)
+<li><tt>CFB553FDAA2A5342BB3383CF908AFD4601E0D9EE@dewdfe21.wdf.sap.corp</tt>
+  <br>0.58; "SSH-2.0-SAP"; connecting to 127.0.0.1:22
+<li><tt>240156E724FD4B43B5D4EA0F86C6BC8A80D512@fsmail3.is.tcu.edu</tt>
+  <br>0.58; "SSH-2.0-4.1.2 SSH Secure Shell Toolkit"
+<li><tt>f3d578550505160904747bb411@mail.gmail.com</tt>
+  <br>0.57; SSH server was running on port 21 in a restricted environment,
+  and other protocols reported corruption; this went away when moving to
+  port 443
 </ul>
