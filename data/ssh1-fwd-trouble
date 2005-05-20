@@ -19,7 +19,7 @@ Error messages reported include:
 <li>"Extremely large packet length from server suggests data stream
 corruption"
 <li>"Out of memory"
-<ul>
+</ul>
 
 <p>
 Reports:
