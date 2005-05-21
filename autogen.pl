@@ -22,6 +22,7 @@ print << "EOF";
 </HEAD>
 <BODY>
 <h1 align=center>$title</h1>
+<!--MIRRORWARNING-->
 
 <p align=center>
 EOF
