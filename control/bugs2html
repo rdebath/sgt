@@ -447,6 +447,7 @@ sub bug2html {
     my $body = $bugs{$bugname}->{"body"};
     my $svninfo = $bugs{$bugname}->{"svn"};
     my $class = ($hdrs->{class} or "artifact");
+    my $ctype = ($hdrs->{"content-type"} or "text/plain");
 
     open(HTML, "> $htmldir/$bugname.html") or die "$htmldir/$bugname.html: $!";
     print HTML <<EOH;
@@ -476,9 +477,10 @@ sub bug2html {
 
 EOH
 
-    foreach $h (keys %$hdrs) {
+    my $do_hdr = sub {
+	my ($h) = @_;
 	my($desc);
-	$h eq "content-type" && next;
+	$h eq "content-type" && return;
 	$h eq "class" && ($desc = $classdesc{$hdrs->{$h}});
 	$h eq "priority" && ($desc = $prioritydesc{$hdrs->{$h}});
 	$h eq "difficulty" && ($desc = $difficultydesc{$hdrs->{$h}});
@@ -498,9 +500,21 @@ EOH
 	    print HTML $txt;
 	}
 	print HTML qq"<br>\n";
+    };
+
+    my $hdrs2 = { %$hdrs };
+    foreach $h (qw/summary class difficulty depends blocks priority
+		   absent-in present-in fixed-in/) {
+	if (exists($hdrs2->{$h})) {
+	    &$do_hdr($h);
+	    delete $hdrs2->{$h};
+	}
+    }
+    foreach $h (keys %$hdrs2) {
+	&$do_hdr($h);
     }
 
-    if ($hdrs->{'content-type'} =~ "^text/x-html-body") {
+    if ($ctype =~ "^text/x-html-body") {
 	print HTML $body;
     } else {
         $body = html_escape($body);
