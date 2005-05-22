@@ -392,38 +392,30 @@ HTTP-visible redirect, rather than a server-side filesystem tweak such
 as a symlink, for better behaviour in the face of web caches.)
 
 <p>
-Alternatively, you can mirror our web site using
-<a href="http://www.gnu.org/software/wget/wget.html">GNU wget</a>.
-This is less bandwidth-efficient, as unlike <code>rsync</code>
-it's not incremental. It's also more difficult, because our binary
-downloads are hosted on a different server for bandwidth reasons, so a
-conventional "<code>wget -r</code>" will not fetch them at all. Instead,
-you will need at least two invocations of <code>wget</code>. Also, as
-mentioned above, the release binaries appear to be stored in a
-virtual directory called "<code>latest</code>", but this actually
-returns an HTTP temporary redirect to a numbered directory such as
-"<code>0.53</code>". Ideally a mirror should reproduce this
-behaviour as well.
-
-<p>
-Here is a sample Bourne shell script to create a working PuTTY
-mirror site with the binaries in the right place and the HTTP
-redirect set up correctly. This script requires <code>sed</code>,
-<code>perl</code> and GNU <code>wget</code>, and it also assumes
-your web server is Apache (as above). Unlike the above
-<code>rsync</code> command, this script will create a subdirectory
-called "<code>putty</code>" in the current directory, and place all
-the PuTTY web site files inside that subdirectory.
-
-<ul><li>
-<a href="mirror-wget.sh"><code>mirror-wget.sh</code></a>
-</li></ul>
-
-<p>
-We normally suggest that <code>wget</code> mirrors are updated around
-once a week, and no less often than once a month. You can also subscribe
-to our <a href="maillist.html">mailing list</a> to receive notification
+Since <code>rsync</code> is incremental, there should be no reason not
+to update frequently, although currently there's no point in doing so
+more often than once a day. In any case, we would recommend updating no
+less often than once a week, in order to fetch any urgent updates such
+as security bugfixes. You can also subscribe to our
+<a href="maillist.html">mailing list</a> to receive notification
 of new releases.
+
+<p>
+We used to support an alternative method of mirroring using
+GNU wget, and provided a sample shell script. This is now
+<em>deprecated</em> in favour of <code>rsync</code>, for the
+following reasons:
+<ul>
+<li><code>rsync</code> uses less bandwidth;
+<li>the <code>rsync</code> method moves all the post-processing
+complexity to our end, so we can implement changes and deal with bugs
+much more easily - and in particular, it allows us to insert a note to the
+effect that the mirrored site is a mirror site to reduce general
+confusion;<!-- he's in the army -->
+<li>we've had trouble in the past with mirroring <code>wget</code>s
+going mad and eating all our host's bandwidth/CPU, which <code>rsync</code>
+hasn't yet done, to our knowledge.
+</ul>
 
 <p>
 Before notifying us of your mirror, please test that it works:
