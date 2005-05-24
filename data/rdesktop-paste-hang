@@ -1,0 +1,33 @@
+Summary: Paste from tunneled Remote Desktop session into PuTTY causes hang
+Difficulty: taxing
+Present-in: 0.53b 2004-02-12 0.56 0.57 0.58
+Content-type: text/x-html-body
+
+<p>
+We've had a few reports that the following scenario causes PuTTY to hang
+("Not responding"):
+<ol>
+<li>Set up a PuTTY session with a tunnel for a Remote Desktop session.
+<li>Copy text from the Remote Desktop session.
+<li>Paste it into the PuTTY session running the tunnel.
+</ol>
+Closing the Remote Desktop session apparently unwedges PuTTY.
+
+<p>
+This sounds like a classic deadlock. However, we haven't been able to
+reproduce it ourselves (with XP SP1).
+
+<p>
+A workaround is apparently to paste into some other application before
+pasting into PuTTY.
+
+<p>
+Reports:
+<ul>
+<li><tt>&lt;000001c3f126$ee1b8ca0$6401a8c0@COMPAQ&gt;</tt>
+<br>MS Win XP Home Edition, 5.1.2600 SP 1 Build 2600; 0.53b, 2004-02-12
+<li><tt>&lt;20050108235307.GA44292@donnex.net&gt;</tt>
+<br>"windows xp sp2 pro swedish version"; 0.56 "and dev"
+<li><tt>&lt;Pine.LNX.4.44.0505231927410.25150-100000@smurfette.trifocus.net&gt;</tt>
+<br>"windowsxp pro service pack 2"; 0.57, 0.58
+</ul>
