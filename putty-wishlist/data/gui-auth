@@ -31,6 +31,12 @@ where the server would like to control as much of the prompt window
 as possible. Not sure of the best way to do this yet.)
 
 <p>
+On Windows, Plink can create dialog boxes despite being a console-mode
+program. On Unix, we wouldn't want to add a dependency to Gtk to Plink
+just for this; perhaps we can implement the <code>ssh-askpass</code>
+interface.
+
+<p>
 All optional, of course.
 
 <p>
