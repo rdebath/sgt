@@ -124,6 +124,7 @@ bashrc_dovars() {
   # LS_COLORS: image files
   LS_COLORS=$LS_COLORS':*.jpg=01;35:*.gif=01;35:*.bmp=01;35:*.ppm=01;35'
   LS_COLORS=$LS_COLORS':*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35'
+  LS_COLORS=$LS_COLORS':*.png=01;35'
   # LS_COLORS: animations
   LS_COLORS=$LS_COLORS':*.mpg=01;37:*.avi=01;37:*.gl=01;37:*.dl=01;37'
   # LS_COLORS: header files
