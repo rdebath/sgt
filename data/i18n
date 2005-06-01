@@ -9,5 +9,17 @@ Extract all the user-visible text to a single location, so it can be
 easily replaced with a set of translations into other languages.
 It's not yet clear whether we want to do this at compile time,
 post-compile time, or using a Windows string resource (probably not
-the latter since we will eventually be porting to non-Windows
-environments).
+the latter since we require portability to non-Windows environments).
+
+<p>
+(Having special markup for strings &agrave; la
+<a href="http://www.gnu.org/software/gettext/">gettext</a>
+may be useful in other ways; for instance, IIRC WinCE requires all UI
+strings to be marked up as wide-character strings with
+<code>L"foo"</code>. We could hide this behind the same markup we use
+for l10n.)
+
+<p>
+In the meantime, people are welcome to create translated versions of
+PuTTY, but these would have to be maintained as a fork of the PuTTY
+code since there's no clean way to integrate them into the core code.
