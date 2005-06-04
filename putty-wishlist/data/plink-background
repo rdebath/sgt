@@ -1,0 +1,10 @@
+Summary: Plink option to background after authentication
+Class: wish
+Difficulty: tricky
+Priority: low
+Content-type: text/plain
+
+OpenSSH has a "-f" option which causes it to fork into the background after
+authentication.  Plink should probably have this too.  Its implementation
+wouldn't be terribly complex on Unix, though it would need an "authentication
+complete" callback from the backend.  I have no idea about Windows.
