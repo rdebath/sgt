@@ -22,18 +22,18 @@ copy-and-paste too.
 <br>0.54 + snapshot; OpenSSH; "clear scrollback" implicated?
 
 <li><tt>s19e0a69.037@dohprimo.ccf.health.nsw.gov.au</tt>
-<br>0.53 and 0.56 "Out of memory", &gt;400 lines (ish); "T64 Unix"
+<br>0.53 and 0.56 "Out of memory", &gt;400 lines (ish); SSH to "T64 Unix"
 
 <li><tt>41D261A2.4060806@lucent.com</tt>
-<br>0.56 "Out of memory", snapshots crash; HP-UX 11 and SunOS 5
+<br>0.56 "Out of memory", snapshots crash; Telnet to HP-UX 11 and SunOS 5
 <br>Dr Watson, registry settings, logs
 
 <li><tt>549E069FE8AE6E4C95E0420E534FCD010324DA7C@exchgob7.corp.dir.ameren.com</tt>
-<br>Cisco PIX firewalls, Clear Scrollback, Copy All to Clipboard
+<br>Cisco PIX firewalls (SSH-1), Clear Scrollback, Copy All to Clipboard
 <br>Limited XP error report information
 
 <li><tt>6D4E54434B6EF845B7A53AC02468BE9A0D3110@fflon-exc02.hq.ffastfill.com</tt>
-<br>Telnet to Cisco, change scrollback from 2000 to 20000 lines, issue a command ~4500 lines, "Copy All to Clipboard" =&gt; crash
+<br>0.58 / 2005-06-08; telnet to Cisco, change scrollback from 2000 to 20000 lines, issue a command ~4500 lines, "Copy All to Clipboard" =&gt; crash
 <br>screenshot of some of XP's crash info
 
 </ul>
