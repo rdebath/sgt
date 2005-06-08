@@ -1,7 +1,7 @@
 Summary: Crashes with moderately large clipboard operations
 Class: bug
 Priority: medium
-Present-in: 0.53 0.54 2004-06-01 0.56 2004-11-26 2004-11-29 2004-12-27 2005-02-22 2005-03-18 2005-03-28
+Present-in: 0.53 0.54 2004-06-01 0.56 2004-11-26 2004-11-29 2004-12-27 2005-02-22 2005-03-18 2005-03-28 0.58 2005-06-08
 Content-type: text/x-html-body
 
 <p>
@@ -31,5 +31,9 @@ copy-and-paste too.
 <li><tt>549E069FE8AE6E4C95E0420E534FCD010324DA7C@exchgob7.corp.dir.ameren.com</tt>
 <br>Cisco PIX firewalls, Clear Scrollback, Copy All to Clipboard
 <br>Limited XP error report information
+
+<li><tt>6D4E54434B6EF845B7A53AC02468BE9A0D3110@fflon-exc02.hq.ffastfill.com</tt>
+<br>Telnet to Cisco, change scrollback from 2000 to 20000 lines, issue a command ~4500 lines, "Copy All to Clipboard" =&gt; crash
+<br>screenshot of some of XP's crash info
 
 </ul>
