@@ -14,15 +14,21 @@ We've had a few reports that the following scenario causes PuTTY to hang
 Closing the Remote Desktop session apparently unwedges PuTTY.
 
 <p>
-This sounds like a classic deadlock. However, we haven't been able to
+This sounds like a classic deadlock. This looks plausible if Terminal
+Services defers sending clipboard data over the network until it's
+requested; PuTTY does all the operations involved in a paste without
+explicitly checking for and dealing with any network activity.
+
+<p>
+However, we haven't been able to
 reproduce it ourselves (with XP SP1). There's some indication that it
 only happens when pasting from certain applications on the Remote
 Desktop end (<a href="http://www.mirc.com/">mIRC</a> is one such),
 which could explain that.
 
 <p>
-A workaround is apparently to paste into some other application before
-pasting into PuTTY.
+A workaround is apparently to paste into some other local application
+and re-copy from there before pasting into PuTTY.
 
 <p>
 Reports:
@@ -33,4 +39,6 @@ Reports:
 <br>"windows xp sp2 pro swedish version"; 0.56 "and dev"
 <li><tt>&lt;Pine.LNX.4.44.0505231927410.25150-100000@smurfette.trifocus.net&gt;</tt>
 <br>"windowsxp pro service pack 2"; 0.57, 0.58; only happens with mIRC
+<li><tt>&lt;7b9f25e50506080824205a0732@mail.gmail.com&gt;</tt>
+<br>0.58 on 98SE
 </ul>
