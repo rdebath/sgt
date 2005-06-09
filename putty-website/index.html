@@ -50,6 +50,16 @@ cryptography laws.
 <h2>Latest news</h2>
 
 <p>
+<b>2005-06-09 Problems with 0.58 and Windows XP</b>
+
+<p>
+We're getting occasional but persistent reports that the latest release,
+0.58, fails to run on some versions of Windows XP (particularly pre-SP2),
+giving an "application configuration is incorrect" error message. The cause
+is known, and a variety of workarounds are described on the associated
+<a href="wishlist/xp-wont-run.html">bug page</a>.
+
+<p>
 <b>2005-02-20 SECURITY HOLE, fixed in PuTTY 0.57</b>
 
 <p>
@@ -74,44 +84,6 @@ we've ever released) and the md5sum was
 <p>We'd like to take this opportunity to encourage everyone to verify
 the signatures of PuTTY downloads before executing them. Details are
 on our <a href="keys.html">Keys page</a>.
-
-<p>
-<b>2004-11-16 Migration to Subversion</b>
-
-<p>As of today, the PuTTY source tree has migrated away from CVS, to
-use <a href="http://subversion.tigris.org/">Subversion</a> as its
-version control system. I'm afraid this means that anyone who was
-previously checking our source out of CVS will have to start
-checking it out using Subversion instead.
-
-<p>
-<b>2004-10-26 ANOTHER SECURITY HOLE, fixed in PuTTY 0.56</b>
-
-<p>PuTTY 0.56, released today, fixes a
-<b><a href="wishlist/vuln-ssh2-debug.html">serious security hole</a></b>
-which can allow a server to execute code of its choice on a PuTTY
-client connecting to it. In SSH-2, the attack can be performed
-<em>before host key verification</em>, meaning that even if you
-trust the server you <em>think</em> you are connecting to, a
-different machine could be impersonating it and could launch the
-attack before you could tell the difference. We recommend
-<em>everybody</em> upgrade to 0.56 as soon as possible.
-
-<p>That's two really bad holes in three months. I'd like to apologise to
-all our users for the inconvenience.
-
-<p>
-<b>2004-08-03 SECURITY HOLE, fixed in PuTTY 0.55</b>
-
-<p>PuTTY 0.55, released today, fixes a
-<b><a href="wishlist/vuln-modpow.html">serious security hole</a></b>
-which may allow a server to execute code of its choice on a PuTTY
-client connecting to it. In SSH2, the attack can be performed
-<em>before host key verification</em>, meaning that even if you
-trust the server you <em>think</em> you are connecting to, a
-different machine could be impersonating it and could launch the
-attack before you could tell the difference. We recommend
-<em>everybody</em> upgrade to 0.55 as soon as possible.
 
 <h2>Site map</h2>
 
