@@ -20,15 +20,22 @@ requested; PuTTY does all the operations involved in a paste without
 explicitly checking for and dealing with any network activity.
 
 <p>
-However, we haven't been able to
-reproduce it ourselves (with XP SP1). There's some indication that it
-only happens when pasting from certain applications on the Remote
-Desktop end (<a href="http://www.mirc.com/">mIRC</a> is one such),
-which could explain that.
+It seems that the data is only hauled over the network once; if it's
+pasted into another local applicaton and then pasted into the
+tunnelling PuTTY without re-selecting, it works (at least with
+XP Pro SP2 as the server).
 
 <p>
-A workaround is apparently to paste into some other local application
-and re-copy from there before pasting into PuTTY.
+However, we haven't been able to
+reproduce it ourselves (with XP SP1). We've had one report that it
+only happens when pasting from certain applications on the Remote
+Desktop end (<a href="http://www.mirc.com/">mIRC</a> is one such),
+which could explain that (or could just turn out to be a mistaken
+correlation caused by the effect mentioned above).
+
+<p>
+Another workaround is apparently to paste into some other local
+application and re-copy from there before pasting into PuTTY.
 
 <p>
 Reports:
@@ -40,5 +47,5 @@ Reports:
 <li><tt>&lt;Pine.LNX.4.44.0505231927410.25150-100000@smurfette.trifocus.net&gt;</tt>
 <br>"windowsxp pro service pack 2"; 0.57, 0.58; only happens with mIRC
 <li><tt>&lt;7b9f25e50506080824205a0732@mail.gmail.com&gt;</tt>
-<br>0.58 on 98SE
+<br>0.58 on 98SE client; server is XP Pro SP2
 </ul>
