@@ -11,5 +11,6 @@ whereas a horizontal scrollbar would adjust which part of a larger terminal
 was visible.
 
 <p>A simple workaround for users of Unix systems is to install
-<code>less</code> and use <code>less -S</code> to view their files and command
+<a href="http://www.greenwoodsoftware.com/less/"><code>less</code></a>
+and use <code>less -S</code> to view their files and command
 output.
