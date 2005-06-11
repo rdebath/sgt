@@ -1,22 +1,25 @@
-Summary: Assertion failed in terminal.c:lineptr(): line != NULL
+Summary: Bombs out with line==NULL in terminal.c
 Class: bug
 Priority: medium
 Present-in: 0.56
 Content-type: text/x-html-body
 
 <p>
-(<em>Update:</em> if you're seeing this consistently, please try a
-development snapshot 2005-03-07 or later, which has some extra 
-diagnostics to help us track this down. Ta.)
+We receive occasional reports of PuTTY crashing out with
+<code>line==NULL</code> in <code>terminal.c:lineptr()</code>.
+However, we haven't been able to reproduce the problem ourselves.
 
 <p>
-No-one has reproduced this with a current snapshot, and we haven't yet
-been able to reproduce it with 0.56 either.
+In recent versions of PuTTY (0.58 and up), the error takes the form
+of one or more error boxes saying "line==NULL in terminal.c" and
+giving some diagnostic information, along with an exhortation to
+contact us.
 
 <p>
-All these instances are in <tt>terminal.c:lineptr()</tt> (the line
-number has changed a lot due to the extensive terminal re-engineering
-since 0.56).
+In versions of PuTTY before snapshot 2005-03-07, the error
+is instead a failure of an assertion in <code>terminal.c</code>
+that <code>line != NULL</code> (the precise line number has changed
+a lot due to the extensive terminal re-engineering since 0.56).
 
 <p>
 We've had one report since we added diagnostics which indicates that
