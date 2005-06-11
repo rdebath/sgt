@@ -23,6 +23,6 @@ order not to bloat the core of PuTTY, we probably wouldn't contemplate
 it at all unless it could be implemented as a separate DLL.
 
 <p>
-In theory, however, a SOCKSified FTP client would work with PuTTY's
+As a special case, a SOCKSified FTP client can work with PuTTY's existing
 dynamic forwarding <em>if</em> you use passive mode. (This requires
 that both FTP client and server support it.)
