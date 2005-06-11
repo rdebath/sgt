@@ -28,3 +28,13 @@ visual change to the <em>contents</em> of the window (changing the
 background colour springs to mind as a reasonably easy option). This
 wouldn't really be good enough if the window was minimised or in
 another virtual desktop, but it would be better than nothing.
+
+<p>
+<em>Update:</em> some suggestions we've received:
+<ul>
+<li>Apparently there is an <code>URGENT</code> hint somewhere that some
+taskbar-based window managers take notice of.
+<li>There's been a suggestion that some window managers take notice of
+beeps in managed windows (but it's not clear that the apps in question
+aren't using the above mechanism).
+</ul>
