@@ -8,3 +8,7 @@ Content-type: text/x-html-body
 A GUI SFTP client. (Possibly it should also be able to use SCP but
 with massively reduced functionality.) Writing big complex GUIs is
 hard work and I simply don't have the effort to spare.
+
+<p>
+Some third-party file transfer clients using PuTTY code can be
+found on our <a href="../links.html">Links page</a>.
