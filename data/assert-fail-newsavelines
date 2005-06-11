@@ -17,6 +17,11 @@ connection startup (possibly at other times too).
 <p>
 We've not been able to reproduce this ourselves.
 
+<p>
+(Possibly related, although we've no hard evidence for this:
+<a href="assert-line-not-null.html">`assert-line-not-null'</a>
+and <a href="large-clipboard-crash.html">`large-clipboard-crash'</a>.)
+
 <ul>
 
 <li><tt>OFA8A74C15.A4B5BE13-ON65256EF4.00210ED6-80256EF4.003C2FE1@in.ibm.com</tt>

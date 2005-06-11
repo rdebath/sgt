@@ -27,6 +27,11 @@ We've had one report since we added diagnostics which indicates that
 thought of a plausible mechanism for <tt>screen</tt> or
 <tt>alt_screen</tt> to end up undersized.
 
+<p>
+(Possibly related, although we've no hard evidence for this:
+<a href="assert-fail-newsavelines.html">`assert-fail-newsavelines'</a>
+and <a href="large-clipboard-crash.html">`large-clipboard-crash'</a>.)
+
 <ul>
 <li><tt>Pine.0410290832480.79579@mozart.musicbox.net</tt>
   <br>0.56 on WinME and 2K; terminal.c:159
