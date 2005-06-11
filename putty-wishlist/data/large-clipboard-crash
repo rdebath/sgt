@@ -15,6 +15,11 @@ Typically this is associated with use of the "Copy All to Clipboard"
 menu action, but apparently it can happen with ordinary mouse-button
 copy-and-paste too.
 
+<p>
+(Possibly related, although we've no hard evidence for this:
+<a href="assert-line-not-null.html">`assert-line-not-null'</a>
+and <a href="assert-fail-newsavelines.html">`assert-fail-newsavelines'</a>.)
+
 <ul>
 
 <li><tt><a href="http://groups.google.com/groups?as_umsgid=Rb8vc.137%24vO1.1200%40nnrp1.uunet.ca">Rb8vc.137$vO1.1200@nnrp1.uunet.ca</a></tt>
