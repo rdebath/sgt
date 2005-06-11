@@ -20,5 +20,7 @@ idea.  The lack of a MAC makes it very easy for an attacker to modify
 the data stream.
 
 <p>
-<b>Update:</b> Ben Harris has written an Internet-Draft describing a way of
-using Arcfour reasonably securely with SSH-2, and PuTTY now implements this.
+<b>Update:</b> Ben Harris has written an Internet-Draft (currently
+<a href="http://www.ietf.org/internet-drafts/draft-harris-ssh-arcfour-fixes-02.txt">draft-harris-ssh-arcfour-fixes-02</a>)
+describing a way of using Arcfour reasonably securely with SSH-2, and
+PuTTY now implements this.
