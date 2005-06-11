@@ -22,3 +22,8 @@ leave rather a lag between things happening and finally being written
 to disc; and when the log file is closed, the entire screen and
 scrollback state would have to be written to the log to bring it up to
 date, which is a rather similar operation to this wish.
+
+<p>
+This also has the advantage that each row written to the log file
+can sensibly be timestamped, which people
+<a href="log-timestamp.html">occasionally ask for</a>.
