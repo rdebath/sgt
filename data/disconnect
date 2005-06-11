@@ -2,6 +2,7 @@ Summary: Better handling of the connection closing
 Class: semi-bug
 Priority: medium
 Difficulty: tricky
+Fixed-in: 2005-01-12
 Content-type: text/x-html-body
 
 <p>Better handling of the connection closing, and of SSH_MSG_DISCONNECT
