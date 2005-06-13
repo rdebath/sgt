@@ -75,6 +75,8 @@
 
 #include "v.h"
 
+#include <gdk/gdkkeysyms.h>
+
 /*
  * FIXME: These should be set from the current display size.
  * Tricky, because I'd also like to take the GNOME taskbar into
@@ -356,6 +358,11 @@ static int win_key_press(GtkWidget *widget, GdkEventKey *event, gpointer data)
 	if ((c == '\010' || c == '\177' ||
              c == 'b' || c == 'B' ||
              c == 'p' || c == 'P') && w->pos > 0)
+	    switch_to_image(w, w->pos-1);
+    } else {
+	int c = event->keyval;
+
+	if (c == GDK_BackSpace && w->pos > 0)
 	    switch_to_image(w, w->pos-1);
     }
 
