@@ -157,7 +157,7 @@ char *ilist_load(struct ilist *il, char *filename)
 	    il->filenames = sresize(il->filenames, il->size, char *);
 	}
 	il->images[il->n] = im;
-	il->filenames[il->n] = filename;
+	il->filenames[il->n] = dupstr(filename);
 	il->n++;
         get_scaled_size(im, &w, &h);
         if (il->maxw < w) il->maxw = w;
@@ -573,7 +573,7 @@ int main(int argc, char **argv)
 		err = ilist_load(il, buf);
 		if (err) {
 		    fprintf(stderr, "v: unable to load image '%s': %s\n",
-			    p, err);
+			    buf, err);
 		    if (!ignoreloaderrs)
 			errs = TRUE;
 		}
