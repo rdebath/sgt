@@ -40,4 +40,12 @@ int image_width(image *img);
 int image_height(image *img);
 void image_to_pixmap(image *img, GdkPixmap *pm, int w, int h);
 
+/*
+ * bumf.c
+ */
+void licence(void);
+void help(void);
+void usage(void);
+void showversion(void);
+
 #endif

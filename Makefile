@@ -14,13 +14,14 @@ LDFLAGS = `$(GTK_CONFIG) --libs`
 
 all: v
 
-V = v.o malloc.o imlib1.o
+V = v.o malloc.o bumf.o imlib1.o
 v: $(V)
 	$(CC) $(LDFLAGS) -o $@ $(V) -lgdk_imlib
 
 malloc.o: ./malloc.c ./v.h
 imlib1.o: ./imlib1.c ./v.h
 v.o: ./v.c ./v.h
+bumf.o: ./bumf.c ./v.h
 
 clean:
 	rm -f *.o v
