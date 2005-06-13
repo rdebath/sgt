@@ -62,6 +62,10 @@
  *       window background, which would have the advantage of
  *       making it always unambiguous where the image actually
  *       began?
+ * 
+ *  - sort out sensible alpha channel handling. I _think_ we're
+ *    currently compositing the image on to black, which isn't
+ *    ideal.
  */
 
 #include <stdio.h>
@@ -76,7 +80,12 @@
  * Tricky, because I'd also like to take the GNOME taskbar into
  * account. Not sure how to do that.
  */
-int maxw = 1574, maxh = 1106;
+int maxw = 1572, maxh = 1104;
+
+/*
+ * Size of border drawn around the image in max-size mode.
+ */
+#define BORDER 1
 
 void fatal(char *fmt, ...)
 {
@@ -92,10 +101,33 @@ void fatal(char *fmt, ...)
     exit(1);
 }
 
+static void get_scaled_size(image *im, int *w, int *h)
+{
+    int iw, ih;
+
+    iw = image_width(im);
+    ih = image_height(im);
+
+    /*
+     * Scale the image down if it's too big.
+     */
+    if (iw > maxw || ih > maxh) {
+	float wscale = (float)iw / maxw;
+	float hscale = (float)ih / maxh;
+	float scale = (wscale > hscale ? wscale : hscale);
+	iw /= scale;
+	ih /= scale;
+    }
+
+    if (w) *w = iw;
+    if (h) *h = ih;
+}
+
 struct ilist {
     image **images;
     char **filenames;
     int n, size;
+    int maxw, maxh;
 };
 
 struct ilist *ilist_new(void)
@@ -104,12 +136,15 @@ struct ilist *ilist_new(void)
     il->images = NULL;
     il->filenames = NULL;
     il->n = il->size = 0;
+    il->maxw = il->maxh = 0;
     return il;
 }
 
 char *ilist_load(struct ilist *il, char *filename)
 {
     char *err;
+    int w, h;
+
     image *im = image_load(filename, &err);
     if (!im)
 	return err;
@@ -122,6 +157,9 @@ char *ilist_load(struct ilist *il, char *filename)
 	il->images[il->n] = im;
 	il->filenames[il->n] = filename;
 	il->n++;
+        get_scaled_size(im, &w, &h);
+        if (il->maxw < w) il->maxw = w;
+        if (il->maxh < h) il->maxh = h;
 	return NULL;
     }
 }
@@ -141,6 +179,8 @@ void ilist_free(struct ilist *il)
 struct window {
     struct ilist *il;
     int pos;
+    int use_max_size;
+    int iw, ih, ox, oy, ww, wh;
     GtkWidget *window, *area;
     GdkPixmap *pm;
 };
@@ -155,21 +195,18 @@ static void switch_to_image(struct window *w, int index)
     w->pos = index;
 
     im = w->il->images[index];
-    iw = image_width(im);
-    ih = image_height(im);
+    get_scaled_size(im, &iw, &ih);
 
-    /*
-     * Scale the image down if it's too big.
-     */
-    if (iw > maxw || ih > maxh) {
-	float wscale = (float)iw / maxw;
-	float hscale = (float)ih / maxh;
-	float scale = (wscale > hscale ? wscale : hscale);
-	iw /= scale;
-	ih /= scale;
-    }
+    w->iw = iw;
+    w->ih = ih;
+    w->ox = w->oy = 0;
 
-    gtk_drawing_area_size(GTK_DRAWING_AREA(w->area), iw, ih);
+    if (w->use_max_size)
+        gtk_drawing_area_size(GTK_DRAWING_AREA(w->area),
+                              w->il->maxw + 2*BORDER,
+                              w->il->maxh + 2*BORDER);
+    else
+        gtk_drawing_area_size(GTK_DRAWING_AREA(w->area), iw, ih);
     gtk_window_set_title(GTK_WINDOW(w->window), w->il->filenames[index]);
 
     /*
@@ -180,6 +217,7 @@ static void switch_to_image(struct window *w, int index)
 	GtkRequisition req;
 	gtk_widget_size_request(w->window, &req);
 	gdk_window_resize(w->window->window, req.width, req.height);
+	gdk_window_clear(w->window->window);
 
         if (w->pm)
             gdk_pixmap_unref(w->pm);
@@ -198,21 +236,109 @@ static gint expose_area(GtkWidget *widget, GdkEventExpose *event,
                         gpointer data)
 {
     struct window *w = (struct window *)data;
+    int xr, yr, wr, hr;
+
+#define OVERLAP_RECT(x1,y1,w1,h1,x2,y2,w2,h2) do { \
+    xr = ((x1) > (x2) ? (x1) : (x2)); \
+    yr = ((y1) > (y2) ? (y1) : (y2)); \
+    wr = ((x1)+(w1) < (x2)+(w2) ? (x1)+(w1) : (x2)+(w2)) - xr; \
+    hr = ((y1)+(h1) < (y2)+(h2) ? (y1)+(h1) : (y2)+(h2)) - yr; \
+} while (0)
+#define RECT_EXISTS (wr > 0 && hr > 0)
+
+    if (w->pm) {
+        OVERLAP_RECT(event->area.x, event->area.y,
+                     event->area.width, event->area.height,
+                     w->ox, w->oy, w->iw, w->ih);
+        if (RECT_EXISTS)
+            gdk_draw_pixmap(widget->window,
+                            widget->style->fg_gc[GTK_WIDGET_STATE(widget)],
+                            w->pm,
+                            xr - w->ox, yr - w->oy, xr, yr, wr, hr);
+    }
 
     /*
-     * If we ever need to position a small image within a larger
-     * drawing area, the `ox' and `oy' fragments commented out here
-     * should do all that's necessary.
+     * Black border around the image.
      */
-    if (w->pm) {
-	gdk_draw_pixmap(widget->window,
-			widget->style->fg_gc[GTK_WIDGET_STATE(widget)],
-			w->pm,
-			event->area.x /* - w->ox */,
-                        event->area.y /* - w->oy */,
-			event->area.x, event->area.y,
-			event->area.width, event->area.height);
-    }
+    OVERLAP_RECT(event->area.x, event->area.y,
+                 event->area.width, event->area.height,
+                 w->ox - BORDER, w->oy - BORDER, w->iw + BORDER, BORDER);
+    if (RECT_EXISTS)
+        gdk_draw_rectangle(widget->window,
+                           widget->style->fg_gc[GTK_WIDGET_STATE(widget)],
+                           1, xr, yr, wr, hr);
+    OVERLAP_RECT(event->area.x, event->area.y,
+                 event->area.width, event->area.height,
+                 w->ox + w->iw, w->oy - BORDER, BORDER, w->ih + BORDER);
+    if (RECT_EXISTS)
+        gdk_draw_rectangle(widget->window,
+                           widget->style->fg_gc[GTK_WIDGET_STATE(widget)],
+                           1, xr, yr, wr, hr);
+    OVERLAP_RECT(event->area.x, event->area.y,
+                 event->area.width, event->area.height,
+                 w->ox - BORDER, w->oy, BORDER, w->ih + BORDER);
+    if (RECT_EXISTS)
+        gdk_draw_rectangle(widget->window,
+                           widget->style->fg_gc[GTK_WIDGET_STATE(widget)],
+                           1, xr, yr, wr, hr);
+    OVERLAP_RECT(event->area.x, event->area.y,
+                 event->area.width, event->area.height,
+                 w->ox, w->oy + w->ih, w->iw + BORDER, BORDER);
+    if (RECT_EXISTS)
+        gdk_draw_rectangle(widget->window,
+                           widget->style->fg_gc[GTK_WIDGET_STATE(widget)],
+                           1, xr, yr, wr, hr);
+
+    /*
+     * Background everywhere else.
+     */
+    OVERLAP_RECT(event->area.x, event->area.y,
+                 event->area.width, event->area.height,
+                 0, 0, w->ox + w->iw + BORDER, w->oy - BORDER);
+    if (RECT_EXISTS)
+        gdk_draw_rectangle(widget->window,
+                           widget->style->bg_gc[GTK_WIDGET_STATE(widget)],
+                           1, xr, yr, wr, hr);
+    OVERLAP_RECT(event->area.x, event->area.y,
+                 event->area.width, event->area.height,
+                 w->ox + w->iw + BORDER, 0,
+                 w->ww - (w->ox + w->iw + BORDER), w->oy + w->ih + BORDER);
+    if (RECT_EXISTS)
+        gdk_draw_rectangle(widget->window,
+                           widget->style->bg_gc[GTK_WIDGET_STATE(widget)],
+                           1, xr, yr, wr, hr);
+    OVERLAP_RECT(event->area.x, event->area.y,
+                 event->area.width, event->area.height,
+                 0, w->oy - BORDER, w->ox - BORDER, w->wh - (w->oy - BORDER));
+    if (RECT_EXISTS)
+        gdk_draw_rectangle(widget->window,
+                           widget->style->bg_gc[GTK_WIDGET_STATE(widget)],
+                           1, xr, yr, wr, hr);
+    OVERLAP_RECT(event->area.x, event->area.y,
+                 event->area.width, event->area.height,
+                 w->ox - BORDER, w->oy + w->ih + BORDER,
+                 w->ww - (w->ox - BORDER), w->wh - (w->oy + w->ih + BORDER));
+    if (RECT_EXISTS)
+        gdk_draw_rectangle(widget->window,
+                           widget->style->bg_gc[GTK_WIDGET_STATE(widget)],
+                           1, xr, yr, wr, hr);
+
+#undef OVERLAP_RECT
+#undef RECT_EXISTS
+
+    return TRUE;
+}
+
+static gint configure_area(GtkWidget *widget,
+                           GdkEventConfigure *event, gpointer data)
+{
+    struct window *w = (struct window *)data;
+
+    w->ww = event->width;
+    w->wh = event->height;
+    w->ox = (event->width - w->iw) / 2;
+    w->oy = (event->height - w->ih) / 2;
+
     return TRUE;
 }
 
@@ -236,7 +362,7 @@ static int win_key_press(GtkWidget *widget, GdkEventKey *event, gpointer data)
     return FALSE;
 }
 
-static struct window *new_window(struct ilist *il)
+static struct window *new_window(struct ilist *il, int maxsize)
 {
     struct window *w = snew(struct window);
 
@@ -244,8 +370,11 @@ static struct window *new_window(struct ilist *il)
 
     w->pm = NULL;
 
+    w->use_max_size = maxsize;
+
     w->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     w->area = gtk_drawing_area_new();
+    w->ww = w->wh = 0;
 
     gtk_widget_show(w->area);
     gtk_container_add(GTK_CONTAINER(w->window), w->area);
@@ -256,6 +385,8 @@ static struct window *new_window(struct ilist *il)
 		       GTK_SIGNAL_FUNC(win_key_press), w);
     gtk_signal_connect(GTK_OBJECT(w->area), "expose_event",
 		       GTK_SIGNAL_FUNC(expose_area), w);
+    gtk_signal_connect(GTK_OBJECT(w->area), "configure_event",
+		       GTK_SIGNAL_FUNC(configure_area), w);
 
     switch_to_image(w, 0);             /* just to calculate the size */
 
@@ -269,25 +400,128 @@ static struct window *new_window(struct ilist *il)
 int main(int argc, char **argv)
 {
     struct ilist *il;
-    int opts = TRUE, errs = FALSE;
+    int opts = TRUE, errs = FALSE, nogo = FALSE, maxsize = FALSE;
 
     gtk_init(&argc, &argv);
     image_init();
 
     il = ilist_new();
-    while (--argc > 0) {
-	char *p = *++argv;
 
-	if (opts && *p == '-') {
-	    if (!strcmp(p, "--")) {
-		opts = FALSE;
-		continue;
-	    } else {
-		fprintf(stderr, "v: unrecognised command-line"
-			" option '%s'\n", p);
-		errs = TRUE;
+    /*
+     * Parse command line arguments.
+     */
+    while (--argc) {
+	char *p = *++argv;
+	if (*p == '-') {
+	    /*
+	     * An option.
+	     */
+	    while (p && *++p) {
+		char c = *p;
+		switch (c) {
+		  case '-':
+		    /*
+		     * Long option.
+		     */
+		    {
+			char *opt, *val;
+			opt = p++;     /* opt will have _one_ leading - */
+			while (*p && *p != '=')
+			    p++;	       /* find end of option */
+			if (*p == '=') {
+			    *p++ = '\0';
+			    val = p;
+			} else
+			    val = NULL;
+
+			assert(opt[0] == '-');
+                        if (!opt[1]) {
+                            opts = FALSE;   /* all the rest are filenames */
+                        } else if (!strcmp(opt, "-maxsize")) {
+                            maxsize = TRUE;
+			} else if (!strcmp(opt, "-help")) {
+			    help();
+			    nogo = TRUE;
+			} else if (!strcmp(opt, "-version")) {
+			    showversion();
+			    nogo = TRUE;
+			} else if (!strcmp(opt, "-licence") ||
+				   !strcmp(opt, "-license")) {
+			    licence();
+			    nogo = TRUE;
+			} else {
+			    errs = TRUE;
+                            fprintf(stderr, "v: unrecognised command-line"
+                                    " option '-%s'\n", opt);
+			}
+		    }
+		    p = NULL;
+		    break;
+		  case 'h':
+		  case 'V':
+		  case 'L':
+		  case 'm':
+		    /*
+		     * Option requiring no parameter.
+		     */
+		    switch (c) {
+		      case 'h':
+			help();
+			nogo = TRUE;
+			break;
+		      case 'V':
+			showversion();
+			nogo = TRUE;
+			break;
+		      case 'L':
+			licence();
+			nogo = TRUE;
+			break;
+		      case 'm':
+			maxsize = TRUE;
+			break;
+		    }
+		    break;
+#if 0                                  /* currently no options with params */
+		  case 'C':
+		    /*
+		     * Option requiring parameter.
+		     */
+		    p++;
+		    if (!*p && argc > 1)
+			--argc, p = *++argv;
+		    else if (!*p) {
+			char opt[2];
+			opt[0] = c;
+			opt[1] = '\0';
+			errs = TRUE;
+                        fprintf(stderr, "v: option '-%c' expects an"
+                                " argument\n", c);
+		    }
+		    /*
+		     * Now c is the option and p is the parameter.
+		     */
+		    switch (c) {
+		      case 'C':
+                        /* p contains the option value; do something with it */
+			break;
+		    }
+		    p = NULL;	       /* prevent continued processing */
+		    break;
+#endif
+		  default:
+		    /*
+		     * Unrecognised option.
+		     */
+                    errs = TRUE;
+                    fprintf(stderr, "v: unrecognised command-line"
+                            " option '-%c'\n", c);
+		}
 	    }
 	} else {
+	    /*
+	     * A non-option argument.
+	     */
 	    char *err = ilist_load(il, p);
 	    if (err) {
 		fprintf(stderr, "v: unable to load image '%s': %s\n", p, err);
@@ -300,11 +534,14 @@ int main(int argc, char **argv)
 	return 1;
 
     if (il->n == 0) {
-	fprintf(stderr, "usage: v <image> [ <image>... ]\n");
-	return 0;
+        usage();
+	nogo = TRUE;
     }
 
-    new_window(il);
+    if (nogo)
+        return 0;
+
+    new_window(il, maxsize);
 
     gtk_main();
 
