@@ -408,8 +408,38 @@ int main(int argc, char **argv)
 {
     struct ilist *il;
     int opts = TRUE, errs = FALSE, nogo = FALSE, maxsize = FALSE;
+    int ignoreloaderrs = FALSE;
 
-    gtk_init(&argc, &argv);
+    /*
+     * GTK will gratuitously eat an argument which is a single
+     * minus sign, so we must tinker with the argc/argv we feed
+     * them. Annoying, but there we go.
+     */
+    {
+	int gtk_argc;
+	char **gtk_argv;
+	int trail_argc;
+	char **trail_argv;
+
+	for (gtk_argc = 1; gtk_argc < argc; gtk_argc++)
+	    if (!strcmp(argv[gtk_argc], "-"))
+		break;
+	gtk_argv = argv;
+
+	trail_argc = argc - gtk_argc;
+	trail_argv = argv + gtk_argc;
+
+	gtk_init(&gtk_argc, &argv);
+
+	/*
+	 * Now concatenate the remains of gtk_argv with trail_argv.
+	 */
+	argc = gtk_argc + trail_argc;
+	argv = snewn(argc, char *);
+	memcpy(argv, gtk_argv, gtk_argc * sizeof(char *));
+	memcpy(argv + gtk_argc, trail_argv, trail_argc * sizeof(char *));
+    }
+
     image_init();
 
     il = ilist_new();
@@ -419,7 +449,7 @@ int main(int argc, char **argv)
      */
     while (--argc) {
 	char *p = *++argv;
-	if (*p == '-') {
+	if (*p == '-' && p[1]) {
 	    /*
 	     * An option.
 	     */
@@ -446,6 +476,8 @@ int main(int argc, char **argv)
                             opts = FALSE;   /* all the rest are filenames */
                         } else if (!strcmp(opt, "-maxsize")) {
                             maxsize = TRUE;
+                        } else if (!strcmp(opt, "-ignore-load-errors")) {
+                            ignoreloaderrs = TRUE;
 			} else if (!strcmp(opt, "-help")) {
 			    help();
 			    nogo = TRUE;
@@ -468,6 +500,7 @@ int main(int argc, char **argv)
 		  case 'V':
 		  case 'L':
 		  case 'm':
+		  case 'i':
 		    /*
 		     * Option requiring no parameter.
 		     */
@@ -486,6 +519,9 @@ int main(int argc, char **argv)
 			break;
 		      case 'm':
 			maxsize = TRUE;
+			break;
+		      case 'i':
+			ignoreloaderrs = TRUE;
 			break;
 		    }
 		    break;
@@ -525,6 +561,23 @@ int main(int argc, char **argv)
                             " option '-%c'\n", c);
 		}
 	    }
+	} else if (*p == '-') {
+	    /*
+	     * A non-option argument which is just a minus sign
+	     * means we read filenames from stdin, one per line.
+	     */
+	    char buf[4096];
+	    char *err;
+	    while (fgets(buf, sizeof(buf), stdin)) {
+		buf[strcspn(buf, "\r\n")] = '\0';
+		err = ilist_load(il, buf);
+		if (err) {
+		    fprintf(stderr, "v: unable to load image '%s': %s\n",
+			    p, err);
+		    if (!ignoreloaderrs)
+			errs = TRUE;
+		}
+	    }
 	} else {
 	    /*
 	     * A non-option argument.
@@ -532,7 +585,8 @@ int main(int argc, char **argv)
 	    char *err = ilist_load(il, p);
 	    if (err) {
 		fprintf(stderr, "v: unable to load image '%s': %s\n", p, err);
-		errs = TRUE;
+		if (!ignoreloaderrs)
+		    errs = TRUE;
 	    }
 	}
     }
