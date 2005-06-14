@@ -1,6 +1,6 @@
 Summary: Reports of port forwarding corruption
 Class: bug
-Present-in: 0.53b 2003-06-29 0.54
+Present-in: 0.53b 2003-06-29 0.54 0.58
 Priority: high
 Content-type: text/x-html-body
 
@@ -53,5 +53,21 @@ send after socket shutdown.").
 <br>Fedora Core 2 (unpatched) + OpenSSH (openssh-server-3.6.1p2-34)
 <br>Remote tunnel for "yum" over HTTP: "yum" pulling data
 (i.e. outbound from PuTTY)
+
+<li><code>D9304F864F1759059287F365@[192.168.0.10]</code>
+<br>0.53b, 0.58, 2005-06-12:r5952 to OpenSSH 3.9p1
+<br>Using SOCKS dynamic forwarding to forward FTP, upload corrupts files
+(resulting file is shorter than expected); FTP progress bar goes suspiciously
+fast for first 1-200k of a 500k file
+<br>Other SOCKS servers behave fine; `get' is fine; static port
+forwarding is fine
+
+<li><code>6.0.0.22.2.20050614193231.01fda408@195.70.37.56</code>
+<br>0.58 to Debian OpenSSH
+<br>Remote-to-local tunnel for JetDirect (local printer port 9100)
+<br>Files under 8k: OK
+<br>Files over 8k: all data in PuTTY's log, but not all gets to the
+printer
+<br>Logs available
 
 </ul>
