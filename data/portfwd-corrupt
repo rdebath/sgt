@@ -16,6 +16,13 @@ Problems have been reported with both directions of tunneling, both directions
 of data transfer, and both SSH protocols (SSH-1 and SSH-2).
 
 <p>
+<em>Update, 2005-06-15:</em> I (JTN) have reproduced loss of trailing
+data with a remote-to-local SSH-2 port forwarding, where a burst data
+is sent from remote to local followed immediately by EOF. I suspect
+that PuTTY's <a href="half-closed.html">lack of support for
+half-closed connections</a> is to blame in at least this case.
+
+<p>
 The reports below may correspond to several different bugs, as a range of
 symptoms are reported.
 
@@ -46,7 +53,10 @@ send after socket shutdown.").
 <br>Includes SSH packet log; this shows SSH-2 local-to-remote forwarding, with PuTTY apparently receiving all the data. Maybe it fails to pass it on to the HTTP client?
 
 <li><code>002101c45ee8$ff761990$6801a8c0@carmani600m</code>
-<br>"SMTP tunneling corrupts attachments" -- no other info
+<br>"SMTP tunneling corrupts attachments"
+<br>It looks like something other than PuTTY was modifying the attachments
+(possibly in addition to PuTTY), so we aren't able to extract useful
+information from this report.
 
 <li><code>1090249727.4682.55.camel@oberon.tremagi.org.uk</code>
 <br>Win2KSP3 + PuTTY 0.54 (and 0.53b)
