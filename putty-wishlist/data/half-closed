@@ -1,0 +1,28 @@
+Summary: PuTTY doesn't permit half-closed connections
+Class: bug
+Difficulty: tricky
+Priority: medium
+Present-in: 0.58
+Content-type: text/x-html-body
+
+<p>
+By and large, where there are full-duplex connections in PuTTY, it
+doesn't currently support the notion of a <em>half-closed</em>
+connection - that is, end-of-file has been indicated in one direction,
+but data is still flowing in the other direction. This applies to
+actual TCP sockets and also SSH channels.
+
+<p>
+What usually happens is that PuTTY abruptly closes a socket/channel as
+soon as it sees EOF in either direction.
+
+<p>
+I suspect this is leading to data loss in some circumstances (so may
+be a/the cause of <a href="portfwd-corrupt.html">`portfwd-corrupt'</a>).
+
+<p>
+What probably needs to be done is to decouple EOFs in either
+direction, and to sprinkle use of <code>shutdown()</code> and EOF
+notifications such as <code>SSH1_MSG_CHANNEL_CLOSE</code> and
+<code>SSH2_MSG_CHANNEL_EOF</code> throughout the code. This is a
+noticeable amount of work.
