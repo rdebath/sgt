@@ -1431,6 +1431,10 @@ define cvssvn_log() {
         strcmp(substr(name, 1, 15), "*svn-annotate*:") == 0) {
         name = substr(name, 16, -1);
     }
+    if (strcmp(substr(name, 1, 11), "*cvs-diff*:") == 0 or
+        strcmp(substr(name, 1, 11), "*svn-diff*:") == 0) {
+        name = substr(name, 12, -1);
+    }
     if (strcmp(file, "") == 0) {
         ERROR_BLOCK { error("Unable to determine base file name"); }
         file = get_blocal_var("cvssvn-file");
@@ -1464,6 +1468,74 @@ define cvssvn_log() {
     jedrc_create_blocal_var("cvssvn-file", 's');
     set_blocal_var(file, "cvssvn-file");
 }
+define cvssvn_diff() {
+    variable file, dir, name, bufname, bufnum, which, rev1, rev2, args;
+    (file, dir, name, ) = getbuf_info();
+    if (strcmp(substr(name, 1, 10), "*cvs-log*:") == 0 or
+	strcmp(substr(name, 1, 10), "*svn-log*:") == 0) {
+        name = substr(name, 11, -1);
+    }
+    if (strcmp(substr(name, 1, 15), "*cvs-annotate*:") == 0 or
+        strcmp(substr(name, 1, 15), "*svn-annotate*:") == 0) {
+        name = substr(name, 16, -1);
+    }
+    % Unlike log and annotate, it's perfectly meaningful to do a
+    % second diff starting from a diff buffer, because diffs are
+    % parametrised.
+    if (strcmp(substr(name, 1, 11), "*cvs-diff*:") == 0 or
+        strcmp(substr(name, 1, 11), "*svn-diff*:") == 0) {
+        name = substr(name, 12, -1);
+    }
+    if (strcmp(file, "") == 0) {
+        ERROR_BLOCK { error("Unable to determine base file name"); }
+        file = get_blocal_var("cvssvn-file");
+    }
+    if (blocal_var_exists("cvssvn-which")) {
+	which = get_blocal_var("cvssvn-which");
+    } else {
+	which = cvssvn_which(dir);
+	jedrc_create_blocal_var("cvssvn-which", 's');
+	set_blocal_var(which, "cvssvn-which");
+    }
+    if (which == "") {
+	error("Unable to find an applicable version control tool");
+    }
+    rev2 = read_mini ("Later revision [default: working copy]:", "", "");
+    rev1 = read_mini ("Earlier revision [default: current]:", "", "");
+    bufname = "*" + which + "-diff*:" + name;
+    bufnum = 0;
+    while (bufferp(bufname)) {
+        bufnum++;
+        bufname = sprintf("*%s-diff-%d*:%s", which, bufnum, name);
+    }
+    change_default_dir(dir);
+    sw2buf(bufname);
+    erase_buffer();
+    text_mode();
+    if (which == "cvs") {
+        args = "";
+        if (rev1 == "")
+            rev1 = "BASE";
+        args = args + " -r" + rev1;
+        if (rev2 != "")
+            args = args + " -r" + rev2;
+	run_shell_cmd("cvs diff" + args + " " + file);
+	message("cvs diff" + args + " " + file);
+    } else { % svn
+        args = "";
+        if (rev1 == "")
+            rev1 = "BASE";
+        if (rev2 != "")
+            args = args + " -r" + rev1 + ":" + rev2;
+        else
+            args = args + " -r" + rev1;
+	run_shell_cmd("svn diff" + args + " " + file);
+    }
+    setbuf_info((getbuf_info & ~1) | 8); % clear modified bit, set readonly
+    bob();
+    jedrc_create_blocal_var("cvssvn-file", 's');
+    set_blocal_var(file, "cvssvn-file");
+}
 define cvssvn_annotate() {
     variable file, dir, name, line, ret, which;
     (file, dir, name, ) = getbuf_info();
@@ -1476,6 +1548,10 @@ define cvssvn_annotate() {
     if (strcmp(substr(name, 1, 10), "*cvs-log*:") == 0 or
 	strcmp(substr(name, 1, 10), "*svn-log*:") == 0) {
         name = substr(name, 11, -1);
+    }
+    if (strcmp(substr(name, 1, 11), "*cvs-diff*:") == 0 or
+        strcmp(substr(name, 1, 11), "*svn-diff*:") == 0) {
+        name = substr(name, 12, -1);
     }
     if (strcmp(file, "") == 0) {
         ERROR_BLOCK { error("Unable to determine base file name"); }
@@ -1518,15 +1594,19 @@ define cvssvn_annotate() {
 
 define cvs_log() { cvssvn_log(); }
 define cvs_annotate() { cvssvn_annotate(); }
+define cvs_diff() { cvssvn_diff(); }
 define svn_log() { cvssvn_log(); }
 define svn_annotate() { cvssvn_annotate(); }
+define svn_diff() { cvssvn_diff(); }
 define svn_blame() { cvssvn_annotate(); }
 define svn_praise() { cvssvn_annotate(); }
 
 add_completion("cvs_log");
 add_completion("cvs_annotate");
+add_completion("cvs_diff");
 add_completion("svn_log");
 add_completion("svn_blame");
+add_completion("svn_diff");
 
 %}}}
 %{{{ M-x rot13
