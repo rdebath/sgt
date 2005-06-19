@@ -1,0 +1,13 @@
+Summary: PuTTY should use WP_APP, not WM_USER
+Class: bug
+Difficulty: fun
+Priority: medium
+Content-type: text/plain
+
+Ben Rudiak-Gould mentions:
+
+>App-private window messages are supposed to be numbered from WM_APP. WM_USER
+>is for window-class-specific messages. You should probably use WM_APP 
+>instead of WM_XUSER, though I doubt it will matter in practice.
+
+This should be a trivial change for someone who can test builds on Windows.
