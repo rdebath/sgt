@@ -16,6 +16,13 @@ randomness on Windows, so for key generation we make the user generate
 some by waving the mouse around.
 
 <p>
+Another reason that the current Windows PuTTYgen is unsuited to batch
+use is that as a Windows GUI application, it will not block the batch
+file but be launched off asynchronously. Even ignoring the randomness
+issue (which can be ignored for automated format conversions, for
+instance), a separate console application would be required.
+
+<p>
 (The Unix version of PuTTYgen can and does run in a batch mode, as we
 use <tt>/dev/random</tt> there, which is assumed to be a sufficiently
 good source of randomness and doesn't require us to interact with the
