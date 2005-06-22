@@ -60,8 +60,9 @@ def isint(s):
 #  - PMBREAK is a mono-break paragraph.
 #  - PTITLE is a title paragraph.
 #  - PTITLEQUIET is a quiet title paragraph (appears in the title
-#    on LJ, but is formatted normally on Mono).
-#  - PTITLELJ is an LJ-only title paragraph.
+#    on title-using systems, but is formatted normally on Mono).
+#  - PTITLEONLY is a title paragraph which _only_ appears in
+#    title-using systems.
 #  - PTALKER is a talker-formatted paragraph.
 PNORMAL = 1
 PPRE = 2
@@ -69,9 +70,9 @@ PBULLET = 3
 PMBREAK = 4
 PTITLE = 5
 PTITLEQUIET = 6
-PTITLELJ = 7
+PTITLEONLY = 7
 PTALKER = 8
-def is_title(typ): return typ in [PTITLE,PTITLEQUIET,PTITLELJ]
+def is_title(typ): return typ in [PTITLE,PTITLEQUIET,PTITLEONLY]
 # Mono attribute definitions.
 mono_colours = "AAAAAAAAKRGYBMCW" # 0-7 normal, 8-15 coloured
 ATTR_BOLD = 1
@@ -86,6 +87,8 @@ ATTR_URL = 0xC3
 # story-mode text.
 monoquotes = [("", 0, 0), ("  ", ATTR_QUOTED, 0),
 ("> ", ATTR_QUOTED, 0), ("   ", ATTR_STORY, 0)]
+# Same for news.
+newsquotes = [("", 0), ("  ", 0), ("> ", 0), ("   ", 0)]
 # Regexp matching dangerous things to put at the start of a line.
 monodanger = re.compile(r'^[A-Z][A-Za-z]*:')
 # Maximum length of a Mono edit.
@@ -93,10 +96,13 @@ MONO_EDIT_MAX = 98
 class output:
     def __init__(self):
 	self.mono = []
+	self.news = []
 	self.html = ""
 	self.subj = ""
+	self.newssubj = ""
 	self.quotestate = 0
         self.monoquote = monoquotes[0]
+        self.newsquote = newsquotes[0]
 	self.in_ul = 0
         self.timestamp = now
 	self.mono_last_edit_start = -1
@@ -111,6 +117,10 @@ class output:
     def mono_blankline(self):
         if len(self.mono) > 0 and self.mono[-1] != "":
             self.mono.append("")
+
+    def news_blankline(self):
+        if len(self.news) > 0 and self.news[-1] != "":
+            self.news.append("")
 
     def mono_new_edit(self):
         lt = time.localtime(self.timestamp)
@@ -130,6 +140,9 @@ class output:
 
     def mono_add_word(self, text, attrs, isbreak):
         self.mono_words.append((text, attrs, isbreak))
+
+    def news_add_word(self, text, isbreak):
+        self.news_words.append((text, isbreak))
 
     def mono_append(self, attr, currwid, word):
         text = word[0]
@@ -209,6 +222,64 @@ class output:
                 i = i + 1
         return ret
 
+    def news_wrap_optimal(self, list, i1, i2, width=72, opt_width=72):
+        class holder:
+	    "container class"
+	    pass
+        n = len(list)
+        z = []
+        for i in range(n-1, -1, -1):
+            if i == 0:
+		text = i1[0]
+	    else:
+		text = i2[0]
+	    wid = len(text)
+	    best = None
+	    bestcost = None
+	    z = [holder()] + z
+	    for j in range(1, n-i+1):
+		text = text + list[i+j-1][0]
+		wid = len(text)
+                if i+j < n and list[i+j][1] == 0:
+                    continue # can't wrap here; don't bother trying
+	        if wid > width:
+		    break
+	        if j >= len(z):
+		    if wid <= opt_width:
+		        # We allow the last line to be short without
+		        # penalty, although we still penalise it for being
+		        # longer than opt_width.
+		        cost = 0
+		    else:
+		        cost = (opt_width-wid) ** 2
+	        else:
+		    thiscost = (opt_width-wid) ** 2
+		    cost = thiscost + z[j].cost
+	        if bestcost == None or bestcost >= cost:
+		    bestcost = cost
+		    best = j
+	    if best == None:
+	        z[0].cost = 0
+	        z[0].n = n - i
+	    else:
+	        z[0].cost = bestcost
+	        z[0].n = best
+        i = 0
+        ret = []
+        while i < len(list):
+	    n = z[i].n
+            if i == 0:
+		text = i1[0]
+            else:
+		text = i2[0]
+            for word in list[i:i+n]:
+		text = text + word[0]
+            ret.append(text)
+	    i = i + n
+            if i < len(list) and list[i][1] == 1:
+                i = i + 1
+        return ret
+
     def mono_show_para(self, blankable=0):
         quot = self.monoquote
         if self.mono_bullet_wid:
@@ -223,6 +294,21 @@ class output:
 	if blankable and len(list) == 0:
 	    list = ['']
         self.mono.extend(list)
+
+    def news_show_para(self, blankable=0):
+        quot = self.newsquote
+        if self.news_bullet_wid:
+	    if self.news_bullet_txt != "":
+		i1 = (quot[0] + self.news_bullet_txt, quot[1])
+		i2 = (quot[0] + " " * self.news_bullet_wid, quot[1])
+	    else:
+		i1 = i2 = (quot[0] + " " * self.news_bullet_wid, quot[1])
+        else:
+            i1 = i2 = quot
+        list = self.news_wrap_optimal(self.news_words, i1, i2)
+	if blankable and len(list) == 0:
+	    list = ['']
+        self.news.extend(list)
 
     def htmlsafe(self, text):
 	text = string.replace(text, "&", "&amp;")
@@ -246,6 +332,7 @@ class output:
 		self.html = self.html + "<span class=\"fiction\">"
 	    self.quotestate = n
             self.monoquote = monoquotes[n]
+            self.newsquote = newsquotes[n]
 
     def ljcut(self, text):
 	if text == None:
@@ -268,6 +355,7 @@ class output:
 	    self.html = self.html[:-4]
 
 	self.mono_blankline()
+	self.news_blankline()
 	if len(self.mono) - self.mono_last_edit_start >= MONO_EDIT_MAX:
 	    msg = "Mono edit at line %d is too long!" % (self.mono_last_edit_start+1)
 	    self.warnings.append(msg)
@@ -277,13 +365,29 @@ class output:
 		msg = "Mono line %d is too long!" % i
 		self.warnings.append(msg)
 
+	global nowlocal
+	self.news_headers = ["Newsgroups: chiark.journals"]
+	self.news_headers.append("Date: " + time.strftime("%a, %d %b %Y %H:%M:%S %z", nowlocal))
+	# FIXME: name and subject prefix ought to be better than hardcoded.
+	self.news_headers.append("From: Simon Tatham <anakin@pobox.com>")
+	self.news_headers.append("Subject: [sgtatham] " + self.newssubj)
+	self.news = self.news_headers + [""] + self.news
+	# FIXME: likewise sig.
+	self.news.append("-- ")
+	self.news.append("Simon Tatham's multi-format journal, also available at:")
+	self.news.append(" - http://www.livejournal.com/users/simont/")
+	self.news.append(" - <MLNANAKIN!> on mono.org")
+
     def begin_para(self, typ):
 	self.html_ok = 1
 	self.mono_ok = 1
+	self.news_ok = 1
 	self.html_title = 0
         self.mono_attr = self.monoquote[1]
         self.mono_bullet_wid = 0
 	self.mono_bullet_txt = ""
+        self.news_bullet_wid = 0
+	self.news_bullet_txt = ""
 	self.para_type = typ
 
 	if typ == PBULLET:
@@ -292,6 +396,8 @@ class output:
 	    self.in_ul = 1
             self.mono_bullet_wid = 3
 	    self.mono_bullet_txt = " - "
+            self.news_bullet_wid = 3
+	    self.news_bullet_txt = " - "
 	else:
 	    if self.in_ul: self.html = self.html + "</ul>"
 	    self.in_ul = 0
@@ -306,7 +412,7 @@ class output:
 	    self.html_title = 1
 	    if typ == PTITLE:
 		self.mono_attr = self.mono_attr | ATTR_UNDER
-	    elif typ == PTITLELJ:
+	    elif typ == PTITLEONLY:
 		self.mono_ok = 0
 	if typ == PNORMAL:
 	    self.html = self.html + "<p>"
@@ -316,6 +422,7 @@ class output:
 	    self.talker = 0 # no <tr> open, no <td> open
 
         self.mono_words = []
+        self.news_words = []
 
     def end_para(self, typ):
         bullet = 0
@@ -327,6 +434,13 @@ class output:
 	    self.html = self.html + "</li>"
 	if typ == PTITLE:
 	    self.mono_title = self.mono_words
+	if is_title(typ):
+	    self.newssubj = ""
+	    for word in self.news_words:
+		self.newssubj = self.newssubj + word[0]
+	    newsshow = 0
+	else:
+	    newsshow = 1
 	if typ == PTALKER:
 	    if (self.talker & 2):
 		self.html = self.html + "</td>"
@@ -335,6 +449,9 @@ class output:
 	    self.html = self.html + "</table>"
         self.mono_show_para()
         self.mono_blankline()
+	if newsshow:
+	    self.news_show_para()
+	    self.news_blankline()
 
     def tlbegin(self):
 	self.htmlsave = self.html
@@ -342,6 +459,9 @@ class output:
 	if len(self.mono_words) > 0:
 	    self.mono_show_para()
 	    self.mono_words = []
+	if len(self.news_words) > 0:
+	    self.news_show_para()
+	    self.news_words = []
 	pass
 
     def tlend(self):
@@ -372,6 +492,17 @@ class output:
 	    self.mono_words = []
 	    self.mono_bullet_txt = " " * left + text
 	    self.mono_bullet_wid = left + sw
+	if self.news_ok:
+	    text = ""
+	    attr = sw = 0
+	    for word in self.news_words:
+		text = text + word[0]
+	    text = text + " "
+	    left = 10 - len(text)
+	    if left < 0: left = 0
+	    self.news_words = []
+	    self.news_bullet_txt = " " * left + text
+	    self.news_bullet_wid = left + len(text)
 
     def tb(self):
 	if self.html_ok:
@@ -385,12 +516,18 @@ class output:
 	    if len(self.mono_words) > 0:
 		self.mono_show_para()
 		self.mono_words = []
+	if self.news_ok:
+	    if len(self.news_words) > 0:
+		self.news_show_para()
+		self.news_words = []
 
     def footnote(self, text):
 	if self.html_ok:
 	    self.html = self.html + "<span style=\"color: red\">["+text+"]</span>"
         if self.mono_ok:
             self.mono_add_word("["+text+"]", ATTR_FOOTNOTE, 0)
+        if self.news_ok:
+            self.news_add_word("["+text+"]", 0)
 
     def line_break(self):
 	if self.html_ok:
@@ -398,6 +535,9 @@ class output:
         if self.mono_ok:
             self.mono_show_para(1)
             self.mono_words = []
+        if self.news_ok:
+            self.news_show_para(1)
+            self.news_words = []
 
     def quote(self, opening):
 	if self.html_ok:
@@ -410,6 +550,7 @@ class output:
 	else:
 	    quotes = ["'","`"]
         self.mono_add_word(quotes[opening != 0], self.mono_attr, 0)
+        self.news_add_word(quotes[opening != 0], 0)
         # '
 
     def emph(self, on):
@@ -418,6 +559,7 @@ class output:
 	elif self.html_title:
 	    self.subj = self.subj + ["</em>","<em>"][on != 0]
         self.mono_add_word("_", self.mono_attr, 0)
+        self.news_add_word("_", 0)
 
     def code(self, on):
 	if self.html_ok:
@@ -439,6 +581,9 @@ class output:
             self.mono_attr = self.mono_attr | ATTR_BOLD
 	else:
             self.mono_attr = self.mono_attr & ~ATTR_BOLD
+
+	if self.news_ok:
+	    self.news_add_word("*", 0)
 
     def url(self, text, inline):
 	utext = text
@@ -462,8 +607,21 @@ class output:
 	    self.mono.append(" " * spaces + monotext)
 	    self.mono_blankline()
 	    self.mono_words = []
+
+	    self.news_show_para()
+	    if self.news_bullet_wid:
+		self.news_bullet_txt = ""
+	    self.news_blankline()
+	    newstext = text
+	    spaces = (72 - len(text)) / 2
+	    if spaces < 0:
+		spaces = 0
+	    self.news.append(" " * spaces + newstext)
+	    self.news_blankline()
+	    self.news_words = []
 	else:
 	    self.mono_add_word(text, ATTR_URL, 0)
+	    self.news_add_word(text, 0)
 
     def name(self, text):
 	if self.html_ok:
@@ -472,20 +630,17 @@ class output:
 	    self.subj = self.subj + "<lj user=\"" + text + "\">"
 
     def posturlmode(self, on):
-        self.mono_ok = (on == 0)
-	pass
+        self.mono_ok = self.news_ok = (on == 0)
 
     def postnamemode(self, on):
         self.html_ok = (on == 0)
-	pass
 
     def posttitlemode(self, on):
         self.html_ok = self.html_title = (on == 0)
-	pass
+        self.news_ok = (on == 0)
 
     def end_title(self):
         self.mono_attr = self.mono_attr & ~ATTR_UNDER
-	pass
 
     def word(self, text):
 	if self.html_ok or self.html_title:
@@ -501,11 +656,17 @@ class output:
 		self.html = self.html + htmltext
         if self.mono_ok:
             self.mono_add_word(text, self.mono_attr, 0)
+        if self.news_ok:
+            self.news_add_word(text, 0)
 
     def special(self, keyword):
 	if keyword == "pound":
-	    self.html = self.html + "&#163;"
-	    self.mono_add_word("L", self.mono_attr, 0)
+	    if self.html_ok:
+		self.html = self.html + "&#163;"
+	    if self.mono_ok:
+		self.mono_add_word("L", self.mono_attr, 0)
+	    if self.news_ok:
+		self.news_add_word("L", 0)
 
     def whitespace(self, text):
 	if self.html_ok:
@@ -514,6 +675,8 @@ class output:
 	    self.subj = self.subj + text
         if self.mono_ok:
             self.mono_add_word(text, self.mono_attr, 1)
+        if self.news_ok:
+            self.news_add_word(text, 1)
 
     def default_mbreak(self):
 	# Invent an mbreak paragraph with default text in it.
@@ -694,7 +857,7 @@ def rdinput(file):
     (TSIMPLE,"story"), (TSIMPLE,"/story"),
     (TSIMPLE,"pre"), (TSIMPLE,"b"), (TSIMPLE, "mbreak"), 
     (TOPEN, "ljcut"), (TOPEN, "mbreak"), (TOPEN, "t"), (TOPEN, "tq"),
-    (TOPEN, "tlj"),
+    (TOPEN, "tlj"), (TOPEN, "tonly"),
     (PARA,), (EOF,)]
 
     while 1:
@@ -767,10 +930,10 @@ def rdinput(file):
 		stack = ["tq"]
 		para_type = PTITLEQUIET
 		break
-	    elif tok == (TOPEN, "tlj"):
+	    elif tok == (TOPEN, "tlj") or tok == (TOPEN, "tonly"):
 		t.next()
-		stack = ["tlj"]
-		para_type = PTITLELJ
+		stack = ["tonly"]
+		para_type = PTITLEONLY
 		break
 	    elif tok == (NL,) or tok == (PARA,) or tok == (WHITE,):
 		t.next()
@@ -897,7 +1060,7 @@ def rdinput(file):
 			o.postnamemode(0)
 		    elif s == "tl":
 			o.tlend()
-		    elif s == "t" or s == "tlj":
+		    elif s == "t" or s == "tlj" or s == "tonly":
 			o.end_title()
 		    elif s == "tq":
 			o.end_title()
@@ -996,7 +1159,8 @@ while 1:
 	print i
     print
 
-    sys.stdout.write("Edit again, preview Mono, preview Html, Post (to Mono), Abort? [EMHPA] ")
+    sys.stdout.write("Edit again, preview Mono, preview Html, preview News,\n")
+    sys.stdout.write("Post (to Mono only / Lj / News), Abort? [EMHNPA] ")
     try:
 	s = sys.stdin.readline()
     except KeyboardInterrupt:
@@ -1010,7 +1174,7 @@ while 1:
 	os.system(os.environ["VISUAL"] + " " + fname)
 	continue
 
-    if not (s in ["m\n", "h\n", "p\n", "pm\n"]):
+    if not (s in ["m\n", "h\n", "n\n", "p\n", "pm\n", "pl\n", "pn\n"]):
 	print "Unknown command."
 	print
 	continue
@@ -1028,12 +1192,17 @@ while 1:
 		i = "\007B\007CRFrom: \007CGinsert nameline here"
 	    f.write(i + "\n")
 	f.close()
+    elif s == "n\n":
+	f = os.popen("less -r", "w")
+	for i in out.news:
+	    f.write(i + "\n")
+	f.close()
     elif s == "h\n":
 	f = os.popen("fold -w79 | less -r", "w")
 	f.write("Subject: " + out.subj + "\n\n")
 	f.write(out.html)
 	f.close()
-    elif s == "p\n" or s == "pm\n":
+    elif s == "p\n" or s == "pm\n" or s == "pl\n" or s == "pn\n":
 	f = open(os.environ["HOME"] + "/src/lj/diary.data", "w")
 	g = os.popen("xcopy -C 2>/dev/null", "w")
 	h = os.popen("wclip 2>/dev/null", "w")
@@ -1057,7 +1226,7 @@ while 1:
 	h.close()
 	print "Mono text written to diary.data file and piped through xcopy."
 	print "Don't forget to have your nameline in the ^Y paste buffer!"
-	if s == "p\n":
+	if s == "p\n" or s == "pl\n":
 	    dict = {"mode":"postevent", "lineendings":"unix"}
 	    dict["event"] = out.html
 	    if out.subj != "":
@@ -1078,7 +1247,15 @@ while 1:
 	    else:
 		print "Posted to LJ; itemid =", ret["itemid"]
 	else:
-	    print "Not posted to LJ (`pm' command given)"
+	    print "Not posted to LJ (restricted command given)"
+	if s == "p\n" or s == "pn\n":
+	    f = os.popen("inews", "w")
+	    for i in out.news:
+		f.write(i + "\n")
+	    f.close()
+	    print "Posted to news."
+	else:
+	    print "Not posted to news (restricted command given)"
 	break
 
 if need_unlink:
