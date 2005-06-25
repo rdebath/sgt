@@ -600,11 +600,19 @@ class output:
 	    if self.mono_bullet_wid:
 		self.mono_bullet_txt = ""
 	    self.mono_blankline()
-	    monotext = "\007B\007U\007CB" + text
-	    spaces = (79 - len(text)) / 2
-	    if spaces > 79 - len(monotext):
-		spaces = 79 - len(monotext)
-	    self.mono.append(" " * spaces + monotext)
+
+	    attrs = "\007B\007U\007CB"
+	    maxlen = 79 - len(attrs)
+	    totallen = len(text)
+	    while len(text) > 0:
+		currtext = text[:maxlen]
+		text = text[maxlen:]
+		monotext = attrs + currtext
+		spaces = (72 - totallen) / 2
+		if spaces > 79 - len(monotext):
+		    spaces = 79 - len(monotext)
+		self.mono.append(" " * spaces + monotext)
+
 	    self.mono_blankline()
 	    self.mono_words = []
 
