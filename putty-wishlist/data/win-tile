@@ -1,0 +1,25 @@
+Summary: PuTTY interacts badly with Windows' automatic tiling
+Class: bug
+Difficulty: tricky
+Priority: medium
+Content-type: text/plain
+
+From an e-mail:
+
+It would be nice if PuTTY worked better with Windows' taskbar's "Tile 
+Windows Horizontally/Vertically" context menu option.
+
+For simplicity let's say you have only two PuTTY windows open.  And you 
+right click the task bar and choose "Tile Horizontally".  The PuTTY windows 
+don't act the same as say, Notepad, would.  Their size doesn't change yet 
+they are positioned properly (one at the top and the other halfway down the 
+screen).
+
+Try it with two Notepad windows (or pretty much any program) to see the 
+difference.
+
+I assume it's because of PuTTY's strict resizing limitation -- based on the 
+font in the terminal window.
+It would be great if window sizes were automatically resized to as be close 
+as possible to what's requested of them by a system-wide "Tile 
+Horizontally/Vertically" instruction.
