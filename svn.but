@@ -156,8 +156,9 @@ by \cw{svnserve}, which means nobody can destroy or change history
 Remote access, of course, is still via \cw{ssh}, only instead of
 running \cq{ssh remote-host svnserve}, you now have to run \cq{ssh
 remote-host userv simon-svn svnserve}. But Subversion makes it easy
-to configure strange remote access methods, so that wasn't a
-problem.
+to configure strange remote access methods (by adding entries in the
+\cw{[tunnels]} section in the \c{.subversion/config} file), so that
+wasn't a problem.
 
 Of course, fine-grained access control still isn't supplied by doing
 it like this. But that can be done easily enough using Subversion's
