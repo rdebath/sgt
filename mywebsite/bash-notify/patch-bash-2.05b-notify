@@ -231,11 +231,13 @@ diff -ur bash-2.05b.original/parse.y bash-2.05b/parse.y
        					  current_readline_prompt : "");
  
        if (signal_is_ignored (SIGINT) == 0 && old_sigint)
-@@ -1778,6 +1889,7 @@
+@@ -1778,6 +1889,9 @@
        i = 0;
        shell_input_line_terminator = 0;
  
++#if defined (READLINE)
 +      clean_sigchld_pipe();
++#endif
  #if defined (JOB_CONTROL)
        /* This can cause a problem when reading a command as the result
  	 of a trap, when the trap is called from flush_child.  This call

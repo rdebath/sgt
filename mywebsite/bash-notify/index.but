@@ -127,11 +127,15 @@ versions.)
 
 \b \W{patch-bash-2.05b-notify}\cw{patch-bash-2.05b-notify}
 
-In addition, here is a Debian binary package (for \cw{i386}) of the
-patched \c{bash}. This should install cleanly on any system running
-Debian 3.0 (\q{woody}).
+In addition, here are Debian binary packages (for \cw{i386}) of the
+patched \c{bash}. These should install cleanly on any system running
+Debian 3.1 (\q{sarge}) or 3.0 (\q{woody}).
 
-\b \W{bash_2.05a-11+notify_i386.deb}\cw{bash_2.05a-11+notify_i386.deb}
+\b For \q{sarge}:
+\W{bash_2.05b-26+notify_i386.deb}\cw{bash_2.05b-26+notify_i386.deb}
+
+\b For \q{woody}:
+\W{bash_2.05a-11+notify_i386.deb}\cw{bash_2.05a-11+notify_i386.deb}
 
 \U Internals
 
@@ -167,11 +171,12 @@ check for job terminations and also empty the pipe buffer.
 
 \U Status
 
-This patch has spent about a year in alpha testing. As of July 2004,
-I'm now publishing it on the web for other people to beta-test. I
-have mailed the \c{bash} maintainers about it; if and when they
-reply, I'll update this page.
+I wrote this patch in July 2003. It spent about a year in alpha
+testing, and then in July 2004 I published it on the web for other
+people to beta-test. I mailed the \c{bash} maintainers about it at
+that time as well, but they never replied. (I certainly wouldn't
+blame them if they thought it was far too hacky!)
 
-(I have no particular reason to think the \c{bash} maintainers will
-be interested in folding this patch into the main development. I
-certainly wouldn't blame them if they thought it was far too hacky!)
+Therefore I'm resigned to maintaining this patch as a third-party
+addition to \c{bash}, and I expect to adapt it to new releases of
+\c{bash} as and when I find myself dealing with those releases.
