@@ -2429,9 +2429,9 @@ define timber_bcc_self() {
 }
 
 %}}}
-%{{{ timber_attach(): add an Attach: header in a composer buffer
+%{{{ timber_attach(): add an Attachment: header in a composer buffer
 
-% Add an Attach: header line in a composition.
+% Add an Attachment: header line in a composition.
 define timber_attach() {
     variable fname, type, fbuf, tbuf;
 
@@ -2453,7 +2453,7 @@ define timber_attach() {
 	eol();
 	go_right_1();
     }
-    insert("Attach: " + fname + " " + type + "\n");
+    insert("Attachment: " + fname + " " + type + "\n");
     pop_spot();
 }
 
@@ -2737,7 +2737,7 @@ define timber_forward() {
     insert("To: ");
     push_spot();
     insert("\nSubject: " + subj);
-    insert("\nAttach-Enclosed: message/rfc822 \"forwarded message\"");
+    insert("\nAttachment-Enclosed: message/rfc822 \"forwarded message\"");
     insert("\n\n");
 
     if (file_status(expand_filename(timber_sig)) == 1) {
@@ -2875,8 +2875,8 @@ define timber_only() {
 % important, because we can't get it back. `sendmail -oem' makes
 % Sendmail mail-bounce instead of printing errors.
 % (4) Filter through the Timber attachment processing script
-% before doing anything else. (This converts Attach: headers and
-% Attach-Enclosed: headers into proper MIME encapsulation, and
+% before doing anything else. (This converts Attachment: headers and
+% Attachment-Enclosed: headers into proper MIME encapsulation, and
 % deals with Queue: headers.)
 variable timber_sendmail = "unset";
 
