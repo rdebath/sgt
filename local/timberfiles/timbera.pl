@@ -3,21 +3,22 @@
 # Take a Timber RFC822ish message on stdin, and send it.
 #
 # Timber RFC822ish messages consist of:
-#  - A header section, which may contain Attach and Attach-Enclosed
-#    headers. Terminated by a blank line just like proper RFC822. May
-#    also contain Queue: headers.
+#  - A header section, which may contain Attachment and
+#    Attachment-Enclosed headers. Terminated by a blank line just
+#    like proper RFC822. May also contain Queue: headers.
 #  - A body section. Terminated by EOF or a line beginning with a ^F.
 #  - Attachment sections. Each new one is begun by a ^F line.
 #
-# Attach and Attach-Enclosed headers look like this:
+# Attachment and Attachment-Enclosed headers look like this:
 #
-#   Attach[-Enclosed]: word [word...]
+#   Attachment[-Enclosed]: word [word...]
 #
-# The first word of an Attach header is a filename. Subsequent words
-# are the same as for an Attach-Enclosed header. (For Attach-Enclosed
-# the data comes from an attachment section rather than a file.)
+# The first word of an Attachment header is a filename. Subsequent
+# words are the same as for an Attachment-Enclosed header. (For
+# Attachment-Enclosed the data comes from an attachment section
+# rather than a file.)
 #
-# The first word of an Attach-Enclosed header is a MIME type. `text/plain',
+# The first word of an Attachment-Enclosed header is a MIME type. `text/plain',
 # `message/rfc822', `application/octet-stream', whatever. If it contains
 # two slashes, the text after the second is taken as the character set.
 # Hence `text/plain/iso-8859-1' becomes
@@ -28,8 +29,8 @@
 #
 # The third word, if present and non-empty, is the content name
 # for the `name=' part of the Content-Type header. If not present, the
-# `name=' field will be either omitted (for Attach-Enclosed) or filled in
-# as the last path component of the source file name (for Attach). If
+# `name=' field will be either omitted (for Attachment-Enclosed) or filled in
+# as the last path component of the source file name (for Attachment). If
 # present and empty, the `name=' part will be omitted unconditionally.
 #
 # Word syntax is like shell syntax with just " and \. I.e. any backslashed
@@ -57,7 +58,7 @@ $queue = 0;
 while (<>) {
   chomp;
   last if $_ eq "";  # headers done
-  if (/^Attach:/ or /^Attach-Enclosed:/) {
+  if (/^Attachment:/ or /^Attachment-Enclosed:/) {
     /^([^:]*):\s+(.*)$/; $htype = $1; @hwords = (); $_ = $2;
     while (/^(([^ \t"\\]|\\.|"([^\\"]|\\.)*")+)((\s+)(.*))?$/) {
       $wd = $1; $_ = $6;
@@ -128,16 +129,16 @@ if (&contains_hibit_chars($body)) {
 push @parts, [$bodyhdrs, $body];
 
 # Remaining parts come from the @aheaders array, in order. For those
-# that are Attach: headers, we must read a file to get the data; for
-# those that are Attach-Enclosed: headers, we must take from the
+# that are Attachment: headers, we must read a file to get the data; for
+# those that are Attachment-Enclosed: headers, we must take from the
 # @attachments array.
 
 foreach $a (@aheaders) {
   @a = @$a;
   $htype = shift @a;
-  if ($htype eq "Attach") {
+  if ($htype eq "Attachment") {
     $file = shift @a;
-    die "Missing filename in Attach header\n" if $file eq "";
+    die "Missing filename in Attachment header\n" if $file eq "";
     $defname = $file; $defname =~ s/.*\///g;
     $file =~ s/^(~?)([^\/]*)//;
     if ($1 eq "~") { # tilde-expand
@@ -149,7 +150,7 @@ foreach $a (@aheaders) {
     close F;
   } else {
     $data = shift @attachments;
-    die "Missing attachment for Attach-Enclosed header\n" if !defined $data;
+    die "Missing attachment for Attachment-Enclosed header\n" if !defined $data;
     $defname = "";
   }
   $ctype = shift @a;
