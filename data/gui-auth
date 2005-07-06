@@ -33,8 +33,17 @@ as possible. Not sure of the best way to do this yet.)
 <p>
 On Windows, Plink can create dialog boxes despite being a console-mode
 program. On Unix, we wouldn't want to add a dependency to Gtk to Plink
-just for this; perhaps we can implement the <code>ssh-askpass</code>
-interface.
+just for this; we can probably implement the <code>ssh-askpass</code>
+interface, although it would look a bit naff (existing passphrase
+requesters mention OpenSSH in the dialog caption, and only allow one
+prompt at a time).
+<ul>
+<li>For reference, the <code>ssh-askpass</code> interface is rather
+simple: a prompt (may contain newlines) is optionally passed in as
+the first argument, the passphrase is spit out on stdout with a
+newline, and exit status is zero for success and non-zero for failure
+or user cancellation.
+</ul>
 
 <p>
 All optional, of course.
