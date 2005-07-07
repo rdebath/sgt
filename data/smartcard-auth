@@ -15,12 +15,15 @@ on demand, which is what an SSH agent does too.
 
 <p>Some patches we've seen:
 <ul>
-<li><tt>&lt;300242548@web.de&gt;
-<br>Patch with extended key file format that uses external (PuTTY-specific?)
-DLL
-<br>(patch can be found at
-<a href="http://www.opensc.org/files/contrib/">opensc.org</a>)
 <li><tt>&lt;200409231510.55383.kstef@mtppi.org&gt;
 <br>Patches against PuTTY/Pageant 0.55 to use PKCS#11 libraries (tested with 
 <a href="http://www.opensc.org/">OpenSC</a>)
+<li>These patches can be found in
+<a href="http://www.opensc.org/files/contrib/">opensc.org's contrib directory</a>.
+<li><tt>&lt;300242548@web.de&gt;
+<br>Patch with extended key file format that uses external (PuTTY-specific?)
+DLL
+<br>A compiled binary called PuTTYcard can <em>also</em> be found in
+<a href="http://www.opensc.org/files/contrib/">opensc.org's contrib directory</a>,
+although confusingly it apparently doesn't <em>use</em> OpenSC.
 </ul>
