@@ -23,5 +23,11 @@ Workaround: for NT-class systems, you could use
 to turn the serial connection into a telnet connection.
 (Or someone's suggested a
 <a href="ftp://ftp.h07.org/pub/h07.org/projects/system/wconsd-0.1.zip">patched version</a>
-that's funkier in some way.) Similarly, on Unix, you could use
+that's funkier in some way.)
+Another possibility is
+<a href="http://www.elifulkerson.com/projects/telnet-serial-bridge.php">tsb</a>,
+which apparently works on Win9x/Me as well.
+
+<p>
+Similarly, on Unix, you could use
 <a href="http://ser2net.sourceforge.net/">ser2net</a>.
