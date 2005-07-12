@@ -1,6 +1,6 @@
 Summary: Reports of SSH-1 trouble with port/X11 forwarding
-Absent-in: 0.55 0.57
-Present-in: 0.58 2005-05-19
+Absent-in: 0.55 0.57 2005-02-17
+Present-in: 2005-02-18 0.58 2005-05-19
 Content-type: text/x-html-body
 
 <p>
@@ -9,8 +9,9 @@ out with various error messages when port- or X11 forwarding is in
 use. The problems do not show up with SSH-2.
 
 <p>
-We haven't reproduced this ourselves yet, and don't know where the
-problem might lie.
+We haven't reproduced this ourselves yet. A correspondent has found
+that the problem appeared between 2005-02-17 and 2005-02-18, which
+implies that something between r5324:5335 broke it.
 
 <p>
 Error messages reported include:
