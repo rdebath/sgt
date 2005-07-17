@@ -1,8 +1,18 @@
 <html>
 <head>
 <title>Simon Tatham's Portable Puzzle Collection</title>
-</head>
 <link rel="stylesheet" type="text/css" href="../sitestyle.css" name="Simon Tatham's Home Page Style">
+<style type="text/css">
+span.puzzle {display: -moz-inline-box;
+	     display: inline-block;
+	     margin-right: 10px;
+	     margin-bottom: 10px;
+	     vertical-align: top;
+	     width: 200px;}
+span.puzzle table {width: 200px; align: top; }
+span.puzzle table p {width: 200px; }
+</style>
+</head>
 <body>
 <h1 align=center>Simon Tatham's Portable Puzzle Collection</h1>
 
@@ -36,163 +46,228 @@ convenient for me. I do not claim credit, in general, for inventing
 the rules of any of these puzzles; all I claim is authorship of the
 code.
 
-<dl>
+<p>
+A link to the Windows binary for each game is provided in this
+section. For all other platforms, the games are provided in a single
+bundle, so scroll down to the
+<a href="#download">Download</a>
+section to get them all.
 
-<dt style="clear: both">
-<a href="doc/net.html#net">
-<image style="margin: 0.5em" alt="" width=150 height=150 border=0 align=right src="net.png" />
-</a>
-<a href="doc/net.html#net">Net</a>
-</dt>
-<dd><p>Reassemble the shuffled tiles into a fully connected network
-by rotating them back to their correct orientations.
-</dd>
-<dt style="clear: both">
-<a href="doc/cube.html#cube">
-<image style="margin: 0.5em" alt="" width=150 height=150 border=0 align=right src="cube.png" />
-</a>
-<a href="doc/cube.html#cube">Cube</a>
-</dt>
-<dd><p>Pick up the blue squares by rolling the cube over them. Try
-to get all six blue squares on the faces of the cube at once. Count
-your moves and try to do it in as few as possible. Then try it on a
-triangular grid with any of a tetrahedron, an octahedron or an
-icosahedron.
-</dd>
-<dt style="clear: both">
-<a href="doc/fifteen.html#fifteen">
-<image style="margin: 0.5em" alt="" width=150 height=150 border=0 align=right src="fifteen.png" />
-</a>
-<a href="doc/fifteen.html#fifteen">Fifteen</a>
-</dt>
-<dd><p>The good old "15-puzzle". Slide the tiles around to arrange
-them into numerical order.
-</dd>
-<dt style="clear: both">
-<a href="doc/sixteen.html#sixteen">
-<image style="margin: 0.5em" alt="" width=150 height=150 border=0 align=right src="sixteen.png" />
-</a>
-<a href="doc/sixteen.html#sixteen">Sixteen</a>
-</dt>
-<dd><p>Arrange the tiles into numerical order again, this time by
-rotating an entire row or column at a time within itself.
-</dd>
-<dt style="clear: both">
-<a href="doc/twiddle.html#twiddle">
-<image style="margin: 0.5em" alt="" width=150 height=150 border=0 align=right src="twiddle.png" />
-</a>
-<a href="doc/twiddle.html#twiddle">Twiddle</a>
-</dt>
-<dd><p>Arrange the tiles into numerical order yet again. This time
-your move is to rotate a square of four (or more!) tiles around each
-other.
-</dd>
-<dt style="clear: both">
-<a href="doc/rectangles.html#rectangles">
-<image style="margin: 0.5em" alt="" width=150 height=150 border=0 align=right src="rect.png" />
-</a>
-<a href="doc/rectangles.html#rectangles">Rectangles</a>
-</dt>
-<dd><p>Subdivide the grid into rectangles so that each rectangle
-contains only one number, and has area equal to that number.
-</dd>
-<dt style="clear: both">
-<a href="doc/netslide.html#netslide">
-<image style="margin: 0.5em" alt="" width=150 height=150 border=0 align=right src="netslide.png" />
-</a>
-<a href="doc/netslide.html#netslide">Netslide</a>
-</dt>
-<dd><p>Combine two of these puzzles at once: use the sliding action
-of "Sixteen" to reassemble a grid in the style of "Net".
-</dd>
-<dt style="clear: both">
-<a href="doc/pattern.html#pattern">
-<image style="margin: 0.5em" alt="" width=150 height=150 border=0 align=right src="pattern.png" />
-</a>
-<a href="doc/pattern.html#pattern">Pattern</a>
-</dt>
-<dd><p>Fill in a grid with a black and white pattern, given only the
-lengths of the continuous runs of black squares.
-</dd>
-<dt style="clear: both">
-<a href="doc/solo.html#solo">
-<image style="margin: 0.5em" alt="" width=150 height=150 border=0 align=right src="solo.png" />
-</a>
-<a href="doc/solo.html#solo">Solo</a>
-</dt>
-<dd><p>Fill in a grid full of digits so that each row, column and
-square block contains only one of each different digit.
-</dd>
-<dt style="clear: both">
-<a href="doc/mines.html#mines">
-<image style="margin: 0.5em" alt="" width=150 height=150 border=0 align=right src="mines.png" />
-</a>
-<a href="doc/mines.html#mines">Mines</a>
-</dt>
-<dd><p>Find all the mines in the grid, without treading on any of them.
-</dd>
-<dt style="clear: both">
-<a href="doc/samegame.html#samegame">
-<image style="margin: 0.5em" alt="" width=150 height=150 border=0 align=right src="samegame.png" />
-</a>
-<a href="doc/samegame.html#samegame">Same Game</a>
-</dt>
-<dd><p>Clear the grid by removing touching groups of the same colour squares.
-</dd>
-<dt style="clear: both">
-<a href="doc/flip.html#flip">
-<image style="margin: 0.5em" alt="" width=150 height=150 border=0 align=right src="flip.png" />
-</a>
-<a href="doc/flip.html#flip">Flip</a>
-</dt>
-<dd><p>Light up all the unlit squares by flipping overlapping sets
-of them at a time.
-</dd>
-<dt style="clear: both">
-<a href="doc/guess.html#guess">
-<image style="margin: 0.5em" alt="" width=150 height=150 border=0 align=right src="guess.png" />
-</a>
-<a href="doc/guess.html#guess">Guess</a>
-</dt>
-<dd><p>Guess the hidden combination of colours.
-</dd>
-<dt style="clear: both">
-<a href="doc/pegs.html#pegs">
-<image style="margin: 0.5em" alt="" width=150 height=150 border=0 align=right src="pegs.png" />
-</a>
-<a href="doc/pegs.html#pegs">Pegs</a>
-</dt>
-<dd><p>Clear the board of all but one peg, by jumping pegs over each
-other to remove them.
-</dd>
-<dt style="clear: both">
-<a href="doc/dominosa.html#dominosa">
-<image style="margin: 0.5em" alt="" width=150 height=150 border=0 align=right src="dominosa.png" />
-</a>
-<a href="doc/dominosa.html#dominosa">Dominosa</a>
-</dt>
-<dd><p>Tile a rectangle with a full set of dominoes, matching all
-the numbers against the provided pattern.
-</dd>
-<dt style="clear: both">
-<a href="doc/untangle.html#untangle">
-<image style="margin: 0.5em" alt="" width=150 height=150 border=0 align=right src="untangle.png" />
-</a>
-<a href="doc/untangle.html#untangle">Untangle</a>
-</dt>
-<dd><p>Reposition the points so that the lines do not cross one
-another.
-</dd>
-<dt style="clear: both">
-<a href="doc/blackbox.html#blackbox">
-<image style="margin: 0.5em" alt="" width=150 height=150 border=0 align=right src="blackbox.png" />
-</a>
-<a href="doc/blackbox.html#blackbox">Black Box</a>
-</dt>
-<dd><p>Find the hidden balls in the box by bouncing laser beams off
-them from the sides.
-</dd>
-</dl>
+<p>
+<div class="outer" align="center">
+
+<span class="puzzle"><table>
+<tr><th align="center">Black Box</th></tr>
+<tr><td align="center">
+<image style="margin: 0.5em" alt="" width=150 height=150 border=0 src="blackbox.png" />
+</td></tr>
+<tr><td align="center" style="font-size: 70%"><code>[</code>
+<a href="doc/blackbox.html#blackbox">manual</a>
+<code>|</code>
+<a href="blackbox.exe"><code>blackbox.exe</code></a>
+<code>]</code></td></tr>
+<tr><td align="center">Find the hidden balls in the box by bouncing laser beams off
+them.
+</td></tr></table></span>
+<span class="puzzle"><table>
+<tr><th align="center">Cube</th></tr>
+<tr><td align="center">
+<image style="margin: 0.5em" alt="" width=150 height=150 border=0 src="cube.png" />
+</td></tr>
+<tr><td align="center" style="font-size: 70%"><code>[</code>
+<a href="doc/cube.html#cube">manual</a>
+<code>|</code>
+<a href="cube.exe"><code>cube.exe</code></a>
+<code>]</code></td></tr>
+<tr><td align="center">Pick up all the blue squares by rolling the cube over them.
+</td></tr></table></span>
+<span class="puzzle"><table>
+<tr><th align="center">Dominosa</th></tr>
+<tr><td align="center">
+<image style="margin: 0.5em" alt="" width=150 height=150 border=0 src="dominosa.png" />
+</td></tr>
+<tr><td align="center" style="font-size: 70%"><code>[</code>
+<a href="doc/dominosa.html#dominosa">manual</a>
+<code>|</code>
+<a href="dominosa.exe"><code>dominosa.exe</code></a>
+<code>]</code></td></tr>
+<tr><td align="center">Tile the rectangle with a full set of dominoes.
+</td></tr></table></span>
+<span class="puzzle"><table>
+<tr><th align="center">Fifteen</th></tr>
+<tr><td align="center">
+<image style="margin: 0.5em" alt="" width=150 height=150 border=0 src="fifteen.png" />
+</td></tr>
+<tr><td align="center" style="font-size: 70%"><code>[</code>
+<a href="doc/fifteen.html#fifteen">manual</a>
+<code>|</code>
+<a href="fifteen.exe"><code>fifteen.exe</code></a>
+<code>]</code></td></tr>
+<tr><td align="center">Slide the tiles around to arrange them into order.
+</td></tr></table></span>
+<span class="puzzle"><table>
+<tr><th align="center">Flip</th></tr>
+<tr><td align="center">
+<image style="margin: 0.5em" alt="" width=150 height=150 border=0 src="flip.png" />
+</td></tr>
+<tr><td align="center" style="font-size: 70%"><code>[</code>
+<a href="doc/flip.html#flip">manual</a>
+<code>|</code>
+<a href="flip.exe"><code>flip.exe</code></a>
+<code>]</code></td></tr>
+<tr><td align="center">Flip groups of squares to light them all up at once.
+</td></tr></table></span>
+<span class="puzzle"><table>
+<tr><th align="center">Guess</th></tr>
+<tr><td align="center">
+<image style="margin: 0.5em" alt="" width=150 height=150 border=0 src="guess.png" />
+</td></tr>
+<tr><td align="center" style="font-size: 70%"><code>[</code>
+<a href="doc/guess.html#guess">manual</a>
+<code>|</code>
+<a href="guess.exe"><code>guess.exe</code></a>
+<code>]</code></td></tr>
+<tr><td align="center">Guess the hidden combination of colours.
+</td></tr></table></span>
+<span class="puzzle"><table>
+<tr><th align="center">Mines</th></tr>
+<tr><td align="center">
+<image style="margin: 0.5em" alt="" width=150 height=150 border=0 src="mines.png" />
+</td></tr>
+<tr><td align="center" style="font-size: 70%"><code>[</code>
+<a href="doc/mines.html#mines">manual</a>
+<code>|</code>
+<a href="mines.exe"><code>mines.exe</code></a>
+<code>]</code></td></tr>
+<tr><td align="center">Find all the mines without treading on any of them.
+</td></tr></table></span>
+<span class="puzzle"><table>
+<tr><th align="center">Net</th></tr>
+<tr><td align="center">
+<image style="margin: 0.5em" alt="" width=150 height=150 border=0 src="net.png" />
+</td></tr>
+<tr><td align="center" style="font-size: 70%"><code>[</code>
+<a href="doc/net.html#net">manual</a>
+<code>|</code>
+<a href="netgame.exe"><code>netgame.exe</code></a>
+<code>]</code></td></tr>
+<tr><td align="center">Rotate each tile to reassemble the network.
+</td></tr></table></span>
+<span class="puzzle"><table>
+<tr><th align="center">Netslide</th></tr>
+<tr><td align="center">
+<image style="margin: 0.5em" alt="" width=150 height=150 border=0 src="netslide.png" />
+</td></tr>
+<tr><td align="center" style="font-size: 70%"><code>[</code>
+<a href="doc/netslide.html#netslide">manual</a>
+<code>|</code>
+<a href="netslide.exe"><code>netslide.exe</code></a>
+<code>]</code></td></tr>
+<tr><td align="center">Slide a row at a time to reassemble the
+network.
+</td></tr></table></span>
+<span class="puzzle"><table>
+<tr><th align="center">Pattern</th></tr>
+<tr><td align="center">
+<image style="margin: 0.5em" alt="" width=150 height=150 border=0 src="pattern.png" />
+</td></tr>
+<tr><td align="center" style="font-size: 70%"><code>[</code>
+<a href="doc/pattern.html#pattern">manual</a>
+<code>|</code>
+<a href="pattern.exe"><code>pattern.exe</code></a>
+<code>]</code></td></tr>
+<tr><td align="center">Fill in the pattern in the grid, given only the lengths
+of runs of black squares.
+</td></tr></table></span>
+<span class="puzzle"><table>
+<tr><th align="center">Pegs</th></tr>
+<tr><td align="center">
+<image style="margin: 0.5em" alt="" width=150 height=150 border=0 src="pegs.png" />
+</td></tr>
+<tr><td align="center" style="font-size: 70%"><code>[</code>
+<a href="doc/pegs.html#pegs">manual</a>
+<code>|</code>
+<a href="pegs.exe"><code>pegs.exe</code></a>
+<code>]</code></td></tr>
+<tr><td align="center">Jump pegs over each other to remove all but one.
+</td></tr></table></span>
+<span class="puzzle"><table>
+<tr><th align="center">Rectangles</th></tr>
+<tr><td align="center">
+<image style="margin: 0.5em" alt="" width=150 height=150 border=0 src="rect.png" />
+</td></tr>
+<tr><td align="center" style="font-size: 70%"><code>[</code>
+<a href="doc/rectangles.html#rectangles">manual</a>
+<code>|</code>
+<a href="rect.exe"><code>rect.exe</code></a>
+<code>]</code></td></tr>
+<tr><td align="center">Divide the grid into rectangles with areas equal to the
+numbers.
+</td></tr></table></span>
+<span class="puzzle"><table>
+<tr><th align="center">Same Game</th></tr>
+<tr><td align="center">
+<image style="margin: 0.5em" alt="" width=150 height=150 border=0 src="samegame.png" />
+</td></tr>
+<tr><td align="center" style="font-size: 70%"><code>[</code>
+<a href="doc/samegame.html#samegame">manual</a>
+<code>|</code>
+<a href="samegame.exe"><code>samegame.exe</code></a>
+<code>]</code></td></tr>
+<tr><td align="center">Clear the grid by removing touching groups of the same colour squares.
+</td></tr></table></span>
+<span class="puzzle"><table>
+<tr><th align="center">Sixteen</th></tr>
+<tr><td align="center">
+<image style="margin: 0.5em" alt="" width=150 height=150 border=0 src="sixteen.png" />
+</td></tr>
+<tr><td align="center" style="font-size: 70%"><code>[</code>
+<a href="doc/sixteen.html#sixteen">manual</a>
+<code>|</code>
+<a href="sixteen.exe"><code>sixteen.exe</code></a>
+<code>]</code></td></tr>
+<tr><td align="center">Slide a row at a time to arrange the tiles into
+order.
+</td></tr></table></span>
+<span class="puzzle"><table>
+<tr><th align="center">Solo</th></tr>
+<tr><td align="center">
+<image style="margin: 0.5em" alt="" width=150 height=150 border=0 src="solo.png" />
+</td></tr>
+<tr><td align="center" style="font-size: 70%"><code>[</code>
+<a href="doc/solo.html#solo">manual</a>
+<code>|</code>
+<a href="solo.exe"><code>solo.exe</code></a>
+<code>]</code></td></tr>
+<tr><td align="center">Fill in the grid so that each row, column and
+square block contains one of every digit.
+</td></tr></table></span>
+<span class="puzzle"><table>
+<tr><th align="center">Twiddle</th></tr>
+<tr><td align="center">
+<image style="margin: 0.5em" alt="" width=150 height=150 border=0 src="twiddle.png" />
+</td></tr>
+<tr><td align="center" style="font-size: 70%"><code>[</code>
+<a href="doc/twiddle.html#twiddle">manual</a>
+<code>|</code>
+<a href="twiddle.exe"><code>twiddle.exe</code></a>
+<code>]</code></td></tr>
+<tr><td align="center">Rotate the tiles around themselves to arrange them into
+order.
+</td></tr></table></span>
+<span class="puzzle"><table>
+<tr><th align="center">Untangle</th></tr>
+<tr><td align="center">
+<image style="margin: 0.5em" alt="" width=150 height=150 border=0 src="untangle.png" />
+</td></tr>
+<tr><td align="center" style="font-size: 70%"><code>[</code>
+<a href="doc/untangle.html#untangle">manual</a>
+<code>|</code>
+<a href="untangle.exe"><code>untangle.exe</code></a>
+<code>]</code></td></tr>
+<tr><td align="center">Reposition the points so that the lines do not cross.
+</td></tr></table></span>
+</div>
 
 <h2 style="clear: both">Licence</h2>
 
@@ -203,7 +278,7 @@ This means that you can do pretty much anything you like with the
 game binaries or the code, except pretending you wrote them
 yourself, or suing me if anything goes wrong.
 
-<h2>Download</h2>
+<h2><a name="download">Download</a></h2>
 
 <p>Here are Windows executables of the puzzle games in the
 collection. (On Windows only, the Net executable is called
