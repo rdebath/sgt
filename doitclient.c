@@ -488,7 +488,7 @@ void showversion(void)
     char *v;
     extern char doitlib_revision[];
 
-    v = makeversion(versionbuf, "$Revision: 1.25 $");
+    v = makeversion(versionbuf, "$Revision$");
     if (v)
 	printf("doitclient revision %s", v);
     else
@@ -985,6 +985,10 @@ int main(int argc, char **argv)
     }
 
     if (need_connection) {
+        if (!secret) {
+            fprintf(stderr, "doit: no secret file specified\n");
+            exit(EXIT_FAILURE);
+        }
         secretdata = read_secret_file(secret, &secretlen);
         if (!secretdata)
             return 1;

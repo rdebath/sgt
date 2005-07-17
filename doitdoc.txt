@@ -170,6 +170,10 @@ particular, this means that if you want a universal section to apply
 to _all_ hosts, you can do this by providing a zero-length prefix -
 just use a line containing the word `host' on its own.
 
+If lookup by the DoIt server host is inconvenient for some reason,
+you can force DoIt to look at a specific entry with the environment
+variable DOIT_SERVER.
+
 Finding the server
 ------------------
 
