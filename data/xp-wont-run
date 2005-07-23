@@ -8,25 +8,39 @@ Fixed-in: 2005-04-07 r5604
 Content-type: text/x-html-body
 
 <p>
-We've had a few reports that PuTTY 0.58 utterly fails to run on some
+PuTTY 0.58 utterly fails to run on some
 (but not all) versions of Windows XP, with the following error
 message:
 
-<p>
 <blockquote>
 The application has failed to start because the
 application configuration is incorrect. Reinstalling the
 application may fix this problem.
 </blockquote>
 
+<p>or (in German):
+
+<blockquote>
+Diese Anwendung konnte nicht gestartet werden, weil die Anwenungskonfiguration 
+nicht korrekt ist. Zur Problembehebung sollten Sie die Anwendung neu installiere
+n.
+</blockquote>
+
+<p>or (in Dutch):
+
+<blockquote>
+De toepassing kan niet worden gestart omdat de configuratie van de
+toepassing onjuist is. Het opnieuw installeren van de toepassing kan die
+probleem oplossen.
+</blockquote>
+
 <p>
 (Reinstalling PuTTY does not fix the problem.)
 
 <p>
-It's not clear to us precisely which variants of XP are affected.
-We've only had a trickle of reports so far; the information we've seen
-indicates that the problem is with older, unpatched versions of XP
-(one report indicated it went away upon upgrade to SP2).
+As far as we can tell, this problem only affects Windows XP systems that
+don't have Service Pack 2 installed.  In particular, we've had one report
+that installing SP2 solved the problem.
 
 <p>
 I believe this is likely due to a trim I (JTN) made to the
