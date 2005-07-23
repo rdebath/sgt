@@ -601,6 +601,8 @@ class output:
 		self.mono_bullet_txt = ""
 	    self.mono_blankline()
 
+	    newstext = text
+
 	    attrs = "\007B\007U\007CB"
 	    maxlen = 79 - len(attrs)
 	    totallen = len(text)
@@ -620,8 +622,7 @@ class output:
 	    if self.news_bullet_wid:
 		self.news_bullet_txt = ""
 	    self.news_blankline()
-	    newstext = text
-	    spaces = (72 - len(text)) / 2
+	    spaces = (72 - len(newstext)) / 2
 	    if spaces < 0:
 		spaces = 0
 	    self.news.append(" " * spaces + newstext)
@@ -675,15 +676,22 @@ class output:
 		self.mono_add_word("L", self.mono_attr, 0)
 	    if self.news_ok:
 		self.news_add_word("L", 0)
+	elif keyword == "tm":
+	    if self.html_ok:
+		self.html = self.html + "&#8482;"
+	    if self.mono_ok:
+		self.mono_add_word("(TM)", self.mono_attr, 0)
+	    if self.news_ok:
+		self.news_add_word("(TM)", 0)
 
     def whitespace(self, text):
 	if self.html_ok:
 	    self.html = self.html + self.htmlsafe(text)
 	elif self.html_title:
 	    self.subj = self.subj + text
-        if self.mono_ok:
+        if self.mono_ok and len(self.mono_words) > 0:
             self.mono_add_word(text, self.mono_attr, 1)
-        if self.news_ok:
+        if self.news_ok and len(self.news_words) > 0:
             self.news_add_word(text, 1)
 
     def default_mbreak(self):
@@ -965,6 +973,8 @@ def rdinput(file):
 		    o.footnote(tok[1])
 		elif tok[1] == "L":
 		    o.special("pound")
+		elif tok[1] == "TM":
+		    o.special("tm")
 		elif tok[1] == "br":
 		    tok2 = t.curr()
 		    # Skip line break just before end of paragraph.
@@ -1260,8 +1270,10 @@ while 1:
 	    f = os.popen("inews", "w")
 	    for i in out.news:
 		f.write(i + "\n")
-	    f.close()
-	    print "Posted to news."
+	    if f.close():
+		print "Posting to news returned an error code"
+	    else:
+		print "Posted to news."
 	else:
 	    print "Not posted to news (restricted command given)"
 	break
