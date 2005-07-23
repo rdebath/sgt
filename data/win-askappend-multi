@@ -1,0 +1,13 @@
+Summary: Multiple askappend dialogue boxes on Windows
+Present-in: 0.58
+Class: bug
+Content-type: text/plain
+Priority: medium
+
+According to a report:
+
+When PuTTY is set up to log (printable or all session data), and the
+option "Ask the user every time" is selected, two dialog boxes titled
+"PuTTY Log to File" questioning whether to overwrite, append, or cancel
+logging appeared.  After answering both dialog boxes, the PuTTY terminal
+no longer displays incoming data.
