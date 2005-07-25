@@ -77,6 +77,11 @@
 
 #include <gdk/gdkkeysyms.h>
 
+#include <X11/X.h>
+#include <X11/Xlib.h>
+#include <X11/Xutil.h>
+#include <gdk/gdkx.h>
+
 /*
  * FIXME: These should be set from the current display size.
  * Tricky, because I'd also like to take the GNOME taskbar into
@@ -404,11 +409,32 @@ static struct window *new_window(struct ilist *il, int maxsize)
     return w;
 }
 
+static void set_root_window(image *im)
+{
+    int iw, ih;
+    GdkPixmap *pm;
+    int screen;
+    Window rootwin;
+
+    iw = image_width(im);
+    ih = image_height(im);
+
+    screen = DefaultScreen(GDK_DISPLAY());
+    rootwin = RootWindow(GDK_DISPLAY(), screen);
+
+    pm = gdk_pixmap_new(gdk_window_foreign_new(rootwin), iw, ih, -1);
+    image_to_pixmap(im, pm, iw, ih);
+
+    XSetWindowBackgroundPixmap(GDK_DISPLAY(), rootwin, GDK_WINDOW_XWINDOW(pm));
+    XClearWindow(GDK_DISPLAY(), rootwin);
+    XSetCloseDownMode(GDK_DISPLAY(), RetainPermanent);
+}
+
 int main(int argc, char **argv)
 {
     struct ilist *il;
     int opts = TRUE, errs = FALSE, nogo = FALSE, maxsize = FALSE;
-    int ignoreloaderrs = FALSE;
+    int ignoreloaderrs = FALSE, rootwin = FALSE;
 
     /*
      * GTK will gratuitously eat an argument which is a single
@@ -478,6 +504,8 @@ int main(int argc, char **argv)
                             maxsize = TRUE;
                         } else if (!strcmp(opt, "-ignore-load-errors")) {
                             ignoreloaderrs = TRUE;
+                        } else if (!strcmp(opt, "-root")) {
+                            rootwin = TRUE;
 			} else if (!strcmp(opt, "-help")) {
 			    help();
 			    nogo = TRUE;
@@ -602,9 +630,12 @@ int main(int argc, char **argv)
     if (nogo)
         return 0;
 
-    new_window(il, maxsize);
-
-    gtk_main();
+    if (rootwin) {
+        set_root_window(il->images[0]);
+    } else {
+        new_window(il, maxsize);
+        gtk_main();
+    }
 
     return 0;
 }
