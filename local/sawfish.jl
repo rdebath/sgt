@@ -120,6 +120,10 @@
 ;; that window ID, _if_ it's the very next enter-notify. (This
 ;; ensures that waving the mouse about will clear any incorrect
 ;; setting of this variable and avoid any trouble.)
+;;
+;; In addition to all this, I also avoid transferring focus to
+;; certain types of window (the GNOME panel) due to mouse
+;; movements only.
 
 ;; This function contains the knowledge of which window types we do
 ;; not want to unexpectedly take focus away from.
@@ -128,6 +132,14 @@
               "putty\0Putty\0")
       (equal (caddr (get-x-property w 'WM_CLASS))
               "pterm\0Pterm\0")
+  )
+)
+
+;; This function contains knowledge about window types which I
+;; don't want to focus just because of mouse movements.
+(define (sgt-no-focus-on-mouse-p w)
+  (or (equal (caddr (get-x-property w 'WM_CLASS))
+              "panel_window\0Panel\0")
   )
 )
 
@@ -152,6 +164,7 @@
       (case action
         ((pointer-in)
          (when (and (window-really-wants-input-p w)
+                    (not (sgt-no-focus-on-mouse-p w))
                     (not (equal sgt-enter-notify-ignore w)))
            ;;(print (list 'setting-focus-to w))
            (set-input-focus w))
