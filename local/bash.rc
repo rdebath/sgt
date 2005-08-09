@@ -566,3 +566,24 @@ zzcat() {
 }
 
 #}}}
+#{{{ shell function which echoes a command before doing it
+verbose() {
+  local i x y s
+  i=$#
+  s=""
+  while [ $i -gt 0 ]; do
+    x="$1"
+    shift 
+    i=$[$i-1]
+    echo -n "$s"
+    s=" "
+    case "$x" in
+      *[!a-zA-Z0-9%+,\-./:=\[\]^_]*) y=${x//\'/\'\\\'\'}; echo -n "'$y'" ;;
+      *) echo -n "$x" ;;
+    esac
+    set -- "$@" "$x"
+  done
+  echo
+  "$@"
+}
+#}}}
