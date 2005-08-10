@@ -19,7 +19,7 @@ if test -f $HOME/.mfilter; then FILTER=$HOME/.mfilter; fi
 while [ $# -gt 0 ]; do
   case "$1" in
     -screen) SCREEN='screen -ln';;
-    -ssh) EXEC=exec; CONNECT='ssh -C -x -e none -l mono';;
+    -ssh) EXEC=exec; CONNECT='sh -c '\''eval "set -- $SSHOPTS" && exec ssh -C -x -e none -l mono "$@"'; CEND="'";;
     -nopty) EXEC=; CONNECT='stty -isig -icanon -echo; cat | ssh -C -x -e none -l mono';
             CEND='; stty isig icanon echo'; unset exec ;;
     -nofilter) FILTER= ;;
