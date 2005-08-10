@@ -54,9 +54,9 @@ else
   nyear=$year
 fi
 
-m1=`cal $pmonth $pyear | tr '\n' .`
-m2=`cal  $month  $year | tr '\n' .`
-m3=`cal $nmonth $nyear | tr '\n' .`
+m1=`$REALCAL $pmonth $pyear | tr '\n' .`
+m2=`$REALCAL  $month  $year | tr '\n' .`
+m3=`$REALCAL $nmonth $nyear | tr '\n' .`
 
 while test -n "$m1" -o -n "$m2" -o -n "$m3"; do
   l1="`echo \"$m1\" | cut -d. -f1`"
