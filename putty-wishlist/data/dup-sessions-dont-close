@@ -1,7 +1,7 @@
 Summary: On Windows, parent session doesn't close until child does
 Class: semi-bug
 Difficulty: fun
-Present-in: 0.58 2005-07-11 2005-08-04
+Present-in: 0.57 0.58 2005-07-11 2005-08-04
 Content-type: text/x-html-body
 
 <p>
