@@ -2,6 +2,7 @@ Summary: PuTTY should use WP_APP, not WM_USER
 Class: bug
 Difficulty: fun
 Priority: medium
+Fixed-in: r6183 2005-08-11
 Content-type: text/plain
 
 Ben Rudiak-Gould mentions:
