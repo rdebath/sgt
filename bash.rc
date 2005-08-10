@@ -566,24 +566,31 @@ zzcat() {
 }
 
 #}}}
-#{{{ shell function which echoes a command before doing it
-verbose() {
-  local i x y s
+#{{{ shellquote() and verbose()
+
+shellquote() {
+  local i x y s ret
   i=$#
   s=""
+  ret=""
   while [ $i -gt 0 ]; do
     x="$1"
     shift 
     i=$[$i-1]
-    echo -n "$s"
+    ret="$ret$s"
     s=" "
     case "$x" in
-      *[!a-zA-Z0-9%+,\-./:=\[\]^_]*) y=${x//\'/\'\\\'\'}; echo -n "'$y'" ;;
-      *) echo -n "$x" ;;
+      *[!a-zA-Z0-9%+,\-./:=\[\]^_]*) y=${x//\'/\'\\\'\'}; ret="$ret'$y'" ;;
+      *) ret="$ret$x" ;;
     esac
     set -- "$@" "$x"
   done
-  echo
+  echo "$ret"
+}
+
+verbose() {
+  shellquote "$@"
   "$@"
 }
+
 #}}}
