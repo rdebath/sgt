@@ -1,0 +1,75 @@
+#!/bin/bash
+
+# Script to wrapper cal(1) and give it more sensible command-line
+# parsing.
+
+REALCAL=/usr/bin/cal
+
+month=`date +%m`
+month=$[1$month - 100]  # trim leading zero, avoiding octal trap
+year=`date +%Y`
+
+# Possible invocations:
+#
+# Every invocation which prints a single month also prints the two
+# either side.
+#
+#  - just `cal': prints the current month.
+#  - `cal <n>' where n <= 12: prints the nearest month with that
+#    number (erring on the side of the future if it's 6 months away
+#    from the current one).
+#  - `cal <n> <m>': prints month n in year m as usual.
+#
+#  - `cal <n>' where n > 12: prints the entire calendar for that
+#    year, as usual.
+
+if test "$#" = 2; then
+  month=$1
+  year=$2
+elif test "$#" -gt 2; then
+  exec $REALCAL "$1"
+elif test "$#" = 1 && test "$1" -gt 12; then
+  exec $REALCAL "$1"
+elif test "$#" = 1; then
+  if test "$1" -gt $[$month + 6]; then
+    year=$[$year - 1]
+  elif test "$month" -ge $[$1 + 6]; then
+    year=$[$year + 1]
+  fi
+  month=$1
+fi
+
+if test "$month" = 1; then
+  pmonth=12
+  pyear=$[$year - 1]
+else
+  pmonth=$[$month - 1]
+  pyear=$year
+fi
+if test "$month" = 12; then
+  nmonth=1
+  nyear=$[$year + 1]
+else
+  nmonth=$[$month + 1]
+  nyear=$year
+fi
+
+m1=`cal $pmonth $pyear | tr '\n' .`
+m2=`cal  $month  $year | tr '\n' .`
+m3=`cal $nmonth $nyear | tr '\n' .`
+
+while test -n "$m1" -o -n "$m2" -o -n "$m3"; do
+  l1="`echo \"$m1\" | cut -d. -f1`"
+  l2="`echo \"$m2\" | cut -d. -f1`"
+  l3="`echo \"$m3\" | cut -d. -f1`"
+
+  l1="`echo \"$l1                       \" | cut -c1-23`"
+  l2="`echo \"$l2                       \" | cut -c1-23`"
+  l3="`echo \"$l3                       \" | cut -c1-23`"
+
+  echo "$l1$l2$l3"
+
+  m1="`echo \"$m1\" | cut -d. -f2-`"
+  m2="`echo \"$m2\" | cut -d. -f2-`"
+  m3="`echo \"$m3\" | cut -d. -f2-`"
+done | sed 's/ *$//'
