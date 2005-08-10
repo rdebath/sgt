@@ -54,22 +54,14 @@ else
   nyear=$year
 fi
 
-m1=`$REALCAL $pmonth $pyear | tr '\n' .`
-m2=`$REALCAL  $month  $year | tr '\n' .`
-m3=`$REALCAL $nmonth $nyear | tr '\n' .`
-
-while test -n "$m1" -o -n "$m2" -o -n "$m3"; do
-  l1="`echo \"$m1\" | cut -d. -f1`"
-  l2="`echo \"$m2\" | cut -d. -f1`"
-  l3="`echo \"$m3\" | cut -d. -f1`"
-
-  l1="`echo \"$l1                       \" | cut -c1-23`"
-  l2="`echo \"$l2                       \" | cut -c1-23`"
-  l3="`echo \"$l3                       \" | cut -c1-23`"
-
-  echo "$l1$l2$l3"
-
-  m1="`echo \"$m1\" | cut -d. -f2-`"
-  m2="`echo \"$m2\" | cut -d. -f2-`"
-  m3="`echo \"$m3\" | cut -d. -f2-`"
-done | sed 's/ *$//'
+{ $REALCAL $pmonth $pyear ; echo "SEPARATOR" ;
+  $REALCAL  $month  $year ; echo "SEPARATOR" ;
+  $REALCAL $nmonth $nyear ; } | tee z | \
+    perl -ne 'chomp; if (/SEPARATOR/) { push @things,$a; $a=[] } else {' \
+          -e 'push @$a,$_; $wid=length $_; $maxwid=$wid if $maxwid < $wid;' \
+          -e '$maxht=scalar @$a if $maxht < scalar @$a }' \
+          -e 'END { push @things,$a; for ($y=0; $y<$maxht; $y++) {' \
+          -e '$s=""; $x=0; foreach $thing (@things) {' \
+          -e '$s .= " " x ($maxwid+2); $s=substr($s,0,($maxwid+2)*$x);' \
+          -e '$s.=$thing->[$y]; $x++;' \
+          -e '} print "$s\n"; } }'
