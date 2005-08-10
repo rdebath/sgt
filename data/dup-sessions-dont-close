@@ -1,0 +1,31 @@
+Summary: On Windows, parent session doesn't close until child does
+Class: semi-bug
+Difficulty: fun
+Present-in: 0.58 2005-07-11 2005-08-04
+Content-type: text/x-html-body
+
+<p>
+On Win2K/XP, if a session B is started via "Duplicate Session" from
+a previous session A, the connection associated with A doesn't go away
+on the server until session B is closed (the TCP connection remains up
+as seen by <tt>netstat</tt> on both client and server). This can cause
+processes to hang around, especially if session A is closed rudely
+(with Alt-F4, for example).
+
+<p>
+This isn't observed on Win98.
+
+<p>
+This is presumably the sort of inheritance of handles/sockets that
+r5468 was supposed to deal with. In 0.57 (prior to that change),
+the same occurs with "New Session" too, which lends support to that
+theory. (I didn't observe this with 0.58, although there is a
+<a href="http://groups.google.com/groups?selm=1118856270.523545.40240%40g14g2000cwa.googlegroups.com">report</a>
+of it happening even there with 0.58 on XP.)
+
+<p>
+We might want to make all our sockets non-inheritable with
+<code>DuplicateHandle()</code>/<code>CloseHandle()</code>. (I haven't
+found documentation of how you get a handle from a socket, but I've
+been assured that a socket <em>is</em> a handle, and can just be
+passed in with appropriate casts.)
