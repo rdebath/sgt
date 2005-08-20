@@ -1,0 +1,13 @@
+Summary: If the host key isn't saved, rekeys cause another warning
+Class: bug
+Difficulty: fun
+Priority: medium
+Present-in: 0.58
+Content-type: text/plain
+
+If the user answers "no" to the "cache host key?" prompt, they get asked
+again at the next rekey.  This is a little silly -- PuTTY should remember
+the host key it didn't save, and only whinge if the key has changed.
+
+What PuTTY should do if a different key for the host has turned up in
+the cache in the meantime is left as an exercise for the reader.
