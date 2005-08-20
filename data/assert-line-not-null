@@ -45,6 +45,22 @@ and <a href="large-clipboard-crash.html">`large-clipboard-crash'</a>.)
 </ul>
 
 <p>
+One user (1124367194.23192.240954800@webmail.messagingengine.com)
+has found a reliable cause of what may be the same bug:
+<blockquote>
+<p>I am using bblean blackbox for windows as a shell on windows XP SP2, and
+whenever I rollup a maximized putty window the following fatal error
+results:
+<pre>
+line==NULL in terminal.c
+lineno=4621 y=0 w=93 h=0
+count(scrollback=003B0F60)=200
+count(screen=00CFA2B8)=0
+count(alt=003B0F70)=0 alt_sblines=0
+whichtree=00CFA2B8 treeindex=0
+</pre>
+</blockquote>
+<p>
 Perhaps an unrelated bug that's already been fixed:
 <ul>
 <li><tt>000d01c4b1c7$ca506090$4296a8c0@nadine</tt>
