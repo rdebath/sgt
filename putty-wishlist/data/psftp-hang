@@ -1,0 +1,43 @@
+Summary: Reports of PSFTP hanging/consuming 100% CPU
+Absent-in: 0.56
+Present-in: 0.58 2005-08-11
+
+We've had several reports of PSFTP 0.58 hanging or consuming lots
+of CPU. Possibly this only happens when it's started from Explorer,
+rather than the Command Prompt.
+
+I wasn't able to reproduce this on Win98; however, on Win2K SP4,
+a PSFTP instance started from a shortcut (including from the start menu)
+seems to just sit there and munch CPU when asked to "open <sessname>",
+whereas the same binary started from cmd.exe works fine. No output is
+seen even if the shortcut invokes "psftp -v". (Seen with 0.58 and
+2005-08-11:r6183.)
+
+External reports & sketchy notes:
+
+ * 17762650.1119449356166.JavaMail.root@wamui-cedar.atl.sa.earthlink.net
+   XP Pro, 0.58 
+   run, "open [server]", username/password
+   then responds sluggish (3mins for "exit")
+
+ * C22F646F6265F94A919BC05D7726FAAF01228820@CHZHBEXC12.ch.kworld.kpmg.com
+   XP - sometimes - 0.58 (not "older")
+   only when more than one psftp session?
+
+ * 005e01c5a75e$f590d040$06c8a8c0@PETER
+   0.58, not 0.56
+   consumes CPU for several mins before starting to xfer; thereafter OK
+
+ * F8B9B12641FB6B4FAC761BDEF9D63B040616284E@tlv-ex-01.adprod.bmc.com
+   Win2K SP4 - "several computers" (machine specific?); 0.58
+   start from cmd.exe - OK; from Explorer - hangs
+   hangs after username; sometimes recovers, but slow get/put
+
+ * E1DcmyG-00029Z-00@ixion.tartarus.org
+   0.58 on XP SP2
+   ok from cmd.exe, not from Explorer; hangs between username/password
+
+Possibly related?:
+ * eed4e9ec05062811354a7ba1a8@mail.gmail.com
+   XP SP2; 2005-06-28:r6024
+   hang on bye/exit/quit (command prompt, batch file) from connected
