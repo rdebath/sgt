@@ -363,6 +363,8 @@ other comment characters:
 \c hello, world > thingy
 \c $ echo-literally ooh # this is a comment
 \c ooh # this is a comment
+\c $ echo-literally `rm -rf $HOME`
+\c `rm -rf $HOME`
 
 Of course, this hack is even \e{more} unstable than the magic alias
 hack: it won't work if run from a script, or as part of a complex
