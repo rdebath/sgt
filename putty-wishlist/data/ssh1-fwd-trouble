@@ -1,6 +1,7 @@
-Summary: Reports of SSH-1 trouble with port/X11 forwarding
+Summary: Reports of SSH-1 trouble, particularly with port/X11 forwarding
 Absent-in: 0.55 0.57 2005-02-17
 Present-in: 2005-02-18 0.58 2005-05-19
+Fixed-in: r6221 2005-08-27
 Content-type: text/x-html-body
 
 <p>
@@ -23,13 +24,7 @@ corruption"
 </ul>
 
 <p>
-Reports:
-<ul>
-<li><tt>42551C05.3060504@ecs.soton.ac.uk</tt>
-<br>"redhat 8"/OpenSSH_3.4p1, "redhat enterpise 3"/OpenSSH_3.6.1p2
-<li><tt>200505121422.j4CEMaqj012603@r2d2.charthouse.co.uk</tt>
-<li><tt>A4EC8EBB0E93C5458D3039EB62A66D917069B3@pscdalpexch02.perotsystems.net</tt>
-<br>HP-UX 11.0/OpenSSH_3.5p1, Solaris 8/OpenSSH_3.6.1p1
-<li><tt>DPEHJNMCEDBKMLLEIMIKOEPMDCAA.jochen.hiller@gmx.net</tt>
-<li><tt>20050706114453.DB572CA45@cpmail.cp.net</tt>
-</ul>
+<em>Update:</em> we've made a change which is reported to have fixed
+this. (It turns out that use of port forwarding wasn't absolutely
+necessary to cause this problem.) Thanks to Gevan Dutton for pointing
+us in the right direction.
