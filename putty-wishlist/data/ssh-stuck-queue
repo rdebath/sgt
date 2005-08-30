@@ -14,7 +14,7 @@ processed rather later than it could be.
 There's been a report that this shows up in real life when receiving
 lots of data down an SSH-1 connection, where <code>ssh1_throttle()</code>
 is called.
-<br><tt>&lt;OF39FE4940.43DB4418-ONCC257067.000BF4DD-CC257067.000F5220@bnz.co.nz&gt;
+<br><tt>&lt;OF39FE4940.43DB4418-ONCC257067.000BF4DD-CC257067.000F5220@bnz.co.nz&gt;</tt>
 
 <p>
 <code>ssh_set_frozen()</code> should probably signal something, but
