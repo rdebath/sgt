@@ -21,6 +21,14 @@ the data stream.
 
 <p>
 <b>Update:</b> Ben Harris has written an Internet-Draft (currently
-<a href="http://www.ietf.org/internet-drafts/draft-harris-ssh-arcfour-fixes-02.txt">draft-harris-ssh-arcfour-fixes-02</a>)
+<a href="http://www.ietf.org/internet-drafts/draft-harris-ssh-arcfour-fixes-03.txt">draft-harris-ssh-arcfour-fixes-03</a>)
 describing a way of using Arcfour reasonably securely with SSH-2, and
-PuTTY now implements this.
+PuTTY now implements this. Note that this document defines the
+"arcfour256" and "arcfour128" ciphers; PuTTY still does not support
+the less secure "arcfour" cipher, and we have no plans to make it
+do so.
+
+(In fact it currently only supports those ciphers under private
+names defined in an earlier draft:
+"arcfour256-draft-00@putty.projects.tartarus.org" and so on. If
+the draft is approved, we should add the IETF names.)
