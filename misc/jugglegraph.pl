@@ -1,9 +1,56 @@
 #!/usr/bin/perl
 
 # usage: jugglegraph.pl <nballs> <maxheight>
+#    or: jugglegraph.pl -l <siteswap>       to find the landing pattern
+#  also: -k <pattern>                       to keep a particular graph node
 
-$n = shift @ARGV;
-$max = shift @ARGV;
+$keepnodes = {};
+
+@otherargs = ();
+while (defined ($arg = shift @ARGV)) {
+    if ($arg eq "-l") {
+	$landingmode = 1;
+	$ss = shift @ARGV;
+    } elsif ($arg eq "-k") {
+	$keep = shift @ARGV;
+	$keep =~ y/-x//cd;
+	$keep = "|" . $keep;
+	$keepnodes{$keep} = 1;
+    } else {
+	push @otherargs, $arg;
+    }
+}
+
+if ($landingmode) {
+    if ($ss =~ /,/) {
+	@ss = split /,/, $ss;
+    } else {
+	@ss = split //, $ss;
+    }
+    $pattern = 0;
+    @outputs = ();
+    while (1) {
+	$last = $pattern;
+	for ($i = 0; $i <= $#ss; $i++) {
+	    $outputs[$i] = &fmt($pattern);
+	    $t = $ss[$i];
+	    # Try to make throw $t.
+	    die "invalid siteswap\n" if $pattern & (1 << $t);
+	    $pattern |= 1 << $t;
+	    # Advance time.
+	    $pattern >>= 1;
+	}
+	last if $pattern == $last;
+    }
+    for ($i = 0; $i <= $#ss; $i++) {
+	printf "%s --%d--> %s\n",
+	  $outputs[$i], $ss[$i], $outputs[($i+1) % scalar @ss];
+    }
+    exit 0;
+}
+
+$n = shift @otherargs;
+$max = shift @otherargs;
 
 $nnodes = $ncomplete = 0;
 @nodes = ();
@@ -26,7 +73,7 @@ foreach $link (sort { &lcmp($a,$b) } @links) {
 while (1) {
   my $doneone = 0;
   FL: foreach $i (sort {$b <=> $a} keys %nodeexists) {
-    if (!$linksto{$i.":".$i}) {
+    if (!$keepnodes{&fmt($i)} && !$linksto{$i.":".$i}) {
       &removenode($i);
       $doneone = 1;
       last FL;
