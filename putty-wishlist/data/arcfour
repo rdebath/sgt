@@ -1,9 +1,9 @@
-Summary: The "arcfour" cipher isn't supported
+Summary: The Arcfour cipher isn't supported
 Class: wish
 Difficulty: fun
 Priority: low
 Content-type: text/x-html-body
-Fixed-in: 2005-04-22
+Fixed-in: 2005-09-04
 
 <p>
 PuTTY doesn't support the "arcfour" (RC4) cipher in SSH-2.  Arcfour is
@@ -28,7 +28,9 @@ PuTTY now implements this. Note that this document defines the
 the less secure "arcfour" cipher, and we have no plans to make it
 do so.
 
-(In fact it currently only supports those ciphers under private
+<p>
+(Support was first added in 2005-04-22, but uonly under private
 names defined in an earlier draft:
-"arcfour256-draft-00@putty.projects.tartarus.org" and so on. If
-the draft is approved, we should add the IETF names.)
+"arcfour256-draft-00@putty.projects.tartarus.org" and so on.
+Only from 2005-09-04 do we support the IETF names, which also
+appear in OpenSSH from 4.2.)
