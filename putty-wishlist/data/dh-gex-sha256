@@ -1,0 +1,15 @@
+Summary: Implement "diffie-hellman-group-exchange-sha256"
+Class: wish
+Difficulty: tricky
+Content-type: text/x-html-body
+Fixed-in: 2005-09-05
+
+<p>
+Diffie-Hellman group exchange was implemented in PuTTY some years ago
+(it's been present since 0.52).
+
+<p>
+However, the final version of
+<a href="http://tools.ietf.org/wg/secsh/draft-ietf-secsh-dh-group-exchange/">draft-ietf-secsh-dh-group-exchange</a>
+added a new key exchange method relative to earlier drafts, using SHA-256
+instead of SHA-1. We should implement that too.
