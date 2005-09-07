@@ -91,7 +91,7 @@ def dofnt(fnt):
     f.underline = frombyte(fnt[0x51:]) != 0
     f.strikeout = frombyte(fnt[0x52:]) != 0
     f.weight = fromword(fnt[0x53:])
-    f.charset = frombyte(fnt[0x55:]) != 0
+    f.charset = frombyte(fnt[0x55:])
     #print "Attrs", f.italic, f.underline, f.strikeout, f.weight
     #print "Charset", f.charset
     # Read the char table.
