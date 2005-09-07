@@ -1,0 +1,17 @@
+Summary: Support builds for 64-bit Windows
+Class: wish
+Difficulty: fun
+Priority: low
+Fixed-in: r5821 2005-05-22
+Content-type: text/x-html-body
+
+<p>
+It's occasionally been pointed out that PuTTY doesn't compile/run cleanly
+for 64-bit Windows.
+
+<p>
+This should now be fixed. (You'll need to build with the
+<code>NO_MANIFESTS</code> build flag.)
+
+<p>
+(Note that we have no plans to provide native 64-bit builds ourselves.)
