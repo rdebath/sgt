@@ -14,4 +14,13 @@ This should now be fixed. (You'll need to build with the
 <code>NO_MANIFESTS</code> build flag.)
 
 <p>
-(Note that we have no plans to provide native 64-bit builds ourselves.)
+(Note that we have no plans to provide native 64-bit builds ourselves.
+Even ignoring the fact that we don't have appropriate hardware/compilers,
+it's not clear what advantage there is to be had from running PuTTY
+in native 64-bit mode.)
+
+<p>
+<em>Update:</em> it looks like the call to <code>SetClassLong()</code>
+in <code>window.c:update_mouse_pointer()</code> should also be fixed.
+Unfortunately, <a href="http://www.mingw.org/">MinGW</a> doesn't yet
+support the replacement <code>SetClassLongPtr()</code>.
