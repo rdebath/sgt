@@ -94,7 +94,7 @@ bheap *bheap_new(int maxelts, int eltsize, int direction,
      * Allocate one extra element of space, to use for swapping
      * things.
      */
-    bh->elts = malloc(maxelts * (eltsize+1));
+    bh->elts = malloc((maxelts + 1) * eltsize);
     if (!bh->elts)
 	return NULL;
 
@@ -363,6 +363,15 @@ void rem(int x)
 int main(void)
 {
     coverage = checked_coverage = 0;
+
+    /* Regression test - this used to report access violations when run under
+     * valgrind. */
+    bh = bheap_new(2, sizeof(int), +1, intcmp, &intcmp_ctx);
+    add(2);
+    add(1);
+    rem(1);
+    rem(2);
+    bheap_free(bh);
 
     bh = bheap_new(MAX, sizeof(int), +1, intcmp, &intcmp_ctx);
 
