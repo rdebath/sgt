@@ -41,5 +41,5 @@ def test(s):
 
 test("squiggles")
 test("abracadabra")
-test("the quick brown fox jumped over the lazy dog")
-test("pease pudding hot, pease pudding cold, pease pudding in the pot, nine days old")
+test("the quick brown fox jumps over the lazy dog")
+test("pease porridge hot, pease porridge cold, pease porridge in the pot, nine days old")
