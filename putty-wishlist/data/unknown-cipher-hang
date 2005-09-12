@@ -1,0 +1,11 @@
+Summary: PuTTY hangs if a saved session's preferred cipher is unknown
+Present-in: 0.58
+Fixed-in: r6294 2005-09-13
+Class: bug
+Priority: medium
+Difficulty: fun
+Content-type: text/plain
+
+If a saved session has as its preferred cipher or key-exchange mechanism
+one that isn't recognised by PuTTY (e.g. having been emitted by a newer
+version), PuTTY hangs when loading the saved session.
