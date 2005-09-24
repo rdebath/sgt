@@ -35,9 +35,10 @@ is suboptimal in a number of regards.
 (The PuTTY binaries also contain XML
 <a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/sbscs/setup/application_manifests.asp">application manifests</a>
 to improve appearance on Windows XP; these contain a mandatory version
-number, which is currently hard-coded to 1.0.0.0. This should probably
-be corrected too, although we don't currently know of anything that
-looks at this version number.)
+number. While in current code this is hard-coded to 0.0.0.0, in some
+older versions it was set to 1.0.0.0. This isn't ideal, although we
+don't currently know of anything that actually looks at this version
+number.)
 
 <p>
 Mailing list references:
