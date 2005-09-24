@@ -18,16 +18,16 @@ See also design discussion in
 <a href="win-command-prompt.html#puttycyg">`win-command-prompt'</a>.
 
 <p>
-Workaround: for NT-class systems, you could use
-<a href="http://www.greenend.org.uk/steve/software/wconsd.c">wconsd</a>
-to turn the serial connection into a telnet connection.
-(Or someone's suggested a
+Workaround: you could use third-party software to turn the serial
+connection into a telnet connection. Some possibilities include:
+<ul>
+<li><a href="http://www.greenend.org.uk/steve/software/wconsd.c">wconsd</a>,
+for NT-class Windows systems.
+<ul><li>Someone's suggested a
 <a href="ftp://ftp.h07.org/pub/h07.org/projects/system/wconsd-0.1.zip">patched version</a>
-that's funkier in some way.)
-Another possibility is
-<a href="http://www.elifulkerson.com/projects/telnet-serial-bridge.php">tsb</a>,
+that's funkier in some way.</ul>
+<li><a href="http://www.elifulkerson.com/projects/telnet-serial-bridge.php">tsb</a>,
 which apparently works on Win9x/Me as well.
-
-<p>
-Similarly, on Unix, you could use
-<a href="http://ser2net.sourceforge.net/">ser2net</a>.
+<li><a href="http://www.digibit.org/phpBB2/dload.php?action=category&cat_id=1">NET2COM</a>, also for Windows.
+<li><a href="http://ser2net.sourceforge.net/">ser2net</a>, for Unix.
+</ul>
