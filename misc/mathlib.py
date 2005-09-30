@@ -37,6 +37,16 @@ def gcd(a,b):
         a, b = b, a % b
     return a
 
+def factorise(n):
+    factor = 2
+    while factor * factor <= n:
+	while n % factor == 0:
+	    print factor
+	    n = n / factor
+	factor = factor + 1
+    if n > 1:
+	print n
+
 def intexp(f):
     "Render a finite float into the form integer * 2^exponent. Return (i,e)."
     m, e = math.frexp(f)
