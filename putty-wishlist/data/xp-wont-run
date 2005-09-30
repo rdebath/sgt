@@ -39,18 +39,18 @@ probleem oplossen.
 
 <p>
 As far as we can tell, this problem only affects Windows XP systems that
-don't have Service Pack 2 installed.  In particular, we've had one report
-that installing SP2 solved the problem.
+don't have Service Pack 2 installed.  In particular, we've had reports
+that installing SP2 solves the problem.
 
 <p>
-I believe this is likely due to a trim I (JTN) made to the
+This is due to a trim I (JTN) made to the
 <a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/sbscs/setup/application_manifests.asp">application manifests</a>;
 the trimmed version conformed to Microsoft's specifications, and
 we tested it on one XP install (SP1), but it seems not all XP installs
 are born equal in this regard.
 
 <p>
-If so, it will affect the graphical utilities only (PuTTY, PuTTYtel,
+It affects only the graphical utilities (PuTTY, PuTTYtel,
 PuTTYgen, and Pageant).
 
 <p>
@@ -81,6 +81,8 @@ rename to <tt>pageant.exe.manifest</tt>
 snapshots soon, so this may not be a good long-term solution,
 depending on what state they're in.)
 
+<li>A previous version of PuTTY, if you don't need the new features
+and bugfixes in 0.58. (Note that all releases before 0.57 have known
+security problems, so if you're going to do this you should use 0.57.)
+
 </ul>
-<p>
-Alternatively, PuTTY 0.57 doesn't suffer from this problem.
