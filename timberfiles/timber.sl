@@ -1242,7 +1242,7 @@ define timber_get_mimepart(use_decoded) {
 
     eol();
     go_right_1();
-    name = filename = NULL;
+    name = NULL; filename = NULL;
     while (not eolp()) {
         c = what_char();
         if (c == '<' or c == '>') {
