@@ -400,6 +400,10 @@ $1 = "Timber";
     definekey("timber_movemsgup", "^[^[OA", $1);
     definekey("timber_movemsgdown", "^[^[OB", $1);
 
+    % M-u marks the message as unread again.
+    definekey("timber_unread", "^[U", $1);
+    definekey("timber_unread", "^[u", $1);
+
     % We'll make / a search function, just because it is in so many
     % readonly text viewing applications.
     definekey("search_forward", "/", $1);
@@ -1039,6 +1043,39 @@ define timber_bom() {
 	go_up_1();
 	bol();
     }
+}
+
+%}}}
+%{{{ timber_unread(): mark a read message as unread again
+
+% Mark this message as unread, so that it will be read again the
+% next time Timber is run.
+
+define timber_unread() {
+    variable header, header_hiding, h2, c, showing, firstpart, leadchr;
+
+    push_spot();
+    timber_bom();
+    timber_rw();
+    go_right(2);
+    deln(1);
+    insert("U");
+    go_down_1();
+    bol();
+    while (what_char() == '|') {
+	if (timber_ila("|Status: ")) {
+	    go_right(9);
+	    while (not eolp()) {
+		if (what_char() == 'R')
+		    deln(1);
+		else
+		    go_right_1();
+	    }
+	}
+	go_down_1();
+	bol();
+    }
+    pop_spot();
 }
 
 %}}}
