@@ -67,6 +67,16 @@ while (<>) {
     }
     $a = [$htype, @hwords];
     push @aheaders, $a;
+  } elsif (/^Attach:/) {
+    /^([^:]*):\s+(.*)$/; $htype = $1; @hwords = (); $_ = $2;
+    if (/^(([^ \t"\\]|\\.|"([^\\"]|\\.)*")+)((\s+)(.*))?$/) {
+      $wd = $1; $_ = $6;
+      $wd =~ s/(\\(.)|")/$2/g;
+      push @hwords, $wd;
+      push @hwords, $_;
+    }
+    $a = [$htype, @hwords];
+    push @aheaders, $a;
   } elsif (/^Queue:/) {
     $_ .= "!"; # ensure there's spacing around everything
     exit 1 unless /^(.*\D)(\d\d\d\d)[\-\/]?(\d\d)[\-\/]?(\d\d)(\D.*)$/;
@@ -136,7 +146,7 @@ push @parts, [$bodyhdrs, $body];
 foreach $a (@aheaders) {
   @a = @$a;
   $htype = shift @a;
-  if ($htype eq "Attachment") {
+  if ($htype eq "Attach" or $htype eq "Attachment") {
     $file = shift @a;
     die "Missing filename in Attachment header\n" if $file eq "";
     $defname = $file; $defname =~ s/.*\///g;
@@ -153,7 +163,11 @@ foreach $a (@aheaders) {
     die "Missing attachment for Attachment-Enclosed header\n" if !defined $data;
     $defname = "";
   }
-  $ctype = shift @a;
+  if ($htype eq "Attach") {
+      $ctype = lookupmime();
+  } else {
+      $ctype = shift @a;
+  }
   $ctype = "application/octet-stream" unless defined $ctype;
   $charset = undef;
   if ($ctype =~ /^([^\/]+\/[^\/]+)(\/[^\/]+)/) {
@@ -340,4 +354,22 @@ sub mail {
     print OUTPUT "$msg";
     close OUTPUT;
   }
+}
+
+sub lookupmime {
+    # Look up the MIME type for a file name.
+    
+    my ($ext) = "";
+    my (@words, $type);
+    $ext = $1 if $file =~ /\.([^\.\/]+)$/;
+    
+    open MT, "/etc/mime.types";
+    while (<MT>) {
+	chomp;
+	next if /^\s*#/; # strip comments
+	@words = split /\s+/, $_;
+	$type = shift @words;
+	return $type if grep { $ext eq $_ } @words;
+    }
+    return "application/octet-stream";
 }
