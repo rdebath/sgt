@@ -44,6 +44,41 @@ static int CALLBACK LicenceProc(HWND hwnd, UINT msg,
 				WPARAM wParam, LPARAM lParam);
 HWND aboutbox = NULL;
 
+/* Allocate the concatenation of N strings. Terminate arg list with NULL. */
+char *dupcat(const char *s1, ...)
+{
+    int len;
+    char *p, *q, *sn;
+    va_list ap;
+
+    len = strlen(s1);
+    va_start(ap, s1);
+    while (1) {
+	sn = va_arg(ap, char *);
+	if (!sn)
+	    break;
+	len += strlen(sn);
+    }
+    va_end(ap);
+
+    p = malloc(len + 1);
+    if (!p) return p;
+    strcpy(p, s1);
+    q = p + strlen(p);
+
+    va_start(ap, s1);
+    while (1) {
+	sn = va_arg(ap, char *);
+	if (!sn)
+	    break;
+	strcpy(q, sn);
+	q += strlen(q);
+    }
+    va_end(ap);
+
+    return p;
+}
+
 extern int systray_init(void) {
     BOOL res;
     NOTIFYICONDATA tnid;
@@ -100,11 +135,84 @@ void hotkey_shutdown(void)
     UnregisterHotKey(winurl_hwnd, IDHOT_LAUNCH);
 }
 
-void do_launch_url(void)
+static int launch_it(char *url)
+{
+    if (url) {
+	return (int)ShellExecute(winurl_hwnd, "open", url,
+				 NULL, NULL, SW_SHOWNORMAL);
+    }
+    return 0;
+}
+
+static int our_isspace(char c) {
+    return (c && (isspace((unsigned char)c) || c == '\xA0'));
+}
+
+/* Check if the argument is a plausible URL scheme followed by a colon. */
+static int is_url_scheme(const char *s) {
+    if (isalpha((unsigned char)*s)) {
+	s++;
+	while (isalnum((unsigned char)*s))
+	    s++;
+	if (*s == ':')
+	    return 1;
+    }
+    return 0;
+}
+
+/* Check if the argument is a vaguely plausible local-part followed
+ * by an `@'. */
+static int is_local_part(const char *s) {
+    while (*s &&
+	   (isalnum((unsigned char)*s) || strchr("!#$%&'*+-/=?^_`{|}~.", *s)))
+	s++;
+    return (*s == '@');
+}
+
+/*
+ * Take a text string and try to extract a URL from it, and launch it.
+ */
+static int launch_url(char *s)
+{
+    int ret;
+    if (is_url_scheme(s)) {
+	/*
+	 * Looks like it already has a URL scheme. Fine as it is.
+	 */
+	ret = launch_it(s);
+    } else if (is_local_part(s)) {
+	/*
+	 * It's likely to be an email address, so we'll prefix
+	 * `mailto:'.
+	 */
+	char *url = dupcat("mailto:", s, NULL);
+	ret = launch_it(url);
+	free(url);
+    } else {
+	/*
+	 * No idea. We'll prefix `http://' on the
+	 * assumption that it's a truncated URL of the form
+	 * `www.thingy.com/wossname' or just `www.thingy.com'.
+	 * 
+	 * Exception: if the URL starts "//", we only prefix the
+	 * `http:'.
+	 */
+	char *url;
+	if (s[0] == '/' && s[1] == '/')
+	    url = dupcat("http:", s, NULL);
+	else
+	    url = dupcat("http://", s, NULL);
+	ret = launch_it(url);
+	free(url);
+    }
+    return ret;
+}
+
+void do_launch_urls(void)
 {
     HGLOBAL clipdata;
-    char *s = NULL, *t = NULL, *p, *q;
-    int len, ret, i;
+    char *s = NULL, *t = NULL, *p, *q, *r, *e;
+    int len, ret, in_url = 0, n = 0;
 
     if (!OpenClipboard(NULL)) {
 	goto error; /* unable to read clipboard */
@@ -120,8 +228,8 @@ void do_launch_url(void)
     }
 
     /*
-     * Now strip each \n and any following spaces from the URL
-     * text. In a future version this might be made configurable.
+     * Now strip (some) whitespace from the URL text.
+     * In a future version this might be made configurable.
      */
     len = strlen(s);
     t = malloc(len+8);                 /* leading "http://" plus trailing \0 */
@@ -131,59 +239,78 @@ void do_launch_url(void)
     }
 
     p = s;
-    while (p[0] && (isspace((unsigned char)(p[0])) || p[0] == '\xA0'))
+    q = t;
+    /* Strip leading whitespace. */
+    while (p[0] && our_isspace(p[0]))
 	p++;
-    q = t + 7;
 
-    for (; *p; p++) {
-	if (*p != '\n')
-	    *q++ = *p;
-	else {
-	    while (p[1] && (isspace((unsigned char)(p[1])) || p[1] == '\xA0'))
-		p++;
-	}
+    /* Find any newlines, and close up any white-space around them. */
+    while ((r = strpbrk(p, "\r\n"))) {
+	char *rr = r;
+	/* Strip whitespace before newline(s) */
+	while (our_isspace(rr[0]))
+	    rr--;
+	while (p <= rr)
+	    *q++ = *p++;
+	/* Strip newline(s) and following whitespace */
+	p = r;
+	while (p[0] && our_isspace(p[0]))
+	    p++;
     }
+
+    /* Strip any trailing whitespace */
+    r = p + strlen(p);
+    while (r > p && our_isspace(r[-1]))
+	r--;
+    while (p < r)
+	*q++ = *p++;
 
     *q = '\0';
 
+    GlobalUnlock(s);
+
     /*
-     * Now we have the URL starting at t+7, with space to add a
-     * protocol prefix in case it's required. See if it is
-     * required.
+     * Now we have whitespace-filtered text in t.
+     * First look for <>-delimited strings per RFC3986, and try to
+     * launch any we find as URLs.
      */
-    i = strspn(t+7, "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
-    if (t[7+i] == ':') {
-        p = t+7;                       /* we have our own protocol prefix */
-    } else if (t[7+i] == '@') {
-	/*
-	 * This URL doesn't contain a protocol, and its first
-	 * punctuation character is an @. That makes it likely to
-	 * be an email address, so we'll prefix `mailto:'.
-	 */
-	strncpy(t, "mailto:", 7);
-	p = t;
-    } else {
-	/*
-	 * This URL doesn't contain a protocol, and doesn't look
-	 * like an email address, so we'll prefix `http://' on the
-	 * assumption that it's a truncated URL of the form
-	 * `www.thingy.com/wossname' or just `www.thingy.com'.
-	 * 
-	 * Exception: if the URL starts "//", we only prefix the
-	 * "http:".
-	 */
-	if (t[7] == '/' && t[8] == '/')
-	    p = t+2;
-	else
-	    p = t;
-	strncpy(p, "http://", 7);
+    q = t;
+    while ((e = strpbrk(q, "<>"))) {
+	switch (*e) {
+	  case '<':
+	    q = e+1;
+	    in_url = 1;
+	    break;
+	  case '>':
+	    if (in_url) {
+		/* deal with RFC1738 <URL:...> */
+		if (strncmp(q, "URL:", 4) == 0)
+		    q += 4;
+		/* Remove whitespace between < / <URL: / > and URL. */
+		while (our_isspace(*q)) q++;
+		{
+		    char *ee = e-1;
+		    while (our_isspace(*ee)) ee--;
+		    ee[1] = '\0';
+		}
+		/* We may as well allow non-RFC <foo@example.com> and
+		 * indeed <URL:www.example.com>. */
+		(void) launch_url(q);
+		n++;
+		in_url = 0;
+	    }
+	    q = e+1;
+	    break;
+	}
     }
 
-    ret = (int)ShellExecute(winurl_hwnd, "open", p, NULL, NULL, SW_SHOWNORMAL);
+    if (!n) {
+	/* Didn't find any URLs by that method. Try parsing the string
+	 * as a whole as one. */
+	ret = launch_url(t);
+    }
 
     free(t);
-
-    GlobalUnlock(s);
 
     error:
     /*
@@ -263,7 +390,7 @@ static LRESULT CALLBACK WndProc (HWND hwnd, UINT message,
 	    GetCursorPos(&cursorpos);
 	    PostMessage(hwnd, WM_SYSTRAY2, cursorpos.x, cursorpos.y);
 	} else if (lParam == WM_LBUTTONUP) {
-	    do_launch_url();
+	    do_launch_urls();
 	}
 	break;
       case WM_SYSTRAY2:
@@ -279,13 +406,13 @@ static LRESULT CALLBACK WndProc (HWND hwnd, UINT message,
 	break;
       case WM_HOTKEY:
 	if (wParam == IDHOT_LAUNCH)
-	    do_launch_url();
+	    do_launch_urls();
 	return 0;
       case WM_COMMAND:
 	if ((wParam & ~0xF) == IDM_CLOSE) {
 	    SendMessage(hwnd, WM_CLOSE, 0, 0);
 	} else if ((wParam & ~0xF) == IDM_LAUNCH) {
-	    do_launch_url();
+	    do_launch_urls();
 	} else if ((wParam & ~0xF) == IDM_ABOUT) {
 	    if (!aboutbox) {
 		aboutbox = CreateDialog(winurl_instance,
@@ -324,7 +451,7 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int show) {
 	 * a URL and then terminate, rather than starting up a
 	 * window etc.
 	 */
-	do_launch_url();
+	do_launch_urls();
 	return 0;
     }
 
