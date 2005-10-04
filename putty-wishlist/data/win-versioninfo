@@ -30,6 +30,11 @@ Windows compilers we've tried. We reserve the right to back it out
 if it causes trouble.
 
 <p>
+The meaning of the binary version number (e.g., 0.58.6356.0) is
+described in
+<tt><a href="http://tartarus.org/~simon-anonsvn/viewcvs.cgi/putty/windows/version.rc2?view=markup">windows/version.rc2</a></tt>.
+
+<p>
 (The PuTTY binaries also contain XML
 <a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/sbscs/setup/application_manifests.asp">application manifests</a>
 to improve appearance on Windows XP; these contain a mandatory 
