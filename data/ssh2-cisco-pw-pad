@@ -1,0 +1,30 @@
+Summary: Cisco SSH-2 servers can't handle over-padded packets
+Category: wish
+Absent-in: 0.55
+Present-in: 0.58
+Difficult: tricky
+Priority: low
+Content-type: text/x-html-body
+
+<p>
+It appears that the SSH-2 server in some versions of Cisco CatOS (version
+string "SSH-2.0-Cisco-1.25") is unable to cope with the
+<a href="http://www.tartarus.org/~simon-anonsvn/viewcvs.cgi?rev=5122&amp;view=rev">additional padding</a>
+that PuTTY puts on packets containing passwords in order to mask their length.
+This additional padding is permitted by the SSH-2 specification, which
+merely requires:
+
+<pre>
+      random padding
+         Arbitrary-length padding, such that the total length of
+         (packet_length || padding_length || payload || random padding)
+         is a multiple of the cipher block size or 8, whichever is
+         larger.  There MUST be at least four bytes of padding.  The
+         padding SHOULD consist of random bytes.  The maximum amount of
+         padding is 255 bytes.
+</pre>
+
+<p>This can be solved by reverting to sending an SSH_MSG_IGNORE immediately
+after the password, either for all connections or just when talking to
+broken Cisco servers.  Alternatively, we could just accept guessable password
+lengths when talking to broken servers.
