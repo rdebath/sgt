@@ -14,6 +14,9 @@ backend so far, serial connections have neither hostname nor port,
 and other connections don't have stop bits and guff like that.
 
 <p>
+<a href="http://putty.dwalin.ru/">TuTTY</a> has a serial backend patch.
+
+<p>
 See also design discussion in
 <a href="win-command-prompt.html#puttycyg">`win-command-prompt'</a>.
 

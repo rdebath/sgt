@@ -30,6 +30,9 @@ across a wide range of Windows versions</a>. (Not sure about Win32s.)
 </ul>
 
 <p>
+<a href="http://putty.dwalin.ru">TuTTY</a> implements something like this.
+
+<p>
 Also, we already have various means of distinguishing sessions, and we
 keep getting asked for more. If we added them all, PuTTY would
 balloon.
