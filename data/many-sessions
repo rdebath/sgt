@@ -16,7 +16,8 @@ sessions, perhaps by introducing a hierarchical directory structure
 within the saved-sessions list. (Some list entries would be
 directories, which you could click on to go down a level; in any
 non-root directory there would be a `back up a level' item you could
-click on to go back up.)
+click on to go back up.)  <a href="http://putty.dwalin.ru/">TuTTY</a>
+apparently does something like this.
 
 <p>
 A smaller and simpler alternative would be simply to allow the PuTTY
