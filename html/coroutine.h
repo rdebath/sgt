@@ -120,7 +120,7 @@
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  * 
- * $Id: coroutine.h,v 1.1 2000/10/04 08:43:43 simon Exp $
+ * $Id$
  */
 
 #ifndef COROUTINE_H
@@ -132,7 +132,7 @@
  * `scr' macros for static coroutines.
  */
 
-#define scrBegin(x)      static int scrLine = 0; switch(scrLine) { case 0:;
+#define scrBegin         static int scrLine = 0; switch(scrLine) { case 0:;
 #define scrFinish(z)     } return (z)
 #define scrFinishV       } return
 
