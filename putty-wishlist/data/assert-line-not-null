@@ -42,6 +42,16 @@ and <a href="large-clipboard-crash.html">`large-clipboard-crash'</a>.)
   <br>"disable switching to alternate screen" enabled
 <li><tt>f37cdb910503291851a052bd9@mail.gmail.com</tt>
   <br>with diagnostic info
+<li><tt>20051013140345.GA9964@dot.oreally.co.uk</tt>
+  <br>0.58 on Win2K+SP4
+  <br><pre>
+line==NULL in terminal.c
+lineno=5376 y=65 w=182 h=65
+count(scrollback=00890758)=2
+count(screen=008BE508)=65
+count(alt=00890768)=65 alt_sblines=64
+whichtree=008BE508 treeindex=65
+</pre>
 </ul>
 
 <p>
