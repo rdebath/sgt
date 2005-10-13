@@ -1,0 +1,9 @@
+Summary: On Windows, IPv6 scoped addresses don't work
+Content-type: text/plain
+Priority: low
+Class: bug
+
+It's been reported that IPv6 scoped addresses, such as
+fe80::200:e2ff:fe65:9ce%4, don't work correctly on Windows XP Home + XP2.
+SecureCRT does work, which suggests that we might just need to invoke
+getaddrinfo() differently.
