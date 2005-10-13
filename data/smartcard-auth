@@ -26,4 +26,6 @@ DLL
 <br>A compiled binary called PuTTYcard can <em>also</em> be found in
 <a href="http://www.opensc.org/files/contrib/">opensc.org's contrib directory</a>,
 although confusingly it apparently doesn't <em>use</em> OpenSC.
+<li><a href="http://www.joebar.ch/puttysc/">PuTTY SC</a> uses PKCS#11, and
+doesn't seem to have any source.
 </ul>
