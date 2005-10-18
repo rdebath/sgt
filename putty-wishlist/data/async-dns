@@ -33,3 +33,7 @@ such a way that it doesn't mind which happens; in practice that will
 probably mean the function which called <code>sk_namelookup</code>
 should terminate immediately after doing so, rather than doing
 anything which might need to be done before or after the DNS lookup.
+
+<p>
+<a href="http://dillgroup.ucsf.edu/~justin/putty/adns/">Patch</a> (unreviewed):
+<tt>Pine.LNX.4.60.0510092209320.31985@maxwell.compbio.ucsf.edu</tt>
