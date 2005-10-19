@@ -64,3 +64,16 @@ authentication using MS SSPI; not thoroughly reviewed but doesn't look
 hopeful
 
 </ul>
+
+<p>
+Binary-only versions:
+
+<ul>
+
+<li>
+Centrify provide a
+<a href="http://www.centrify.com/resources/putty.asp">modified version of PuTTY</a>
+which uses the Windows SSPI for GSSAPI support. It includes features
+specific to their other products.
+
+</ul>
