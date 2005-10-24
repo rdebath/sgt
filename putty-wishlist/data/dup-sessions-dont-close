@@ -29,3 +29,8 @@ We might want to make all our sockets non-inheritable with
 found documentation of how you get a handle from a socket, but I've
 been assured that a socket <em>is</em> a handle, and can just be
 passed in with appropriate casts.)
+
+<p>
+When <a href="config-struct.html">`config-struct'</a> is implemented,
+it might be possible to avoid passing strange handles about entirely,
+which might avoid this sort of problem.
