@@ -53,7 +53,7 @@ words available as \cw{$1}, \cw{$2} and so on.
 
 This is a simple and flexible way to define new commands. The inside
 of a shell function can do anything that a shell script in a file
-could have done, and has the the additional ability to modify the
+could have done, and has the additional ability to modify the
 shell's internal state. (For example, a shell function can change
 your current directory, whereas an external shell script cannot.)
 
