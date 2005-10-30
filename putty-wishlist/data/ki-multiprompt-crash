@@ -4,6 +4,7 @@ Difficulty: tricky
 Priority: high
 Absent-in: 0.57
 Present-in: 0.58 2005-05-11
+Fixed-in: 2005-10-31
 Content-type: text/x-html-body
 
 <p>
@@ -16,3 +17,9 @@ non-GUI tools (PSCP, PSFTP, Plink) should work fine.
 This problem has the same root cause as
 <a href="ssh1-bad-passphrase-crash.html">`ssh1-bad-passphrase-crash'</a>,
 and should be fixed by the same rearrangement.
+
+<p>
+<em>Update, 2005-10-31:</em> I believe this should now be fixed,
+but I don't have convenient access to any SSH servers which have this
+property to verify that. If you have been seeing this problem, please
+try a snapshot and let us know whether it works.
