@@ -20,6 +20,4 @@ and should be fixed by the same rearrangement.
 
 <p>
 <em>Update, 2005-10-31:</em> I believe this should now be fixed,
-but I don't have convenient access to any SSH servers which have this
-property to verify that. If you have been seeing this problem, please
-try a snapshot and let us know whether it works.
+and we've had one report confirming that.
