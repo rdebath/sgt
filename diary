@@ -405,7 +405,7 @@ class output:
 	if typ == PPRE:
 	    self.html = self.html + "<pre><code>"
 	if typ == PMBREAK:
-	    self.html_ok = 0
+	    self.html_ok = self.news_ok = 0
             self.mono_new_edit()
 	if is_title(typ):
 	    self.html_ok = 0
