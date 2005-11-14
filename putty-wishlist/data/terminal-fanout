@@ -61,6 +61,10 @@ PuTTY. Unfortunately, I don't think I've got the time to write it.
 </blockquote>
 
 <p>
+A Windows application which implements something like this is
+<a href="http://www.millardsoftware.com/puttycs">PuTTYCS</a>.
+
+<p>
 There are apparently Unix utilities called
 <a href="http://www.stearns.org/fanout/README.html">fanout and fanterm</a>
 which implement this style of thing.
