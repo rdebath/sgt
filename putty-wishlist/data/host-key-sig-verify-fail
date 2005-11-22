@@ -4,7 +4,7 @@ Present-in: 0.55 0.56 2005-01-31 0.57 0.58
 Content-type: text/x-html-body
 
 <p>
-We've had a couple of as-yet-unexplained reports of this (SSH-2
+We've had several as-yet-unexplained reports of this (SSH-2
 specific) error message, which may represent a bug in PuTTY or in an
 SSH server, or perhaps data corruption in between. They've been
 difficult to reproduce.
@@ -42,3 +42,14 @@ as well as the ordinary SSH packet log.
   <br><tt>&lt;4296E722.7090106@koncar-institut.hr&gt;</tt>:
   <br><em>SSH packet log with DH private value</em> (to be analysed)
 </ul>
+
+<p>
+One interesting report had both this SSH-2 failure, and the SSH-1
+failure "Incorrect CRC received on packet", occurring reproducibly
+on the <em>same</em> machine, and no other. Some further digging
+into the SSH-1 problem by our correspondent indicated that PuTTY's
+<tt>rsaencrypt()</tt> function was playing up; and they found that
+with their compiler ("Microsoft (R) 32-bit C/C++ Optimizing Compiler
+Version 13.10.3077 for 80x86") adding <tt>/Od</tt> (disable all
+optimisations) made the problem go away.
+<br><tt>&lt;20051108211710.79855.qmail@web52815.mail.yahoo.com&gt;</tt> et seq
