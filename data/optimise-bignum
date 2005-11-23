@@ -1,21 +1,51 @@
-Summary: Bignum optimisation for more x86 compilers / more processors
+Summary: Enable bignum optimisation for Windows Visual C builds
 Class: semi-bug
 Difficulty: tricky
 Priority: medium
+Fixed-in: r6469 2005-11-24
+Content-type: text/x-html-body
 
-sshbn.c contains conditionally-activated optimised code for x86
+<p>
+<tt>sshbn.c</tt> contains conditionally-activated optimised code for x86
 processors which uses 32-bit chunks instead of 16-bit ones, and a
 small amount of inline assembler to force fast arithmetic with these
 chunks. This makes a noticeable difference to bignum operations such
 as at SSH connection setup.
 
+<p>
 We only have appropriate compiler goop for GCC/x86 currently, so this
 code will only be activated on many Linux/Unix x86 builds and
 MinGW/Cygwin Windows builds; in particular, it's not in our standard
 Windows builds, which are done with MS Visual C.
 
+<p>
 It would be nice if we could enable the C bit of the optimisation on
 more processors. In particular, it might be handy on the Mac port, if
 any of the slower Mac processors can get anything out of it.
 
-Patch for MSVC (unreviewed): <20050331164047.GA24174@clipper.ens.fr>
+<p>
+<em>Update, 2005-11-23:</em> part of a patch from Lionel Fourquaux
+that enables this optimisation has now been applied. Since this fixes
+the overwhelmingly common case, I'm going to declare this fixed,
+although patches for other compilers/platforms are still welcome.
+
+<p>
+Here's an example of the improvement with r6468, on a slow (P233)
+client connecting to a fast (Athlon 1800) server:
+<table>
+<tr>
+<th></th>
+<th>DH group exchange</th>
+<th>4096-bit RSA2 user auth</th>
+</tr>
+<tr>
+<th>Vanilla VC</th>
+<td>11s/10s/11s</td>
+<td>123s/123s/123s</td>
+</tr>
+<tr>
+<th>Optimised VC</th>
+<td>3s/3s/3s</td>
+<td>34s/34s/34s</td>
+</tr>
+</table>
