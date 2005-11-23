@@ -37,7 +37,7 @@ as well as the ordinary SSH packet log.
   <br>0.57; SSH server was running on port 21 in a restricted environment,
   and other protocols reported corruption; this went away when moving to
   port 443
-<li><tt>&lt;4257734F.4060406@koncar-institut.hr&gt;
+<li><tt>&lt;4257734F.4060406@koncar-institut.hr&gt;</tt>
   <br>0.57, OpenSSH_3.8.1p1
   <br><tt>&lt;4296E722.7090106@koncar-institut.hr&gt;</tt>:
   <br><em>SSH packet log with DH private value</em> (to be analysed)
