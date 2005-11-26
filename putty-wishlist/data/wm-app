@@ -1,4 +1,4 @@
-Summary: PuTTY should use WP_APP, not WM_USER
+Summary: PuTTY should use WM_APP, not WM_USER
 Class: bug
 Difficulty: fun
 Priority: medium
