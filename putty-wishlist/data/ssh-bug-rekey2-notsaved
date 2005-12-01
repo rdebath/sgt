@@ -1,0 +1,23 @@
+Summary: SSH-2 rekey bug-compatibility setting not saved
+Class: bug
+Difficulty: fun
+Present-in: 0.58
+Fixed-in: r6473 2005-12-02
+Content-type: text/x-html-body
+
+<p>
+In 0.58, a new SSH bug-compatibility mode was added to PuTTY:
+<a href="http://www.tartarus.org/~simon/puttydoc/Chapter4.html#config-ssh-bug-rekey">"Handles SSH-2 key re-exchange badly"</a>.
+
+<p>
+However, in 0.58, attempts to save any setting other than "Auto" fail
+- the setting stays at "Auto". (Apparently there is some NetApp server
+- "Data ONTAP" - that needs this mode and isn't picked up by our
+heuristics.) This is fixed in the development snapshots.
+
+<p>
+If the setting is present in the saved settings, 0.58 will happily
+load it, so a workaround for 0.58 users is to use a snapshot just to
+save the setting to the desired value, and then revert to using 0.58.
+(Alternatively, you could edit the setting manually; its name is
+<tt>BugRekey2</tt> with values 0=Auto, 1=Off, 2=On.)
