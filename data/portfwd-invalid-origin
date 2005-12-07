@@ -1,0 +1,25 @@
+Summary: Some servers reject SSH-2 tunnels due to invalid originator IP address
+Class: semi-bug
+Difficulty: fun
+Present-in: 0.58
+Fixed-in: r6477 2005-12-08
+Content-type: text/x-html-body
+
+<p>
+In SSH-2, the local-to-remote port-forwarding request is defined by
+<a href="http://tools.ietf.org/wg/secsh/draft-ietf-secsh-connect/">secsh-connect</a>
+to contain an "originator IP address" and "originator port", which
+identify to the server where the connection the client received came
+from.
+
+<p>
+PuTTY has always taken the view that this is none of the server's
+business, and sent the bogus IP address <tt>client-side-connection</tt>
+and port 0.
+
+<p>
+Apparently, some servers take exception to this and refuse the
+forwarding. Specifically, a problem was reported with
+<a href="http://www.ssh.com/products/tectia/server/">SSH Tectia Server (T)</a>
+for Windows, version 5.0.0-844. Using <tt>0.0.0.0</tt> instead appears
+to mollify this server.
