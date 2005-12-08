@@ -18,8 +18,9 @@ business, and sent the bogus IP address <tt>client-side-connection</tt>
 and port 0.
 
 <p>
-Apparently, some servers take exception to this and refuse the
-forwarding. Specifically, a problem was reported with
+Apparently, some servers take exception to this (with some
+justification) and refuse the forwarding. Specifically, a problem
+was reported with
 <a href="http://www.ssh.com/products/tectia/server/">SSH Tectia Server (T)</a>
 for Windows, version 5.0.0-844. Using <tt>0.0.0.0</tt> instead appears
 to mollify this server.
