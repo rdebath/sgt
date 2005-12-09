@@ -1,97 +1,45 @@
-This is the README for the source archive of PuTTY, a free Win32
-and Unix Telnet and SSH client.
+This directory contains `ipbt', a high-tech player for `ttyrec'
+files.
 
-If you want to rebuild PuTTY from source, we provide a variety of
-Makefiles and equivalents. (If you have fetched the source from
-Subversion, you'll have to generate the Makefiles yourself -- see
-below.)
+`ttyrec' is a program similar to script(1): it records all the
+terminal output during a Unix terminal session. Unlike script, it
+writes timestamps into the output file as well as raw output data,
+so that the session can be played back at the original speed. It is
+commonly used for recording games of NetHack.
 
-For building on Windows:
+Conventional ttyrec players are little more than a loop
+interspersing sleep(2) with write(2); it's easy to pause and
+fast-forward, and a particularly advanced player might be able to
+rewind by noticing screen clears and using them as marker points
+(since replay can be restarted reasonably safely from a screen
+clear), but precision single-step backward and forward motion is
+entirely beyond such an application.
 
- - windows/Makefile.vc is for command-line builds on MS Visual C++
-   systems. Change into the `windows' subdirectory and type `nmake
-   -f Makefile.vc' to build all the PuTTY binaries.
+ipbt works by embedding a terminal emulator: it is essentially a
+derivative work of the PuTTY code base. The input file is read in
+full and run through the internal terminal emulator, and the
+resulting screen states are saved in an internal movie array in such
+a way that any screen state (`frame') can be retrieved efficiently.
+Once this is done, the player application simply displays a sequence
+of frames using libncurses; the user can perform the usual pause and
+speed adjustment operations, but can also jump to an arbitrary frame
+number and move backwards as well as forwards.
 
-   Last time we checked, PuTTY built with vanilla VC7, or VC6 with
-   the Platform SDK.
+The downside is that ipbt takes time to read the entire input file
+before starting. I've been testing it on an 8Mb ttyrec of a NetHack
+ascension; on a 1GHz Pentium III it takes about a minute to read the
+file, and a further twenty seconds to rearrange the movie array from
+writing order into reading order. After that setup phase, however,
+playback is efficient.
 
-   (We've also had one report of success building with the
-   OpenWatcom compiler -- www.openwatcom.org -- using Makefile.vc
-   with `wmake -ms -f makefile.vc' and NO_MULTIMON, although we
-   haven't tried this ourselves.)
+Current status of ipbt:
+ * Basically works.
+ * Available keypresses during playback are not documented yet. Read
+   the source if you need to. (NetHackers will probably be used to
+   that anyway :-)
+ * Dependent on libncurses; uses the use_default_colors() extension
+   function, which means it probably won't compile on other curses
+   implementations without a bit of autoconf work.
+ * Makefile is rudimentary at best. Porting work required.
 
- - Inside the windows/MSVC subdirectory are MS Visual Studio project
-   files for doing GUI-based builds of the various PuTTY utilities.
-   These have been tested on Visual Studio 6.
-
-   You should be able to build each PuTTY utility by loading the
-   corresponding .dsp file in Visual Studio. For example,
-   MSVC/putty/putty.dsp builds PuTTY itself, MSVC/plink/plink.dsp
-   builds Plink, and so on.
-
- - windows/Makefile.bor is for the Borland C compiler. Type `make -f
-   Makefile.bor' while in the `windows' subdirectory to build all
-   the PuTTY binaries.
-
- - windows/Makefile.cyg is for Cygwin / mingw32 installations. Type
-   `make -f Makefile.cyg' while in the `windows' subdirectory to
-   build all the PuTTY binaries. Note that by default the multiple
-   monitor support is excluded from the Cygwin build, since at the
-   time of writing Cygwin doesn't include the necessary headers.
-
- - windows/Makefile.lcc is for lcc-win32. Type `make -f
-   Makefile.lcc' while in the `windows' subdirectory. (You will
-   probably need to specify COMPAT=-DNO_MULTIMON.)
-
- - Inside the windows/DEVCPP subdirectory are Dev-C++ project
-   files for doing GUI-based builds of the various PuTTY utilities.
-
-For building on Unix:
-
- - unix/configure is for Unix and GTK. If you don't have GTK, you
-   should still be able to build the command-line utilities (PSCP,
-   PSFTP, Plink, PuTTYgen) using this script. To use it, change
-   into the `unix' subdirectory, run `./configure' and then `make'.
-
-   Note that Unix PuTTY has mostly only been tested on Linux so far;
-   portability problems such as BSD-style ptys or different header file
-   requirements are expected.
- 
- - unix/Makefile.gtk is for non-autoconfigured builds. This makefile
-   expects you to change into the `unix' subdirectory, then run `make
-   -f Makefile.gtk'.
-
- - For the graphical utilities, Gtk+-1.2 is required. Gtk+-2.0 is not
-   yet supported.
-
- - Both Unix Makefiles have an `install' target. Note that by default
-   it tries to install `man' pages, which you may need to have built
-   using Halibut first -- see below.
-
-All of the Makefiles are generated automatically from the file
-`Recipe' by the Perl script `mkfiles.pl'. Additions and corrections
-to Recipe and the mkfiles.pl are much more useful than additions and
-corrections to the alternative Makefiles themselves.
-
-The Unix `configure' script and its various requirements are generated
-by the shell script `mkauto.sh', which requires GNU Autoconf, GNU
-Automake, and Gtk; if you've got the source from Subversion rather
-than using one of our source snapshots, you'll need to run this
-yourself.
-
-Documentation (in various formats including Windows Help and Unix
-`man' pages) is built from the Halibut (`.but') files in the `doc'
-subdirectory using `doc/Makefile'. If you aren't using one of our
-source snapshots, you'll need to do this yourself. Halibut can be
-found at <http://www.chiark.greenend.org.uk/~sgtatham/halibut/>.
-
-The PuTTY home web site is
-
-    http://www.chiark.greenend.org.uk/~sgtatham/putty/
-
-If you want to send bug reports or feature requests, please read the
-Feedback section of the web site before doing so. Sending one-line
-reports saying `it doesn't work' will waste your time as much as
-ours.
-
-See the file LICENCE for the licence conditions.
+Oh, and `ipbt' stands for `It's Play-Back Time'.
