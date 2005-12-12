@@ -1,17 +1,17 @@
 Summary: Failed assertion: count234(term->scrollback) <= newsavelines
 Class: bug
 Priority: medium
-Present-in: 0.55
+Present-in: 0.55 0.58
 Content-type: text/x-html-body
 
 <p>
 We've had occasional reports of the failure of the following assertion:
 
-<p>terminal.c:559 (0.55)
+<p>terminal.c:559 (0.55), :454 (0.58)
 <br>count234(term-&gt;scrollback) &lt;= newsavelines
 
 <p>
-All the reports we've had seem to also include a CPU-intensive delay at
+Most of the reports we've had seem to also include a CPU-intensive delay at
 connection startup (possibly at other times too).
 
 <p>
@@ -29,5 +29,8 @@ and <a href="large-clipboard-crash.html">`large-clipboard-crash'</a>.)
 
 <li><tt>2872.66.167.58.15.1094144958.squirrel@66.167.58.15</tt>
 <br>0.55, "09-02-2004"; SSH
+
+<li><tt>F0652A9934B81649B13293685D1945E90199B261@WHQNT60.AAM.NET</tt>
+<br>0.58, SSH
 
 </ul>
