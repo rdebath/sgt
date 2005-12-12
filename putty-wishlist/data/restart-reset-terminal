@@ -1,0 +1,24 @@
+Summary: Reset terminal state when restarting session
+Class: semi-bug
+Difficulty: fun
+Priority: medium
+Content-type: text/x-html-body
+
+<p>
+PuTTY now has the ability to <a href="reuse-windows.html">reuse terminal
+windows</a> with the `Restart Session' option. However, the terminal may be
+in some bad state (cursor off, black text on black background, or whatever),
+or the prompts for the new session may appear in the middle of the 
+previous session's output.
+
+<p>
+We could put more effort into sanitising the terminal state, while keeping
+the previous session's info on screen for reference. Suggested actions
+(to take place when the new session starts):
+<ul>
+<li>Reset all attributes to defaults (colours, bold, cursor, character set
+etc etc);
+<li>Move cursor to the first column;
+<li>Move cursor to after the last "used" row on the screen, scrolling
+down if necessary.
+</ul>
