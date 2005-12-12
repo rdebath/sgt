@@ -1,0 +1,148 @@
+<html> <!-- -*- html -*- -->
+<head>
+<title>IPBT: a high-tech ttyrec player for Unix</title>
+</head>
+<link rel="stylesheet" type="text/css" href="../sitestyle.css" name="Simon Tatham's Home Page Style">
+<body>
+<h1 align=center>IPBT</h1>
+
+<p align=center><i>a high-tech <code>ttyrec</code> player for Unix</i>
+
+<h2>Introduction</h2>
+
+<p>
+<a href="http://namazu.org/~satoru/ttyrec/index.html.en"><code>ttyrec</code></a>
+is a program for recording a Unix terminal session. It works much
+like <code>script</code>, but its output file contains timestamp
+information in addition to the terminal data, so that the session
+can be played back later in real time. A common use for this program
+is to record games of
+<a href="http://www.nethack.org/">NetHack</a>
+for other people to watch;
+<a href="http://alt.org/nethack/"><code>alt.org</code></a>,
+for example, does this routinely.
+
+<p>
+The simplest application for playing back a <code>ttyrec</code> file
+is to write the data in the file to a terminal, stopping to wait in
+between sections as directed by the timestamps in the file. It's
+easy enough to provide features such as double or half speed, fast
+forward and pause; but going <em>backwards</em> in time is very
+difficult, since terminal data cannot be interpreted in reverse to
+work out what was on the screen before the current time. So if
+you're watching a <code>ttyrec</code> and something interesting
+flashes up on the screen and is gone before you can press Pause, it
+can be very difficult to retrieve it.
+
+<p>
+IPBT solves this problem. It is a <code>ttyrec</code> player which
+analyses the entire <code>ttyrec</code> file before beginning the
+playback, and reorganises it into a form which permits
+frame-by-frame forward and backward replay. So if something
+interesting goes past, you just press Pause and then back up by a
+few frames, and there it is.
+
+<p>
+The downside is that the initial analysis phase takes time. On my
+2GHz Pentium 4, I find it takes of the order of ten seconds per
+megabyte of input. So if you want to watch an 8Mb file, you'll have
+to wait for something in excess of a minute before IPBT is ready to
+show it to you. (This is annoying, but for me at least it's more
+than made up for by the ability to rewind.)
+
+<h2>Technical details</h2>
+
+<p>
+IPBT works by reading the entire input file and running it through
+an internal terminal emulator. The terminal emulator used is the one
+from the
+<a href="http://www.chiark.greenend.org.uk/~sgtatham/putty/">PuTTY</a>
+SSH client (simply because that's the one whose API I was most
+familiar with). Thus, IPBT is a derived work of PuTTY.
+
+<p>
+While reading the file, IPBT builds up a list of the screen contents
+changes which take place over the course of the recording. These are
+then sorted into an order which permits efficient random-access
+retrieval of the screen state in any frame.
+
+<p>
+After doing this, IPBT is ready for playback. Playback is performed
+without any reference to the <code>ttyrec</code> file at all: the
+program simply displays the screen states that came out of the
+internal terminal emulator, in whatever order the user requests, via
+<code>curses</code>.
+
+<h2>Status of IPBT</h2>
+
+<p>
+IPBT is currently working but unpolished. I don't have the time and
+energy to polish it very much myself, so I'm hoping to receive
+contributions from other people.
+
+<p>
+For a full list of the things that need doing, you can read the file
+<a href="http://www.tartarus.org/~simon-anonsvn/viewcvs.cgi/*checkout*/ipbt/TODO"><code>TODO</code></a>
+in the source distribution. The big one, at the moment, is that it
+needs an
+<a href="http://www.gnu.org/software/autoconf/"><code>autoconf</code></a>
+framework and some portability tweaks
+to make it work with <code>curses</code> implementations other than
+<a href="http://www.gnu.org/software/ncurses/ncurses.html"><code>ncurses</code></a>.
+
+<h2>Licence</h2>
+
+<p>
+IPBT is distributed under the MIT licence, so it is free to copy,
+redistribute, use and reuse. For more details, see the file called
+LICENCE in the distribution archive.
+
+<h2>Download</h2>
+
+<p>
+A Unix source archive of IPBT is available here:
+
+<blockquote>
+<p>
+<a href="ARCHIVE-NAME"><code>ARCHIVE-NAME</code></a>
+</blockquote>
+
+<p>
+If you want to see the latest state of development, you can check
+the development sources out from my Subversion repository.
+
+<p>
+The Subversion URL you need is
+<code>svn://ixion.tartarus.org/main/ipbt</code>. So you could use a
+checkout command such as this:
+<pre><code>svn co svn://ixion.tartarus.org/main/ipbt</code></pre>
+
+<p>
+Alternatively, you can browse the Subversion repository on the WWW,
+<a href="http://www.tartarus.org/~simon-anonsvn/viewcvs.cgi/ipbt/">here</a>.
+</p>
+
+<h2>Feedback</h2>
+
+<p>
+Please report bugs to
+<a href="mailto:&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;">&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;</a>.
+
+<p>
+You might find it helpful to read
+<a href="../bugs.html">this article</a>
+before reporting a bug.
+
+<p>
+Patches are welcome.
+
+<hr>
+(comments to <a href="mailto:&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;">&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;</a>)
+<br>
+(thanks to
+<a href="http://www.chiark.greenend.org.uk/">chiark</a>
+for hosting this page)
+<br>
+(last modified on <!--LASTMOD-->[insert date here]<!--END-->)
+</body>
+</html>
