@@ -19,12 +19,15 @@ some by waving the mouse around.
 Also, since Windows PuTTYgen is a GUI application, even ignoring the
 randomness issue (which can be ignored for automated format
 conversions, for instance), using it from a batch file is slightly
-tricky. Normally, it will not block the batch file, but this can be
-dealt with with <tt>START /WAIT</tt>. Also, it probably won't be able
-to interact with the console, so it's not clear how it can indicate
-errors (let alone ask for passphrases). (Is the exit code accessible
-to a batch file when using <tt>START /WAIT</tt>?) These problems might
-necessitate a separate console application.
+tricky. Normally, it will not block the batch file, but this could be
+dealt with with <tt>START /WAIT</tt>.
+
+<p>
+However, it's still not clear how such a setup might e.g. indicate
+errors (given that it probably won't be able to interact with the
+console). Since we already <em>have</em> a command-line PuTTYgen (for
+Unix), it might be better to just port that to Windows as a console
+application, disabling key generation on the way.
 
 <p>
 (The Unix version of PuTTYgen can and does run in a batch mode, as we
