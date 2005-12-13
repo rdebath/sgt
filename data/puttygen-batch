@@ -16,11 +16,15 @@ randomness on Windows, so for key generation we make the user generate
 some by waving the mouse around.
 
 <p>
-Another reason that the current Windows PuTTYgen is unsuited to batch
-use is that as a Windows GUI application, it will not block the batch
-file but be launched off asynchronously. Even ignoring the randomness
-issue (which can be ignored for automated format conversions, for
-instance), a separate console application would be required.
+Also, since Windows PuTTYgen is a GUI application, even ignoring the
+randomness issue (which can be ignored for automated format
+conversions, for instance), using it from a batch file is slightly
+tricky. Normally, it will not block the batch file, but this can be
+dealt with with <tt>START /WAIT</tt>. Also, it probably won't be able
+to interact with the console, so it's not clear how it can indicate
+errors (let alone ask for passphrases). (Is the exit code accessible
+to a batch file when using <tt>START /WAIT</tt>?) These problems might
+necessitate a separate console application.
 
 <p>
 (The Unix version of PuTTYgen can and does run in a batch mode, as we
