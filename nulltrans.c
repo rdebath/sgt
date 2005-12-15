@@ -20,7 +20,8 @@ void tstate_argument(tstate *state, char *arg)
     exit(1);
 }
 
-char *translate(tstate *state, char *data, int inlen, int *outlen, int input)
+char *translate(tstate *state, char *data, int inlen, int *outlen,
+		double *delay, int input)
 {
     char *ret;
 
@@ -33,5 +34,6 @@ char *translate(tstate *state, char *data, int inlen, int *outlen, int input)
     memcpy(ret, data, inlen);
 
     *outlen = inlen;
+    *delay = 0.0;
     return ret;
 }
