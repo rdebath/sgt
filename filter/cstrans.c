@@ -67,7 +67,8 @@ void tstate_argument(tstate *state, char *arg)
     state->nargs++;
 }
 
-char *translate(tstate *state, char *data, int inlen, int *outlen, int input)
+char *translate(tstate *state, char *data, int inlen, int *outlen,
+		double *delay, int input)
 {
     char *ret;
     int retsize, retlen, inret, midlen, midret;
@@ -119,5 +120,6 @@ char *translate(tstate *state, char *data, int inlen, int *outlen, int input)
     }
 
     *outlen = retlen;
+    *delay = 0.0;
     return ret;
 }
