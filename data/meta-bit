@@ -12,10 +12,27 @@ and expect "meta" to set the top bit of the character instead.  There should
 probably be an option to enable this behaviour.
 
 <p>
-When I (BJH) last mentioned this to Simon, he asked what should be done
-about keys that transmit multiple characters (<i>e.g.</i> function keys).
-I think the best move is probably to have them entirely unaffected by
-Alt in this mode.
+Interesting questions about this include:
+<ul>
+<li>
+What should happen if the user presses Meta plus a key which
+transmits multiple characters (such as a function key). BJH thinks
+the best move is probably to have Meta produce no additional effect
+in this case.
+<li>
+What should happen if the terminal is in a multi-byte character set.
+Presumably in UTF-8 mode Meta-a should not produce the single byte
+0xE1, on the basis that applications ought at least to be able to
+expect the input data to be valid UTF-8! Should it instead produce
+the UTF-8 encoding of U+00E1? What if we subsequently support MB
+character sets other than UTF-8, in which U+00E1 might not be a
+representable character?
+<li>
+What should happen if the key pressed with Meta <em>already</em> has
+the high bit set: French keyboards, for example, produce some
+accented characters by single keypresses. Is the high bit toggled,
+or merely forced to 1?
+</ul>
 
 <p>We've been sent this patch, which might be helpful:
 
