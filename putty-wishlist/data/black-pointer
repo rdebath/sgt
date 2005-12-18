@@ -2,7 +2,7 @@ Summary: Mouse pointer appears black on some systems
 Class: semi-bug
 Priority: low
 Difficulty: taxing
-Present-in:  0.51 0.52 2002-12-28
+Present-in:  0.51 0.52 2002-12-28 0.58
 Content-type: text/x-html-body
 
 <p>
@@ -29,6 +29,16 @@ black background.  Reports so far:
 <li>PuTTY 0.52
 <li>16-bit colour
 <li>Gforce 2 MX compatible MSI video card
+</ul>
+<li> &lt;Pine.GSO.4.64.0512161443510.18707@brains.eng.cse.dmu.ac.uk&gt;
+  <i>et seq.</i>:<br>
+<ul>
+<li>Windows XP
+<li>PuTTY 0.58
+<li>Setting background to 0,0,1 or 1,1,1 (see below) didn't help
+<li>Using accessibility wiazard to set "inverting cursor" didn't help
+<li>Using accessibility wizard to set black cursor with white outline
+gave something usable
 </ul>
 </ul>
 <p>
