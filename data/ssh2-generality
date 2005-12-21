@@ -20,20 +20,26 @@ you don't want to have to type your password in again).
 
 <p>
 Going in the other direction, several people have asked if it could
-be possible to start PuTTY <em>without</em> starting a terminal
-window and a shell - just have PuTTY sit in the background and do
+be possible to start PuTTY <em>without</em> starting a 
+<a href="no-terminal-window.html">terminal window</a>
+and a shell - just have PuTTY sit in the background and do
 port forwarding only. This would also be possible in theory.
-<ul>
-<li>Patch (unreviewed): <code>3E9DBAE6.6030703@acero.com</code></li>
-</ul>
 
 <p>
 Similarly, perhaps we should also support running (e.g.) psftp
 sessions over an existing connection rather than forcing a new TCP/SSH
-connection, using the same sort of inter-process communication as with
-Pageant. Needs careful implementation to avoid opening security holes.
+connection - similar to the "connection multiplexing" feature in recent
+versions of OpenSSH - using the same sort of inter-process
+communication as with Pageant. Needs careful implementation to avoid
+opening security holes.
+
+<p>
+Would we want the server part of such a feature implemented in all
+the PuTTY utilities, or only in a dedicated application, perhaps one
+created for <a href="no-terminal-window.html">`no-terminal-window'</a>?
 
 <p>
 <b>SGT, 2004-10-13</b>: Just checked in the easy bit. PuTTY and
 Plink can now avoid running a command (equivalent to OpenSSH's
 <code>-N</code> option, and indeed enabled by the same switch).
+(PuTTY will still put up a terminal window.)
