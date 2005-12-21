@@ -1,0 +1,48 @@
+Summary: Ability to run without terminal window (for forwarding etc)
+Class: wish
+Difficulty: tricky
+Priority: medium
+Content-type: text/x-html-body
+
+<p>
+Every so often we get requests to be able to run PuTTY or Plink
+without any sort of terminal window at all. The usual use case is SSH
+being used only for port-forwarding (tunnelling).
+
+<p>
+(In SSH-2, we can already run 
+<a href="http://www.tartarus.org/~simon/puttydoc/Chapter4.html#config-ssh-noshell">without requesting a shell</a>,
+but we still put up a terminal window (in PuTTY) or keep the console
+open (in Plink).)
+
+<p>
+The main issue that needs to be addressed is one of user interaction.
+For a start, where will passwords and such be entered? (We could
+only permit authentication which doesn't require user interaction,
+but that seems a bit naff.)
+<a href="gui-auth.html">`gui-auth'</a> may be a solution to this.
+
+<p>
+Another issue in a similar vein is control after
+the session has started. Currently, one uses the terminal window to
+add/remove tunnels or to terminate the session; one would need some
+other way to access these at least some of these control functions,
+such as (on Windows) a system tray icon.
+
+<p>
+It's not entirely clear whether this is best done by modifying PuTTY,
+modifying Plink (unlikely), or creating an entirely new application
+dedicated to such "headless" operation. (Re the last option, see also
+<a href="ssh2-generality.html">`ssh2-generality'</a>.)
+
+<p>
+It may be possible to do this with the tools as they stand.
+I'd be surprised if there wasn't some application that could hide
+Plink's console window in a system tray icon, or something like that,
+but I don't know of one (please let us know if you do). This would be
+fine if the only control required after session startup was to kill
+the entire session.
+
+<p>
+There are a number of third-party applications based on PuTTY which
+address this sort of use case; see the Links page.
