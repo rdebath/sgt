@@ -14,5 +14,10 @@ This should be relatively easy (it's already the case for the
 scrollback).
 
 <p>
+There should probably be <em>some</em> way of flushing the info
+off the side of the screen, though; probably the `Clear Scrollback'
+command.
+
+<p>
 (cf. <a href="resize-scroll-effects.html">`resize-scroll-effects'</a>
 for the case where the number of rows is changed.)
