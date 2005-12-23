@@ -34,107 +34,35 @@ accented characters by single keypresses. Is the high bit toggled,
 or merely forced to 1?
 </ul>
 
-<p>We've been sent this patch, which might be helpful:
+<p>SGT, 2005-12-23: I've just investigated xterm's answers to these
+questions. xterm itself has relatively little understanding of
+complex character sets: it operates either in "conventional 8bit
+mode" or in UTF-8 mode. In the former, the character set is assumed
+to be single-byte and the Meta key translates each low-half
+character into its high-half counterpart in the obvious way. In the
+latter mode, the Meta key translates ASCII into ISO-8859-1 and then
+encodes it as UTF-8 (so that, for example, Meta-a sends C3 A1 which
+is the UTF-8 encoding of U+00E1). xterm supports all other character
+sets by interposing "luit", which means that whether a Meta
+combination generates anything in (say) Shift-JIS will depend
+entirely on whether the relevant Unicode value between U+0080 and
+U+00FF is representable in the target character set. Meanwhile, Meta
+appears to do nothing at all if combined with anything <em>not</em>
+in the 00-7F range, be it a character outside that range or a
+multi-character sequence from a function key.
 
-<pre>
-Common subdirectories: putty-orig/DOC and putty-mod/DOC
-diff -ubBw putty-orig/PUTTY.H putty-mod/PUTTY.H
---- putty-orig/PUTTY.H	2002-10-07 19:44:26.000000000 -0400
-+++ putty-mod/PUTTY.H	2003-03-16 17:46:07.000000000 -0500
-@@ -298,6 +298,7 @@
-     int alt_f4;			       /* is it special? */
-     int alt_space;		       /* is it special? */
-     int alt_only;		       /* is it special? */
-+    int alt_metabit;		       /* set meta instead of escape */
-     int localecho;
-     int localedit;
-     int alwaysontop;
-diff -ubBw putty-orig/SETTINGS.C putty-mod/SETTINGS.C
---- putty-orig/SETTINGS.C	2002-09-26 20:37:34.000000000 -0400
-+++ putty-mod/SETTINGS.C	2003-03-16 17:48:46.000000000 -0500
-@@ -211,6 +211,7 @@
-     write_setting_i(sesskey, "AltF4", cfg->alt_f4);
-     write_setting_i(sesskey, "AltSpace", cfg->alt_space);
-     write_setting_i(sesskey, "AltOnly", cfg->alt_only);
-+    write_setting_i(sesskey, "AltMetabit", cfg->alt_metabit);
-     write_setting_i(sesskey, "ComposeKey", cfg->compose_key);
-     write_setting_i(sesskey, "CtrlAltKeys", cfg->ctrlaltkeys);
-     write_setting_i(sesskey, "TelnetKey", cfg->telnet_keyboard);
-@@ -430,6 +431,7 @@
-     gppi(sesskey, "AltF4", 1, &amp;cfg->alt_f4);
-     gppi(sesskey, "AltSpace", 0, &amp;cfg->alt_space);
-     gppi(sesskey, "AltOnly", 0, &amp;cfg->alt_only);
-+    gppi(sesskey, "AltMetaBit", 0, &amp;cfg->alt_metabit);
-     gppi(sesskey, "ComposeKey", 0, &amp;cfg->compose_key);
-     gppi(sesskey, "CtrlAltKeys", 1, &amp;cfg->ctrlaltkeys);
-     gppi(sesskey, "TelnetKey", 0, &amp;cfg->telnet_keyboard);
-diff -ubBw putty-orig/WINDLG.C putty-mod/WINDLG.C
---- putty-orig/WINDLG.C	2002-09-26 20:37:34.000000000 -0400
-+++ putty-mod/WINDLG.C	2003-03-16 18:09:15.000000000 -0500
-@@ -303,6 +303,7 @@
-     IDC_CURAPPLIC,
-     IDC_COMPOSEKEY,
-     IDC_CTRLALTKEYS,
-+    IDC_ALTMETABIT,
-     keyboardpanelend,
- 
-     terminalpanelstart,
-@@ -735,6 +736,8 @@
-         return "JI(`',`keyboard.compose')";
-       case IDC_CTRLALTKEYS:
-         return "JI(`',`keyboard.ctrlalt')";
-+      case IDC_ALTMETABIT:
-+	return "JI(`',`keyboard.altmetabit')";
- 
-       case IDC_NOAPPLICK:
-       case IDC_NOAPPLICC:
-@@ -1111,6 +1114,7 @@
-     CheckDlgButton(hwnd, IDC_ALTONLY, cfg.alt_only);
-     CheckDlgButton(hwnd, IDC_COMPOSEKEY, cfg.compose_key);
-     CheckDlgButton(hwnd, IDC_CTRLALTKEYS, cfg.ctrlaltkeys);
-+    CheckDlgButton(hwnd, IDC_ALTMETABIT, cfg.alt_metabit);
-     CheckDlgButton(hwnd, IDC_TELNETKEY, cfg.telnet_keyboard);
-     CheckDlgButton(hwnd, IDC_TELNETRET, cfg.telnet_newline);
-     CheckRadioButton(hwnd, IDC_ECHOBACKEND, IDC_ECHONO,
-@@ -1639,6 +1643,8 @@
- 	checkbox(&amp;cp, "AltGr ac&amp;ts as Compose key", IDC_COMPOSEKEY);
- 	checkbox(&amp;cp, "Control-Alt is &amp;different from AltGr",
- 		 IDC_CTRLALTKEYS);
-+	checkbox(&amp;cp, "Set meta bit on alt (instead of escape-char)",
-+		 IDC_ALTMETABIT);
- 	endbox(&amp;cp);
-     }
- 
-@@ -2699,6 +2705,12 @@
- 			cfg.ctrlaltkeys =
- 			IsDlgButtonChecked(hwnd, IDC_CTRLALTKEYS);
- 		break;
-+	      case IDC_ALTMETABIT:
-+		if (HIWORD(wParam) == BN_CLICKED ||
-+		    HIWORD(wParam) == BN_DOUBLECLICKED)
-+			cfg.alt_metabit =
-+			IsDlgButtonChecked(hwnd, IDC_ALTMETABIT);
-+		break;
- 	      case IDC_TELNETKEY:
- 		if (HIWORD(wParam) == BN_CLICKED ||
- 		    HIWORD(wParam) == BN_DOUBLECLICKED)
-diff -ubBw putty-orig/WINDOW.C putty-mod/WINDOW.C
---- putty-orig/WINDOW.C	2002-11-08 09:19:48.000000000 -0500
-+++ putty-mod/WINDOW.C	2003-03-16 18:47:52.000000000 -0500
-@@ -3784,8 +3784,11 @@
- 		    } else {
- 			char cbuf[2];
- 			cbuf[0] = '\033';
--			cbuf[1] = ch;
--			lpage_send(kbd_codepage, cbuf+!left_alt, 1+!!left_alt, 1);
-+			cbuf[1] = ch | ((left_alt & cfg.alt_metabit) << 7);
-+			lpage_send(kbd_codepage, 
-+				cbuf + !(left_alt & !cfg.alt_metabit), 
-+				1 + !!(left_alt & !cfg.alt_metabit), 
-+				1);
- 		    }
- 		}
- 		show_mouseptr(0);
-</pre>
-
-<p>Another patch (unreviewed): <code>3EC11D82.60306@isometry.net</code>
+<p>This all seems a bit chaotic: I had to work hard to get xterm to
+demonstrate both modes to me, although I got there in the end. Based
+on my findings, I think a possible specification for PuTTY which
+would offer all of xterm's functionality would be to have a
+three-way switch governing the behaviour of the Alt key. In the
+default mode, Alt/Meta generates a prefix ESC as it always has done.
+In the second mode (analogous to xterm's UTF-8 mode), it maps ASCII
+into the top half of ISO 8859-1, translating that as appropriate for
+the line codepage (so that some Meta combinations will generate
+nothing in some character sets) and affects nothing else at all. In
+the third mode (analogous to xterm's 8bit mode), it maps the low
+half of an SBCS into the high half, no matter what SBCS is chosen.
+We'd have to invent something arbitrary for the third mode to do if
+the line codepage were not an SBCS; probably the most sensible
+option is to fall back to the second mode.
