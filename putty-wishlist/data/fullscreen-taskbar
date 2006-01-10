@@ -11,3 +11,8 @@ that wasn't the behaviour years ago.)
 
 I (JTN) have only noticed it on Win98 systems (2 so far), but it has
 been the case on that platform for ages.
+
+OSD: On WinXP, the behaviour differs depending on whether the taskbar
+is set to "always on top".  If this is set, the taskbar disappears a
+fraction of a second after PuTTY goes full screen.  If "always on top" 
+is not set, a fullscreen PuTTY covers it immediately.
