@@ -3,6 +3,7 @@ Class: semi-bug
 Priority: low
 Difficulty: taxing
 Content-type: text/plain
+Fixed-in: 0.52
 
 There's been a report that if you switch Windows keymaps while PuTTY
 is running, it doesn't notice: the keymap in force when PuTTY starts
