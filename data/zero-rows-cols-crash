@@ -2,6 +2,7 @@ Summary: Setting rows and columns to zero causes crash
 Class: bug
 Priority: medium
 Content-type: text/plain
+Fixed-in: 2006-01-10
 
 <4202CF05.2010508@registriesltd.com.au> (Windows XP):
 Secondly I wanted to report a very minor bug in putty. If you have a 
