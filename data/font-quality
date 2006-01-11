@@ -3,6 +3,7 @@ Class: wish
 Priority: medium
 Difficulty: fun
 Content-Type: text/x-html-body
+Fixed-in: 2006-01-12
 
 <p>
 Ability to configure font quality (the fdwQuality parameter to
