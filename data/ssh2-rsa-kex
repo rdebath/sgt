@@ -1,0 +1,13 @@
+Summary: Implement SSH-2 RSA key exchange
+Class: wish
+Priority: medium
+Difficulty: fun
+Content-type: text/x-html-body
+
+<p>
+<a href="http://www.ietf.org/internet-drafts/draft-harris-ssh-rsa-kex-06.txt">draft-harris-ssh-rsa-kex</a>
+(in the <a href="http://www.rfc-editor.org/queue.html">RFC Editor's queue</a>
+at the time of writing) defines a means to use RSA key exchange in
+SSH-2 (similar to SSH-1's key exchange, but without the other
+disadvantages of SSH-1). This might be particularly suitable for slow
+client systems.
