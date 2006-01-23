@@ -15,3 +15,15 @@ suggested to us that Microsoft at least won't add anything "until at
 least Longhorn". There are various libraries out there such as the
 <a href="http://www.verisign.com/nds/naming/idn/sdk.html">VeriSign IDN SDK</a>
 and <a href="http://www.gnu.org/software/libidn/">GNU libidn</a>.
+
+<p>
+It's not clear that IDN support in PuTTY is worth the developer effort
+or the binary space, given that (presumably) you can just type
+<tt>xn--</tt>whatever into the "host name" box.
+With (say) a web browser, it is normal to want to access lots of
+different web sites you've never visited before, whose addresses
+you've got off a cereal packet, and so on; the domain name is a
+relatively important part of the process. With PuTTY, you typically
+access a small number of sites with which you have prior arrangements,
+and often you just put the domain name into a saved session and forget
+about it.
