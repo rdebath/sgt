@@ -20,8 +20,9 @@ idea.  The lack of a MAC makes it very easy for an attacker to modify
 the data stream.
 
 <p>
-<b>Update:</b> Ben Harris has written an Internet-Draft (currently
-<a href="http://www.ietf.org/internet-drafts/draft-harris-ssh-arcfour-fixes-03.txt">draft-harris-ssh-arcfour-fixes-03</a>)
+<b>Update:</b> Ben Harris has written an Internet-Draft
+(draft-harris-ssh-arcfour-fixes, now
+<a href="http://www.ietf.org/rfc/rfc4345.txt">RFC 4345</a>)
 describing a way of using Arcfour reasonably securely with SSH-2, and
 PuTTY now implements this. Note that this document defines the
 "arcfour256" and "arcfour128" ciphers; PuTTY still does not support
