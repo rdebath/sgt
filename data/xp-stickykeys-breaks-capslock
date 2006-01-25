@@ -21,3 +21,5 @@ To reproduce:
 
 Ref: <Pine.LNX.4.21.0404231432350.7898-100000@chiark.greenend.org.uk>
 
+OSD: I can't now reproduce this with XP SP2 and any version of PuTTY
+including the versions it was originally reported against.
