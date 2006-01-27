@@ -2,7 +2,7 @@ Summary: Support builds for 64-bit Windows
 Class: wish
 Difficulty: fun
 Priority: low
-Fixed-in: r5821 2005-05-22
+Fixed-in: r6535 2006-01-28
 Content-type: text/x-html-body
 
 <p>
@@ -18,9 +18,3 @@ This should now be fixed. (You'll need to build with the
 Even ignoring the fact that we don't have appropriate hardware/compilers,
 it's not clear what advantage there is to be had from running PuTTY
 in native 64-bit mode.)
-
-<p>
-<em>Update:</em> it looks like the call to <code>SetClassLong()</code>
-in <code>window.c:update_mouse_pointer()</code> should also be fixed.
-Unfortunately, <a href="http://www.mingw.org/">MinGW</a> doesn't yet
-support the replacement <code>SetClassLongPtr()</code>.
