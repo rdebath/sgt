@@ -2,6 +2,7 @@ Summary: Multiple askappend dialogue boxes on Windows
 Present-in: 0.58
 Class: bug
 Content-type: text/plain
+Fixed-in: 2006-01-26
 Priority: medium
 
 According to a report:
