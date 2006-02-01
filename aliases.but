@@ -351,7 +351,7 @@ I'm aware of is to recover it from the command history using
 
 The resulting alias is a command which prints \e{exactly} what was
 passed on the remainder of its command line, whether that contains
-single quotes, double quotes, theoretically insignicant variations
+single quotes, double quotes, theoretically insignificant variations
 in whitespace, redirections, wildcards, trailing backslashes or even
 other comment characters:
 
