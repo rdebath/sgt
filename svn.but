@@ -101,23 +101,23 @@ information to disk. (Well, unless it gets swapped out; but I
 encrypt my swap partition!)
 
 The alternative was \cw{svnserve}, and tunnelling it over SSH. But
-\cw{svnserve} doesn't support the fine-grained access control that
-the HTTP access method does; you just have users who can commit, and
-users who cannot. This wasn't really sufficient; I have a variety of
-projects which I co-develop with different groups of people, and I
-didn't want to be forced to allow someone commit access to (say)
-PuTTY as a necessary consequence of collaborating with them on (say)
-mail handling software.
-
-I would guess that the reason why \cw{svnserve} doesn't bother to
-provide serious access control is because it doesn't seem
-particularly useful in most cases: if a group of collaborating users
-all tunnel \cw{svnserve} over SSH, then it runs under each user's
-UID, so all users need physical write permission to the repository.
-And once they've all got that, there's simply no point in imposing
-fiddly access control, since it would only be voluntary \dash anyone
-willing to put the effort into modifying an SVN client could just
-bypass it.
+this doesn't provide the fine-grained access control that the HTTP
+access method does; you just have users who can commit, and users
+who cannot. \cw{svnserve} does actually \e{support} fine-grained
+access control in Subversion 1.3 and above, by using the
+\cw{authz-db} configuration file directive to specify an access
+control file, but in this particular scenario it isn't helpful: if a
+group of collaborating users all tunnel \cw{svnserve} over SSH, then
+it runs under each user's UID, so all users need physical write
+permission to the repository. And once they've all got that, there's
+simply no point in imposing fiddly access control, since it would
+only be voluntary \dash anyone willing to put the effort into
+modifying an SVN client could just bypass it. This wasn't really
+sufficient; I have a variety of projects which I co-develop with
+different groups of people, and I didn't want to be forced to allow
+someone effective commit access to (say) PuTTY as a necessary
+consequence of collaborating with them on (say) mail handling
+software.
 
 So, this wasn't looking particularly wonderful. HTTP provides
 fine-grained access control but poor network security; \cw{svnserve}
@@ -151,7 +151,9 @@ then it would run under their own UID which has no direct access to
 the repository; so this mechanism ensures that the \e{only}
 operations anyone can perform on the repository are those permitted
 by \cw{svnserve}, which means nobody can destroy or change history
-(except me, of course, the repository admin).
+(except me, of course, the repository admin). Finally, this also
+means that the fine-grained access control provided by \cw{svnserve}
+1.3 and above is now secure against users attempting to bypass it.
 
 Remote access, of course, is still via \cw{ssh}, only instead of
 running \cq{ssh remote-host svnserve}, you now have to run \cq{ssh
@@ -160,28 +162,21 @@ to configure strange remote access methods (by adding entries in the
 \cw{[tunnels]} section in the \c{.subversion/config} file), so that
 wasn't a problem.
 
-Of course, fine-grained access control still isn't supplied by doing
-it like this. But that can be done easily enough using Subversion's
-pre-commit hook. The pre-commit hook can examine a prospective
-commit in detail using \cw{svnlook}; it can see which files are
-modified, note the name of the committer, and even examine the data
-in the altered files if it wants to. So in particular, it can look
-up the changed files and the committing user against an access list;
-and if it returns a failure status, then the commit is aborted. This
-would be a worthless security measure in the normal usage of
-\cw{svnserve} over SSH, but in the \cw{userv} world it's reliable,
-because no user can interfere with the running of the hook script.
-
-Another nice thing is that Subversion's hook scripts aren't
+Another nice thing is that Subversion's access control file isn't
 version-controlled within the repository itself. This removes any
 possible risk that an incautiously written access list might allow a
-user to commit to the hook script and grant themself extra
+user to commit to the list itself and grant themself extra
 permissions!
 
-(Note that the pre-commit hook only allows fine-grained \e{commit}
-control; read access is unlimited no matter what I do. There are one
-or two things for which it would be convenient to be able to change
-this, but they're not vital to me.)
+(Prior to Subversion 1.3, I had to do commit control using
+Subversion's pre-commit hook mechanism. The pre-commit hook can
+examine a prospective commit in detail using \cw{svnlook}, seeing
+which files are modified, the name of the committer, and even the
+data in the altered files if it wants to. So in particular, it can
+look up the changed files and the committing user against an access
+list; and if it returns a failure status, then the commit is
+aborted. However, 1.3's native mechanism is superior because it
+supports restriction of read access as well as commits.)
 
 There was one small niggle in the \cw{userv} mechanism: a bug in
 \cw{userv} which meant that if the \cw{userv} client process was
@@ -191,14 +186,16 @@ Subversion's policy is to routinely \cw{SIGKILL} its tunnel process
 whenever it finishes using it (the source comments suggest that some
 badly-behaved tunnel utility failed to respond sensibly to anything
 less!), this was a serious problem. Fortunately, I know the
-\cw{userv} author personally and he sent me a fix promptly; I don't
-know when the fix will make it into a release, or even if it's done
-so already. An alternative workaround might have been to write a
-sort of \q{bodyguard} wrapper which executed \cw{userv} as a
-subprocess with a different process group ID, in the hope of taking
-the \cw{SIGKILL} itself and having it miss \cw{userv}, but I haven't
-actually tried this myself. If you're stuck with a buggy version of
-\cw{userv}, it might be worth a try, though.
+\cw{userv} author personally and he sent me a
+\W{http://www.chiark.greenend.org.uk/ucgi/~ijackson/cvsweb/userv/client.c.diff?r1=1.27&r2=1.28&f=h}{fix}
+promptly; I don't know when the fix will make it into a release, or
+even if it's done so already. An alternative workaround might have
+been to write a sort of \q{bodyguard} wrapper which executed
+\cw{userv} as a subprocess with a different process group ID, in the
+hope of taking the \cw{SIGKILL} itself and having it miss
+\cw{userv}, but I haven't actually tried this myself. If you're
+stuck with a buggy version of \cw{userv}, it might be worth a try,
+though.
 
 \C{storage} Storage
 
