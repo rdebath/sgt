@@ -36,20 +36,70 @@ int main(int argc, char **argv)
     /*
      * Process command line.
      */
-    while (--argc) {
+    while (--argc > 0) {
 	char *p = *++argv;
 	if (*p == '-') {
 	    if (!strcmp(p, "--")) {
 		--argc, ++argv;	       /* point at argument after "--" */
 		break;		       /* finish processing options */
 	    } else if (p[1] == '-') {
-		fprintf(stderr, "unknown long option: %s\n", p);
-		errors = 1;
+		char *q;
+		int ret;
+
+		q = strchr(p, '=');
+		if (q)
+		    *q++ = '\0';
+
+		ret = tstate_option(state, '\0', p+2, q);
+		if (ret == OPT_MISSINGARG) {
+		    assert(!q);
+
+		    if (--argc > 0) {
+			q = *++argv;
+			ret = tstate_option(state, '\0', p+2, q);
+		    } else {
+			fprintf(stderr, "option %s expects an argument\n", p);
+			errors = 1;
+		    }
+		}
+		
+		if (ret == OPT_UNKNOWN) {
+		    fprintf(stderr, "unknown long option: %s\n", p);
+		    errors = 1;
+		} else if (ret == OPT_SPURIOUSARG) {
+		    fprintf(stderr, "option %s does not expect an argument\n",
+			    p);
+		    errors = 1;
+		}
 	    } else {
 		char c;
+		int ret;
+
 		while ((c = *++p) != '\0') {
-		    fprintf(stderr, "unknown short option: -%c\n", c);
-		    errors = 1;
+		    ret = tstate_option(state, c, NULL, NULL);
+		    if (ret == OPT_MISSINGARG) {
+			char *q;
+
+			if (p[1])
+			    q = p+1;
+			else if (--argc > 0)
+			    q = *++argv;
+			else {
+			    fprintf(stderr, "option -%c expects an"
+				    " argument\n", c);
+			    errors = 1;
+			}
+			ret = tstate_option(state, c, NULL, q);
+		    }
+
+		    if (ret == OPT_UNKNOWN) {
+			fprintf(stderr, "unknown option: -%c\n", c);
+			errors = 1;
+		    } else if (ret == OPT_SPURIOUSARG) {
+			fprintf(stderr, "option -%c does not expect an"
+				" argument\n", c);
+			errors = 1;
+		    }
 		}
 	    }
 	} else {
@@ -68,6 +118,8 @@ int main(int argc, char **argv)
 	perror("slave pty: open");
 	return 1;
     }
+
+    tstate_ready(state);
 
     /*
      * Fork and execute the command.
@@ -124,7 +176,7 @@ int main(int argc, char **argv)
 
     while (1) {
 	fd_set rset;
-	char buf[4096];
+	char buf[65536];
 	int ret;
 	double wait;
 	int itimeout, otimeout;
@@ -220,6 +272,8 @@ int main(int argc, char **argv)
     }
 
     tcsetattr(0, TCSANOW, &oldattrs);
+
+    tstate_done(state);
 
     return exitcode;
 }
