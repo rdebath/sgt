@@ -42,6 +42,11 @@ tstate *tstate_init(void)
     return state;
 }
 
+int tstate_option(tstate *state, int shortopt, char *longopt, char *value)
+{
+    return OPT_UNKNOWN;
+}
+
 void tstate_argument(tstate *state, char *arg)
 {
     int cset;
@@ -65,6 +70,10 @@ void tstate_argument(tstate *state, char *arg)
 	state->outcset = cset;
 
     state->nargs++;
+}
+
+void tstate_ready(tstate *state)
+{
 }
 
 char *translate(tstate *state, char *data, int inlen, int *outlen,
@@ -122,4 +131,9 @@ char *translate(tstate *state, char *data, int inlen, int *outlen,
     *outlen = retlen;
     *delay = 0.0;
     return ret;
+}
+
+void tstate_done(tstate *state)
+{
+    free(state);
 }
