@@ -1,5 +1,35 @@
+/*
+ * dump.c: simple hex dump program with a more sensible output
+ * format than od(1) or hexdump(1).
+ * 
+ * This software is copyright (c) 1995-2006 Jon Skeet and Simon
+ * Tatham.
+ *
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or
+ * sell copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following
+ * conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ * OTHER DEALINGS IN THE SOFTWARE.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
 
 struct dumpstate {
     int lower;                         /* display in lower case? */
@@ -13,6 +43,7 @@ struct dumpstate {
 void dump (struct dumpstate state, FILE *fp) {   
     long addr=0;
     int i, j;
+    int pushc = EOF, pushed = 0, seeneof = 0, squash;
     unsigned char *buffer;
     char *prl, *oldprl;
     char *fmt, *hex;
@@ -36,19 +67,31 @@ void dump (struct dumpstate state, FILE *fp) {
 	exit (1);
     }
 
+    state.offset = (state.offset % state.linewidth);
+    state.offset = (state.offset + state.linewidth) % state.linewidth;
     if (state.offset)
 	byteoffset = state.linewidth - state.offset;
     else
 	byteoffset = 0;
 
-    while (1) {
-        i = fread(buffer + byteoffset, 1, state.linewidth - byteoffset, fp);
-        if (i <= 0)                    /* finished reading data */
-            break;
+    while (!seeneof) {
+	for (i = byteoffset; i < state.linewidth; i++) {
+	    int c;
 
-	if (i) {
-            i += byteoffset;
+	    if (pushed) {
+		c = pushc;
+		pushed = 0;
+	    } else
+		c = getc(fp);
 
+	    if (c == EOF) {
+		seeneof = 1;
+		break;
+	    }
+	    buffer[i] = c;
+	}
+
+	if (i > byteoffset) {
 	    memset(prl, ' ', state.linewidth*4+17);
 
 	    for (j = byteoffset; j < i; j++) {
@@ -67,7 +110,25 @@ void dump (struct dumpstate state, FILE *fp) {
 	    } else
 		prl[3*i-1] = '\0';
 
-	    if (state.squash && !strcmp(oldprl, prl) && !feof(fp)) {
+	    squash = 0;
+	    if (state.squash && !strcmp(oldprl, prl)) {
+		/*
+		 * We need to know if we're at the end of the input,
+		 * because if so then we never squash this output line
+		 * into a previous one.
+		 */
+		if (!seeneof) {
+		    assert(!pushed);
+		    pushc = getc(fp);
+		    pushed = 1;
+		    if (pushc == EOF)
+			seeneof = 1;
+		}
+		if (!seeneof)
+		    squash = 1;
+	    }
+
+	    if (squash) {
 		if (!etcflag) {
 		    etcflag = 1;
 		    printf("etc...\n");
@@ -77,7 +138,7 @@ void dump (struct dumpstate state, FILE *fp) {
 		printf (fmt, addr + state.start, prl);
 		strcpy (oldprl, prl);
 	    }
-	    addr += state.linewidth - byteoffset;
+	    addr += i - byteoffset;
 	}
 	byteoffset = 0;
     }
@@ -169,6 +230,10 @@ int main(int argc, char **argv) {
 		    break;
 		  case 'w':
 		    state.linewidth = strtoul(v,NULL,0);
+		    if (state.linewidth <= 0) {
+			fprintf(stderr, "dump: line width must be positive\n");
+			return 1;
+		    }
 		    break;
 		}
 		break;
