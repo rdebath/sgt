@@ -1,20 +1,22 @@
-Summary: Window close button disabled after login on Windows XP
+Summary: Window close button disabled with Virtual Dimension
 Class: bug
 Present-in: 0.58 2006-02-08 r6542
 Content-type: text/x-html-body
 
 <p>
-We've had a couple of reports that the `Close' button (the `X' on the
-top right of the window) is disabled on PuTTY windows, as is the
-corresponding window/context menu entry.
+We've had a couple of reports from users of
+<a href="http://virt-dimension.sourceforge.net/">Virtual Dimension</a>
+that the `Close' button (the `X' on the top right of the window) is
+disabled on PuTTY windows, as is the corresponding window/context menu
+entry. Reports indicate that the close button is greyed sometime
+during authentication.
 
 <p>
-Reports indicate that the close button is greyed sometime during
-authentication.
-
-<p>
-All the reports so far have been on Windows XP, which none of the team
-use on a regular basis.
+It looks like the way PuTTY is manipulating the window menu (which it
+does after a successful SSH login, to update the "Special Commands"
+menu) is clashing with the way Virtual Dimension is manipulating the
+same menu. r6546 changes the way we handle the "Special Commands"
+menu.
 
 <p>
 Reports:
