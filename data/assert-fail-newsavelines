@@ -15,7 +15,19 @@ Most of the reports we've had seem to also include a CPU-intensive delay at
 connection startup (possibly at other times too).
 
 <p>
-We've not been able to reproduce this ourselves.
+The only way we've found to reproduce this assertion failure is by configuring
+a <em>negative</em> number of lines in the scrollback. If the magnitude of
+the negative number is large, we see the delay at startup too.
+
+<p>
+On some platforms (including Windows), a very large <em>positive</em>
+scrollback setting can end up treated as a negative one, triggering this.
+This can happen for scrollback sizes of 2<sup>31</sup> (2147483648) or
+greater. (You'd probably run out of physical memory before filling up
+such a ridiculously large scrollback buffer!) So don't do that, then.
+
+<p>
+We should probably be robust against silly configurations like this.
 
 <p>
 (Possibly related, although we've no hard evidence for this:
@@ -31,9 +43,6 @@ and <a href="large-clipboard-crash.html">`large-clipboard-crash'</a>.)
 <br>0.55, "09-02-2004"; SSH
 
 <li><tt>F0652A9934B81649B13293685D1945E90199B261@WHQNT60.AAM.NET</tt>
-<br>0.58, SSH
-<br>Apparently this person was attempting to use 9999999999 lines
-of scrollback or thereabouts. Don't Do That, Then. (I suppose we
-should be robust against that sort of thing.)
+<br>0.58, SSH, very large scrollback setting
 
 </ul>
