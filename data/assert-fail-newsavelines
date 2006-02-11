@@ -32,5 +32,8 @@ and <a href="large-clipboard-crash.html">`large-clipboard-crash'</a>.)
 
 <li><tt>F0652A9934B81649B13293685D1945E90199B261@WHQNT60.AAM.NET</tt>
 <br>0.58, SSH
+<br>Apparently this person was attempting to use 9999999999 lines
+of scrollback or thereabouts. Don't Do That, Then. (I suppose we
+should be robust against that sort of thing.)
 
 </ul>
