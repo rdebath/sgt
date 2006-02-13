@@ -13,6 +13,10 @@ since we now allow RTF pasting, perhaps it could paste style
 information (bold, italic etc) alongside the actual text.
 
 <p>
+<strong>Update:</strong> Since r6555 pasting in RTF now includes colour
+and style information.
+
+<p>
 Probably at least some of these features will want to be
 configurable off, since I can imagine them causing trouble in some
 situations.
