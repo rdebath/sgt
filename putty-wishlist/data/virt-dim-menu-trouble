@@ -1,6 +1,7 @@
 Summary: Window close button disabled with Virtual Dimension
 Class: bug
 Present-in: 0.58 2006-02-08 r6542
+Fixed-in: r6546 2006-02-10
 Content-type: text/x-html-body
 
 <p>
@@ -16,13 +17,9 @@ It looks like the way PuTTY is manipulating the window menu (which it
 does after a successful SSH login, to update the "Special Commands"
 menu) is clashing with the way Virtual Dimension is manipulating the
 same menu. r6546 changes the way we handle the "Special Commands"
-menu.
+menu, which has been confirmed to make the problem go away.
 
 <p>
-Reports:
-<ul>
-<li><tt>907bea850601101820q7fe3d254u53a5c20ebb5e291a@mail.gmail.com</tt>
-<br>WinXP, after password
-<li><tt>17385.23341.166602.254784@brand.scrye.com</tt>
-<br>WinXP, X11 forwarding, Duplicate Session, after username
-</ul>
+(See also a
+<a href="http://sourceforge.net/tracker/index.php?func=detail&aid=1375233&group_id=74581&atid=541421">problem report</a>
+against Virtual Dimension.)
