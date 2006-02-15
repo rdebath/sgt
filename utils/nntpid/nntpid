@@ -6,6 +6,7 @@
 # Usage:     nntpid <messageid>
 #    or:     nntpid messageid               (angle brackets optional)
 #    or:     nntpid news.group.name 1234    (group+number form)
+#    or:     nntpid -a news.group.name      (download all available articles)
 #
 # The name of your news server is obtained from the environment variable
 # NNTPSERVER, or from the file /etc/nntpserver if that's not set.
@@ -25,8 +26,10 @@ use FileHandle;
 $usage =
   "usage: nntpid [ -v ] [ -d ] <message-id>\n" .
   "   or: nntpid [ -v ] [ -d ] <newsgroup> <article-number>\n" .
+  "   or: nntpid [ -v ] -a <newsgroup>\n" .
   "where: -v                  verbose (print interaction with news server)\n" .
   "       -d                  direct output (don't consider using PAGER)\n" .
+  "       -a                  dump all articles in group to stdout as mbox\n" .
   " also: nntpid --version    report version number\n" .
   "       nntpid --help       display this help text\n" .
   "       nntpid --licence    display (MIT) licence text\n";
@@ -56,11 +59,13 @@ $licence =
 
 $pager = 1;
 $verbose = 0;
+$all = 0;
 
 while ($ARGV[0] =~ /^-(.+)$/) {
   shift @ARGV;
   $verbose = 1, next if $1 eq "v";
   $pager = 0, next if $1 eq "d";
+  $all = 1, next if $1 eq "a";
   if ($1 eq "-help") {
     print STDERR $usage;
     exit 0;
@@ -79,7 +84,9 @@ while ($ARGV[0] =~ /^-(.+)$/) {
 
 die $usage if !defined $ARGV[0];
 
-if (defined $ARGV[1]) {
+if ($all) {
+  $group = $ARGV[0];
+} elsif (defined $ARGV[1]) {
   $group = $ARGV[0];
   $mid = $ARGV[1];
 } else {
@@ -104,32 +111,51 @@ connect(S,$paddr) or die "connect: $!";
 
 S->autoflush(1);
 
+$fatal = 1; # most errors need to be fatal
+
 &getline;
 $code =~ /^2\d\d/ or die "no initial greeting from server\n";
 
 &docmd("MODE READER");
 # some servers require a GROUP before an ARTICLE command
-&docmd("GROUP $group");
-&docmd("ARTICLE $mid");
-$art = "";
-while (1) {
-  &getline;
-  s/[\r\n]//g;
-  last if /^\.$/;
-  s/^\.//;
-  $art .= "$_\n";
-}
-&docmd("QUIT");
-close S;
-
-if ($pager and -t STDOUT) {
-    $pagername = $ENV{"PAGER"};
-    $pagername = "more" unless defined $pagername;
-    open PAGER, "| $pagername";
-    print PAGER $art;
-    close PAGER;
+$numbers = &docmd("GROUP $group");
+if ($all) {
+    @numbers = split / /, $numbers;
+    $fatal = 0; # ignore failure to retrieve any given article
+    for ($mid = $numbers[1]; $mid <= $numbers[2]; $mid++) {
+	$art = &getart($mid);
+	$art =~ s/\n(>*From )/\n>$1/gs;
+	print "From nntpid ".(localtime)."\n".$art."\n";
+    }
 } else {
-    print $art;
+    $art = &getart($mid);
+    &docmd("QUIT");
+    close S;
+
+    if ($pager and -t STDOUT) {
+	$pagername = $ENV{"PAGER"};
+	$pagername = "more" unless defined $pagername;
+	open PAGER, "| $pagername";
+	print PAGER $art;
+	close PAGER;
+    } else {
+	print $art;
+    }
+}
+
+sub getart {
+  my ($mid) = @_;
+  $ret = &docmd("ARTICLE $mid");
+  return undef if !defined $ret;
+  $art = "";
+  while (1) {
+    &getline;
+    s/[\r\n]//g;
+    last if /^\.$/;
+    s/^\.//;
+    $art .= "$_\n";
+  }
+  return $art;
 }
 
 sub putline {
@@ -143,16 +169,21 @@ sub getline {
   s/[\r\n]*$//s;
   $code = substr($_,0,3);
   print STDERR "<<< $_\n" if $verbose;
+  return substr($_,4);
 }
 
 sub docmd {
   my ($cmd) = @_;
   while (1) {
     &putline($cmd);
-    &getline;
+    $line = &getline;
     if ($code eq "480") { &auth; } else { last; }
   }
-  $code =~ /^2\d\d/ or die "failed on `$cmd':\n$_\n";
+  if ($code !~ /^2\d\d/) {
+    die "failed on `$cmd':\n$_\n" if $fatal;
+    return undef;
+  }
+  return $line;
 }
 
 sub auth {
