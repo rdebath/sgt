@@ -8,8 +8,8 @@
 
 \U SYNOPSIS
 
-\c cvt-utf8 [flags] [hex UTF-8 bytes and/or U+codepoints]
-\e bbbbbbbb  iiiii   iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+\c cvt-utf8 [flags] [hex UTF-8 bytes, U+codepoints, SGML entities]
+\e bbbbbbbb  iiiii   iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
 
 \U DESCRIPTION
 
@@ -28,11 +28,12 @@ code point in the Unicode character database and identify it.
 \b Look up Unified Han characters in the \q{Unihan} database and
 provide their translation text.
 
-By default, \cw{cvt-utf8} expects to receive hex numbers (either
-UTF-8 bytes or Unicode code points) on the command line, and it will
-print out a verbose analysis of the input data. If you need it to
-read UTF-8 from standard input or to write pure UTF-8 to standard
-output, you can do so using command-line options.
+By default, \cw{cvt-utf8} expects to receive character data on the
+command line (as a mixture of UTF-8 bytes, Unicode code points and
+SGML numeric character entities), and it will print out a verbose
+analysis of the input data. If you need it to read UTF-8 from
+standard input or to write pure UTF-8 to standard output, you can do
+so using command-line options.
 
 \U OPTIONS
 
@@ -65,6 +66,15 @@ points...
 
 ... and \cw{cvt-utf8} gives you the UTF-8 encodings plus the
 character definitions.
+
+If it's more convenient, you can specify those characters as SGML
+numeric entity references (for example if you're cutting and pasting
+out of a web page):
+
+\c $ cvt-utf8 '&#8364;' '&#x2013;'
+\e   bbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+\c U-000020AC  E2 82 AC          EURO SIGN
+\c U-00002013  E2 80 93          EN DASH
 
 Alternatively, you can supply a list of UTF-8 bytes...
 

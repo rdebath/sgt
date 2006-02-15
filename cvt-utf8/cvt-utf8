@@ -203,23 +203,39 @@ def do(args):
 
     list = []
     for arg in args:
+	got = ('none')
 	if string.upper(arg[0]) == "U":
+	    assert arg[1] == "+" or arg[1] == "-"
+	    got = ('ucs', string.atoi(arg[2:], 16))
+	elif arg[:2] == "&#":
+	    # SGML character entity. Either &# followed by a
+	    # number, or &#x followed by a hex number.
+	    s = arg
+	    if s[-1:] == ";": s = s[:-1]
+	    if string.upper(s[:3]) == "&#X":
+		got = ('ucs', string.atoi(s[3:], 16))
+	    else:
+		got = ('ucs', string.atoi(s[2:], 10))
+	else:
+	    got = ('utf8', string.atoi(arg, 16))
+
+	if got[0] == 'utf8':
+	    list.append(got[1])
+	elif got[0] == 'ucs':
 	    if len(list) > 0:
 		process_utf8(liststepper(list))
 		list = []
-	    assert arg[1] == "+" or arg[1] == "-"
-	    process_ucs(string.atoi(arg[2:], 16))
-	else:
-	    list.append(string.atoi(arg, 16))
+	    process_ucs(got[1])
 
     if len(list) > 0:
 	process_utf8(liststepper(list))
 
 def usage(arg):
-    print "usage: cvt-utf8 [flags] <hex UTF-8 bytes and/or U+codepoints>"
+    print "usage: cvt-utf8 [flags] <hex UTF-8 bytes, U+codepoints, SGML entities>"
     print "  e.g. cvt-utf8 e2 82 ac"
     print "    or cvt-utf8 U+20ac"
     print "    or cvt-utf8 U-10ffff"
+    print "    or cvt-utf8 '&#8211;'"
     print ""
     print "where: -o or --output        just output well-formed UTF-8 instead of"
     print "                             an analysis of the input data"
