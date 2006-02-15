@@ -80,7 +80,7 @@ None known at present.
 
 \U LICENCE
 
-\cw{xcopy} is free software, distributed under the MIT licence. Type
-\cw{xcopy --licence} to see the full licence text.
+\cw{beep} is free software, distributed under the MIT licence. Type
+\cw{beep --licence} to see the full licence text.
 
 \versionid $Id$
