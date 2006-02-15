@@ -117,7 +117,6 @@ if ($multiple) {
 
 sub makelink {
   local ($source, $target) = @_;
-
   # Calculate the absolute path names of both source and target.
   $source = &normalise($source);
   $target = &normalise($target);
@@ -160,7 +159,7 @@ sub normalise {
     1 while s/^(.*)\/\.(\/.*)?$/$1$2/;
 
     # Remove redundant slashes.
-    s/\/+/\//;
+    s/\/+/\//g;
 
     # Remove a trailing slash if present.
     s/\/$//;
@@ -194,6 +193,7 @@ sub normalise {
 	    $_ = $pre . $post;
 	}
 	$_ = "/" if $_ eq ""; # special case
+	s/\/+/\//g; # remove redundant slashes again in case link text had any
 	$log .= "$_";
 	warn "lns: $log\n" if $verbose > 2;
     }
