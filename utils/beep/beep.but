@@ -1,0 +1,86 @@
+\cfg{man-identity}{beep}{1}{2006-02-15}{Simon Tatham}{Simon Tatham}
+
+\title Man page for \c{beep}
+
+\U NAME
+
+\c{beep} - produce a beeping noise, by any available method
+
+\U SYNOPSIS
+
+\c beep [ -v ] [ -X | -T | -S ]
+\e bbbb   bb     bb   bb   bb
+
+\U DESCRIPTION
+
+\c{beep} is a command-line utility for making a computer go beep.
+
+Under normal circumstances, you should be able to use it just by
+typing \cq{beep}, with no options.
+
+The traditional method of producing a beep in a shell script is to
+write an ASCII BEL (\cw{\\007}) character to standard output, by
+means of a shell command such as \cq{echo -ne '\\007'}. This only
+works if the calling shell's standard output is currently directed
+to a terminal device of some sort; if not, the beep will produce no
+sound and might even cause unwanted corruption in whatever file the
+output is directed to.
+
+There are other ways to cause a beeping noise. A slightly more
+reliable method is to open \cw{/dev/tty} and send your BEL character
+there. This is robust against I/O redirection, but still fails in
+the case where the shell script wishing to generate a beep does not
+\e{have} a controlling terminal, for example because it is run from
+an X window manager.
+
+A third approach is to connect to your X display and send it a bell
+command. This does not depend on a Unix terminal device, but does
+(of course) require an X display.
+
+The \c{beep} command supports all these methods of generating a
+beep, and will try them in order until one works. Its order of
+preference is to use the X server, then to fall back to
+\cw{/dev/tty}, and if all else fails it will simply write a BEL to
+its standard output.
+
+\U OPTIONS
+
+\dt \cw{-X}
+
+\dd Restricts \c{beep} to only using the X server to generate its
+beep. If there is no X server available, no beep will be generated
+and \c{beep} will return failure.
+
+\dt \cw{-T}
+
+\dd Restricts \c{beep} to only using \cw{/dev/tty} to generate its
+beep. If \cw{/dev/tty} cannot be opened or written to, no beep will
+be generated and \c{beep} will return failure.
+
+\dt \cw{-S}
+
+\dd Restricts \c{beep} to only using standard output to generate its
+beep. If its standard output cannot be written to, no beep will be
+generated and \c{beep} will return failure.
+
+\dt \cw{-v}
+
+\dd Causes \c{beep} to log everything it did even if it succeeds. By
+default, error messages will only be output if none of the available
+beep methods succeeded.
+
+\U EXIT STATUS
+
+\c{beep} will return a success (0) status if it thinks it
+successfully beeped, and failure (1) otherwise.
+
+\U BUGS
+
+None known at present.
+
+\U LICENCE
+
+\cw{xcopy} is free software, distributed under the MIT licence. Type
+\cw{xcopy --licence} to see the full licence text.
+
+\versionid $Id$
