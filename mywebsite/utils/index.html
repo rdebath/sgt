@@ -7,10 +7,10 @@
 
 <p>
 This web page presents a collection of small Unix-based utility
-programs which I wrote for myself and found useful. Each of these is
-a program I ended up giving copies of to other people because they
-found it useful too; so now I'm publishing the whole lot to the
-world just in case anyone else wants them.
+programs which I wrote for myself and found useful. Many of these
+are programs I ended up giving copies of to other people because
+they found them useful too; so now I'm publishing the whole lot to
+the world just in case anyone else wants them.
 
 <h2>The utilities</h2>
 
@@ -22,6 +22,11 @@ Click on the name of each utility to see its <code>man</code> page.
 <dd>Simple stand-alone converter between base64
 (<a href="http://www.ietf.org/rfc/rfc2045.txt">RFC 2045</a>) and
 ordinary binary data.
+<dt><a href="beep.html"><code>beep</code></a>
+<dd>Produce a beep, by any means necessary (tries the X server,
+<code>/dev/tty</code> and standard output). More reliable than
+"<code>echo -ne '\007'</code>", and doesn't pollute redirected output
+files.
 <dt><a href="cvt-utf8.html"><code>cvt-utf8</code></a>
 <dd>Convert between Unicode code points and the UTF-8 encoding. Also
 looks up each code point in the Unicode Character Database and/or
@@ -61,6 +66,10 @@ Tarballs of each utility are available here.
 <p>
 <code>
 <a href="base64.tar.gz">base64.tar.gz</a>
+</code>
+<br>
+<code>
+<a href="beep.tar.gz">beep.tar.gz</a>
 </code>
 <br>
 <code>
