@@ -56,9 +56,9 @@ whichtree=008BE508 treeindex=65
 
 <p>
 One user (1124367194.23192.240954800@webmail.messagingengine.com)
-reported a firing of the same assertion with PuTTY 0.58. However, as
+reported a failure of the same assertion with PuTTY 0.58. However, as
 their screen is apparently zero rows high (presumably due to their
-window manager), this pathological case is probably a problem that's now
+window manager), this pathological case is a problem that's now
 protected against via
 <a href="zero-rows-cols-crash.html">`zero-rows-cols-crash'</a>.
 <blockquote>
