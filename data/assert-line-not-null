@@ -56,7 +56,11 @@ whichtree=008BE508 treeindex=65
 
 <p>
 One user (1124367194.23192.240954800@webmail.messagingengine.com)
-has found a reliable cause of what may be the same bug:
+reported a firing of the same assertion with PuTTY 0.58. However, as
+their screen is apparently zero rows high (presumably due to their
+window manager), this pathological case is probably a problem that's now
+protected against via
+<a href="zero-rows-cols-crash.html">`zero-rows-cols-crash'</a>.
 <blockquote>
 <p>I am using bblean blackbox for windows as a shell on windows XP SP2, and
 whenever I rollup a maximized putty window the following fatal error
