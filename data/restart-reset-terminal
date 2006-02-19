@@ -2,6 +2,7 @@ Summary: Reset terminal state when restarting session
 Class: semi-bug
 Difficulty: fun
 Priority: medium
+Fixed-in: r6577 2006-02-20
 Content-type: text/x-html-body
 
 <p>
