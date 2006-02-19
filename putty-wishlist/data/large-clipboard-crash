@@ -1,44 +1,19 @@
-Summary: Crashes with moderately large clipboard operations
+Summary: Crashes with large clipboard operations containing lots of blank space
 Class: bug
 Priority: medium
 Present-in: 0.53 0.54 2004-06-01 0.56 2004-11-26 2004-11-29 2004-12-27 2005-02-22 2005-03-18 2005-03-28 0.58 2005-06-08
+Fixed-in: r6570 2006-02-20
 Content-type: text/x-html-body
 
 <p>
 We've had some reports of crashes when moderately large clipboard
-operations (hundreds or thousands of lines, or approx 32k+) are
-performed. We've not been able to reproduce this ourselves. Some
-reports indicate that it might be specific to certain servers.
+operations are performed. Typically this is associated with use of the
+"Copy All to Clipboard" menu action, but it can happen with ordinary
+mouse-button copy-and-paste too.
 
 <p>
-Typically this is associated with use of the "Copy All to Clipboard"
-menu action, but apparently it can happen with ordinary mouse-button
-copy-and-paste too.
-
-<p>
-(Possibly related, although we've no hard evidence for this:
-<a href="assert-line-not-null.html">`assert-line-not-null'</a>
-and <a href="assert-fail-newsavelines.html">`assert-fail-newsavelines'</a>.)
-
-<ul>
-
-<li><tt><a href="http://groups.google.com/groups?as_umsgid=Rb8vc.137%24vO1.1200%40nnrp1.uunet.ca">Rb8vc.137$vO1.1200@nnrp1.uunet.ca</a></tt>
-(news) / <tt>E1BVqZq-000837-00@chiark.greenend.org.uk</tt> (mail)
-<br>0.54 + snapshot; OpenSSH; "clear scrollback" implicated?
-
-<li><tt>s19e0a69.037@dohprimo.ccf.health.nsw.gov.au</tt>
-<br>0.53 and 0.56 "Out of memory", &gt;400 lines (ish); SSH to "T64 Unix"
-
-<li><tt>41D261A2.4060806@lucent.com</tt>
-<br>0.56 "Out of memory", snapshots crash; Telnet to HP-UX 11 and SunOS 5
-<br>Dr Watson, registry settings, logs
-
-<li><tt>549E069FE8AE6E4C95E0420E534FCD010324DA7C@exchgob7.corp.dir.ameren.com</tt>
-<br>Cisco PIX firewalls (SSH-1), Clear Scrollback, Copy All to Clipboard
-<br>Limited XP error report information
-
-<li><tt>6D4E54434B6EF845B7A53AC02468BE9A0D3110@fflon-exc02.hq.ffastfill.com</tt>
-<br>0.58 / 2005-06-08; telnet to Cisco, change scrollback from 2000 to 20000 lines, issue a command ~4500 lines, "Copy All to Clipboard" =&gt; crash
-<br>screenshot of some of XP's crash info
-
-</ul>
+It turns out that PuTTY can crash when attempting to copy a large
+(&gt; 5 kilobyte) chunk of text containing a significant number of
+consecutive empty lines. (More than 100 after the 5k mark would likely
+guarantee a crash or other misbehaviour, but it could happen with
+fewer.)
