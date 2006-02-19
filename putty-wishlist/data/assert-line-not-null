@@ -29,8 +29,7 @@ thought of a plausible mechanism for <tt>screen</tt> or
 
 <p>
 (Possibly related, although we've no hard evidence for this:
-<a href="assert-fail-newsavelines.html">`assert-fail-newsavelines'</a>
-and <a href="large-clipboard-crash.html">`large-clipboard-crash'</a>.)
+<a href="assert-fail-newsavelines.html">`assert-fail-newsavelines'</a>.)
 
 <ul>
 <li><tt>Pine.0410290832480.79579@mozart.musicbox.net</tt>
