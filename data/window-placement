@@ -25,5 +25,6 @@ Further update: it's been suggested that GetWindowDC(NULL) should be
 fine in 99% of cases.
 <12250972734.20040408170548@kanargh.force9.co.uk>
 
-2004-Jul-25: I'm experimenting with this change and hope to put it
-in the snapshots to try out soon.
+2006-Feb-26: I've done some experimenting with this change, but it
+seems to have a few unexpected interactions with the rest of our
+resize code (which needs an overhaul in any case).
