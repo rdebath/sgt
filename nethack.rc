@@ -1,0 +1,58 @@
+# Simon Tatham's .nethackrc. Currently tuned for NetHack 3.4.3.
+
+OPTIONS=windowtype:tty,toptenwin,hilite_pet,!number_pad,hpmon
+OPTIONS=fixinv,safe_pet,sortpack,tombstone,color
+OPTIONS=!sparkle,!cmdassist
+OPTIONS=verbose,news,fruit:pineapple
+OPTIONS=dogname:Dog
+OPTIONS=catname:Greebo
+OPTIONS=horsename:Tornado
+OPTIONS=nomail
+OPTIONS=menucolors
+OPTIONS=autodig,DECgraphics,showexp,time
+OPTIONS=boulder:0
+OPTIONS=disclose:+i +a +v +g +c
+OPTIONS=msg_window:reversed
+OPTIONS=suppress_alert:3.4.3
+OPTIONS=pickup_types:$"!?=/
+OPTIONS=lit_corridor
+
+# This monsters setting is exactly equivalent to the default, except
+# that the space (ghosts and shades) has become an X. This renders
+# ghosts and shades conveniently visible, while still keeping them
+# distinguishable from xorns by colour (ghosts are grey, shades
+# blue, xorns brown). Have to remember that this _doesn't_ mean
+# genociding X will get them :-) but otherwise I think it's useful.
+OPTIONS=monsters:abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ@X'&;:~]
+
+# Highlight things if their curse status is known. I'd quite like to
+# highlight known-uncursed fully identified things (`a +0 dagger',
+# `a wand of locking (0:3)') in yellow to indicate uncursedness,
+# but of course not _everything_ with a numeric quantifier is fully
+# identified (armour being the obvious counterexample). I could put
+# in a huge number of regexp rules to match all the different types
+# of weapon, or to unmatch all the different types of armour, but
+# haven't yet had the motivation. (Besides, I'd have to check it all
+# on any NetHack upgrade.)
+MENUCOLOR=" blessed "=green
+MENUCOLOR=" holy "=green
+MENUCOLOR=" uncursed "=yellow
+MENUCOLOR=" cursed "=red
+MENUCOLOR=" unholy "=red
+
+# Special highlight for anything whose curse status is causing me an
+# immediate problem: anything I can't take off or drop. Loadstones
+# might be identified, or I might have called one `LOAD'.
+MENUCOLOR=" cursed .* (being worn)"=orange&underline
+MENUCOLOR=" cursed .* (weapon in .*)"=orange&underline
+MENUCOLOR=" cursed .* (on .*)"=orange&underline
+MENUCOLOR=" cursed .* load"=orange&underline
+MENUCOLOR=" cursed .* LOAD"=orange&underline
+
+# Highlight wands of cancellation to help prevent exploding-BoH
+# accidents. When I engrave-test a wand and find it might be
+# cancellation, my practice is to name it something including the
+# string `canc', so that this rule will still match it. Usually
+# `silver,invistelecanc', or some subset of that if I've already
+# seen invis or tele.
+MENUCOLOR="wand.*canc"=magenta&bold
