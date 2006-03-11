@@ -36,3 +36,11 @@ in the policies of most window managers.)
 <p>
 People who want this capability may find the third-party utility
 <a href="http://spoox.org/projects/twsc/">TWSC</a> useful.
+
+<p>
+A related suggestion is that separate PuTTY windows could know about
+each other, and a key combination such as Ctrl-Tab could switch
+between just PuTTY windows. A (scary) patch implementing this can
+be found
+<a href="http://hp.vector.co.jp/authors/VA024651/#PuTTYctrltab_top">here</a>
+(web page in Japanese).
