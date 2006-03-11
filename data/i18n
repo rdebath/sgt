@@ -9,7 +9,9 @@ Extract all the user-visible text to a single location, so it can be
 easily replaced with a set of translations into other languages.
 It's not yet clear whether we want to do this at compile time,
 post-compile time, or using a Windows string resource (probably not
-the latter since we require portability to non-Windows environments).
+the latter since we require portability to non-Windows environments;
+for an example of a patch implementing this approach, see
+<a href="http://hp.vector.co.jp/authors/VA024651/#PuTTYkj_top">PuTTYkj</a>).
 
 <p>
 (Having special markup for strings &agrave; la
