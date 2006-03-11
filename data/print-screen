@@ -15,7 +15,9 @@ emulation to be implemented.
 
 <p>
 The best you can do currently is copy and paste from the PuTTY window
-to another program, and print from there. 
+to another program, and print from there. (Since r6555 / 2006-02-14,
+PuTTY has supported copying text with a full set of colours and other
+attributes.)
 
 <p>
 Alternatively,
