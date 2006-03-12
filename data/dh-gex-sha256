@@ -16,4 +16,4 @@ instead of SHA-1. We should implement that too.
 
 <p>
 (<em>Update:</em> Note that this support was liable to crash in snapshots
-before r6006, 2006-03-13.)
+before r6606, 2006-03-13.)
