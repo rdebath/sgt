@@ -7,6 +7,42 @@ import urllib
 import os
 import time
 
+class Redirected:
+    def __init__(self,h):
+	self.newurl = h["Location"]
+	self.headers = h
+    pass
+
+class MyURLopener(urllib.FancyURLopener):
+    def http_error_default(self, url, fp, errcode, errmsg, headers):
+        """Default error handler: close the connection and raise IOError."""
+        void = fp.read()
+        fp.close()
+        raise IOError, str(errcode) + " " + errmsg
+    def http_error_302(self, url, fp, errcode, errmsg, headers):
+        """Default error handler: close the connection and raise IOError."""
+        void = fp.read()
+        fp.close()
+        raise Redirected, headers
+urllib._urlopener = MyURLopener()
+
+def getcookies(headers, currheaders="", trim=0):
+    cookies = {}
+    if len(currheaders) > 0:
+	sep = "; "
+    else:
+	sep = "Cookie: "
+    for i in headers.getallmatchingheaders("Set-Cookie"):
+	assert i[:12] == "Set-Cookie: "
+	cookie = i[12:]
+	j = string.find(cookie, ";")
+	if j >= 0:
+	    cookie = cookie[:j]
+	    if cookie[-1:] != "=":
+		currheaders = currheaders + sep + cookie
+		sep = "; "
+    return currheaders
+
 verbose = force = last = 0
 args = sys.argv[1:]
 while len(args) > 0:
@@ -93,33 +129,49 @@ if ljproto.ljok(ret):
 	tryit = 1
 	new = 2 # means quite likely to be new stuff, but uncertain
     if tryit:
-	urlguts = "www.livejournal.com/users/"+ljproto.ljusername()+"/friends"
+	urlguts = ljproto.ljuserhost() + ".livejournal.com/friends"
 	if date_start != "" and date_stop != "":
 	    url = "http://" + urlguts + "/"
 	    session = os.environ["HOME"] + "/.ljscan/ljsession"
 	    try:
 		sessf = open(session, "r")
 		cookie = chomp(sessf.readline())
+		fcookie = chomp(sessf.readline())
+		ch = cookie
 		sessf.close()
-		index = string.find(cookie, ": ")
+		index = string.find(ch, ": ")
 		if index >= 0:
-		    urllib._urlopener.addheader(cookie[:index], cookie[index+2:])
+		    urllib._urlopener.addheader(ch[:index], ch[index+2:])
 	    except IOError, e:
 		pass # if we couldn't find it, then fair enough
 	    try:
-		f = urllib._urlopener.open(url)
-		date = ""
 		while 1:
-		    s = f.readline()
-		    if s == "": break
-		    a1 = string.find(s, date_start)
-		    if a1 >= 0:
-			a1 = a1 + len(date_start)
-			a2 = string.find(s, date_stop, a1)
-			if a2 > a1:
-			    date = s[a1:a2]
-			    break
-		f.close()
+		    for k in range(len(urllib._urlopener.addheaders)):
+			if urllib._urlopener.addheaders[k][0] == "Cookie":
+			    index = string.find(ch, ": ")
+			    if index >= 0:
+				urllib._urlopener.addheaders[k] = (ch[:index], ch[index+2:])
+		    try:
+			# print "trying", urllib._urlopener.addheaders, url
+			f = urllib._urlopener.open(url)
+			headers = f.info()
+			data = f.read()
+			f.close()
+			break
+		    except Redirected, r:
+			if string.find(r.newurl, "//www.livejournal.com"):
+			    ch = fcookie
+			else:
+			    ch = cookie
+			ch = getcookies(r.headers, ch)
+			url = r.newurl
+		date = ""
+		a1 = string.find(data, date_start)
+		if a1 >= 0:
+		    a1 = a1 + len(date_start)
+		    a2 = string.find(data, date_stop, a1)
+		    if a2 > a1:
+			date = data[a1:a2]
 	    except IOError, e:
 		print "friends page:", e
 		sys.exit(1)

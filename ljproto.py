@@ -83,3 +83,8 @@ def ljusername():
     finally:
 	f.close()
     return None
+
+def ljuserhost():
+    "Retrieve the user's LJ host name."
+    name = ljusername()
+    return string.replace(name, "_", "-")
