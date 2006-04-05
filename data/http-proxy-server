@@ -1,0 +1,16 @@
+Summary: Present HTTP proxy interface to dynamic port forwarding
+Class: wish
+Difficulty: tricky
+Priority: low
+Content-type: text/x-html-body
+
+<p>
+<a href="portfwd-dynamic.html">Dynamic port forwarding</a> presents a
+SOCKS proxy interface. It might be nice to have the option of
+presenting an HTTP proxy interface instead, since some clients
+support that interface and not SOCKS.
+
+<p>
+A potential difficulty is that it's not clear how much of the large
+and sprawling HTTP specification we would need to implement in
+order to interoperate usefully.
