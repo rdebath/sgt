@@ -46,8 +46,8 @@ create its target link with precisely that name.
 If the second argument is a directory, \cw{lns} will assume you want
 a link created \e{inside} that directory, with the same filename as
 the source file. If you supply more than two arguments, \cw{lns}
-will \e{expect} the final argument to a directory, and will do this
-for each of the other arguments.
+will \e{expect} the final argument to be a directory, and will do
+this for each of the other arguments.
 
 (This behaviour is intended to mimic \cw{cp} as closely as
 possible.)
