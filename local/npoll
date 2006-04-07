@@ -28,6 +28,7 @@ foreach $i (@ARGV) {
   } else {
     $gotgroups = 1;
     $groups{$i} = 1;
+    push @gplist, $grp;
   }
 }
 
@@ -42,13 +43,14 @@ while (<NEWSRC>) {
     $groups{$grp} = 0;
     $chkgroups{$grp} = 1;
     $read{$grp} = $read;
+    push @gplist, $grp if !$gotgroups;
   }
 }
 close NEWSRC;
 
 # Warn about any groups specified on the command line that we won't
 # look at.
-foreach $i (keys %groups) {
+foreach $i (@gplist) {
   warn "newschk: group $i not mentioned in .newsrc, ignoring\n"
     if $groups{$i} == 1;
 }
@@ -71,7 +73,7 @@ S->autoflush(1);
 $code =~ /^2\d\d/ or die "newschk: no initial greeting from server\n";
 
 &docmd("MODE READER");
-foreach $group (sort keys %chkgroups) {
+foreach $group (grep { $chkgroups{$_} } @gplist) {
   &docmd("GROUP $group");
   if ($code == "211") {
     @results = split " ", $line;
