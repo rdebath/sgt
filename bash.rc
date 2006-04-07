@@ -465,10 +465,14 @@ alias xlsfonts='bashrc_a_shopts="$SHELLOPTS"; set -f; xlsfonts'
 rfc() {
   local filename
   local host
+  local nameonly
+  local url
+  nameonly=no
   host="www.ietf.org"
   while test $# -gt 0; do
     case $1 in
       -h) host="$2"; shift;;
+      -n) nameonly=yes;;
       --help) echo "Usage: rfc [-h hostname] [index | rfc-number]";
               return 0;;
       -*) echo Unrecognised option "$1" >&2; return 1 ;;
@@ -481,8 +485,12 @@ rfc() {
     shift
   done
 
-  wget -q -O - "http://$host/rfc/$filename" | \
-    env LESSOPEN="|cat" less $filename
+  url="http://$host/rfc/$filename"
+  if test $nameonly = yes; then
+    echo "$url"
+  else
+    wget -q -O - "$url" | env LESSOPEN="|cat" less $filename
+  fi
 }
 
 #}}}
