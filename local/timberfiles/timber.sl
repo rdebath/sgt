@@ -1056,6 +1056,11 @@ define timber_unread() {
 
     push_spot();
     timber_bom();
+    if (what_char() != '*' or timber_la("* [end]")) {
+	pop_spot();
+	error("Not on a message.");
+	return;
+    }
     timber_rw();
     go_right(2);
     deln(1);
