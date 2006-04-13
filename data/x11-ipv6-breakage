@@ -2,11 +2,15 @@ Summary: Reported X forwarding breakage due to IPv6
 Class: bug
 Priority: medium
 Difficulty: taxing
-Present-in: 2005-02-10
+Present-in: 2005-02-10 0.58
 Content-type: text/x-html-body
 
 <p>
-We've had one report that X forwarding in PuTTY broke after we
+We've had a couple of reports of X forwarding breakage related to
+IPv6.
+
+<p>
+One report implied that X forwarding in PuTTY broke right after we
 integrated the IPv6 code. Presumably the IPv6 changes have had some
 sort of side effect on the local network connection between PuTTY
 and the X server, but it isn't clear what since we haven't been able
@@ -36,6 +40,23 @@ Windows version was XP SP2.
 </ul>
 
 <p>
+Another report
+(<code>&lt;4E2CCFB2C8CC5244939D17374DC28E0003444974@ing.com&gt;</code>):
+
+<ul>
+<li>Windows XP Pro SP1
+<li>Connecting via an HTTP proxy
+<li>Same symptom ("explicit kill or server shutdown")
+<li>Using <code>127.0.0.1:0</code> doesn't help at all
+<li>X server doesn't matter (tried Exceed, Cygwin)
+<li>Still happens with "latest development snapshot" (2006-04)
+<li>Uninstalling IPv6 made the problem go away
+<li>PuTTY Event Log entries (approximate):
+<br><pre>2006-04-12 12:44:08 Received X11 connect request from 127.0.0.1:39241
+2006-04-12 12:44:08 Opening X11 forward connection succeeded
+2006-04-12 12:44:08 Forwarded X11 connection terminated</pre>
+</ul>
+
+<p>
 If anyone is able to reproduce this or shed some light on possible
 causes, we'd be grateful.
-
