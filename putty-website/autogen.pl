@@ -80,9 +80,16 @@ EOF
 
 sub fix_href {
   local ($_) = @_;
-  s#^\Qhttp://www.chiark.greenend.org.uk/~sgtatham/putty/\E(.+)#$1# or /\// or
+  if (s#^\Qhttp://www.chiark.greenend.org.uk/~sgtatham/putty/\E(.+)#$1# or
+    /\// or
     /^news:/ or /^mailto:/ or
-    /^#/ or s/^\Q$srcfn\E// or
+    /^#/ or s/^\Q$srcfn\E//) {
+    return $_;
+  } else {
+    foreach my $file (@files) {
+      return $_ if s#^\Q$file->[1]\E#$file->[0]#;
+    }
     s#^#http://www.tartarus.org/~simon/puttydoc\/#;
-  $_;
+    return $_;
+  }
 }
