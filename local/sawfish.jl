@@ -53,10 +53,13 @@
 ;; Left-Windows + x to minimise windows {{{
 
 (define (iconify-window-under-pointer)
-   (let ((w (query-pointer-window)))
-      (when (not (null w)) (iconify-window w))
+   (let ((w1 (query-pointer-window))
+         (w2 (input-focus)))
+      (cond ((not (null w1)) (iconify-window w1))
+            ((not (null w2)) (iconify-window w2))
       )
    )
+)
 
 (define-command 'iconify-window-under-pointer iconify-window-under-pointer)
 
