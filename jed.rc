@@ -290,10 +290,13 @@ setkey("grep_goto", "^@C");
 setkey("grep_goto", "^[[20~");
 #endif
 %}}}
-%{{{ disable isearch
+%{{{ disable isearch and enable regexp search
 
 setkey("search_forward", "^S");
 setkey("search_backward", "^R");
+
+setkey("re_search_forward", "^[^S");
+setkey("re_search_backward", "^[^R");
 
 %}}}
 %{{{ redefine bits of C and SLang mode
@@ -1457,7 +1460,7 @@ define cvssvn_log() {
     if (which == "cvs") {
 	run_shell_cmd("cvs log " + file);
     } else { % svn
-	run_shell_cmd("svn log -v " + file);
+	run_shell_cmd("svnlog " + file + " || svn log -v " + file);
     }
     setbuf_info((getbuf_info & ~1) | 8); % clear modified bit, set readonly
     bob();
