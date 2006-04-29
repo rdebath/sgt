@@ -33,6 +33,11 @@ a Notepad and a Firefox, say. (This is another way of saying that
 the deficiency isn't specific to PuTTY, but is a lack of flexibility
 in the policies of most window managers.)
 
+<ul>
+<li><a href="http://www.wintabber.com/">WinTabber</a> is an
+implementation of this concept for Windows 2000/XP.
+</ul>
+
 <p>
 People who want this capability may find the third-party utility
 <a href="http://spoox.org/projects/twsc/">TWSC</a> useful.
