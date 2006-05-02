@@ -571,9 +571,9 @@ int get_str (char *prompt, char *buf, int highlight) {
 		    p++;
 		    if (p<r && *p == '\\')
 			p++, display_set_colour(COL_ESCAPE);
-		    else if (p>=r || !isxdigit (*p))
+		    else if (p>=r || !isxdigit ((unsigned char)*p))
 			display_set_colour(COL_INVALID);
-		    else if (p+1>=r || !isxdigit (p[1]))
+		    else if (p+1>=r || !isxdigit ((unsigned char)p[1]))
 			p++, display_set_colour(COL_INVALID);
 		    else
 			p+=2, display_set_colour(COL_ESCAPE);
@@ -641,7 +641,8 @@ int parse_quoted (char *buffer) {
 	    p++;
 	    if (*p == '\\')
 		*q++ = *p++;
-	    else if (p[1] && isxdigit(*p) && isxdigit(p[1])) {
+	    else if (p[1] && isxdigit((unsigned char)*p) &&
+		     isxdigit((unsigned char)p[1])) {
 		char buf[3];
 		buf[0] = *p++;
 		buf[1] = *p++;

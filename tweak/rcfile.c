@@ -207,14 +207,14 @@ void read_rc (void) {
 	 * really come from. Process it.
 	 */
 	q = rcbuffer;
-	while (*q && isspace(*q))
+	while (*q && isspace((unsigned char)*q))
 	    q++;
 
 	if (!*q || *q == '#')
 	    continue;		       /* comment or blank line */
 
 	r = q;
-	while (*r && !isspace(*r))
+	while (*r && !isspace((unsigned char)*r))
 	    r++;
 	if (*r)
 	    *r++ = '\0';
@@ -231,11 +231,11 @@ void read_rc (void) {
 	     */
 	    keyact action;
 
-	    while (*r && isspace(*r))
+	    while (*r && isspace((unsigned char)*r))
 		r++;
 
 	    q = r;
-	    while (*q && !isspace(*q))
+	    while (*q && !isspace((unsigned char)*q))
 		q++;
 	    if (*q)
 		*q++ = '\0';
@@ -268,7 +268,8 @@ void read_rc (void) {
 			errors_here = TRUE;
 		    } else if (*q == '\\' || *q == '^') {
 			*s++ = *q++;
-		    } else if (isxdigit(*q) && q[1] && isxdigit(q[1])) {
+		    } else if (isxdigit((unsigned char)*q) &&
+			       q[1] && isxdigit((unsigned char)q[1])) {
 			char buf[3];
 			buf[0] = *q++;
 			buf[1] = *q++;
