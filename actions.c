@@ -1,9 +1,9 @@
+#include "tweak.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-
-#include "tweak.h"
 
 static void act_exit (void);
 static void act_save (void);
@@ -73,8 +73,8 @@ keyact parse_action (char *name) {
     return NULL;
 }
 
-static int begline(int x) {
-    int y = x + width-offset;
+static fileoffset_t begline(fileoffset_t x) {
+    fileoffset_t y = x + width-offset;
     y -= (y % width);
     y -= width-offset;
     if (y < 0)
@@ -82,8 +82,8 @@ static int begline(int x) {
     return y;
 }
 
-static int endline(int x) {
-    int y = x + width-offset;
+static fileoffset_t endline(fileoffset_t x) {
+    fileoffset_t y = x + width-offset;
     y -= (y % width);
     y += width-1;
     y -= width-offset;
@@ -209,7 +209,7 @@ static void act_left(void) {
 }
 
 static void act_right(void) {
-    int new_top;
+    fileoffset_t new_top;
 
     if (edit_type == 1) {
 	if (cur_pos < file_size)
@@ -230,7 +230,7 @@ static void act_right(void) {
 }
 
 static void act_end(void) {
-    int new_top;
+    fileoffset_t new_top;
 
     cur_pos = endline(cur_pos);
     edit_type = !!edit_type;
@@ -245,7 +245,7 @@ static void act_end(void) {
 }
 
 static void act_down(void) {
-    int new_top;
+    fileoffset_t new_top;
 
     cur_pos += width;
     if (cur_pos >= file_size) {
@@ -261,7 +261,7 @@ static void act_down(void) {
 }
 
 static void act_pgdn(void) {
-    int new_top;
+    fileoffset_t new_top;
 
     cur_pos += (scrlines-1) * width;
     if (cur_pos >= file_size) {
@@ -277,7 +277,7 @@ static void act_pgdn(void) {
 }
 
 static void act_bottom (void) {
-    int new_top;
+    fileoffset_t new_top;
 
     cur_pos = file_size;
     edit_type = !!edit_type;
@@ -407,7 +407,7 @@ static void act_mark (void) {
 }
 
 static void act_cut (void) {
-    long marktop, marksize;
+    fileoffset_t marktop, marksize;
 
     if (!marking || mark_point==cur_pos) {
 	display_beep();
@@ -440,7 +440,7 @@ static void act_cut (void) {
 }
 
 static void act_copy (void) {
-    int marktop, marksize;
+    fileoffset_t marktop, marksize;
 
     if (!marking) {
 	display_beep();
@@ -460,7 +460,7 @@ static void act_copy (void) {
 }
 
 static void act_paste (void) {
-    int cutsize, new_top;
+    fileoffset_t cutsize, new_top;
 
     cutsize = buf_length (cutbuffer);
     if (!insert_mode) {
@@ -491,7 +491,7 @@ static void act_susp (void) {
 
 static void act_goto (void) {
     char buffer[80];
-    long position, new_top;
+    fileoffset_t position, new_top;
     int error;
 
     if (!get_str("Enter position to go to: ", buffer, FALSE))
@@ -559,7 +559,8 @@ static int search_prompt(char *withdef, char *withoutdef)
 }
 
 static void act_search (void) {
-    int len, posn, dfapos;
+    int len;
+    fileoffset_t posn, dfapos;
     DFA dfa;
     static unsigned char sblk[SEARCH_BLK];
     static char withdef[] = "Search forward (default=last): ";
@@ -584,7 +585,7 @@ static void act_search (void) {
 	    posn++;
 	    dfapos = dfa[dfapos][*q++];
 	    if (dfapos == len) {
-		int new_top;
+		fileoffset_t new_top;
 
 		cur_pos = posn - len;
 		edit_type = !!edit_type;
@@ -600,7 +601,8 @@ static void act_search (void) {
 }
 
 static void act_search_backwards (void) {
-    int len, posn, dfapos;
+    int len;
+    fileoffset_t posn, dfapos;
     DFA dfa;
     static unsigned char sblk[SEARCH_BLK];
     static char withdef[] = "Search backward (default=last): ";
@@ -629,7 +631,7 @@ static void act_search_backwards (void) {
 	    posn--;
 	    dfapos = dfa[dfapos][*--q];
 	    if (dfapos == len) {
-		int new_top;
+		fileoffset_t new_top;
 
 		cur_pos = posn;
 		edit_type = !!edit_type;
@@ -654,11 +656,11 @@ static void act_recentre (void) {
 static void act_width (void) {
     char buffer[80];
     char prompt[80];
-    long w;
-    long new_top;
+    fileoffset_t w;
+    fileoffset_t new_top;
     int error;
 
-    sprintf (prompt, "Enter screen width in bytes (now %d): ", width);
+    sprintf (prompt, "Enter screen width in bytes (now %"OFF"d): ", width);
     if (!get_str (prompt, buffer, FALSE))
 	return;
     w = parse_num (buffer, &error);
@@ -680,11 +682,11 @@ static void act_width (void) {
 static void act_offset (void) {
     char buffer[80];
     char prompt[80];
-    long o;
-    long new_top;
+    fileoffset_t o;
+    fileoffset_t new_top;
     int error;
 
-    sprintf (prompt, "Enter start-of-file offset in bytes (now %d): ",
+    sprintf (prompt, "Enter start-of-file offset in bytes (now %"OFF"d): ",
 	     realoffset);
     if (!get_str (prompt, buffer, FALSE))
 	return;

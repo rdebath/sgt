@@ -1,3 +1,5 @@
+#include "tweak.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,8 +12,6 @@
 #endif
 
 #include <slang.h>
-
-#include "tweak.h"
 
 #if defined(unix) && !defined(GO32)
 static int sigwinch (int sigtype)
