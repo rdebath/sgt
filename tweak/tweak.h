@@ -1,6 +1,17 @@
 #ifndef TWEAK_TWEAK_H
 #define TWEAK_TWEAK_H
 
+#ifndef NO_LARGE_FILES
+
+#ifndef _LARGEFILE_SOURCE
+#define _LARGEFILE_SOURCE
+#endif
+#ifndef _FILE_OFFSET_BITS
+#define _FILE_OFFSET_BITS 64
+#endif
+
+#endif
+
 #ifndef FALSE
 #define FALSE 0
 #endif
@@ -33,6 +44,22 @@
 #define NULL64  NULL16,NULL16,NULL16,NULL16
 #define NULL256 NULL64,NULL64,NULL64,NULL64
 
+#include <stdio.h>
+
+#ifdef NO_LARGE_FILES
+typedef int fileoffset_t;              /* used for all file offsets */
+#define OFF
+#define ATOOFF atoi
+#define STRTOOFF strtol
+#define fseeko fseek
+#define ftello ftell
+#else
+typedef long long fileoffset_t;	       /* used for all file offsets */
+#define OFF "ll"
+#define ATOOFF atoll
+#define STRTOOFF strtoll
+#endif
+
 typedef int (*DFA)[256];
 typedef struct {
     int len;
@@ -48,9 +75,10 @@ extern char decstatus[], hexstatus[], *statfmt;
 extern char last_char, *pname, *filename;
 extern buffer *filedata, *cutbuffer;
 extern int fix_mode, look_mode, insert_mode, edit_type, finished, marking;
-extern long file_size, top_pos, cur_pos, mark_point;
+extern fileoffset_t file_size, top_pos, cur_pos, mark_point;
 extern int scrlines, modified, new_file;
-extern int width, offset, realoffset, ascii_enabled;
+extern fileoffset_t width, offset, realoffset;
+extern int ascii_enabled;
 
 #ifdef unix
 extern volatile int safe_update, update_required;
@@ -58,7 +86,7 @@ extern void update (void);
 #endif
 
 extern void fix_offset(void);
-extern long parse_num (char *buffer, int *error);
+extern fileoffset_t parse_num (char *buffer, int *error);
 
 extern void draw_scr (void);
 extern int backup_file (void);
@@ -84,14 +112,16 @@ extern buffer *buf_new_empty(void);
 extern buffer *buf_new_from_file(FILE *fp);
 extern void buf_free(buffer *buf);
 
-extern void buf_insert_data(buffer *buf, void *data, int len, int pos);
-extern void buf_fetch_data(buffer *buf, void *data, int len, int pos);
-extern void buf_overwrite_data(buffer *buf, void *data, int len, int pos);
-extern void buf_delete(buffer *buf, int len, int pos);
-extern buffer *buf_cut(buffer *buf, int len, int pos);
-extern buffer *buf_copy(buffer *buf, int len, int pos);
-extern void buf_paste(buffer *buf, buffer *cutbuffer, int pos);
-extern int buf_length(buffer *buf);
+extern void buf_insert_data(buffer *buf, void *data, int len,
+                            fileoffset_t pos);
+extern void buf_fetch_data(buffer *buf, void *data, int len, fileoffset_t pos);
+extern void buf_overwrite_data(buffer *buf, void *data, int len,
+                               fileoffset_t pos);
+extern void buf_delete(buffer *buf, fileoffset_t len, fileoffset_t pos);
+extern buffer *buf_cut(buffer *buf, fileoffset_t len, fileoffset_t pos);
+extern buffer *buf_copy(buffer *buf, fileoffset_t len, fileoffset_t pos);
+extern void buf_paste(buffer *buf, buffer *cutbuffer, fileoffset_t pos);
+extern fileoffset_t buf_length(buffer *buf);
 
 extern void display_setup(void);
 extern void display_cleanup(void);

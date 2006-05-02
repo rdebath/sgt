@@ -1,8 +1,8 @@
+#include "tweak.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#include "tweak.h"
 
 static DFA build_dfa (char *pattern, int len)
 {

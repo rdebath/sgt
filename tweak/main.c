@@ -1,9 +1,6 @@
 /*
  * TODO possibly after that:
  * 
- *  - Need to handle >2Gb files! Up the `filesize' type to long
- *    long, and use it everywhere (not just in buffer.c).
- *
  *  - Multiple buffers, multiple on-screen windows.
  *     + ^X^F to open new file
  *     + ^X^R to open new file RO
@@ -77,6 +74,8 @@
  * 	    _and_ when pasting a cut buffer _into_ one.
  */
 
+#include "tweak.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -92,8 +91,6 @@
 #include <process.h>
 #endif
 
-#include "tweak.h"
-
 static void init(void);
 static void done(void);
 static void load_file (char *);
@@ -103,8 +100,8 @@ char hex[256][3];		       /* LUT: binary to hex, 1 byte */
 
 char message[80];
 
-char decstatus[] = "%s TWEAK "VER": %-18.18s %s posn=%-10d size=%-10d";
-char hexstatus[] = "%s TWEAK "VER": %-18.18s %s posn=0x%-8X size=0x%-8X";
+char decstatus[] = "%s TWEAK "VER": %-18.18s %s posn=%-10"OFF"d size=%-10"OFF"d";
+char hexstatus[] = "%s TWEAK "VER": %-18.18s %s posn=0x%-8"OFF"X size=0x%-8"OFF"X";
 char *statfmt = hexstatus;
 
 char last_char;
@@ -121,12 +118,12 @@ int marking = FALSE;
 int modified = FALSE;
 int new_file = FALSE;		       /* shouldn't need initialisation -
 					* but let's not take chances :-) */
-int width = 16;
-int realoffset = 0, offset = 16;
+fileoffset_t width = 16;
+fileoffset_t realoffset = 0, offset = 16;
 
 int ascii_enabled = TRUE;
 
-long file_size = 0, top_pos = 0, cur_pos = 0, mark_point = 0;
+fileoffset_t file_size = 0, top_pos = 0, cur_pos = 0, mark_point = 0;
 
 int scrlines;
 
@@ -134,7 +131,7 @@ int scrlines;
  * Main program
  */
 int main(int argc, char **argv) {
-    int newoffset = -1, newwidth = -1;
+    fileoffset_t newoffset = -1, newwidth = -1;
 
     /*
      * Parse command line arguments
@@ -170,10 +167,10 @@ int main(int argc, char **argv) {
 		}
 		switch (c) {
 		  case 'o': case 'O':
-		    newoffset = strtol(value, NULL, 0);   /* allow `0xXX' */
+		    newoffset = parse_num(value, NULL);
 		    break;
 		  case 'w': case 'W':
-		    newwidth = strtol(value, NULL, 0);
+		    newwidth = parse_num(value, NULL);
 		    break;
 		}
 		break;
@@ -229,7 +226,7 @@ int main(int argc, char **argv) {
 void fix_offset(void) {
     if (3*width+11 > display_cols) {
 	width = (display_cols-11) / 3;
-	sprintf (message, "Width reduced to %d to fit on the screen", width);
+	sprintf (message, "Width reduced to %"OFF"d to fit on the screen", width);
     }
     if (4*width+14 > display_cols) {
 	ascii_enabled = FALSE;
@@ -279,7 +276,7 @@ static void load_file (char *fname) {
     file_size = 0;
     if ( (fp = fopen (fname, "rb")) ) {
 	if (eager_mode) {
-	    long len;
+	    size_t len;
 	    static char buffer[4096];
 
 	    filedata = buf_new_empty();
@@ -295,12 +292,12 @@ static void load_file (char *fname) {
 	    }
 	    fclose (fp);
 	    assert(file_size == buf_length(filedata));
-	    sprintf(message, "loaded %s (size %ld == 0x%lX).",
+	    sprintf(message, "loaded %s (size %"OFF"d == 0x%"OFF"X).",
 		    fname, file_size, file_size);
 	} else {
 	    filedata = buf_new_from_file(fp);
 	    file_size = buf_length(filedata);
-	    sprintf(message, "opened %s (size %ld == 0x%lX).",
+	    sprintf(message, "opened %s (size %"OFF"d == 0x%"OFF"X).",
 		    fname, file_size, file_size);
 	}
 	new_file = FALSE;
@@ -321,7 +318,7 @@ static void load_file (char *fname) {
  */
 int save_file (void) {
     FILE *fp;
-    long pos = 0;
+    fileoffset_t pos = 0;
 
     if (look_mode)
 	return FALSE;		       /* do nothing! */
@@ -330,7 +327,7 @@ int save_file (void) {
 	static char buffer[SAVE_BLKSIZ];
 
 	while (pos < file_size) {
-	    long size = file_size - pos;
+	    fileoffset_t size = file_size - pos;
 	    if (size > SAVE_BLKSIZ)
 		size = SAVE_BLKSIZ;
 
@@ -387,8 +384,9 @@ static int scrbuflines = 0;
  */
 void draw_scr (void) {
     int scrsize, scroff, llen, i, j;
-    long currpos;
-    int marktop, markbot, mark;
+    fileoffset_t currpos;
+    fileoffset_t marktop, markbot;
+    int mark;
     char *p;
     unsigned char c, *q;
     char *linebuf;
@@ -476,9 +474,10 @@ void draw_scr (void) {
 		 * requiring highlighting: a hex bit and an ascii
 		 * bit.
 		 */
-		int localstart= (currpos<marktop?marktop:currpos) - currpos;
-		int localstop = (currpos+llen>markbot ? markbot :
-				 currpos+llen) - currpos;
+		fileoffset_t localstart= (currpos<marktop ? marktop :
+                                          currpos) - currpos;
+		fileoffset_t localstop = (currpos+llen>markbot ? markbot :
+                                          currpos+llen) - currpos;
 		localstart += width-llen;
 		localstop += width-llen;
 		display_write_chars(linebuf, 11+3*localstart);
@@ -686,18 +685,18 @@ void schedule_update(void) {
 	update_required = TRUE;
 }
 
-long parse_num (char *buffer, int *error) {
+fileoffset_t parse_num (char *buffer, int *error) {
     if (error)
 	*error = FALSE;
     if (!buffer[strspn(buffer, "0123456789")]) {
 	/* interpret as decimal */
-	return atoi(buffer);
+	return ATOOFF(buffer);
     } else if (buffer[0]=='0' && (buffer[1]=='X' || buffer[1]=='x') &&
 	       !buffer[2+strspn(buffer+2,"0123456789ABCDEFabcdef")]) {
-	return strtol(buffer+2, NULL, 16);
+	return STRTOOFF(buffer+2, NULL, 16);
     } else if (buffer[0]=='$' &&
 	       !buffer[1+strspn(buffer+1,"0123456789ABCDEFabcdef")]) {
-	return strtol(buffer+1, NULL, 16);
+	return STRTOOFF(buffer+1, NULL, 16);
     } else {
 	return 0;
 	if (error)

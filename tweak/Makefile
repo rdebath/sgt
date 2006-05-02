@@ -1,3 +1,21 @@
+# Useful options you might want to put on the make command line:
+#
+#  - `SLANG=yes' to build against libslang instead of libncurses
+#    (libncurses is better and more reliable, but libslang might be
+#    all you have on a particular platform if you're unlucky).
+#
+#  - `XFLAGS=-DNO_LARGE_FILES' to leave out the 64-bit file access
+#    support (restricts Tweak to editing files under 2Gb, but
+#    should cause it to compile successfully on platforms without
+#    fseeko and ftello and/or long long support).
+#
+#  - `VERSION=X.XX' (for whatever X.XX you like) to cause the `make
+#    release' target to build a release tarball called
+#    `tweak-X.XX.tar.gz' which unpacks into a directory
+#    `tweak-X.XX'. Note that you also need to modify the version
+#    number in tweak.h, or else the resulting binary won't match
+#    the version number on the archive.
+
 CC := gcc
 CFLAGS := -g -c -Wall $(XFLAGS)
 LINK := gcc

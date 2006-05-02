@@ -1,10 +1,11 @@
+#include "tweak.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 #include <assert.h>
 
-#include "tweak.h"
 #include "btree.h"
 
 #ifdef TEST_BUFFER
@@ -25,13 +26,11 @@ struct buffer {
 };
 
 struct bufblk {
-    int len;			       /* number of bytes in block, always */
+    fileoffset_t len;		       /* number of bytes in block, always */
     struct file *file;		       /* non-NULL indicates a file block */
-    int filepos;		       /* only meaningful if fp!=NULL */
+    fileoffset_t filepos;	       /* only meaningful if fp!=NULL */
     unsigned char *data;	       /* only used if fp==NULL */
 };
-
-typedef int filesize;		       /* FIXME: should be larger */
 
 static bt_element_t bufblkcopy(void *state, void *av)
 {
@@ -74,7 +73,7 @@ static void bufblkfree(void *state, void *av)
 void bufblkpropmake(void *state, bt_element_t av, void *destv)
 {
     struct bufblk *a = (struct bufblk *)av;
-    filesize *dest = (filesize *)destv;
+    fileoffset_t *dest = (fileoffset_t *)destv;
 
     *dest = a->len;
 }
@@ -82,9 +81,9 @@ void bufblkpropmake(void *state, bt_element_t av, void *destv)
 /* s1 may be NULL (indicating copy s2 into dest). s2 is never NULL. */
 void bufblkpropmerge(void *state, void *s1v, void *s2v, void *destv)
 {
-    filesize *s1 = (filesize *)s1v;
-    filesize *s2 = (filesize *)s2v;
-    filesize *dest = (filesize *)destv;
+    fileoffset_t *s1 = (fileoffset_t *)s1v;
+    fileoffset_t *s2 = (fileoffset_t *)s2v;
+    fileoffset_t *dest = (fileoffset_t *)destv;
     if (!s1 && !s2) return;	       /* don't need to free anything */
     *dest = *s2 + (s1 ? *s1 : 0);
 }
@@ -100,8 +99,8 @@ static buffer *buf_new_from_bt(btree *bt)
 
 static btree *buf_bt_new(void)
 {
-    return bt_new(NULL, bufblkcopy, bufblkfree, sizeof(filesize),
-		  alignof(filesize), bufblkpropmake, bufblkpropmerge,
+    return bt_new(NULL, bufblkcopy, bufblkfree, sizeof(fileoffset_t),
+		  alignof(fileoffset_t), bufblkpropmake, bufblkpropmerge,
 		  NULL, 2);
 }
 
@@ -115,13 +114,13 @@ static int bufblksearch(void *tstate, void *sstate, int ntrees,
 			void **props, int *counts,
 			bt_element_t *elts, int *is_elt)
 {
-    int *disttogo = (int *)sstate;
-    int distsofar = 0;
+    fileoffset_t *disttogo = (fileoffset_t *)sstate;
+    fileoffset_t distsofar = 0;
     int i;
 
     for (i = 0; i < ntrees; i++) {
 	struct bufblk *blk;
-	int sublen = props[i] ? *(filesize *)props[i] : 0;
+	fileoffset_t sublen = props[i] ? *(fileoffset_t *)props[i] : 0;
 
 	if ((props[i] && *disttogo < distsofar + sublen) ||
 	    (*disttogo == distsofar + sublen && i == ntrees-1)) {
@@ -155,7 +154,7 @@ static int bufblksearch(void *tstate, void *sstate, int ntrees,
     return 0;			       /* placate gcc */
 }
 
-static int buf_bt_find_pos(btree *bt, int pos, int *poswithin)
+static int buf_bt_find_pos(btree *bt, fileoffset_t pos, fileoffset_t *poswithin)
 {
     int index;
 
@@ -179,7 +178,7 @@ static struct bufblk *buf_convert_to_literal(struct bufblk *blk)
 	ret->file = NULL;
 	ret->filepos = 0;
 	ret->len = blk->len;
-	fseek(blk->file->fp, blk->filepos, SEEK_SET);
+	fseeko(blk->file->fp, blk->filepos, SEEK_SET);
 	fread(ret->data, blk->len, 1, blk->file->fp);
 
 	return ret;
@@ -197,7 +196,7 @@ static struct bufblk *buf_convert_to_literal(struct bufblk *blk)
 static int buf_bt_cleanup(btree *bt, int index)
 {
     struct bufblk *a, *b, *cvt;
-    int totallen;
+    fileoffset_t totallen;
     unsigned char tmpdata[BLKMAX*2];
 
     if (index < 0) return 0;
@@ -266,9 +265,10 @@ static int buf_bt_cleanup(btree *bt, int index)
     }
 }
 
-static int buf_bt_splitpoint(btree *bt, int pos)
+static int buf_bt_splitpoint(btree *bt, fileoffset_t pos)
 {
-    int poswithin, index;
+    fileoffset_t poswithin;
+    int index;
     struct bufblk *blk, *newblk;
 
     index = buf_bt_find_pos(bt, pos, &poswithin);
@@ -298,7 +298,7 @@ static int buf_bt_splitpoint(btree *bt, int pos)
     return index + 1;
 }
 
-static btree *buf_bt_split(btree *bt, int pos, int before)
+static btree *buf_bt_split(btree *bt, fileoffset_t pos, int before)
 {
     int index = buf_bt_splitpoint(bt, pos);
     return bt_splitpos(bt, index, before);
@@ -316,7 +316,7 @@ static btree *buf_bt_join(btree *a, btree *b)
     return ret;
 }
 
-static void buf_insert_bt(buffer *buf, btree *bt, int pos)
+static void buf_insert_bt(buffer *buf, btree *bt, fileoffset_t pos)
 {
     btree *right = buf_bt_split(buf->bt, pos, FALSE);
     buf->bt = buf_bt_join(buf->bt, bt);
@@ -327,14 +327,15 @@ static int bufblklensearch(void *tstate, void *sstate, int ntrees,
 			   void **props, int *counts,
 			   bt_element_t *elts, int *is_elt)
 {
-    int *output = (int *)sstate;
-    int i, size = 0;
+    fileoffset_t *output = (fileoffset_t *)sstate;
+    fileoffset_t size = 0;
+    int i;
 
     for (i = 0; i < ntrees; i++) {
 	struct bufblk *blk;
 
 	if (props[i])
-	    size += *(filesize *)props[i];
+	    size += *(fileoffset_t *)props[i];
 
 	if (i < ntrees-1) {
 	    blk = (struct bufblk *)elts[i];
@@ -350,16 +351,16 @@ static int bufblklensearch(void *tstate, void *sstate, int ntrees,
     return 1;
 }
 
-static int buf_bt_length(btree *bt)
+static fileoffset_t buf_bt_length(btree *bt)
 {
-    int length;
+    fileoffset_t length;
 
     bt_propfind(bt, bufblklensearch, &length, NULL);
 
     return length;
 }
 
-extern int buf_length(buffer *buf)
+extern fileoffset_t buf_length(buffer *buf)
 {
     return buf_bt_length(buf->bt);
 }
@@ -388,8 +389,8 @@ extern buffer *buf_new_from_file(FILE *fp)
     blk->file = file;
     blk->filepos = 0;
 
-    fseek(fp, 0, SEEK_END);
-    blk->len = ftell(fp);
+    fseeko(fp, 0, SEEK_END);
+    blk->len = ftello(fp);
 
     bt_addpos(buf->bt, blk, 0);
 
@@ -398,9 +399,11 @@ extern buffer *buf_new_from_file(FILE *fp)
     return buf;
 }
 
-extern void buf_fetch_data(buffer *buf, void *vdata, int len, int pos)
+extern void buf_fetch_data(buffer *buf, void *vdata, int len, fileoffset_t pos)
 {
-    int index, poswithin, thislen;
+    int index;
+    fileoffset_t poswithin;
+    fileoffset_t thislen;
     unsigned char *data = (unsigned char *)vdata;
 
     index = buf_bt_find_pos(buf->bt, pos, &poswithin);
@@ -413,7 +416,7 @@ extern void buf_fetch_data(buffer *buf, void *vdata, int len, int pos)
 	    thislen = len;
 
 	if (blk->file) {
-	    fseek(blk->file->fp, blk->filepos + poswithin, SEEK_SET);
+	    fseeko(blk->file->fp, blk->filepos + poswithin, SEEK_SET);
 	    fread(data, thislen, 1, blk->file->fp);
 	} else {
 	    memcpy(data, blk->data + poswithin, thislen);
@@ -428,7 +431,8 @@ extern void buf_fetch_data(buffer *buf, void *vdata, int len, int pos)
     }
 }
 
-extern void buf_insert_data(buffer *buf, void *vdata, int len, int pos)
+extern void buf_insert_data(buffer *buf, void *vdata, int len,
+                            fileoffset_t pos)
 {
     btree *bt = buf_bt_new();
     int nblocks, blklen1, extra;
@@ -467,7 +471,7 @@ extern void buf_insert_data(buffer *buf, void *vdata, int len, int pos)
     buf_insert_bt(buf, bt, pos);
 }
 
-extern void buf_delete(buffer *buf, int len, int pos)
+extern void buf_delete(buffer *buf, fileoffset_t len, fileoffset_t pos)
 {
     btree *left = buf_bt_split(buf->bt, pos, TRUE);
     btree *right = buf_bt_split(buf->bt, len, FALSE);
@@ -477,13 +481,14 @@ extern void buf_delete(buffer *buf, int len, int pos)
     buf->bt = buf_bt_join(left, right);
 }
 
-extern void buf_overwrite_data(buffer *buf, void *data, int len, int pos)
+extern void buf_overwrite_data(buffer *buf, void *data, int len,
+                               fileoffset_t pos)
 {
     buf_delete(buf, len, pos);
     buf_insert_data(buf, data, len, pos);
 }
 
-extern buffer *buf_cut(buffer *buf, int len, int pos)
+extern buffer *buf_cut(buffer *buf, fileoffset_t len, fileoffset_t pos)
 {
     btree *left = buf_bt_split(buf->bt, pos, TRUE);
     btree *right = buf_bt_split(buf->bt, len, FALSE);
@@ -494,7 +499,7 @@ extern buffer *buf_cut(buffer *buf, int len, int pos)
     return buf_new_from_bt(ret);
 }
 
-extern buffer *buf_copy(buffer *buf, int len, int pos)
+extern buffer *buf_copy(buffer *buf, fileoffset_t len, fileoffset_t pos)
 {
     btree *left = buf_bt_split(buf->bt, pos, TRUE);
     btree *right = buf_bt_split(buf->bt, len, FALSE);
@@ -506,7 +511,7 @@ extern buffer *buf_copy(buffer *buf, int len, int pos)
     return buf_new_from_bt(ret);
 }
 
-extern void buf_paste(buffer *buf, buffer *cutbuffer, int pos)
+extern void buf_paste(buffer *buf, buffer *cutbuffer, fileoffset_t pos)
 {
     btree *bt = bt_clone(cutbuffer->bt);
     buf_insert_bt(buf, bt, pos);
@@ -516,7 +521,8 @@ extern void buf_paste(buffer *buf, buffer *cutbuffer, int pos)
 static FILE *debugfp = NULL;
 extern void buffer_diagnostic(buffer *buf, char *title)
 {
-    int i, offset;
+    int i;
+    fileoffset_t offset;
     struct bufblk *blk;
 
     if (!debugfp) {
@@ -533,9 +539,9 @@ extern void buffer_diagnostic(buffer *buf, char *title)
     fprintf(debugfp, "Listing of buffer [%s]:\n", title);
     offset = 0;
     for (i = 0; (blk = (struct bufblk *)bt_index(buf->bt, i)) != NULL; i++) {
-	fprintf(debugfp, "%08x: %p, len =%8d,", offset, blk, blk->len);
+	fprintf(debugfp, "%016"OFF"x: %p, len =%8"OFF"d,", offset, blk, blk->len);
 	if (blk->file) {
-	    fprintf(debugfp, " file %p pos %8d\n", blk->file, blk->filepos);
+	    fprintf(debugfp, " file %p pos %8"OFF"d\n", blk->file, blk->filepos);
 	} else {
 	    int j;
 

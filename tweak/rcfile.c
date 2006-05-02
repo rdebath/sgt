@@ -1,9 +1,9 @@
+#include "tweak.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-
-#include "tweak.h"
 
 #if defined(unix) && !defined(GO32)
 #define RCNAME ".tweakrc"
