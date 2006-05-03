@@ -1,5 +1,7 @@
 /*
- * TODO possibly after that:
+ * Potential future TODO items. Points marked ISSUE need to be
+ * resolved one way or another, with good justification for the
+ * decision made, before implementation begins.
  * 
  *  - Multiple buffers, multiple on-screen windows.
  *     + ^X^F to open new file
@@ -15,17 +17,16 @@
  *     + hex-editor-style minibuffer for entering search terms,
  * 	 rather than the current rather crap one; in particular
  * 	 this enables pasting into the search string.
- *     + er, how exactly do we deal with the problem of saving over
- * 	 a file which we're maintaining references to in another
- * 	 buffer? The _current_ buffer can at least be sorted out by
- * 	 replacing it with a fresh tree containing a single
- * 	 file-data block, but other buffers are in trouble.
- * 	  * if we can rely on Unix fd semantics, this isn't too
- * 	    bad; we can just keep the fd open on the original file,
- * 	    and then the data stays around even after we rename(2)
- * 	    our new version over the top. Disk space usage gets
- * 	    silly after a few iterations, but it's better than
- * 	    nothing.
+ *     + ISSUE: how exactly do we deal with the problem of saving
+ * 	 over a file which we're maintaining references to in
+ * 	 another buffer? The _current_ buffer can at least be
+ * 	 sorted out by replacing it with a fresh tree containing a
+ * 	 single file-data block, but other buffers are in trouble.
+ * 	  * if we can rely on Unix fd semantics, one option is just
+ * 	    to keep the fd open on the original file, and then the
+ * 	    data stays around even after we rename(2) our new
+ * 	    version over the top. Disk space usage gets silly after
+ * 	    a few iterations, but it's better than nothing.
  * 
  *  - Undo!
  *     + this actually doesn't seem _too_ horrid. For a start, one
@@ -44,34 +45,76 @@
  * 	 shouldn't be one. Sort that out.
  * 
  *  - In-place editing.
- *     + this is an extra option when running in Fix mode. It
- * 	 causes a change of semantics when saving: instead of
- * 	 constructing a new backup file and writing it over the old
- * 	 one, we simply seek within the original file and write out
- * 	 all the pieces that have changed.
- *     + Primarily useful for editing disk devices directly
- * 	 (yikes!), or other situations where you actually cannot
- * 	 create a fresh copy of the file and rename(2) it into
- * 	 place.
- *     + I had intended to suggest that in Fix mode this would be
- * 	 nice and easy, since every element of the buffer tree is
- * 	 either a literal block (needs writing) or a from-file
- * 	 block denoting the same file _in the same position_.
- * 	 However, this is not in fact the case because you can cut
- * 	 and paste, so it's not that easy.
- *     + So I'm forced to the conclusion that when operating in
- * 	 this mode, it becomes illegal to cut and paste from-file
- * 	 blocks: they must be loaded in full at some point.
- * 	  * Thinking ahead about multiple-buffer operation: it
- * 	    would be a bad idea to keep a from-file block
- * 	    referencing /dev/hda and paste it into another ordinary
- * 	    buffer. But _also_ it would be a bad idea to paste a
- * 	    from-file block referencing a file stored _on_ /dev/hda
- * 	    into the in-place buffer dealing with /dev/hda itself.
- * 	  * So I'm forced to another odd conclusion, which is that
- * 	    from-file blocks must be eliminated in _two_ places:
- * 	    when copying a cut buffer _from_ an in-place buffer,
- * 	    _and_ when pasting a cut buffer _into_ one.
+ *     + this is an extra option useful for editing disk devices
+ * 	 directly (!), or other situation in which it's impossible
+ * 	 or impractical to rename(2) your new file over the old
+ * 	 one. It causes a change of semantics when saving: instead
+ * 	 of constructing a new backup file and writing it over the
+ * 	 old one, we simply seek within the original file and write
+ * 	 out all the pieces that have changed.
+ *     + Saving the file involves identifying the bits of the file
+ * 	 that need to change, and changing them. A piece of file
+ * 	 can be discarded as `no change required' if it's
+ * 	 represented in the buffer by a from-file block whose file
+ * 	 offset is equal to its offset in the buffer.
+ * 	  * Once we have identified all the bits that do need to
+ * 	    change, we have to draw up a dependency graph to
+ * 	    indicate which bits want to be copied from which other
+ * 	    bits. (You don't want to overwrite a piece of file if
+ * 	    you still have from-file blocks pointing at that
+ * 	    piece.) This is a directed graph with nodes
+ * 	    corresponding to intervals of the file, and edges
+ * 	    indicating that the source node's interval is intended
+ * 	    to end up containing the data from the target node's
+ * 	    interval in the original file. Another node type is
+ * 	    `literal data', which can be the target of an edge but
+ * 	    never the source.
+ * 	     - note that this means any two nodes connected by an
+ * 	       edge must represent intervals of the same length.
+ * 	       Sometimes this means that an interval must be split
+ * 	       into pieces even though it is represented in the
+ * 	       buffer by a single large from-file block (if
+ * 	       from-file blocks copying _from_ it don't cover the
+ * 	       whole of it). I suspect the simplest approach here
+ * 	       is just to start by making a B-tree of division
+ * 	       points in the file: every from-file block adds four
+ * 	       division points (for start and end of both source
+ * 	       and dest interval), and once the tree is complete,
+ * 	       each graph node represents the interval between two
+ * 	       adjacent division points.
+ * 	     - ISSUE: actually, that strategy is inadequate:
+ * 	       consider a large from-file block displaced by only
+ * 	       one byte from its source location. The above
+ * 	       strategy gives division points at x, x+1, x+y,
+ * 	       x+y+1, but the interval [x,x+1] actually wants to
+ * 	       point to [x+1,x+2] and we don't have a division
+ * 	       point for that. Worse still, finding a way to add
+ * 	       the remaining division points is also undesirable
+ * 	       because there'd be so many of them. Needs design
+ * 	       changes.
+ * 	  * Then, any node which is not the target of any edge
+ * 	    represents a piece of file which it's safe to write
+ * 	    over, so we do so and throw away the node.
+ * 	  * If we run out of such nodes and the graph is still
+ * 	    non-empty, it's because all remaining nodes are part of
+ * 	    loops. A loop must represent a set of disjoint
+ * 	    intervals in the file, all the same length, which need
+ * 	    to be permuted cyclically. So we deal with such a loop
+ * 	    by reading a chunk of data from the start of one of the
+ * 	    intervals and holding it, then copying from the next
+ * 	    interval to that one, and so on until we've gone round
+ * 	    the loop.
+ * 	     + the intervals in the loop might be far too big to
+ * 	       hold an entire interval's worth of real data in
+ * 	       memory, so we might have to do it piecewise.
+ *     + ISSUE: I wonder if a warning of some sort might be in
+ * 	 order for if you accidentally request most of the file be
+ * 	 moved about. This sort of trickery is really intended for
+ * 	 small changes to a large file; if you (say) enable insert
+ * 	 mode while editing a hard disk and accidentally leave
+ * 	 everything one byte further up, you _really_ don't want to
+ * 	 hit Save. The semantics of the warning are difficult,
+ * 	 though.
  */
 
 #include "tweak.h"
