@@ -3,32 +3,29 @@
 #
 # Make Contact
 #
-echo
-MACHINE=`telnet mono.org 99 2>/dev/null`
-set -- $MACHINE
+LOADS=`nc loads.mono.org 23 2>/dev/null || telnet loads.mono.org 2>/dev/null`
+set -- $LOADS
 
-if [ $# != 9 ]
-then
-  shift; shift
-  if [ a$one != a-n ]
-  then
-    MACHINE=$8
-  else
-    MACHINE=$9
-  fi
-else
-  echo Could not get a machine
-  MACHINE=NOLOGIN
+if [ "z$1" = "zTrying" ]; then
+  while [ "z$1" != "z" -a "z$1" != "zHOSTS" ]; do
+    shift
+  done
 fi
 
-#
-# Check for login barring ....
-#
+MACHINE=nologin
+if [ "z$1" = "zHOSTS" -a -n "$2" ]; then
+  case "$2" in
+    *[ABCDEFGHIJKLMNOPQRSTUVWXYZ]*) ;;
+    *.i.mono.org) MACHINE=`echo $2 | sed 's/\.i\./\./'`;;
+    *.mono.org) MACHINE=$2;;
+    *) ;;
+  esac
+fi
 
-if [ $MACHINE != NOLOGIN ]
+if [ $MACHINE != nologin ]
 then
   # (umask 077; tee sent) |
-  ssh -C -x $MACHINE -l mono 2>/dev/null | tee logfile
+  ssh -C -x -o 'StrictHostKeyChecking yes' $MACHINE -l mono 2>/dev/null | tee logfile
 else
   echo Sorry - Logins are disabled at the moment. This is probably due to a
   echo system upgrade. Please try again later.
