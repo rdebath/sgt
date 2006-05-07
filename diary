@@ -354,6 +354,32 @@ class output:
 	if self.html[-4:] == "</p>":
 	    self.html = self.html[:-4]
 
+	# Switch round <lj-cut> and <p> tags.
+	i = -1
+	try:
+	    while 1:
+		i = string.index(self.html, "<lj-cut", i+1)
+		# Failure to find this will throw ValueError and
+		# terminate the while loop. Ick, but it'll work.
+		j = string.index(self.html, ">", i)
+		if self.html[j+1:j+4] == "<p>":
+		    self.html = self.html[:i] + "<p>" + \
+		    self.html[i:j+1] + self.html[j+4:]
+	except ValueError, e:
+	    pass
+
+	# Remove all empty <p></p>.
+	i = -1
+	try:
+	    while 1:
+		i = string.index(self.html, "<p></p>", i+1)
+		# Failure to find this will throw ValueError and
+		# terminate the while loop. Ick, but it'll work.
+		self.html = self.html[:i] + self.html[i+7:]
+		i = i - 1
+	except ValueError, e:
+	    pass
+
 	self.mono_blankline()
 	self.news_blankline()
 	if len(self.mono) - self.mono_last_edit_start >= MONO_EDIT_MAX:
@@ -585,14 +611,20 @@ class output:
 	if self.news_ok:
 	    self.news_add_word("*", 0)
 
-    def url(self, text, inline):
+    def url(self, text, inline, image):
 	utext = text
+	if image:
+	    inline = 0
 	if string.find(utext, ":") < 0:
 	    if string.find(utext, "/") < 0:
 		utext = utext + "/"
 	    utext = "http://" + utext
 	if self.html_ok:
-	    self.html = self.html + "<a href=\"" + utext + "\">" + self.htmlsafe(text) + "</a>"
+	    if image:
+		self.html = self.html + "</p><p align=\"center\"><a href=\"" \
+		+ utext + "\"><img border=0 src=\"" + utext + "\"></a></p><p>"
+	    else:
+		self.html = self.html + "<a href=\"" + utext + "\">" + self.htmlsafe(text) + "</a>"
 	elif self.html_title:
 	    self.subj = self.subj + "<a href=\"" + utext + "\">" + self.htmlsafe(text) + "</a>"
 	if not inline:
@@ -638,8 +670,9 @@ class output:
 	elif self.html_title:
 	    self.subj = self.subj + "<lj user=\"" + text + "\">"
 
-    def posturlmode(self, on):
+    def posturlmode(self, on, image):
         self.mono_ok = self.news_ok = (on == 0)
+	self.html_ok = (on == 0 or image == 0)
 
     def postnamemode(self, on):
         self.html_ok = (on == 0)
@@ -1023,7 +1056,8 @@ def rdinput(file):
 		else:
 		    sys.stderr.write("unknown tag `" + tok[1] + "'\n")
 	    elif tok[0] == TOPEN:
-		if tok[1] == "url":
+		if tok[1] == "url" or tok[1] == "img":
+		    img = (tok[1] == "img")
 		    tok = t.next()
 		    url = ""
 		    mode = 1
@@ -1033,13 +1067,13 @@ def rdinput(file):
 			    tok = t.next()
 			elif mode == 1:
 			    if tok == (TCLOSE,):
-				o.url(url, 1)
+				o.url(url, 1, img)
 				t.next()
 				break
-			    o.url(url, 0)
+			    o.url(url, 0, img)
 			    if tok[0] == WHITE or tok[0] == NL:
 				t.next()
-			    o.posturlmode(1)
+			    o.posturlmode(1, img)
 			    # Subsequent stuff inside this element
 			    # will be treated normally.
 			    stack = stack + ["url"]
@@ -1099,7 +1133,7 @@ def rdinput(file):
 		    elif s == "b":
 			o.bold(0)
 		    elif s == "url":
-			o.posturlmode(0)
+			o.posturlmode(0, 0)
 		    elif s == "name":
 			o.postnamemode(0)
 		    elif s == "tl":
