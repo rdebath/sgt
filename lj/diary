@@ -138,6 +138,9 @@ class output:
         self.mono.append("")
 	self.mono_edit_count = self.mono_edit_count + 1
 
+    def warn(msg):
+	self.warnings.append(msg)
+
     def mono_add_word(self, text, attrs, isbreak):
         self.mono_words.append((text, attrs, isbreak))
 
@@ -677,6 +680,14 @@ class output:
     def postnamemode(self, on):
         self.html_ok = (on == 0)
 
+    def linkstart(self, url):
+	if self.html_ok:
+	    self.html = self.html + "<a href=\"" + url + "\">"
+
+    def linkend(self):
+	if self.html_ok:
+	    self.html = self.html + "</a>"
+
     def posttitlemode(self, on):
         self.html_ok = self.html_title = (on == 0)
         self.news_ok = (on == 0)
@@ -1078,6 +1089,25 @@ def rdinput(file):
 			    # will be treated normally.
 			    stack = stack + ["url"]
 			    break
+		elif tok[1] == "link":
+		    tok = t.next()
+		    url = ""
+		    while tok != (EOF,):
+			if tok[0] == WORD:
+			    url = url + tok[1]
+			    tok = t.next()
+			else:
+			    if tok == (TCLOSE,):
+				o.warn("{link} with no text after URL!");
+				t.next()
+				break
+			    o.linkstart(url)
+			    if tok[0] == WHITE or tok[0] == NL:
+				t.next()
+			    # Subsequent stuff inside this element
+			    # will be treated normally.
+			    stack = stack + ["link"]
+			    break
 		elif tok[1] == "name":
 		    tok = t.next()
 		    name = ""
@@ -1134,6 +1164,8 @@ def rdinput(file):
 			o.bold(0)
 		    elif s == "url":
 			o.posturlmode(0, 0)
+		    elif s == "link":
+			o.linkend()
 		    elif s == "name":
 			o.postnamemode(0)
 		    elif s == "tl":
