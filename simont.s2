@@ -701,6 +701,14 @@ summary="">
 """</td>
 <td class="meta">]</td>
 </tr>
+<tr>
+<td class="meta">[</td>
+<td class="meta" align="right"><b>add</b></td>
+<td class="meta" align="center">|</td>
+<td class="meta"><a
+href="$*SITEROOT/tools/memadd.bml?journal=$.journal.username&itemid=$.entry.itemid">to Memories</a></td>
+<td class="meta">]</td>
+</tr>
 </table>
 </td>
 </tr>
