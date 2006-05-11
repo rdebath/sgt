@@ -330,6 +330,9 @@ int main(int argc, char **argv)
 	}
     }
 
+    close(masterw);
+    close(masterr);
+
     if (exitcode < 0) {
 	int pid;
 	exitcode = wait(&pid);
