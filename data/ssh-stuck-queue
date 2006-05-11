@@ -29,3 +29,4 @@ Another likely report of this problem:
 <p>
 <code>ssh_set_frozen()</code> should probably signal something, but
 I'm not sure enough of the control flow to know quite what.
+(This is already done in some places, e.g., <tt>ssh_dialog_callback()</tt>.)
