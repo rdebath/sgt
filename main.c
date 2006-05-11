@@ -22,14 +22,51 @@ void sigchld(int sig)
     exitcode = wait(&pid);	       /* reap the exit code */
 }
 
+struct termios oldattrs, newattrs;
+
+void attrsonexit(void)
+{
+    tcsetattr(0, TCSANOW, &oldattrs);
+}
+
+struct mainopts {
+    int pipe;
+};
+
+int option(struct mainopts *opts, struct tstate *state,
+	   int shortopt, char *longopt, char *value)
+{
+    /*
+     * Process standard options across all filter programs here;
+     * hand everything else on to tstate_option.
+     */
+    if (longopt) {
+	if (!strcmp(longopt, "pipe")) {
+	    shortopt = 'p';
+	} else
+	    return tstate_option(state, shortopt, longopt, value);
+    }
+
+    if (shortopt == 'p') {
+	if (value)
+	    return OPT_SPURIOUSARG;
+	opts->pipe = TRUE;
+    } else
+	return tstate_option(state, shortopt, longopt, value);
+
+    return OPT_OK;
+}
+
 int main(int argc, char **argv)
 {
     int errors = 0;
-    int masterfd, slavefd, pid;
-    struct termios oldattrs, newattrs;
+    int masterr, masterw, slaver, slavew, pid;
     double iwait = 0.0, owait = 0.0;
     char ptyname[FILENAME_MAX];
     tstate *state;
+    struct mainopts opts;
+
+    opts.pipe = TRUE;
 
     state = tstate_init();
 
@@ -50,13 +87,13 @@ int main(int argc, char **argv)
 		if (q)
 		    *q++ = '\0';
 
-		ret = tstate_option(state, '\0', p+2, q);
+		ret = option(&opts, state, '\0', p+2, q);
 		if (ret == OPT_MISSINGARG) {
 		    assert(!q);
 
 		    if (--argc > 0) {
 			q = *++argv;
-			ret = tstate_option(state, '\0', p+2, q);
+			ret = option(&opts, state, '\0', p+2, q);
 		    } else {
 			fprintf(stderr, "option %s expects an argument\n", p);
 			errors = 1;
@@ -76,7 +113,7 @@ int main(int argc, char **argv)
 		int ret;
 
 		while ((c = *++p) != '\0') {
-		    ret = tstate_option(state, c, NULL, NULL);
+		    ret = option(&opts, state, c, NULL, NULL);
 		    if (ret == OPT_MISSINGARG) {
 			char *q;
 
@@ -89,7 +126,7 @@ int main(int argc, char **argv)
 				    " argument\n", c);
 			    errors = 1;
 			}
-			ret = tstate_option(state, c, NULL, q);
+			ret = option(&opts, state, c, NULL, q);
 		    }
 
 		    if (ret == OPT_UNKNOWN) {
@@ -110,16 +147,34 @@ int main(int argc, char **argv)
 	return 1;
 
     /*
-     * Allocate the pty.
+     * Allocate the pty or pipes.
      */
-    masterfd = pty_get(ptyname);
-    slavefd = open(ptyname, O_RDWR);
-    if (slavefd < 0) {
-	perror("slave pty: open");
-	return 1;
+    if (opts.pipe) {
+	int p[2];
+	if (pipe(p) < 0) {
+	    perror("pipe");
+	    return 1;
+	}
+	masterr = p[0];
+	slavew = p[1];
+	if (pipe(p) < 0) {
+	    perror("pipe");
+	    return 1;
+	}
+	slaver = p[0];
+	masterw = p[1];
+    } else {
+	masterr = pty_get(ptyname);
+	masterw = dup(masterr);
+	slaver = open(ptyname, O_RDWR);
+	slavew = dup(slaver);
+	if (slaver < 0) {
+	    perror("slave pty: open");
+	    return 1;
+	}
     }
 
-    tstate_ready(state);
+    tstate_ready(state, &iwait, &owait);
 
     /*
      * Fork and execute the command.
@@ -135,17 +190,22 @@ int main(int argc, char **argv)
 	/*
 	 * We are the child.
 	 */
-	close(masterfd);
+	close(masterr);
+	close(masterw);
+
+	fcntl(slaver, F_SETFD, 0);    /* don't close on exec */
+	fcntl(slavew, F_SETFD, 0);    /* don't close on exec */
 	close(0);
+	dup2(slaver, 0);
 	close(1);
-	close(2);
-	fcntl(slavefd, F_SETFD, 0);    /* don't close on exec */
-	dup2(slavefd, 0);
-	dup2(slavefd, 1);
-	dup2(slavefd, 2);
-	setsid();
-	setpgrp();
-	tcsetpgrp(0, getpgrp());
+	dup2(slavew, 1);
+	if (!opts.pipe) {
+	    close(2);
+	    dup2(slavew, 2);
+	    setsid();
+	    setpgrp();
+	    tcsetpgrp(0, getpgrp());
+	}
 	/* Close everything _else_, for tidiness. */
 	for (i = 3; i < 1024; i++)
 	    close(i);
@@ -162,17 +222,21 @@ int main(int argc, char **argv)
     }
 
     /*
-     * Now we're the parent. Close the slave fd and start copying
+     * Now we're the parent. Close the slave fds and start copying
      * stuff back and forth.
      */
-    close(slavefd);
+    close(slaver);
+    close(slavew);
 
-    tcgetattr(0, &oldattrs);
-    newattrs = oldattrs;
-    newattrs.c_iflag &= ~(IXON | IXOFF | ICRNL | INLCR);
-    newattrs.c_oflag &= ~(ONLCR | OCRNL);
-    newattrs.c_lflag &= ~(ISIG | ICANON | ECHO);
-    tcsetattr(0, TCSADRAIN, &newattrs);
+    if (!opts.pipe) {
+	tcgetattr(0, &oldattrs);
+	newattrs = oldattrs;
+	newattrs.c_iflag &= ~(IXON | IXOFF | ICRNL | INLCR);
+	newattrs.c_oflag &= ~(ONLCR | OCRNL);
+	newattrs.c_lflag &= ~(ISIG | ICANON | ECHO);
+	atexit(attrsonexit);
+	tcsetattr(0, TCSADRAIN, &newattrs);
+    }
 
     while (1) {
 	fd_set rset;
@@ -200,10 +264,10 @@ int main(int argc, char **argv)
 	}
 
 	FD_ZERO(&rset);
-	FD_SET(masterfd, &rset);
+	FD_SET(masterr, &rset);
 	FD_SET(0, &rset);
 
-	ret = select(masterfd+1, &rset, NULL, NULL, ptv);
+	ret = select(masterr+1, &rset, NULL, NULL, ptv);
 
 	itimeout = otimeout = FALSE;
 	if (ret == 0) {
@@ -228,12 +292,12 @@ int main(int argc, char **argv)
 	    return 1;
 	}
 
-	if (FD_ISSET(masterfd, &rset) || otimeout) {
+	if (FD_ISSET(masterr, &rset) || otimeout) {
 	    char *translated;
 	    int translen;
 
-	    if (FD_ISSET(masterfd, &rset)) {
-		ret = read(masterfd, buf, sizeof(buf));
+	    if (FD_ISSET(masterr, &rset)) {
+		ret = read(masterr, buf, sizeof(buf));
 		if (ret <= 0)
 		    break;
 	    } else
@@ -260,7 +324,7 @@ int main(int argc, char **argv)
 	    translated = translate(state, buf, ret, &translen, &iwait, 1);
 
 	    if (translen)
-		write(masterfd, translated, translen);
+		write(masterw, translated, translen);
 
 	    free(translated);
 	}
@@ -270,8 +334,6 @@ int main(int argc, char **argv)
 	int pid;
 	exitcode = wait(&pid);
     }
-
-    tcsetattr(0, TCSANOW, &oldattrs);
 
     tstate_done(state);
 

@@ -72,7 +72,7 @@ void tstate_argument(tstate *state, char *arg)
     state->nargs++;
 }
 
-void tstate_ready(tstate *state)
+void tstate_ready(tstate *state, double *idelay, double *odelay)
 {
 }
 

@@ -94,7 +94,7 @@ void tstate_argument(tstate *state, char *arg)
     state->outfile = arg;
 }
 
-void tstate_ready(tstate *state)
+void tstate_ready(tstate *state, double *idelay, double *odelay)
 {
     if (!state->outfile) {
 	fprintf(stderr, "record: no output file name specified\n");

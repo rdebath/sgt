@@ -1,6 +1,6 @@
 COMPILE = $(CC) $(CFLAGS) -MD -c -o $@ $<
 
-all: nullfilter csfilter nhfilter record
+all: nullfilter csfilter nhfilter record idlewrapper
 
 nullfilter: main.o pty.o nulltrans.o
 	$(CC) $(LFLAGS) -o $@ $^
@@ -12,6 +12,9 @@ nhfilter: main.o pty.o nhtrans.o
 	$(CC) $(LFLAGS) -o $@ $^
 
 record: main.o pty.o record.o
+	$(CC) $(LFLAGS) -o $@ $^
+
+idlewrapper: main.o pty.o idletrans.o
 	$(CC) $(LFLAGS) -o $@ $^
 
 main.o: main.c; $(COMPILE)

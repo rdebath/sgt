@@ -41,7 +41,7 @@ void tstate_argument(tstate *state, char *arg)
     exit(1);
 }
 
-void tstate_ready(tstate *state)
+void tstate_ready(tstate *state, double *idelay, double *odelay)
 {
 }
 
