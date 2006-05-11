@@ -19,7 +19,7 @@ int pty_get(char *name);
 tstate *tstate_init(void);
 int tstate_option(tstate *state, int shortopt, char *longopt, char *value);
 void tstate_argument(tstate *state, char *arg);
-void tstate_ready(tstate *state);
+void tstate_ready(tstate *state, double *idelay, double *odelay);
 char *translate(tstate *state, char *data, int inlen, int *outlen,
 		double *delay, int input);
 void tstate_done(tstate *state);
