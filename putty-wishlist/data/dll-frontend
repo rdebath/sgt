@@ -3,7 +3,7 @@ Class: wish
 Difficulty: tricky
 Priority: low
 Depends: remove-statics
-Content-type: text/x-html-fragment
+Content-type: text/x-html-body
 
 <p>
 A lot of people ask for a DLL that implements an SSH client, so that
