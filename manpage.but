@@ -268,10 +268,6 @@ command names, and edit the file to do what you want.
 
 \H{tweak-manpage-bugs} BUGS
 
-Currently, \cw{tweak} cannot handle files larger than 2 gigabytes.
-
-There is no reverse search function.
-
 This man page probably ought to contain an explicit list of internal
 command names, rather than simply referring you to the default
 \cw{.tweakrc}.
