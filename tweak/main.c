@@ -115,6 +115,55 @@
  * 	 everything one byte further up, you _really_ don't want to
  * 	 hit Save. The semantics of the warning are difficult,
  * 	 though.
+ *
+ *  - Custom display and/or input formats?
+ *     + for example, Zap on RISC OS is able to display a binary
+ * 	 file at 4 bytes per line and show the ARM disassembly of
+ * 	 each word. For added credit, ability to type an ARM
+ * 	 instruction back _in_ and have it reassembled into binary
+ * 	 would be even better.
+ *     + a simpler example is that sometimes you want to view a
+ * 	 file as a sequence of little-endian 32-bit words rather
+ * 	 than single bytes.
+ *     + this would have to involve some sort of scripting or
+ * 	 internal API. I'd really rather the interface was nailed
+ * 	 down very early on and people were then free to develop
+ * 	 custom formats without my involvement; I might be
+ * 	 persuaded to keep a library of them or a list of
+ * 	 hyperlinks or something, but actually _maintaining_ them
+ * 	 is more effort than I want.
+ *     + ARM assembler is all very well, but what about x86, with
+ * 	 its variable instruction length? You can start
+ * 	 disassembling from any byte position and work forwards
+ * 	 unambiguously, but going backwards or jumping to an
+ * 	 arbitrary byte position is much harder. You might have to
+ * 	 shift your current file view back or forward by one byte
+ * 	 to resynchronise, and the semantics of insert mode become
+ * 	 generally confused, and even trying to _predict_ what a
+ * 	 sensible synchronisation point would be when jumping to a
+ * 	 bit of the file you've never seen before ... yuck.
+ * 	  * The key thing that makes this horrid is that the custom
+ * 	    display mode looks at the file _contents_, not merely
+ * 	    its length, when deciding how many bytes per line to
+ * 	    display. File-position-dependent number of bytes per
+ * 	    line is fine, but _data_ dependency is doom.
+ * 	  * So I think that in the interests of not causing tension
+ * 	    between random things people would like in _some_ hex
+ * 	    editor and what makes Tweak Tweak, I am going to put my
+ * 	    foot down and say that I will not implement any
+ * 	    mechanism which permits a data-dependent number of
+ * 	    bytes per line. Anything short of that, fine, send me a
+ * 	    patch or a detailed and well thought out design and
+ * 	    I'll consider it on its merits.
+ * 	  * I don't, OTOH, see any reason why a custom display
+ * 	    function couldn't be permitted to see data before or
+ * 	    after the current lineful if it wanted to. So x86
+ * 	    disassembly could be done in a one-byte-per-line sort
+ * 	    of fashion in which each line shows the machine
+ * 	    instruction which the CPU would see if it started
+ * 	    executing at that byte, and also gave its length. Then
+ * 	    you could pick out the sequence of instructions you
+ * 	    were interested in from the various out-of-sync ones.
  */
 
 #include "tweak.h"
