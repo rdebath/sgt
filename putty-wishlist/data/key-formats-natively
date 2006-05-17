@@ -1,0 +1,84 @@
+Summary: Ability to use OpenSSH and ssh.com SSH-2 private keys directly (without first converting with PuTTYgen)
+Class: wish
+Difficulty: tricky
+Priority: low
+Content-type: text/x-html-body
+
+<p>
+We are occasionally asked if PuTTY could acquire the ability to use
+foreign private key formats. The PuTTY <em>suite</em> supports these
+key formats, in the sense that PuTTYgen can load and save them and
+convert them into PuTTY's own PPK key format; but a conversion step
+is required, because PuTTY itself does not include the foreign key
+import code.
+
+<p>
+I'm unwilling to do this, because I designed the PPK format rather
+carefully with some specific design goals in mind, and PuTTY in its
+current form actually depends on those design goals. The advantages
+of the PuTTY key format are:
+
+<ul>
+<li>
+<b>Public half of key is stored in plaintext</b>. OpenSSH's private
+key format encrypts the entire key file, so that the client has to
+ask you for your passphrase before it can do anything with the key
+at all. In particular, this means it has to ask for your passphrase
+before it can even <em>offer</em> the public key to the server for
+authentication. PuTTY's format stores the public key in plaintext
+and only encrypts the private half, which means that it can
+automatically send the public key to the server and determine
+whether the server is willing to accept authentications with that
+key, and it will only ever ask for a passphrase if it really needs
+to.
+<p>
+I think OpenSSH will read a <code>.pub</code> file for this
+purpose if it appears alongside the private key file, but this is a
+source of confusion as often as convenience (I've seen people
+replace a private key file and leave an out-of-date
+<code>.pub</code> alongside it, and then be very confused by the
+resulting SSH authentication process!).
+
+<li>
+<b>Key is fully tamperproofed</b>. Key formats which store the
+public key in plaintext can be vulnerable to a tampering attack, in
+which the public half of the key is modified in such a way that
+signatures made with the doctored key leak information about the
+private half. For this reason, PuTTY's key format contains a MAC
+(Message Authentication Code), keyed off the passphrase, and
+covering the public <em>and</em> private halves of the key. Thus, we
+provide the convenience of having the public key available in
+plaintext but we also instantly detect any attempt at a tampering
+attack, giving a combination of security and convenience which I do
+not believe is found in any other key format. As a side benefit, the
+MAC also covers the key's comment, preventing any possible mischief
+that might be possible if someone were to swap two keys and
+interchange the comments.
+<p>
+OpenSSH's approach of keeping the public key encrypted
+<em>might</em> also provide some security against this type of
+attack, but it's unclear that it provides proper protection:
+encryption designed for confidentiality often leaves ways in which
+the encrypted data can be usefully modified by an attacker. For real
+integrity protection you want a real dedicated MAC, which is
+designed to do precisely that.
+</ul>
+
+<p>
+So in order to support non-PPK key formats in PuTTY, we would have
+to revamp the public-key authentication code considerably, to make
+it a lot more flexible about when it asked the user for a
+passphrase. This would also lead to confusing subtle differences
+in operation depending on the key type in use; supporting OpenSSH's
+<code>.pub</code> files would also introduce the same failure mode
+as OpenSSH exhibits when the two files get out of sync; and for all
+of this coding effort on our part and potential UI-level chaos, we
+would be providing users with the ability to decrease the security
+of their private keys without even necessarily being aware of it.
+
+<p>
+Therefore, our current intention is not to implement this feature,
+and our recommendation is that people convert foreign private key
+formats to PPK in order to use them with PuTTY. This is not too
+difficult now that we have a Unix command-line port of PuTTYgen,
+which should make it feasible to automate such conversion.
