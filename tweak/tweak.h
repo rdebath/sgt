@@ -27,7 +27,7 @@
 #define ABORT 7			       /* character code for ^G */
 #endif
 
-#define VER "3.00"		       /* version */
+#define VER "3.01"		       /* version */
 
 #define SEARCH_BLK 65536	       /* so can this */
 #define SAVE_BLKSIZ 32768	       /* and this too */
