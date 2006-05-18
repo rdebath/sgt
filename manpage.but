@@ -220,6 +220,9 @@ might enter \cw{\\05hello}. If you want to specify a literal
 backslash character, you can either enter it in hex (as \cw{\\5C}),
 or simply double it on input (\cw{\\\\}).
 
+Press \cw{^R} to search backwards instead of forwards from the
+current cursor position.
+
 Since \cw{tweak} deals in pure binary data, searches are always
 case-sensitive.
 
