@@ -83,6 +83,7 @@ depending on what state they're in.)
 
 <li>A previous version of PuTTY, if you don't need the new features
 and bugfixes in 0.58. (Note that all releases before 0.57 have known
-security problems, so if you're going to do this you should use 0.57.)
+security problems, so if you're going to do this you should use
+<a href="http://www.chiark.greenend.org.uk/~sgtatham/putty/0.57">0.57</a>.)
 
 </ul>
