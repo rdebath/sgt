@@ -62,7 +62,7 @@ def hexstr(x):
     return s
 
 def charname(x):
-    if db:
+    if db is not None:
 	key = hexstr(x)
 	while len(key) < 4: key = "0" + key
 	key = string.upper(key)
