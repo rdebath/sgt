@@ -29,3 +29,13 @@ platform-generic half which maps our standard key names into actual
 character sequences to be sent to the host.
 (See <a href="portable-keyboard.html">portable-keyboard</a> for
 further discussion of this problem.)
+
+<p>
+<b>SGT, 2006-05-24</b>: A user suggests that it would be nice when
+using some server-side applications (<code>irssi</code> in
+particular) to be able to configure the mouse scroll wheel to send
+scroll-up and scroll-down keypresses to the server. This seems to me
+to be best implemented by having a general key remapping layer and
+making it able to remap mouse events as well as key events. (This
+would also allow users to disable or reconfigure the normal mouse
+button behaviour as well if they disliked the default.)
