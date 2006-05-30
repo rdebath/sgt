@@ -887,6 +887,13 @@ Most interfaces are not perfect when they are first designed. Most
 of them need to be redesigned later, or at least changed in some
 way.
 
+If your interface is between two parts of the same monolithic
+program, this is not a major difficulty. All the code which depends
+on the interface is within reach of any programmer working on the
+program, so you can make any change to the interface you like as
+long as you find all the points which are affected by the change and
+update them as well.
+
 If your interface is a network protocol, or an interface to a shared
 library which can be upgraded independently of the programs which
 depend on it, then making changes to the interface becomes more
@@ -1143,12 +1150,13 @@ situation there are two separate speed issues to consider:
 \b Bandwidth: the total amount of data transferred over the network
 connection.
 
-\b Round trips: the number of times side stops to wait for the other
-side to reply to it. Increasingly, modern networks tend to have high
-bandwidth but also high round-trip times; so if you transfer a large
-amount of data in small blocks, but you stop and wait for a reply
-from the other end between each pair of blocks, then you will use
-only a fraction of the available bandwidth in the connection.
+\b Round trips: the number of times one side stops to wait for the
+other side to reply to it. Increasingly, modern networks tend to
+have high bandwidth but also high round-trip times; so if you
+transfer a large amount of data in small blocks, but you stop and
+wait for a reply from the other end between each pair of blocks,
+then you will use only a fraction of the available bandwidth in the
+connection.
 
 \# \H{misc-secondguess} Don't second-guess
 \# a real biggie: Thou Shalt Not Enumerate Possible User Types And
