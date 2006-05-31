@@ -1,0 +1,14 @@
+layerinfo "type" = "user";
+set stronger_text = "#000000";
+set page_alink = "#0000ff";
+set stronger_back = "#e0e0e0";
+set comment_bar_two_fgcolor = "#000000";
+set comment_bar_two_bgcolor = "#e0e0e0";
+set comment_bar_one_fgcolor = "#000000";
+set page_link = "#0000c0";
+set page_back = "#c0c0c0";
+set page_friends_items = 50;
+set weak_text = "#000000";
+set journals_to_avoid = "too_much_info bad_sex vaginapagina customers_suck";
+set weak_back = "#e0e0e0";
+set page_vlink = "#8000c0";
