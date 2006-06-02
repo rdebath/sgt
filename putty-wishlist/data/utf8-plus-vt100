@@ -1,0 +1,33 @@
+Summary: Simultaneous support for UTF-8 and enough ISO-2022 sequences for VT100 line drawing
+Class: wish
+Priority: low
+Difficulty: fun
+Content-type: text/x-html-body
+
+<p>
+It's been suggested that it might be nice for PuTTY to support the
+traditional VT100 line drawing behaviour (using ISO-2022 escape
+sequences such as ESC ( B, ESC ) 0, SO and SI) in the same mode as
+also supporting UTF-8. This would allow it to simultaneously support
+legacy applications which ran on a VT100 and hence never output any
+character value above 0x7F, and modern UTF-8-aware applications.
+
+<p> Markus Kuhn <a
+href="http://www.cl.cam.ac.uk/~mgk25/unicode.html#term">thinks this
+is wrong</a> ("While a terminal emulator is in UTF-8 mode, any ISO
+2022 escape sequences [...] are ignored"), and I (SGT) am inclined
+to agree, not least because the lack of easily corruptible ISO 2022
+state is a useful defence against the confusion caused by
+accidentally spewing binary files into your standard output. On the
+other hand, I can see the potential utility of being able to run two
+classes of plausibly common application without needing a mode
+switch or <code>luit</code>. So I think that if we do this at all
+(which isn't clear, hence priority "low"), it should be a
+configurable option.
+
+<p>
+BJH points out that ISO 2022 requires that when we return from
+UTF-8 (by ESC % @) the ISO-2022 state must be the same as when we
+left, so if we did this then we'd have to keep a separate
+pseudo-ISO-2022 state inside the UTF-8 mode (and discard it on ESC %
+@, rather than preserving it until the next ESC % G).
