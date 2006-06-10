@@ -1,0 +1,15 @@
+Summary: Clipboard operations unreliable in mouse reporting mode
+Class: bug
+Difficulty: fun
+Present-in: 0.58 2006-06-10
+Content-type: text/x-html-body
+
+<p>
+When the terminal is in "mouse reporting" mode, and Shift is used to
+override this for clipboard operations, text is not reliably copied to
+the clipboard.
+
+<p>
+In particular, if the Shift key is released before the mouse button being
+used for selection is released, the copy operation does not happen --
+the mouse release event is reported to the server instead.
