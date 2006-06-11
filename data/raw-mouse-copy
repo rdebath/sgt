@@ -2,6 +2,7 @@ Summary: Clipboard operations unreliable in mouse reporting mode
 Class: bug
 Difficulty: fun
 Present-in: 0.58 2006-06-10
+Fixed-in: r6727 2006-06-12
 Content-type: text/x-html-body
 
 <p>
