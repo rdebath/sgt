@@ -4,7 +4,7 @@ Priority: low
 Class: bug
 Present-in: 2005-10-14
 
-It's been reported that IPv6 scoped addresses, such as
+It's been reported that IPv6 scoped addresses (as defined in RFC4007), such as
 fe80::200:e2ff:fe65:9ce%4, don't work correctly on Windows XP Home + XP2.
 The error is "Network error: No route to host".
 SecureCRT does work, which suggests that we might just need to invoke
