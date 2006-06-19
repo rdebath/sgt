@@ -226,16 +226,6 @@ Actually <em>making</em> a d5 would be difficult. Instead, I bought
 a standard d10 (two five-sided pyramids back to back), and painted
 pairs of faces the same.
 
-<p>
-(A reader familiar with the range of dice available in roleplaying
-and gaming shops might have noticed by now that a 5x6 outcome grid
-contains 30 possibilities in total, and that you can actually buy
-30-sided dice, so taking a d30 and labelling it 2, 3, 3, 4, 4, 4, 5,
-5, 5, 5, 6, 6, 6, 6, 6, 8, 8, 8, 8, 8, 9, 9, 9, 9, 10, 10, 10, 11,
-11, 12 would have been much simpler. However, in practical terms
-it's quite hard to find a d30 large enough to paint replacement
-labels on!)
-
 <h2>Extension</h2>
 
 <p>
@@ -404,6 +394,73 @@ below 1, add 6.
 And, once again, removing the 7 face from the odd die produces a pair
 of dice which never roll 7, and this time they generate both totals and
 red numbers, so these could be used for Cities and Knights.
+
+<h2>Evaluation</h2>
+
+<p>
+The mechanism I've described above works nicely on paper, but
+unfortunately it has a practical disadvantage, which is that it's
+unusually sensitive to imperfections in the dice.
+
+<p>
+The normal procedure of rolling 2d6 and adding the values together
+has the effect of <em>spreading out</em> the overall effect of an
+imperfection. Suppose you roll two normal dice, for example, and one
+of them is a bit more likely to roll a 3 than it should be. The
+effect on the overall distribution of the sum of both dice is that
+4, 5, 6, 7, 8 and 9 are all more likely than they should be, but <em>by
+one sixth as much</em>, because the random value from the other die
+distributes the error over a wide range. So the normal procedure is
+naturally quite tolerant of faults (or even deliberate weighting) in
+the dice.
+
+<p>
+Not so with the mechanism I describe above. If the even die rolls 8
+25% more often than 6, then 8 will come up 25% more often than 6 in
+the overall result; the <em>whole</em> of the error in one die is
+propagated to the overall result. And because Settlers treats every
+distinct roll of the dice as <em>qualitatively</em> different rather
+than just a bit more or less of a continuously varying quantity,
+minor imperfections in the dice have a severe and noticeable impact
+on the game play. In actual fact, since starting to play Settlers
+with my dice, we have been constantly annoyed by apparently unfair
+behaviour of the dice over the course of entire games; we haven't
+gone as far as doing actual statistical tests of my dice's accuracy,
+but it certainly seems <em>possible</em> that the phenomenon I
+describe here is to blame.
+
+<p>
+A really obvious alternative approach would have been to roll a d6
+(labelled 1-6 as usual) and a d5 (also labelled 1-5 in the obvious
+way), add the results, and then add one if it was 7 or more. (This
+generates the Cities and Knights red numbers trivially, as well:
+simply let the d6 be the red one.) I initially discarded this
+approach because it felt inelegant; I wanted my dice to roll (say) a
+9 by producing something which was
+<em>obviously</em> a 9, rather than producing something that looked
+like an 8 and requiring you to remember to convert it into a 9. (In
+particular, one manifestation of this elegance property is that with
+my mechanism the procedure for calculating the outcome is the same
+whichever of the two odd dice you're currently using.)
+Unfortunately, this inelegant approach might well have been more
+practical in terms of tolerating flawed dice.
+
+<p>
+A reader familiar with the range of dice available in roleplaying
+and gaming shops might also have noticed that a 5&#215;6 outcome
+grid contains 30 possibilities in total, and that you can actually
+buy 30-sided dice, so taking a d30 and labelling it 2, 3, 3, 4, 4,
+4, 5, 5, 5, 5, 6, 6, 6, 6, 6, 8, 8, 8, 8, 8, 9, 9, 9, 9, 10, 10, 10,
+11, 11, 12 would have been a simpler solution still. This might have
+been a bit fault-intolerant at the extreme ends of the range (with
+only one 2 face and only one 12 face, having a noticeable imbalance
+between them would be easy), but it would probably work acceptably
+in the middle of the range (which is where Settlers players seem to
+like to spend most of their time if they can arrange it) because
+with five separate 8 faces a significant imbalance would be harder
+to arrange. However, the real practical problem with this approach
+is that it's quite hard to find a d30 large enough to paint
+replacement labels on!
 
 <hr>
 (comments to <a href="mailto:&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;">&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;</a>)
