@@ -771,6 +771,7 @@ function EntryPage::print_comment (Comment c) {
 
     print "<td align='left'>$poster";
     if ($c.metadata{"poster_ip"}) { print " (IP Address: " + $c.metadata{"poster_ip"} + ")"; }
+    if ($c.screened) { print " (screened)"; }
     print "</td>";
     print "<td align='right'>";
     print $c.time->date_format("%%da%% %%yyyy%%-%%mm%%-%%dd%% %%HH%%:%%min%%");
@@ -833,7 +834,9 @@ function EntryPage::print_comment_partial (Comment c) {
 <table width="100%" cellpadding="5" cellspacing="0" border="0" summary="">
 <tr bgcolor="$background" color="$color" align='left'><td align="left">""";
 
-    print "$poster: $subj";
+    print "$poster";
+    if ($c.screened) { print " (screened)"; }
+    print ": $subj";
 
     """</td><td align="right" class="comments">""";
 
