@@ -55,4 +55,14 @@ structures should store the original untransformed characters, so
 that cut and paste doesn't depend on the selected font. (But, aargh,
 what about RTF pasting which <em>specifies</em> the font?! Perhaps
 I'll choose to ignore that for the moment...)
+<ul>
+<li>
+Although, in fact, a similar feature could be useful for clipboard
+operations. We occasionally get complaints about Unix commands pasting
+incorrectly into PuTTY from Microsoft Word documents; it turns out
+that Word has "auto-corrected" ordinary quotes to smart ones, hyphens
+to en dashes, and so on; and when these are pasted into a Unix shell,
+they tend to come out as dots. So some people would find compatibility
+mappings on incoming pastes useful, at least.
+</ul>
 </ul>
