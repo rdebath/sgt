@@ -39,8 +39,13 @@ implementation of this concept for Windows 2000/XP.
 </ul>
 
 <p>
-People who want this capability may find the third-party utility
-<a href="http://spoox.org/projects/twsc/">TWSC</a> useful.
+There are also a couple of third-party tools to do this sort of thing:
+<ul>
+<li><a href="http://www.raisin.de/putty-tabs/putty-tabs.html">PuttyTabs</a>
+provides a floating tab bar to switch between PuTTY windows.
+<li><a href="http://spoox.org/projects/twsc/">TWSC</a> provides a menu
+of open terminal windows (PuTTY and some other terminal programs).
+</ul>
 
 <p>
 A related suggestion is that separate PuTTY windows could know about
