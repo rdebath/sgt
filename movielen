@@ -6,6 +6,7 @@
 # formats I might come across that I didn't already know about.
 
 import sys
+import string
 import zlib
 
 verbose = 0
@@ -29,8 +30,7 @@ def decode_beu(s):
     return ret
 
 def mpegtimestamp(data):
-    # See comments further down for details of this completely
-    # bizarre format.
+    # See comments further down for details of this format.
     data = decode_beu(data)
     data = data >> 1 # eat unused bottom bit
     data = (data & 0x7FFF) | ((data >> 1) & ~0x7FFF) # eat unused bit 15
@@ -170,10 +170,10 @@ def dofile(name):
 	    # it wasn't a MOV.
 	    f.seek(0)
 
-	# MPEG-1 `system multiplex' streams are completely barking
-	# mad and nothing like any of the above basically IFF-like
-	# formats. We can expect to find a number of things in an
-	# MPEG-1 system stream, as follows...
+	# MPEG-1 `system multiplex' streams are nothing like any of
+	# the above basically IFF-like formats. We can expect to
+	# find a number of things in an MPEG-1 system stream, as
+	# follows...
 	#  - A `pack header': 00 00 01 BA followed by eight bytes.
 	#    A `pack' contains an optional system header and then
 	#    one or more packets.
@@ -191,16 +191,9 @@ def dofile(name):
 	# Pack headers contain timestamps.
 	#  - The first _five_ bytes of the pack header contain a
 	#    33-bit integer timestamp called the SCR (system clock
-	#    reference), encoded in a completely stupid subset of
-	#    its bits: nnnnYYYn YYYYYYYY YYYYYYYn YYYYYYYY
-	#    YYYYYYYn. (Big-endian.)
-	#  - The remaining three bytes of the pack header contain a
-	#    `mux rate', stored as nYYYYYYY YYYYYYYY YYYYYYYn
-	#    (arrgh!), but as closely as I can tell that doesn't
-	#    seem to be important right now.
-	#  - I can't find it anywhere in the MPEG reference
-	#    implementation, but the mplayer source code suggests
-	#    that the unit of time is 1/90000 second (!!!).
+	#    reference), encoded in a subset of its bits: nnnnYYYn
+	#    YYYYYYYY YYYYYYYn YYYYYYYY YYYYYYYn. (Big-endian.)
+	#  - The unit of time is 1/90000 second (how strange).
 	#
 	# But packets _also_ contain timestamps, and those are
 	# better ones because they indicate when the data is
@@ -217,58 +210,69 @@ def dofile(name):
 	#    PTS and DTS double timestamp ([30-3F] followed by nine
 	#    more bytes).
 	#
-	# I think all we can sensibly do with an MPEG stream is go
-	# all the way through it and pick out the highest timestamp
-	# we can find from any of the pack or packet headers. This
-	# isn't perfectly accurate (the last timestamp appears to
-	# be that of the _start_ of the last packet or pack, which
-	# means actual playback continues for a few frames after
-	# that time), but it's the best I can do without trying to
-	# untangle the video format as well as the system
-	# multiplex. Good grief.
+	# The following is a guess, but it looks plausible. The
+	# point of the strange stream format appears to be that
+	# it's randomly seekable: all pack and packet headers begin
+	# 00 00, and the timestamp format reserves a bit every two
+	# bytes which in practice always seem to be set to 1. I
+	# think there must be an overall rule that says thou shalt
+	# not have 00 00 _anywhere_ in an MPEG stream except at one
+	# of the abovementioned headers. Therefore, the right thing
+	# to do is actually to seek straight to the _end_ of the
+	# file and work backwards to the nearest timestamp.
+	#
+	# This isn't perfectly accurate (the last timestamp appears
+	# to be that of the _start_ of the last packet or pack,
+	# which means actual playback continues for a few frames
+	# after that time), but it's the best I can do without
+	# trying to untangle the video format as well as the system
+	# multiplex.
 	try:
-	    latesttime = 0
+	    f.seek(0,2)
+	    flen = f.tell()
+	    fdata = ""
+	    oldhdrindex = 0
+	    latesttime = None
 	    while 1:
-		hdr = f.read(4)
-		if hdr == "" or hdr == "\x00\x00\x01\xB9":
-		    # end of file; output our best shot at the
-		    # duration
-		    printduration(name, latesttime / 90000.0)
-		    return
-		elif hdr == "\x00\x00\x01\xBA":
-		    # pack header including an SCR timestamp
-		    packhdr = f.read(8)
-		    assert len(packhdr) == 8
-		    latesttime = max(latesttime, mpegtimestamp(packhdr[:5]))
-		elif hdr == "\x00\x00\x01\xBB":
-		    # system header; skip it
-		    syshdr = f.read(8)
-		    while 1:
-			streamid = f.read(3)
-			assert len(streamid) == 3
-			if ord(streamid[0]) < 0x80:
-			    f.seek(-3,1)
-			    break
-		elif hdr[:3] == "\x00\x00\x01":
-		    # actual packet; see if it contains a PTS
-		    # and/or DTS timestamp
-		    packetlen = f.read(2)
-		    assert len(packetlen) == 2
-		    packetlen = decode_beu(packetlen)
-		    packetdata = f.read(packetlen)
-		    assert len(packetdata) == packetlen
-		    i = 0
-		    while packetdata[i:i+1] == "\xFF":
-			i = i + 1
-		    if ord(packetdata[i:i+1]) >= 0x40 and ord(packetdata[i:i+1]) < 0x80:
-			i = i + 2 # scale data
-		    if ord(packetdata[i:i+1]) >= 0x20 and ord(packetdata[i:i+1]) < 0x30:
-			# PTS only
-			latesttime = max(latesttime, mpegtimestamp(packetdata[i:i+5]))
-		    elif ord(packetdata[i:i+1]) >= 0x30 and ord(packetdata[i:i+1]) < 0x40:
-			# PTS and DTS
-			latesttime = max(latesttime, mpegtimestamp(packetdata[i:i+5]))
-			latesttime = max(latesttime, mpegtimestamp(packetdata[i+5:i+10]))
+		spos = flen - len(fdata) - 512
+		if spos < 0: spos = 0
+		f.seek(spos)
+		fnewlen = flen - len(fdata) - spos
+		fnewdata = f.read(fnewlen)
+		assert len(fnewdata) == fnewlen
+		fdata = fnewdata + fdata
+		oldhdrindex = fnewlen + oldhdrindex
+		hdrindex = string.find(fdata, "\x00\x00\x01")
+		if hdrindex >= 0 and hdrindex < oldhdrindex:
+		    oldhdrindex = hdrindex
+		    hdr = fdata[hdrindex:hdrindex+4]
+		    if hdr == "" or hdr == "\x00\x00\x01\xB9":
+			# end of file marker; ignore
+			pass
+		    elif hdr == "\x00\x00\x01\xBA":
+			# pack header including an SCR timestamp
+			latesttime = mpegtimestamp(fdata[hdrindex+4:hdrindex+9])
+		    elif hdr == "\x00\x00\x01\xBB":
+			# system header; skip it
+			pass
+		    elif hdr[:3] == "\x00\x00\x01" and ord(hdr[3]) >= 0xc0:
+			# actual packet; see if it contains a PTS
+			# and/or DTS timestamp
+			i = hdrindex+6
+			while fdata[i:i+1] == "\xFF":
+			    i = i + 1
+			if ord(fdata[i:i+1]) >= 0x40 and ord(fdata[i:i+1]) < 0x80:
+			    i = i + 2 # scale data
+			if ord(fdata[i:i+1]) >= 0x20 and ord(fdata[i:i+1]) < 0x30:
+			    # PTS only
+			    latesttime = mpegtimestamp(fdata[i:i+5])
+			elif ord(fdata[i:i+1]) >= 0x30 and ord(fdata[i:i+1]) < 0x40:
+			    # PTS and DTS
+			    latesttime = mpegtimestamp(fdata[i:i+5])
+			    latesttime = max(latesttime, mpegtimestamp(fdata[i+5:i+10]))
+		    if latesttime != None:
+			printduration(name, latesttime / 90000.0)
+			return
 
 	except AssertionError, x:
 	    # it wasn't a valid MPEG stream. I think.
