@@ -114,6 +114,39 @@ set box_width = 600;
 
 set journals_to_avoid = "";
 
+function rindex(string haystack, string needle) : int
+{
+    var int mostlen;
+    var int half;
+    var string substr;
+
+    # S2, for some silly reason, does not see fit to provide this as
+    # a builtin, so I'm going to have to do it myself.
+
+    if (not $haystack->contains($needle)) {
+        return -1;
+    }
+
+    $mostlen = $haystack->length() - $needle->length();
+
+    if ($haystack->ends_with($needle)) {
+        return $mostlen;
+    } else {
+        # Divide the string in half and recurse.
+        $half = ($mostlen + 1) / 2;
+	$substr = $haystack->substr($half, $haystack->length() - $half);
+	if ($substr->contains($needle)) {
+	    # It's in the right-hand half.
+	    return $half + rindex($substr, $needle);
+	} else {
+	    # It must at least _start_ within the bit we cut off the
+            # left, although it might overlap into the bit on the right.
+	    return rindex($haystack->substr(0, $half + $needle->length()-1),
+	                  $needle);
+	}
+    }
+}
+
 function fix_tables(string t) : string
 {
     # The LJ HTML cleaner apparently doesn't know that <tr> and
@@ -131,14 +164,27 @@ function fix_tables(string t) : string
     #
     # I also have to do this recursively, because S2 doesn't contain
     # a while statement.
+    #
+    # Finally, LJ helpfully appends tag information to the entry
+    # _before_ passing it to us, so we can't guarantee to find our
+    # table tags right at the end. We need to catch anything that's
+    # after the last </table>.
 
-    if ($t->substr($t->length() - 5, 5) == "</tr>" or
-        $t->substr($t->length() - 5, 5) == "</td>") {
-	$t = $t->substr(0, $t->length() - 5);
-	return fix_tables($t);
+    var int tabpos;
+    var int trpos;
+    var int tdpos;
+
+    $tabpos = rindex($t, "</table>");
+    $trpos = rindex($t, "</tr>");
+    $tdpos = rindex($t, "</td>");
+    if ($trpos > $tabpos) {
+        $t = $t->substr(0, $trpos) + $t->substr($trpos+5, $t->length()-$trpos-5);
+    } elseif ($tdpos > $tabpos) {
+        $t = $t->substr(0, $tdpos) + $t->substr($tdpos+5, $t->length()-$tdpos-5);
     } else {
         return $t;
     }
+    return fix_tables($t);
 }
 
 function print_stylesheet () {
