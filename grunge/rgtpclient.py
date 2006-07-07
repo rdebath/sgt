@@ -52,8 +52,12 @@ class RGTPConnection:
     def _timecvt(self, timestamp):
 	"Convert a GROGGS timestamp (hex seconds since 1 Jan 1970 GMT)\n"\
 	"into a Python timestamp (seconds since an unspecified epoch)"
-	# First convert 1 Jan 1970 _local_ time into a Python timestamp
-	epochtuple = (1970, 1, 1, 0, 0, 0, 0, 0, 0)
+	# We don't want to go further back than 1970 during
+	# computation, so I'm going to add 100000 seconds to my
+	# test time. That's 27h46m40s.
+
+	# First convert 2.x Jan 1970 _local_ time into a Python timestamp
+	epochtuple = (1970, 1, 2, 3, 46, 40, 0, 0, 0)
 	try1 = time.mktime(epochtuple)
 	# Now convert that back into GMT and see how far it went wrong
 	errortuple = time.gmtime(try1)
@@ -63,7 +67,7 @@ class RGTPConnection:
 	# fail, even if daylight saving happens very near the start of
 	# the year, because we have set the DST flag zero in both calls
 	# to mktime.
-	epoch = 2*try1-try2
+	epoch = 2*try1-try2 - 100000
 	return epoch + string.atoi(timestamp, 16)
 
     def _getline(self):
