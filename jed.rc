@@ -13,6 +13,36 @@ if (BATCH == 0) {
 setkey("help_prefix", "^H");
 
 %}}}
+%{{{ Key bindings for rectangle kill/insert.
+
+% It isn't as simple as binding kill_rect and insert_rect to keys,
+% because those functions also leave the cursor in unhelpful
+% places. It's generally more useful to have the cursor at the
+% _top_ of the resulting rectangle.
+
+define kill_rect_and_reposition_cursor() {
+    variable l1, l2;
+    l1 = what_line();
+    exchange_point_and_mark();
+    l2 = what_line();
+    if (l2 > l1)
+	exchange_point_and_mark();
+    kill_rect();
+}
+
+define insert_rect_and_reposition_cursor() {
+    variable l1, c1, l2;
+    l1 = what_line();
+    insert_rect();
+    c1 = what_column();
+    go_up(what_line() - l1);
+    goto_column_best_try(c1);
+}
+
+setkey("kill_rect_and_reposition_cursor", "^XL");
+setkey("insert_rect_and_reposition_cursor", "^XP");
+
+%}}}
 %{{{ FFS, whose silly idea was it to make ` into a quote-next command?
 setkey("self_insert_cmd", "`");
 %}}}
@@ -134,6 +164,12 @@ unsetkey("^[I"); unsetkey("^[i");
 unsetkey("^[H"); unsetkey("^[h");
 unsetkey("^[[21~");
 
+%}}}
+%{{{ Ctrl+arrows under X are more annoying than useful; disable them
+unsetkey("^[[^A");
+unsetkey("^[[^B");
+unsetkey("^[[^C");
+unsetkey("^[[^D");
 %}}}
 %{{{ file functions: ^X^R, M-x cd, M-x revert, M-x insh
 
@@ -429,6 +465,21 @@ define armasm_mode_hook() %{{{
     keymap = what_keymap();
     definekey("jedrc_armasm_format_paragraph", "^[Q", keymap);
     definekey("jedrc_armasm_format_paragraph", "^[q", keymap);
+#ifexists unset_buffer_hook
+    unset_buffer_hook("par_sep");
+#endif
+}
+
+%}}}
+
+%}}}
+%{{{ redefine bits of PS mode
+
+define ps_mode_hook() %{{{
+{
+    variable keymap;
+    keymap = what_keymap();
+    definekey("jedrc_ps_format_paragraph", "^[Q", keymap);
 #ifexists unset_buffer_hook
     unset_buffer_hook("par_sep");
 #endif
@@ -1170,6 +1221,9 @@ if (jedrc_is_in_lib("sokoban.sl")) { %{{{
 % Also, .m is Objective-C, for Mac OS X work.
 add_mode_for_extension("c", "m");
 
+% Mostly for Gareth: .phtml is HTML.
+add_mode_for_extension("html","phtml");
+
 %}}}
 %{{{ ESC 0 inserts `0', so we can type eight zeros using ALT-8 ALT-0
 setkey(". 48 insert_char", "^[0");
@@ -1373,6 +1427,9 @@ define jedrc_c_format_paragraph() {
 }
 define jedrc_armasm_format_paragraph() {
     jedrc_format_paragraph("; ");
+}
+define jedrc_ps_format_paragraph() {
+    jedrc_format_paragraph("% ");
 }
 define jedrc_perl_format_paragraph() {
     jedrc_format_paragraph("# ");
