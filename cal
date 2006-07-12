@@ -56,7 +56,7 @@ fi
 
 { $REALCAL $pmonth $pyear ; echo "SEPARATOR" ;
   $REALCAL  $month  $year ; echo "SEPARATOR" ;
-  $REALCAL $nmonth $nyear ; } | tee z | \
+  $REALCAL $nmonth $nyear ; } | \
     perl -ne 'chomp; if (/SEPARATOR/) { push @things,$a; $a=[] } else {' \
           -e 'push @$a,$_; $wid=length $_; $maxwid=$wid if $maxwid < $wid;' \
           -e '$maxht=scalar @$a if $maxht < scalar @$a }' \
