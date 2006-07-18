@@ -8,6 +8,7 @@ import math
 file = sys.stdin
 fileneedsclose = 0
 playerrange = {}
+playernames = {}
 orderstats = 0
 args = sys.argv[1:]
 doingopts = 1
@@ -17,7 +18,7 @@ while len(args) > 0:
     if doingopts and arg[0] == "-":
 	if arg == "--":
 	    doingopts = 0
-	elif arg[1] == "p":
+	elif arg[1] == "p" or arg[1] == "n":
 	    # Option with argument.
 	    val = arg[2:]
 	    if val == "":
@@ -37,6 +38,9 @@ while len(args) > 0:
 		    pmin = pmax = string.atoi(val)
 		for i in range(pmin, pmax+1):
 		    playerrange[i] = 1
+	    elif arg[1] == "n":
+		# Player name.
+		playernames[val] = 1
 	elif arg == "-o":
 	    orderstats = 1
 	else:
@@ -63,6 +67,10 @@ while 1:
 	continue
     game = {}
     for i in range(len(sa)/2):
+	if len(playernames) > 0 and not playernames.has_key(sa[2*i]):
+	    # skip game containing an unsanctioned player
+	    game = None
+	    break
 	if orderstats:
 	    name = "P%d" % (i+1)
 	else:
@@ -72,7 +80,8 @@ while 1:
 	    score = int(score) + epsilon   # normalise tie-breaking wins
 	game[name] = score
 	players[name] = 1 # track overall set of players just in case
-    games.append(game)
+    if game != None:
+	games.append(game)
 
 if fileneedsclose:
     file.close()
