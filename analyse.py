@@ -58,7 +58,12 @@ line = 0
 while 1:
     s = file.readline()
     if s == "": break
+    hashpos = string.find(s, "#")
+    if hashpos >= 0:
+	s = s[:hashpos]
     sa = string.split(s)
+    if len(sa) == 0:
+	continue
     if len(sa) % 2:
 	sys.stderr.write("um, odd number of fields at line %d?\n" % line)
 	continue
