@@ -398,7 +398,14 @@ int winnow(struct params p, unsigned char *poss, unsigned char *guess,
     return count;
 }
 
-int playgame(struct params p, get_mark_fn_t mark, void *markctx, int *moves)
+struct userguess {
+    int len;
+    unsigned char *guess;
+    struct userguess *next;
+};
+
+int playgame(struct params p, get_mark_fn_t mark, void *markctx, int *moves,
+	     struct userguess *userguesses)
 {
     unsigned char *poss = TEMPALLOC(p.comb);
     unsigned char *guess = TEMPALLOC(p.pegs);
@@ -416,7 +423,28 @@ int playgame(struct params p, get_mark_fn_t mark, void *markctx, int *moves)
 
     while (1) {
 	int b, w, sure;
-	sure = nextguess(p, guess, poss, symm);
+	if (userguesses && userguesses->len < 0) {
+	    int c;
+	    while (userguesses && userguesses->len < 0)
+		userguesses = userguesses->next;
+	    printf("Possibilities:");
+	    for (c = 0; c < p.comb; c++)
+		if (poss[c]) {
+		    int i;
+		    make_comb(p, guess, c);
+		    putchar(' ');
+		    for (i = 0; i < p.pegs; i++)
+			putchar('a' + guess[i]);
+		}
+	    printf("\n");
+	}
+	if (userguesses) {
+	    sure = 0;
+	    memcpy(guess, userguesses->guess, p.pegs);
+	    userguesses = userguesses->next;
+	} else {
+	    sure = nextguess(p, guess, poss, symm);
+	}
 	symm_update(p, symm, guess);
 	mark(p, &b, &w, guess, sure, markctx);
 	nmoves++;
@@ -547,6 +575,7 @@ int main(int argc, char **argv)
     int answerlen = -1;
     struct params p;
     char *pname = argv[0];
+    struct userguess *ughead = NULL, *ugtail = NULL, *ug;
 
     while (--argc) {
 	char *p = *++argv;
@@ -567,9 +596,22 @@ int main(int argc, char **argv)
 		  case 'v':
 		    verbose = 1;
 		    break;
+		  case 's':
+		    ug = TEMPALLOC(sizeof(struct userguess));
+		    ug->len = -1;
+		    ug->guess = NULL;
+
+		    if (ugtail)
+			ugtail->next = ug;
+		    else
+			ughead = ug;
+		    ugtail = ug;
+		    ug->next = NULL;
+		    break;
 		  case 'p':
 		  case 'c':
 		  case 'r':
+		  case 'g':
 		    if (*p)
 			v = p, p = "";
 		    else if (--argc)
@@ -593,6 +635,20 @@ int main(int argc, char **argv)
 			    answer[i] = v[i] - 'a';
 			}
 			break;
+		      case 'g':
+			ug = TEMPALLOC(sizeof(struct userguess));
+			ug->len = strlen(v);
+			ug->guess = TEMPALLOC(ug->len);
+			for (i = 0; i < ug->len; i++)
+			    ug->guess[i] = v[i] - 'a';
+
+			if (ugtail)
+			    ugtail->next = ug;
+			else
+			    ughead = ug;
+			ugtail = ug;
+			ug->next = NULL;
+			break;
 		    }
 		    break;
 		  default:
@@ -607,6 +663,28 @@ int main(int argc, char **argv)
     if (pegs < 1 || colours < 1) {
 	fprintf(stderr, "%s: parameters out of range\n", pname);
 	return 1;
+    }
+
+    for (ug = ughead; ug; ug = ug->next) {
+	if (ug->len < 0)
+	    continue;		       /* special case */
+	for (i = 0; i < ug->len; i++) {
+	    if (ug->guess[i] >= colours) {
+		fprintf(stderr, "%s: user-supplied guess '", pname);
+		for (i = 0; i < ug->len; i++)
+		    fputc('a' + ug->guess[i], stderr);
+		fprintf(stderr, "' uses a colour beyond limit of '%c'\n",
+			'a' + colours - 1);
+		return 1;
+	    }
+	}
+	if (ug->len != pegs) {
+	    fprintf(stderr, "%s: user-supplied guess '", pname);
+	    for (i = 0; i < ug->len; i++)
+		fputc('a' + ug->guess[i], stderr);
+	    fprintf(stderr, "' does not match peg count %d\n", pegs);
+	    return 1;
+	}
     }
 
     if (answer && !tryall) {
@@ -634,7 +712,8 @@ int main(int argc, char **argv)
 
 	for (i = 0; i < p.comb; i++) {
 	    make_comb(p, comb, i);
-	    ret = playgame(p, compute_internal_mark, comb, &moves);
+	    /* No sensible reason to support pre-made moves in this mode */
+	    ret = playgame(p, compute_internal_mark, comb, &moves, NULL);
 	    assert(ret);
 	    if (verbose) {
 		int j;
@@ -667,9 +746,10 @@ int main(int argc, char **argv)
 	int moves;
 	int ret;
 	if (answer)
-	    ret = playgame(p, compute_internal_mark_verbose, answer, &moves);
+	    ret = playgame(p, compute_internal_mark_verbose, answer, &moves,
+			   ughead);
 	else
-	    ret = playgame(p, ask_user_for_mark, NULL, &moves);
+	    ret = playgame(p, ask_user_for_mark, NULL, &moves, ughead);
 
 	if (ret)
 	    printf("Solved successfully after %d moves.\n", moves);
