@@ -4,27 +4,79 @@ import string
 import sys
 import math
 
+# Process command-line arguments.
+file = sys.stdin
+fileneedsclose = 0
+playerrange = {}
+orderstats = 0
+args = sys.argv[1:]
+doingopts = 1
+while len(args) > 0:
+    arg = args[0]
+    args = args[1:]
+    if doingopts and arg[0] == "-":
+	if arg == "--":
+	    doingopts = 0
+	elif arg[1] == "p":
+	    # Option with argument.
+	    val = arg[2:]
+	    if val == "":
+		if len(args) > 0:
+		    val = args[0]
+		    args = args[1:]
+		else:
+		    sys.stderr.write("option '%s' expected an argument\n" % arg)
+		    continue
+	    if arg[1] == "p":
+		# Number of players.
+		minus = string.find(val, "-")
+		if minus >= 0:
+		    pmin = string.atoi(val[:minus])
+		    pmax = string.atoi(val[minus+1:])
+		else:
+		    pmin = pmax = string.atoi(val)
+		for i in range(pmin, pmax+1):
+		    playerrange[i] = 1
+	elif arg == "-o":
+	    orderstats = 1
+	else:
+	    sys.stderr.write("option '%s' unrecognised\n" % arg)
+	    continue
+    else:
+	file = open(arg, "r")
+	fileneedsclose = 1
+
 # Read in the score file.
 players = {}
 games = []
 epsilon = 2.0 ** -32
 line = 0
 while 1:
-    s = sys.stdin.readline()
+    s = file.readline()
     if s == "": break
     sa = string.split(s)
     if len(sa) % 2:
 	sys.stderr.write("um, odd number of fields at line %d?\n" % line)
 	continue
+    if len(playerrange) > 0 and not playerrange.has_key(len(sa)/2):
+	# skip game whose player count is not in the user-specified range
+	continue
     game = {}
     for i in range(len(sa)/2):
-	name = sa[2*i]
+	if orderstats:
+	    name = "P%d" % (i+1)
+	else:
+	    name = sa[2*i]
 	score = string.atof(sa[2*i+1])
 	if score != int(score):
 	    score = int(score) + epsilon   # normalise tie-breaking wins
 	game[name] = score
 	players[name] = 1 # track overall set of players just in case
     games.append(game)
+
+if fileneedsclose:
+    file.close()
+
 players = players.keys()
 players.sort()
 
@@ -72,7 +124,14 @@ def normalise_game(g):
 
     ng = {}
     for name, score in g.items():
-	ng[name] = (score - mean) / sd
+	if sd != 0:
+	    ng[name] = (score - mean) / sd
+	else:
+	    # sd==0 can only occur if all the scores are identical,
+	    # in which case the only sensible thing to do at all is
+	    # to set scores to zero. We can't get variance 1, but
+	    # we can get mean 0.
+	    ng[name] = 0
 
     return ng
 
@@ -82,13 +141,17 @@ def normalise_rank_01(g):
     # equal-sized steps.
 
     gl = g.items()
-    gl.sort(lambda a, b: a[1] > b[1] or (a[1] != b[1] and -1))
+    gl.sort(lambda b, a: a[1] > b[1] or (a[1] != b[1] and -1))
     ng = {}
     i = 0
+    rank = i
+    prev = None
     for n, v in gl:
-	ng[n] = float(i) / (len(gl)-1)
+	if v != prev:
+	    rank = i
+	ng[n] = float(len(gl)-1-rank) / (len(gl)-1)
 	i = i + 1
-
+	prev = v
     return ng
 
 def normalise_rank_top(g):
@@ -99,10 +162,14 @@ def normalise_rank_top(g):
     gl.sort(lambda b, a: a[1] > b[1] or (a[1] != b[1] and -1))
     ng = {}
     i = 1
+    rank = i
+    prev = None
     for n, v in gl:
-	ng[n] = float(i)
+	if v != prev:
+	    rank = i
+	ng[n] = float(rank)
 	i = i + 1
-
+	prev = v
     return ng
 
 # Analyse a set of scores.
