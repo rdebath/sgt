@@ -94,6 +94,12 @@ your data will be lost. Also, the file is not replaced atomically.
 This method is very convenient in non-critical situations, but is
 not recommended for critical or automated use.)
 
+Another use for \cw{-o} is for requesting a list of files using
+\c{find}(1) or \c{ls}(1), without the output file appearing in the
+list:
+
+\c $ find . -type f | reservoir -o filelist
+
 \U LICENCE
 
 \cw{reservoir} is free software, distributed under the MIT licence. Type
