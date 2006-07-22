@@ -158,7 +158,7 @@ windows} will not work. \cw{multi} comes to the rescue:
 \c svn mv winutils.c windows/winutils.c
 
 Of course, your Perl fragment can be more complex than just a
-\cw{s///} command. Here's a means of tidying up after extracting a
+\cw{s///} command. Here's a means of tidying up after extracting an
 MS-DOS zip file containing all filenames in upper case:
 
 \c $ multi mv 'y/A-Z/a-z/' *[A-Z]*
@@ -167,14 +167,17 @@ MS-DOS zip file containing all filenames in upper case:
 \c mv MAIN.C main.c
 \c mv STUFF.C stuff.c
 
-Here's an example using \cw{-r}. Suppose you have lots of small C
-programs and you want to quickly compile them all into binaries:
+Here's an example using \cw{-r}. Suppose you have lots of \c{.wav}
+sound files, and you want to encode them all into compressed Ogg
+Vorbis format. The \c{oggenc} command expects its destination file
+name as an argument to the \c{-o} parameter, so it's most convenient
+to put that \e{before} the input file name:
 
-\c $ multi -r - cc -o - 's/.c$//' *.c
-\e   bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
-\c cc -o bar bar.c
-\c cc -o baz baz.c
-\c cc -o foo foo.c
+\c $ multi -r - oggenc -o - 's/.wav$/.ogg/' *.wav
+\e   bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+\c oggenc -o bar.ogg bar.wav
+\c oggenc -o baz.ogg baz.wav
+\c oggenc -o foo.ogg foo.wav
 
 Finally, here's a general technique for going beyond the limits of
 \cw{multi}, in the case where you need to do something more
