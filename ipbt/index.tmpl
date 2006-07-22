@@ -44,11 +44,11 @@ few frames, and there it is.
 
 <p>
 The downside is that the initial analysis phase takes time. On my
-2GHz Pentium 4, I find it takes of the order of ten seconds per
+2GHz Pentium 4, I find it takes of the order of five seconds per
 megabyte of input. So if you want to watch an 8Mb file, you'll have
-to wait for something in excess of a minute before IPBT is ready to
-show it to you. (This is annoying, but for me at least it's more
-than made up for by the ability to rewind.)
+to wait for something in excess of half a minute before IPBT is
+ready to show it to you. (This is annoying, but for me at least it's
+more than made up for by the ability to rewind.)
 
 <h2>Technical details</h2>
 
@@ -63,8 +63,8 @@ familiar with). Thus, IPBT is a derived work of PuTTY.
 <p>
 While reading the file, IPBT builds up a list of the screen contents
 changes which take place over the course of the recording. These are
-then sorted into an order which permits efficient random-access
-retrieval of the screen state in any frame.
+stored into an internal data structure which permits efficient
+random-access retrieval of the screen state in any frame.
 
 <p>
 After doing this, IPBT is ready for playback. Playback is performed
@@ -83,8 +83,8 @@ contributions from other people.
 <p>
 For a full list of the things that need doing, you can read the file
 <a href="http://www.tartarus.org/~simon-anonsvn/viewcvs.cgi/*checkout*/ipbt/TODO"><code>TODO</code></a>
-in the source distribution. The big one, at the moment, is that it
-needs an
+in the source distribution. The big ones, at the moment, are that it
+needs documentation first and foremost, and also an
 <a href="http://www.gnu.org/software/autoconf/"><code>autoconf</code></a>
 framework and some portability tweaks
 to make it work with <code>curses</code> implementations other than
