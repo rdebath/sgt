@@ -185,7 +185,7 @@ ambitious with your two file names. Suppose you want to use one file
 name as the target of a shell redirection operator, for example.
 
 \c $ multi - sh -c 'grep foo $0 > $1' - 's/.txt$/.grepped/' *.txt
-\e   bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+\e   bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
 \c sh -c 'grep foo $0 > $1' bar.txt bar.grepped
 \c sh -c 'grep foo $0 > $1' baz.txt baz.grepped
 \c sh -c 'grep foo $0 > $1' foo.txt foo.grepped
