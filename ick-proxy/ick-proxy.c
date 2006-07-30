@@ -297,6 +297,8 @@ void run_daemon(char **daemon_words, int port)
     struct Connection *chead = NULL;
     struct Connection *current_open = NULL;
 
+    signal(SIGPIPE, SIG_IGN);
+
     if (pipe(signalpipe) < 0) {
         fprintf(stderr, "ick-proxy: pipe: %s\n", strerror(errno));
         exit(1);
