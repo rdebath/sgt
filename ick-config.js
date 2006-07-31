@@ -23,10 +23,12 @@ function RewriteURL(url)
 	var middle, mpos, list;
 	mpos = url.indexOf(".livejournal.com/");
 	middle = url.substr(7, mpos-7);
-        /* list of livejournal.com hostnames that _aren't_ usernames */
+        /* list of livejournal.com hostnames that _don't_ need
+	 * the style=mine suffix. Most of these are special things that
+	 * aren't usernames; `simont' is also included here. */
         list = "/pics/userpic/lists/userpic-origin/files/stat/" +
             "bigip/stat-origin/img/status/mail/post/www/ljdev/" +
-            "userpic-voxel/wwwstat/files-origin/";
+            "userpic-voxel/wwwstat/files-origin/simont/";
 	if (middle.indexOf(".") < 0 && list.indexOf("/"+middle+"/") < 0)
 	    style = true;
     }
