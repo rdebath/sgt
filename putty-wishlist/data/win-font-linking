@@ -1,7 +1,7 @@
 Summary: Windows Unicode font linking broken
 Class: bug
 Difficulty: tricky
-Priority: medium
+Priority: high
 Absent-in: 0.56 0.57
 Present-in: 0.58
 Content-type: text/x-html-body

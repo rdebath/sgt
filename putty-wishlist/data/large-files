@@ -1,6 +1,6 @@
 Summary: PSFTP and PSCP can't handle big files (> 2 GB, > 4 GB)
 Class: semi-bug
-Priority: medium
+Priority: high
 Difficulty: fun
 Content-type: text/x-html-body
 
