@@ -3,6 +3,7 @@ Class: semi-bug
 Priority: high
 Difficulty: fun
 Content-type: text/x-html-body
+Fixed-in: 2006-08-13
 
 <p>
 The file transfer utilities (PSCP and PSFTP) ought to handle
@@ -20,3 +21,8 @@ we've not been able to test that; also note that the same error can
 still occur if files <a href="pscp-size-change.html">change in size</a>.
 In any case files over 4GB are <em>still</em> not supported (and this
 would require some upheaval to fix).
+
+<p>
+2006-08-13: I (OSD) have checked in a pile of stuff which should allow
+large file support where possible.  On Windows, this basically means
+NT and above.
