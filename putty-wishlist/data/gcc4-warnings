@@ -1,0 +1,11 @@
+Summary: Compiling the Unix version with GCC4 generates warnings
+Class: bug
+Priority: medium
+Present-in: 0.58
+Content-type: text/x-html-body
+
+<p>PuTTY doesn't build cleanly using GCC 4 on Unix because we turn on 
+<tt>-Wall</tt> and <tt>-Werror</tt>.  Most of the problems are the
+usual ones to do with signenedness of pointer targets.
+Debian bug #<a href="http://bugs.debian.org/287960">287960</a> has some
+details and patches.
