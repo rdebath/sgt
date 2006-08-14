@@ -1,0 +1,13 @@
+Summary: Window title escape sequences not interpreted in line charset
+Class: bug
+Priority: medium
+Content-type: text/x-html-body
+
+<p>PuTTY does not display unicode characters correctly in the title bar.
+When charset is set to UTF-8 from PuTTY and locales on the remote
+computer are en_US.UTF-8, unicode characters are shown as they vere
+latin chars.
+
+<p>Also reported to Ubuntu as <a href="https://launchpad.net/distros/ubuntu/+source/putty/+bug/48781">bug 48781</a>, where it's suggested that
+<a href="port-unix-gtk2.html">using GTK2</a> will
+help.
