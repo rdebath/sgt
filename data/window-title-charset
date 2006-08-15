@@ -1,0 +1,9 @@
+Summary: Window titles not interpreted according to current charset
+Class: semi-bug
+Priority: medium
+Difficulty: fun
+
+If an escape sequence (e.g. OSC 0) sets the window title bar, the text
+in the escape sequence is just sent to the window system for display.
+We should make sure it is interpreted according to whatever character
+set / codepage the terminal emulator is currently using.
