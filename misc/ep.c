@@ -101,6 +101,22 @@ void comb_from_index(char *array, int val, int ignoremask,
     }
 }
 
+/*
+ * Return a random number in the range [0,n).
+ */
+int random_upto(int n)
+{
+    int divisor = RAND_MAX / n;
+    int limit = n * divisor;
+    int r;
+
+    do
+	r = rand();
+    while (r >= limit);
+
+    return r / divisor;
+}
+
 /* ----------------------------------------------------------------------
  * Game-specific utility functions.
  */
@@ -575,19 +591,8 @@ void validate(struct game_state state)
 }
 
 /* ----------------------------------------------------------------------
- * Recursive game state evaluator.
+ * Game state and move manipulation.
  */
-
-/*
- * Evaluate a position by making all possible moves. Returns the
- * maximum _advantage_ the active player can gain over the inactive
- * one. Expects `already_done' to point to an array of 93848734
- * signed chars containing the values of already-evaluated
- * positions, or 100 if that position has not already been
- * evaluated.
- */
-
-int positions_checked;
 
 struct move {
     int pos;			       /* elephant to move */
@@ -616,37 +621,19 @@ struct game_state flip(struct game_state state)
     return state;
 }
 
-int evaluate(struct game_state state, signed char *already_done,
-	     struct moves *outmoves);
-
-int flipval(struct game_state state, signed char *already_done)
-{
-    /*
-     * Flip the game state into the other player's perspective.
-     */
-    state = flip(state);
-
-    /*
-     * And negate the evaluation, since this will be from the
-     * _other_ player's perspective.
-     */
-    return -evaluate(state, already_done, NULL);
-}
-
 /*
- * Given a game state and a move, make that move. If `newstate' is
- * true, simply return the resulting game state and the score
- * increments for each player. If `newstate' is false, instead pass
- * the resulting game state on to flipval to evaluate from the
- * opponent's perspective, and then return the value to the active
- * player of making that move.
+ * Given a game state and a move, make that move. Return the
+ * resulting game state in `newstate', and add the score increments
+ * for each player to the values pointed to by `a_score' and
+ * `i_score'. Actual return value is non-zero if the move is legal,
+ * or zero if not. In the latter case, none of the output pointers
+ * is touched.
  */
-int moveval(struct game_state state, struct moves moves,
-	    signed char *already_done, struct game_state *newstate,
-	    int *a_score, int *i_score)
+int makemove(struct game_state state, struct moves moves,
+	     struct game_state *newstate, int *a_score, int *i_score)
 {
     int i, j, e, as, is;
-    int ecount, hindmost, bitmask;
+    int ecount, mcount, hindmost, bitmask, nmoves;
     int value = 0, logval;
     struct move *movep;
 
@@ -661,32 +648,40 @@ int moveval(struct game_state state, struct moves moves,
 	    moves.moves[0].pos < 0 || moves.moves[0].pos > 3 ||
 	    state.board[moves.moves[0].pos] != 0 ||
 	    moves.parade)
-	    return -101;	       /* disallow move */
+	    return 0;		       /* disallow move */
 	state.board[moves.moves[0].pos] = 1;
 	state.aplace--;
 	goto done;
     }
 
-    ecount = 0;
+    ecount = mcount = 0;
     hindmost = 59;
     for (i = 0; i < 59; i++)
 	if (state.board[i]) {
 	    hindmost = min(i, hindmost);
 	    ecount++;
+	    if (i == hindmost || board[i] != WATER)
+		mcount++;
 	}
 
-    if (ecount == 0)
-	return -101;		       /* no available move at all! */
+    if (state.ahome + state.ihome >= 3)
+	return 0;		       /* three elephants home, game over */
+    assert(ecount > 0);
 
     /*
      * Validate basic move: for a parade move there must be exactly
-     * `ecount' moves (one per elephant), otherwise there must be
-     * exactly min(ecount,3) moves.
+     * `ecount' moves (one per elephant). The move count for a
+     * normal move depends on how many elephants are currently
+     * immobilised in water, and may change half way through. (With
+     * two mobile elephants, you must make two moves, but if those
+     * two moves re-mobilise the hindmost elephant then you must
+     * make three.) However, we do know that we must move _at
+     * least_ min(mcount,3) elephants.
      */
     if (moves.parade && moves.nmoves != ecount)
-	return -101;
-    if (!moves.parade && moves.nmoves != min(ecount, 3))
-	return -101;
+	return 0;
+    if (!moves.parade && moves.nmoves < min(mcount, 3))
+	return 0;
 
     /*
      * The moves must target distinct elephants, and elephants
@@ -694,18 +689,19 @@ int moveval(struct game_state state, struct moves moves,
      */
     for (i = 0; i < moves.nmoves; i++)
 	if (!state.board[moves.moves[i].pos])
-	    return -101;	       /* no elephant here */
+	    return 0;		       /* no elephant here */
     for (i = 0; i < moves.nmoves-1; i++)
 	for (j = i+1; j < moves.nmoves; j++) {
 	    if (moves.moves[i].pos == moves.moves[j].pos)
-		return -101;	       /* moving same elephant twice */
+		return 0;	       /* moving same elephant twice */
 	    if (moves.parade && moves.moves[i].pos < moves.moves[j].pos)
-		return -101;	       /* malformed parade */
+		return 0;	       /* malformed parade */
 	}
 
     bitmask = 14;		       /* we can move by 1, 2 or 3 */
     movep = moves.moves;
-    while (moves.nmoves-- > 0) {
+    nmoves = moves.nmoves;
+    while (nmoves-- > 0) {
 	int pos = movep->pos;
 	int step = movep->step;
 	movep++;
@@ -715,20 +711,20 @@ int moveval(struct game_state state, struct moves moves,
 	 * unless we're in elephant parade mode.
 	 */
 	if (!moves.parade && pos > hindmost && board[pos] == WATER)
-	    return -101; /* extremely low value forces move to be discarded */
+	    return 0;
 
 	if (moves.parade) {
 	    /*
 	     * Ensure all move distances are 1.
 	     */
 	    if (step != 1)
-		return -101;
+		return 0;
 	} else {
 	    /*
 	     * Ensure each move distance is used at most once.
 	     */
 	    if (step < 1 || step > 3 || !(bitmask & (1 << step)))
-		return -101;
+		return 0;
 	    bitmask &= ~(1 << step);
 	}
 
@@ -749,6 +745,18 @@ int moveval(struct game_state state, struct moves moves,
 		 * the elephant we jumped.
 		 */
 		i++;
+
+		/*
+		 * Also, if the new hindmost elephant was
+		 * previously immobilised in water, we now
+		 * increment mcount to remobilise it, and re-check
+		 * the move count.
+		 */
+		if (hindmost == i-1 && board[i-1] == WATER) {
+		    mcount++;
+		    if (!moves.parade && moves.nmoves < min(mcount, 3))
+			return 0;
+		}
 	    }
 	    /*
 	     * The elephant's move terminates prematurely if we
@@ -803,13 +811,10 @@ int moveval(struct game_state state, struct moves moves,
     }
 
     done:
-    if (newstate) {
-	*newstate = flip(state);
-	*a_score += as;
-	*i_score += is;
-	return 0;
-    } else
-	return value + flipval(state, already_done);
+    *newstate = flip(state);
+    *a_score += as;
+    *i_score += is;
+    return 1;
 }
 
 void printpos(int index, struct game_state state, int two_d,
@@ -876,81 +881,45 @@ void printpos(int index, struct game_state state, int two_d,
 }
 
 /*
- * Actual evaluation function. Given a game state, returns its
- * value, and optionally (if `outmoves' is non-null) also returns
- * one of the optimal moves.
+ * Enumerate the possible moves from a given position, without
+ * stopping to check whether they're valid or not.
  * 
- * If `outmoves' is null, this function will return the appropriate
- * byte from the `already_done' array instead of recursing, if that
- * byte is valid. If `outmoves' is not null, the function is forced
- * to do at least one level of proper running in order to test all
- * possible moves and see which is the best; but below _that_ it
- * will consult the `already_done' array.
+ * Returns the number of move candidates, which are loaded into the
+ * `outmoves' array. The largest possible return value is MAXMOVES.
  */
-int evaluate(struct game_state state, signed char *already_done,
-	     struct moves *outmoves)
+#define MAXMOVES 241 /* (4+4*3+4*3*2)*6+1 */
+int listmoves(struct game_state state, struct moves *outmoves)
 {
     struct moves moves;
-    int index, i, j;
-    int val, bestval;
+    int ret = 0;
+    int i, j;
 
     /*
-     * First see if this position already exists. If `outmoves' is
-     * true, we're being asked for our move in this situation, so
-     * we can't take this shortcut - but we will take it at the
-     * next layer down.
-     */
-    index = marshal(state);
-    if (!outmoves && already_done[index] != 100) {
-#ifdef EVAL_DIAGNOSTICS_EXTRA
-	printpos(index, state, 0, 0, 0, 0, 0);
-	printf(" = %d\n", already_done[index]);
-#endif
-	return already_done[index];
-    }
-
-    /*
-     * Failing that, we have to try every possible move from this
-     * position and evaluate the result. To begin with, divide up
-     * opening from endgame.
+     * See if this is an opening position (not all elephants
+     * placed).
      */
     if (state.aplace > 0) {
 	/*
-	 * If so, we can place it on any of the first four
-	 * positions which isn't already an elephant.
+	 * If so, we can place an elephant on any of the first four
+	 * positions which isn't already full.
 	 */
-	bestval = -100;
 	for (i = 0; i < 4; i++)
 	    if (!state.board[i]) {
 		moves.moves[0].pos = i;
 		moves.moves[0].step = 0;     /* indicates placing an elephant */
 		moves.parade = 0;
 		moves.nmoves = 1;
-		val = moveval(state, moves, already_done, NULL, NULL, NULL);
-		bestval = max(val, bestval);
-		if (outmoves && val == bestval)
-		    *outmoves = moves;
+		assert(ret < MAXMOVES);
+		*outmoves++ = moves;
+		ret++;
 	    }
-	assert(bestval != -100);
-    } else if (state.ahome == 2 && state.ihome == 2) {
+	assert(ret > 0);
+    } else if (state.ahome + state.ihome >= 3) {
 	/*
-	 * We have no remaining elephants on the board, and neither
-	 * does the opponent. Recursion bottoms out here. Game
-	 * over, value zero.
+	 * The game ends when three elephants are home, even if
+	 * there are still logs on the board. So the recursion
+	 * bottoms out here. Game over, value zero.
 	 */
-	bestval = 0;
-#if 0
-    } else if (state.ahome == 2) {
-	/*
-	 * One might rule that once both a player's elephants are
-	 * home that player can no longer direct play. I don't
-	 * think that's right, though; since players can move one
-	 * another's elephants anyway, I see no reason the player
-	 * with no elephants shouldn't continue to make moves in
-	 * the hope of jumping the other player over some logs!
-	 */
-	bestval = flipval(state, already_done);
-#endif
     } else {
 	/*
 	 * Main play. There are elephants on the board.
@@ -976,9 +945,9 @@ int evaluate(struct game_state state, signed char *already_done,
 	assert(j <= 4);
 	moves.nmoves = j;
 	moves.parade = 1;
-	bestval = moveval(state, moves, already_done, NULL, NULL, NULL);
-	if (outmoves)
-	    *outmoves = moves;
+	assert(ret < MAXMOVES);
+	*outmoves++ = moves;
+	ret++;
 
 	/*
 	 * Now we have a load of other moves to make. First, find
@@ -1006,40 +975,126 @@ int evaluate(struct game_state state, signed char *already_done,
 	      case 5: moves.moves[0].step=3; moves.moves[1].step=2; moves.moves[2].step=1; break;
 	    }
 
+	    /*
+	     * We must try moving every combination of elephants
+	     * _up to_ three, because sometimes we can't move as
+	     * many as three because some are immobilised.
+	     */
 	    for (m1 = 0; m1 < ne; m1++) {
 		moves.moves[0].pos = elephants[m1];
-		if (ne == 1) {
-		    /*
-		     * This is the only elephant we can move.
-		     */
-		    moves.nmoves = 1;
-		    val = moveval(state, moves, already_done, NULL, NULL, NULL);
-		    bestval = max(val, bestval);
-		    if (outmoves && val == bestval)
-			*outmoves = moves;
-		} else for (m2 = 0; m2 < ne; m2++) if (m2 != m1) {
+
+		moves.nmoves = 1;
+		assert(ret < MAXMOVES);
+		*outmoves++ = moves;
+		ret++;
+
+		for (m2 = 0; m2 < ne; m2++) if (m2 != m1) {
 		    moves.moves[1].pos = elephants[m2];
-		    if (ne == 2) {
-			/*
-			 * These are the only two elephants we can
-			 * move.
-			 */
-			moves.nmoves = 2;
-			val = moveval(state, moves, already_done, NULL, NULL, NULL);
-			bestval = max(val, bestval);
-			if (outmoves && val == bestval)
-			    *outmoves = moves;
-		    } else for (m3 = 0; m3 < ne; m3++) {
-			if (m3 != m2 && m3 != m1) {
-			    moves.moves[2].pos = elephants[m3];
-			    moves.nmoves = 3;
-			    val = moveval(state, moves, already_done, NULL, NULL, NULL);
-			    bestval = max(val, bestval);
-			    if (outmoves && val == bestval)
-				*outmoves = moves;
-			}
+
+		    moves.nmoves = 2;
+		    assert(ret < MAXMOVES);
+		    *outmoves++ = moves;
+		    ret++;
+
+		    for (m3 = 0; m3 < ne; m3++) if (m3 != m2 && m3 != m1) {
+			moves.moves[2].pos = elephants[m3];
+			
+			moves.nmoves = 3;
+			assert(ret < MAXMOVES);
+			*outmoves++ = moves;
+			ret++;
 		    }
 		}
+	    }
+	}
+    }
+
+    return ret;
+}
+
+/* ----------------------------------------------------------------------
+ * Recursive game state evaluator.
+ */
+
+int positions_checked;
+
+/*
+ * Actual evaluation function. Given a game state, returns its
+ * value (defined as the maximum _advantage_ the active player can
+ * gain over the inactive one), and optionally (if `outmoves' is
+ * non-null) also returns one of the optimal moves.
+ * 
+ * Expects `already_done' to point to an array of 93848734 signed
+ * chars containing the values of already-evaluated positions, or
+ * 100 if that position has not already been evaluated.
+ * 
+ * If `outmoves' is null, this function will return the appropriate
+ * byte from the `already_done' array instead of recursing, if that
+ * byte is valid. If `outmoves' is not null, the function is forced
+ * to do at least one level of proper running in order to test all
+ * possible moves and see which is the best; but below _that_ it
+ * will consult the `already_done' array.
+ */
+#define MAXDEPTH 64
+struct moves movestack[MAXDEPTH][MAXMOVES];
+
+int evaluate(struct game_state state, signed char *already_done,
+	     struct moves *outmoves, int depth)
+{
+    struct moves *moves;
+    int index, i, n, nmoves;
+    int val, bestval;
+
+    /*
+     * First see if this position already exists. If `outmoves' is
+     * true, we're being asked for our move in this situation, so
+     * we can't take this shortcut - but we will take it at the
+     * next layer down.
+     */
+    index = marshal(state);
+    if (!outmoves && already_done[index] != 100) {
+#ifdef EVAL_DIAGNOSTICS_EXTRA
+	printpos(index, state, 0, 0, 0, 0, 0);
+	printf(" = %d\n", already_done[index]);
+#endif
+	return already_done[index];
+    }
+
+    /*
+     * Failing that, we have to try every possible move from this
+     * position and evaluate the result.
+     */
+    bestval = -100;
+    assert(depth < MAXDEPTH);
+    moves = movestack[depth];
+    assert(moves != NULL);
+    nmoves = listmoves(state, moves);
+    n = 0;
+    if (nmoves == 0) {
+	bestval = 0;		       /* game over, value zero */
+    } else for (i = 0; i < nmoves; i++) {
+	struct game_state newstate;
+	int as = 0, is = 0;
+
+	if (makemove(state, moves[i], &newstate, &as, &is)) {
+	    val = as - is - evaluate(newstate, already_done, NULL, depth+1);
+	    if (val >= bestval) {
+		if (outmoves) {
+		    /*
+		     * We want to choose a random move from all the
+		     * optimal ones. We do this by replacing our
+		     * previous best move with the current one with
+		     * probability 1/n, where n is the number of
+		     * moves we have so far seen with this value
+		     * (including this one).
+		     */
+		    if (val > bestval)
+			n = 0;	       /* reset n for new highest value */
+		    n++;	       /* count this move */
+		    if (n == 1 || random_upto(n) == 0)
+			*outmoves = moves[i];
+		}
+		bestval = val;
 	    }
 	}
     }
@@ -1182,6 +1237,7 @@ int main(int argc, char **argv)
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/mman.h>
+#include <time.h>
 
 void printmove(struct game_state state, struct moves moves,
 	       int a_letter, int b_letter)
@@ -1240,6 +1296,8 @@ int main(int argc, char **argv)
 
     struct game_state state;
 
+    srand(time(NULL));
+
     /*
      * Command syntax:
      * 
@@ -1264,9 +1322,10 @@ int main(int argc, char **argv)
 
 	memset(data, 100, 93848734);
 
-	ret = evaluate(state, data, NULL);
+	ret = evaluate(state, data, NULL, 0);
 
 	printf("Game value = %d\n", ret);
+	printf("Total %d positions\n", positions_checked);
 
 	if (argc > 2)
 	    fname = argv[2];
@@ -1365,6 +1424,7 @@ int main(int argc, char **argv)
 		   "  e2            place an initial elephant at a position\n"
 		   "  o             find optimal move and print it\n"
 		   "  r             re-display current position\n"
+		   "  l             list legal moves from current position\n"
 		   "  d             toggle between 1-D and 2-D display\n");
 	    goto input;
 	}
@@ -1440,8 +1500,7 @@ int main(int argc, char **argv)
 	    moves.nmoves = i;
 	    moves.parade = 0;
 
-	    i = moveval(state, moves, data, &newstate, &a_score, &b_score);
-	    if (i <= -100) {
+	    if (!makemove(state, moves, &newstate, &a_score, &b_score)) {
 		printf("Illegal move\n");
 	    } else {
 		printmove(state, moves, a_letter, b_letter);
@@ -1474,8 +1533,7 @@ int main(int argc, char **argv)
 	    moves.nmoves = j;
 	    moves.parade = 1;
 
-	    i = moveval(state, moves, data, &newstate, &a_score, &b_score);
-	    if (i <= -100) {
+	    if (!makemove(state, moves, &newstate, &a_score, &b_score)) {
 		printf("Illegal move\n");
 	    } else {
 		printmove(state, moves, a_letter, b_letter);
@@ -1494,15 +1552,14 @@ int main(int argc, char **argv)
 	if (cmd[0] == 'e') {
 	    struct moves moves;
 	    struct game_state newstate;
-	    int i, t;
+	    int t;
 
 	    moves.nmoves = 1;
 	    moves.parade = 0;
 	    moves.moves[0].pos = atoi(cmd+1);
 	    moves.moves[0].step = 0;
 
-	    i = moveval(state, moves, data, &newstate, &a_score, &b_score);
-	    if (i <= -100) {
+	    if (!makemove(state, moves, &newstate, &a_score, &b_score)) {
 		printf("Illegal move\n");
 	    } else {
 		printmove(state, moves, a_letter, b_letter);
@@ -1522,14 +1579,14 @@ int main(int argc, char **argv)
 	    struct moves moves;
 	    struct game_state newstate;
 	    moves.nmoves = -1;	       /* placeholder */
-	    evaluate(state, data, &moves);
+	    evaluate(state, data, &moves, 0);
 	    if (moves.nmoves == -1)
 		printf("No move available from this position (end of game)\n");
 	    else {
 		int i, t;
 
-		i = moveval(state, moves, data, &newstate, &a_score, &b_score);
-		assert(i > -100);
+		i = makemove(state, moves, &newstate, &a_score, &b_score);
+		assert(i);
 
 		printmove(state, moves, a_letter, b_letter);
 
@@ -1541,6 +1598,50 @@ int main(int argc, char **argv)
 		t = a_score; a_score = b_score; b_score = t;
 	    }
 	    continue;
+	}
+
+	if (cmd[0] == 'l') {
+	    struct moves moves[MAXMOVES];
+	    int indices[MAXMOVES];
+	    int i, nind, j, index, as, bs, nmoves;
+
+	    nmoves = listmoves(state, moves);
+	    nind = 0;
+
+	    for (i = 0; i < nmoves; i++) {
+		struct game_state newstate;
+		/*
+		 * Oh, I can't be bothered. O(n^2) is fine by me
+		 * when n is fixed as small as MAXMOVES.
+		 */
+		as = bs = 0;
+		if (makemove(state, moves[i], &newstate, &as, &bs)) {
+		    index = marshal(newstate);
+		    for (j = 0; j < nind; j++)
+			if (indices[j] == index)
+			    break;
+		    if (j == nind) {
+			indices[nind++] = index;
+			printf("To reach %8d", index);
+			/*
+			 * By definition of the value of a
+			 * position, we cannot make our prognosis
+			 * better with any move. However, we can
+			 * make it worse.
+			 */
+			assert(as - bs - data[index] <= data[current_index]);
+			if (as - bs - data[index] == data[current_index])
+			    printf(" (optimal)");
+			else
+			    printf(" (drop %2d)", (data[current_index] -
+						   (as - bs - data[index])));
+			printf(": ");
+			printmove(state, moves[i], a_letter, b_letter);
+		    }
+		}
+	    }
+
+	    goto input;		       /* do not redisplay */
 	}
 
 	if (cmd[0] == 's' || isdigit((unsigned char)cmd[0])) {
