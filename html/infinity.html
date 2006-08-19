@@ -682,6 +682,33 @@ even close enough to bijectivity to work. Readers are invited to
 help out here!
 </p>
 
+<p>
+(Addendum, as of 19-Aug-2006: some progress on this. Suppose you
+divide the space of infinite bit streams into equivalence classes
+such that two streams are equivalent iff their <em>bitwise XOR</em>
+is computable by a finitely long program. Suppose you then invoke
+the Axiom of Choice to find a representative member of each
+equivalence class. Then, given an input bit stream, you XOR it with
+the representative member for its own equivalence class, giving a
+computable bit stream, which you can then convert into the finite
+program which generates it and then generate a hash bit by ordinary
+finite hashing. Repeat infinitely many times, with a fresh
+invocation of the Axiom of Choice for each output bit, and you have
+an infinitely long bit stream derived from your input one. I believe
+even an Infinity Machine cannot invert this function, because taking
+into account any finite subset of the output bits does not narrow
+down the possible inputs to the point where they cease to be
+uncountable. So this looks like a workable hash function.
+Unfortunately, as far as I can see, each invocation of the AoC
+requires uncountably many bits to store its output, and uncountably
+many instructions to be executed to invent it in the first place, so
+an Infinity Machine as I've described it cannot <em>compute</em> the
+hash function either! And if you go one better and introduce an
+Uncountable Machine, then it can probably invert the function as
+well as computing it. Does this mean public trapdoor functions are
+infeasible on the Infinity Machine, or is there a completely
+different approach?)
+
 <h2>Conclusion</h2>
 
 <p> 
