@@ -1,5 +1,6 @@
 Summary: Proxying through arbitrary command (e.g. another SSH session)
 Class: wish
+Fixed-in: 2006-08-27 r6808
 Difficulty: tricky
 Priority: low
 Content-type: text/x-html-body
@@ -43,5 +44,5 @@ this approach would assist those people who need to use
 an SSH server as a proxy.
 
 <p>
-<em>Update:</em> as of 2003 May 6 the Unix port supports this. The
-Windows version doesn't (yet).
+<b>SGT, 2006-08-26</b>: I've just implemented this for Windows (Unix
+has supported it since 2003) and it seems to be basically working.
