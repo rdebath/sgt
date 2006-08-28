@@ -2,6 +2,7 @@ Summary: Back end that talks to a serial port instead of a network
 Class: wish
 Priority: medium
 Difficulty: tricky
+Fixed-in: 2006-08-29 r6815
 Content-type: text/x-html-body
 
 <p>
@@ -34,3 +35,6 @@ which apparently works on Win9x/Me as well.
 <li><a href="http://www.digibit.org/phpBB2/dload.php?action=category&cat_id=1">NET2COM</a>, also for Windows.
 <li><a href="http://ser2net.sourceforge.net/">ser2net</a>, for Unix.
 </ul>
+
+<p>
+<b>SGT, 2006-08-28</b>: I believe this is basically there now.
