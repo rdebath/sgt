@@ -1,8 +1,7 @@
-Summary: Multiple askappend dialogue boxes on Windows
-Present-in: 0.58
+Summary: Logging dialog box duplicated, and can cause session to hang
+Present-in: 0.58 2006-09-02
 Class: bug
 Content-type: text/plain
-Fixed-in: 2006-01-26
 Priority: medium
 
 According to a report:
@@ -12,3 +11,6 @@ option "Ask the user every time" is selected, two dialog boxes titled
 "PuTTY Log to File" questioning whether to overwrite, append, or cancel
 logging appeared.  After answering both dialog boxes, the PuTTY terminal
 no longer displays incoming data.
+
+The double dialog box was fixed in 2006-01-26, but the session hang
+remains. (It's particularly evident with Telnet sessions.)
