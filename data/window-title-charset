@@ -1,9 +1,20 @@
 Summary: Window titles not interpreted according to current charset
-Class: semi-bug
+Class: bug
 Priority: medium
 Difficulty: fun
+Content-type: text/x-html-body
 
-If an escape sequence (e.g. OSC 0) sets the window title bar, the text
+<p>
+If an escape sequence (e.g. <tt>OSC 0</tt>) sets the window title bar, the text
 in the escape sequence is just sent to the window system for display.
 We should make sure it is interpreted according to whatever character
 set / codepage the terminal emulator is currently using.
+
+<p>
+For instance, when charset is set to UTF-8 from PuTTY and locales on the
+remote computer are en_US.UTF-8, unicode characters are shown as they vere
+latin chars.
+
+<p>
+Also reported to Ubuntu as <a href="https://launchpad.net/distros/ubuntu/+source/putty/+bug/48781">bug 48781</a>, where it's suggested that
+<a href="port-unix-gtk2.html">using GTK2</a> will help.
