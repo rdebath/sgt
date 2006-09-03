@@ -1,6 +1,6 @@
 Summary: Logging dialog box duplicated, and can cause session to hang
-Absent-in: 0.57 2005-02-18
-Present-in: 2005-02-21 0.58 2006-02-01 2006-09-02
+Absent-in: 0.57 2005-02-18 r5338
+Present-in: r5371 2005-02-21 0.58 2006-02-01 2006-09-02
 Class: bug
 Content-type: text/plain
 Priority: medium
