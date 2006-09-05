@@ -2,6 +2,7 @@ Summary: Server-controlled clearing of the scrollback
 Class: wish
 Difficulty: fun
 Priority: low
+Fixed-in: r6847 2006-09-06
 Content-type: text/x-html-body
 
 <p>
@@ -24,11 +25,10 @@ scrollback in xterm - it doesn't have any other effect.
 <a href="http://dickey.his.com/xterm/xterm.log.html#xterm_107">patch 107</a>;
 it is documented in <code>ctlseqs.ms</code> as "Erase Saved Lines
 (xterm)".)
+<li><em>Update, 2006-09-06:</em> this sequence is implemented in
+PuTTY as of today's snapshot.
 </ul>
 
 <p>
 It's been suggested that screen clears could do this. If so, it would
 have to be configurable, and disabled by default.
-
-<p>
-Patch (unreviewed): <code>3F82D4D8.3080404@pi3.informatik.uni-mannheim.de</code>
