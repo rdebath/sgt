@@ -5,22 +5,22 @@ subdir="$2"
 
 rm -rf test.full
 svnadmin create test.full && svnadmin load test.full < "$infile"
-if test "$?" -gt 0; then echo "*** test failed\n" >&2; exit 1; fi
+if test "$?" -gt 0; then echo "*** test failed" >&2; exit 1; fi
 
 ./svndumpfilter2 test.full "$subdir" < "$infile" > test.outdump
-if test "$?" -gt 0; then echo "*** test failed\n" >&2; exit 1; fi
+if test "$?" -gt 0; then echo "*** test failed" >&2; exit 1; fi
 
 rm -rf test.filtered
-svnadmin create test.filtered && svnadmin load test.filtered < "$infile"
-if test "$?" -gt 0; then echo "*** test failed\n" >&2; exit 1; fi
+svnadmin create test.filtered && svnadmin load test.filtered < test.outdump
+if test "$?" -gt 0; then echo "*** test failed" >&2; exit 1; fi
 
-svnadmin dump --deltas test.full | ./svndumpfilter2 test.full "$subdir" \
-  > test.outdump.deltas
-if test "$?" -gt 0; then echo "*** test failed\n" >&2; exit 1; fi
+svnadmin dump --deltas test.full > test.origdump.deltas
+./svndumpfilter2 test.full "$subdir" < test.origdump.deltas > test.outdump.deltas
+if test "$?" -gt 0; then echo "*** test failed" >&2; exit 1; fi
 
 rm -rf test.filtered.deltas
-svnadmin create test.filtered.deltas && svnadmin load test.filtered.deltas < "$infile"
-if test "$?" -gt 0; then echo "*** test failed\n" >&2; exit 1; fi
+svnadmin create test.filtered.deltas && svnadmin load test.filtered.deltas < test.outdump.deltas
+if test "$?" -gt 0; then echo "*** test failed" >&2; exit 1; fi
 
 dumptree() {
   prev=""
@@ -43,8 +43,8 @@ while test "$rev" -le "$youngest"; do
   dumptree test.filtered "$subdir" > test.dump2
   dumptree test.filtered.deltas "$subdir" > test.dump3
   diff test.dump1 test.dump2
-  if test "$?" -gt 0; then echo "*** test failed\n" >&2; exit 1; fi
+  if test "$?" -gt 0; then echo "*** test failed" >&2; exit 1; fi
   diff test.dump1 test.dump3
-  if test "$?" -gt 0; then echo "*** test failed\n" >&2; exit 1; fi
+  if test "$?" -gt 0; then echo "*** test failed" >&2; exit 1; fi
   rev=$[1+$rev]
 done

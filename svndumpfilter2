@@ -39,86 +39,6 @@ class InterestingPaths:
 		return 1
 	return 0
 
-# Now here's a class that tracks a directory tree, storing a
-# user-provided value at each node.
-#
-# We expect to be reading a valid SVN dump file output by SVN
-# itself, so I currently feel no particular obligation to do
-# user-friendly error reporting. Assertion failures or Python
-# exceptions are perfectly adequate, since errors should only show
-# up during development of this script.
-def copy(tree):
-    if type(tree) != types.DictType:
-	return tree
-    ret = {}
-    for key, val in tree.items():
-	if len(val) == 2:
-	    ret[key] = (val[0], copy(val[1]))
-	else:
-	    ret[key] = val
-    return ret
-
-class DirTree:
-    # Each directory within the tree is represented by a
-    # dictionary, with filenames as keys. Entries representing
-    # subdirectories have a tuple containing (userdata,
-    # next-level-dict) as their value; entries representing files
-    # just have a 1-tuple containing (userdata,).
-    def __init__(self, clone=None):
-	"Initialise an empty dir tree, or clone from `clone' if present."
-	if clone == None:
-	    self.topdir = {}
-	else:
-	    self.topdir = copy(clone.topdir)
-
-    def _searchto(self, path):
-	ps = splitpath(path)
-	d = self.topdir
-	for s in ps[:-1]:
-	    d = d[s][1]
-	s = ps[-1]
-	return d, s
-
-    def mkdir(self, path, data=None):
-	d, s = self._searchto(path)
-	assert not d.has_key(s)
-	d[s] = (data, {})
-
-    def mkfile(self, path, data=None):
-	d, s = self._searchto(path)
-	assert not d.has_key(s)
-	d[s] = (data,)
-
-    def find(self, path):
-	d, s = self._searchto(path)
-	assert d.has_key(s)
-	return d[s][0]
-
-    def change(self, path, data=None):
-	d, s = self._searchto(path)
-	assert d.has_key(s)
-	d[s] = (data,) + d[s][1:]
-
-    def filetype(self, path):
-	d, s = self._searchto(path)
-	assert d.has_key(s)
-	if len(d[s]) > 1:
-	    return "d"
-	else:
-	    return "f"
-
-    def delete(self, path):
-	d, s = self._searchto(path)
-	assert d.has_key(s)
-	del d[s]
-
-    def filenames(self, path):
-	d, s = self._searchto(path + "/flibble")
-	return d.keys()
-
-    def copy(self):
-	return DirTree(self)
-
 # A class and some functions to handle a single lump of
 # RFC822-ish-headers-plus-data read from an SVN dump file.
 
@@ -192,14 +112,16 @@ class Lump:
 	    self.sethdr("Prop-content-length", str(len(self.prop)))
 	else:
 	    self.delhdr("Prop-content-length")
-	if len(self.text) > 0:
-	    self.sethdr("Text-content-length", str(len(self.text)))
-	    m = md5.new()
-	    m.update(self.text)
-	    self.sethdr("Text-content-md5", m.hexdigest())
-	else:
-	    self.delhdr("Text-content-length")
-	    self.delhdr("Text-content-md5")
+	# Only fiddle with the md5 if we're not doing a delta.
+	if self.hdrdict.get("Text-delta", "false") != "true":
+	    if len(self.text) > 0:
+		self.sethdr("Text-content-length", str(len(self.text)))
+		m = md5.new()
+		m.update(self.text)
+		self.sethdr("Text-content-md5", m.hexdigest())
+	    else:
+		self.delhdr("Text-content-length")
+		self.delhdr("Text-content-md5")
 	if len(self.prop) > 0 or len(self.text) > 0:
 	    self.sethdr("Content-length", str(len(self.prop)+len(self.text)))
 	else:
@@ -258,110 +180,77 @@ def write_lump(f, lump):
 
 class Filter:
     def __init__(self, paths):
-	self.dirtree = DirTree()
 	self.revisions = {}
 	self.paths = paths
-
-    def docopy(self, stree, srev, spath, dtree, dpath, contents=None):
-	# If the destination directory is uninteresting, we don't
-	# need to write anything to `contents' ever.
-	if contents != None and not self.paths.interesting(dpath):
-	    #sys.stderr.write("%s->%s: copy to uninteresting location\n" % (spath, dpath));
-	    contents = None
-
-	# Simple case: a copy from an interesting directory is done
-	# in the normal way, and then we stop writing to `contents'
-	# because there's no need to log the subsidiary copies
-	# explicitly.
-	if contents != None and self.paths.interesting(spath):
-	    #sys.stderr.write("%s->%s: copy between interesting locations\n" % (spath, dpath));
-	    lump = Lump()
-	    lump.sethdr("Node-path", dpath)
-	    lump.sethdr("Node-action", "add")
-	    lump.sethdr("Node-copyfrom-rev", str(srev))
-	    lump.sethdr("Node-copyfrom-path", spath)
-	    contents.append(lump)
-	    contents = None
-
-	typ = stree.filetype(spath)
-	if typ == "f":
-	    dtree.mkfile(dpath)
-	    # Difficult case: we must copy this file explicitly.
-	    if contents != None:
-		#sys.stderr.write("%s->%s: file copy needing full data\n" % (spath, dpath));
-		lump = Lump()
-		lump.sethdr("Node-path", dpath)
-		lump.sethdr("Node-kind", "file")
-		lump.sethdr("Node-action", "add")
-		lump.props = stree.find(spath)
-		f = os.popen("svnlook cat -r" + str(srev) + \
-		" " + repos + " " + spath, "r")
-		lump.text = f.read()
-		f.close()
-		contents.append(lump)
-	else:
-	    dtree.mkdir(dpath)
-	    # Difficult case: we must create this directory explicitly.
-	    if contents != None:
-		#sys.stderr.write("%s->%s: dir copy needing explicit mkdir\n" % (spath, dpath));
-		lump = Lump()
-		lump.sethdr("Node-path", dpath)
-		lump.sethdr("Node-kind", "dir")
-		lump.sethdr("Node-action", "add")
-		lump.props = stree.find(spath)
-		contents.append(lump)
-	    files = stree.filenames(spath)
-	    for file in files:
-		self.docopy(stree, srev, catpath(spath, file), \
-		dtree, catpath(dpath, file), contents)
 
     def tweak(self, revhdr, contents):
 	contents2 = []
 	for lump in contents:
 	    action = lump.hdrdict["Node-action"]
 	    path = lump.hdrdict["Node-path"]
-	    #sys.stderr.write("%s %s\n" % (action, path))
+
+	    if not self.paths.interesting(path):
+		continue # boooring
+
+	    need = 1 # we need to do something about this lump
+
 	    if action == "add":
 		if lump.hdrdict.has_key("Node-copyfrom-path"):
 		    srcrev = string.atoi(lump.hdrdict["Node-copyfrom-rev"])
 		    srcpath = lump.hdrdict["Node-copyfrom-path"]
-		    # Must find the source dir subtree, _as it
-		    # existed in the given revision_, and copy it
-		    # in full.
-		    srctree = self.revisions[srcrev]
-		    self.docopy(srctree, srcrev, srcpath, \
-		    self.dirtree, path, contents2)
-		    if len(lump.text) > 0 and self.paths.interesting(path):
-			# This was a copyfrom _plus_ some sort of
-			# delta or new contents, which means that
-			# having done the copy we now also need a
-			# change record providing the new contents.
-			lump.sethdr("Node-action", "change")
-			lump.delhdr("Node-copyfrom-rev")
-			lump.delhdr("Node-copyfrom-path")
-			contents2.append(lump)
-		elif lump.hdrdict["Node-kind"] == "dir":
-		    self.dirtree.mkdir(path, lump.props)
-		    if self.paths.interesting(path):
-			contents2.append(lump)
-		else:
-		    self.dirtree.mkfile(path, lump.props)
-		    if self.paths.interesting(path):
-			contents2.append(lump)
-	    elif action == "change":
-		self.dirtree.change(path, lump.props)
-		if self.paths.interesting(path):
-		    contents2.append(lump)
-	    elif action == "delete":
-		self.dirtree.delete(path)
-		if self.paths.interesting(path):
-		    contents2.append(lump)
-
-	# Must now clone the entire dir tree and store it in a
-	# revisions array, in case a future copy needs to access
-	# this version of the tree.
-	revnum = string.atoi(revhdr.hdrdict["Revision-number"])
-	self.revisions[revnum] = self.dirtree.copy()
+		    if not self.paths.interesting(srcpath):
+			# Copy from a boring path to an interesting
+			# one, meaning we must use svnlook to
+			# extract the subtree and convert it into
+			# lumps.
+			treecmd = "svnlook tree -r%d %s %s" % \
+			(srcrev, repos, srcpath)
+			tree = os.popen(treecmd, "r")
+			pathcomponents = []
+			while 1:
+			    treeline = tree.readline()
+			    if treeline == "": break
+			    if treeline[-1:] == "\n": treeline = treeline[:-1]
+			    subdir = 0
+			    while treeline[-1:] == "/":
+				subdir = 1
+				treeline = treeline[:-1]
+			    depth = 0
+			    while treeline[:1] == " ":
+				depth = depth + 1
+				treeline = treeline[1:]
+			    pathcomponents[depth:] = [treeline]
+			    thissrcpath = string.join([srcpath] + pathcomponents[1:], "/")
+			    thisdstpath = string.join([path] + pathcomponents[1:], "/")
+			    newlump = Lump()
+			    newlump.sethdr("Node-path", thisdstpath)
+			    newlump.sethdr("Node-action", "add")
+			    props = os.popen("svnlook pl -r%d %s %s" % \
+			    (srcrev, repos, thissrcpath), "r")
+			    while 1:
+				propname = props.readline()
+				if propname == "": break
+				if propname[-1:] == "\n": propname = propname[:-1]
+				while propname[:1] == " ": propname = propname[1:]
+				propf = os.popen("svnlook pg -r%d %s %s %s" % \
+				(srcrev, repos, propname, thissrcpath), "r")
+				proptext = propf.read()
+				propf.close()
+				newlump.setprop(propname, proptext)
+			    props.close()
+			    if subdir:
+				newlump.sethdr("Node-kind", "dir")
+			    else:
+				newlump.sethdr("Node-kind", "file")
+				f = os.popen("svnlook cat -r%d %s %s" % \
+				(srcrev, repos, thissrcpath), "r")
+				newlump.text = f.read()
+				f.close()
+			    contents2.append(newlump)
+			tree.close()
+			need = 0 # we have now done something
+	    if need:
+		contents2.append(lump)
 
 	# Change the contents array.
 	contents[:] = contents2
