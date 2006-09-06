@@ -291,6 +291,7 @@ int header_val(const char *header_name);
 int encoding_val(const char *encoding_name);
 int disposition_val(const char *disposition_name);
 int write_wrapped(int fd, char *data, int length);
+char *read_from_stdin(int *len);
 void init_mime_details(struct mime_details *md);
 void free_mime_details(struct mime_details *md);
 char *dupstr(const char *s);
@@ -308,6 +309,8 @@ void export_as_mbox(char *ego);
  * display.c
  */
 enum { DISPLAY_BARE, DISPLAY_ANSI };
+void display_msgtext(char *message, int msglen,
+		     int charset, int type, int full);
 void display_message(char *ego, int charset, int type, int full);
 
 /*

@@ -359,31 +359,10 @@ void send_message (int charset, char *message, int msglen)
 
 void send_from_stdin(int charset)
 {
-    char *message = NULL;
-    int msglen = 0, msgsize = 0;
+    char *message;
+    int msglen;
 
-    while (1) {
-	int ret, i, j;
-
-	if (msgsize - msglen < 1024) {
-	    msgsize = msglen + 1024;
-	    message = sresize(message, msgsize, char);
-	}
-
-	ret = read(0, message + msglen, msgsize - msglen);
-	if (ret < 0) {
-	    perror("read");
-	    return;
-	}
-	if (ret == 0)
-	    break;
-
-	for (i = j = 0; i < ret; i++) {
-	    if (message[msglen + i] != '\r')
-		message[msglen + j++] = message[msglen + i];
-	}
-	msglen += j;
-    }
+    message = read_from_stdin(&msglen);
 
     send_message (charset, message, msglen);
 }

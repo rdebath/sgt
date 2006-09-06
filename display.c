@@ -267,14 +267,264 @@ static void display_output_fn(void *vctx, const char *text, int len,
 	printf("\033[39;0m");
 }
 
+struct display_parse_ctx {
+    int nmd, mdsize;
+    struct mime_details *md;
+};
+
+void display_info_fn(void *vctx, struct message_parse_info *info)
+{
+    struct display_parse_ctx *ctx = (struct display_parse_ctx *)vctx;
+    struct mime_details *md;
+
+    if (info->type == PARSE_MIME_PART) {
+	if (ctx->nmd >= ctx->mdsize) {
+	    ctx->mdsize += 16;
+	    ctx->md = sresize(ctx->md, ctx->mdsize, struct mime_details);
+	}
+
+	md = &ctx->md[ctx->nmd++];
+
+	/*
+	 * Start by copying the whole structure.
+	 */
+	*md = info->u.md;
+
+	/*
+	 * Now dupstr the various string fields.
+	 */
+	md->major = dupstr(md->major);
+	md->minor = dupstr(md->minor);
+	if (md->filename)
+	    md->filename = dupstr(md->filename);
+	if (md->description)
+	    md->description = dupstr(md->description);
+    }
+}
+
+void display_internal(char *message, int msglen,
+		      struct mime_details *md, int nmd,
+		      int charset, int type, int full)
+{
+    int mindisp;
+    struct display_output_ctx ctx;
+    struct display_parse_ctx pctx;
+    int i, *parents = NULL;
+    int done_blank_line;
+
+    /*
+     * Parse the message and display the headers. In this parse
+     * pass we also extract information about the MIME parts if we
+     * don't already have it.
+     */
+    ctx.output_charset = charset;
+    ctx.display_type = type;
+    ctx.boring = FALSE;
+    ctx.full = full;
+    pctx.nmd = pctx.mdsize = 0;
+    pctx.md = NULL;
+    parse_message(message, msglen, display_output_fn, &ctx,
+		  md ? null_info_fn : display_info_fn, &pctx, CS_NONE);
+    printf("\n");		       /* separating blank line */
+    done_blank_line = TRUE;
+
+    if (!md) {
+	md = pctx.md;
+	nmd = pctx.nmd;
+    }
+
+    /*
+     * Find the parent MIME parts. Also determine whether the
+     * outermost part is multipart/mixed, in which case we
+     * don't display an ID line for it ever.
+     */
+    parents = mime_part_parents(md, nmd);
+    if (!full && nmd > 0 &&
+	!istrcmp(md[0].major, "multipart") &&
+	!istrcmp(md[0].minor, "mixed"))
+	mindisp = 1;
+    else
+	mindisp = 0;
+
+    /*
+     * Fix up the Content-Dispositions.
+     */
+    fix_content_dispositions(md, nmd);
+
+#if 0
+    {
+	int j;
+	for (j = 0; j < nmd; j++)
+	    printf("MIME part: %s/%s (%s, cs=%s) at (%d,%d)\n"
+		   "  (%s, fn=\"%s\", desc=\"%s\")\n",
+		   md[j].major, md[j].minor,
+		   encoding_name(md[j].transfer_encoding),
+		   charset_to_localenc(md[j].charset),
+		   md[j].offset, md[j].length,
+		   disposition_name(md[j].disposition),
+		   md[j].filename, md[j].description);
+    }
+#endif
+
+    /*
+     * For each MIME part, display the text (decoded and
+     * translated) and/or a heading line giving details of it.
+     */
+    for (i = mindisp; i < nmd; i++) {
+	/*
+	 * Heading line is of the format
+	 *
+	 *   --[1] filename: description [text/plain, ISO-8859-1]
+	 *
+	 * The separating colon-space between filename and
+	 * description only applies when both are present.
+	 *
+	 * There are 2 hyphens per indentation level, which
+	 * indicates the nesting depth of the part.
+	 */
+	if (full || md[i].disposition == ATTACHMENT) {
+	    const char *charsetstr;
+	    int buflen, k;
+	    char *buf, *p, *sep;
+
+	    charsetstr = charset_to_localenc(md[i].charset);
+	    if (!charsetstr)
+		charsetstr = "unknown charset";
+
+	    buflen = 40+2*nmd;     /* the index and all the punctuation */
+	    if (md[i].filename)
+		buflen += strlen(md[i].filename);
+	    if (md[i].description)
+		buflen += strlen(md[i].description);
+	    buflen += strlen(md[i].major);
+	    buflen += strlen(md[i].minor);
+	    buflen += strlen(charsetstr);
+
+	    buf = snewn(buflen, char);
+	    p = buf;
+	    k = i;
+	    while (parents[k] >= mindisp) {
+		k = parents[k];
+		p += sprintf(p, "--");
+	    }
+	    p += sprintf(p, "[%d]", i);
+	    sep = " ";
+	    if (md[i].filename) {
+		p += sprintf(p, "%s%s", sep, md[i].filename);
+		sep = ": ";
+	    }
+	    if (md[i].description)
+		p += sprintf(p, "%s%s", sep, md[i].description);
+	    p += sprintf(p, " [%s/%s", md[i].major, md[i].minor);
+	    /*
+	     * We only bother with the charset for text parts.
+	     */
+	    if (!strcmp(md[i].major, "text"))
+		p += sprintf(p, ", %s", charsetstr);
+	    p += sprintf(p, "]\n");
+
+	    assert(p - buf < buflen);
+
+	    /*
+	     * This ID line has been constructed from data in
+	     * the database, which means it is currently
+	     * expressed in UTF-8.
+	     */
+	    display_output_fn(&ctx, buf, p - buf,
+			      TYPE_ATTACHMENT_ID_LINE, CS_UTF8);
+	    done_blank_line = FALSE;
+	    sfree(buf);
+	}
+
+	if (md[i].disposition == INLINE) {
+	    char *dbuffer = NULL, *decoded;
+	    int declen;
+
+	    switch (md[i].transfer_encoding) {
+	      case NO_ENCODING:
+		decoded = message + md[i].offset;
+		declen = md[i].length;
+		break;
+	      case QP:
+		dbuffer = snewn(md[i].length, char);
+		declen = qp_decode(message + md[i].offset, md[i].length,
+				   dbuffer, FALSE);
+		decoded = dbuffer;
+		break;
+	      case BASE64:
+		dbuffer = snewn(base64_decode_length(md[i].length), char);
+		declen = base64_decode(message + md[i].offset,
+				       md[i].length, dbuffer);
+		decoded = dbuffer;
+		break;
+	    }
+
+	    if (!done_blank_line)
+		printf("\n");
+	    display_output_fn(&ctx, decoded, declen,
+			      TYPE_BODY_TEXT, md[i].charset);
+	    printf("\n");
+	    done_blank_line = TRUE;
+	}
+
+	/*
+	 * Go up the nesting tree to the ancestors of this
+	 * part, and see which are terminating (i.e. the _next_
+	 * part is not a subpart of them). Output end lines for
+	 * those.
+	 */
+	{
+	    int k, l;
+	    k = i;
+	    while (parents[k] >= mindisp) {
+		k = parents[k];
+		if (i+1 >= nmd ||
+		    !mime_parts_overlap(&md[i+1], &md[k])) {
+		    /*
+		     * Part k has ended.
+		     */
+		    int buflen = 40+2*nmd;
+		    char *buf = snewn(buflen, char);
+		    char *p = buf;
+
+		    l = k;
+		    while (parents[l] >= mindisp) {
+			l = parents[l];
+			p += sprintf(p, "--");
+		    }
+
+		    p += sprintf(p, "[%d] ends\n", k);
+		    display_output_fn(&ctx, buf, p - buf,
+				      TYPE_ATTACHMENT_ID_LINE, CS_UTF8);
+		    done_blank_line = FALSE;
+		    sfree(buf);
+		} else
+		    break;
+	    }
+
+	}
+    }
+
+    if (pctx.md) {
+	for (i = 0; i < pctx.nmd; i++)
+	    free_mime_details(&pctx.md[i]);
+	sfree(pctx.md);
+    }
+    sfree(parents);
+    sfree(message);
+}
+
+void display_msgtext(char *message, int msglen,
+		     int charset, int type, int full)
+{
+    display_internal(message, msglen, NULL, 0, charset, type, full);
+}
+
 void display_message(char *ego, int charset, int type, int full)
 {
     char *location, *message, *separator;
-    int msglen, mindisp;
-    struct display_output_ctx ctx;
-    struct mime_details *md = NULL;
-    int nmd, i, *parents = NULL;
-    int done_blank_line;
+    struct mime_details *md;
+    int msglen, nmd, i;
 
     location = message_location(ego);
     if (!location)
@@ -286,207 +536,20 @@ void display_message(char *ego, int charset, int type, int full)
 	sfree(location);
 
 	/*
-	 * Display the headers.
-	 */
-	ctx.output_charset = charset;
-	ctx.display_type = type;
-	ctx.boring = FALSE;
-	ctx.full = full;
-	parse_message(message, msglen, display_output_fn, &ctx,
-		      null_info_fn, NULL, CS_NONE);
-	printf("\n");		       /* separating blank line */
-	done_blank_line = TRUE;
-
-	/*
 	 * Retrieve the locations of the MIME parts from the
 	 * database.
 	 */
 	md = find_mime_parts(ego, &nmd);
 	if (!md) {
 	    error(err_internal, "no-mime-parts");
-	    goto cleanup;
-	}
+	} else {
+	    display_internal(message, msglen, md, nmd, charset, type, full);
 
-	/*
-	 * Find the parent MIME parts. Also determine whether the
-	 * outermost part is multipart/mixed, in which case we
-	 * don't display an ID line for it ever.
-	 */
-	parents = mime_part_parents(md, nmd);
-	if (!full && nmd > 0 &&
-	    !istrcmp(md[0].major, "multipart") &&
-	    !istrcmp(md[0].minor, "mixed"))
-	    mindisp = 1;
-	else
-	    mindisp = 0;
-
-	/*
-	 * Fix up the Content-Dispositions.
-	 */
-	fix_content_dispositions(md, nmd);
-
-#if 0
-	{
-	    int j;
-	    for (j = 0; j < nmd; j++)
-		printf("MIME part: %s/%s (%s, cs=%s) at (%d,%d)\n"
-		       "  (%s, fn=\"%s\", desc=\"%s\")\n",
-		       md[j].major, md[j].minor,
-		       encoding_name(md[j].transfer_encoding),
-		       charset_to_localenc(md[j].charset),
-		       md[j].offset, md[j].length,
-		       disposition_name(md[j].disposition),
-		       md[j].filename, md[j].description);
-	}
-#endif
-
-	/*
-	 * For each MIME part, display the text (decoded and
-	 * translated) and/or a heading line giving details of it.
-	 */
-	for (i = mindisp; i < nmd; i++) {
-	    /*
-	     * Heading line is of the format
-	     * 
-	     *   --[1] filename: description [text/plain, ISO-8859-1]
-	     * 
-	     * The separating colon-space between filename and
-	     * description only applies when both are present.
-	     * 
-	     * There are 2 hyphens per indentation level, which
-	     * indicates the nesting depth of the part.
-	     */
-	    if (full || md[i].disposition == ATTACHMENT) {
-		const char *charsetstr;
-		int buflen, k;
-		char *buf, *p, *sep;
-
-		charsetstr = charset_to_localenc(md[i].charset);
-		if (!charsetstr)
-		    charsetstr = "unknown charset";
-
-		buflen = 40+2*nmd;     /* the index and all the punctuation */
-		if (md[i].filename)
-		    buflen += strlen(md[i].filename);
-		if (md[i].description)
-		    buflen += strlen(md[i].description);
-		buflen += strlen(md[i].major);
-		buflen += strlen(md[i].minor);
-		buflen += strlen(charsetstr);
-
-		buf = snewn(buflen, char);
-		p = buf;
-		k = i;
-		while (parents[k] >= mindisp) {
-		    k = parents[k];
-		    p += sprintf(p, "--");
-		}
-		p += sprintf(p, "[%d]", i);
-		sep = " ";
-		if (md[i].filename) {
-		    p += sprintf(p, "%s%s", sep, md[i].filename);
-		    sep = ": ";
-		}
-		if (md[i].description)
-		    p += sprintf(p, "%s%s", sep, md[i].description);
-		p += sprintf(p, " [%s/%s", md[i].major, md[i].minor);
-		/*
-		 * We only bother with the charset for text parts.
-		 */
-		if (!strcmp(md[i].major, "text"))
-		    p += sprintf(p, ", %s", charsetstr);
-		p += sprintf(p, "]\n");
-
-		assert(p - buf < buflen);
-
-		/*
-		 * This ID line has been constructed from data in
-		 * the database, which means it is currently
-		 * expressed in UTF-8.
-		 */
-		display_output_fn(&ctx, buf, p - buf,
-				  TYPE_ATTACHMENT_ID_LINE, CS_UTF8);
-		done_blank_line = FALSE;
-		sfree(buf);
-	    }
-
-	    if (md[i].disposition == INLINE) {
-		char *dbuffer = NULL, *decoded;
-		int declen;
-
-		switch (md[i].transfer_encoding) {
-		  case NO_ENCODING:
-		    decoded = message + md[i].offset;
-		    declen = md[i].length;
-		    break;
-		  case QP:
-		    dbuffer = snewn(md[i].length, char);
-		    declen = qp_decode(message + md[i].offset, md[i].length,
-				       dbuffer, FALSE);
-		    decoded = dbuffer;
-		    break;
-		  case BASE64:
-		    dbuffer = snewn(base64_decode_length(md[i].length), char);
-		    declen = base64_decode(message + md[i].offset,
-					   md[i].length, dbuffer);
-		    decoded = dbuffer;
-		    break;
-		}
-
-		if (!done_blank_line)
-		    printf("\n");
-		display_output_fn(&ctx, decoded, declen,
-				  TYPE_BODY_TEXT, md[i].charset);
-		printf("\n");
-		done_blank_line = TRUE;
-	    }
-
-	    /*
-	     * Go up the nesting tree to the ancestors of this
-	     * part, and see which are terminating (i.e. the _next_
-	     * part is not a subpart of them). Output end lines for
-	     * those.
-	     */
-	    {
-		int k, l;
-		k = i;
-		while (parents[k] >= mindisp) {
-		    k = parents[k];
-		    if (i+1 >= nmd ||
-			!mime_parts_overlap(&md[i+1], &md[k])) {
-			/*
-			 * Part k has ended.
-			 */
-			int buflen = 40+2*nmd;
-			char *buf = snewn(buflen, char);
-			char *p = buf;
-
-			l = k;
-			while (parents[l] >= mindisp) {
-			    l = parents[l];
-			    p += sprintf(p, "--");
-			}
-
-			p += sprintf(p, "[%d] ends\n", k);
-			display_output_fn(&ctx, buf, p - buf,
-					  TYPE_ATTACHMENT_ID_LINE, CS_UTF8);
-			done_blank_line = FALSE;
-			sfree(buf);
-		    } else
-			break;
-		}
-
-	    }
-	}
-
-	cleanup:
-	if (md) {
 	    for (i = 0; i < nmd; i++)
 		free_mime_details(&md[i]);
 	    sfree(md);
 	}
-	sfree(parents);
-	sfree(message);
+
 	sfree(separator);
     }
 }
