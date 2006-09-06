@@ -5,6 +5,8 @@
 #include <unistd.h>
 #include <string.h>
 #include <ctype.h>
+#include <errno.h>
+#include <stdio.h>
 
 #include "timber.h"
 #include "charset.h"
@@ -117,6 +119,43 @@ int write_wrapped(int fd, char *data, int length)
     }
 
     return TRUE;
+}
+
+/*
+ * Function that comes in handy in a couple of places: read all of
+ * stdin into an internal string.
+ */
+char *read_from_stdin(int *len)
+{
+    char *message = NULL;
+    int msglen = 0, msgsize = 0;
+
+    while (1) {
+	int ret, i, j;
+
+	if (msgsize - msglen < 1024) {
+	    msgsize = msglen + 1024;
+	    message = sresize(message, msgsize, char);
+	}
+
+	ret = read(0, message + msglen, msgsize - msglen);
+	if (ret < 0) {
+	    perror("read");
+	    *len = 0;
+	    return NULL;
+	}
+	if (ret == 0)
+	    break;
+
+	for (i = j = 0; i < ret; i++) {
+	    if (message[msglen + i] != '\r')
+		message[msglen + j++] = message[msglen + i];
+	}
+	msglen += j;
+    }
+
+    *len = msglen;
+    return message;
 }
 
 void init_mime_details(struct mime_details *md)

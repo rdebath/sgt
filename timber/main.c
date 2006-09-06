@@ -59,6 +59,25 @@ void run_command(int argc, char **argv)
 			    !strcmp(argv[0], "display-full"));
     }
 
+    if (!strcmp(argv[0], "display-filter") ||
+	!strcmp(argv[0], "display-filter-full")) {
+	int i;
+	int charset = CS_ASCII;
+	char *message;
+	int msglen;
+
+	i = 1;
+	if (i < argc)
+	    charset = charset_from_localenc(argv[i++]);
+
+	message = read_from_stdin(&msglen);
+
+	display_msgtext(message, msglen, charset, DISPLAY_ANSI,
+			!strcmp(argv[0], "display-filter-full"));
+
+	sfree(message);
+    }
+
     if (!strcmp(argv[0], "send")) {
 	int charset = CS_ASCII;
 	if (argc > 1)
