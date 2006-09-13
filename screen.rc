@@ -10,3 +10,4 @@ defescape ^\^\
 startup_message off
 shell -/bin/bash
 vbell off
+nethack off
