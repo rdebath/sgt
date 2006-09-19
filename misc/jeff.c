@@ -175,6 +175,8 @@ void do_file(FILE *fp, int unjeff, int (*start_line)(char *line))
 		    *q = '\r';
 	    fputs(p, stdout);
 	    firstline = FALSE;
+
+	    free(p);
 	}
     }
 }
