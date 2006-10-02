@@ -40,7 +40,11 @@ esac
 
 # Check if a machine is supplied
 case "$MACH" in
-  '' ) ;;
+  '' ) if test -f $HOME/.monomach; then
+         MACH=`cat $HOME/.monomach`
+	 MACHINE=`echo $MACH | sed -e 's/\.mono\.org$//; s/\([a-z]\)$/\1.mono.org/'`
+	 echo "Machine $MACHINE read from ~/.monomach."
+       fi;;
   *) MACHINE=`echo $MACH | sed -e 's/\.mono\.org$//; s/\([a-z]\)$/\1.mono.org/'`
      echo "Machine $MACHINE supplied on command line." ;;
 esac
