@@ -12,7 +12,11 @@ if [ "z$1" = "zTrying" ]; then
   done
 fi
 
-MACHINE=nologin
+if test -f $HOME/.monomach; then
+  MACHINE=`sed -e 's/\.mono\.org$//; s/\([a-z]\)$/\1.mono.org/' $HOME/.monomach`
+else
+  MACHINE=nologin
+fi
 if [ "z$1" = "zHOSTS" -a -n "$2" ]; then
   case "$2" in
     *[ABCDEFGHIJKLMNOPQRSTUVWXYZ]*) ;;
