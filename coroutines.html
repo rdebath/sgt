@@ -235,7 +235,7 @@ So if we use a state variable, we could do this:
     for (i = 0; i &lt 10; i++) {
         state = 1; /* so we will come back to LABEL1 */
         return i;
-        LABEL1: /* resume control straight after the return */
+        LABEL1:; /* resume control straight after the return */
     }
 }</code></pre>
 
@@ -294,7 +294,7 @@ Instead of using a <code>switch</code> statement to decide which
         for (i = 0; i &lt 10; i++) {
             state = 1; /* so we will come back to "case 1" */
             return i;
-            case 1: /* resume control straight after the return */
+            case 1:; /* resume control straight after the return */
         }
     }
 }</code></pre>
