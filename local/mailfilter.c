@@ -641,11 +641,12 @@ static void scanner_feed_text(scanner *s, stream *st, void *vctx,
 }
 
 static const char *specific_msg;
-#define wcsprefix(w1, w2) (!wcsncmp((w1), (w2), wcslen((w2))))
 
 static void scanner_cleanup_text(scanner *s, stream *st, void *vctx)
 {
     text *ctx = (text *)vctx;
+    const wchar_t *str;
+    int linelen;
     int i;
 
     if (ctx->charset == CS_NONE)
@@ -678,8 +679,10 @@ static void scanner_cleanup_text(scanner *s, stream *st, void *vctx)
      */
     assert(ctx->firstbitlen < lenof(ctx->firstbit));
     ctx->firstbit[ctx->firstbitlen] = L'\0';
-    if (wcsprefix(ctx->firstbit, L"Troubles with wife?\nMake a miracles"
-		  " in bed!\n"))
+    str = L"Make a miracles in bed!\n";
+    linelen = wcscspn(ctx->firstbit, L"\n");
+    if (!wcsncmp(ctx->firstbit, str, wcslen(str)) ||
+	!wcsncmp(ctx->firstbit + linelen + 1, str, wcslen(str)))
 	specific_msg = "This appears to be a prolific pharmacy spam.";
 }
 
