@@ -12,6 +12,7 @@
 #include <string.h>
 #include <strings.h>
 #include <stdlib.h>
+#include <wchar.h>
 #include <limits.h>
 #include <time.h>
 #include <assert.h>
@@ -351,6 +352,8 @@ typedef struct text {
     int qp, qpstate;
     charset_state state;
     int freq[ALPH_COUNT];
+    wchar_t firstbit[257];
+    int firstbitlen;
 } text;
 
 static int scanned_textpart_already = 0;
@@ -367,6 +370,7 @@ static void scanner_init_text(scanner *s, stream *st, void *vctx)
     ctx->qp = ctx->html = 0;
     ctx->qpstate = ctx->htmlstate = 0;
     ctx->state = charset_init_state;
+    ctx->firstbitlen = 0;
     for (i = 0; i < ALPH_COUNT; i++)
 	ctx->freq[i] = 0;
 
@@ -430,6 +434,22 @@ static void scanner_init_text(scanner *s, stream *st, void *vctx)
 #endif
 }
 
+static void scanner_feed_text_unicode(scanner *s, stream *st, text *ctx,
+				      const wchar_t *data, int len)
+{
+    int uselen;
+
+    uselen = lenof(ctx->firstbit)-1 - ctx->firstbitlen;
+
+    if (uselen > 0) {
+	if (uselen > len)
+	    uselen = len;
+	memcpy(ctx->firstbit + ctx->firstbitlen, data,
+	       uselen * sizeof(wchar_t));
+	ctx->firstbitlen += uselen;
+    }
+}
+
 static void scanner_feed_text_posthtml(scanner *s, stream *st, text *ctx,
 				       const char *data, int len)
 {
@@ -441,6 +461,8 @@ static void scanner_feed_text_posthtml(scanner *s, stream *st, text *ctx,
 				     ctx->charset, &ctx->state, NULL, 0);
 	if (wbuflen > 0) {
 	    int i;
+
+	    scanner_feed_text_unicode(s, st, ctx, wbuf, wbuflen);
 
 	    for (i = 0; i < wbuflen; i++) {
 		int ch = wbuf[i];
@@ -618,6 +640,9 @@ static void scanner_feed_text(scanner *s, stream *st, void *vctx,
     }
 }
 
+static const char *specific_msg;
+#define wcsprefix(w1, w2) (!wcsncmp((w1), (w2), wcslen((w2))))
+
 static void scanner_cleanup_text(scanner *s, stream *st, void *vctx)
 {
     text *ctx = (text *)vctx;
@@ -646,6 +671,16 @@ static void scanner_cleanup_text(scanner *s, stream *st, void *vctx)
     for (i = 0; i < ALPH_COUNT; i++)
 	if (i != ALPH_LATIN && ctx->freq[i] > ctx->freq[ALPH_LATIN])
 	    foreign_language = 1;
+
+    /*
+     * If the start of the message text matches a really obvious
+     * spam pattern, we reject.
+     */
+    assert(ctx->firstbitlen < lenof(ctx->firstbit));
+    ctx->firstbit[ctx->firstbitlen] = L'\0';
+    if (wcsprefix(ctx->firstbit, L"Troubles with wife?\nMake a miracles"
+		  " in bed!\n"))
+	specific_msg = "This appears to be a prolific pharmacy spam.";
 }
 
 static int agif_found = 0;
@@ -686,6 +721,9 @@ const char *scanner_filter(int len, const char *data)
     } else {
 	scanner_feed_data(darkly, data, len);
     }
+
+    if (specific_msg)
+	return specific_msg;
 
     if (agif_found)
 	return "Regrettably I currently reject any mail "
