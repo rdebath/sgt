@@ -1173,6 +1173,14 @@ const char *realfilter(const char *id, int len, const char *data)
 	return "putty-announce does not accept incoming mail.";
 
     /*
+     * Other non-standard addresses to which lots of spam is
+     * coming.
+     */
+    if (!strcmp(id, "RCPT") &&
+	!strlenzcmp(data, len, "simon-tzsz@tartarus.org"))
+	return "This address is disused.";
+
+    /*
      * Otherwise, we don't care about headers; only the message
      * data is of interest to the rest of these filters.
      */
