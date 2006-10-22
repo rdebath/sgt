@@ -29,6 +29,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stddef.h>
 #include <math.h>
 
 #include "misc.h"
@@ -434,54 +435,66 @@ int parsecols(char *string, void *vret) {
 }
 
 int main(int argc, char **argv) {
-    ComplexList roots;
-    int verbose = FALSE;
-    char *outfile = NULL;
-    struct Size imagesize = {0,0};
-    double xcentre, ycentre, xrange, yrange, scale, minfade, overpower;
-    int gotxcentre, gotycentre, gotxrange, gotyrange, gotscale, gotminfade,
-        gotoverpower;
-    int cyclic = -1, blur = -1;
-    struct Colours *colours = NULL;
-    int fade = -1, limit = -1;
-
     struct Params par;
     int i;
     double aspect;
 
-    struct Cmdline options[] = {
+    struct optdata {
+	int verbose;
+	char *outfile;
+	struct Size imagesize;
+	double xcentre, ycentre, xrange, yrange, scale, minfade, overpower;
+	int gotxcentre, gotycentre, gotxrange, gotyrange, gotscale, gotminfade,
+	    gotoverpower;
+	int cyclic, blur;
+	struct Colours *colours;
+	int fade, limit;
+	ComplexList roots;
+    } optdata = {
+	FALSE,
+	NULL,
+	{0,0},
+	0, 0, 0, 0, 0, 0, 0,
+	FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE,
+	-1, -1,
+	NULL,
+	-1, -1,
+	{NULL,0,0},
+    };
+
+    static const struct Cmdline options[] = {
 	{1, "--output", 'o', "file.bmp", "output bitmap name",
-		"filename", parsestr, &outfile, NULL},
+		"filename", parsestr, offsetof(struct optdata, outfile), -1},
 	{1, "--size", 's', "NNNxNNN", "output bitmap size",
-		"output bitmap size", parsesize, &imagesize, NULL},
+		"output bitmap size", parsesize, offsetof(struct optdata, imagesize), -1},
 	{1, "--xrange", 'x', "NNN", "mathematical x range",
-		"x range", parseflt, &xrange, &gotxrange},
+		"x range", parseflt, offsetof(struct optdata, xrange), offsetof(struct optdata, gotxrange)},
 	{1, "--yrange", 'y', "NNN", "mathematical y range",
-		"y range", parseflt, &yrange, &gotyrange},
+		"y range", parseflt, offsetof(struct optdata, yrange), offsetof(struct optdata, gotyrange)},
 	{2, "--xcentre\0--xcenter", 'X', "NNN", "mathematical x centre point",
-		"x centre", parseflt, &xcentre, &gotxcentre},
+		"x centre", parseflt, offsetof(struct optdata, xcentre), offsetof(struct optdata, gotxcentre)},
 	{2, "--ycentre\0--ycenter", 'Y', "NNN", "mathematical y centre point",
-		"y centre", parseflt, &ycentre, &gotycentre},
+		"y centre", parseflt, offsetof(struct optdata, ycentre), offsetof(struct optdata, gotycentre)},
 	{1, "--scale", 'S', "NNN", "image scale (ie pixel spacing)",
-		"image scale", parseflt, &scale, &gotscale},
+		"image scale", parseflt, offsetof(struct optdata, scale), offsetof(struct optdata, gotscale)},
 	{1, "--limit", 'l', "256", "maximum limit on iterations",
-		"limit", parseint, &limit, NULL},
+		"limit", parseint, offsetof(struct optdata, limit), -1},
 	{1, "--fade", 'f', "16", "how many shades of each colour",
-		"fade parameter", parseint, &fade, NULL},
+		"fade parameter", parseint, offsetof(struct optdata, fade), -1},
 	{1, "--minfade", 'F', "0.4", "dimmest shade of each colour to use",
-		"minimum fade value", parseflt, &minfade, &gotminfade},
+		"minimum fade value", parseflt, offsetof(struct optdata, minfade), offsetof(struct optdata, gotminfade)},
 	{1, "--cyclic", 'C', "yes", "allocate colours cyclically",
-		"cyclic setting", parsebool, &cyclic, NULL},
+		"cyclic setting", parsebool, offsetof(struct optdata, cyclic), -1},
 	{1, "--blur", 'B', "no", "blur out iteration boundaries",
-		"blur setting", parsebool, &blur, NULL},
+		"blur setting", parsebool, offsetof(struct optdata, blur), -1},
         {1, "--power", 'p', "1", "raise entire function to a power",
-                "overall power", parseflt, &overpower, &gotoverpower},
+                "overall power", parseflt, offsetof(struct optdata, overpower), offsetof(struct optdata, gotoverpower)},
 	{2, "--colours\0--colors", 'c', "1,0,0:0,1,0", "colours for roots",
-		"colour specification", parsecols, &colours, NULL},
+		"colour specification", parsecols, offsetof(struct optdata, colours), -1},
 	{1, "--verbose", 'v', NULL, "report details of what is done",
-		NULL, NULL, NULL, &verbose},
+		NULL, NULL, -1, offsetof(struct optdata, verbose)},
 	{0, NULL, 0, "<root>", "a complex root of the polynomial",
-		"complex number", addroot, &roots, NULL},
+		"complex number", addroot, offsetof(struct optdata, roots), -1},
     };
 
     char *usageextra[] = {
@@ -489,11 +502,11 @@ int main(int argc, char **argv) {
 	    "   as to preserve the aspect ratio",
     };
 
-    zero_list(&roots);
+    zero_list(&optdata.roots);
 
-    parse_cmdline("newton", argc, argv, options, lenof(options));
+    parse_cmdline("newton", argc, argv, options, lenof(options), &optdata);
 
-    if (argc < 2 || roots.n == 0)
+    if (argc < 2 || optdata.roots.n == 0)
 	usage_message("newton [options] <root> <root>...",
 		      options, lenof(options),
 		      usageextra, lenof(usageextra));
@@ -503,38 +516,38 @@ int main(int argc, char **argv) {
      */
 
     /* If no output file, complain. */
-    if (!outfile) {
+    if (!optdata.outfile) {
 	fprintf(stderr, "newton: no output file specified: "
 		"use something like `-o file.bmp'\n");
 	return EXIT_FAILURE;
     } else
-	par.outfile = outfile;
+	par.outfile = optdata.outfile;
 
     /* If no roots, complain. */
-    if (!roots.n) {
+    if (!optdata.roots.n) {
 	fprintf(stderr, "newton: no roots specified: "
 		"use something like `1 1+i -1 -i-1'\n");
 	return EXIT_FAILURE;
     } else
-	par.roots = roots;
+	par.roots = optdata.roots;
 
     /* If no colours, default to a standard string. */
-    if (!colours)
+    if (!optdata.colours)
 	/* assume colread will succeed */
 	par.colours = colread("1,0,0:1,1,0:0,1,0:0,0,1:1,0,1:0,1,1");
     else
-	par.colours = colours;
+	par.colours = optdata.colours;
 
     /*
      * If a scale was specified, use it to deduce xrange and
-     * yrange from imagesize.w and imagesize.h, or vice versa.
+     * yrange from optdata.imagesize.w and optdata.imagesize.h, or vice versa.
      */
-    if (gotscale) {
-	if (imagesize.w && !gotxrange) xrange = imagesize.w * scale;
-	else if (gotxrange && !imagesize.w) imagesize.w = xrange / scale;
+    if (optdata.gotscale) {
+	if (optdata.imagesize.w && !optdata.gotxrange) optdata.xrange = optdata.imagesize.w * optdata.scale;
+	else if (optdata.gotxrange && !optdata.imagesize.w) optdata.imagesize.w = optdata.xrange / optdata.scale;
 
-	if (imagesize.h && !gotyrange) yrange = imagesize.h * scale;
-	else if (gotyrange && !imagesize.h) imagesize.h = yrange / scale;
+	if (optdata.imagesize.h && !optdata.gotyrange) optdata.yrange = optdata.imagesize.h * optdata.scale;
+	else if (optdata.gotyrange && !optdata.imagesize.h) optdata.imagesize.h = optdata.yrange / optdata.scale;
     }
 
     /*
@@ -542,11 +555,11 @@ int main(int argc, char **argv) {
      * to fill in blanks in other sizes.
      */
     aspect = 0;
-    if (imagesize.w && imagesize.h) {
-	aspect = (double)imagesize.w / imagesize.h;
+    if (optdata.imagesize.w && optdata.imagesize.h) {
+	aspect = (double)optdata.imagesize.w / optdata.imagesize.h;
     }
-    if (gotxrange && gotyrange) {
-	double newaspect = xrange / yrange;
+    if (optdata.gotxrange && optdata.gotyrange) {
+	double newaspect = optdata.xrange / optdata.yrange;
 	if (aspect != 0 && newaspect != aspect)
 	    aspect = -1;
 	else
@@ -554,82 +567,82 @@ int main(int argc, char **argv) {
     }
 
     if (aspect > 0) {
-	if (imagesize.w && !imagesize.h) imagesize.h = imagesize.w / aspect;
-	if (!imagesize.w && imagesize.h) imagesize.w = imagesize.h * aspect;
-	if (gotxrange && !gotyrange)
-	    yrange = xrange / aspect, gotyrange = TRUE;
-	if (!gotxrange && gotyrange)
-	    xrange = yrange * aspect, gotxrange = TRUE;
+	if (optdata.imagesize.w && !optdata.imagesize.h) optdata.imagesize.h = optdata.imagesize.w / aspect;
+	if (!optdata.imagesize.w && optdata.imagesize.h) optdata.imagesize.w = optdata.imagesize.h * aspect;
+	if (optdata.gotxrange && !optdata.gotyrange)
+	    optdata.yrange = optdata.xrange / aspect, optdata.gotyrange = TRUE;
+	if (!optdata.gotxrange && optdata.gotyrange)
+	    optdata.xrange = optdata.yrange * aspect, optdata.gotxrange = TRUE;
     }
 
     /*
      * Now complain if no output image size was specified.
      */
-    if (!imagesize.w || !imagesize.h) {
+    if (!optdata.imagesize.w || !optdata.imagesize.h) {
 	fprintf(stderr, "newton: no output size specified: "
 		"use something like `-s 400x400'\n");
 	return EXIT_FAILURE;
     } else {
-	par.width = imagesize.w;
-	par.height = imagesize.h;
+	par.width = optdata.imagesize.w;
+	par.height = optdata.imagesize.h;
     }
 
     /*
      * Also complain if no input mathematical extent specified.
      */
-    if (!gotxrange || !gotyrange) {
+    if (!optdata.gotxrange || !optdata.gotyrange) {
 	fprintf(stderr, "newton: no image extent specified: "
 		"use something like `-x 2 -y 2'\n");
 	return EXIT_FAILURE;
     } else {
-	if (!gotxcentre) xcentre = 0.0;
-	if (!gotycentre) ycentre = 0.0;
-	par.x0 = xcentre - xrange;
-	par.x1 = xcentre + xrange;
-	par.y0 = ycentre - yrange;
-	par.y1 = ycentre + yrange;
+	if (!optdata.gotxcentre) optdata.xcentre = 0.0;
+	if (!optdata.gotycentre) optdata.ycentre = 0.0;
+	par.x0 = optdata.xcentre - optdata.xrange;
+	par.x1 = optdata.xcentre + optdata.xrange;
+	par.y0 = optdata.ycentre - optdata.yrange;
+	par.y1 = optdata.ycentre + optdata.yrange;
     }
 
     /*
      * If we're in verbose mode, regurgitate the final
      * parameters.
      */
-    if (verbose) {
+    if (optdata.verbose) {
 	int i;
 	printf("Output file `%s', %d x %d\n",
 	       par.outfile, par.width, par.height);
 	printf("Mathematical extent [%g,%g] x [%g,%g]\n",
 	       par.x0, par.x1, par.y0, par.y1);
-	for (i = 0; i < roots.n; i++)
-	    printf("Root at %g + %g i\n", roots.list[i].r,
-		   roots.list[i].i);
+	for (i = 0; i < par.roots.n; i++)
+	    printf("Root at %g + %g i\n", par.roots.list[i].r,
+		   par.roots.list[i].i);
     }
 
     /*
      * If no fade parameter given, default to 16.
      */
-    par.nfade = fade > 0 ? fade : 16;
+    par.nfade = optdata.fade > 0 ? optdata.fade : 16;
 
     /*
      * If no limit given, default to 256.
      */
-    par.limit = limit > 0 ? limit : 256;
+    par.limit = optdata.limit > 0 ? optdata.limit : 256;
 
     /*
      * If no minfade given, default to 0.4.
      */
-    par.minfade = gotminfade ? minfade : 0.4;
+    par.minfade = optdata.gotminfade ? optdata.minfade : 0.4;
 
     /*
      * If no overall power given, default to 1.
      */
-    par.overpower = gotoverpower ? overpower : 1.0;
+    par.overpower = optdata.gotoverpower ? optdata.overpower : 1.0;
 
     /*
      * cyclic and blur default to true and false respectively.
      */
-    par.cyclic = cyclic >= 0 ? cyclic : 1;
-    par.blur = blur >= 0 ? blur : 0;
+    par.cyclic = optdata.cyclic >= 0 ? optdata.cyclic : 1;
+    par.blur = optdata.blur >= 0 ? optdata.blur : 0;
 
     i = plot(par) ? EXIT_SUCCESS : EXIT_FAILURE;
 

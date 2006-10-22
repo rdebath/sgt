@@ -27,6 +27,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stddef.h>
 #include <time.h>
 #include <math.h>
 
@@ -232,48 +233,60 @@ int addcol(char *string, void *vret)
 }
 
 int main(int argc, char **argv) {
-    int verbose = FALSE;
-    char *outfile = NULL;
-    struct Size imagesize = {0,0};
-    int side = 0;
-    int vertex_mode = FALSE, face_mode = FALSE;
-    struct RGB colours[4], centre;
-    struct ColourList colourlist = { 0, 4, colours };
-    int gotcentre = FALSE;
-    double distance;
-    int cuboid = FALSE;
-    int gotdistance = FALSE;
-    int edges = FALSE;
-
+    struct RGB colours[4];
     struct Params par;
     int i;
 
-    struct Cmdline options[] = {
-	{0, NULL, 0, "<colour>", "specify a colour (must be 0 or 4 of them)",
-		"colour", addcol, &colourlist, NULL},
-	{1, "--centre", 'R', "colour", "specify centre colour for random choice",
-		"centre colour", parsecol, &centre, &gotcentre},
-	{1, "--distance", 'D', NULL, "specify radial distance for random choice",
-		"distance", parseflt, &distance, &gotdistance},
-	{1, "--cuboid", 'B', NULL, "use colour cuboid not cube in random choice",
-		NULL, NULL, NULL, &cuboid},
-	{1, "--corners", 'c', NULL, "assign colours to corners of solid",
-		NULL, NULL, NULL, &vertex_mode},
-	{1, "--faces", 'f', NULL, "assign colours to faces of solid",
-		NULL, NULL, NULL, &face_mode},
-	{1, "--edges", 'e', NULL, "show edges of solid",
-		NULL, NULL, NULL, &edges},
-	{1, "--grid", 'g', "NNN", "grid size (side length of triangle)",
-		"grid size", parseint, &side, NULL},
-	{1, "--output", 'o', "file.bmp", "output bitmap name",
-		"filename", parsestr, &outfile, NULL},
-	{1, "--size", 's', "NNNxNNN", "output bitmap size",
-		"output bitmap size", parsesize, &imagesize, NULL},
-	{1, "--verbose", 'v', NULL, "report details of what is done",
-		NULL, NULL, NULL, &verbose},
+    struct optdata {
+	struct ColourList colourlist;
+	struct RGB centre;
+	double distance;
+	int gotcentre, gotdistance;
+	int vertex_mode, face_mode, cuboid, edges;
+	int verbose;
+	char *outfile;
+	struct Size imagesize;
+	int side;
+    } optdata = {
+	{0,4,NULL},
+	{0,0,0},
+	0,
+	FALSE, FALSE,
+	FALSE, FALSE, FALSE, FALSE,
+	FALSE,
+	NULL,
+	{0,0},
+	0,
     };
 
-    parse_cmdline("tetra", argc, argv, options, lenof(options));
+    static const struct Cmdline options[] = {
+	{0, NULL, 0, "<colour>", "specify a colour (must be 0 or 4 of them)",
+		"colour", addcol, offsetof(struct optdata, colourlist), -1},
+	{1, "--centre", 'R', "colour", "specify centre colour for random choice",
+		"centre colour", parsecol, offsetof(struct optdata, centre), offsetof(struct optdata, gotcentre)},
+	{1, "--distance", 'D', "distance", "specify radial distance for random choice",
+		"distance", parseflt, offsetof(struct optdata, distance), offsetof(struct optdata, gotdistance)},
+	{1, "--cuboid", 'B', NULL, "use colour cuboid not cube in random choice",
+		NULL, NULL, -1, offsetof(struct optdata, cuboid)},
+	{1, "--corners", 'c', NULL, "assign colours to corners of solid",
+		NULL, NULL, -1, offsetof(struct optdata, vertex_mode)},
+	{1, "--faces", 'f', NULL, "assign colours to faces of solid",
+		NULL, NULL, -1, offsetof(struct optdata, face_mode)},
+	{1, "--edges", 'e', NULL, "show edges of solid",
+		NULL, NULL, -1, offsetof(struct optdata, edges)},
+	{1, "--grid", 'g', "NNN", "grid size (side length of triangle)",
+		"grid size", parseint, offsetof(struct optdata, side), -1},
+	{1, "--output", 'o', "file.bmp", "output bitmap name",
+		"filename", parsestr, offsetof(struct optdata, outfile), -1},
+	{1, "--size", 's', "NNNxNNN", "output bitmap size",
+		"output bitmap size", parsesize, offsetof(struct optdata, imagesize), -1},
+	{1, "--verbose", 'v', NULL, "report details of what is done",
+		NULL, NULL, -1, offsetof(struct optdata, verbose)},
+    };
+
+    optdata.colourlist.colours = colours;
+
+    parse_cmdline("tetra", argc, argv, options, lenof(options), &optdata);
 
     if (argc < 2)
 	usage_message("tetra [options] [<colour> <colour> <colour> <colour>]",
@@ -284,17 +297,17 @@ int main(int argc, char **argv) {
      */
 
     /* If no output file, complain. */
-    if (!outfile) {
+    if (!optdata.outfile) {
 	fprintf(stderr, "tetra: no output file specified: "
 		"use something like `-o file.bmp'\n");
 	return EXIT_FAILURE;
     } else
-	par.outfile = outfile;
+	par.outfile = optdata.outfile;
 
     /* If no colours, default to a standard set. */
-    if (colourlist.n == 0) {
-	if (gotcentre || gotdistance) {
-	    if (gotcentre && gotdistance) {
+    if (optdata.colourlist.n == 0) {
+	if (optdata.gotcentre || optdata.gotdistance) {
+	    if (optdata.gotcentre && optdata.gotdistance) {
 		double coords[4][3] = {
 		    { 1.0, 0.0, 0.0 },
 		    { 0.0, 1.0, 0.0 },
@@ -350,16 +363,16 @@ int main(int argc, char **argv) {
 		    for (j = 0; j < 3; j++) {
 			static const double scale[3] = {0.30, 0.59, 0.11};
 			double *cp, *op;
-			coords[i][j] *= distance;
-			if (cuboid)
+			coords[i][j] *= optdata.distance;
+			if (optdata.cuboid)
 			    coords[i][j] /= scale[j];
 
 			if (j == 0)
-			    cp = &par.c[i].r, op = &centre.r;
+			    cp = &par.c[i].r, op = &optdata.centre.r;
 			else if (j == 1)
-			    cp = &par.c[i].g, op = &centre.g;
+			    cp = &par.c[i].g, op = &optdata.centre.g;
 			else
-			    cp = &par.c[i].b, op = &centre.b;
+			    cp = &par.c[i].b, op = &optdata.centre.b;
 
 			*cp = *op + coords[i][j];
 			if (*cp < 0) *cp = 0;
@@ -378,7 +391,7 @@ int main(int argc, char **argv) {
 	    parsecol("0,0,1", &par.c[2]);
 	    parsecol("1,1,1", &par.c[3]);
 	}
-    } else if (colourlist.n == 4) {
+    } else if (optdata.colourlist.n == 4) {
 	par.c[0] = colours[0];
 	par.c[1] = colours[1];
 	par.c[2] = colours[2];
@@ -391,33 +404,33 @@ int main(int argc, char **argv) {
     /*
      * Now complain if no output image size was specified.
      */
-    if (!imagesize.w || !imagesize.h) {
+    if (!optdata.imagesize.w || !optdata.imagesize.h) {
 	fprintf(stderr, "tetra: no output size specified: "
 		"use something like `-s 400x400'\n");
 	return EXIT_FAILURE;
     } else {
-	par.width = imagesize.w;
-	par.height = imagesize.h;
+	par.width = optdata.imagesize.w;
+	par.height = optdata.imagesize.h;
     }
 
     /*
      * Ensure at most one of vertex_mode and face_mode was
      * specified.
      */
-    if (vertex_mode && face_mode) {
+    if (optdata.vertex_mode && optdata.face_mode) {
 	fprintf(stderr, "tetra: at most one of `-c' and `-f' expected");
 	return EXIT_FAILURE;
     }
 
-    par.side = side;
-    par.show_edges = edges;
-    par.colour_vertices = vertex_mode; /* making face mode the default */
+    par.side = optdata.side;
+    par.show_edges = optdata.edges;
+    par.colour_vertices = optdata.vertex_mode; /* making face mode the default */
 
     /*
      * If we're in verbose mode, regurgitate the final
      * parameters.
      */
-    if (verbose) {
+    if (optdata.verbose) {
 	printf("Output file `%s', %d x %d\n",
 	       par.outfile, par.width, par.height);
 	printf("Tetrahedron side length %d\n", par.side);

@@ -102,34 +102,35 @@ int parsecol(char *string, void *vret) {
 }
 
 static void process_option(char const *programname,
-			   struct Cmdline *option, char *arg)
+			   const struct Cmdline *option,
+			   char *arg, void *optdata)
 {
     assert((arg != NULL) == (option->arghelp != NULL));
 
     if (arg) {
-	if (!option->parse(arg, option->parse_ret)) {
+	if (!option->parse(arg, (char *)optdata + option->parse_ret_off)) {
 	    fprintf(stderr, "%s: unable to parse %s `%s'\n", programname,
 		    option->valname, arg);
 	    exit(EXIT_FAILURE);
 	}
-	if (option->gotflag)
-	    *option->gotflag = TRUE;
+	if (option->gotflag_off >= 0)
+	    *(int *)((char *)optdata + option->gotflag_off) = TRUE;
     } else {
-	assert(option->gotflag);
-	*option->gotflag = TRUE;
+	assert(option->gotflag_off >= 0);
+	*(int *)((char *)optdata + option->gotflag_off) = TRUE;
     }
 }
 
 void parse_cmdline(char const *programname, int argc, char **argv,
-		   struct Cmdline *options, int noptions)
+		   const struct Cmdline *options, int noptions, void *optdata)
 {
     int doing_options = TRUE;
     int i;
-    struct Cmdline *argopt = NULL;
+    const struct Cmdline *argopt = NULL;
 
     for (i = 0; i < noptions; i++) {
-	if (options[i].gotflag)
-	    *options[i].gotflag = FALSE;
+	if (options[i].gotflag_off >= 0)
+	    *(int *)((char *)optdata + options[i].gotflag_off) = FALSE;
     }
 
     while (--argc > 0) {
@@ -153,7 +154,7 @@ void parse_cmdline(char const *programname, int argc, char **argv,
 		}
 	    }
 
-	    process_option(programname, argopt, arg);
+	    process_option(programname, argopt, arg, optdata);
 	} else {
 	    char c = arg[1];
 	    char *val = arg+2;
@@ -172,10 +173,10 @@ void parse_cmdline(char const *programname, int argc, char **argv,
 			    if (options[i].arghelp) {
 				if (arg[len] == '=') {
 				    process_option(programname, &options[i],
-						   arg + len + 1);
+						   arg + len + 1, optdata);
 				} else if (--argc > 0) {
 				    process_option(programname, &options[i],
-						   *++argv);
+						   *++argv, optdata);
 				} else {
 				    fprintf(stderr, "%s: option `%s' requires"
 					    " an argument\n", programname,
@@ -183,7 +184,8 @@ void parse_cmdline(char const *programname, int argc, char **argv,
 				    exit(EXIT_FAILURE);
 				}
 			    } else {
-				process_option(programname, &options[i], NULL);
+				process_option(programname, &options[i],
+					       NULL, optdata);
 			    }
 			    done = TRUE;
 			}
@@ -191,16 +193,19 @@ void parse_cmdline(char const *programname, int argc, char **argv,
 		} else if (c == options[i].shortopt) {
 		    if (options[i].arghelp) {
 			if (*val) {
-			    process_option(programname, &options[i], val);
+			    process_option(programname, &options[i], val,
+					   optdata);
 			} else if (--argc > 0) {
-			    process_option(programname, &options[i], *++argv);
+			    process_option(programname, &options[i], *++argv,
+					   optdata);
 			} else {
 			    fprintf(stderr, "%s: option `%s' requires an"
 				    " argument\n", programname, arg);
 			    exit(EXIT_FAILURE);
 			}
 		    } else {
-			process_option(programname, &options[i], NULL);
+			process_option(programname, &options[i], NULL,
+				       optdata);
 		    }
 		    done = TRUE;
 		}
@@ -215,7 +220,7 @@ void parse_cmdline(char const *programname, int argc, char **argv,
 }
 
 void usage_message(char const *usageline,
-		   struct Cmdline *options, int noptions,
+		   const struct Cmdline *options, int noptions,
 		   char **extratext, int nextra)
 {
     int i, maxoptlen = 0;

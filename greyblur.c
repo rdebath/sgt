@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stddef.h>
 
 #include "misc.h"
 
@@ -136,27 +137,35 @@ int plot(struct Params par)
  */
 
 int main(int argc, char **argv) {
-    int verbose = 0;
-    char *outfile = NULL;
-    struct Size imagesize = {0,0};
-    int steps = 0, levels = 0;
     struct Params par;
     int i;
 
-    struct Cmdline options[] = {
-	{1, "--output", 'o', "file.bmp", "output bitmap name",
-		"filename", parsestr, &outfile, NULL},
-	{1, "--size", 's', "NNNxNNN", "output bitmap size",
-		"output bitmap size", parsesize, &imagesize, NULL},
-	{1, "--steps", 'n', "NNN", "number of iterations of smoothing",
-		"step count", parseint, &steps, NULL},
-	{1, "--levels", 'l', "NNN", "number of levels of output colour",
-		"level count", parseint, &levels, NULL},
-	{1, "--verbose", 'v', NULL, "report details of what is done",
-		NULL, NULL, NULL, &verbose},
+    struct optdata {
+	int verbose;
+	char *outfile;
+	struct Size imagesize;
+	int steps, levels;
+    } optdata = {
+	0,
+	NULL,
+	{0,0},
+	0, 0,
     };
 
-    parse_cmdline("greyblur", argc, argv, options, lenof(options));
+    static const struct Cmdline options[] = {
+	{1, "--output", 'o', "file.bmp", "output bitmap name",
+		"filename", parsestr, offsetof(struct optdata, outfile), -1},
+	{1, "--size", 's', "NNNxNNN", "output bitmap size",
+		"output bitmap size", parsesize, offsetof(struct optdata, imagesize), -1},
+	{1, "--steps", 'n', "NNN", "number of iterations of smoothing",
+		"step count", parseint, offsetof(struct optdata, steps), -1},
+	{1, "--levels", 'l', "NNN", "number of levels of output colour",
+		"level count", parseint, offsetof(struct optdata, levels), -1},
+	{1, "--verbose", 'v', NULL, "report details of what is done",
+		NULL, NULL, -1, offsetof(struct optdata, verbose)},
+    };
+
+    parse_cmdline("greyblur", argc, argv, options, lenof(options), &optdata);
 
     if (argc < 2)
 	usage_message("greyblur [options]", options, lenof(options), NULL, 0);
@@ -166,33 +175,33 @@ int main(int argc, char **argv) {
      */
 
     /* If no output file, complain. */
-    if (!outfile) {
+    if (!optdata.outfile) {
 	fprintf(stderr, "greyblur: no output file specified: "
 		"use something like `-o file.bmp'\n");
 	return EXIT_FAILURE;
     } else
-	par.outfile = outfile;
+	par.outfile = optdata.outfile;
 
     /*
      * Now complain if no output image size was specified.
      */
-    if (!imagesize.w || !imagesize.h) {
+    if (!optdata.imagesize.w || !optdata.imagesize.h) {
 	fprintf(stderr, "greyblur: no output size specified: "
 		"use something like `-s 400x400'\n");
 	return EXIT_FAILURE;
     } else {
-	par.width = imagesize.w;
-	par.height = imagesize.h;
+	par.width = optdata.imagesize.w;
+	par.height = optdata.imagesize.h;
     }
 
-    par.steps = (steps > 0 ? steps : 5);
-    par.levels = (levels > 0 ? levels : 2);
+    par.steps = (optdata.steps > 0 ? optdata.steps : 5);
+    par.levels = (optdata.levels > 0 ? optdata.levels : 2);
 
     /*
      * If we're in verbose mode, regurgitate the final
      * parameters.
      */
-    if (verbose) {
+    if (optdata.verbose) {
 	printf("Output file `%s', %d x %d\n",
 	       par.outfile, par.width, par.height);
 	printf("Smoothing steps: %d\n", par.steps);
