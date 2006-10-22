@@ -449,7 +449,7 @@ int main(int argc, char **argv) {
 		"input scale", parseflt, &iscale, &gotiscale},
 	{1, "--oscale", 'O', "NNN", "output scale (ie modulus)",
 		"output scale", parseflt, &oscale, &gotoscale},
-	{1, "--fade", 'f', "turn", "on fading at edges of patches",
+	{1, "--fade", 'f', NULL, "turn on fading at edges of patches",
 		NULL, NULL, NULL, &fade},
 	{1, "--poly", 'p', "x2+2xy+y2", "polynomial to plot",
 		"polynomial", parsepoly, &poly, NULL},
