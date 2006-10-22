@@ -28,6 +28,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stddef.h>
 
 #include "misc.h"
 
@@ -417,46 +418,54 @@ int parsecols(char *string, void *vret) {
 }
 
 int main(int argc, char **argv) {
-    int fade, isbase, verbose;
-    char *outfile = NULL;
-    struct Size imagesize = {0,0}, basesize = {0,0};
-    double xcentre, ycentre, xrange, yrange, iscale, oscale;
-    int gotxcentre, gotycentre, gotxrange, gotyrange, gotiscale, gotoscale;
-    struct Poly *poly = NULL;
-    struct Colours *colours = NULL;
     struct Params par;
     int i;
     double aspect;
 
-    struct Cmdline options[] = {
+    struct options {
+	char *outfile;
+	struct Size imagesize, basesize;
+	double xcentre, ycentre, xrange, yrange, iscale, oscale;
+	int gotxcentre, gotycentre, gotxrange, gotyrange, gotiscale, gotoscale;
+	int fade, isbase, verbose;
+	struct Poly *poly;
+	struct Colours *colours;
+    } optdata = {
+	NULL, {0,0}, {0,0},
+	0, 0, 0, 0, 0, 0,
+	FALSE, FALSE, FALSE, FALSE, FALSE, FALSE,
+	FALSE, FALSE, FALSE, NULL, NULL
+    };
+
+    static const struct Cmdline options[] = {
 	{1, "--output", 'o', "file.bmp", "output bitmap name",
-		"filename", parsestr, &outfile, NULL},
+		"filename", parsestr, offsetof(struct options, outfile), -1},
 	{1, "--size", 's', "NNNxNNN", "output bitmap size",
-		"output bitmap size", parsesize, &imagesize, NULL},
+		"output bitmap size", parsesize, offsetof(struct options, imagesize), -1},
 	{1, "--xrange", 'x', "NNN", "mathematical x range",
-		"x range", parseflt, &xrange, &gotxrange},
+		"x range", parseflt, offsetof(struct options, xrange), offsetof(struct options, gotxrange)},
 	{1, "--yrange", 'y', "NNN", "mathematical y range",
-		"y range", parseflt, &yrange, &gotyrange},
+		"y range", parseflt, offsetof(struct options, yrange), offsetof(struct options, gotyrange)},
 	{2, "--xcentre\0--xcenter", 'X', "NNN", "mathematical x centre point",
-		"x centre", parseflt, &xcentre, &gotxcentre},
+		"x centre", parseflt, offsetof(struct options, xcentre), offsetof(struct options, gotxcentre)},
 	{2, "--ycentre\0--ycenter", 'Y', "NNN", "mathematical y centre point",
-		"y centre", parseflt, &ycentre, &gotycentre},
+		"y centre", parseflt, offsetof(struct options, ycentre), offsetof(struct options, gotycentre)},
 	{1, "--basesize", 'b', "NNNxNNN", "base image size",
-		"base image size", parsesize, &basesize, NULL},
+		"base image size", parsesize, offsetof(struct options, basesize), -1},
 	{1, "--base", 'B', NULL, "this *is* the base image (default)",
-		NULL, NULL, NULL, &isbase},
+		NULL, NULL, -1, offsetof(struct options, isbase)},
 	{1, "--iscale", 'I', "NNN", "input scale (ie base pixel spacing)",
-		"input scale", parseflt, &iscale, &gotiscale},
+		"input scale", parseflt, offsetof(struct options, iscale), offsetof(struct options, gotiscale)},
 	{1, "--oscale", 'O', "NNN", "output scale (ie modulus)",
-		"output scale", parseflt, &oscale, &gotoscale},
+		"output scale", parseflt, offsetof(struct options, oscale), offsetof(struct options, gotoscale)},
 	{1, "--fade", 'f', NULL, "turn on fading at edges of patches",
-		NULL, NULL, NULL, &fade},
+		NULL, NULL, -1, offsetof(struct options, fade)},
 	{1, "--poly", 'p', "x2+2xy+y2", "polynomial to plot",
-		"polynomial", parsepoly, &poly, NULL},
+		"polynomial", parsepoly, offsetof(struct options, poly), -1},
 	{2, "--colours\0--colors", 'c', "1,0,0:0,1,0", "colours for patches",
-		"colour specification", parsecols, &colours, NULL},
+		"colour specification", parsecols, offsetof(struct options, colours), -1},
 	{1, "--verbose", 'v', NULL, "report details of what is done",
-		NULL, NULL, NULL, &verbose},
+		NULL, NULL, -1, offsetof(struct options, verbose)},
     };
 
     char *usageextra[] = {
@@ -469,7 +478,7 @@ int main(int argc, char **argv) {
 	"   selection (this needs to be better explained :-)"
     };
 
-    parse_cmdline("filigram", argc, argv, options, lenof(options));
+    parse_cmdline("filigram", argc, argv, options, lenof(options), &optdata);
 
     if (argc < 2)
 	usage_message("filigram [options]",
@@ -481,52 +490,52 @@ int main(int argc, char **argv) {
      */
 
     /* If no output scale, default to 1. */
-    if (!gotoscale)
+    if (!optdata.gotoscale)
 	par.oscale = 1.0;
     else
-	par.oscale = oscale;
+	par.oscale = optdata.oscale;
 
     /* If no output file, complain. */
-    if (!outfile) {
+    if (!optdata.outfile) {
 	fprintf(stderr, "filigram: no output file specified: "
 		"use something like `-o file.bmp'\n");
 	return EXIT_FAILURE;
     } else
-	par.filename = outfile;
+	par.filename = optdata.outfile;
 
     /* If no polynomial, complain. */
-    if (!poly) {
+    if (!optdata.poly) {
 	fprintf(stderr, "filigram: no polynomial specified: "
 		"use something like `-p x2+2xy+y2'\n");
 	return EXIT_FAILURE;
     } else
-	par.poly = poly;
+	par.poly = optdata.poly;
 
     /* If no colours, default to 1,1,1. */
-    if (!colours)
+    if (!optdata.colours)
 	par.colours = colread("1,1,1");   /* assume this will succeed */
     else
-	par.colours = colours;
+	par.colours = optdata.colours;
 
-    par.fading = fade;
+    par.fading = optdata.fade;
 
     /*
      * If precisely one explicit aspect ratio specified, use it
      * to fill in blanks in other sizes.
      */
     aspect = 0;
-    if (imagesize.w && imagesize.h) {
-	aspect = (double)imagesize.w / imagesize.h;
+    if (optdata.imagesize.w && optdata.imagesize.h) {
+	aspect = (double)optdata.imagesize.w / optdata.imagesize.h;
     }
-    if (basesize.w && basesize.h) {
-	double newaspect = (double)basesize.w / basesize.h;
+    if (optdata.basesize.w && optdata.basesize.h) {
+	double newaspect = (double)optdata.basesize.w / optdata.basesize.h;
 	if (newaspect != aspect)
 	    aspect = -1;
 	else
 	    aspect = newaspect;
     }
-    if (gotxrange && gotyrange) {
-	double newaspect = xrange / yrange;
+    if (optdata.gotxrange && optdata.gotyrange) {
+	double newaspect = optdata.xrange / optdata.yrange;
 	if (newaspect != aspect)
 	    aspect = -1;
 	else
@@ -534,75 +543,75 @@ int main(int argc, char **argv) {
     }
 
     if (aspect > 0) {
-	if (imagesize.w && !imagesize.h) imagesize.h = imagesize.w / aspect;
-	if (!imagesize.w && imagesize.h) imagesize.w = imagesize.h * aspect;
-	if (basesize.w && !basesize.h) basesize.h = basesize.w / aspect;
-	if (!basesize.w && basesize.h) basesize.w = basesize.h * aspect;
-	if (gotxrange && !gotyrange)
-	    yrange = xrange / aspect, gotyrange = TRUE;
-	if (!gotxrange && gotyrange)
-	    xrange = yrange * aspect, gotxrange = TRUE;
+	if (optdata.imagesize.w && !optdata.imagesize.h) optdata.imagesize.h = optdata.imagesize.w / aspect;
+	if (!optdata.imagesize.w && optdata.imagesize.h) optdata.imagesize.w = optdata.imagesize.h * aspect;
+	if (optdata.basesize.w && !optdata.basesize.h) optdata.basesize.h = optdata.basesize.w / aspect;
+	if (!optdata.basesize.w && optdata.basesize.h) optdata.basesize.w = optdata.basesize.h * aspect;
+	if (optdata.gotxrange && !optdata.gotyrange)
+	    optdata.yrange = optdata.xrange / aspect, optdata.gotyrange = TRUE;
+	if (!optdata.gotxrange && optdata.gotyrange)
+	    optdata.xrange = optdata.yrange * aspect, optdata.gotxrange = TRUE;
     }
 
     /*
      * Now complain if no output image size was specified.
      */
-    if (!imagesize.w || !imagesize.h) {
+    if (!optdata.imagesize.w || !optdata.imagesize.h) {
 	fprintf(stderr, "filigram: no output size specified: "
 		"use something like `-s 640x480'\n");
 	return EXIT_FAILURE;
     } else {
-	par.width = imagesize.w;
-	par.height = imagesize.h;
+	par.width = optdata.imagesize.w;
+	par.height = optdata.imagesize.h;
     }
 
     /*
      * Also complain if no input mathematical extent specified.
      */
-    if (!gotxrange || !gotyrange) {
+    if (!optdata.gotxrange || !optdata.gotyrange) {
 	fprintf(stderr, "filigram: no image extent specified: "
 		"use something like `-x 20 -y 15'\n");
 	return EXIT_FAILURE;
     } else {
-	if (!gotxcentre) xcentre = 0.0;
-	if (!gotycentre) ycentre = 0.0;
-	par.x0 = xcentre - xrange;
-	par.x1 = xcentre + xrange;
-	par.y0 = ycentre - yrange;
-	par.y1 = ycentre + yrange;
+	if (!optdata.gotxcentre) optdata.xcentre = 0.0;
+	if (!optdata.gotycentre) optdata.ycentre = 0.0;
+	par.x0 = optdata.xcentre - optdata.xrange;
+	par.x1 = optdata.xcentre + optdata.xrange;
+	par.y0 = optdata.ycentre - optdata.yrange;
+	par.y1 = optdata.ycentre + optdata.yrange;
     }
 
     /*
      * All that's left to set up is xscale and yscale. At this
      * stage we expect to see at most one of
-     *   `isbase' true
-     *   `basesize.w' and `basesize.h' both nonzero
-     *   `gotiscale' true
+     *   `optdata.isbase' true
+     *   `optdata.basesize.w' and `optdata.basesize.h' both nonzero
+     *   `optdata.gotiscale' true
      */
-    i = (!!isbase) + (basesize.w && basesize.h) + (!!gotiscale);
+    i = (!!optdata.isbase) + (optdata.basesize.w && optdata.basesize.h) + (!!optdata.gotiscale);
     if (i > 1) {
 	fprintf(stderr, "filigram: "
 		"expected at most one of `-b', `-B', `-I'\n");
 	return EXIT_FAILURE;
     } else if (i == 0) {
-	/* Default: isbase is true. */
-	isbase = TRUE;
+	/* Default: optdata.isbase is true. */
+	optdata.isbase = TRUE;
     }
-    if (isbase) {
-	basesize = imagesize;
+    if (optdata.isbase) {
+	optdata.basesize = optdata.imagesize;
     }
-    if (gotiscale)
-	par.xscale = par.yscale = iscale;
+    if (optdata.gotiscale)
+	par.xscale = par.yscale = optdata.iscale;
     else {
-	par.xscale = (par.x1 - par.x0) / basesize.w;
-	par.yscale = (par.y1 - par.y0) / basesize.h;
+	par.xscale = (par.x1 - par.x0) / optdata.basesize.w;
+	par.yscale = (par.y1 - par.y0) / optdata.basesize.h;
     }
 
     /*
      * If we're in verbose mode, regurgitate the final
      * parameters.
      */
-    if (verbose) {
+    if (optdata.verbose) {
 	printf("Output file `%s', %d x %d\n",
 	       par.filename, par.width, par.height);
 	printf("Mathematical extent [%g,%g] x [%g,%g]\n",

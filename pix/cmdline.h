@@ -22,15 +22,15 @@ struct Cmdline {
     char *deschelp;
     char *valname;		       /* for use in `cannot parse' messages */
     int (*parse)(char *string, void *ret);
-    void *parse_ret;
-    int *gotflag;
+    int parse_ret_off;		       /* offset into options structure */
+    int gotflag_off;		       /* and another one */
 };
 
 void parse_cmdline(char const *programname, int argc, char **argv,
-		   struct Cmdline *options, int noptions);
+		   const struct Cmdline *options, int noptions, void *optdata);
 
 void usage_message(char const *usageline,
-		   struct Cmdline *options, int noptions,
+		   const struct Cmdline *options, int noptions,
 		   char **extratext, int nextra);
 
 #endif /* CMDLINE_H */

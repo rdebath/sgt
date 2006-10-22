@@ -28,6 +28,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stddef.h>
 #include <time.h>
 
 #include "misc.h"
@@ -361,34 +362,43 @@ int plot(struct Params params) {
  */
 
 int main(int argc, char **argv) {
-    int verbose = 0;
-    int metal = FALSE;
-    char *outfile = NULL;
-    struct Size imagesize = {0,0};
     int i;
-    int radius = 0, minradius = 0, prefradius = 0, distance = 0;
     struct Params par;
 
-    struct Cmdline options[] = {
-	{1, "--output", 'o', "file.bmp", "output bitmap name",
-		"filename", parsestr, &outfile, NULL},
-	{1, "--size", 's', "NNNxNNN", "output bitmap size",
-		"output bitmap size", parsesize, &imagesize, NULL},
-	{1, "--radius", 'r', "NNN", "maximum bubble radius",
-		"maximum radius", parseint, &radius, NULL},
-	{1, "--minradius", 'm', "NNN", "minimum bubble radius",
-		"minimum radius", parseint, &radius, NULL},
-	{1, "--preferred", 'p', "NNN", "preferred distance between bubbles",
-		"preferred distance", parseint, &prefradius, NULL},
-	{1, "--distance", 'd', "NNN", "minimum distance between bubbles",
-		"minimum distance", parseint, &distance, NULL},
-	{1, "--metal", 'M', NULL, "draw metal balls instead of bubbles",
-		NULL, NULL, NULL, &metal},
-	{1, "--verbose", 'v', NULL, "report details of what is done",
-		NULL, NULL, NULL, &verbose},
+    struct optdata {
+	int verbose;
+	int metal;
+	char *outfile;
+	struct Size imagesize;
+	int radius, minradius, prefradius, distance;
+    } optdata = {
+	0,
+	FALSE,
+	NULL,
+	{0,0},
+	0, 0, 0, 0,
     };
 
-    parse_cmdline("bubbles", argc, argv, options, lenof(options));
+    static const struct Cmdline options[] = {
+	{1, "--output", 'o', "file.bmp", "output bitmap name",
+		"filename", parsestr, offsetof(struct optdata, outfile), -1},
+	{1, "--size", 's', "NNNxNNN", "output bitmap size",
+		"output bitmap size", parsesize, offsetof(struct optdata, imagesize), -1},
+	{1, "--radius", 'r', "NNN", "maximum bubble radius",
+		"maximum radius", parseint, offsetof(struct optdata, radius), -1},
+	{1, "--minradius", 'm', "NNN", "minimum bubble radius",
+		"minimum radius", parseint, offsetof(struct optdata, minradius), -1},
+	{1, "--preferred", 'p', "NNN", "preferred distance between bubbles",
+		"preferred distance", parseint, offsetof(struct optdata, prefradius), -1},
+	{1, "--distance", 'd', "NNN", "minimum distance between bubbles",
+		"minimum distance", parseint, offsetof(struct optdata, distance), -1},
+	{1, "--metal", 'M', NULL, "draw metal balls instead of bubbles",
+		NULL, NULL, -1, offsetof(struct optdata, metal)},
+	{1, "--verbose", 'v', NULL, "report details of what is done",
+		NULL, NULL, -1, offsetof(struct optdata, verbose)},
+    };
+
+    parse_cmdline("bubbles", argc, argv, options, lenof(options), &optdata);
 
     if (argc < 2)
 	usage_message("bubbles [options]", options, lenof(options), NULL, 0);
@@ -400,23 +410,23 @@ int main(int argc, char **argv) {
      */
 
     /* If no output file, complain. */
-    if (!outfile) {
+    if (!optdata.outfile) {
 	fprintf(stderr, "bubbles: no output file specified: "
 		"use something like `-o file.bmp'\n");
 	return EXIT_FAILURE;
     } else
-	par.outfile = outfile;
+	par.outfile = optdata.outfile;
 
     /*
      * Now complain if no output image size was specified.
      */
-    if (!imagesize.w || !imagesize.h) {
+    if (!optdata.imagesize.w || !optdata.imagesize.h) {
 	fprintf(stderr, "bubbles: no output size specified: "
 		"use something like `-s 400x400'\n");
 	return EXIT_FAILURE;
     } else {
-	par.width = imagesize.w;
-	par.height = imagesize.h;
+	par.width = optdata.imagesize.w;
+	par.height = optdata.imagesize.h;
     }
 
     /*
@@ -424,14 +434,14 @@ int main(int argc, char **argv) {
      * to standard values. Minradius defaults to 0; prefradius
      * defaults to maxradius.
      */
-    par.maxradius = (radius > 0 ? radius : 32);
-    par.distance = (distance > 0 ? distance : 8);
-    par.minradius = (minradius > 0 ? minradius : 0);
-    par.prefradius = (prefradius > 0 ? prefradius : par.maxradius);
+    par.maxradius = (optdata.radius > 0 ? optdata.radius : 32);
+    par.distance = (optdata.distance > 0 ? optdata.distance : 8);
+    par.minradius = (optdata.minradius > 0 ? optdata.minradius : 0);
+    par.prefradius = (optdata.prefradius > 0 ? optdata.prefradius : par.maxradius);
 
-    par.metal = metal;
+    par.metal = optdata.metal;
 
-    if (verbose > 1)
+    if (optdata.verbose > 1)
 	par.trace = 1;
     else
 	par.trace = 0;
@@ -440,7 +450,7 @@ int main(int argc, char **argv) {
      * If we're in verbose mode, regurgitate the final
      * parameters.
      */
-    if (verbose) {
+    if (optdata.verbose) {
 	printf("Output file `%s', %d x %d\n",
 	       par.outfile, par.width, par.height);
 	printf("Bubble radius range %d to %d\n",
