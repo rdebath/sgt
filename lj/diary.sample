@@ -57,7 +57,7 @@ We can still do {e emphasis} and so forth.
 {pre}
 This is    preformatted
 {e and} quoted
-and so it's kinda fun.
+    and so it's kinda fun.
 
 {/Q}
 
