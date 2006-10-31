@@ -1,0 +1,25 @@
+Summary: Variable expansion in configured window title
+Class: wish
+Difficulty: fun
+Priority: medium
+Content-type: text/x-html-body
+
+<p>
+Some sort of variable expansion in the window title as configured in
+PuTTY, with keywords for things like hostname, username, and so on.
+
+<p>
+One slightly special keyword would be one expanding to whatever the
+server set the window title to. (Some people have software that tracks
+window titles, so would like a guaranteed-constant bit while allowing
+the server to influence the title.) This would obviously require some
+change to the default behaviour where a server-specified title
+completely overrides what's in the configuration -- perhaps triggered
+by the presence of this keyword.
+
+<p>
+(It seems a bit of a shame to invent yet another random incompatible
+micro-language instead of adding variable expansion /
+<a href="scripting.html">scripting</a> consistently across the entire
+interface, but we're unlikely to get around to even designing the
+latter any time soon.)
