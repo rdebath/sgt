@@ -18,3 +18,7 @@ latin chars.
 <p>
 Also reported to Ubuntu as <a href="https://launchpad.net/distros/ubuntu/+source/putty/+bug/48781">bug 48781</a>, where it's suggested that
 <a href="port-unix-gtk2.html">using GTK2</a> will help.
+
+<p>
+Patch for Windows to interpret window title as UTF-8 (unreviewed):
+<tt>&lt;454617EB.2080900@yahoo.com.au&gt;</tt>
