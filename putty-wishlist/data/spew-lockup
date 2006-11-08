@@ -1,0 +1,16 @@
+Subject: Remote terminal spew can lock out local GUI
+Class: bug
+Absent-in: 0.57
+Present-in: 2004-12-23 0.58
+Priority: high
+
+<p>
+If the remote server floods us with terminal data enthusiastically
+enough, the local GUI can be completely locked out (at least on
+Windows). The appearance is that PuTTY appears to hang: it consumes as
+much CPU as it can, the window does not update, and the GUI (keyboard,
+menus etc) is unresponsive. If and when the stream of data abates,
+PuTTY becomes responsive again.
+
+<p>
+This crept in somewhere between 0.57 and 0.58.
