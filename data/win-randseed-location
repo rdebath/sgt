@@ -1,7 +1,7 @@
 Summary: PuTTY's placement of PUTTY.RND is non-optimal on Windows
 Class: semi-bug
 Difficulty: fun
-Priority: medium
+Priority: high
 Content-type: text/x-html-body
 
 <p>
@@ -24,3 +24,7 @@ wrt old Windows versions - full horrors in
 <p>
 (If this is fixed, perhaps we should continue to support
 <em>reading</em> the files from their old locations.)
+
+<p>
+<em>Update, 2006-11-08:</em> it's been suggested that this might stop
+PuTTY running as a standard user in Windows Vista. Bumped priority.
