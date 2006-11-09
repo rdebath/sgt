@@ -1,8 +1,9 @@
-Subject: Remote terminal spew can lock out local GUI
+Summary: Remote terminal spew can lock out local GUI
 Class: bug
 Absent-in: 0.57
 Present-in: 2004-12-23 0.58
 Priority: high
+Content-type: x-html-body
 
 <p>
 If the remote server floods us with terminal data enthusiastically
