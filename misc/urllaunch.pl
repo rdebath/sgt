@@ -93,6 +93,14 @@ if ($rewrite and -x "$ENV{'HOME'}/.urlrewrite") {
     $url = $newurl if $newurl =~ /\/\//;
 }
 
+# Fork, in case we're running from the command line.
+$pid = fork;
+if ($pid < 0) {
+    warn "fork: $!\n"; # but then continue regardless; it _might_ work!
+} elsif ($pid > 0) {
+    exit 0;
+}
+
 # Mozilla is a bit weird about launching URLs. If we just run
 # `mozilla $url' it runs the risk of converting an _existing_
 # Mozilla window into the new URL. Instead we must use a -remote
