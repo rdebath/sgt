@@ -5,6 +5,9 @@
 import sys
 import string
 
+def wrap_none(list):
+    sys.stdout.write(string.join(list, " ") + "\n")
+
 def wrap_greedy(list):
     wid = -1
     line = []
@@ -114,9 +117,11 @@ for arg in sys.argv[1:]:
 	    verbose = 1
 	elif arg[:2] == "-g":
 	    wrapfn = wrap_greedy
+	elif arg[:2] == "-d":
+	    wrapfn = wrap_none
 	else:
 	    print "wrap: unknown option " + arg[:2]
-	    print "usage: wrap [-v] [-g] [-wWIDTH] [-oOPTWIDTH] [file [file...]]"
+	    print "usage: wrap [-v] [-g] [-d] [-wWIDTH] [-oOPTWIDTH] [file [file...]]"
 	    sys.exit(0)
     else:
 	donefile = 1
