@@ -1,0 +1,20 @@
+#!/usr/bin/python 
+
+# Simple program which copies its standard input to its standard
+# output with the lines rearranged into a random order.
+
+import random
+import sys
+
+lines = []
+while 1:
+    s = sys.stdin.readline()
+    if s == "":
+	break;
+    if s[-1:] != "\n":
+	s = s + "\n"
+    lines.append(s)
+
+random.shuffle(lines)
+for line in lines:
+    sys.stdout.write(line)
