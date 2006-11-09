@@ -1,0 +1,82 @@
+#!/usr/bin/perl 
+
+# Simplistic implementation of `ps' using nothing but core Perl and
+# Linux's /proc. Written for temporary use while a Linux system in
+# the middle of an upgrade failed to run the real ps due to library
+# problems. Might some day come in handy again in similar emergency
+# situations; unlikely perhaps, but it would seem a waste to throw
+# it away now I've got it.
+
+chdir "/proc";
+@pids = glob "[0-9]*";
+
+%lines = ();
+%children = ();
+@toplevels = ();
+
+for $pid (sort { $a <=> $b } @pids) {
+    $cmdline = '';
+    open CMDLINE, "$pid/cmdline";
+    $cmdline .= $_ while <CMDLINE>;
+    close CMDLINE;
+    $stat = '';
+    open STAT, "$pid/stat";
+    $stat .= $_ while <STAT>;
+    close STAT;
+    @stat = split ' ', $stat;
+    $printcl = "";
+    $sep = "";
+    foreach $arg (split /\0/,$cmdline) {
+	if ($arg !~ /^[a-zA-Z0-9%+,\-.\/:=\[\]^_]+$/) {
+	    $arg =~ s/'/'\\''/g;
+	    $arg =~ s/[[:cntrl:]]/?/g;
+	    $arg = "'$arg'";
+	}
+	$printcl .= $sep . $arg;
+	$sep = " ";
+    }
+    $printcl = $stat[1] if $printcl eq "";
+    $lines{$pid} = $printcl;
+
+    $uid = -1;
+    open STATUS, "$pid/status";
+    while (<STATUS>) {
+	/Uid:\s*(\d+)/ and do { $uid = $1; };
+    }
+    close STATUS;
+    $uid{$pid} = ($uid == -1 ? "???" : ((getpwuid($uid))[0]));
+
+    $ppid = $stat[3];
+    if ($ppid == 1) {
+        push @toplevels, $pid;
+    } else {
+	push @{$children{$ppid}}, $pid;
+    }
+}
+
+&output("", @toplevels);
+
+sub output {
+    my $pfx = shift @_;
+    my (@list) = @_;
+    my $pid;
+    my $newpfx;
+    my $i;
+
+    for ($i = 0; $i < scalar @list; $i++) {
+	$pid = $list[$i];
+	printf "%5d %-8.8s %s%s\n", $pid, $uid{$pid}, $pfx, $lines{$pid};
+	if ($pfx eq "") {
+	    $newpfx = " \\_ ";
+	} else {
+	    my $pfx1 = substr($pfx, 0, (length $pfx) - 4);
+	    my $pfx2 = substr($pfx, (length $pfx) - 4);
+	    if ($i+1 < scalar @list) {
+		$newpfx = $pfx1 . " |  " . $pfx2;
+	    } else {
+		$newpfx = $pfx1 . "    " . $pfx2;
+	    }
+	}
+	&output($newpfx, @{$children{$pid}});
+    }
+}
