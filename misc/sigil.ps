@@ -1,0 +1,34 @@
+% PostScript which renders my umbrella-shaped quasi-monogram sigil.
+% I probably ought to get round to putting some DSC or EPS comments
+% on this at some point, really.
+
+/y 7 16 div def
+/x y 2 div def
+/theta 50 def
+/z 7 4 div def
+/phi 180 def
+/r 1 4 div def
+/lwid 1 6 div def
+
+300 600 translate 150 dup scale
+1 setlinejoin
+1 setlinecap
+
+newpath
+0 1 moveto
+1 1 1 180 270 arc
+1 -1 1 90 180 arc
+-1 -1 1 0 90 arc
+-1 1 1 -90 0 arc
+closepath
+-1 0 moveto x neg 0 rlineto currentpoint y sub y 90 270 theta add arc
+1 0 moveto x 0 rlineto currentpoint y sub y 90 -90 theta sub arcn
+0 -1 moveto 0 z neg rlineto currentpoint exch r sub exch r 0 phi neg arcn
+lwid setlinewidth stroke
+
+% left limit is min(-2r-lwid, -x-y-1-lwid)
+% right limit is x+y+1+lwid
+% upper limit is 1+lwid
+% lower limit is min(-2y-lwid, -z-r-1-lwid)
+
+showpage
