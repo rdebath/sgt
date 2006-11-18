@@ -1,3 +1,15 @@
+/*
+ * C array which maps the 256 byte values to their C string
+ * equivalents. If you replace every character of a string with its
+ * entry in this array, and put a double quote character on the
+ * start and on the end of the result, you should get a valid C
+ * string literal which expands to the original string.
+ * 
+ * In more informal contexts, this is also a useful table to have
+ * around when simply trying to remove non-printable characters
+ * from a string for diagnostic output.
+ */
+
 char *toprint[256] = {
     "\\000", "\\001", "\\002", "\\003", "\\004", "\\005", "\\006", "\\a"  ,
     "\\b"  , "\\t"  , "\\n"  , "\\v"  , "\\f"  , "\\r"  , "\\016", "\\017",
