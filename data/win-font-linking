@@ -4,6 +4,7 @@ Difficulty: tricky
 Priority: high
 Absent-in: 0.56 0.57
 Present-in: 0.58
+Fixed-in: r6910 2006-11-19
 Content-type: text/x-html-body
 
 <p>
@@ -34,7 +35,7 @@ inadvertently clobbered) while preserving the properties we need would
 be most welcome.
 
 <p>
-Ben suggests another approach to defusing <code>ExtTextOut()</code>:
+Ben suggests another approach to defusing <code>ExtTextOutW()</code>:
 feed it Arabic presentation forms (which we do already) and also
 explicit Unicode directional overrides to force LTR rendering. (This
 does commit us to potentially having to find workarounds for any other
@@ -43,3 +44,18 @@ cleverness that Windows' font engine might choose to impose on us.)
 <p>
 A workaround is to use a fixed-width font that directly supports all
 the characters you need, if you can find one.
+
+<p>
+<b>SGT, 2006-11-18</b>: I've just implemented an alternative
+workaround, which is to only use <code>exact_textout()</code> for
+those characters liable to cause unwanted bidi behaviour if passed
+straight to <code>ExtTextOutW</code>. So now everything
+<em>other</em> than right-to-left scripts is handled directly by
+<code>ExtTextOutW</code>, as it used to be, meaning that everything
+which 0.57 handled completely correctly should once again be handled
+completely correctly.
+
+<p>
+We still don't support font linking for bidi text, but this is no
+longer a regression over 0.57 because 0.57 would merely have done
+something <em>else</em> wrong when given bidi text.
