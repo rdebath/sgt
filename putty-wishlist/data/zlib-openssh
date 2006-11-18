@@ -1,0 +1,25 @@
+Summary: Support for "zlib@openssh.com"
+Class: wish
+Difficulty: tricky
+Priority: medium
+Content-type: text/plain
+
+OpenSSH 4.2 introduces a variety of ZLIB compression called "zlib@openssh.com"
+which delays starting compression until after the server has sent
+SSH_MSG_USERAUTH_ACCEPT.  As far as we can tell, this is inherently subject
+to a race condition, since the client can't know whether the server has sent
+that message, and hence whether it should be transmitting compressed or
+uncompressed packets.  After the client has received USERAUTH_ACCEPT, of
+course, it knows that the server has sent it and can safely send compressed
+packets.  This suggests that the following implementation would be safe
+(assuming throughout that the user has requested compression):
+
+1: Before USERAUTH_ACCEPT is received, advertise "zlib,none" in KEXINIT.
+2: If an incoming KEXINIT includes "zlib@openssh.com", remember that.
+3: After receiving USERAUTH_ACCEPT, if the current compression algorithm is
+   "none" and KEXINIT contained "zlib@openssh.com", initiate key re-exchange.
+4: In KEXINITs after receiving USERAUTH_ACCEPT, advertise
+   "zlib,zlib@openssh.com,none".
+
+There's no need for PuTTY to stop supporting "zlib", since by the time we
+send NEWKEYS, we've authenticated the server.
