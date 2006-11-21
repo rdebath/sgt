@@ -175,12 +175,36 @@ void ilist_free(struct ilist *il)
 {
     while (il->n > 0) {
 	il->n--;
-        image_free(il->images[il->n]);
+        if (il->images[il->n])
+	    image_free(il->images[il->n]);
 	sfree(il->filenames[il->n]);
     }
     sfree(il->images);
     sfree(il->filenames);
     sfree(il);
+}
+
+void ilist_tmpfree(struct ilist *il, int n)
+{
+    if (0 <= n && n < il->n) {
+	if (il->images[n])
+	    image_free(il->images[n]);
+	il->images[n] = NULL;
+    }
+}
+
+void ilist_reload(struct ilist *il, int n)
+{
+    char *err;
+    assert(0 <= n && n < il->n);
+    if (il->images[n])
+	return;			       /* already loaded */
+    il->images[n] = image_load(il->filenames[n], &err);
+    if (!il->images[n]) {
+	fprintf(stderr, "v: unable to reload image '%s': %s\n",
+		il->filenames[n], err);
+	exit(1);
+    }
 }
 
 struct window {
@@ -199,9 +223,15 @@ static void switch_to_image(struct window *w, int index)
 
     assert(w->il->n > index);
 
+    ilist_tmpfree(w->il, w->pos);
+
     w->pos = index;
 
     im = w->il->images[index];
+    if (!im) {
+	ilist_reload(w->il, index);
+	im = w->il->images[index];
+    }
     get_scaled_size(im, &iw, &ih);
 
     w->iw = iw;
@@ -356,19 +386,27 @@ static int win_key_press(GtkWidget *widget, GdkEventKey *event, gpointer data)
     if (event->string[0] && !event->string[1]) {
 	int c = event->string[0];
 
-	if (c == 'q' || c == 'Q' || c == '\x11')
+	if (c == 'q' || c == 'Q' || c == '\x11') {
 	    gtk_widget_destroy(w->window);/* quit */
-	if ((c == ' ' || c == 'n' || c == 'N') && w->pos+1 < w->il->n)
+	    return TRUE;
+	}
+	if ((c == ' ' || c == 'n' || c == 'N') && w->pos+1 < w->il->n) {
 	    switch_to_image(w, w->pos+1);
+	    return TRUE;
+	}
 	if ((c == '\010' || c == '\177' ||
              c == 'b' || c == 'B' ||
-             c == 'p' || c == 'P') && w->pos > 0)
+             c == 'p' || c == 'P') && w->pos > 0) {
 	    switch_to_image(w, w->pos-1);
+	    return TRUE;
+	}
     } else {
 	int c = event->keyval;
 
-	if (c == GDK_BackSpace && w->pos > 0)
+	if (c == GDK_BackSpace && w->pos > 0) {
 	    switch_to_image(w, w->pos-1);
+	    return TRUE;
+	}
     }
 
     return FALSE;
