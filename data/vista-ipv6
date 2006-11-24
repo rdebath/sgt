@@ -1,0 +1,26 @@
+Summary: IPv6 support doesn't work in Windows Vista
+Class: bug
+Difficulty: taxing
+Priority: medium
+Content-type: text/x-html-body
+
+<p>We've had a report that PuTTY's IPv6 support doesn't work in Windows Vista
+(x86 RTM version from MSDN), and it always falls back to IPv4:
+
+<blockquote>
+<p>As far as I can see, connections via IPv4 work exactly as they should.  With 
+IPv6, however, it would appear that regardless of the mode I specify (either 
+Auto or IPv6 on the Connection section of the configuration, that PuTTY always 
+connects to the relevant IPv4 socket at the remote end, and never the IPv6 
+socket.  This is also repeatable using the command line: i.e. <code>putty -6 -ssh 
+my.host.name</code> also connects via IPv4.
+
+<p>It is also not possible, using Vista, to connect to an IPv6 address literal 
+either via the PuTTY user interface itself or the command line.  In my case I 
+was trying to connect to my server 2001:8b0:127::2 but this was refused with 
+the error message 'Unable to open connection to server 2001:8b0:127::2 
+gethostbyname: unknown error'
+
+<p>(I understand that Microsoft have changed the Winsock interface in Vista so 
+this may have some bearing on the problem.)
+</blockquote>
