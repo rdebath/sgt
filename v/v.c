@@ -39,10 +39,6 @@
  *       whatever).
  *
  *  - scaling of images so they fit on the screen.
- *     + so we need to sense the screen size
- *     + and also it would be good to somehow sense the presence of
- *       the GNOME taskbar, although I've no idea how you can tell
- *       that.
  *     + should also be able to switch back to 1-1 viewing, which
  *       probably means scrollbars.
  *     + manual scaling would probably be nice too.
@@ -80,14 +76,72 @@
 #include <X11/X.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
+#include <X11/Xatom.h>
 #include <gdk/gdkx.h>
 
+int fw = 23, fh = 40;
+
+int maxw, maxh;
+
 /*
- * FIXME: These should be set from the current display size.
- * Tricky, because I'd also like to take the GNOME taskbar into
- * account. Not sure how to do that.
+ * Determine the maximum usable area of the screen. At a pinch we
+ * can do this simply by querying the screen size, but if there are
+ * taskbars and the like around the edges of the screen then
+ * ideally we prefer to fit within them. Thus we query the
+ * _NET_WORKAREA property on the root window if we can.
+ *
+ * Ideally we also ought to ask the window manager how big the
+ * window frame is going to be, using _NET_REQUEST_FRAME_EXTENTS,
+ * and take that into account as well. However, I haven't
+ * implemented this, because so far this program has only one user
+ * and it's me, and the WM I use doesn't appear to support that
+ * feature. So instead I have a hardwired fw and fh (above) which
+ * configure the frame extents assumed by v, and there are
+ * command-line options to adjust them. The defaults, of course,
+ * just happen to be set the way I like them. Anyone who grabs v
+ * out of my svn repository and doesn't like this approach is
+ * welcome to send me code...
  */
-int maxw = 1572, maxh = 1104;
+void setup_maxw_maxh(void)
+{
+    int minx, miny, maxx, maxy;
+    Display *disp;
+    Window root;
+    Atom prop, proptype;
+    int format;
+    unsigned long nitems, bytes;
+    unsigned long *propdata;
+
+    minx = miny = 0;
+    maxx = gdk_screen_width();
+    maxy = gdk_screen_height();
+
+    disp = GDK_DISPLAY();
+    root = RootWindow(disp, DefaultScreen(disp));
+    prop = XInternAtom(disp, "_NET_WORKAREA", True);
+    if (prop != None &&
+        XGetWindowProperty(disp, root, prop, 0, 4, False, XA_CARDINAL,
+                           &proptype, &format, &nitems, &bytes,
+                           (unsigned char **)(void *)&propdata) == Success &&
+        proptype == XA_CARDINAL &&
+        nitems >= 4) {
+
+        minx = propdata[0];
+        miny = propdata[1];
+        maxx = propdata[2];
+        maxy = propdata[3];
+
+        XFree(propdata);
+    }
+
+    maxw = maxx - minx;
+    maxh = maxy - miny;
+
+    maxw -= fw;
+    maxh -= fh;
+
+    printf("%d %d\n", maxw, maxh);
+}
 
 /*
  * Size of border drawn around the image in max-size mode.
@@ -426,6 +480,8 @@ static struct window *new_window(struct ilist *il, int maxsize)
     w->area = gtk_drawing_area_new();
     w->ww = w->wh = 0;
 
+    setup_maxw_maxh();
+
     gtk_widget_show(w->area);
     gtk_container_add(GTK_CONTAINER(w->window), w->area);
 
@@ -550,6 +606,18 @@ int main(int argc, char **argv)
 			} else if (!strcmp(opt, "-version")) {
 			    showversion();
 			    nogo = TRUE;
+			} else if (!strcmp(opt, "-fh")) {
+			    if (!val)
+				fprintf(stderr, "v: option '-%s' expects an"
+					" argument\n", opt);
+			    else
+				fh = atoi(val);
+			} else if (!strcmp(opt, "-fw")) {
+			    if (!val)
+				fprintf(stderr, "v: option '-%s' expects an"
+					" argument\n", opt);
+			    else
+				fw = atoi(val);
 			} else if (!strcmp(opt, "-licence") ||
 				   !strcmp(opt, "-license")) {
 			    licence();
