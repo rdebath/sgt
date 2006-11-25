@@ -83,6 +83,8 @@ int fw = 23, fh = 40;
 
 int maxw, maxh;
 
+enum { NEVER, TOOBIG, ALWAYS } scale = TOOBIG;
+
 /*
  * Determine the maximum usable area of the screen. At a pinch we
  * can do this simply by querying the screen size, but if there are
@@ -168,9 +170,10 @@ static void get_scaled_size(image *im, int *w, int *h)
     ih = image_height(im);
 
     /*
-     * Scale the image down if it's too big.
+     * Optionally scale the image up or down to the maximum
+     * aspect-preserving size that fits on the screen.
      */
-    if (iw > maxw || ih > maxh) {
+    if (scale != NEVER && (iw > maxw || ih > maxh || scale == ALWAYS)) {
 	float wscale = (float)iw / maxw;
 	float hscale = (float)ih / maxh;
 	float scale = (wscale > hscale ? wscale : hscale);
@@ -478,8 +481,6 @@ static struct window *new_window(struct ilist *il, int maxsize)
     w->area = gtk_drawing_area_new();
     w->ww = w->wh = 0;
 
-    setup_maxw_maxh();
-
     gtk_widget_show(w->area);
     gtk_container_add(GTK_CONTAINER(w->window), w->area);
 
@@ -558,6 +559,8 @@ int main(int argc, char **argv)
 	memcpy(argv + gtk_argc, trail_argv, trail_argc * sizeof(char *));
     }
 
+    setup_maxw_maxh();
+
     image_init();
 
     il = ilist_new();
@@ -633,6 +636,8 @@ int main(int argc, char **argv)
 		  case 'L':
 		  case 'm':
 		  case 'i':
+		  case 'a':
+		  case 'n':
 		    /*
 		     * Option requiring no parameter.
 		     */
@@ -651,6 +656,12 @@ int main(int argc, char **argv)
 			break;
 		      case 'm':
 			maxsize = TRUE;
+			break;
+		      case 'a':
+			scale = ALWAYS;
+			break;
+		      case 'n':
+			scale = NEVER;
 			break;
 		      case 'i':
 			ignoreloaderrs = TRUE;
