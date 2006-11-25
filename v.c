@@ -139,8 +139,6 @@ void setup_maxw_maxh(void)
 
     maxw -= fw;
     maxh -= fh;
-
-    printf("%d %d\n", maxw, maxh);
 }
 
 /*
