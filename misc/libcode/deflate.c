@@ -39,6 +39,13 @@
  *     + abandon the entropic approximation and go with trial
  * 	 Huffman runs
  *
+ *  - Compression quality: see if increasing SYMLIMIT causes
+ *    dynamic blocks to start being consistently smaller than it.
+ *
+ *  - Compression quality: we ought to be able to fall right back
+ *    to actual uncompressed blocks if really necessary, though
+ *    it's not clear what the criterion for doing so would be.
+ *
  *  - Performance: chooseblock() is currently computing the whole
  *    entropic approximation for every possible block size. It
  *    ought to be able to update it incrementally as it goes along
