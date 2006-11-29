@@ -20,23 +20,24 @@ if len(args) != 2:
 n = int(args[0])
 k = int(args[1])
 
-list = [0] * k + [n-1] * k
 used = {}
 
-for i in range(k+1):
-    used[tuple(list[i:i+k])] = 1
+tmplist = [n-1] * (k-1) + [0] * k
+for i in range(k):
+    used[tuple(tmplist[i:i+k])] = 1
+
+list = [0] * k
 
 while 1:
     prefix = tuple(list[-(k-1):])   # last k-1 elements of the list
     next = -1
-    for j in range(n-1,-1,-1):
+    for j in range(n):
         if used.get(prefix + (j,), 0) == 0:
             next = j
             break
     if next == -1:
-        assert len(list) == n ** k + k - 1
-        assert list[0:k-1] == list[-(k-1):]
-        list = list[0:-(k-1)]
+        assert len(list) == n ** k
+        assert list[-(k-1):] == [n-1] * (k-1)
         break
     list.append(next)
     used[prefix + (next,)] = 1
