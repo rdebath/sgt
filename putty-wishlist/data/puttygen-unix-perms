@@ -1,0 +1,22 @@
+Summary: puttygen can create world-readable private keys
+Class: bug
+Difficulty: fun
+Priority: medium
+Present-in: 0.58
+Content-type: text/x-html-body
+
+From <a href="http://bugs.debian.org/400804">Debian bug 400804</a>:
+<blockquote>
+<p>When i run puttygen (either to create a new key, or to translate an
+openssh-style key), the emitted ppk file (the putty private key) is
+created with the standard umask, which by default in debian leaves
+things world-readable.
+
+<p>this is in contrast to ssh-keygen from the openssh suite, which
+creates private keys with group and other permissions all off, no
+matter what the current umask.
+
+<p>I think that ssh-keygen's approach is what people expect and intend
+when it comes to public keys, and it's a better idea to make these
+things safe-by-default.
+</blockquote>
