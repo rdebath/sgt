@@ -1904,6 +1904,7 @@ int deflate_decompress_data(deflate_decompress_ctx *dctx,
 	    if (code == -2)
 		goto decode_error;
 	    if (code < 256) {
+		emit_char(dctx, code);
 		debug(("recv: got literal %d [%d]\n", code,
 		       BITCOUNT(dctx) - dctx->bitcount_before));
 	    } else if (code == 256) {
@@ -2105,6 +2106,7 @@ int main(int argc, char **argv)
 
     do {
 	ret = fread(buf, 1, sizeof(buf), fp);
+	outbuf = NULL;
 	if (dhandle) {
 	    if (ret > 0)
 		deflate_decompress_data(dhandle, buf, ret,
@@ -2121,7 +2123,7 @@ int main(int argc, char **argv)
             if (outlen)
                 fwrite(outbuf, 1, outlen, stdout);
             sfree(outbuf);
-        } else if (dhandle) {
+        } else if (dhandle && ret > 0) {
             fprintf(stderr, "decoding error\n");
             return 1;
         }
