@@ -1641,6 +1641,11 @@ struct deflate_decompress_ctx {
     int outlen, outsize;
     int type;
     unsigned long adler32;
+#ifdef TESTDBG
+    int bytesread;
+    int bitcount_before;
+#define BITCOUNT(dctx) ( (dctx)->bytesread * 8 - (dctx)->nbits )
+#endif
 };
 
 deflate_decompress_ctx *deflate_decompress_new(int type)
@@ -1666,6 +1671,9 @@ deflate_decompress_ctx *deflate_decompress_new(int type)
     dctx->type = type;
     dctx->lastblock = FALSE;
     dctx->adler32 = 1;
+#ifdef TESTDBG
+    dctx->bytesread = dctx->bitcount_before = 0;
+#endif
 
     return dctx;
 }
@@ -1748,6 +1756,9 @@ int deflate_decompress_data(deflate_decompress_ctx *dctx,
 	    dctx->bits |= (*block++) << dctx->nbits;
 	    dctx->nbits += 8;
 	    len--;
+#ifdef TESTDBG
+	    dctx->bytesread++;
+#endif
 	}
 	switch (dctx->state) {
 	  case START:
@@ -1883,15 +1894,19 @@ int deflate_decompress_data(deflate_decompress_ctx *dctx,
 	    dctx->state = TREES_LEN;
 	    break;
 	  case INBLK:
+#ifdef TESTDBG
+	    dctx->bitcount_before = BITCOUNT(dctx);
+#endif
 	    code = huflookup(&dctx->bits, &dctx->nbits, dctx->currlentable);
 	    debug(("recv: litlen %d\n", code));
 	    if (code == -1)
 		goto finished;
 	    if (code == -2)
 		goto decode_error;
-	    if (code < 256)
-		emit_char(dctx, code);
-	    else if (code == 256) {
+	    if (code < 256) {
+		debug(("recv: got literal %d [%d]\n", code,
+		       BITCOUNT(dctx) - dctx->bitcount_before));
+	    } else if (code == 256) {
 		if (dctx->lastblock)
 		    dctx->state = END;
 		else
@@ -1941,6 +1956,8 @@ int deflate_decompress_data(deflate_decompress_ctx *dctx,
 		       dist - rec->min, rec->extrabits));
 	    EATBITS(rec->extrabits);
 	    dctx->state = INBLK;
+	    debug(("recv: got copy <%d,%d> [%d]\n", dctx->len, dist,
+		   BITCOUNT(dctx) - dctx->bitcount_before));
 	    while (dctx->len--)
 		emit_char(dctx, dctx->window[(dctx->winpos - dist) &
 					     (WINSIZE - 1)]);
