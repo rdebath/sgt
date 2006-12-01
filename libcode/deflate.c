@@ -21,17 +21,12 @@
  *    I'm not sure exactly how those work when you don't know in
  *    advance that your next block will be static (as we did in
  *    PuTTY). And remember the 9-bit limitation of zlib.
+ *     + also, zlib has FULL_FLUSH which clears the LZ77 state as
+ * 	 well, for random access.
  *
  *  - Compression quality: introduce the option of choosing a
  *    static block instead of a dynamic one, where that's more
  *    efficient.
- *
- *  - Compression quality: the actual LZ77 engine appears to be
- *    unable to track a match going beyond the input data passed to
- *    it in a single call. I'd prefer it to be more restartable
- *    than that: we ought to be able to pass in our input data in
- *    whatever size blocks happen to be convenient and not affect
- *    the output at all.
  *
  *  - Compression quality: chooseblock() appears to be computing
  *    wildly inaccurate block size estimates. Possible resolutions:
@@ -113,272 +108,589 @@
  * and good luck :-)
  */
 
-struct LZ77InternalContext;
-struct LZ77Context {
-    struct LZ77InternalContext *ictx;
-    void *userdata;
-    void (*literal) (struct LZ77Context * ctx, unsigned char c);
-    void (*match) (struct LZ77Context * ctx, int distance, int len);
-};
+typedef struct LZ77 LZ77;
 
 /*
- * Initialise the private fields of an LZ77Context. It's up to the
- * user to initialise the public fields.
+ * Set up an LZ77 context. The user supplies two function pointer
+ * parameters: `literal', called when the compressor outputs a
+ * literal byte, and `match', called when the compressor outputs a
+ * match. Each of these functions, in addition to parameters
+ * describing the data being output, also receives a void * context
+ * parameter which is passed in to lz77_new().
  */
-static int lz77_init(struct LZ77Context *ctx);
+static LZ77 *lz77_new(void (*literal)(void *ctx, unsigned char c),
+		      void (*match)(void *ctx, int distance, int len),
+		      void *ctx);
 
 /*
- * Supply data to be compressed. Will update the private fields of
- * the LZ77Context, and will call literal() and match() to output.
- * If `compress' is FALSE, it will never emit a match, but will
- * instead call literal() for everything.
+ * Supply data to be compressed. This produces output by calling
+ * the literal() and match() functions passed to lz77_new().
+ * 
+ * This function buffers data internally, so in any given call it
+ * will not necessarily output literals and matches which cover all
+ * the data passed in to it. To force a buffer flush, use
+ * lz77_flush().
  */
-static void lz77_compress(struct LZ77Context *ctx,
-			  const unsigned char *data, int len, int compress);
+static void lz77_compress(LZ77 *lz, const void *data, int len);
+
+/*
+ * Force the LZ77 compressor to output literals and matches which
+ * cover all the data it has received as input until now.
+ *
+ * After calling this function, the LZ77 stream is still active:
+ * future input data will still be matched against data which was
+ * provided before the flush. Therefore, this function can be used
+ * to produce guaranteed record boundaries in a single data stream,
+ * but can _not_ be used to reuse the same LZ77 context for two
+ * entirely separate data streams (otherwise the second one might
+ * make backward references beyond the start of its data).
+ * 
+ * Calling this in the middle of a data stream can decrease
+ * compression quality. If maximum compression is the only concern,
+ * do not call this function until the very end of the stream.
+ */
+static void lz77_flush(LZ77 *lz);
+
+/*
+ * Free an LZ77 context when it's finished with. This does not
+ * automatically flush buffered data; call lz77_flush explicitly to
+ * do that.
+ */
+static void lz77_free(LZ77 *lz);
 
 /*
  * Modifiable parameters.
  */
-#define WINSIZE 32768		       /* window size. Must be power of 2! */
+#define MAXMATCHDIST 32768	       /* maximum backward distance */
+#define MAXMATCHLEN 258		       /* maximum length of a match */
 #define HASHMAX 2039		       /* one more than max hash value */
-#define MAXMATCH 32		       /* how many matches we track */
 #define HASHCHARS 3		       /* how many chars make a hash */
+#define MAXLAZY 3		       /* limit of lazy matching */
 
 /*
- * This compressor takes a less slapdash approach than the
- * gzip/zlib one. Rather than allowing our hash chains to fall into
- * disuse near the far end, we keep them doubly linked so we can
- * _find_ the far end, and then every time we add a new byte to the
- * window (thus rolling round by one and removing the previous
- * byte), we can carefully remove the hash chain entry.
+ * Derived parameters.
  */
+#define WINSIZE (MAXMATCHDIST + HASHCHARS * 2)  /* actual window size */
 
-#define INVALID -1		       /* invalid hash _and_ invalid offset */
-struct WindowEntry {
-    short next, prev;		       /* array indices within the window */
-    short hashval;
-};
+struct LZ77 {
+    /*
+     * Administrative data passed in from lz77_new().
+     */
+    void *ctx;
+    void (*literal)(void *ctx, unsigned char c);
+    void (*match)(void *ctx, int distance, int len);
 
-struct HashEntry {
-    short first;		       /* window index of first in chain */
-};
-
-struct Match {
-    int distance, len;
-};
-
-struct LZ77InternalContext {
-    struct WindowEntry win[WINSIZE];
+    /*
+     * The actual data in the sliding window, stored as a circular
+     * buffer. `winpos' marks the head of the buffer. So
+     * data[winpos] is the most recent character; data[winpos+1] is
+     * the most recent but one; and data[winpos-1] (all mod
+     * WINSIZE, of course) is the least recent character still in
+     * the buffer.
+     */
     unsigned char data[WINSIZE];
     int winpos;
-    struct HashEntry hashtab[HASHMAX];
-    unsigned char pending[HASHCHARS];
-    int npending;
+
+    /*
+     * This variable indicates the number of input characters we
+     * have accepted into the window which haven't been output yet.
+     * It can exceed WINSIZE if we're tracking a particularly long
+     * match.
+     */
+    int k;
+
+    /*
+     * This variable indicates the number of valid bytes in the
+     * sliding window. It starts at zero at the beginning of the
+     * data stream, then rapidly rises to WINSIZE; it can also
+     * decrease by small amounts during the compression when we
+     * need to rewind the state by a few bytes.
+     */
+    int nvalid;
+
+    /*
+     * This variable indicates that the compressor state has been
+     * rewound by a few bytes, which causes the main loop to reuse
+     * characters already in the sliding window instead of taking
+     * more from the input data.
+     */
+    int rewound;
+
+    /*
+     * This array links the window positions into disjoint lists
+     * chained from the hash table. hashnext[pos] gives the
+     * position of the next most recent sequence of three
+     * characters with the same hash as this one. Indices in this
+     * table have the same meaning as indices in `data', and mark
+     * the _most recent_ of the three characters involved.
+     * 
+     * The list need only be singly linked: we detect the end of a
+     * hash chain by observing that pos and hashnext[pos] are on
+     * opposite sides of the maximum match distance.
+     * 
+     * If hashnext[pos] < 0, that also indicates the end of a hash
+     * chain. This only comes up at the start of the algorithm
+     * before the hash chain has been used.
+     */
+    int hashnext[WINSIZE];
+
+    /*
+     * The hash table. For each hash value, this stores the
+     * location within the window of the most recent sequence of
+     * three characters with that hash value, or -1 if there hasn't
+     * been one yet.
+     */
+    int hashhead[HASHMAX];
+
+    /*
+     * This list links together the set of backward distances which
+     * currently constitute valid matches. Unlike the other arrays
+     * of size WINSIZE, this one is indexed by absolute backward
+     * distance: its indices are not dependent on winpos.
+     *
+     * This list can contain multiple disjoint linked lists when
+     * we're doing lazy matching. (Two candidate matches starting
+     * at positions which differ by less than HASHCHARS cannot both
+     * have the same backward distance, because if they did then
+     * they'd be part of the same longer match and obviously the
+     * one starting earlier would be preferable; so there can be no
+     * collision within this array.)
+     * 
+     * matchnext[pos] is
+     * 	- less than 0 if pos is the last element in such a list
+     * 	- exactly 0 if pos is not part of such a list at all (this
+     * 	  does not clash with a real backward distance because real
+     * 	  backward distances must be at least 1!)
+     * 	- otherwise gives the next shortest backward distance of a
+     * 	  so-far valid match.
+     */
+    int matchnext[WINSIZE];
+
+    /*
+     * These variables track the heads of linked lists in
+     * nextmatch. matchhead[i] is the list of possible matches
+     * starting i bytes after the last output, or -1 if the list is
+     * currently empty.
+     */
+    int matchhead[HASHCHARS];
+
+    /*
+     * These variables track the current length, and best backward
+     * distance, of the matches listed in matchhead. Entries in
+     * these two arrays can persist after matchhead[i] has become
+     * -1, because only after we know how long all the matches are
+     * going to be can we decide which one to output.
+     */
+    int matchlen[HASHCHARS], matchdist[HASHCHARS];
+
+    /*
+     * These are the literals saved during lazy matching: if we
+     * output a match starting at k+i, we need i literals from
+     * position k.
+     */
+    unsigned char literals[HASHCHARS-1];
 };
 
-static int lz77_hash(const unsigned char *data)
-{
-    return (257 * data[0] + 263 * data[1] + 269 * data[2]) % HASHMAX;
+static int lz77_hash(const unsigned char *data) {
+    return (257*data[0] + 263*data[1] + 269*data[2]) % HASHMAX;
 }
 
-static int lz77_init(struct LZ77Context *ctx)
+static LZ77 *lz77_new(void (*literal)(void *ctx, unsigned char c),
+		      void (*match)(void *ctx, int distance, int len),
+		      void *ctx)
 {
-    struct LZ77InternalContext *st;
+    LZ77 *lz;
     int i;
 
-    st = snew(struct LZ77InternalContext);
-    if (!st)
-	return 0;
+    lz = (LZ77 *)malloc(sizeof(LZ77));
+    if (!lz)
+	return NULL;
 
-    ctx->ictx = st;
+    lz->ctx = ctx;
+    lz->literal = literal;
+    lz->match = match;
 
-    for (i = 0; i < WINSIZE; i++)
-	st->win[i].next = st->win[i].prev = st->win[i].hashval = INVALID;
-    for (i = 0; i < HASHMAX; i++)
-	st->hashtab[i].first = INVALID;
-    st->winpos = 0;
+    for (i = 0; i < WINSIZE; i++) {
+	lz->data[i] = 0;
+	lz->hashnext[i] = -1;
+	lz->matchnext[i] = 0;
+    }
 
-    st->npending = 0;
+    for (i = 0; i < HASHMAX; i++) {
+	lz->hashhead[i] = -1;
+    }
 
-    return 1;
+    for (i = 0; i < HASHCHARS; i++) {
+	lz->matchhead[i] = -1;
+	lz->matchlen[i] = 0;
+	lz->matchdist[i] = 0;
+	lz->literals[i] = 0;
+    }
+    
+    lz->winpos = 0;
+    lz->k = 0;
+    lz->nvalid = 0;
+    lz->rewound = 0;
+
+    return lz;
 }
 
-static void lz77_advance(struct LZ77InternalContext *st,
-			 unsigned char c, int hash)
+static void lz77_free(LZ77 *lz)
 {
-    int off;
+    free(lz);
+}
 
-    /*
-     * Remove the hash entry at winpos from the tail of its chain,
-     * or empty the chain if it's the only thing on the chain.
-     */
-    if (st->win[st->winpos].prev != INVALID) {
-	st->win[st->win[st->winpos].prev].next = INVALID;
-    } else if (st->win[st->winpos].hashval != INVALID) {
-	st->hashtab[st->win[st->winpos].hashval].first = INVALID;
+static void lz77_hashsearch(LZ77 *lz, int hash, unsigned char *currchars)
+{
+    int pos, nextpos, matchlimit;
+
+    assert(lz->matchhead[lz->k-HASHCHARS] < 0);
+    assert(lz->matchdist[lz->k-HASHCHARS] == 0);
+    assert(lz->matchlen[lz->k-HASHCHARS] == 0);
+
+    if (lz->k < HASHCHARS+MAXLAZY-1) {
+	/*
+	 * Save the literal at this position, in case we need it.
+	 */
+	lz->literals[lz->k - HASHCHARS] =
+	    lz->data[(lz->winpos + HASHCHARS-1) % WINSIZE];
     }
 
     /*
-     * Create a new entry at winpos and add it to the head of its
-     * hash chain.
+     * Find the most distant place in the window where we could
+     * viably start a match. This is limited by the maximum match
+     * distance, and it's also limited by the current amount of
+     * valid data in the window.
      */
-    st->win[st->winpos].hashval = hash;
-    st->win[st->winpos].prev = INVALID;
-    off = st->win[st->winpos].next = st->hashtab[hash].first;
-    st->hashtab[hash].first = st->winpos;
-    if (off != INVALID)
-	st->win[off].prev = st->winpos;
-    st->data[st->winpos] = c;
+    matchlimit = (lz->nvalid < MAXMATCHDIST ? lz->nvalid : MAXMATCHDIST);
+    matchlimit = (matchlimit + lz->winpos) % WINSIZE;
 
-    /*
-     * Advance the window pointer.
-     */
-    st->winpos = (st->winpos + 1) & (WINSIZE - 1);
-}
+    pos = lz->hashhead[hash];
+    while (pos != -1) {
+	int bdist;
+	int i;
 
-#define CHARAT(k) ( (k)<0 ? st->data[(st->winpos+k)&(WINSIZE-1)] : data[k] )
+	/*
+	 * Compute the backward distance.
+	 */
+	bdist = (pos + WINSIZE - lz->winpos) % WINSIZE;
 
-static void lz77_compress(struct LZ77Context *ctx,
-			  const unsigned char *data, int len, int compress)
-{
-    struct LZ77InternalContext *st = ctx->ictx;
-    int i, hash, distance, off, nmatch, matchlen, advance;
-    struct Match defermatch, matches[MAXMATCH];
-    int deferchr;
-
-    /*
-     * Add any pending characters from last time to the window. (We
-     * might not be able to.)
-     */
-    for (i = 0; i < st->npending; i++) {
-	unsigned char foo[HASHCHARS];
-	int j;
-	if (len + st->npending - i < HASHCHARS) {
-	    /* Update the pending array. */
-	    for (j = i; j < st->npending; j++)
-		st->pending[j - i] = st->pending[j];
-	    break;
-	}
-	for (j = 0; j < HASHCHARS; j++)
-	    foo[j] = (i + j < st->npending ? st->pending[i + j] :
-		      data[i + j - st->npending]);
-	lz77_advance(st, foo[0], lz77_hash(foo));
-    }
-    st->npending -= i;
-
-    defermatch.len = 0;
-    deferchr = '\0';
-    while (len > 0) {
-
-	/* Don't even look for a match, if we're not compressing. */
-	if (compress && len >= HASHCHARS) {
-	    /*
-	     * Hash the next few characters.
-	     */
-	    hash = lz77_hash(data);
+	/*
+	 * If there's already a match being tracked at this
+	 * distance, don't bother trying this one. Also, it's
+	 * possible this match may be in the future (because if we
+	 * rewound the compressor, some entries at the head of the
+	 * hash chain will not be valid again _yet_), so check that
+	 * too.
+	 */
+	if (bdist > 0 && bdist <= MAXMATCHDIST && !lz->matchnext[bdist]) {
 
 	    /*
-	     * Look the hash up in the corresponding hash chain and see
-	     * what we can find.
+	     * Make sure the characters at pos really do match the
+	     * ones in currchars.
 	     */
-	    nmatch = 0;
-	    for (off = st->hashtab[hash].first;
-		 off != INVALID; off = st->win[off].next) {
-		/* distance = 1       if off == st->winpos-1 */
-		/* distance = WINSIZE if off == st->winpos   */
-		distance =
-		    WINSIZE - (off + WINSIZE - st->winpos) % WINSIZE;
-		for (i = 0; i < HASHCHARS; i++)
-		    if (CHARAT(i) != CHARAT(i - distance))
-			break;
-		if (i == HASHCHARS) {
-		    matches[nmatch].distance = distance;
-		    matches[nmatch].len = 3;
-		    if (++nmatch >= MAXMATCH)
-			break;
-		}
-	    }
-	} else {
-	    nmatch = 0;
-	    hash = INVALID;
-	}
-
-	if (nmatch > 0) {
-	    /*
-	     * We've now filled up matches[] with nmatch potential
-	     * matches. Follow them down to find the longest. (We
-	     * assume here that it's always worth favouring a
-	     * longer match over a shorter one.)
-	     */
-	    matchlen = HASHCHARS;
-	    while (matchlen < len) {
-		int j;
-		for (i = j = 0; i < nmatch; i++) {
-		    if (CHARAT(matchlen) ==
-			CHARAT(matchlen - matches[i].distance)) {
-			matches[j++] = matches[i];
-		    }
-		}
-		if (j == 0)
+	    for (i = 0; i < HASHCHARS; i++)
+		if (lz->data[(pos + i) % WINSIZE] != currchars[i])
 		    break;
-		matchlen++;
-		nmatch = j;
-	    }
-
-	    /*
-	     * We've now got all the longest matches. We favour the
-	     * shorter distances, which means we go with matches[0].
-	     * So see if we want to defer it or throw it away.
-	     */
-	    matches[0].len = matchlen;
-	    if (defermatch.len > 0) {
-		if (matches[0].len > defermatch.len + 1) {
-		    /* We have a better match. Emit the deferred char,
-		     * and defer this match. */
-		    ctx->literal(ctx, (unsigned char) deferchr);
-		    defermatch = matches[0];
-		    deferchr = data[0];
-		    advance = 1;
-		} else {
-		    /* We don't have a better match. Do the deferred one. */
-		    ctx->match(ctx, defermatch.distance, defermatch.len);
-		    advance = defermatch.len - 1;
-		    defermatch.len = 0;
+	    if (i == HASHCHARS) {
+		/*
+		 * They did, so this is a valid match position. Add
+		 * it to the list of possible match locations.
+		 */
+		lz->matchnext[bdist] = lz->matchhead[lz->k-HASHCHARS];
+		lz->matchhead[lz->k-HASHCHARS] = bdist;
+		/*
+		 * We're working through the window from most to
+		 * least recent, and we want to prefer matching
+		 * against more recent data; so here we only set
+		 * matchdist on the first (i.e. most recent) match
+		 * we find.
+		 */
+		if (!lz->matchlen[lz->k-HASHCHARS]) {
+		    lz->matchlen[lz->k-HASHCHARS] = HASHCHARS;
+		    lz->matchdist[lz->k-HASHCHARS] = bdist;
 		}
-	    } else {
-		/* There was no deferred match. Defer this one. */
-		defermatch = matches[0];
-		deferchr = data[0];
-		advance = 1;
-	    }
-	} else {
-	    /*
-	     * We found no matches. Emit the deferred match, if
-	     * any; otherwise emit a literal.
-	     */
-	    if (defermatch.len > 0) {
-		ctx->match(ctx, defermatch.distance, defermatch.len);
-		advance = defermatch.len - 1;
-		defermatch.len = 0;
-	    } else {
-		ctx->literal(ctx, data[0]);
-		advance = 1;
 	    }
 	}
 
 	/*
-	 * Now advance the position by `advance' characters,
-	 * keeping the window and hash chains consistent.
+	 * Step along the hash chain to try the next candidate
+	 * location. If we've gone past matchlimit, stop.
+	 * 
+	 * Special case: we could also link to ourself here. This
+	 * occurs when this window position is repeating a previous
+	 * hash and nothing else has had the same hash in between.
 	 */
-	while (advance > 0) {
-	    if (len >= HASHCHARS) {
-		lz77_advance(st, *data, lz77_hash(data));
-	    } else {
-		st->pending[st->npending++] = *data;
+	nextpos = lz->hashnext[pos];
+	if (nextpos == pos ||
+	    (matchlimit + WINSIZE - nextpos) % WINSIZE >
+	    (matchlimit + WINSIZE - pos) % WINSIZE)
+	    break;
+	else
+	    pos = nextpos;
+    }
+}
+
+static void lz77_outputmatch(LZ77 *lz)
+{
+    int besti = -1, bestval = -1;
+    int i;
+
+    /*
+     * Decide which match to output. The rule is: in order for a
+     * match starting i characters later than another one to be
+     * worth choosing, it must be at least i characters longer as
+     * well.
+     *
+     * This reduces to a concrete algorithm in which we subtract i
+     * from the length of match[i], and pick the largest of the
+     * resulting numbers, breaking ties in favour of _later_
+     * matches.
+     */
+    for (i = MAXLAZY; i-- > 0 ;)
+	if (lz->matchlen[i] - i > bestval) {
+	    bestval = lz->matchlen[i] - i;
+	    besti = i;
+	}
+
+    /*
+     * Output the match plus its pre-literals (if any).
+     */
+    for (i = 0; i < besti; i++)
+	lz->literal(lz->ctx, lz->literals[i]);
+    lz->match(lz->ctx, lz->matchdist[besti], lz->matchlen[besti]);
+
+    /*
+     * Decrease k by the amount of data we've just output.
+     */
+    lz->k -= besti + lz->matchlen[besti];
+
+    /*
+     * Clean out the matchdist and matchlen arrays.
+     */
+    for (i = 0; i < HASHCHARS; i++)
+	lz->matchdist[i] = lz->matchlen[i] = 0;
+
+    /*
+     * If k is HASHCHARS or more, we must rewind the compressor
+     * state by a few bytes so that we can reprocess those bytes
+     * and look for new matches starting there. Because the window
+     * size is a few bytes more than MAXMATCHDIST, this does not
+     * impact our ability to find matches at the maximum distance
+     * even after this rewinding.
+     */
+    if (lz->k >= HASHCHARS) {
+	int rw = lz->k - (HASHCHARS-1);
+
+	assert(lz->rewound + rw < HASHCHARS);
+
+	lz->winpos = (lz->winpos + rw) % WINSIZE;
+	lz->rewound += rw;
+	lz->k -= rw;
+	lz->nvalid -= rw;
+    }
+}
+
+static void lz77_flush(LZ77 *lz)
+{
+    int i;
+
+    while (lz->k >= HASHCHARS) {
+	/*
+	 * Output a match.
+	 */
+	lz77_outputmatch(lz);
+
+	/*
+	 * Clean up the match lists.
+	 */
+	for (i = 0; i < HASHCHARS; i++) {
+	    while (lz->matchhead[i] >= 0) {
+		int tmp = lz->matchhead[i];
+
+		lz->matchhead[i] = lz->matchnext[tmp];
+		lz->matchnext[tmp] = 0;
 	    }
-	    data++;
+	}
+
+	/*
+	 * In case we've rewound, call the main compress function
+	 * with length zero to reprocess the rewound data. Then we
+	 * might go back round this loop if that spotted a final
+	 * match after the one we output above.
+	 */
+	lz77_compress(lz, NULL, 0);
+    }
+
+    assert(lz->k < HASHCHARS);
+    /*
+     * Now just output literals until we reduce k to zero.
+     */
+    while (lz->k > 0) {
+	lz->k--;
+	lz->literal(lz->ctx, lz->data[(lz->winpos + lz->k) % WINSIZE]);
+    }
+}
+
+static void lz77_compress(LZ77 *lz, const void *vdata, int len)
+{
+    const unsigned char *data = (const unsigned char *)vdata;
+
+    while (lz->rewound > 0 || len > 0) {
+	unsigned char currchars[HASHCHARS];
+	int hash;
+	int rewound_this_time;
+
+	/*
+	 * First thing we do with every character we see: add it to
+	 * the sliding window, and shift the window round.
+	 */
+	lz->winpos = (lz->winpos + WINSIZE-1) % WINSIZE;
+	if (lz->rewound == 0) {
 	    len--;
-	    advance--;
+	    lz->data[lz->winpos] = *data++;
+	    rewound_this_time = 0;
+	} else {
+	    lz->rewound--;
+	    rewound_this_time = 1;
+	}
+	lz->k++;
+	if (lz->nvalid < WINSIZE)
+	    lz->nvalid++;
+
+	/*
+	 * If we're still within one hash length of the start of
+	 * the input data, there really is nothing more we can do
+	 * at all just yet.
+	 */
+	if (lz->nvalid < HASHCHARS)
+	    continue;
+
+	/*
+	 * Hash the most recent three characters.
+	 */
+	{
+	    int i;
+	    for (i = 0; i < HASHCHARS; i++)
+		currchars[i] = lz->data[(lz->winpos + i) % WINSIZE];
+	    hash = lz77_hash(currchars);
+	}
+
+	/*
+	 * If k is within the range [HASHCHARS, HASHCHARS+MAXLAZY),
+	 * make a list of matches starting HASHCHARS bytes before
+	 * the end of the window, and store the head of the list in
+	 * matchhead[k-HASHCHARS].
+	 */
+	if (lz->k >= HASHCHARS && lz->k < HASHCHARS+MAXLAZY)
+	    lz77_hashsearch(lz, hash, currchars);
+
+	/*
+	 * We never let k get bigger than HASHCHARS unless there's
+	 * a match starting at it. So if k==HASHCHARS and there
+	 * isn't such a match, output a literal and decrement k.
+	 */
+	if (lz->k == HASHCHARS && lz->matchhead[0] < 0) {
+	    lz->literal(lz->ctx, currchars[HASHCHARS-1]);
+	    lz->k--;
+	}
+
+	/*
+	 * For each list of matches we're currently tracking which
+	 * we _haven't_ only just started, go through the list and
+	 * winnow it to only those which have continued to match.
+	 */
+	if (lz->k > HASHCHARS) {
+	    int i;
+	    for (i = 0; i < MAXLAZY && lz->k-i > HASHCHARS; i++) {
+		int outpos = -1, inpos = lz->matchhead[i], nextinpos;
+		int bestdist = 0; 
+
+		while (inpos >= 0) {
+		    nextinpos = lz->matchnext[inpos];
+
+		    /*
+		     * See if this match is still going.
+		     */
+		    if (
+#ifdef MAXMATCHLEN
+			lz->matchlen[i] < MAXMATCHLEN &&
+#endif
+
+			lz->data[(lz->winpos + inpos) % WINSIZE] ==
+			lz->data[lz->winpos]) {
+			/*
+			 * It is; put it back on the winnowed list.
+			 */
+			if (outpos < 0)
+			    lz->matchhead[i] = inpos;
+			else
+			    lz->matchnext[outpos] = inpos;
+			outpos = inpos;
+			/*
+			 * Because we built up the match list in
+			 * reverse order compared to the hash
+			 * chain, we must prefer _later_ entries in
+			 * the match list in order to prefer
+			 * matching against the most recent data.
+			 */
+			bestdist = inpos;
+		    } else {
+			/*
+			 * It isn't; mark it as unused in the
+			 * matchnext array.
+			 */
+			lz->matchnext[inpos] = 0;
+		    }
+
+		    inpos = nextinpos;
+		}
+
+		/*
+		 * Terminate the new list.
+		 */
+		if (outpos < 0)
+		    lz->matchhead[i] = -1;
+		else
+		    lz->matchnext[outpos] = -1;
+
+		/*
+		 * And update the distance/length tracker for this
+		 * match.
+		 */
+		if (bestdist) {
+		    lz->matchdist[i] = bestdist;
+		    lz->matchlen[i]++;
+		}
+	    }
+	}
+
+	/*
+	 * Add the current window position to the head of the
+	 * appropriate hash chain.
+	 * 
+	 * (If the compressor is still recovering from a rewind,
+	 * this position will _already_ be on its hash chain, so we
+	 * don't do this.)
+	 */
+	if (!rewound_this_time) {
+	    lz->hashnext[lz->winpos] = lz->hashhead[hash];
+	    lz->hashhead[hash] = lz->winpos;
+	}
+
+	/*
+	 * If k >= HASHCHARS+MAXLAZY-1 (meaning that we've had a
+	 * chance to try a match at every viable starting point)
+	 * and there are no ongoing matches, we must output
+	 * something.
+	 */
+	if (lz->k >= HASHCHARS+MAXLAZY-1) {
+	    int i;
+	    for (i = 0; i < HASHCHARS; i++)
+		if (lz->matchhead[i] >= 0)
+		    break;
+	    if (i == HASHCHARS)
+		lz77_outputmatch(lz);
 	}
     }
 }
@@ -450,7 +762,7 @@ static int hufcodes(const unsigned char *lengths, int *codes, int nsyms)
 #define SYM_EXTRABITS_SHIFT 26
 
 struct deflate_compress_ctx {
-    struct LZ77Context *lzc;
+    LZ77 *lz;
     unsigned char *outbuf;
     int outlen, outsize;
     unsigned long outbits;
@@ -977,6 +1289,8 @@ static void outblock(deflate_compress_ctx *out,
 	for (i = 0; i < 19; i++)
 	    codelen[i] = len3[lenlenmap[i]];
 	for (hclen = 19; hclen > 4 && codelen[hclen-1] == 0; hclen--);
+    } else {
+	hlit = hdist = hclen = ntreesyms = 0;   /* placate optimiser */
     }
 
     /*
@@ -1242,109 +1556,89 @@ static const coderecord distcodes[] = {
     {29, 13, 24577, 32768},
 };
 
-static void literal(struct LZ77Context *ectx, unsigned char c)
+static void literal(void *vctx, unsigned char c)
 {
-    deflate_compress_ctx *out = (deflate_compress_ctx *) ectx->userdata;
+    deflate_compress_ctx *out = (deflate_compress_ctx *)vctx;
 
     outsym(out, SYMPFX_LITLEN | c);
 }
 
-static void match(struct LZ77Context *ectx, int distance, int len)
+static void match(void *vctx, int distance, int len)
 {
     const coderecord *d, *l;
     int i, j, k;
-    deflate_compress_ctx *out = (deflate_compress_ctx *) ectx->userdata;
+    deflate_compress_ctx *out = (deflate_compress_ctx *)vctx;
 
-    while (len > 0) {
-	int thislen;
+    assert(len >= 3 && len <= 258);
 
-	/*
-	 * We can transmit matches of lengths 3 through 258
-	 * inclusive. So if len exceeds 258, we must transmit in
-	 * several steps, with 258 or less in each step.
-	 *
-	 * Specifically: if len >= 261, we can transmit 258 and be
-	 * sure of having at least 3 left for the next step. And if
-	 * len <= 258, we can just transmit len. But if len == 259
-	 * or 260, we must transmit len-3.
-	 */
-	thislen = (len > 260 ? 258 : len <= 258 ? len : len - 3);
-	len -= thislen;
-
-	/*
-	 * Binary-search to find which length code we're
-	 * transmitting.
-	 */
-	i = -1;
-	j = sizeof(lencodes) / sizeof(*lencodes);
-	while (1) {
-	    assert(j - i >= 2);
-	    k = (j + i) / 2;
-	    if (thislen < lencodes[k].min)
-		j = k;
-	    else if (thislen > lencodes[k].max)
-		i = k;
-	    else {
-		l = &lencodes[k];
-		break;		       /* found it! */
-	    }
+    /*
+     * Binary-search to find which length code we're
+     * transmitting.
+     */
+    i = -1;
+    j = sizeof(lencodes) / sizeof(*lencodes);
+    while (1) {
+	assert(j - i >= 2);
+	k = (j + i) / 2;
+	if (len < lencodes[k].min)
+	    j = k;
+	else if (len > lencodes[k].max)
+	    i = k;
+	else {
+	    l = &lencodes[k];
+	    break;		       /* found it! */
 	}
+    }
 
-	/*
-	 * Transmit the length code.
-	 */
-	outsym(out, SYMPFX_LITLEN | l->code);
+    /*
+     * Transmit the length code.
+     */
+    outsym(out, SYMPFX_LITLEN | l->code);
 
-	/*
-	 * Transmit the extra bits.
-	 */
-	if (l->extrabits) {
-	    outsym(out, (SYMPFX_EXTRABITS | (thislen - l->min) |
-			 (l->extrabits << SYM_EXTRABITS_SHIFT)));
+    /*
+     * Transmit the extra bits.
+     */
+    if (l->extrabits) {
+	outsym(out, (SYMPFX_EXTRABITS | (len - l->min) |
+		     (l->extrabits << SYM_EXTRABITS_SHIFT)));
+    }
+
+    /*
+     * Binary-search to find which distance code we're
+     * transmitting.
+     */
+    i = -1;
+    j = sizeof(distcodes) / sizeof(*distcodes);
+    while (1) {
+	assert(j - i >= 2);
+	k = (j + i) / 2;
+	if (distance < distcodes[k].min)
+	    j = k;
+	else if (distance > distcodes[k].max)
+	    i = k;
+	else {
+	    d = &distcodes[k];
+	    break;		       /* found it! */
 	}
+    }
 
-	/*
-	 * Binary-search to find which distance code we're
-	 * transmitting.
-	 */
-	i = -1;
-	j = sizeof(distcodes) / sizeof(*distcodes);
-	while (1) {
-	    assert(j - i >= 2);
-	    k = (j + i) / 2;
-	    if (distance < distcodes[k].min)
-		j = k;
-	    else if (distance > distcodes[k].max)
-		i = k;
-	    else {
-		d = &distcodes[k];
-		break;		       /* found it! */
-	    }
-	}
+    /*
+     * Write the distance code.
+     */
+    outsym(out, SYMPFX_DIST | d->code);
 
-	/*
-	 * Write the distance code.
-	 */
-	outsym(out, SYMPFX_DIST | d->code);
-
-	/*
-	 * Transmit the extra bits.
-	 */
-	if (d->extrabits) {
-	    outsym(out, (SYMPFX_EXTRABITS | (distance - d->min) |
-			 (d->extrabits << SYM_EXTRABITS_SHIFT)));
-	}
+    /*
+     * Transmit the extra bits.
+     */
+    if (d->extrabits) {
+	outsym(out, (SYMPFX_EXTRABITS | (distance - d->min) |
+		     (d->extrabits << SYM_EXTRABITS_SHIFT)));
     }
 }
 
 deflate_compress_ctx *deflate_compress_new(int type)
 {
     deflate_compress_ctx *out;
-    struct LZ77Context *ectx = snew(struct LZ77Context);
-
-    lz77_init(ectx);
-    ectx->literal = literal;
-    ectx->match = match;
 
     out = snew(deflate_compress_ctx);
     out->type = type;
@@ -1361,20 +1655,16 @@ deflate_compress_ctx *deflate_compress_new(int type)
     out->lastblock = FALSE;
     out->finished = FALSE;
 
-    ectx->userdata = out;
-    out->lzc = ectx;
+    out->lz = lz77_new(literal, match, out);
 
     return out;
 }
 
 void deflate_compress_free(deflate_compress_ctx *out)
 {
-    struct LZ77Context *ectx = out->lzc;
-
     sfree(out->syms);
+    lz77_free(out->lz);
     sfree(out);
-    sfree(ectx->ictx);
-    sfree(ectx);
 }
 
 static unsigned long adler32_update(unsigned long s,
@@ -1399,7 +1689,6 @@ int deflate_compress_data(deflate_compress_ctx *out,
 			  const void *vblock, int len, int flushtype,
 			  void **outblock, int *outlen)
 {
-    struct LZ77Context *ectx = out->lzc;
     const unsigned char *block = (const unsigned char *)vblock;
 
     assert(!out->finished);
@@ -1428,7 +1717,7 @@ int deflate_compress_data(deflate_compress_ctx *out,
     /*
      * Feed our data to the LZ77 compression phase.
      */
-    lz77_compress(ectx, block, len, TRUE);
+    lz77_compress(out->lz, block, len);
 
     /*
      * Update checksums.
@@ -1448,6 +1737,11 @@ int deflate_compress_data(deflate_compress_ctx *out,
 	break;			       /* don't flush any data at all (duh) */
       case DEFLATE_SYNC_FLUSH:
 	/*
+	 * Flush the LZ77 compressor.
+	 */
+	lz77_flush(out->lz);
+
+	/*
 	 * Close the current block.
 	 */
 	flushblock(out);
@@ -1464,6 +1758,11 @@ int deflate_compress_data(deflate_compress_ctx *out,
 	outbits(out, 0xFFFF, 16);
 	break;
       case DEFLATE_END_OF_DATA:
+	/*
+	 * Flush the LZ77 compressor.
+	 */
+	lz77_flush(out->lz);
+
 	/*
 	 * Output a block with BFINAL set.
 	 */
@@ -1500,7 +1799,7 @@ int deflate_compress_data(deflate_compress_ctx *out,
 }
 
 /* ----------------------------------------------------------------------
- * deflate decompression.
+ * Deflate decompression.
  */
 
 /*
@@ -1525,6 +1824,8 @@ struct table {
 };
 
 #define MAXSYMS 288
+
+#define DWINSIZE 32768
 
 /*
  * Build a single-level decode table for elements
@@ -1635,7 +1936,7 @@ struct deflate_decompress_ctx {
     unsigned char lengths[286 + 32];
     unsigned long bits;
     int nbits;
-    unsigned char window[WINSIZE];
+    unsigned char window[DWINSIZE];
     int winpos;
     unsigned char *outblk;
     int outlen, outsize;
@@ -1725,7 +2026,7 @@ static int huflookup(unsigned long *bitsp, int *nbitsp, struct table *tab)
 static void emit_char(deflate_decompress_ctx *dctx, int c)
 {
     dctx->window[dctx->winpos] = c;
-    dctx->winpos = (dctx->winpos + 1) & (WINSIZE - 1);
+    dctx->winpos = (dctx->winpos + 1) & (DWINSIZE - 1);
     if (dctx->outlen >= dctx->outsize) {
 	dctx->outsize = dctx->outlen + 512;
 	dctx->outblk = sresize(dctx->outblk, dctx->outsize, unsigned char);
@@ -1961,7 +2262,7 @@ int deflate_decompress_data(deflate_decompress_ctx *dctx,
 		   BITCOUNT(dctx) - dctx->bitcount_before));
 	    while (dctx->len--)
 		emit_char(dctx, dctx->window[(dctx->winpos - dist) &
-					     (WINSIZE - 1)]);
+					     (DWINSIZE - 1)]);
 	    break;
 	  case UNCOMP_LEN:
 	    /*
