@@ -15,10 +15,10 @@
  * internal EOF indication.
  * 
  * DEFLATE_TYPE_ZLIB represents the zlib container format, as
- * defined in RFC 1950. It has a two-byte header to defend against
- * being fed completely inappropriate data, and a four-byte Adler32
- * checksum at the end to verify correct decoding, but apart from
- * those six bytes it's exactly equivalent to DEFLATE_TYPE_BARE.
+ * defined in RFC 1950. It has a two-byte header, and a four-byte
+ * Adler32 checksum at the end to verify correct decoding, but
+ * apart from those six bytes it's exactly equivalent to
+ * DEFLATE_TYPE_BARE.
  * 
  * DEFLATE_TYPE_GZIP represents the gzip compressed file format, as
  * defined in RFC 1952. This is a more full-featured format, with a
@@ -144,6 +144,7 @@ int deflate_decompress_data(deflate_decompress_ctx *ctx,
 #define DEFLATE_ERRORLIST(A) \
     A(DEFLATE_NO_ERR, "success"), \
     A(DEFLATE_ERR_ZLIB_HEADER, "invalid zlib header"), \
+    A(DEFLATE_ERR_ZLIB_WRONGCOMP, "zlib header specifies non-deflate compression"), \
     A(DEFLATE_ERR_GZIP_HEADER, "invalid gzip header"), \
     A(DEFLATE_ERR_GZIP_WRONGCOMP, "gzip header specifies non-deflate compression"), \
     A(DEFLATE_ERR_GZIP_FHCRC, "gzip header specifies disputed FHCRC flag"), \
