@@ -749,11 +749,11 @@ static int hufcodes(const unsigned char *lengths, int *codes, int nsyms)
 	startcode[i] = code;
 	code += count[i];
 	if (code > (1 << i))
-	    return -1;		       /* overcommitted */
+	    maxlen = -1;	       /* overcommitted */
 	code <<= 1;
     }
     if (code < (1 << MAXCODELEN))
-	return -2;		       /* undercommitted */
+	maxlen = -2;		       /* undercommitted */
     /* Determine the code for each symbol. Mirrored, of course. */
     for (i = 0; i < nsyms; i++) {
 	code = startcode[lengths[i]]++;
@@ -1472,27 +1472,31 @@ static void outblock(deflate_compress_ctx *out,
 }
 
 static void outblock_wrapper(deflate_compress_ctx *out,
-			     int best_dynamic_len)
+			     int best_dynamic_len, int longest_len)
 {
     /*
      * Final block choice function: we have the option of either
      * outputting a dynamic block of length best_dynamic_len, or a
-     * static block of length out->nsyms. Whichever gives us the
+     * static block of length longest_len. Whichever gives us the
      * best value for money, we do.
      *
      * FIXME: currently we always choose dynamic except for empty
      * blocks. We should make a sensible judgment.
      */
-    if (out->nsyms == 0)
+#ifdef STATIC_ONLY
+    outblock(out, longest_len, FALSE);
+#else
+    if (longest_len == 0)
 	outblock(out, 0, FALSE);
     else
 	outblock(out, best_dynamic_len, TRUE);
+#endif
 }
 
 static void chooseblock(deflate_compress_ctx *out)
 {
     int freqs1[286], freqs2[30];
-    int i, bestlen;
+    int i, bestlen, longestlen = 0;
     double bestvfm;
     int nextrabits;
 
@@ -1555,6 +1559,8 @@ static void chooseblock(deflate_compress_ctx *out)
 		bestlen = i;
 		bestvfm = vfm;
 	    }
+
+	    longestlen = i;
 	}
 
 	/*
@@ -1578,7 +1584,7 @@ static void chooseblock(deflate_compress_ctx *out)
     assert(bestlen > 0);
 
 /* fprintf(stderr, "chooseblock: bestlen %d, bestvfm %g\n", bestlen, bestvfm); */
-    outblock_wrapper(out, bestlen);
+    outblock_wrapper(out, bestlen, longestlen);
 }
 
 /*
@@ -1588,13 +1594,11 @@ static void chooseblock(deflate_compress_ctx *out)
 static void flushblock(deflate_compress_ctx *out)
 {
     /*
-     * Because outblock_wrapper guarantees to output either a
-     * dynamic block of the given length or a static block of
-     * length out->nsyms, we know that passing out->nsyms as the
-     * given length will definitely result in us using up the
-     * entire buffer.
+     * No need to check that out->nsyms is a valid block length: we
+     * know it has to be, because flushblock() is called in between
+     * two matches/literals.
      */
-    outblock_wrapper(out, out->nsyms);
+    outblock_wrapper(out, out->nsyms, out->nsyms);
     assert(out->nsyms == 0);
 }
 
