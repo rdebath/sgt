@@ -723,7 +723,10 @@ static const unsigned char lenlenmap[] = {
  * codes, in the final form suitable for feeding to outbits (i.e.
  * already bit-mirrored).
  *
- * Returns the maximum code length found.
+ * Returns the maximum code length found. Can also return -1 to
+ * indicate the table was overcommitted (too many or too short
+ * codes to exactly cover the possible space), or -2 to indicate it
+ * was undercommitted (too few or too long codes).
  */
 static int hufcodes(const unsigned char *lengths, int *codes, int nsyms)
 {
@@ -745,8 +748,12 @@ static int hufcodes(const unsigned char *lengths, int *codes, int nsyms)
     for (i = 1; i < MAXCODELEN; i++) {
 	startcode[i] = code;
 	code += count[i];
+	if (code > (1 << i))
+	    return -1;		       /* overcommitted */
 	code <<= 1;
     }
+    if (code < (1 << MAXCODELEN))
+	return -2;		       /* undercommitted */
     /* Determine the code for each symbol. Mirrored, of course. */
     for (i = 0; i < nsyms; i++) {
 	code = startcode[lengths[i]]++;
@@ -2012,12 +2019,18 @@ static struct table *mkonetab(int *codes, unsigned char *lengths, int nsyms,
 /*
  * Build a decode table, given a set of Huffman tree lengths.
  */
-static struct table *mktable(unsigned char *lengths, int nlengths)
+static struct table *mktable(unsigned char *lengths, int nlengths, int *error)
 {
     int codes[MAXSYMS];
     int maxlen;
 
     maxlen = hufcodes(lengths, codes, nlengths);
+
+    if (maxlen < 0) {
+	*error = (maxlen == -1 ? DEFLATE_ERR_LARGE_HUFTABLE :
+		  DEFLATE_ERR_SMALL_HUFTABLE);
+	return NULL;
+    }
 
     /*
      * Now we have the complete list of Huffman codes. Build a
@@ -2098,9 +2111,11 @@ deflate_decompress_ctx *deflate_decompress_new(int type)
     memset(lengths + 144, 9, 256 - 144);
     memset(lengths + 256, 7, 280 - 256);
     memset(lengths + 280, 8, 288 - 280);
-    dctx->staticlentable = mktable(lengths, 288);
+    dctx->staticlentable = mktable(lengths, 288, NULL);
+    assert(dctx->staticlentable);
     memset(lengths, 5, 32);
-    dctx->staticdisttable = mktable(lengths, 32);
+    dctx->staticdisttable = mktable(lengths, 32, NULL);
+    assert(dctx->staticdisttable);
     dctx->state = (type == DEFLATE_TYPE_ZLIB ? ZLIBSTART :
 		   type == DEFLATE_TYPE_GZIP ? GZIPSTART :
 		   OUTSIDEBLK);
@@ -2241,14 +2256,14 @@ int deflate_decompress_data(deflate_decompress_ctx *dctx,
              *  - bits 0-4 should be set up to make the whole thing
              *    a multiple of 31 (checksum).
              */
-            if ((header & 0x0F00) != 0x0800) {
-		error = DEFLATE_ERR_ZLIB_WRONGCOMP;
-                goto finished;
-	    }
 	    if ((header & 0xF000) >  0x7000 ||
                 (header & 0x0020) != 0x0000 ||
                 (header % 31) != 0) {
 		error = DEFLATE_ERR_ZLIB_HEADER;
+                goto finished;
+	    }
+            if ((header & 0x0F00) != 0x0800) {
+		error = DEFLATE_ERR_ZLIB_WRONGCOMP;
                 goto finished;
 	    }
 	    dctx->state = OUTSIDEBLK;
@@ -2411,16 +2426,23 @@ int deflate_decompress_data(deflate_decompress_ctx *dctx,
 		EATBITS(3);
 	    }
 	    if (dctx->lenptr == dctx->hclen) {
-		dctx->lenlentable = mktable(dctx->lenlen, 19);
+		dctx->lenlentable = mktable(dctx->lenlen, 19, &error);
+		if (!dctx->lenlentable)
+		    goto finished;     /* error code set up by mktable */
 		dctx->state = TREES_LEN;
 		dctx->lenptr = 0;
 	    }
 	    break;
 	  case TREES_LEN:
 	    if (dctx->lenptr >= dctx->hlit + dctx->hdist) {
-		dctx->currlentable = mktable(dctx->lengths, dctx->hlit);
+		dctx->currlentable = mktable(dctx->lengths, dctx->hlit,
+					     &error);
+		if (!dctx->currlentable)
+		    goto finished;     /* error code set up by mktable */
 		dctx->currdisttable = mktable(dctx->lengths + dctx->hlit,
-					      dctx->hdist);
+					      dctx->hdist, &error);
+		if (!dctx->currdisttable)
+		    goto finished;     /* error code set up by mktable */
 		freetable(&dctx->lenlentable);
 		dctx->lenlentable = NULL;
 		dctx->state = INBLK;
@@ -2431,7 +2453,7 @@ int deflate_decompress_data(deflate_decompress_ctx *dctx,
 	    if (code == -1)
 		goto finished;
 	    if (code == -2) {
-		error = DEFLATE_ERR_INVALID_HUFFMAN;
+		error = DEFLATE_ERR_INVALID_HUF_CODE;
 		goto finished;
 	    }
 	    if (code < 16)
@@ -2470,7 +2492,7 @@ int deflate_decompress_data(deflate_decompress_ctx *dctx,
 	    if (code == -1)
 		goto finished;
 	    if (code == -2) {
-		error = DEFLATE_ERR_INVALID_HUFFMAN;
+		error = DEFLATE_ERR_INVALID_HUF_CODE;
 		goto finished;
 	    }
 	    if (code < 256) {
@@ -2516,7 +2538,7 @@ int deflate_decompress_data(deflate_decompress_ctx *dctx,
 	    if (code == -1)
 		goto finished;
 	    if (code == -2) {
-		error = DEFLATE_ERR_INVALID_HUFFMAN;
+		error = DEFLATE_ERR_INVALID_HUF_CODE;
 		goto finished;
 	    }
 	    dctx->state = GOTDISTSYM;
