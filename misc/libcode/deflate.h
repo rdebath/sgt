@@ -114,18 +114,8 @@ int deflate_decompress_data(deflate_decompress_ctx *ctx,
 			    void **outblock, int *outlen);
 
 /*
- * This macro defines the list of error codes and their string
- * descriptions. It's defined like this to permit multiple modes of
- * use; in addition to the enum declaration below, a user can
- * define an array of error strings by doing
- * 
- *   #define A(code,str) str
- *   const char *const deflate_errors[] = { DEFLATE_ERRORLIST(A) };
- *   #undef A
- * 
- * or alternatively they can define a diagnostic array of string
- * representations of the symbolic names by changing the definition
- * of the above macro A to read "#code" instead of "str".
+ * Enumeration of error codes. The strange macro is so that I can
+ * define description arrays in the accompanying source.
  */
 #define DEFLATE_ERRORLIST(A) \
     A(DEFLATE_NO_ERR, "success"), \
@@ -133,9 +123,16 @@ int deflate_decompress_data(deflate_decompress_ctx *ctx,
     A(DEFLATE_ERR_INVALID_HUFFMAN, "invalid Huffman code encountered"), \
     A(DEFLATE_ERR_CHECKSUM, "incorrect data checksum"), \
     A(DEFLATE_ERR_UNEXPECTED_EOF, "unexpected end of data")
-
 #define DEFLATE_ENUM_DEF(x,y) x
-enum { DEFLATE_ERRORLIST(DEFLATE_ENUM_DEF) };
+enum { DEFLATE_ERRORLIST(DEFLATE_ENUM_DEF), DEFLATE_NUM_ERRORS };
 #undef DEFLATE_ENUM_DEF
+
+/*
+ * Arrays mapping the above error codes to, respectively, a text
+ * error string and a textual representation of the symbolic error
+ * code.
+ */
+extern const char *const deflate_error_msg[DEFLATE_NUM_ERRORS];
+extern const char *const deflate_error_sym[DEFLATE_NUM_ERRORS];
 
 #endif /* DEFLATE_DEFLATE_H */
