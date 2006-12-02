@@ -2241,14 +2241,16 @@ int deflate_decompress_data(deflate_decompress_ctx *dctx,
              *  - bits 0-4 should be set up to make the whole thing
              *    a multiple of 31 (checksum).
              */
-            if ((header & 0x0F00) != 0x0800 ||
-                (header & 0xF000) >  0x7000 ||
+            if ((header & 0x0F00) != 0x0800) {
+		error = DEFLATE_ERR_ZLIB_WRONGCOMP;
+                goto finished;
+	    }
+	    if ((header & 0xF000) >  0x7000 ||
                 (header & 0x0020) != 0x0000 ||
                 (header % 31) != 0) {
 		error = DEFLATE_ERR_ZLIB_HEADER;
                 goto finished;
 	    }
-
 	    dctx->state = OUTSIDEBLK;
 	    break;
 	  case GZIPSTART:
