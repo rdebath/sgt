@@ -2394,11 +2394,19 @@ int deflate_decompress_data(deflate_decompress_ctx *dctx,
     return error;
 }
 
-#ifdef STANDALONE
-
 #define A(code,str) str
-const char *const deflate_errors[] = { DEFLATE_ERRORLIST(A) };
+const char *const deflate_error_msg[DEFLATE_NUM_ERRORS] = {
+    DEFLATE_ERRORLIST(A)
+};
 #undef A
+
+#define A(code,str) #code
+const char *const deflate_error_sym[DEFLATE_NUM_ERRORS] = {
+    DEFLATE_ERRORLIST(A)
+};
+#undef A
+
+#ifdef STANDALONE
 
 int main(int argc, char **argv)
 {
@@ -2495,7 +2503,7 @@ int main(int argc, char **argv)
             sfree(outbuf);
         }
 	if (err > 0) {
-            fprintf(stderr, "decoding error: %s\n", deflate_errors[err]);
+            fprintf(stderr, "decoding error: %s\n", deflate_error_msg[err]);
             return 1;
         }
     } while (ret > 0);
@@ -2514,10 +2522,6 @@ int main(int argc, char **argv)
 #endif
 
 #ifdef TESTMODE
-
-#define A(code,str) str
-const char *const deflate_errors[] = { DEFLATE_ERRORLIST(A) };
-#undef A
 
 int main(int argc, char **argv)
 {
@@ -2591,7 +2595,8 @@ int main(int argc, char **argv)
 		assert(outbuf2 == NULL);
 	    }
 	    if (err) {
-		fprintf(stderr, "decoding error: %s\n", deflate_errors[err]);
+		fprintf(stderr, "decoding error: %s\n",
+			deflate_error_msg[err]);
 		return 1;
 	    }
 	}
