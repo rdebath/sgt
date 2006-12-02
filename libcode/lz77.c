@@ -693,13 +693,30 @@ void literal(void *vctx, unsigned char c) {
     ctx->ptr++;
 }
 
+void dotest(const void *data, int len, int step)
+{
+    struct testctx t;
+    LZ77 *lz;
+    int j;
+
+    t.data = data;
+    t.len = len;
+    t.ptr = 0;
+    lz = lz77_new(literal, match, &t);
+    for (j = 0; j < t.len; j += step)
+	lz77_compress(lz, t.data + j, (t.len - j < step ? t.len - j : step));
+    lz77_flush(lz);
+    lz77_free(lz);
+    assert(t.len == t.ptr);
+    printf("\n");
+}
+
 #define lenof(x) (sizeof((x))/sizeof(*(x)))
 
 int main(int argc, char **argv) {
-    LZ77 *lz;
-    struct testctx t;
-    int i, j, len, truncate = 0;
+    int i, len, truncate = 0;
     int step;
+    char *filename = NULL;
 
     step = 48000;		       /* big step by default */
 
@@ -707,27 +724,39 @@ int main(int argc, char **argv) {
 	char *p = *++argv;
 	if (!strcmp(p, "-t")) {
 	    truncate = 1;
-	} else if (p[0] >= '0' && p[0] <= '9') {
-	    step = atoi(p);
+	} else if (p[0] == '-' && p[1] == 'b') {
+	    step = atoi(p+2);	       /* -bN sets block size to N */
+	} else if (p[0] != '-') {
+	    filename = p;
 	}
     }
 
-    for (i = 0; i < lenof(tests); i++) {
-	t.data = tests[i];
-	for (len = (truncate ? 0 : strlen(tests[i]));
-	     len <= strlen(tests[i]); len++) {
-	    t.len = len;
-	    t.ptr = 0;
-	    lz = lz77_new(literal, match, &t);
-	    for (j = 0; j < t.len; j += step)
-		lz77_compress(lz, t.data + j,
-			      (t.len - j < step ? t.len - j : step));
-	    lz77_flush(lz);
-	    lz77_free(lz);
-	    assert(t.len == t.ptr);
-	    printf("\n");
+    if (filename) {
+	char *data = NULL;
+	int datalen = 0, datasize = 0;
+	int c;
+	FILE *fp = fopen(filename, "rb");
+
+	while ( (c = fgetc(fp)) != EOF) {
+	    if (datalen >= datasize) {
+		datasize = (datalen * 3 / 2) + 512;
+		data = realloc(data, datasize);
+	    }
+	    data[datalen++] = c;
+	}
+
+	fclose(fp);
+	dotest(data, datalen, step);
+	
+    } else {
+	for (i = 0; i < lenof(tests); i++) {
+	    for (len = (truncate ? 0 : strlen(tests[i]));
+		 len <= strlen(tests[i]); len++) {
+		dotest(tests[i], len, step);
+	    }
 	}
     }
+
     return 0;
 }
 
