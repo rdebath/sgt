@@ -89,6 +89,26 @@
 
 #define lenof(x) (sizeof((x)) / sizeof(*(x)))
 
+#ifndef FALSE
+#define FALSE 0
+#define TRUE (!FALSE)
+#endif
+
+/* ----------------------------------------------------------------------
+ * This file can be compiled in a number of modes.
+ * 
+ * With -DSTANDALONE, it builds a self-contained deflate tool which
+ * can compress, decompress, and also analyse a deflated file to
+ * print out the sequence of literals and copy commands it
+ * contains.
+ * 
+ * With -DTESTMODE, it builds a test application which is given a
+ * file on standard input, both compresses and decompresses it, and
+ * outputs the re-decompressed result so it can be conveniently
+ * diffed against the original. Define -DTESTDBG as well for lots
+ * of diagnostics.
+ */
+
 #if defined TESTDBG
 /* gcc-specific diagnostic macro */
 #define debug_int(x...) ( fprintf(stderr, x) )
@@ -97,9 +117,12 @@
 #define debug(x)
 #endif
 
-#ifndef FALSE
-#define FALSE 0
-#define TRUE (!FALSE)
+#ifdef STANDALONE
+#define ANALYSIS
+#endif
+
+#ifdef ANALYSIS
+int analyse = FALSE;
 #endif
 
 /* ----------------------------------------------------------------------
@@ -1942,7 +1965,8 @@ struct deflate_decompress_ctx {
     int outlen, outsize;
     int type;
     unsigned long adler32;
-#ifdef TESTDBG
+#ifdef ANALYSIS
+    int bytesout;
     int bytesread;
     int bitcount_before;
 #define BITCOUNT(dctx) ( (dctx)->bytesread * 8 - (dctx)->nbits )
@@ -1972,7 +1996,8 @@ deflate_decompress_ctx *deflate_decompress_new(int type)
     dctx->type = type;
     dctx->lastblock = FALSE;
     dctx->adler32 = 1;
-#ifdef TESTDBG
+#ifdef ANALYSIS
+    dctx->bytesout = 0;
     dctx->bytesread = dctx->bitcount_before = 0;
 #endif
 
@@ -2036,6 +2061,9 @@ static void emit_char(deflate_decompress_ctx *dctx, int c)
 	dctx->adler32 = adler32_update(dctx->adler32, &uc, 1);
     }
     dctx->outblk[dctx->outlen++] = c;
+#ifdef ANALYSIS
+    dctx->bytesout++;
+#endif
 }
 
 #define EATBITS(n) ( dctx->nbits -= (n), dctx->bits >>= (n) )
@@ -2057,7 +2085,7 @@ int deflate_decompress_data(deflate_decompress_ctx *dctx,
 	    dctx->bits |= (*block++) << dctx->nbits;
 	    dctx->nbits += 8;
 	    len--;
-#ifdef TESTDBG
+#ifdef ANALYSIS
 	    dctx->bytesread++;
 #endif
 	}
@@ -2195,7 +2223,7 @@ int deflate_decompress_data(deflate_decompress_ctx *dctx,
 	    dctx->state = TREES_LEN;
 	    break;
 	  case INBLK:
-#ifdef TESTDBG
+#ifdef ANALYSIS
 	    dctx->bitcount_before = BITCOUNT(dctx);
 #endif
 	    code = huflookup(&dctx->bits, &dctx->nbits, dctx->currlentable);
@@ -2205,9 +2233,12 @@ int deflate_decompress_data(deflate_decompress_ctx *dctx,
 	    if (code == -2)
 		goto decode_error;
 	    if (code < 256) {
+#ifdef ANALYSIS
+		if (analyse)
+		    printf("%d: literal %d [%d]\n", dctx->bytesout, code,
+			   BITCOUNT(dctx) - dctx->bitcount_before);
+#endif
 		emit_char(dctx, code);
-		debug(("recv: got literal %d [%d]\n", code,
-		       BITCOUNT(dctx) - dctx->bitcount_before));
 	    } else if (code == 256) {
 		if (dctx->lastblock)
 		    dctx->state = END;
@@ -2258,8 +2289,12 @@ int deflate_decompress_data(deflate_decompress_ctx *dctx,
 		       dist - rec->min, rec->extrabits));
 	    EATBITS(rec->extrabits);
 	    dctx->state = INBLK;
-	    debug(("recv: got copy <%d,%d> [%d]\n", dctx->len, dist,
-		   BITCOUNT(dctx) - dctx->bitcount_before));
+#ifdef ANALYSIS
+	    if (analyse)
+		printf("%d: copy len=%d dist=%d [%d]\n", dctx->bytesout,
+		       dctx->len, dist,
+		       BITCOUNT(dctx) - dctx->bitcount_before);
+#endif
 	    while (dctx->len--)
 		emit_char(dctx, dctx->window[(dctx->winpos - dist) &
 					     (DWINSIZE - 1)]);
@@ -2360,18 +2395,26 @@ int main(int argc, char **argv)
     int ret, outlen;
     deflate_decompress_ctx *dhandle;
     deflate_compress_ctx *chandle;
-    int type = DEFLATE_TYPE_ZLIB, opts = TRUE, compress = FALSE;
+    int type = DEFLATE_TYPE_ZLIB, opts = TRUE;
+    int compress = FALSE, decompress = FALSE;
+    int got_arg = FALSE;
     char *filename = NULL;
     FILE *fp;
 
     while (--argc) {
         char *p = *++argv;
 
+	got_arg = TRUE;
+
         if (p[0] == '-' && opts) {
-            if (!strcmp(p, "-d"))
+            if (!strcmp(p, "-b"))
                 type = DEFLATE_TYPE_BARE;
-            if (!strcmp(p, "-c"))
+            else if (!strcmp(p, "-c"))
                 compress = TRUE;
+            else if (!strcmp(p, "-d"))
+                decompress = TRUE;
+            else if (!strcmp(p, "-a"))
+                analyse = decompress = TRUE;
             else if (!strcmp(p, "--"))
                 opts = FALSE;          /* next thing is filename */
             else {
@@ -2384,6 +2427,17 @@ int main(int argc, char **argv)
             fprintf(stderr, "can only handle one filename\n");
             return 1;
         }
+    }
+
+    if (!compress && !decompress) {
+	fprintf(stderr, "usage: deflate [ -c | -d | -a ] [ -b ] [filename]\n");
+	return (got_arg ? 1 : 0);
+    }
+
+    if (compress && decompress) {
+	fprintf(stderr, "please do not specify both compression and"
+		" decompression\n");
+	return (got_arg ? 1 : 0);
     }
 
     if (compress) {
@@ -2421,7 +2475,7 @@ int main(int argc, char **argv)
 				      (void **)&outbuf, &outlen);
 	}
         if (outbuf) {
-            if (outlen)
+            if (!analyse && outlen)
                 fwrite(outbuf, 1, outlen, stdout);
             sfree(outbuf);
         } else if (dhandle && ret > 0) {
