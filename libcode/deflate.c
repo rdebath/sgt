@@ -2167,15 +2167,15 @@ static int huflookup(unsigned long *bitsp, int *nbitsp, struct table *tab)
 	    return ent->code;
 	}
 
-	if (!tab) {
-	    /*
-	     * There was a missing entry in the table, presumably
-	     * due to an invalid Huffman table description, and the
-	     * subsequent data has attempted to use the missing
-	     * entry. Return a decoding failure.
-	     */
-	    return -2;
-	}
+	/*
+	 * If we reach here with `tab' null, it can only be because
+	 * there was a missing entry in the Huffman table. This
+	 * should never occur even with invalid input data, because
+	 * we enforce at mktable time that the Huffman codes should
+	 * precisely cover the code space; so we can enforce this
+	 * by assertion.
+	 */
+	assert(tab);
     }
 }
 
@@ -2452,10 +2452,6 @@ int deflate_decompress_data(deflate_decompress_ctx *dctx,
 	    debug(("recv: codelen %d\n", code));
 	    if (code == -1)
 		goto finished;
-	    if (code == -2) {
-		error = DEFLATE_ERR_INVALID_HUF_CODE;
-		goto finished;
-	    }
 	    if (code < 16)
 		dctx->lengths[dctx->lenptr++] = code;
 	    else {
@@ -2491,10 +2487,6 @@ int deflate_decompress_data(deflate_decompress_ctx *dctx,
 	    debug(("recv: litlen %d\n", code));
 	    if (code == -1)
 		goto finished;
-	    if (code == -2) {
-		error = DEFLATE_ERR_INVALID_HUF_CODE;
-		goto finished;
-	    }
 	    if (code < 256) {
 #ifdef ANALYSIS
 		if (analyse)
@@ -2537,10 +2529,6 @@ int deflate_decompress_data(deflate_decompress_ctx *dctx,
 	    debug(("recv: dist %d\n", code));
 	    if (code == -1)
 		goto finished;
-	    if (code == -2) {
-		error = DEFLATE_ERR_INVALID_HUF_CODE;
-		goto finished;
-	    }
 	    dctx->state = GOTDISTSYM;
 	    dctx->sym = code;
 	    break;
