@@ -2344,7 +2344,7 @@ int deflate_decompress_data(deflate_decompress_ctx *dctx,
 		dctx->state = GZIPCOMMENT;
 	    break;
 	  case GZIPCOMMENT:
-	    if (dctx->gzflags & 8) {
+	    if (dctx->gzflags & 16) {
 		/*
 		 * Expect a NUL-terminated filename.
 		 */
