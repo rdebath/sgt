@@ -9,7 +9,9 @@
 #include "lz77.h"
 
 /*
- * Modifiable parameters.
+ * Modifiable parameters. These are currently tuned for Deflate
+ * (RFC1951) compression, and deflate.c expects this when linking
+ * against it.
  */
 #define MAXMATCHDIST 32768	       /* maximum backward distance */
 #define MAXMATCHLEN 258		       /* maximum length of a match */
@@ -20,7 +22,9 @@
 /*
  * Derived parameters.
  */
-#define WINSIZE (MAXMATCHDIST + HASHCHARS * 2)  /* actual window size */
+#define MAXREWIND (HASHCHARS * 2)
+#define WINSIZE (MAXMATCHDIST + HASHCHARS + MAXREWIND)
+#define NMATCHES (MAXLAZY + MAXLAZY * MAXLAZY)
 
 struct LZ77 {
     /*
@@ -118,11 +122,14 @@ struct LZ77 {
 
     /*
      * These variables track the heads of linked lists in
-     * nextmatch. matchhead[i] is the list of possible matches
-     * starting i bytes after the last output, or -1 if the list is
-     * currently empty.
+     * nextmatch. Each value matchhead[i] points to the head of a
+     * list of possible matches, or -1 if that list is currently
+     * empty. Indices up to and including HASHCHARS-1 always
+     * indicate a match starting i bytes after the last output
+     * byte; indices after that are allocated dynamically by the
+     * `matchlater' array.
      */
-    int matchhead[HASHCHARS];
+    int matchhead[NMATCHES];
 
     /*
      * These variables track the current length, and best backward
@@ -131,14 +138,32 @@ struct LZ77 {
      * -1, because only after we know how long all the matches are
      * going to be can we decide which one to output.
      */
-    int matchlen[HASHCHARS], matchdist[HASHCHARS];
+    int matchlen[NMATCHES], matchdist[NMATCHES];
+
+    /*
+     * This array stores dynamically allocated indices in the
+     * `matchhead', `matchlen' and `matchdist' arrays, starting
+     * from HASHCHARS. These indices are used to track matches
+     * which start after other matches have finished, in order to
+     * make the best available choice when deciding on a lazy
+     * matching strategy.
+     * 
+     * matchlater[p*HASHCHARS+q] stores the index of a match which
+     * begins q bytes after the end of the one in matchhead[p], or
+     * is zero if no such match is known.
+     * 
+     * Also, `nextindex' stores the next unused index in the
+     * matchhead array and friends.
+     */
+    int matchlater[HASHCHARS*HASHCHARS];
+    int nextindex;
 
     /*
      * These are the literals saved during lazy matching: if we
      * output a match starting at k+i, we need i literals from
      * position k.
      */
-    unsigned char literals[HASHCHARS-1];
+    unsigned char literals[HASHCHARS * (HASHCHARS+1)];
 };
 
 static int lz77_hash(const unsigned char *data) {
@@ -170,13 +195,21 @@ LZ77 *lz77_new(void (*literal)(void *ctx, unsigned char c),
 	lz->hashhead[i] = -1;
     }
 
-    for (i = 0; i < HASHCHARS; i++) {
+    for (i = 0; i < NMATCHES; i++) {
 	lz->matchhead[i] = -1;
 	lz->matchlen[i] = 0;
 	lz->matchdist[i] = 0;
+    }
+
+    for (i = 0; i < HASHCHARS * (HASHCHARS+1); i++) {
 	lz->literals[i] = 0;
     }
-    
+
+    for (i = 0; i < HASHCHARS * HASHCHARS; i++) {
+	lz->matchlater[i] = 0;
+    }
+
+    lz->nextindex = HASHCHARS;
     lz->winpos = 0;
     lz->k = 0;
     lz->nvalid = 0;
@@ -190,21 +223,14 @@ void lz77_free(LZ77 *lz)
     free(lz);
 }
 
-static void lz77_hashsearch(LZ77 *lz, int hash, unsigned char *currchars)
+static void lz77_hashsearch(LZ77 *lz, int hash, unsigned char *currchars,
+			    int index)
 {
     int pos, nextpos, matchlimit;
 
-    assert(lz->matchhead[lz->k-HASHCHARS] < 0);
-    assert(lz->matchdist[lz->k-HASHCHARS] == 0);
-    assert(lz->matchlen[lz->k-HASHCHARS] == 0);
-
-    if (lz->k < HASHCHARS+MAXLAZY-1) {
-	/*
-	 * Save the literal at this position, in case we need it.
-	 */
-	lz->literals[lz->k - HASHCHARS] =
-	    lz->data[(lz->winpos + HASHCHARS-1) % WINSIZE];
-    }
+    assert(lz->matchhead[index] < 0);
+    assert(lz->matchdist[index] == 0);
+    assert(lz->matchlen[index] == 0);
 
     /*
      * Find the most distant place in the window where we could
@@ -247,8 +273,8 @@ static void lz77_hashsearch(LZ77 *lz, int hash, unsigned char *currchars)
 		 * They did, so this is a valid match position. Add
 		 * it to the list of possible match locations.
 		 */
-		lz->matchnext[bdist] = lz->matchhead[lz->k-HASHCHARS];
-		lz->matchhead[lz->k-HASHCHARS] = bdist;
+		lz->matchnext[bdist] = lz->matchhead[index];
+		lz->matchhead[index] = bdist;
 		/*
 		 * We're working through the window from most to
 		 * least recent, and we want to prefer matching
@@ -256,9 +282,9 @@ static void lz77_hashsearch(LZ77 *lz, int hash, unsigned char *currchars)
 		 * matchdist on the first (i.e. most recent) match
 		 * we find.
 		 */
-		if (!lz->matchlen[lz->k-HASHCHARS]) {
-		    lz->matchlen[lz->k-HASHCHARS] = HASHCHARS;
-		    lz->matchdist[lz->k-HASHCHARS] = bdist;
+		if (!lz->matchlen[index]) {
+		    lz->matchlen[index] = HASHCHARS;
+		    lz->matchdist[index] = bdist;
 		}
 	    }
 	}
@@ -287,21 +313,55 @@ static void lz77_outputmatch(LZ77 *lz)
     int i;
 
     /*
-     * Decide which match to output. The rule is: in order for a
-     * match starting i characters later than another one to be
-     * worth choosing, it must be at least i characters longer as
-     * well.
+     * Decide which match to output. The basic rule is simply that
+     * we pick the longest match we can find, but break ties in
+     * favour of earlier matches (since a literal we know we have
+     * to output before the match is worse than a literal after the
+     * match that we _might_ get away without).
      *
-     * This reduces to a concrete algorithm in which we subtract i
-     * from the length of match[i], and pick the largest of the
-     * resulting numbers, breaking ties in favour of _later_
-     * matches.
+     * However, there's another consideration: if an early-starting
+     * match has a subsequent match beginning shortly after its end
+     * which lasts until at least MAXLAZY-1 bytes after the end of
+     * the _longest_ available match, then we must consider the
+     * number of literals output in each case and potentially
+     * disqualify later-starting matches on that basis.
      */
-    for (i = MAXLAZY; i-- > 0 ;)
-	if (lz->matchlen[i] - i > bestval) {
-	    bestval = lz->matchlen[i] - i;
+    for (i = 0; i < MAXLAZY; i++) {
+	int j, k;
+
+	/*
+	 * See if there's a second-order match which disqualifies
+	 * match[i] from consideration.
+	 */
+	for (j = 0; j < i; j++) {    /* j indexes earlier 1st-order matches */
+	    for (k = 0; k < HASHCHARS; k++) {   /* k indexes subsequent posn */
+		if (lz->matchlater[j*HASHCHARS+k]) {
+		    int m = lz->matchlater[j*HASHCHARS+k];
+		    /*
+		     * The match must last until at least MAXLAZY-1
+		     * bytes after the end of this one, _and_ it
+		     * must end within HASHCHARS bytes of the
+		     * current window position.
+		     */
+		    int totallen = j + lz->matchlen[j] + k + lz->matchlen[m];
+		    if (lz->k - totallen <= HASHCHARS &&
+			totallen >= i + lz->matchlen[i] + MAXLAZY-1)
+			goto disqualified;   /* high-order `continue;' */
+		}
+	    }
+	}
+
+	/*
+	 * If we reach here, there wasn't, so compare matches in
+	 * the usual way.
+	 */
+	if (lz->matchlen[i] > bestval) {
+	    bestval = lz->matchlen[i];
 	    besti = i;
 	}
+
+	disqualified:;
+    }
 
     /*
      * Output the match plus its pre-literals (if any).
@@ -316,29 +376,82 @@ static void lz77_outputmatch(LZ77 *lz)
     lz->k -= besti + lz->matchlen[besti];
 
     /*
-     * Clean out the matchdist and matchlen arrays.
+     * Make sure the first-order component of the match arrays has
+     * been cleaned out. (In normal use this will happen naturally,
+     * because this function won't be called until all matches have
+     * terminated; but if we're called from lz77_flush() then we
+     * might still have live candidate matches.)
      */
-    for (i = 0; i < HASHCHARS; i++)
+    for (i = 0; i < HASHCHARS; i++) {
 	lz->matchdist[i] = lz->matchlen[i] = 0;
+	while (lz->matchhead[i] >= 0) {
+	    int tmp = lz->matchhead[i];
+
+	    lz->matchhead[i] = lz->matchnext[tmp];
+	    lz->matchnext[tmp] = 0;
+	}
+    }
 
     /*
-     * If k is HASHCHARS or more, we must rewind the compressor
-     * state by a few bytes so that we can reprocess those bytes
-     * and look for new matches starting there. Because the window
-     * size is a few bytes more than MAXMATCHDIST, this does not
-     * impact our ability to find matches at the maximum distance
-     * even after this rewinding.
+     * If k is HASHCHARS or more, see if there were second-order
+     * match possibilities, and if so move them into first-order
+     * position.
+     *
+     * If there weren't, we must rewind the compressor state by a
+     * few bytes so that we can reprocess those bytes and look for
+     * new matches starting there. Because the window size is a few
+     * bytes more than MAXMATCHDIST, this does not impact our
+     * ability to find matches at the maximum distance even after
+     * this rewinding.
      */
     if (lz->k >= HASHCHARS) {
-	int rw = lz->k - (HASHCHARS-1);
+	int got_one = 0;
 
-	assert(lz->rewound + rw < HASHCHARS);
+	for (i = 0; i < HASHCHARS; i++) {
+	    int m = lz->matchlater[besti*HASHCHARS+i];
+	    lz->literals[i] = lz->literals[HASHCHARS+besti*HASHCHARS+i];
+	    if (m > 0) {
+		lz->matchhead[i] = lz->matchhead[m];
+		lz->matchdist[i] = lz->matchdist[m];
+		lz->matchlen[i] = lz->matchlen[m];
+		lz->matchhead[m] = -1;
+		lz->matchdist[m] = 0;
+		lz->matchlen[m] = 0;
+		if (lz->matchlen[i] > 0)
+		    got_one = 1;
+	    }
+	}
 
-	lz->winpos = (lz->winpos + rw) % WINSIZE;
-	lz->rewound += rw;
-	lz->k -= rw;
-	lz->nvalid -= rw;
+	if (!got_one) {
+	    int rw = lz->k - (HASHCHARS-1);
+
+	    assert(lz->rewound + rw < MAXREWIND);
+
+	    lz->winpos = (lz->winpos + rw) % WINSIZE;
+	    lz->rewound += rw;
+	    lz->k -= rw;
+	    lz->nvalid -= rw;
+	}
     }
+
+    /*
+     * Clean out the second-order part of the matchdist and
+     * matchlen arrays, wipe any remaining lists out of
+     * matchhead/matchnext, and reset the second-order match index
+     * allocation.
+     */
+    for (i = HASHCHARS; i < NMATCHES; i++) {
+	lz->matchdist[i] = lz->matchlen[i] = 0;
+	while (lz->matchhead[i] >= 0) {
+	    int tmp = lz->matchhead[i];
+
+	    lz->matchhead[i] = lz->matchnext[tmp];
+	    lz->matchnext[tmp] = 0;
+	}
+    }
+    for (i = 0; i < HASHCHARS*HASHCHARS; i++)
+	lz->matchlater[i] = 0;
+    lz->nextindex = HASHCHARS;
 }
 
 void lz77_flush(LZ77 *lz)
@@ -350,18 +463,6 @@ void lz77_flush(LZ77 *lz)
 	 * Output a match.
 	 */
 	lz77_outputmatch(lz);
-
-	/*
-	 * Clean up the match lists.
-	 */
-	for (i = 0; i < HASHCHARS; i++) {
-	    while (lz->matchhead[i] >= 0) {
-		int tmp = lz->matchhead[i];
-
-		lz->matchhead[i] = lz->matchnext[tmp];
-		lz->matchnext[tmp] = 0;
-	    }
-	}
 
 	/*
 	 * In case we've rewound, call the main compress function
@@ -390,6 +491,7 @@ void lz77_compress(LZ77 *lz, const void *vdata, int len)
 	unsigned char currchars[HASHCHARS];
 	int hash;
 	int rewound_this_time;
+	int thissearchindex = -1;
 
 	/*
 	 * First thing we do with every character we see: add it to
@@ -432,8 +534,54 @@ void lz77_compress(LZ77 *lz, const void *vdata, int len)
 	 * the end of the window, and store the head of the list in
 	 * matchhead[k-HASHCHARS].
 	 */
-	if (lz->k >= HASHCHARS && lz->k < HASHCHARS+MAXLAZY)
-	    lz77_hashsearch(lz, hash, currchars);
+	if (lz->k >= HASHCHARS && lz->k < HASHCHARS+MAXLAZY) {
+	    thissearchindex = lz->k - HASHCHARS;
+	    lz77_hashsearch(lz, hash, currchars, thissearchindex);
+	}
+
+	if (lz->k >= HASHCHARS && lz->k < HASHCHARS+MAXLAZY-1) {
+	    /*
+	     * Save the literal at this position, in case we need it.
+	     */
+	    lz->literals[lz->k - HASHCHARS] =
+		lz->data[(lz->winpos + HASHCHARS-1) % WINSIZE];
+	}
+
+	/*
+	 * Alternatively, if we're currently close to the end of a
+	 * match we've been tracking, see if there's a match
+	 * starting here so we can take that into account when
+	 * making our lazy matching decision.
+	 */
+	{
+	    int i, k, do_search = 0;
+
+	    for (i = 0; i < MAXLAZY; i++) {
+		if (lz->matchhead[i] < 0 && lz->matchlen[i] > 0) {
+		    int distafter = lz->k - HASHCHARS - i - lz->matchlen[i];
+		    if (distafter >= 0 && distafter < MAXLAZY-1-i) {
+			assert(lz->nextindex < NMATCHES);
+			assert(lz->matchlater[i*HASHCHARS+distafter] == 0);
+			lz->matchlater[i*HASHCHARS+distafter] = lz->nextindex;
+			do_search = 1;
+		    }
+		    /*
+		     * Also this is a good time to save any
+		     * literals that come before this match.
+		     */
+		    if (distafter >= 0 && distafter < HASHCHARS) {
+			for (k = 0; k <= distafter; k++)
+			    lz->literals[HASHCHARS + i*HASHCHARS+distafter-k] =
+			    lz->data[(lz->winpos + HASHCHARS-1 + k) % WINSIZE];
+		    }
+		}
+	    }
+
+	    if (do_search) {
+		thissearchindex = lz->nextindex++;
+		lz77_hashsearch(lz, hash, currchars, thissearchindex);
+	    }
+	}
 
 	/*
 	 * We never let k get bigger than HASHCHARS unless there's
@@ -452,9 +600,12 @@ void lz77_compress(LZ77 *lz, const void *vdata, int len)
 	 */
 	if (lz->k > HASHCHARS) {
 	    int i;
-	    for (i = 0; i < MAXLAZY && lz->k-i > HASHCHARS; i++) {
+	    for (i = 0; i < lz->nextindex; i++) {
 		int outpos = -1, inpos = lz->matchhead[i], nextinpos;
 		int bestdist = 0; 
+
+		if (i == thissearchindex)
+		    continue;	       /* this is the one we've just started */
 
 		while (inpos >= 0) {
 		    nextinpos = lz->matchnext[inpos];
@@ -531,13 +682,14 @@ void lz77_compress(LZ77 *lz, const void *vdata, int len)
 	/*
 	 * If k >= HASHCHARS+MAXLAZY-1 (meaning that we've had a
 	 * chance to try a match at every viable starting point)
-	 * and there are no ongoing matches, we must output
-	 * something.
+	 * and all of the first-order ongoing matches end
+	 * HASHCHARS-1 bytes ago or more, we must output something.
 	 */
 	if (lz->k >= HASHCHARS+MAXLAZY-1) {
 	    int i;
 	    for (i = 0; i < HASHCHARS; i++)
-		if (lz->matchhead[i] >= 0)
+		if (lz->matchhead[i] >= 0 ||
+		    lz->k-i-lz->matchlen[i] < HASHCHARS-1)
 		    break;
 	    if (i == HASHCHARS)
 		lz77_outputmatch(lz);
@@ -623,34 +775,38 @@ const char *const tests[] = {
     "0WAabcdefCXbcdefgACcdefghYACfghijklmZADabcdefghijklmBADCA",
     "WAabcdeCXbcdefgACcdefghiYACfghijZADabcdefghijBADCA",
 
-#if 0
     /*
      * Lazy matching: nasty cases in which it can be marginally
-     * better _not_ to lazily match. In at least some of these
-     * cases, choosing the superficially longer lazy match
-     * eliminates an opportunity to render the entire final
-     * lower-case section using one more match and at least three
-     * fewer literals.
-     * 
-     * (The compressor as currently written does not in fact
-     * perform optimally in this situation.)
+     * better _not_ to lazily match. In some of these cases,
+     * choosing the superficially longer lazy match eliminates an
+     * opportunity to render the entire final lower-case section
+     * using one more match and at least three fewer literals.
      */
-    "WAabcdeCXbcdefghijklACYACfghijklmnoZADabcdefghijklmnoBADCA",
-    "WAabcdeCXbcdefghijklACYACghijklmnoZADabcdefghijklmnoBADCA",
-    "WAabcdeCXbcdefghijklACYACfghijklmnZADabcdefghijklmnBADCA",
-    "WAabcdeCXbcdefghijklACYACghijklmnZADabcdefghijklmnBADCA",
-    "WAabcdeCXbcdefghijklACYACfghijklmZADabcdefghijklmBADCA",
-    "WAabcdeCXbcdefghijklACYACghijklmZADabcdefghijklmBADCA",
-    "WAabcdCXbcdefACcdefghijkYACghijklmnZADabcdefghijklmnBADCA",
-    "WAabcdCXbcdefACcdefghijkYACfghijklmnZADabcdefghijklmnBADCA",
-    "WAabcdCXbcdefACcdefghijkYACefghijklmnZADabcdefghijklmnBADCA",
-    "WAabcdCXbcdefACcdefghijkYACghijklmZADabcdefghijklmBADCA",
-    "WAabcdCXbcdefACcdefghijkYACfghijklmZADabcdefghijklmBADCA",
-    "WAabcdCXbcdefACcdefghijkYACefghijklmZADabcdefghijklmBADCA",
-    "WAabcdCXbcdefACcdefghijkYACghijklmZADabcdefghijklBADCA",
-    "WAabcdCXbcdefACcdefghijkYACfghijklmZADabcdefghijklBADCA",
-    "WAabcdCXbcdefACcdefghijkYACefghijklmZADabcdefghijklBADCA",
-#endif
+    "0WAabcdeCXbcdefghijklACYACfghijklmnoZADabcdefghijklmnoBADCA",
+    "[01]WAabcdeCXbcdefghijklACYACghijklmnoZADabcdefghijklmnoBADCA",
+    "0WAabcdeCXbcdefghijklACYACfghijklmnZADabcdefghijklmnBADCA",
+    "1WAabcdeCXbcdefghijklACYACghijklmnZADabcdefghijklmnBADCA",
+    "1WAabcdeCXbcdefghijklACYACfghijklmZADabcdefghijklmBADCA",
+    "1WAabcdeCXbcdefghijklACYACghijklmZADabcdefghijklmBADCA",
+    "1WAabcdCXbcdefACcdefghijkYACghijklmnZADabcdefghijklmnBADCA",
+    "1WAabcdCXbcdefACcdefghijkYACfghijklmnZADabcdefghijklmnBADCA",
+    "0WAabcdCXbcdefACcdefghijkYACefghijklmnZADabcdefghijklmnBADCA",
+    "1WAabcdCXbcdefACcdefghijkYACghijklmZADabcdefghijklmBADCA",
+    "[01]WAabcdCXbcdefACcdefghijkYACfghijklmZADabcdefghijklmBADCA",
+    "0WAabcdCXbcdefACcdefghijkYACefghijklmZADabcdefghijklmBADCA",
+    "2WAabcdCXbcdefACcdefghijkYACghijklmZADabcdefghijklBADCA",
+    "2WAabcdCXbcdefACcdefghijkYACfghijklmZADabcdefghijklBADCA",
+    "0WAabcdCXbcdefACcdefghijkYACefghijklmZADabcdefghijklBADCA",
+
+    /*
+     * Regression tests against specific things I've seen go wrong
+     * in the past. All I really ask of these cases is that they
+     * don't fail assertions; optimal compression is not critical.
+     */
+    "AabcBcdefgCdefDefghiEhijklFabcdefghijklG",
+    "AabcBcdeCefgDfghijkEFabcdefghijklG",
+    "AabcBbcdefgCcdefghiDhijklEjklmnopFabcdefghijklmnopqrstG",
+    "AabcBbcdefghCcdefghijklmnopqrstuvDijklmnopqrstuvwxyzEdefghijklmnoFabcdefghijklmnopqrstuvwxyzG",
 
     /*
      * Fun final test.
