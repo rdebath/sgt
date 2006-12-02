@@ -311,6 +311,76 @@ static void lz77_outputmatch(LZ77 *lz)
 {
     int besti = -1, bestval = -1;
     int i;
+    int matchadjust[HASHCHARS*HASHCHARS], matchstart[NMATCHES];
+
+    /*
+     * Before we do anything else, we need to fiddle with the
+     * `matchlater' array. It's possible that a match we need to be
+     * aware of in a particular position won't be listed there. An
+     * example is if we track three possible matches at k, k+1 and
+     * k+2, the middle one ends first and a new match begins
+     * immediately, then the match at k ends, and the match after
+     * the one at k+1 carries on. In this situation the
+     * second-order match would work just as well after k as it
+     * would after k+1, and this may be vital to know. So here we
+     * go through and copy entries of `matchlater' into each other.
+     */
+    memset(matchstart, 0, sizeof(matchstart));
+    for (i = 0; i < MAXLAZY; i++) {
+	/* First tag each match with its starting point relative to k. */
+	int j, k;
+
+	for (j = 0; j < HASHCHARS; j++) {
+	    int m = lz->matchlater[i*HASHCHARS+j];
+	    if (m)
+		matchstart[m] = i + lz->matchlen[i] + j;
+	}
+    }
+    /* Now go through the matches and replace each one with an earlier-
+     * starting one if it can do better that way. */
+    memset(matchadjust, 0, sizeof(matchadjust));
+    for (i = 0; i < HASHCHARS; i++) {
+	int k;
+	for (k = 0; k < HASHCHARS; k++) {
+	    int ii = lz->matchlater[i*HASHCHARS+k];
+	    int j;
+
+	    if (!ii)
+		continue;
+
+	    for (j = HASHCHARS; j < ii; j++) {
+		/*
+		 * To be worth replacing the current match in this
+		 * slot, the replacement match must start at least
+		 * as early, finish strictly later, and be at least
+		 * the minimum length.
+		 */
+		if ((matchstart[j] <= matchstart[ii]) &&
+		    (matchstart[j] + lz->matchlen[j] >
+		     matchstart[ii] + lz->matchlen[ii]) &&
+		    (matchstart[j] + lz->matchlen[j] >
+		     matchstart[ii] + HASHCHARS)) {
+		    /*
+		     * Replace it, and remember that its length isn't
+		     * quite what we'd have expected it to be.
+		     */
+		    lz->matchlater[i*HASHCHARS+k] = j;
+		    matchadjust[i*HASHCHARS+k] =
+			matchstart[ii] - matchstart[j];
+		    /*
+		     * Now don't do any more adjustment of this i.
+		     * (Once we know that a match of length n can
+		     * be found straight after another match, we
+		     * don't also need to know that a match of n-1
+		     * at the same distance can be found one byte
+		     * later.)
+		     */
+		    goto nexti;
+		}
+	    }
+	}
+	nexti:;
+    }
 
     /*
      * Decide which match to output. The basic rule is simply that
@@ -335,15 +405,18 @@ static void lz77_outputmatch(LZ77 *lz)
 	 */
 	for (j = 0; j < i; j++) {    /* j indexes earlier 1st-order matches */
 	    for (k = 0; k < HASHCHARS; k++) {   /* k indexes subsequent posn */
-		if (lz->matchlater[j*HASHCHARS+k]) {
-		    int m = lz->matchlater[j*HASHCHARS+k];
+		int mi = j*HASHCHARS+k;
+		if (lz->matchlater[mi]) {
+		    int m = lz->matchlater[mi];
+		    int ma = matchadjust[mi];
+
 		    /*
 		     * The match must last until at least MAXLAZY-1
 		     * bytes after the end of this one, _and_ it
 		     * must end within HASHCHARS bytes of the
 		     * current window position.
 		     */
-		    int totallen = j + lz->matchlen[j] + k + lz->matchlen[m];
+		    int totallen = j+lz->matchlen[j] + k + lz->matchlen[m]-ma;
 		    if (lz->k - totallen <= HASHCHARS &&
 			totallen >= i + lz->matchlen[i] + MAXLAZY-1)
 			goto disqualified;   /* high-order `continue;' */
@@ -408,12 +481,13 @@ static void lz77_outputmatch(LZ77 *lz)
 	int got_one = 0;
 
 	for (i = 0; i < HASHCHARS; i++) {
-	    int m = lz->matchlater[besti*HASHCHARS+i];
+	    int mi = besti*HASHCHARS+i;
+	    int m = lz->matchlater[mi];
 	    lz->literals[i] = lz->literals[HASHCHARS+besti*HASHCHARS+i];
 	    if (m > 0) {
 		lz->matchhead[i] = lz->matchhead[m];
 		lz->matchdist[i] = lz->matchdist[m];
-		lz->matchlen[i] = lz->matchlen[m];
+		lz->matchlen[i] = lz->matchlen[m] - matchadjust[mi];
 		lz->matchhead[m] = -1;
 		lz->matchdist[m] = 0;
 		lz->matchlen[m] = 0;
@@ -806,7 +880,11 @@ const char *const tests[] = {
     "AabcBcdefgCdefDefghiEhijklFabcdefghijklG",
     "AabcBcdeCefgDfghijkEFabcdefghijklG",
     "AabcBbcdefgCcdefghiDhijklEjklmnopFabcdefghijklmnopqrstG",
-    "AabcBbcdefghCcdefghijklmnopqrstuvDijklmnopqrstuvwxyzEdefghijklmnoFabcdefghijklmnopqrstuvwxyzG",
+    "AabcBbcdefghCcdefghijklmnopqrstuvDijklmnopqrstuvwxyzEdefghijklmnoF"
+	"abcdefghijklmnopqrstuvwxyzG",
+    "AabcdefBbcdeCcdefghijklmDfghijklmnoEFGHIJabcdefghijklmnoK",
+    "AabcdBbcdCcdefDefgEabcdefgF",
+    "AabcdeBbcdCcdefgDefgEabcdefghiF",
 
     /*
      * Fun final test.
