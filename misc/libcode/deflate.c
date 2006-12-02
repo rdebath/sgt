@@ -10,13 +10,6 @@
  *  - Feature: it would probably be useful to add a third format
  *    type to read and write actual gzip files.
  * 
- *  - Feature: the decompress function should return error codes
- *    indicating what kind of thing went wrong in a decoding error
- *    situation, possibly even including a file pointer. I envisage
- *    an enum of error codes in the header file, and one of those
- *    nasty preprocessor tricks to permit a user to define a
- *    code-to-text mapping array.
- *
  *  - Feature: could do with forms of flush other than SYNC_FLUSH.
  *    I'm not sure exactly how those work when you don't know in
  *    advance that your next block will be static (as we did in
@@ -1708,9 +1701,9 @@ static unsigned long adler32_update(unsigned long s,
     return ((s2 % 65521) << 16) | (s1 % 65521);
 }
 
-int deflate_compress_data(deflate_compress_ctx *out,
-			  const void *vblock, int len, int flushtype,
-			  void **outblock, int *outlen)
+void deflate_compress_data(deflate_compress_ctx *out,
+			   const void *vblock, int len, int flushtype,
+			   void **outblock, int *outlen)
 {
     const unsigned char *block = (const unsigned char *)vblock;
 
@@ -1817,8 +1810,6 @@ int deflate_compress_data(deflate_compress_ctx *out,
      */
     *outblock = (void *)out->outbuf;
     *outlen = out->outlen;
-
-    return 1;
 }
 
 /* ----------------------------------------------------------------------
@@ -2053,7 +2044,7 @@ static void emit_char(deflate_decompress_ctx *dctx, int c)
     dctx->window[dctx->winpos] = c;
     dctx->winpos = (dctx->winpos + 1) & (DWINSIZE - 1);
     if (dctx->outlen >= dctx->outsize) {
-	dctx->outsize = dctx->outlen + 512;
+	dctx->outsize = dctx->outlen * 3 / 2 + 512;
 	dctx->outblk = sresize(dctx->outblk, dctx->outsize, unsigned char);
     }
     if (dctx->type == DEFLATE_TYPE_ZLIB) {
@@ -2075,9 +2066,19 @@ int deflate_decompress_data(deflate_decompress_ctx *dctx,
     const coderecord *rec;
     const unsigned char *block = (const unsigned char *)vblock;
     int code, bfinal, btype, rep, dist, nlen, header, adler;
+    int error = 0;
 
-    dctx->outblk = snewn(256, unsigned char);
-    dctx->outsize = 256;
+    if (len == 0) {
+	*outblock = NULL;
+	*outlen = 0;
+	if (dctx->state != FINALSPIN)
+	    return DEFLATE_ERR_UNEXPECTED_EOF;
+	else
+	    return 0;
+    }
+
+    dctx->outblk = NULL;
+    dctx->outsize = 0;
     dctx->outlen = 0;
 
     while (len > 0 || dctx->nbits > 0) {
@@ -2117,8 +2118,10 @@ int deflate_decompress_data(deflate_decompress_ctx *dctx,
             if ((header & 0x0F00) != 0x0800 ||
                 (header & 0xF000) >  0x7000 ||
                 (header & 0x0020) != 0x0000 ||
-                (header % 31) != 0)
-                goto decode_error;
+                (header % 31) != 0) {
+		error = DEFLATE_ERR_ZLIB_HEADER;
+                goto finished;
+	    }
 
 	    dctx->state = OUTSIDEBLK;
 	    break;
@@ -2193,8 +2196,10 @@ int deflate_decompress_data(deflate_decompress_ctx *dctx,
 	    debug(("recv: codelen %d\n", code));
 	    if (code == -1)
 		goto finished;
-	    if (code == -2)
-		goto decode_error;
+	    if (code == -2) {
+		error = DEFLATE_ERR_INVALID_HUFFMAN;
+		goto finished;
+	    }
 	    if (code < 16)
 		dctx->lengths[dctx->lenptr++] = code;
 	    else {
@@ -2230,8 +2235,10 @@ int deflate_decompress_data(deflate_decompress_ctx *dctx,
 	    debug(("recv: litlen %d\n", code));
 	    if (code == -1)
 		goto finished;
-	    if (code == -2)
-		goto decode_error;
+	    if (code == -2) {
+		error = DEFLATE_ERR_INVALID_HUFFMAN;
+		goto finished;
+	    }
 	    if (code < 256) {
 #ifdef ANALYSIS
 		if (analyse)
@@ -2274,8 +2281,10 @@ int deflate_decompress_data(deflate_decompress_ctx *dctx,
 	    debug(("recv: dist %d\n", code));
 	    if (code == -1)
 		goto finished;
-	    if (code == -2)
-		goto decode_error;
+	    if (code == -2) {
+		error = DEFLATE_ERR_INVALID_HUFFMAN;
+		goto finished;
+	    }
 	    dctx->state = GOTDISTSYM;
 	    dctx->sym = code;
 	    break;
@@ -2353,8 +2362,10 @@ int deflate_decompress_data(deflate_decompress_ctx *dctx,
 	    EATBITS(8);
 	    adler |= (dctx->bits & 0xFF);
 	    EATBITS(8);
-	    if (adler != ((dctx->adler32 >> 16) & 0xFFFF))
-		goto decode_error;
+	    if (adler != ((dctx->adler32 >> 16) & 0xFFFF)) {
+		error = DEFLATE_ERR_CHECKSUM;
+		goto finished;
+	    }
 	    dctx->state = ADLER2;
 	    break;
 	  case ADLER2:
@@ -2364,8 +2375,10 @@ int deflate_decompress_data(deflate_decompress_ctx *dctx,
 	    EATBITS(8);
 	    adler |= (dctx->bits & 0xFF);
 	    EATBITS(8);
-	    if (adler != (dctx->adler32 & 0xFFFF))
-		goto decode_error;
+	    if (adler != (dctx->adler32 & 0xFFFF)) {
+		error = DEFLATE_ERR_CHECKSUM;
+		goto finished;
+	    }
 	    dctx->state = FINALSPIN;
 	    break;
 	  case FINALSPIN:
@@ -2378,21 +2391,19 @@ int deflate_decompress_data(deflate_decompress_ctx *dctx,
     finished:
     *outblock = dctx->outblk;
     *outlen = dctx->outlen;
-    return 1;
-
-    decode_error:
-    sfree(dctx->outblk);
-    *outblock = dctx->outblk = NULL;
-    *outlen = 0;
-    return 0;
+    return error;
 }
 
 #ifdef STANDALONE
 
+#define A(code,str) str
+const char *const deflate_errors[] = { DEFLATE_ERRORLIST(A) };
+#undef A
+
 int main(int argc, char **argv)
 {
     unsigned char buf[65536], *outbuf;
-    int ret, outlen;
+    int ret, err, outlen;
     deflate_decompress_ctx *dhandle;
     deflate_compress_ctx *chandle;
     int type = DEFLATE_TYPE_ZLIB, opts = TRUE;
@@ -2464,8 +2475,11 @@ int main(int argc, char **argv)
 	outbuf = NULL;
 	if (dhandle) {
 	    if (ret > 0)
-		deflate_decompress_data(dhandle, buf, ret,
-					(void **)&outbuf, &outlen);
+		err = deflate_decompress_data(dhandle, buf, ret,
+					      (void **)&outbuf, &outlen);
+	    else
+		err = deflate_decompress_data(dhandle, NULL, 0,
+					      (void **)&outbuf, &outlen);
 	} else {
 	    if (ret > 0)
 		deflate_compress_data(chandle, buf, ret, DEFLATE_NO_FLUSH,
@@ -2473,13 +2487,15 @@ int main(int argc, char **argv)
 	    else
 		deflate_compress_data(chandle, buf, ret, DEFLATE_END_OF_DATA,
 				      (void **)&outbuf, &outlen);
+	    err = 0;
 	}
         if (outbuf) {
             if (!analyse && outlen)
                 fwrite(outbuf, 1, outlen, stdout);
             sfree(outbuf);
-        } else if (dhandle && ret > 0) {
-            fprintf(stderr, "decoding error\n");
+        }
+	if (err > 0) {
+            fprintf(stderr, "decoding error: %s\n", deflate_errors[err]);
             return 1;
         }
     } while (ret > 0);
@@ -2499,6 +2515,10 @@ int main(int argc, char **argv)
 
 #ifdef TESTMODE
 
+#define A(code,str) str
+const char *const deflate_errors[] = { DEFLATE_ERRORLIST(A) };
+#undef A
+
 int main(int argc, char **argv)
 {
     char *filename = NULL;
@@ -2506,7 +2526,7 @@ int main(int argc, char **argv)
     deflate_compress_ctx *chandle;
     deflate_decompress_ctx *dhandle;
     unsigned char buf[65536], *outbuf, *outbuf2;
-    int ret, outlen, outlen2;
+    int ret, err, outlen, outlen2;
     int dlen = 0, clen = 0;
     int opts = TRUE;
 
@@ -2554,15 +2574,24 @@ int main(int argc, char **argv)
 	}
 	if (outbuf) {
 	    clen += outlen;
-	    deflate_decompress_data(dhandle, outbuf, outlen,
-				    (void **)&outbuf2, &outlen2);
+	    err = deflate_decompress_data(dhandle, outbuf, outlen,
+					  (void **)&outbuf2, &outlen2);
 	    sfree(outbuf);
 	    if (outbuf2) {
 		if (outlen2)
 		    fwrite(outbuf2, 1, outlen2, stdout);
 		sfree(outbuf2);
-	    } else {
-		fprintf(stderr, "decoding error\n");
+	    }
+	    if (!err && ret <= 0) {
+		/*
+		 * signal EOF
+		 */
+		err = deflate_decompress_data(dhandle, NULL, 0,
+					      (void **)&outbuf2, &outlen2);
+		assert(outbuf2 == NULL);
+	    }
+	    if (err) {
+		fprintf(stderr, "decoding error: %s\n", deflate_errors[err]);
 		return 1;
 	    }
 	}

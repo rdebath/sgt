@@ -60,9 +60,9 @@ void deflate_compress_free(deflate_compress_ctx *ctx);
  *    compressed data stream is cleaned up. Any checksums required
  *    at the end of the stream are also output.
  */
-int deflate_compress_data(deflate_compress_ctx *ctx,
-			  const void *inblock, int inlen, int flushtype,
-			  void **outblock, int *outlen);
+void deflate_compress_data(deflate_compress_ctx *ctx,
+			   const void *inblock, int inlen, int flushtype,
+			   void **outblock, int *outlen);
 
 enum {
     DEFLATE_NO_FLUSH,
@@ -99,10 +99,43 @@ void deflate_decompress_free(deflate_decompress_ctx *ctx);
  * that memory is stored in `outblock', and the length of output
  * data is stored in `outlen'.
  *
- * FIXME: error reporting?
+ * Returns 0 on success, or a non-zero error code if there was a
+ * decoding error. In case of an error return, the data decoded
+ * before the error is still returned as well. The possible errors
+ * are listed below.
+ * 
+ * If you want to check that the compressed data stream was
+ * correctly terminated, you can call this function with inlen==0
+ * to signal input EOF and see if an error comes back. If you don't
+ * care, don't bother.
  */
 int deflate_decompress_data(deflate_decompress_ctx *ctx,
 			    const void *inblock, int inlen,
 			    void **outblock, int *outlen);
+
+/*
+ * This macro defines the list of error codes and their string
+ * descriptions. It's defined like this to permit multiple modes of
+ * use; in addition to the enum declaration below, a user can
+ * define an array of error strings by doing
+ * 
+ *   #define A(code,str) str
+ *   const char *const deflate_errors[] = { DEFLATE_ERRORLIST(A) };
+ *   #undef A
+ * 
+ * or alternatively they can define a diagnostic array of string
+ * representations of the symbolic names by changing the definition
+ * of the above macro A to read "#code" instead of "str".
+ */
+#define DEFLATE_ERRORLIST(A) \
+    A(DEFLATE_NO_ERR, "success"), \
+    A(DEFLATE_ERR_ZLIB_HEADER, "invalid zlib header"), \
+    A(DEFLATE_ERR_INVALID_HUFFMAN, "invalid Huffman code encountered"), \
+    A(DEFLATE_ERR_CHECKSUM, "incorrect data checksum"), \
+    A(DEFLATE_ERR_UNEXPECTED_EOF, "unexpected end of data")
+
+#define DEFLATE_ENUM_DEF(x,y) x
+enum { DEFLATE_ERRORLIST(DEFLATE_ENUM_DEF) };
+#undef DEFLATE_ENUM_DEF
 
 #endif /* DEFLATE_DEFLATE_H */
