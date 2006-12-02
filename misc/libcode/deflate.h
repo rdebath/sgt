@@ -148,7 +148,9 @@ int deflate_decompress_data(deflate_decompress_ctx *ctx,
     A(DEFLATE_ERR_GZIP_HEADER, "invalid gzip header"), \
     A(DEFLATE_ERR_GZIP_WRONGCOMP, "gzip header specifies non-deflate compression"), \
     A(DEFLATE_ERR_GZIP_FHCRC, "gzip header specifies disputed FHCRC flag"), \
-    A(DEFLATE_ERR_INVALID_HUFFMAN, "invalid Huffman code encountered"), \
+    A(DEFLATE_ERR_SMALL_HUFTABLE, "under-committed Huffman code space"), \
+    A(DEFLATE_ERR_LARGE_HUFTABLE, "over-committed Huffman code space"), \
+    A(DEFLATE_ERR_INVALID_HUF_CODE, "internal Huffman coding error"), \
     A(DEFLATE_ERR_CHECKSUM, "incorrect data checksum"), \
     A(DEFLATE_ERR_INLEN, "incorrect data length"), \
     A(DEFLATE_ERR_UNEXPECTED_EOF, "unexpected end of data")
