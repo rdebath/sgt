@@ -71,7 +71,6 @@
 #include <string.h>
 #include <stdlib.h>
 #include <assert.h>
-#include <math.h>
 
 #include "lz77.h"
 #include "deflate.h"
@@ -974,11 +973,53 @@ static void outblock_wrapper(deflate_compress_ctx *out,
 #endif
 }
 
+/*
+ * Give the approximate log-base-2 of an input integer, measured in
+ * 8ths of a bit. (I.e. this computes an integer approximation to
+ * 8*logbase2(x).)
+ */
+static int approxlog2(unsigned x)
+{
+    int ret = 31*8;
+
+    /*
+     * Binary-search to get the top bit of x up to bit 31.
+     */
+    if (x < 0x00010000U) x <<= 16, ret -= 16*8;
+    if (x < 0x01000000U) x <<=  8, ret -=  8*8;
+    if (x < 0x10000000U) x <<=  4, ret -=  4*8;
+    if (x < 0x40000000U) x <<=  2, ret -=  2*8;
+    if (x < 0x80000000U) x <<=  1, ret -=  1*8;
+
+    /*
+     * Now we know the logarithm we want is in [ret,ret+1).
+     * Determine the bottom three bits by checking against
+     * threshold values.
+     * 
+     * (Each of these threshold values is 0x80000000 times an odd
+     * power of 2^(1/16). Therefore, this function rounds to
+     * nearest.)
+     */
+    if (x <= 0xAD583EEAU) {
+	if (x <= 0x91C3D373U)
+	    ret += (x <= 0x85AAC367U ? 0 : 1);
+	else
+	    ret += (x <= 0x9EF53260U ? 2 : 3);
+    } else {
+	if (x <= 0xCE248C15U)
+	    ret += (x <= 0xBD08A39FU ? 4 : 5);
+	else
+	    ret += (x <= 0xE0CCDEECU ? 6 : x <= 0xF5257D15L ? 7 : 8);
+    }
+
+    return ret;
+}
+
 static void chooseblock(deflate_compress_ctx *out)
 {
     int freqs1[286], freqs2[30];
     int i, bestlen, longestlen = 0;
-    double bestvfm;
+    int bestvfm;
     int nextrabits;
 
     memset(freqs1, 0, sizeof(freqs1));
@@ -994,7 +1035,7 @@ static void chooseblock(deflate_compress_ctx *out)
      * bits-per-symbol count) of a block of that length.
      */
     bestlen = -1;
-    bestvfm = 0.0;
+    bestvfm = 0;
     for (i = 0; i < out->nsyms; i++) {
 	unsigned sym = out->syms[(out->symstart + i) % SYMLIMIT];
 
@@ -1004,38 +1045,35 @@ static void chooseblock(deflate_compress_ctx *out)
 	     * Compute the length approximation and hence the value
 	     * for money.
 	     */
-	    double len = 0.0, vfm;
+	    int len = 0, vfm;
 	    int k;
 	    int total;
 
 	    /*
 	     * FIXME: we should be doing this incrementally, rather
 	     * than recomputing the whole thing at every byte
-	     * position. Also, can we fiddle the logs somehow to
-	     * avoid having to do floating point?
+	     * position.
 	     */
 	    total = 0;
 	    for (k = 0; k < (int)lenof(freqs1); k++) {
 		if (freqs1[k])
-		    len -= freqs1[k] * log(freqs1[k]);
+		    len -= freqs1[k] * approxlog2(freqs1[k]);
 		total += freqs1[k];
 	    }
 	    if (total)
-		len += total * log(total);
+		len += total * approxlog2(total);
 	    total = 0;
 	    for (k = 0; k < (int)lenof(freqs2); k++) {
 		if (freqs2[k])
-		    len -= freqs2[k] * log(freqs2[k]);
+		    len -= freqs2[k] * approxlog2(freqs2[k]);
 		total += freqs2[k];
 	    }
 	    if (total)
-		len += total * log(total);
-	    len /= log(2);
-	    len += nextrabits;
-	    len += 300;   /* very approximate size of the Huffman trees */
+		len += total * approxlog2(total);
+	    len += nextrabits * 8;
+	    len += 300 * 8;   /* very approximate size of the Huffman trees */
 
-	    vfm = i / len;	       /* symbols encoded per bit */
-/* fprintf(stderr, "chooseblock: i=%d gives len %g, vfm %g\n", i, len, vfm); */
+	    vfm = i * 32768 / len;      /* symbols encoded per bit */
 	    if (bestlen < 0 || vfm > bestvfm) {
 		bestlen = i;
 		bestvfm = vfm;
