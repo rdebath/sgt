@@ -33,12 +33,6 @@
  *  - Compression quality: we ought to be able to fall right back
  *    to actual uncompressed blocks if really necessary, though
  *    it's not clear what the criterion for doing so would be.
- *
- *  - Performance: chooseblock() is currently computing the whole
- *    entropic approximation for every possible block size. It
- *    ought to be able to update it incrementally as it goes along
- *    (assuming of course we don't jack it all in and go for a
- *    proper Huffman analysis).
  */
 
 /*
@@ -1018,14 +1012,15 @@ static int approxlog2(unsigned x)
 static void chooseblock(deflate_compress_ctx *out)
 {
     int freqs1[286], freqs2[30];
-    int i, bestlen, longestlen = 0;
+    int i, len, bestlen, longestlen = 0;
+    int total1, total2;
     int bestvfm;
-    int nextrabits;
 
     memset(freqs1, 0, sizeof(freqs1));
     memset(freqs2, 0, sizeof(freqs2));
     freqs1[256] = 1;		       /* we're bound to need one EOB */
-    nextrabits = 0;
+    total1 = 1;
+    total2 = 0;
 
     /*
      * Iterate over all possible block lengths, computing the
@@ -1036,44 +1031,19 @@ static void chooseblock(deflate_compress_ctx *out)
      */
     bestlen = -1;
     bestvfm = 0;
+
+    len = 300 * 8;	      /* very approximate size of the Huffman trees */
+
     for (i = 0; i < out->nsyms; i++) {
 	unsigned sym = out->syms[(out->symstart + i) % SYMLIMIT];
 
 	if (i > 0 && (sym & SYMPFX_MASK) == SYMPFX_LITLEN) {
 	    /*
 	     * This is a viable point at which to end the block.
-	     * Compute the length approximation and hence the value
-	     * for money.
+	     * Compute the value for money.
 	     */
-	    int len = 0, vfm;
-	    int k;
-	    int total;
+	    int vfm = i * 32768 / len;      /* symbols encoded per bit */
 
-	    /*
-	     * FIXME: we should be doing this incrementally, rather
-	     * than recomputing the whole thing at every byte
-	     * position.
-	     */
-	    total = 0;
-	    for (k = 0; k < (int)lenof(freqs1); k++) {
-		if (freqs1[k])
-		    len -= freqs1[k] * approxlog2(freqs1[k]);
-		total += freqs1[k];
-	    }
-	    if (total)
-		len += total * approxlog2(total);
-	    total = 0;
-	    for (k = 0; k < (int)lenof(freqs2); k++) {
-		if (freqs2[k])
-		    len -= freqs2[k] * approxlog2(freqs2[k]);
-		total += freqs2[k];
-	    }
-	    if (total)
-		len += total * approxlog2(total);
-	    len += nextrabits * 8;
-	    len += 300 * 8;   /* very approximate size of the Huffman trees */
-
-	    vfm = i * 32768 / len;      /* symbols encoded per bit */
 	    if (bestlen < 0 || vfm > bestvfm) {
 		bestlen = i;
 		bestvfm = vfm;
@@ -1090,13 +1060,23 @@ static void chooseblock(deflate_compress_ctx *out)
 	if ((sym & SYMPFX_MASK) == SYMPFX_LITLEN) {
 	    sym &= ~SYMPFX_MASK;
 	    assert(sym < lenof(freqs1));
+	    len += freqs1[sym] * approxlog2(freqs1[sym]);
+	    len -= total1 * approxlog2(total1);
 	    freqs1[sym]++;
+	    total1++;
+	    len -= freqs1[sym] * approxlog2(freqs1[sym]);
+	    len += total1 * approxlog2(total1);
 	} else if ((sym & SYMPFX_MASK) == SYMPFX_DIST) {
 	    sym &= ~SYMPFX_MASK;
 	    assert(sym < lenof(freqs2));
+	    len += freqs2[sym] * approxlog2(freqs2[sym]);
+	    len -= total2 * approxlog2(total2);
 	    freqs2[sym]++;
+	    total2++;
+	    len -= freqs2[sym] * approxlog2(freqs2[sym]);
+	    len += total2 * approxlog2(total2);
 	} else if ((sym & SYMPFX_MASK) == SYMPFX_EXTRABITS) {
-	    nextrabits += (sym &~ SYMPFX_MASK) >> SYM_EXTRABITS_SHIFT;
+	    len += 8 * ((sym &~ SYMPFX_MASK) >> SYM_EXTRABITS_SHIFT);
 	}
     }
 
