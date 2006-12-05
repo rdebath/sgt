@@ -17,10 +17,6 @@
  *     + also, zlib has FULL_FLUSH which clears the LZ77 state as
  * 	 well, for random access.
  *
- *  - Compression quality: introduce the option of choosing a
- *    static block instead of a dynamic one, where that's more
- *    efficient.
- *
  *  - Compression quality: chooseblock() appears to be computing
  *    wildly inaccurate block size estimates. Possible resolutions:
  *     + find and fix some trivial bug I haven't spotted yet
@@ -29,6 +25,8 @@
  *
  *  - Compression quality: see if increasing SYMLIMIT causes
  *    dynamic blocks to start being consistently smaller than it.
+ *     + actually we seem to be there already, but check on a
+ * 	 larger corpus.
  *
  *  - Compression quality: we ought to be able to fall right back
  *    to actual uncompressed blocks if really necessary, though
@@ -358,6 +356,15 @@ static const coderecord distcodes[] = {
 #define SYM_EXTRABITS_MASK 0x3C000000U
 #define SYM_EXTRABITS_SHIFT 26
 
+struct huftrees {
+    unsigned char *len_litlen;
+    int *code_litlen;
+    unsigned char *len_dist;
+    int *code_dist;
+    unsigned char *len_codelen;
+    int *code_codelen;
+};
+
 struct deflate_compress_ctx {
     LZ77 *lz;
     unsigned char *outbuf;
@@ -372,6 +379,9 @@ struct deflate_compress_ctx {
     unsigned long datasize;
     int lastblock;
     int finished;
+    unsigned char static_len1[286], static_len2[30];
+    int static_code1[286], static_code2[30];
+    struct huftrees sht;
 #ifdef STATISTICS
     unsigned long bitcount;
 #endif
@@ -543,6 +553,26 @@ static void deflate_buildhuf(int *freqs, unsigned char *lengths,
     int maxprob;
 
     /*
+     * Nasty special case: if the frequency table has fewer than
+     * two non-zero elements, we must invent some, because we can't
+     * have fewer than one bit encoding a symbol.
+     */
+    assert(nsyms >= 2);
+    {
+	int count = 0;
+	for (i = 0; i < nsyms; i++)
+	    if (freqs[i] > 0)
+		count++;
+	if (count < 2) {
+	    for (i = 0; i < nsyms && count > 0; i++)
+		if (freqs[i] == 0) {
+		    freqs[i] = 1;
+		    count--;
+		}
+	}
+    }
+
+    /*
      * First, try building the Huffman table the normal way. If
      * this works, it's optimal, so we don't want to mess with it.
      */
@@ -659,20 +689,32 @@ static void deflate_buildhuf(int *freqs, unsigned char *lengths,
 	assert(lengths[i] <= limit);
 }
 
-struct huftrees {
-    unsigned char *len_litlen;
-    int *code_litlen;
-    unsigned char *len_dist;
-    int *code_dist;
-    unsigned char *len_codelen;
-    int *code_codelen;
-};
+/*
+ * Compute the bit length of a symbol, given the three Huffman
+ * trees.
+ */
+static int symsize(unsigned sym, const struct huftrees *trees)
+{
+    unsigned basesym = sym &~ SYMPFX_MASK;
+    int i;
+
+    switch (sym & SYMPFX_MASK) {
+      case SYMPFX_LITLEN:
+	return trees->len_litlen[basesym];
+      case SYMPFX_DIST:
+	return trees->len_dist[basesym];
+      case SYMPFX_CODELEN:
+	return trees->len_codelen[basesym];
+      default /*case SYMPFX_EXTRABITS*/:
+	return basesym >> SYM_EXTRABITS_SHIFT;
+    }
+}
 
 /*
  * Write out a single symbol, given the three Huffman trees.
  */
 static void writesym(deflate_compress_ctx *out,
-		     unsigned sym, struct huftrees *trees)
+		     unsigned sym, const struct huftrees *trees)
 {
     unsigned basesym = sym &~ SYMPFX_MASK;
     int i;
@@ -699,8 +741,13 @@ static void writesym(deflate_compress_ctx *out,
     }
 }
 
+/*
+ * outblock() must output _either_ a dynamic block of length
+ * `dynamic_len', _or_ a static block of length `static_len', but
+ * it gets to choose which.
+ */
 static void outblock(deflate_compress_ctx *out,
-		     int blklen, int dynamic)
+		     int dynamic_len, int static_len)
 {
     int freqs1[286], freqs2[30], freqs3[19];
     unsigned char len1[286], len2[30], len3[19];
@@ -710,185 +757,225 @@ static void outblock(deflate_compress_ctx *out,
     int treesyms[286 + 30];
     int codelen[19];
     int i, ntreesrc, ntreesyms;
-    struct huftrees ht;
+    int dynamic, blklen;
+    struct huftrees dht;
+    const struct huftrees *ht;
 #ifdef STATISTICS
     unsigned long bitcount_before;
 #endif
 
-    ht.len_litlen = len1;
-    ht.len_dist = len2;
-    ht.len_codelen = len3;
-    ht.code_litlen = code1;
-    ht.code_dist = code2;
-    ht.code_codelen = code3;
+    dht.len_litlen = len1;
+    dht.len_dist = len2;
+    dht.len_codelen = len3;
+    dht.code_litlen = code1;
+    dht.code_dist = code2;
+    dht.code_codelen = code3;
 
     /*
-     * Build the two main Huffman trees.
+     * We make our choice of block to output by doing all the
+     * detailed work to determine the exact length of each possible
+     * block. Then we choose the one which has fewest output bits
+     * per symbol.
      */
-    if (dynamic) {
-	/*
-	 * Count up the frequency tables.
-	 */
-	memset(freqs1, 0, sizeof(freqs1));
-	memset(freqs2, 0, sizeof(freqs2));
-	freqs1[256] = 1;	       /* we're bound to need one EOB */
-	for (i = 0; i < blklen; i++) {
-	    unsigned sym = out->syms[(out->symstart + i) % SYMLIMIT];
 
-	    /*
-	     * Increment the occurrence counter for this symbol, if
-	     * it's in one of the Huffman alphabets and isn't extra
-	     * bits.
-	     */
-	    if ((sym & SYMPFX_MASK) == SYMPFX_LITLEN) {
-		sym &= ~SYMPFX_MASK;
-		assert(sym < lenof(freqs1));
-		freqs1[sym]++;
-	    } else if ((sym & SYMPFX_MASK) == SYMPFX_DIST) {
-		sym &= ~SYMPFX_MASK;
-		assert(sym < lenof(freqs2));
-		freqs2[sym]++;
-	    }
-	}
-	deflate_buildhuf(freqs1, len1, lenof(freqs1), 15);
-	deflate_buildhuf(freqs2, len2, lenof(freqs2), 15);
-    } else {
+    /*
+     * First build the two main Huffman trees for the dynamic
+     * block.
+     */
+
+    /*
+     * Count up the frequency tables.
+     */
+    memset(freqs1, 0, sizeof(freqs1));
+    memset(freqs2, 0, sizeof(freqs2));
+    freqs1[256] = 1;	       /* we're bound to need one EOB */
+    for (i = 0; i < dynamic_len; i++) {
+	unsigned sym = out->syms[(out->symstart + i) % SYMLIMIT];
+
 	/*
-	 * Fixed static trees.
+	 * Increment the occurrence counter for this symbol, if
+	 * it's in one of the Huffman alphabets and isn't extra
+	 * bits.
 	 */
-	for (i = 0; i < lenof(len1); i++)
-	    len1[i] = (i < 144 ? 8 :
-		       i < 256 ? 9 :
-		       i < 280 ? 7 : 8);
-	for (i = 0; i < lenof(len2); i++)
-	    len2[i] = 5;
+	if ((sym & SYMPFX_MASK) == SYMPFX_LITLEN) {
+	    sym &= ~SYMPFX_MASK;
+	    assert(sym < lenof(freqs1));
+	    freqs1[sym]++;
+	} else if ((sym & SYMPFX_MASK) == SYMPFX_DIST) {
+	    sym &= ~SYMPFX_MASK;
+	    assert(sym < lenof(freqs2));
+	    freqs2[sym]++;
+	}
     }
+    deflate_buildhuf(freqs1, len1, lenof(freqs1), 15);
+    deflate_buildhuf(freqs2, len2, lenof(freqs2), 15);
     hufcodes(len1, code1, lenof(freqs1));
     hufcodes(len2, code2, lenof(freqs2));
 
-    if (dynamic) {
-	/*
-	 * Determine HLIT and HDIST.
-	 */
-	for (hlit = 286; hlit > 257 && len1[hlit-1] == 0; hlit--);
-	for (hdist = 30; hdist > 1 && len2[hdist-1] == 0; hdist--);
+    /*
+     * Determine HLIT and HDIST.
+     */
+    for (hlit = 286; hlit > 257 && len1[hlit-1] == 0; hlit--);
+    for (hdist = 30; hdist > 1 && len2[hdist-1] == 0; hdist--);
 
-	/*
-	 * Write out the list of symbols used to transmit the
-	 * trees.
-	 */
-	ntreesrc = 0;
-	for (i = 0; i < hlit; i++)
-	    treesrc[ntreesrc++] = len1[i];
-	for (i = 0; i < hdist; i++)
-	    treesrc[ntreesrc++] = len2[i];
-	ntreesyms = 0;
-	for (i = 0; i < ntreesrc ;) {
-	    int j = 1;
-	    int k;
+    /*
+     * Write out the list of symbols used to transmit the
+     * trees.
+     */
+    ntreesrc = 0;
+    for (i = 0; i < hlit; i++)
+	treesrc[ntreesrc++] = len1[i];
+    for (i = 0; i < hdist; i++)
+	treesrc[ntreesrc++] = len2[i];
+    ntreesyms = 0;
+    for (i = 0; i < ntreesrc ;) {
+	int j = 1;
+	int k;
 
-	    /* Find length of run of the same length code. */
-	    while (i+j < ntreesrc && treesrc[i+j] == treesrc[i])
-		j++;
+	/* Find length of run of the same length code. */
+	while (i+j < ntreesrc && treesrc[i+j] == treesrc[i])
+	    j++;
 
-	    /* Encode that run as economically as we can. */
-	    k = j;
-	    if (treesrc[i] == 0) {
-		/*
-		 * Zero code length: we can output run codes for
-		 * 3-138 zeroes. So if we have fewer than 3 zeroes,
-		 * we just output literals. Otherwise, we output
-		 * nothing but run codes, and tweak their lengths
-		 * to make sure we aren't left with under 3 at the
-		 * end.
-		 */
-		if (k < 3) {
-		    while (k--)
-			treesyms[ntreesyms++] = 0 | SYMPFX_CODELEN;
-		} else {
-		    while (k > 0) {
-			int rpt = (k < 138 ? k : 138);
-			if (rpt > k-3 && rpt < k)
-			    rpt = k-3;
-			assert(rpt >= 3 && rpt <= 138);
-			if (rpt < 11) {
-			    treesyms[ntreesyms++] = 17 | SYMPFX_CODELEN;
-			    treesyms[ntreesyms++] =
-				(SYMPFX_EXTRABITS | (rpt - 3) |
-				 (3 << SYM_EXTRABITS_SHIFT));
-			} else {
-			    treesyms[ntreesyms++] = 18 | SYMPFX_CODELEN;
-			    treesyms[ntreesyms++] =
-				(SYMPFX_EXTRABITS | (rpt - 11) |
-				 (7 << SYM_EXTRABITS_SHIFT));
-			}
-			k -= rpt;
-		    }
-		}
-	    } else {
-		/*
-		 * Non-zero code length: we must output the first
-		 * one explicitly, then we can output a copy code
-		 * for 3-6 repeats. So if we have fewer than 4
-		 * repeats, we _just_ output literals. Otherwise,
-		 * we output one literal plus at least one copy
-		 * code, and tweak the copy codes to make sure we
-		 * aren't left with under 3 at the end.
-		 */
-		assert(treesrc[i] < 16);
-		treesyms[ntreesyms++] = treesrc[i] | SYMPFX_CODELEN;
-		k--;
-		if (k < 3) {
-		    while (k--)
-			treesyms[ntreesyms++] = treesrc[i] | SYMPFX_CODELEN;
-		} else {
-		    while (k > 0) {
-			int rpt = (k < 6 ? k : 6);
-			if (rpt > k-3 && rpt < k)
-			    rpt = k-3;
-			assert(rpt >= 3 && rpt <= 6);
-			treesyms[ntreesyms++] = 16 | SYMPFX_CODELEN;
-			treesyms[ntreesyms++] = (SYMPFX_EXTRABITS | (rpt - 3) |
-						 (2 << SYM_EXTRABITS_SHIFT));
-			k -= rpt;
-		    }
-		}
-	    }
-
-	    i += j;
-	}
-	assert((unsigned)ntreesyms < lenof(treesyms));
-
-	/*
-	 * Count up the frequency table for the tree-transmission
-	 * symbols, and build the auxiliary Huffman tree for that.
-	 */
-	memset(freqs3, 0, sizeof(freqs3));
-	for (i = 0; i < ntreesyms; i++) {
-	    unsigned sym = treesyms[i];
-
+	/* Encode that run as economically as we can. */
+	k = j;
+	if (treesrc[i] == 0) {
 	    /*
-	     * Increment the occurrence counter for this symbol, if
-	     * it's the Huffman alphabet and isn't extra bits.
+	     * Zero code length: we can output run codes for
+	     * 3-138 zeroes. So if we have fewer than 3 zeroes,
+	     * we just output literals. Otherwise, we output
+	     * nothing but run codes, and tweak their lengths
+	     * to make sure we aren't left with under 3 at the
+	     * end.
 	     */
-	    if ((sym & SYMPFX_MASK) == SYMPFX_CODELEN) {
-		sym &= ~SYMPFX_MASK;
-		assert(sym < lenof(freqs3));
-		freqs3[sym]++;
+	    if (k < 3) {
+		while (k--)
+		    treesyms[ntreesyms++] = 0 | SYMPFX_CODELEN;
+	    } else {
+		while (k > 0) {
+		    int rpt = (k < 138 ? k : 138);
+		    if (rpt > k-3 && rpt < k)
+			rpt = k-3;
+		    assert(rpt >= 3 && rpt <= 138);
+		    if (rpt < 11) {
+			treesyms[ntreesyms++] = 17 | SYMPFX_CODELEN;
+			treesyms[ntreesyms++] =
+			    (SYMPFX_EXTRABITS | (rpt - 3) |
+			     (3 << SYM_EXTRABITS_SHIFT));
+		    } else {
+			treesyms[ntreesyms++] = 18 | SYMPFX_CODELEN;
+			treesyms[ntreesyms++] =
+			    (SYMPFX_EXTRABITS | (rpt - 11) |
+			     (7 << SYM_EXTRABITS_SHIFT));
+		    }
+		    k -= rpt;
+		}
+	    }
+	} else {
+	    /*
+	     * Non-zero code length: we must output the first
+	     * one explicitly, then we can output a copy code
+	     * for 3-6 repeats. So if we have fewer than 4
+	     * repeats, we _just_ output literals. Otherwise,
+	     * we output one literal plus at least one copy
+	     * code, and tweak the copy codes to make sure we
+	     * aren't left with under 3 at the end.
+	     */
+	    assert(treesrc[i] < 16);
+	    treesyms[ntreesyms++] = treesrc[i] | SYMPFX_CODELEN;
+	    k--;
+	    if (k < 3) {
+		while (k--)
+		    treesyms[ntreesyms++] = treesrc[i] | SYMPFX_CODELEN;
+	    } else {
+		while (k > 0) {
+		    int rpt = (k < 6 ? k : 6);
+		    if (rpt > k-3 && rpt < k)
+			rpt = k-3;
+		    assert(rpt >= 3 && rpt <= 6);
+		    treesyms[ntreesyms++] = 16 | SYMPFX_CODELEN;
+		    treesyms[ntreesyms++] = (SYMPFX_EXTRABITS | (rpt - 3) |
+					     (2 << SYM_EXTRABITS_SHIFT));
+		    k -= rpt;
+		}
 	    }
 	}
-	deflate_buildhuf(freqs3, len3, lenof(freqs3), 7);
-	hufcodes(len3, code3, lenof(freqs3));
+
+	i += j;
+    }
+    assert((unsigned)ntreesyms < lenof(treesyms));
+
+    /*
+     * Count up the frequency table for the tree-transmission
+     * symbols, and build the auxiliary Huffman tree for that.
+     */
+    memset(freqs3, 0, sizeof(freqs3));
+    for (i = 0; i < ntreesyms; i++) {
+	unsigned sym = treesyms[i];
 
 	/*
-	 * Reorder the code length codes into transmission order, and
-	 * determine HCLEN.
+	 * Increment the occurrence counter for this symbol, if
+	 * it's the Huffman alphabet and isn't extra bits.
 	 */
-	for (i = 0; i < 19; i++)
-	    codelen[i] = len3[lenlenmap[i]];
-	for (hclen = 19; hclen > 4 && codelen[hclen-1] == 0; hclen--);
-    } else {
-	hlit = hdist = hclen = ntreesyms = 0;   /* placate optimiser */
+	if ((sym & SYMPFX_MASK) == SYMPFX_CODELEN) {
+	    sym &= ~SYMPFX_MASK;
+	    assert(sym < lenof(freqs3));
+	    freqs3[sym]++;
+	}
+    }
+    deflate_buildhuf(freqs3, len3, lenof(freqs3), 7);
+    hufcodes(len3, code3, lenof(freqs3));
+
+    /*
+     * Reorder the code length codes into transmission order, and
+     * determine HCLEN.
+     */
+    for (i = 0; i < 19; i++)
+	codelen[i] = len3[lenlenmap[i]];
+    for (hclen = 19; hclen > 4 && codelen[hclen-1] == 0; hclen--);
+
+    /*
+     * Now work out the exact size of both the dynamic and the
+     * static block, in bits.
+     */
+    {
+	int ssize, dsize;
+
+	/*
+	 * First the dynamic block.
+	 */
+	dsize = 3 + 5 + 5 + 4;	       /* 3-bit header, HLIT, HDIST, HCLEN */
+	dsize += 3 * hclen;	       /* code-length-alphabet code lengths */
+	/* Code lengths */
+	for (i = 0; i < ntreesyms; i++)
+	    dsize += symsize(treesyms[i], &dht);
+	/* The actual block data */
+	for (i = 0; i < dynamic_len; i++) {
+	    unsigned sym = out->syms[(out->symstart + i) % SYMLIMIT];
+	    dsize += symsize(sym, &dht);
+	}
+	/* And the end-of-data symbol. */
+	dsize += symsize(SYMPFX_LITLEN | 256, &dht);
+
+	/*
+	 * Now the static block.
+	 */
+	ssize = 3;		       /* 3-bit block header */
+	/* The actual block data */
+	for (i = 0; i < static_len; i++) {
+	    unsigned sym = out->syms[(out->symstart + i) % SYMLIMIT];
+	    ssize += symsize(sym, &out->sht);
+	}
+	/* And the end-of-data symbol. */
+	ssize += symsize(SYMPFX_LITLEN | 256, &out->sht);
+
+	/*
+	 * Compare the two and decide which to output. We break
+	 * exact ties in favour of the static block, because of the
+	 * special case in which that block has zero length.
+	 */
+	dynamic = ((double)ssize * dynamic_len > (double)dsize * static_len);
+	ht = dynamic ? &dht : &out->sht;
+	blklen = dynamic ? dynamic_len : static_len;
     }
 
     /*
@@ -921,7 +1008,7 @@ static void outblock(deflate_compress_ctx *out,
 
 	/* Code lengths for the literal/length and distance trees */
 	for (i = 0; i < ntreesyms; i++)
-	    writesym(out, treesyms[i], &ht);
+	    writesym(out, treesyms[i], ht);
 #ifdef STATISTICS
 	fprintf(stderr, "total tree size %lu bits\n",
 		out->bitcount - bitcount_before);
@@ -931,11 +1018,11 @@ static void outblock(deflate_compress_ctx *out,
     /* Output the actual symbols from the buffer */
     for (i = 0; i < blklen; i++) {
 	unsigned sym = out->syms[(out->symstart + i) % SYMLIMIT];
-	writesym(out, sym, &ht);
+	writesym(out, sym, ht);
     }
 
     /* Output the end-of-data symbol */
-    writesym(out, SYMPFX_LITLEN | 256, &ht);
+    writesym(out, SYMPFX_LITLEN | 256, ht);
 
     /*
      * Remove all the just-output symbols from the symbol buffer by
@@ -943,28 +1030,6 @@ static void outblock(deflate_compress_ctx *out,
      */
     out->symstart = (out->symstart + blklen) % SYMLIMIT;
     out->nsyms -= blklen;
-}
-
-static void outblock_wrapper(deflate_compress_ctx *out,
-			     int best_dynamic_len, int longest_len)
-{
-    /*
-     * Final block choice function: we have the option of either
-     * outputting a dynamic block of length best_dynamic_len, or a
-     * static block of length longest_len. Whichever gives us the
-     * best value for money, we do.
-     *
-     * FIXME: currently we always choose dynamic except for empty
-     * blocks. We should make a sensible judgment.
-     */
-#ifdef STATIC_ONLY
-    outblock(out, longest_len, FALSE);
-#else
-    if (longest_len == 0)
-	outblock(out, 0, FALSE);
-    else
-	outblock(out, best_dynamic_len, TRUE);
-#endif
 }
 
 /*
@@ -1082,8 +1147,7 @@ static void chooseblock(deflate_compress_ctx *out)
 
     assert(bestlen > 0);
 
-/* fprintf(stderr, "chooseblock: bestlen %d, bestvfm %g\n", bestlen, bestvfm); */
-    outblock_wrapper(out, bestlen, longestlen);
+    outblock(out, bestlen, longestlen);
 }
 
 /*
@@ -1097,7 +1161,7 @@ static void flushblock(deflate_compress_ctx *out)
      * know it has to be, because flushblock() is called in between
      * two matches/literals.
      */
-    outblock_wrapper(out, out->nsyms, out->nsyms);
+    outblock(out, out->nsyms, out->nsyms);
     assert(out->nsyms == 0);
 }
 
@@ -1214,6 +1278,29 @@ deflate_compress_ctx *deflate_compress_new(int type)
     out->finished = FALSE;
 
     out->lz = lz77_new(literal, match, out);
+
+    /*
+     * Build the static Huffman tables now, so we'll have them
+     * available every time outblock() is called.
+     */
+    {
+	int i;
+
+	for (i = 0; i < lenof(out->static_len1); i++)
+	    out->static_len1[i] = (i < 144 ? 8 :
+				   i < 256 ? 9 :
+				   i < 280 ? 7 : 8);
+	for (i = 0; i < lenof(out->static_len2); i++)
+	    out->static_len2[i] = 5;
+    }
+    hufcodes(out->static_len1, out->static_code1, lenof(out->static_code1));
+    hufcodes(out->static_len2, out->static_code2, lenof(out->static_code2));
+    out->sht.len_litlen = out->static_len1;
+    out->sht.len_dist = out->static_len2;
+    out->sht.len_codelen = NULL;
+    out->sht.code_litlen = out->static_code1;
+    out->sht.code_dist = out->static_code2;
+    out->sht.code_codelen = NULL;
 
     return out;
 }
