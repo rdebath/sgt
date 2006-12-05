@@ -107,7 +107,7 @@
 #endif
 
 #ifdef ANALYSIS
-int analyse = FALSE;
+int analyse_level = 0;
 #endif
 
 /* ----------------------------------------------------------------------
@@ -696,7 +696,6 @@ static void deflate_buildhuf(int *freqs, unsigned char *lengths,
 static int symsize(unsigned sym, const struct huftrees *trees)
 {
     unsigned basesym = sym &~ SYMPFX_MASK;
-    int i;
 
     switch (sym & SYMPFX_MASK) {
       case SYMPFX_LITLEN:
@@ -1539,10 +1538,30 @@ static struct table *mkonetab(int *codes, unsigned char *lengths, int nsyms,
 /*
  * Build a decode table, given a set of Huffman tree lengths.
  */
-static struct table *mktable(unsigned char *lengths, int nlengths, int *error)
+static struct table *mktable(unsigned char *lengths, int nlengths,
+#ifdef ANALYSIS
+			     const char *alphabet,
+#endif
+			     int *error)
 {
     int codes[MAXSYMS];
     int maxlen;
+
+#ifdef ANALYSIS
+    if (alphabet && analyse_level > 1) {
+	int i, col = 0;
+	printf("code lengths for %s alphabet:\n", alphabet);
+	for (i = 0; i < nlengths; i++) {
+	    col += printf("%3d", lengths[i]);
+	    if (col > 72) {
+		putchar('\n');
+		col = 0;
+	    }
+	}
+	if (col > 0)
+	    putchar('\n');
+    }
+#endif
 
     maxlen = hufcodes(lengths, codes, nlengths);
 
@@ -1631,10 +1650,18 @@ deflate_decompress_ctx *deflate_decompress_new(int type)
     memset(lengths + 144, 9, 256 - 144);
     memset(lengths + 256, 7, 280 - 256);
     memset(lengths + 280, 8, 288 - 280);
-    dctx->staticlentable = mktable(lengths, 288, NULL);
+    dctx->staticlentable = mktable(lengths, 288,
+#ifdef ANALYSIS
+				   NULL,
+#endif
+				   NULL);
     assert(dctx->staticlentable);
     memset(lengths, 5, 32);
-    dctx->staticdisttable = mktable(lengths, 32, NULL);
+    dctx->staticdisttable = mktable(lengths, 32,
+#ifdef ANALYSIS
+				    NULL,
+#endif
+				    NULL);
     assert(dctx->staticdisttable);
     dctx->state = (type == DEFLATE_TYPE_ZLIB ? ZLIBSTART :
 		   type == DEFLATE_TYPE_GZIP ? GZIPSTART :
@@ -1916,6 +1943,16 @@ int deflate_decompress_data(deflate_decompress_ctx *dctx,
 		dctx->state = TREES_HDR;
 	    }
 	    debug(("recv: bfinal=%d btype=%d\n", bfinal, btype));
+#ifdef ANALYSIS
+	    if (analyse_level > 1) {
+		static const char *const btypes[] = {
+		    "uncompressed", "static", "dynamic", "type 3 (unknown)"
+		};
+		printf("new block, %sfinal, %s\n",
+		       bfinal ? "" : "not ",
+		       btypes[btype]);
+	    }
+#endif
 	    break;
 	  case TREES_HDR:
 	    /*
@@ -1932,6 +1969,11 @@ int deflate_decompress_data(deflate_decompress_ctx *dctx,
 	    EATBITS(4);
 	    debug(("recv: hlit=%d hdist=%d hclen=%d\n", dctx->hlit,
 		   dctx->hdist, dctx->hclen));
+#ifdef ANALYSIS
+	    if (analyse_level > 1)
+		printf("hlit=%d, hdist=%d, hclen=%d\n",
+		        dctx->hlit, dctx->hdist, dctx->hclen);
+#endif
 	    dctx->lenptr = 0;
 	    dctx->state = TREES_LENLEN;
 	    memset(dctx->lenlen, 0, sizeof(dctx->lenlen));
@@ -1946,7 +1988,11 @@ int deflate_decompress_data(deflate_decompress_ctx *dctx,
 		EATBITS(3);
 	    }
 	    if (dctx->lenptr == dctx->hclen) {
-		dctx->lenlentable = mktable(dctx->lenlen, 19, &error);
+		dctx->lenlentable = mktable(dctx->lenlen, 19,
+#ifdef ANALYSIS
+					    "code length",
+#endif
+					    &error);
 		if (!dctx->lenlentable)
 		    goto finished;     /* error code set up by mktable */
 		dctx->state = TREES_LEN;
@@ -1956,11 +2002,18 @@ int deflate_decompress_data(deflate_decompress_ctx *dctx,
 	  case TREES_LEN:
 	    if (dctx->lenptr >= dctx->hlit + dctx->hdist) {
 		dctx->currlentable = mktable(dctx->lengths, dctx->hlit,
+#ifdef ANALYSIS
+					     "literal/length",
+#endif
 					     &error);
 		if (!dctx->currlentable)
 		    goto finished;     /* error code set up by mktable */
 		dctx->currdisttable = mktable(dctx->lengths + dctx->hlit,
-					      dctx->hdist, &error);
+					      dctx->hdist,
+#ifdef ANALYSIS
+					      "distance",
+#endif
+					      &error);
 		if (!dctx->currdisttable)
 		    goto finished;     /* error code set up by mktable */
 		freetable(&dctx->lenlentable);
@@ -1972,9 +2025,13 @@ int deflate_decompress_data(deflate_decompress_ctx *dctx,
 	    debug(("recv: codelen %d\n", code));
 	    if (code == -1)
 		goto finished;
-	    if (code < 16)
+	    if (code < 16) {
+#ifdef ANALYSIS
+		if (analyse_level > 1)
+		    printf("code-length %d\n", code);
+#endif
 		dctx->lengths[dctx->lenptr++] = code;
-	    else {
+	    } else {
 		dctx->lenextrabits = (code == 16 ? 2 : code == 17 ? 3 : 7);
 		dctx->lenaddon = (code == 18 ? 11 : 3);
 		dctx->lenrep = (code == 16 && dctx->lenptr > 0 ?
@@ -1992,6 +2049,11 @@ int deflate_decompress_data(deflate_decompress_ctx *dctx,
 	    if (dctx->lenextrabits)
 		debug(("recv: codelen-extrabits %d/%d\n", rep - dctx->lenaddon,
 		       dctx->lenextrabits));
+#ifdef ANALYSIS
+	    if (analyse_level > 1)
+		printf("code-length-repeat: %d copies of %d\n", rep,
+		       dctx->lenrep);
+#endif
 	    while (rep > 0 && dctx->lenptr < dctx->hlit + dctx->hdist) {
 		dctx->lengths[dctx->lenptr] = dctx->lenrep;
 		dctx->lenptr++;
@@ -2009,8 +2071,8 @@ int deflate_decompress_data(deflate_decompress_ctx *dctx,
 		goto finished;
 	    if (code < 256) {
 #ifdef ANALYSIS
-		if (analyse)
-		    printf("%d: literal %d [%d]\n", dctx->bytesout, code,
+		if (analyse_level > 0)
+		    printf("%lu: literal %d [%d]\n", dctx->bytesout, code,
 			   BITCOUNT(dctx) - dctx->bitcount_before);
 #endif
 		emit_char(dctx, code);
@@ -2063,8 +2125,8 @@ int deflate_decompress_data(deflate_decompress_ctx *dctx,
 	    EATBITS(rec->extrabits);
 	    dctx->state = INBLK;
 #ifdef ANALYSIS
-	    if (analyse)
-		printf("%d: copy len=%d dist=%d [%d]\n", dctx->bytesout,
+	    if (analyse_level > 0)
+		printf("%lu: copy len=%d dist=%d [%d]\n", dctx->bytesout,
 		       dctx->len, dist,
 		       BITCOUNT(dctx) - dctx->bitcount_before);
 #endif
@@ -2100,6 +2162,11 @@ int deflate_decompress_data(deflate_decompress_ctx *dctx,
 	  case UNCOMP_DATA:
 	    if (dctx->nbits < 8)
 		goto finished;
+#ifdef ANALYSIS
+	    if (analyse_level > 0)
+		printf("%lu: uncompressed %d [8]\n", dctx->bytesout,
+		       (int)(dctx->bits & 0xFF));
+#endif
 	    emit_char(dctx, dctx->bits & 0xFF);
 	    EATBITS(8);
 	    if (--dctx->uncomplen == 0)
@@ -2222,7 +2289,8 @@ const char *const deflate_error_sym[DEFLATE_NUM_ERRORS] = {
 
 int main(int argc, char **argv)
 {
-    unsigned char buf[65536], *outbuf;
+    unsigned char buf[65536];
+    void *outbuf;
     int ret, err, outlen;
     deflate_decompress_ctx *dhandle;
     deflate_compress_ctx *chandle;
@@ -2247,7 +2315,7 @@ int main(int argc, char **argv)
             else if (!strcmp(p, "-d"))
                 decompress = TRUE;
             else if (!strcmp(p, "-a"))
-                analyse = decompress = TRUE;
+                analyse_level++, decompress = TRUE;
             else if (!strcmp(p, "--"))
                 opts = FALSE;          /* next thing is filename */
             else {
@@ -2313,7 +2381,7 @@ int main(int argc, char **argv)
 	    err = 0;
 	}
         if (outbuf) {
-            if (!analyse && outlen)
+            if (!analyse_level && outlen)
                 fwrite(outbuf, 1, outlen, stdout);
             sfree(outbuf);
         }
