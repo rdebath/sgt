@@ -3,6 +3,7 @@
  * _last time_ I have to write one.
  */
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
@@ -41,8 +42,14 @@ struct LZ77 {
      * the most recent but one; and data[winpos-1] (all mod
      * WINSIZE, of course) is the least recent character still in
      * the buffer.
+     * 
+     * We store slightly more than one windowful of data: the first
+     * HASHCHARS bytes of the window are duplicated at the far end.
+     * This permits us to retrieve HASHCHARS bytes starting at any
+     * window position without having to do expensive mod
+     * operations.
      */
-    unsigned char data[WINSIZE];
+    unsigned char data[WINSIZE+HASHCHARS];
     int winpos;
 
     /*
@@ -185,8 +192,9 @@ LZ77 *lz77_new(void (*literal)(void *ctx, unsigned char c),
     lz->literal = literal;
     lz->match = match;
 
+    memset(lz->data, 0, sizeof(lz->data));
+
     for (i = 0; i < WINSIZE; i++) {
-	lz->data[i] = 0;
 	lz->hashnext[i] = -1;
 	lz->matchnext[i] = 0;
     }
@@ -227,6 +235,7 @@ static void lz77_hashsearch(LZ77 *lz, int hash, unsigned char *currchars,
 			    int index)
 {
     int pos, nextpos, matchlimit;
+    int posval, nextposval;
 
     assert(lz->matchhead[index] < 0);
     assert(lz->matchdist[index] == 0);
@@ -242,6 +251,7 @@ static void lz77_hashsearch(LZ77 *lz, int hash, unsigned char *currchars,
     matchlimit = (matchlimit + lz->winpos) % WINSIZE;
 
     pos = lz->hashhead[hash];
+    posval = (matchlimit + WINSIZE - pos) % WINSIZE;
     while (pos != -1) {
 	int bdist;
 	int i;
@@ -266,7 +276,7 @@ static void lz77_hashsearch(LZ77 *lz, int hash, unsigned char *currchars,
 	     * ones in currchars.
 	     */
 	    for (i = 0; i < HASHCHARS; i++)
-		if (lz->data[(pos + i) % WINSIZE] != currchars[i])
+		if (lz->data[pos + i] != currchars[i])
 		    break;
 	    if (i == HASHCHARS) {
 		/*
@@ -298,12 +308,13 @@ static void lz77_hashsearch(LZ77 *lz, int hash, unsigned char *currchars,
 	 * hash and nothing else has had the same hash in between.
 	 */
 	nextpos = lz->hashnext[pos];
-	if (nextpos == pos ||
-	    (matchlimit + WINSIZE - nextpos) % WINSIZE >
-	    (matchlimit + WINSIZE - pos) % WINSIZE)
+	nextposval = (matchlimit + WINSIZE - nextpos) % WINSIZE;
+	if (nextposval >= posval) {
 	    break;
-	else
+	} else {
 	    pos = nextpos;
+	    posval = nextposval;
+	}
     }
 }
 
@@ -575,6 +586,8 @@ void lz77_compress(LZ77 *lz, const void *vdata, int len)
 	if (lz->rewound == 0) {
 	    len--;
 	    lz->data[lz->winpos] = *data++;
+	    if (lz->winpos < HASHCHARS)
+		lz->data[lz->winpos + WINSIZE] = lz->data[lz->winpos];
 	    rewound_this_time = 0;
 	} else {
 	    lz->rewound--;
@@ -598,7 +611,7 @@ void lz77_compress(LZ77 *lz, const void *vdata, int len)
 	{
 	    int i;
 	    for (i = 0; i < HASHCHARS; i++)
-		currchars[i] = lz->data[(lz->winpos + i) % WINSIZE];
+		currchars[i] = lz->data[lz->winpos + i];
 	    hash = lz77_hash(currchars);
 	}
 
@@ -618,7 +631,7 @@ void lz77_compress(LZ77 *lz, const void *vdata, int len)
 	     * Save the literal at this position, in case we need it.
 	     */
 	    lz->literals[lz->k - HASHCHARS] =
-		lz->data[(lz->winpos + HASHCHARS-1) % WINSIZE];
+		lz->data[lz->winpos + HASHCHARS-1];
 	}
 
 	/*
@@ -772,8 +785,6 @@ void lz77_compress(LZ77 *lz, const void *vdata, int len)
 }
 
 #ifdef LZ77_TESTMODE
-
-#include <stdio.h>
 
 /*
  * These tests are mostly constructed to check specific
