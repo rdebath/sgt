@@ -339,7 +339,7 @@ static void lz77_outputmatch(LZ77 *lz)
     memset(matchstart, 0, sizeof(matchstart));
     for (i = 0; i < MAXLAZY; i++) {
 	/* First tag each match with its starting point relative to k. */
-	int j, k;
+	int j;
 
 	for (j = 0; j < HASHCHARS; j++) {
 	    int m = lz->matchlater[i*HASHCHARS+j];
@@ -541,8 +541,6 @@ static void lz77_outputmatch(LZ77 *lz)
 
 void lz77_flush(LZ77 *lz)
 {
-    int i;
-
     while (lz->k >= HASHCHARS) {
 	/*
 	 * Output a match.
