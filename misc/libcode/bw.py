@@ -1,4 +1,8 @@
+#!/usr/bin/env python
+
 # Burrows-Wheeler transform.
+
+import sys
 
 def bw(s):
     list=[]
@@ -14,6 +18,21 @@ def bw(s):
 	if t[1]:
 	    start = i
     return (start, s)
+
+def mtf(s):
+    order = range(256)
+    ret = ""
+    for c in s:
+	i = ord(c)
+	found = 0
+	for k in range(len(order)):
+	    if order[k] == i:
+		found = 1
+		break
+	assert found
+	order = order[k:k+1] + order[0:k] + order[k+1:]
+	ret = ret + chr(k)
+    return ret
 
 def invbw(pair):
     start, s = pair
@@ -35,11 +54,18 @@ def test(s):
     b = bw(s)
     print s
     print b
+    print repr(mtf(b[1]))
     s2 = invbw(b)
     if s != s2:
 	print "error: inverted to", s2
 
-test("squiggles")
-test("abracadabra")
-test("the quick brown fox jumps over the lazy dog")
-test("pease porridge hot, pease porridge cold, pease porridge in the pot, nine days old")
+if len(sys.argv) > 1:
+    f = open(sys.argv[1])
+    s = f.read()
+    f.close()
+    test(s)
+else:
+    test("squiggles")
+    test("abracadabra")
+    test("the quick brown fox jumps over the lazy dog")
+    test("pease porridge hot, pease porridge cold, pease porridge in the pot, nine days old")
