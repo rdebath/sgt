@@ -2155,9 +2155,12 @@ int deflate_decompress_data(deflate_decompress_ctx *dctx,
 		goto finished;
 	    nlen = dctx->bits & 0xFFFF;
 	    EATBITS(16);
-	    if (dctx->uncomplen == 0)
-		dctx->state = OUTSIDEBLK;	/* block is empty */
-	    else
+	    if (dctx->uncomplen == 0) {/* block is empty */
+		if (dctx->lastblock)
+		    dctx->state = END;
+		else
+		    dctx->state = OUTSIDEBLK;
+	    } else
 		dctx->state = UNCOMP_DATA;
 	    break;
 	  case UNCOMP_DATA:
@@ -2170,8 +2173,12 @@ int deflate_decompress_data(deflate_decompress_ctx *dctx,
 #endif
 	    emit_char(dctx, dctx->bits & 0xFF);
 	    EATBITS(8);
-	    if (--dctx->uncomplen == 0)
-		dctx->state = OUTSIDEBLK;	/* end of uncompressed block */
+	    if (--dctx->uncomplen == 0) {	/* end of uncompressed block */
+		if (dctx->lastblock)
+		    dctx->state = END;
+		else
+		    dctx->state = OUTSIDEBLK;
+	    }
 	    break;
 	  case END:
 	    /*
