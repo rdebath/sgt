@@ -225,29 +225,44 @@ int main(int argc, char **argv)
     png_pixel palette[256];
     unsigned long upalette[256];
     png *p;
-    colquant *cq;
     int i, plen;
 
-    cq = colquant_new(256, 8);
+#ifdef FIXED_PALETTE
+    for (i = 0; i < 6*6*6; i++) {
+	int ir = i / (6*6);
+	int ig = (i / 6) % 6;
+	int ib = i % 6;
 
+	palette[i].r = ir * (0xFFFF / 5);
+	palette[i].g = ig * (0xFFFF / 5);
+	palette[i].b = ib * (0xFFFF / 5);
+    }
+    plen = i;
+#else
     /*
      * First pass: accumulate a single palette across all images.
      */
-    for (i = 1; i < argc; i++) {
-	p = png_decode_file(argv[i], &error);
-	if (p) {
-	    colquant_data(cq, p->pixels, p->width * p->height);
-	    png_free(p);
-	} else {
-	    printf("%s: error: %s\n", argv[i], png_error_msg[error]);
+    {
+	colquant *cq;
+	cq = colquant_new(256, 8);
+	for (i = 1; i < argc; i++) {
+	    p = png_decode_file(argv[i], &error);
+	    if (p) {
+		colquant_data(cq, p->pixels, p->width * p->height);
+		png_free(p);
+	    } else {
+		printf("%s: error: %s\n", argv[i], png_error_msg[error]);
+	    }
 	}
+	plen = colquant_get_palette(cq, palette);
+	colquant_free(cq);
     }
+#endif
 
     /*
-     * Get the palette, and translate it into the right shape for
-     * the bmp functions.
+     * Translate the palette into the right shape for the bmp
+     * functions.
      */
-    plen = colquant_get_palette(cq, palette);
     assert(plen <= 256);
     for (i = 0; i < plen; i++) {
 	upalette[i] = palette[i].r >> 8;
