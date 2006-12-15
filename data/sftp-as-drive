@@ -1,0 +1,11 @@
+Summary: Present SFTP as a mapped drive or file system
+Class: wish
+Difficulty: tricky
+Priority: never
+Content-type: text/plain
+
+It's sometimes suggested that PSFTP would be more useful if it could present
+an SFTP connection as a mapped drive in Windows.  This would be useful, but
+it would also be a lot of effort, would involve lots of nasty windows-specific
+low-level code, and would be quite a long way from PuTTY's core mission of
+terminal emulation.
