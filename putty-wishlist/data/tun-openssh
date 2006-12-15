@@ -1,0 +1,14 @@
+Summary: OpenSSH-compatible tun VPN support
+Class: wish
+Priority: never
+Difficulty: taxing
+Content-type: text/x-html-body
+
+<p>OpenSSH has a crude VPN system based on sending raw IP packets over
+an SSH channel.  We're unlikely to implement this in PuTTY because:
+<ul><li>The protocol appears to have no documentation other than the OpenSSH
+source code.
+<li>From what we've been able to work out of the protocol from the sources,
+it's ugly and depends on the boundaries between network packets being
+represented by boundaries between SSH_MSG_CHANNEL_DATA messages.
+</ul>
