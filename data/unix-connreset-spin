@@ -1,0 +1,22 @@
+Summary: Unix PuTTY spins in tight loop after abnormal exit
+Class: bug
+Priority: medium
+Present-in: 2006-11-29
+Content-type: text/plain
+
+PuTTY (development snapshot 2006-11-29) on Linux spins on the CPU after a
+connection has been terminated unexpectedly.  (In this case, displaying a
+PuTTY Fatal Error dialogue box with a "Connection Reset by Peer" message
+in it.) stracing the putty process when it's in this state produces lots
+of:
+
+poll([{fd=3, events=POLLIN}, {fd=7, events=POLLIN}, {fd=5,
+events=POLLIN|POLLPRI, revents=POLLNVAL}], 3, -1) = 1
+gettimeofday({1165238007, 805859}, NULL) = 0
+gettimeofday({1165238007, 805953}, NULL) = 0
+ioctl(3, FIONREAD, [0])                 = 0
+poll([{fd=3, events=POLLIN}, {fd=7, events=POLLIN}, {fd=5,
+events=POLLIN|POLLPRI, revents=POLLNVAL}], 3, -1) = 1
+gettimeofday({1165238007, 806293}, NULL) = 0
+gettimeofday({1165238007, 806386}, NULL) = 0
+ioctl(3, FIONREAD, [0])                 = 0
