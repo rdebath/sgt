@@ -14,15 +14,23 @@ be selected by Alt-F1, Alt-F2 etc., or by selecting tabs on the
 window (like Firefox or kterm).
 
 <p>
-This would involve a fair amount of reorganisation to set up. For a start
-I'd want a strong guarantee of reliability (if one session crashes,
-can it avoid taking the other nine down?). Also I'd want to be able
-to configure PuTTY to be just the way it is now, because not
-everybody likes the idea of all their sessions being bound together
-in a single window; and finally I'd want to be convinced that the
-code size increase wouldn't be excessive. This is close to having
-priority "never", in fact, unless someone can convince me it's
-really worth its while.
+For a start, this involves arranging to be able to run more than one
+connection within the same PuTTY process. The cross-platform parts
+of this work are long since done (see <a
+href="remove-statics.html">remove-statics</a>), but the Windows
+front end still uses a great many static variables within itself. So
+to even consider doing this work would mean a significant amount of
+restructuring of the Windows code.
+
+<p>
+In addition I'd want a strong guarantee of reliability (if one
+session crashes, can it avoid taking the other nine down?). Also I'd
+want to be able to configure PuTTY to be just the way it is now,
+because not everybody likes the idea of all their sessions being
+bound together in a single window; and finally I'd want to be
+convinced that the code size increase wouldn't be excessive. This is
+close to having priority "never", in fact, unless someone can
+convince me it's really worth its while.
 
 <p>
 Really, the approach we'd prefer is a separate application that can
