@@ -24,3 +24,9 @@ gethostbyname: unknown error'
 <p>(I understand that Microsoft have changed the Winsock interface in Vista so 
 this may have some bearing on the problem.)
 </blockquote>
+
+<p><b>SGT, 2006-12-21</b>: Jeroen Massar &lt;<a
+href="mailto:jeroen@unfix.org">jeroen@unfix.org</a>&gt;, the author
+of PuTTY's IPv6 code, is investigating this. Users experiencing this
+bug might like to contact him and see if they can help solve the
+mystery.
