@@ -1,6 +1,7 @@
 Summary: IPv6 support doesn't work in Windows Vista
 Class: bug
 Difficulty: taxing
+Fixed-in: 2006-12-24 r7007
 Priority: medium
 Content-type: text/x-html-body
 
@@ -25,8 +26,7 @@ gethostbyname: unknown error'
 this may have some bearing on the problem.)
 </blockquote>
 
-<p><b>SGT, 2006-12-21</b>: Jeroen Massar &lt;<a
-href="mailto:jeroen@unfix.org">jeroen@unfix.org</a>&gt;, the author
-of PuTTY's IPv6 code, is investigating this. Users experiencing this
-bug might like to contact him and see if they can help solve the
-mystery.
+<p><b>SGT, 2006-12-24</b>: Jeroen Massar, the original author of
+PuTTY's IPv6 code, has supplied a patch which fixes this. Users
+experiencing this bug might like to download a post-r7007 snapshot
+and make sure the problem has gone away.
