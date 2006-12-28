@@ -20,3 +20,57 @@ events=POLLIN|POLLPRI, revents=POLLNVAL}], 3, -1) = 1
 gettimeofday({1165238007, 806293}, NULL) = 0
 gettimeofday({1165238007, 806386}, NULL) = 0
 ioctl(3, FIONREAD, [0])                 = 0
+
+SGT, 2006-12-28: I've looked briefly into this. I can reproduce it
+easily: the simplest way is to make an SSH connection to a Linux
+box, type `ps j $$' to find out the parent PID of the bash process
+(i.e. the user half of the privilege-separated sshd) and kill it.
+
+Examining the full strace shows that the reason poll() is repeatedly
+returning POLLNVAL on that fd is because it was closed shortly
+before that. So we've closed the fd, but not removed it from GDK's
+input loop.
+
+Or have we? Applying the following diagnostic patch...
+
+Index: uxsel.c
+===================================================================
+--- uxsel.c	(revision 7026)
++++ uxsel.c	(working copy)
+@@ -71,6 +71,7 @@
+ 
+     oldfd = find234(fds, newfd, NULL);
+     if (oldfd) {
++printf("uxsel_input_remove %d %d\n", fd, oldfd->id);
+ 	uxsel_input_remove(oldfd->id);
+ 	del234(fds, oldfd);
+ 	sfree(oldfd);
+@@ -78,12 +79,14 @@
+ 
+     add234(fds, newfd);
+     newfd->id = uxsel_input_add(fd, rwx);
++printf("uxsel_input_add %d %d\n", fd, newfd->id);
+ }
+ 
+ void uxsel_del(int fd)
+ {
+     struct fd *oldfd = find234(fds, &fd, uxsel_fd_findcmp);
+     if (oldfd) {
++printf("uxsel_input_remove %d %d\n", fd, oldfd->id);
+ 	uxsel_input_remove(oldfd->id);
+ 	del234(fds, oldfd);
+ 	sfree(oldfd);
+
+... shows that we actually _do_ call gdk_input_remove() for that fd
+before entering the tight loop, and yet somehow the GDK event loop
+is still checking it. Also, setting a breakpoint on fd_input_func()
+in gtkwin.c indicates that GDK's event loop is not repeatedly
+calling it - i.e. that POLLNVAL is _not_ being passed to user code,
+but is entirely contained within GDK.
+
+In other words, I'm reasonably sure this is a bug in GDK or Glib,
+not in PuTTY. And since PuTTY is still running on GDK 1.2, it seems
+quite possible that the bug might already be fixed in later
+versions. Therefore, we probably ought to (finally) get round to
+porting to GTK 2.x, and see if the problem has gone away, before
+devoting any more effort to this issue.
