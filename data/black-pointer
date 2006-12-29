@@ -66,3 +66,6 @@ their PuTTY colour scheme so that black is RGB 1,1,1 instead of RGB
 0,0,0. I <em>suspect</em> that that will make the problem go away;
 if so, that would confirm my theory about its cause.
 </blockquote>
+
+<p>
+However, we have had reports of the above workaround not helping.
