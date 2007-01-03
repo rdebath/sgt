@@ -9,13 +9,13 @@ People occasionally ask for PuTTY to interpret escape codes in the
 banner some SSH servers send prior to authentication.
 
 <p>
-The current SSH-2 authentication draft
-<a href="http://www.ietf.org/internet-drafts/draft-ietf-secsh-userauth-21.txt">draft-ietf-secsh-userauth-21</a>
+The SSH-2 authentication specification,
+<a href="http://www.ietf.org/rfc/rfc4252.txt">RFC 4252</a>,
 states, in the section about <code>SSH_MSG_USERAUTH_BANNER</code>:
 
 <blockquote>
-      If the message string is displayed, control character filtering
-      discussed in [SSH-ARCH] SHOULD be used to avoid attacks by sending
+      If the 'message' string is displayed, control character filtering,
+      discussed in [SSH-ARCH], SHOULD be used to avoid attacks by sending
       terminal control characters.
 </blockquote>
 
