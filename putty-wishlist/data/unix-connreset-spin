@@ -1,5 +1,5 @@
 Summary: Unix PuTTY spins in tight loop after abnormal exit
-Class: bug
+Class: semi-bug
 Priority: medium
 Present-in: 2006-11-29
 Depends: port-unix-gtk2
