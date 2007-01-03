@@ -2,6 +2,7 @@ Summary: Unix PuTTY spins in tight loop after abnormal exit
 Class: bug
 Priority: medium
 Present-in: 2006-11-29
+Depends: port-unix-gtk2
 Content-type: text/plain
 
 PuTTY (development snapshot 2006-11-29) on Linux spins on the CPU after a
@@ -74,3 +75,8 @@ quite possible that the bug might already be fixed in later
 versions. Therefore, we probably ought to (finally) get round to
 porting to GTK 2.x, and see if the problem has gone away, before
 devoting any more effort to this issue.
+
+SGT, 2007-01-03: Indeed, this is now confirmed as a GTK problem, and
+moreover one which is already fixed in GTK 2. Colin Watson has
+submitted a preliminary patch to build PuTTY against GTK 2, and the
+problem goes away if you do that.
