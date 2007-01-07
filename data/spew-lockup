@@ -2,6 +2,7 @@ Summary: Remote terminal spew can freeze terminal and lock out local GUI
 Class: bug
 Absent-in: 0.57
 Present-in: 2004-12-23 0.58
+Fixed-in: 2007-01-08 r7071
 Priority: high
 Content-Type: text/x-html-body
 
@@ -21,3 +22,9 @@ I (JTN) seem to recall noticing that some code which periodically gave
 the GUI a chance to update disappeared in some upheaval or
 other, but I didn't follow it up at the time and haven't got round
 to digging it up again.
+
+<p>
+<b>SGT, 2007-01-07</b>: I think this came in at r4906, when I
+removed the <code>pending_netevent</code> mechanism in the process
+of setting up the new timing infrastructure. Putting it back in
+seems to solve it.
