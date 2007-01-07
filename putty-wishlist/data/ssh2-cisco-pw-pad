@@ -2,6 +2,7 @@ Summary: Cisco SSH-2 servers can't handle over-padded packets
 Category: wish
 Absent-in: 0.55
 Present-in: 0.58
+Fixed-in: 2007-01-08 r7073
 Difficult: tricky
 Priority: low
 Content-type: text/x-html-body
@@ -28,3 +29,7 @@ merely requires:
 after the password, either for all connections or just when talking to
 broken Cisco servers.  Alternatively, we could just accept guessable password
 lengths when talking to broken servers.
+
+<p>
+<b>SGT, 2007-01-07</b>: I've now reverted to the IGNORE message
+universally, which should fix it.
