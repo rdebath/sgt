@@ -133,10 +133,12 @@ before mailing us to ask for the feature; it might already have
 been added.
 
 <p>
-The Debian bug-tracking system also accrues bug reports and feature
-requests relating to the
-<a href="http://packages.qa.debian.org/p/putty.html">Debian package</a>
-of the Unix port.
+There are other sites tracking bugs and feature requests in
+downstream packages of the Unix port, some of which undoubtedly
+apply to our code:
+<a href="http://packages.qa.debian.org/p/putty.html">Debian</a>,
+<a href="https://launchpad.net/ubuntu/+source/putty">Ubuntu</a>,
+<a href="ftp://ftp.netbsd.org/pub/pkgsrc/current/pkgsrc/security/putty/README.html">NetBSD</a>.
 
 <p>
 Search the wishlist:
