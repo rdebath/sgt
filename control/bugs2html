@@ -384,7 +384,7 @@ unnest("");
 unnest("");
 
 nest(<<EOF);
-<h2>Uncategorised</h2>
+<h2>Unclassified</h2>
 
 <p>
 Usually items we don't know enough about, or haven't yet thought about
