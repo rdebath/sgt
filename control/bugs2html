@@ -232,7 +232,7 @@ nest(<<EOF);
 <h2><a name="pending">Pending</a></h2>
 
 <p>
-These are bugs still be be fixed and features remaining to be
+These are bugs still to be fixed and features remaining to be
 implemented.
 
 EOF
