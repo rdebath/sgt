@@ -2,6 +2,7 @@ Summary: PuTTY's placement of PUTTY.RND is non-optimal on Windows
 Class: semi-bug
 Difficulty: fun
 Priority: high
+Fixed-in: 2007-01-10 r7082
 Content-type: text/x-html-body
 
 <p>
