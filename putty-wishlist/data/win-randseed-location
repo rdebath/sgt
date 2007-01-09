@@ -18,14 +18,21 @@ designed, and that <code>PUTTY.RND</code> is ending up in
 <p>
 Suggested alternative from
 <code>001201c32fd3$8c5484a0$bc1eb440@hyperwolf</code>: use one of the
-paths returned by <code>SHGetFolderPath</code> (requires some faffing
-wrt old Windows versions - full horrors in
-<code>200310180552.h9I5qHZ21748@cs.auckland.ac.nz</code>).
+paths returned by <code>SHGetFolderPath</code>. (To use this function
+with the maximal range of old Windows versions, considerable faffing
+is required - full horrors in
+<code>200310180552.h9I5qHZ21748@cs.auckland.ac.nz</code>.)
 
 <p>
-(If this is fixed, perhaps we should continue to support
+(If this is fixed, we should continue to support
 <em>reading</em> the files from their old locations.)
 
 <p>
 <em>Update, 2006-11-08:</em> it's been suggested that this might stop
 PuTTY running as a standard user in Windows Vista. Bumped priority.
+
+<p>
+<em>Update, 2007-01-09:</em> we now consider keeping <code>PUTTY.RND</code>
+in a path returned from
+<a href="http://msdn.microsoft.com/library/en-us/shellcc/platform/shell/reference/functions/shgetfolderpath.asp"><code>SHGetFolderPath()</code></a>
+on reasonably modern versions of Windows.
