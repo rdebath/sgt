@@ -1,5 +1,5 @@
 Summary: Cisco SSH-2 servers can't handle over-padded packets
-Category: wish
+Class: wish
 Absent-in: 0.55
 Present-in: 0.58
 Fixed-in: 2007-01-08 r7073
