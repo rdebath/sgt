@@ -1,6 +1,7 @@
 Summary: PSFTP hangs/consumes 100% CPU when launched from Explorer
-Absent-in: 0.56 0.57 2004-12-23
-Present-in: 0.58 2005-08-11 2007-01-03
+Class: bug
+Absent-in: 0.56 0.57 2004-11-27 r4904
+Present-in: r4906 2004-11-28 0.58 2005-08-11 2007-01-03
 
 We've had several reports of PSFTP 0.58 hanging or consuming lots
 of CPU. It appears that this only happens when it's started from
@@ -14,6 +15,10 @@ whereas the same binary started from cmd.exe, or from Explorer not via
 a shortcut, works fine. No output is seen even if the shortcut invokes
 "psftp -v". Same problem if the shortcut specifies the session directly.
 (Seen with 0.58 and 2005-08-11:r6183.) Also reproduced on WinXP.
+
+(PSCP actually suffers from the same issue if started from a shortcut
+with a set of arguments that invokes network activity, although
+people are less likely to notice that.)
 
 External reports & sketchy notes:
 
