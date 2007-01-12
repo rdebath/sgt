@@ -2,6 +2,7 @@ Summary: Compiling the Unix version with GCC4 generates warnings
 Class: bug
 Priority: medium
 Present-in: 0.58
+Fixed-in: 2007-01-10
 Content-type: text/x-html-body
 
 <p>PuTTY doesn't build cleanly using GCC 4 on Unix because we turn on 
@@ -9,3 +10,7 @@ Content-type: text/x-html-body
 usual ones to do with signenedness of pointer targets.
 Debian bug #<a href="http://bugs.debian.org/287960">287960</a> has some
 details and patches.
+
+<p>
+<em>Update:</em> The 2007-01-10 snapshot compiled cleanly with GCC
+4.1.2ish.
