@@ -2,6 +2,7 @@ Summary: PSFTP hangs/consumes 100% CPU when launched from Explorer
 Class: bug
 Absent-in: 0.56 0.57 2004-11-27 r4904
 Present-in: r4906 2004-11-28 0.58 2005-08-11 2007-01-03
+Fixed-in: r7098 2007-01-13
 
 We've had several reports of PSFTP 0.58 hanging or consuming lots
 of CPU. It appears that this only happens when it's started from
