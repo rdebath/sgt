@@ -311,12 +311,16 @@ def fon(name, fonts):
     # Entry table / imported names table should contain a zero word.
     entry = word(0)
 
-    # Compute length of resource table. 2 for the shift count, plus
-    # 20 for each resource, plus 2 for end-of-table, plus 8 for
-    # the "FONTDIR" resource name.
-    # Resources are currently one FONTDIR plus n fonts. TODO: a 
-    # VERSIONINFO resource would be nice too.
-    resrcsize = 12 + 20 * (1 + len(fonts))
+    # Compute length of resource table.
+    # 12 (2 for the shift count, plus 2 for end-of-table, plus 8 for the
+    #    "FONTDIR" resource name), plus
+    # 20 for FONTDIR (TYPEINFO and NAMEINFO), plus
+    # 8 for font entry TYPEINFO, plus
+    # 12 for each font's NAMEINFO 
+
+    # Resources are currently one FONTDIR plus n fonts.
+    # TODO: a VERSIONINFO resource would be nice too.
+    resrcsize = 12 + 20 + 8 + 12 * len(fonts)
     resrcpad = ((resrcsize + 15) &~ 15) - resrcsize
 
     # Now position all of this after the NE header.
@@ -347,8 +351,8 @@ def fon(name, fonts):
     restable = restable + word((len(resdata)-start) >> 4)
     restable = restable + word(0x0C50) + word(resrcsize-8) + dword(0)
     # The font resources.
+    restable = restable + word(0x8008) + word(len(fonts)) + dword(0)
     for i in range(len(fonts)):
-	restable = restable + word(0x8008) + word(1) + dword(0)
 	restable = restable + word((q+len(resdata)) >> 4)
 	start = len(resdata)
 	resdata = resdata + fonts[i]
