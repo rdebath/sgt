@@ -22,10 +22,10 @@ from the source fonts.
 The programs are written in Python, so you will need the Python
 interpreter to run them. The Python interpreter can be downloaded
 from
-<a href="http://www.python.org/">www.python.org</a>.
+<a href="http://www.python.org/"><code>www.python.org</code></a>.
 
 <p>
-Windows .FON files come in two different types: NE and PE. These
+Windows <code>.FON</code> files come in two different types: NE and PE. These
 stand for New Executable and Portable Executable (Windows font files
 have the same basic structure as Windows executables). NE is the old
 format that was used by Windows 3, and PE is the new 32-bit
@@ -33,8 +33,8 @@ executable format used in Win95 and above. I believe <em>fonts</em>
 in PE format are not supported by anything below Windows NT. (So
 oddly, the "new" NE is the older of the two formats, and the
 "portable" PE is the one which doesn't work everywhere!) The
-"mkwinfont" script below generates NE fonts only, so they should
-work everywhere. The "dewinfont" script can untangle both NE and PE
+<code>mkwinfont</code> script below generates NE fonts only, so they should
+work everywhere. The <code>dewinfont</code> script can untangle both NE and PE
 fonts, so you could use these scripts to convert a non-portable PE
 font into a portable NE one.
 
@@ -43,9 +43,9 @@ The files are provided for download here:
 
 <ul>
 <li>
-<a href="mkwinfont">mkwinfont</a>
+<a href="mkwinfont"><code>mkwinfont</code></a>
 <li>
-<a href="dewinfont">dewinfont</a>
+<a href="dewinfont"><code>dewinfont</code></a>
 </ul>
 
 <h2>Tektite</h2>
@@ -59,10 +59,10 @@ Unix and Windows).
 alt="[Tektite font sample]" width=387 height=45 border=0></a>
 
 <p>
-I originally constructed it from the font named "t" in the Slackware
-"kbd" package; this font in turn, according to a README in an old
-version of this package, was extracted from a DOS utility called
-VFONT, apparently created by
+I originally constructed it from the font named "<code>t</code>" in
+the Slackware "<code>kbd</code>" package; this font in turn,
+according to a README in an old version of this package, was
+extracted from a DOS utility called VFONT, apparently created by
 <a href="http://www.clysmic.com/attic/">clySmic Software</a>. 
 I'm therefore uncertain of the copyright status of this font. The
 original VFONT copyright said you could copy and distribute the
@@ -85,38 +85,40 @@ So, here are the Tektite files for download:
 
 <ul>
 <li>
-<a href="tektite.fon">tektite.fon</a>
-is Tektite in the form of a Windows .FON bitmap font. Character
+<a href="tektite.fon"><code>tektite.fon</code></a>
+is Tektite in the form of a Windows <code>.FON</code> bitmap font. Character
 encoding is Windows-1252 (the usual superset of ISO-8859-1), but
 also the bottom 32 glyphs contain the VT100 line-drawing character
 set (which makes it suitable for use with the "Font has XWindows
 encoding" option in
 <a href="http://www.chiark.greenend.org.uk/~sgtatham/putty/">PuTTY</a>).
 Also
-<a href="tektite.fd">tektite.fd</a>,
-a textual font description in the format accepted by the "mkwinfont"
+<a href="tektite.fd"><code>tektite.fd</code></a>,
+a textual font description in the format accepted by the
+<code>mkwinfont</code>
 script above.
 <li>
-<a href="tektitec.fon">tektitec.fon</a>
-is Tektite in the form of a Windows .FON bitmap font, but under the
+<a href="tektitec.fon"><code>tektitec.fon</code></a>
+is Tektite in the form of a Windows <code>.FON</code> bitmap font, but under the
 name "Terminal" so that DOS boxes are able to use it. Character
 encoding is CP437 (the old DOS encoding, with some multinational
 characters and a lot of line-drawing stuff). Also
-<a href="tektitec.fd">tektitec.fd</a>,
-a textual font description in the format accepted by the "mkwinfont"
+<a href="tektitec.fd"><code>tektitec.fd</code></a>,
+a textual font description in the format accepted by the
+<code>mkwinfont</code>
 script above.
 <li>
-<a href="tektite.pcf.gz">tektite.pcf.gz</a>
+<a href="tektite.pcf.gz"><code>tektite.pcf.gz</code></a>
 and
-<a href="tektite.pcf.Z">tektite.pcf.Z</a>
+<a href="tektite.pcf.Z"><code>tektite.pcf.Z</code></a>
 (choose your preferred compression) are both Tektite in the form of
 an X bitmap font. The font name is
 "<code>-clySmic-Tektite-Medium-R-Normal--15-140-75-75-C-90-ISO8859-1</code>".
 Character encoding is the X adaptation of ISO-8859-1 (i.e. the
 bottom 32 glyphs contain the VT100 line-drawing characters). Also
-<a href="tektite.bdf">tektite.bdf</a>,
+<a href="tektite.bdf"><code>tektite.bdf</code></a>,
 the textual BDF form of the font (suitable for input to the X
-utility "bdftopcf").
+utility <code>bdftopcf</code>).
 </ul>
 
 <h2>fixed for Windows</h2>
@@ -138,26 +140,52 @@ anyone else wants it:
 
 <ul>
 <li>
-<a href="fixed.fon">fixed.fon</a> is "fixed" in the form of a
-Windows .FON bitmap font. Character encoding is Windows-1252 (the
+<a href="fixed.fon"><code>fixed.fon</code></a> is "fixed" in the form of a
+Windows <code>.FON</code> bitmap font. Character encoding is Windows-1252 (the
 usual superset of ISO-8859-1), but also the bottom 32 glyphs contain
 the VT100 line-drawing character set (which makes it suitable for
 use with the "Font has XWindows encoding" option in
 <a href="http://www.chiark.greenend.org.uk/~sgtatham/putty/">PuTTY</a>).
 Also
-<a href="fixed.fd">fixed.fd</a>,
-a textual font description in the format accepted by the "mkwinfont"
-script above.
+<a href="fixed.fd"><code>fixed.fd</code></a>,
+a textual font description in the format accepted by the
+<code>mkwinfont</code> script above.
 <li>
-<a href="fixedc.fon">fixedc.fon</a>
-is "fixed" in the form of a Windows .FON bitmap font, but under the
+<a href="fixedc.fon"><code>fixedc.fon</code></a>
+is "fixed" in the form of a Windows <code>.FON</code> bitmap font, but under the
 name "Terminal" so that DOS boxes are able to use it. Character
 encoding is CP437 (the old DOS encoding, with some multinational
 characters and a lot of line-drawing stuff). Also
-<a href="fixedc.fd">fixedc.fd</a>,
-a textual font description in the format accepted by the "mkwinfont"
+<a href="fixedc.fd"><code>fixedc.fd</code></a>,
+a textual font description in the format accepted by the
+<code>mkwinfont</code>
 script above.
 </ul>
+
+<h2>All of the above</h2>
+
+<p>
+Unfortunately, you can't install <em>two</em> fonts called
+Terminal on your system, so the above files
+<code>tektitec.fon</code> and <code>fixedc.fon</code> are no use to
+you if you want your Command Prompt windows to be able to choose
+from <em>both</em> of Tektite and "fixed" in addition to the standard
+Windows fonts.
+
+<p>
+Therefore, here is a single combined <code>.FON</code> file, containing
+<em>both</em> of the above fonts under the name "Terminal".
+
+<ul>
+<li>
+<a href="terminal.fon"><code>terminal.fon</code></a>
+</ul>
+
+<p>
+(There is no separate <code>.fd</code> source file for this font:
+you generate it by applying <code>mkwinfont</code> to both of the
+above files <code>tektitec.fd</code> and <code>fixedc.fd</code> at
+the same time.)
 
 <hr>
 (comments to <a href="mailto:&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;">&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;</a>)
