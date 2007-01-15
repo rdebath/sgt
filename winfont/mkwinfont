@@ -447,6 +447,8 @@ for fname in infiles:
     if f == None:
 	sys.stderr.write("unable to load font description "+fname+"\n")
 	sys.exit(1)
+    if facename != None:
+	f.facename = facename
     fds = fds + [f]
     fnts = fnts + [fnt(f)]
 
