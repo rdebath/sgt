@@ -445,13 +445,14 @@ static int win_key_press(GtkWidget *widget, GdkEventKey *event, gpointer data)
 	    gtk_widget_destroy(w->window);/* quit */
 	    return TRUE;
 	}
-	if ((c == ' ' || c == 'n' || c == 'N') && w->pos+1 < w->il->n) {
+	if ((c == ' ' || c == 'n' ||
+	     c == 'B' || c == 'P') && w->pos+1 < w->il->n) {
 	    switch_to_image(w, w->pos+1);
 	    return TRUE;
 	}
 	if ((c == '\010' || c == '\177' ||
-             c == 'b' || c == 'B' ||
-             c == 'p' || c == 'P') && w->pos > 0) {
+             c == 'b' || c == 'N' ||
+             c == 'p') && w->pos > 0) {
 	    switch_to_image(w, w->pos-1);
 	    return TRUE;
 	}
