@@ -10,27 +10,36 @@ non-interactively with the Windows version of PuTTYgen; for instance,
 command-line arguments to specify the key type and so on.
 
 <p>
-The main reason that we haven't done this is that interaction would
-still be required; there isn't a source of sufficiently good
-randomness on Windows, so for key generation we make the user generate
-some by waving the mouse around.
+There are a few wrinkles to this:
 
+<ul>
+<li>
 <p>
-Also, since Windows PuTTYgen is a GUI application, even ignoring the
-randomness issue (which can be ignored for automated format
-conversions, for instance), using it from a batch file is slightly
-tricky. Normally, it will not block the batch file, but this could be
-dealt with with <tt>START /WAIT</tt>.
-
+For generating keys, interaction would still be required; there isn't
+a source of sufficiently good randomness on Windows, so for key
+generation we make the user generate some by waving the mouse around.
 <p>
-However, it's still not clear how such a setup might e.g. indicate
-errors (given that it probably won't be able to interact with the
-console). Since we already <em>have</em> a command-line PuTTYgen (for
+It would be possible to pare the interaction down to the bare minimum
+(mouse-waving and perhaps passphrase entry); this might make PuTTYgen
+suitable for use in an installation procedure, which specifies the
+parameters and does something with the resulting keypair.
+</li>
+<li>
+<p>
+The randomness issue can be ignored for some operations, such as
+automated format conversions. However, Windows PuTTYgen is currently
+a GUI application, which makes using it from a batch file slightly
+tricky. Normally, it will not block the batch file, but this can be
+dealt with with <tt>START /WAIT</tt>; but it's still not clear how
+such a setup might e.g. indicate errors (given that it probably won't
+be able to interact with the console).
+<p>
+Since we already <em>have</em> a command-line PuTTYgen (for
 Unix), it might be better to just port that to Windows as a console
 application, disabling key generation on the way.
-
-<p>
-(The Unix version of PuTTYgen can and does run in a batch mode, as we
+(The Unix version can and does run in a batch mode, as we
 use <tt>/dev/random</tt> there, which is assumed to be a sufficiently
 good source of randomness and doesn't require us to interact with the
 user.)
+</li>
+</ul>
