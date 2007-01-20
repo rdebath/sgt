@@ -85,6 +85,8 @@ int maxw, maxh;
 
 enum { NEVER, TOOBIG, ALWAYS } scale = TOOBIG;
 
+GdkColor bg = {0, 32768, 32768, 32768};
+
 /*
  * Determine the maximum usable area of the screen. At a pinch we
  * can do this simply by querying the screen size, but if there are
@@ -271,6 +273,14 @@ struct window {
     GdkPixmap *pm;
 };
 
+static void set_bg(GdkPixmap *pm, int w, int h)
+{
+    GdkGC *gc = gdk_gc_new(pm);
+    gdk_gc_set_foreground(gc, &bg);
+    gdk_draw_rectangle(pm, gc, 1, 0, 0, w, h);
+    gdk_gc_unref(gc);
+}
+
 static void switch_to_image(struct window *w, int index)
 {
     int iw, ih;
@@ -315,6 +325,7 @@ static void switch_to_image(struct window *w, int index)
             gdk_pixmap_unref(w->pm);
 
         w->pm = gdk_pixmap_new(w->area->window, iw, ih, -1);
+	set_bg(w->pm, iw, ih);
         image_to_pixmap(im, w->pm, iw, ih);
     }
 }
@@ -517,6 +528,7 @@ static void set_root_window(image *im)
     rootwin = RootWindow(GDK_DISPLAY(), screen);
 
     pm = gdk_pixmap_new(gdk_window_foreign_new(rootwin), iw, ih, -1);
+    set_bg(pm, iw, ih);
     image_to_pixmap(im, pm, iw, ih);
 
     XSetWindowBackgroundPixmap(GDK_DISPLAY(), rootwin, GDK_WINDOW_XWINDOW(pm));
@@ -620,6 +632,14 @@ int main(int argc, char **argv)
 					" argument\n", opt);
 			    else
 				fw = atoi(val);
+			} else if (!strcmp(opt, "-bg")) {
+			    if (!val)
+				fprintf(stderr, "v: option '-%s' expects an"
+					" argument\n", opt);
+			    else if (!gdk_color_parse(val, &bg)) {
+				fprintf(stderr, "v: unable to parse colour"
+					" \"%s\"\n", val);
+			    }
 			} else if (!strcmp(opt, "-licence") ||
 				   !strcmp(opt, "-license")) {
 			    licence();
@@ -733,6 +753,11 @@ int main(int argc, char **argv)
 		    errs = TRUE;
 	    }
 	}
+    }
+
+    {
+	GdkColormap *cm = gdk_colormap_get_system();
+	gdk_colormap_alloc_color(cm, &bg, FALSE, TRUE);
     }
 
     if (errs)
