@@ -77,6 +77,7 @@ void image_to_pixmap(image *img, GdkPixmap *pm, int w, int h)
     imlib_context_set_colormap
 	(GDK_COLORMAP_XCOLORMAP(gdk_colormap_get_system()));
     imlib_context_set_drawable(GDK_WINDOW_XWINDOW(pm));
+    imlib_context_set_blend(1);
     imlib_render_image_on_drawable(0, 0);
 
     if (need_free)
