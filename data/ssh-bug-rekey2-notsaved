@@ -12,8 +12,8 @@ In 0.58, a new SSH bug-compatibility mode was added to PuTTY:
 <p>
 However, in 0.58, attempts to save any setting other than "Auto" fail
 - the setting stays at "Auto". (Apparently there is some NetApp server
-- "Data ONTAP" - that needs this mode and isn't picked up by our
-heuristics.) This is fixed in the development snapshots.
+- "Data ONTAP" - that needs this mode and can't be distinguished by
+our heuristics.) This is fixed in the development snapshots.
 
 <p>
 If the setting is present in the saved settings, 0.58 will happily
