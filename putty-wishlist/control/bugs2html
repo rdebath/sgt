@@ -36,8 +36,9 @@ require "./config.pl";
     [ "0.55", "2004-08-02" ],
     [ "0.56", "2004-10-13" ],     # branch date -- released on 2004-10-26
     [ "0.57", "2004-10-13" ],     # released on 2005-02-20, from 0.56 branch
-    [ "0.58", "2005-04-05", "r5599" ]
-  # [ "0.59", "YYYY-MM-DD", "rXXXX" ] : populate with trunk rev
+    [ "0.58", "2005-04-05", "r5599" ],
+    [ "0.59", "2007-01-25", "r7147" ]
+  # [ "0.60", "YYYY-MM-DD", "rXXXX" ] : populate with trunk rev
 );
 
 %classdesc =
