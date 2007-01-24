@@ -21,12 +21,16 @@ $bugdir = "../data";
 require "./config.pl";
 
 # This array maps releases to snapshot dates/revs - it's used to
-# automatically mark bugs which were fixed before the relevant
+# automatically mark bugs which were fixed before or on the relevant
 # snapshot date/rev as also being fixed in a release.
+# For trunk releases, the date and rev of the checkin for the
+# release tag will do.
+# For branch releases, you probably want the date/rev of the branch;
+# you're presumably going to explicitly mark up the fixes that were
+# back-ported to the branch.
 # (Date and/or rev are only necessary for releases made since
 # these capabilities were added to this script - older releases
 # are all explicitly marked in the wishlist data.)
-# Obviously branch releases need special handling here.
 @releases = (
     [ "0.54", "2004-02-12" ],
     [ "0.55", "2004-08-02" ],
@@ -550,6 +554,7 @@ EOF
 sub add_release_fixes {
     my ($bug) = @_;
     my @extra_fixed = ();
+    my %extra_fixed_h = ();
     return unless exists ($bugs{$bug}->{"hdrs"}->{"fixed-in"});
     foreach my $ver (split(' ', $bugs{$bug}->{"hdrs"}->{"fixed-in"})) {
         map {
@@ -561,7 +566,11 @@ sub add_release_fixes {
                  substr($ver,1) <= substr($rel_rev,1))) {
                 # We add the release version in parentheses so that it's
                 # distinguishable from one in the source data.
-                push @extra_fixed, "($rel)";
+                my $relstr = "($rel)";
+                if (!exists($extra_fixed_h{$relstr})) {
+                    $extra_fixed_h{$relstr} = 1;
+                    push @extra_fixed, $relstr;
+                }
             }
         } @releases;
     }
