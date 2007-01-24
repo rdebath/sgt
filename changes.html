@@ -35,7 +35,111 @@ not updating, which happens sometimes):
 For features planned for the next full release (and already available in
 the development snapshots), see the <a href="wishlist/">wishlist page</a>.
 
-<p>These features are new in beta 0.58 (released 2005-04-05):
+<p>These features are new in beta 0.59 (released 2007-01-24):
+
+<ul>
+<li>
+PuTTY can now connect to local serial ports as well as making network
+connections.
+<li>
+Windows PuTTY now supports "local proxying", where a network
+connection is replaced by a local command. (Unix PuTTY has supported
+this since it was first released in 0.54.) Also, Plink has gained a
+"<code>-nc</code>" mode where the primary channel is replaced by an
+SSH tunnel, which makes it particularly useful as the local command
+to run.
+<li>
+Improved speed of SSH on Windows (particularly SSH-2 key exchange and
+public-key authentication).
+<li>
+Improved SFTP throughput.
+<li>
+Various cryptographic improvements in SSH-2, including SDCTR cipher
+modes, a workaround for a weakness in CBC cipher modes, and
+Diffie-Hellman group exchange with SHA-256.
+<li>
+Support for the Arcfour cipher in SSH-2.
+<li>
+Support for sending terminal modes in SSH.
+<li>
+When Pageant is running and an SSH key is specified in the
+configuration, PuTTY will now only try Pageant authentication with
+that key. This gets round a problem where some servers would only
+allow a limited number of keys to be offered before disconnecting.
+<li>
+Support for SSH-2 password expiry mechanisms, and various other
+improvements and bugfixes in authentication.
+<li>
+A change to the SSH-2 password camouflage mechanism in 0.58 upset some
+Cisco servers, so we have reverted to the old method.
+<li>
+The Windows version now comes with documentation in HTML Help
+format. (Windows Vista does not support the older WinHelp format.
+However, we still provide documentation in that format, since Win95
+does not support HTML Help.)
+<li>
+On Windows, when pasting as RTF, attributes of the selection such as
+colours and formatting are also pasted.
+<li>
+Ability to configure font quality on Windows (including antialiasing
+and ClearType).
+<li>
+The terminal is now restored to a sensible state when reusing a window
+to restart a session.
+<li>
+We now support an escape sequence invented by xterm which lets the
+server clear the scrollback (CSI 3 J). This is useful for applications
+such as terminal locking programs.
+<li>
+Improvements to the Unix port:
+<ul>
+<li>
+now compiles cleanly with GCC 4
+<li>
+now has a <code>configure</code> script, and should be portable to
+more platforms
+</ul>
+<li>
+Bug fix: 0.58 utterly failed to run on some installations of
+Windows XP.
+<li>
+Bug fix: PSCP and PSFTP now support large files (greater than 4
+gigabytes), provided the underlying operating system does too.
+<li>
+Bug fix: PSFTP (and PSCP) sometimes ran slowly and consumed lots of
+CPU when started directly from Windows Explorer.
+<li>
+Bug fix: on Windows, some Unicode characters that were displayed
+correctly in 0.57 were displayed as blanks in 0.58.
+<li>
+Bug fix: if the remote server saturated PuTTY with data, PuTTY could
+become unresponsive.
+<li>
+Bug fix: certain large clipboard operations could cause PuTTY to
+crash.
+<li>
+Bug fix: SSH-1 connections tended to crash, particularly when using
+port forwarding.
+<li>
+Bug fix: SSH Tectia Server would reject SSH-2 tunnels from PuTTY due
+to a malformed request.
+<li>
+Bug fix: SSH-2 login banner messages were being dropped silently under
+some circumstances.
+<li>
+Bug fix: the cursor could end up in the wrong place when a server-side
+application used the alternate screen.
+<li>
+Bug fix: on Windows, PuTTY now tries harder to find a suitable place
+to store its random seed file <code>PUTTY.RND</code> (previously it
+was tending to end up in <code>C:\</code> or <code>C:\WINDOWS</code>).
+<li>
+Bug fix: IPv6 should now work on Windows Vista.
+<li>
+Numerous other bugfixes, as usual.
+</ul>
+
+<p>These features were new in beta 0.58 (released 2005-04-05):
 
 <ul>
 <li>
