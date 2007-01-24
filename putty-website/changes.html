@@ -109,8 +109,11 @@ gigabytes), provided the underlying operating system does too.
 Bug fix: PSFTP (and PSCP) sometimes ran slowly and consumed lots of
 CPU when started directly from Windows Explorer.
 <li>
-Bug fix: on Windows, some Unicode characters that were displayed
-correctly in 0.57 were displayed as blanks in 0.58.
+Bug fix: font linking (the automatic use of other fonts on the
+system to provide Unicode characters not present in the selected
+one) should now work again on Windows, after being broken in 0.58.
+(However, it unfortunately still won't work for Arabic and other
+right-to-left text.)
 <li>
 Bug fix: if the remote server saturated PuTTY with data, PuTTY could
 become unresponsive.
