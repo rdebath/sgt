@@ -32,7 +32,7 @@ for NT-class Windows systems.
 that's funkier in some way.</ul>
 <li><a href="http://www.elifulkerson.com/projects/telnet-serial-bridge.php">tsb</a>,
 which apparently works on Win9x/Me as well.
-<li><a href="http://www.digibit.org/phpBB2/dload.php?action=category&cat_id=1">NET2COM</a>, also for Windows.
+<li><a href="http://sourceforge.net/projects/net2com/">NET2COM</a>, also for Windows.
 <li><a href="http://ser2net.sourceforge.net/">ser2net</a>, for Unix.
 </ul>
 
