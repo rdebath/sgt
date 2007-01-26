@@ -1,0 +1,184 @@
+\cfg{html-leaf-level}{0}
+\cfg{html-address-start}{
+Page maintained by
+<a href="mailto:&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;">Simon Tatham</a>.
+<br>
+(last modified on <!--LASTMOD-->[insert date here]<!--END-->)
+}
+\cfg{html-head-end}{<link rel="stylesheet" type="text/css"
+href="../sitestyle.css" name="Simon Tatham's Home Page Style">}
+
+\define{dash} \u2013{-}
+
+\define{ellipsis} \u2026{...}
+
+\title Halibut: yet another free document preparation system
+
+Halibut is a documentation production system, with elements similar
+to TeX, debiandoc-sgml, TeXinfo, and others. It is primarily
+targeted at people producing software manuals.
+
+\U What does it do?
+
+Halibut reads documentation source in a single input format, and
+produces multiple output formats containing the same text. The
+supported output formats are:
+
+\b Plain ASCII text
+
+\b HTML
+
+\b PDF
+
+\b PostScript
+
+\b Unix \cw{man} pages
+
+\b Unix \cw{info}, generated directly as \cw{.info} files rather
+than \cw{.texi} sources
+
+\b Windows HTML Help (\c{.CHM} files), or rather source which can
+be fed to the MS HTML Help compiler to generate them
+
+\b Windows WinHelp (old-style \c{.HLP} files), generated directly
+without needing a help compiler.
+
+Other notable features include:
+
+\b Hypertext cross-references are ubiquitous where possible. In
+particular, the HTML and PDF output both have hyperlinks in every
+reference between sections, and throughout the index and contents
+sections. (It seems daft to me that so many PDF documents fail to
+have this; it's one of the most useful features of PDF.)
+
+\b Support for international characters via Unicode, with the
+ability to fall back to an alternative representation. For example,
+you can write \cw{\\u00F6\{oe\}}, and in output formats that support
+it you will see \q{\u00F6} whereas in those that don't you will see
+\q{oe}.
+
+\b Comprehensive indexing support. Indexing is easy in the simple
+case: as you write the manual, you just wrap a word or two in
+\c{\\i\{this wrapper\}}, and those words will appear in the index.
+More complex indexing is also supported, such as
+
+\lcont{
+
+\b adding references to things you never explicitly said
+
+\b rewriting the appearance of index entries for a consistent style
+
+\b duplicating index entries to several places because you don't
+know which concept they'll be looked up under
+
+\b merging references to several things into one combined list.
+
+}
+
+\b Portability. The Halibut source code is portable ANSI C (apart
+from a dependency on having at least a 32-bit platform), so it
+should run without change on Unix, Windows, BeOS, MacOS, VMS, or
+whatever other (non-16-bit) OS you fancy. (Well, you might have
+trouble outputting PDF under VMS, due to file typing issues. I
+dunno.)
+
+\b Configurability. Each output format supplies configuration
+directives, so it is easy to tailor the HTML output (say) to contain
+a standard header with links to other parts of a site, or to use a
+style sheet, or whatever.
+
+\U So why didn't you just use\ellipsis
+
+A common question is why I had to write a new documentation system
+rather than using an existing one.
+
+\e{TeX} is fundamentally geared towards typesetting on to a printed
+page, so it didn't seem feasible to get it to output any of the more
+markup-oriented formats such as \cw{man} pages and Windows Help.
+
+\e{TeXinfo} can generate both printed manuals and on-line help, but
+neither one is very pretty IMO; and the on-line help output is
+limited to \cw{info} format, which I didn't fancy post-processing
+into Windows Help, HTML etc.
+
+\e{debiandoc-sgml} generates a good range of file formats,
+suggesting that it would probably not have been too hard to hack in
+a couple more; but when I looked at it I didn't see indexing support
+at anything like the level I wanted. Indexing is a big and tricky
+task, and I would hate to hack index support into a document
+producer \e{after} it was written; better to design it in from
+scratch.
+
+\e{DocBook} wasn't well known enough for me to have heard of it when
+this project started. When it was later brought to my attention, I
+looked at the DocBook input format and simply didn't like it. For a
+start, it just involved too much typing for my taste: all the
+keywords are far too long (\cw{<appendix>} rather than \cw{\\A}, for
+example), and the SGML/XML syntax requires you to type each keyword
+\e{again} when you close the section. I just prefer the TeX-like
+backslash-and-braces markup syntax to the HTMLish
+angle-brackets-and-slashes one. I was also suspicious of DocBook's
+very detailed semantic markup such as individually annotating things
+like people's names; I find writing manuals hard enough work as it
+is, without having to write as much metadata as text. Perhaps, if
+anyone asks for it, I might consider writing a DocBook output format
+for Halibut, so that Halibut input can be conveniently translated
+\e{into} DocBook format.
+
+\U Where did this crazy idea come from?
+
+This crazy idea came to me while I was working on
+\W{http://sourceforge.net/projects/nasm}{NASM}, and wanted the
+documentation to be available on the project's web site as well as
+in printable and online-viewable formats. I hacked together a Perl
+implementation of most of the Halibut concepts, without any real
+design, and it worked well enough to get the NASM manual off the
+ground.
+
+However, the Perl version (which is still distributed in the current
+NASM archive as far as I know) had serious limitations, most
+noticeably that it was extremely slow. Also the code was very hard
+to maintain (largely because I wrote a lot of the parser as
+line-noise regexps), the index management had some good ideas but
+implemented them in fundamentally broken ways \ellipsis It just
+didn't seem sensible to continue trying to put features into it. So
+I rewrote it from the ground up in portable C, learning from all my
+mistakes in the original Perl version (\q{build one to throw away}).
+
+\U Why on earth \q{Halibut}? What relevance does the name have to
+anything?
+
+Historical reasons. It's probably better not to ask.
+
+\U What is its current status?
+
+The current release version, Halibut 0.9, is pretty old and lacks
+support for many of the output formats described above: all it
+supports is plain text, HTML, old-style WinHelp and \cw{man} pages,
+and many of those aren't done particularly well. You can download
+the release source code here
+[\W{halibut-0.9.tar.gz}\cw{halibut-0.9.tar.gz}], or you can read the
+\W{doc-0.9/}{release documentation} online in HTML format. However,
+you probably don't want to do either of those things.
+
+Instead, you should check the development sources out from our
+Subversion repository, because the up-to-date code works much better
+and supports many more features and configurability.
+
+The Subversion URL you need for the Halibut trunk development is
+\c{svn://ixion.tartarus.org/main/halibut}. You will also need the
+character-set handling library, which Halibut will expect to be
+checked out alongside the main Halibut source. So you could check
+out all the code necessary for the trunk version of Halibut using a
+pair of commands such as
+
+\c svn co svn://ixion.tartarus.org/main/halibut
+\c svn co svn://ixion.tartarus.org/main/charset
+
+To check out branches or release tags of the code, replace
+\c{halibut} with the branch or tag name (such as \c{halibut-0.9}).
+You can see what branches exist using the command \c{svn ls
+svn://ixion.tartarus.org/main}.
+
+Alternatively, you can browse the Subversion repository on the WWW,
+\W{http://www.tartarus.org/~simon-anonsvn/viewcvs.cgi/halibut}{here}.
