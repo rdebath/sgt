@@ -19,6 +19,7 @@ print << "EOF";
 <HTML><HEAD>
 <TITLE>$title</TITLE>
 <link rel="stylesheet" type="text/css" href="sitestyle.css" title="PuTTY Home Page Style">
+<link rel="shortcut icon" href="putty.ico">
 <meta http-equiv="content-type" content="text/html; charset=US-ASCII">
 </HEAD>
 <BODY>
