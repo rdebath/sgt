@@ -104,6 +104,7 @@ nest(<<EOF);
 <HTML><HEAD>
 <TITLE>PuTTY Known Bugs and Wish List</TITLE>
 <link rel="stylesheet" type="text/css" href="$baseurl/sitestyle.css" title="PuTTY Home Page Style">
+<link rel="shortcut icon" href="$baseurl/putty.ico">
 <meta http-equiv="content-type" content="text/html; charset=US-ASCII">
 </HEAD>
 <BODY>
@@ -464,6 +465,7 @@ sub bug2html {
 <HTML><HEAD>
 <TITLE>PuTTY $class $bugname</TITLE>
 <link rel="stylesheet" type="text/css" href="$baseurl/sitestyle.css" title="PuTTY Home Page Style">
+<link rel="shortcut icon" href="$baseurl/putty.ico">
 <meta http-equiv="content-type" content="text/html; charset=US-ASCII">
 </HEAD>
 <BODY>
