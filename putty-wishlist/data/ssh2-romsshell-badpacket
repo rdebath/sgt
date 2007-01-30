@@ -1,0 +1,25 @@
+Summary: RomSShell disconnects us with "Bad packet content"
+Class: semi-bug
+Difficulty: taxing
+Priority: medium
+Present-in: 0.59
+Absent-in: 0.58
+Content-type: text/x-html-body
+
+<p>
+Connecting to a Foundry router fails:
+<pre>
+> 2007-01-29 09:37:53       Server version: SSH-2.0-RomSShell_4.31
+  [...]
+> 2007-01-29 09:37:53       Initialised triple-DES CBC client->server encryption
+> 2007-01-29 09:37:53       Initialised HMAC-SHA1 client->server MAC algorithm
+> 2007-01-29 09:37:53       Initialised triple-DES CBC server->client encryption
+> 2007-01-29 09:37:53       Initialised HMAC-SHA1 server->client MAC algorithm
+> 2007-01-29 09:37:53       Received disconnect message (protocol error)
+> 2007-01-29 09:37:53       Disconnection message text: Bad packet content
+</pre>
+We have yet to see an SSH packet log of this occurring, so it's not clear
+what the problem is, but our best guess is that RomSShell is having problems
+with the empty SSH_MSG_IGNORE that we send before each packet in CBC mode.
+<p>
+Ref: 000601c743cd$ff7e6a60$9823650a@DRMCKAY
