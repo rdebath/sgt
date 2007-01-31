@@ -2,6 +2,8 @@ Summary: "Default Settings" can be launchable, leading to confusion
 Class: bug
 Difficulty: tricky
 Priority: high
+Absent-in: 0.58
+Present-in: 0.59
 Content-type: text/x-html-body
 
 <p>
@@ -21,7 +23,9 @@ the default settings. (People occasionally complain about this.)
 However, due to an oversight, it <em>is</em> now possible to have
 Default Settings describe a launchable session: simply set
 "Protocol" to "Serial", and have the "Serial line" box non-blank (as
-it is by default). This leads to undesirable behaviour.
+it is by default). This leads to undesirable behaviour; in
+particular, PuTTY launched with no arguments will try to start up
+a session instead of bringing up the configuration dialog.
 
 <p>
 I'm not sure how best to fix this. Restricting what can be stored in
