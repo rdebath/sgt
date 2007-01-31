@@ -1,0 +1,34 @@
+Summary: "Default Settings" can be launchable, leading to confusion
+Class: bug
+Difficulty: tricky
+Priority: high
+Content-type: text/x-html-body
+
+<p>
+When PuTTY loads a saved session, it will under some circumstances
+automatically launch it if it's launchable. "Launchable" used to
+simply mean that it actually specified a host name to connect to,
+but due to <a href="serial-backend.html">the serial port backend</a>
+it's now a more complex criterion.
+
+<p>
+The original intention of the PuTTY configuration storage was that
+"Default Settings" should never describe a session which is
+launchable, which is why we don't permit a host name to be saved in
+the default settings. (People occasionally complain about this.)
+
+<p>
+However, due to an oversight, it <em>is</em> now possible to have
+Default Settings describe a launchable session: simply set
+"Protocol" to "Serial", and have the "Serial line" box non-blank (as
+it is by default). This leads to undesirable behaviour.
+
+<p>
+I'm not sure how best to fix this. Restricting what can be stored in
+Default Settings so that even serial-based defaults are forced not
+to be launchable seems to me like the wrong answer. Perhaps the
+right answer is actually to go through the code and ensure that
+Default Settings in particular is never automatically launched
+<em>even if launchable</em>. If we do that, then perhaps we could
+also repeal the restriction on having a default host name saved in
+Default Settings.
