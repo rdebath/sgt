@@ -152,31 +152,28 @@ Historical reasons. It's probably better not to ask.
 
 \U What is its current status?
 
-The current release version, Halibut 0.9, is pretty old and lacks
-support for many of the output formats described above: all it
-supports is plain text, HTML, old-style WinHelp and \cw{man} pages,
-and many of those aren't done particularly well. You can download
-the release source code here
-[\W{halibut-0.9.tar.gz}\cw{halibut-0.9.tar.gz}], or you can read the
-\W{doc-0.9/}{release documentation} online in HTML format. However,
-you probably don't want to do either of those things.
+Halibut 1.0 was released on 2007-01-31, and supports all of the
+features described above.
 
-Instead, you should check the development sources out from our
-Subversion repository, because the up-to-date code works much better
-and supports many more features and configurability.
+You can download the release source code here
+[\W{halibut-1.0.tar.gz}\cw{halibut-1.0.tar.gz}], or you can read the
+release documentation online in \W{doc-1.0/}{HTML},
+\W{doc-1.0/halibut.pdf}{PDF} or \W{doc-1.0/halibut.txt}{plain text}.
 
-The Subversion URL you need for the Halibut trunk development is
-\c{svn://ixion.tartarus.org/main/halibut}. You will also need the
-character-set handling library, which Halibut will expect to be
-checked out alongside the main Halibut source. So you could check
-out all the code necessary for the trunk version of Halibut using a
-pair of commands such as
+Alternatively, if you want to keep up to date with the very latest
+development, you can check the development sources out from our
+Subversion repository. The Subversion URL you need for the Halibut
+trunk development is \c{svn://ixion.tartarus.org/main/halibut}. You
+will also need the character-set handling library, which Halibut
+will expect to be checked out alongside the main Halibut source. So
+you could check out all the code necessary for the trunk version of
+Halibut using a pair of commands such as
 
 \c svn co svn://ixion.tartarus.org/main/halibut
 \c svn co svn://ixion.tartarus.org/main/charset
 
 To check out branches or release tags of the code, replace
-\c{halibut} with the branch or tag name (such as \c{halibut-0.9}).
+\c{halibut} with the branch or tag name (such as \c{halibut-1.0}).
 You can see what branches exist using the command \c{svn ls
 svn://ixion.tartarus.org/main}.
 
