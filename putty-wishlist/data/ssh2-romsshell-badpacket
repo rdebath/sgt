@@ -19,7 +19,9 @@ Connecting to a Foundry router fails:
 > 2007-01-29 09:37:53       Disconnection message text: Bad packet content
 </pre>
 We have yet to see an SSH packet log of this occurring, so it's not clear
-what the problem is, but our best guess is that RomSShell is having problems
-with the empty SSH_MSG_IGNORE that we send before each packet in CBC mode.
+what the problem is, but our best guess is that
+<a href="http://www.allegrosoft.com/romcli.html">RomSShell</a> is having
+problems with the <a href="ssh2-cbc-weakness.html">empty SSH_MSG_IGNORE</a>
+that we send before each packet in CBC mode.
 <p>
 Ref: 000601c743cd$ff7e6a60$9823650a@DRMCKAY
