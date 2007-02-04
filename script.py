@@ -233,14 +233,14 @@ def run_script_line(s, is_config, cfg):
 
 	nfiles = 0
 	while 1:
-	    namelen = delegatefps[1].read(4)
-	    if len(namelen) < 4:
+	    fnamelen = delegatefps[1].read(4)
+	    if len(fnamelen) < 4:
 		raise misc.builderr("unexpected EOF from delegate server")
-	    namelen = struct.unpack(">L", namelen)[0]
-	    if namelen == 0:
+	    fnamelen = struct.unpack(">L", fnamelen)[0]
+	    if fnamelen == 0:
 		break
-	    name = delegatefps[1].read(namelen)
-	    if len(name) < namelen:
+	    fname = delegatefps[1].read(fnamelen)
+	    if len(fname) < fnamelen:
 		raise misc.builderr("unexpected EOF from delegate server")
 	    datalen = delegatefps[1].read(4)
 	    if len(datalen) < 4:
@@ -249,11 +249,11 @@ def run_script_line(s, is_config, cfg):
 	    data = delegatefps[1].read(datalen)
 	    if len(data) < datalen:
 		raise misc.builderr("unexpected EOF from delegate server")
-	    log.logmsg("Returned file `%s' from delegate server" % name)
+	    log.logmsg("Returned file `%s' from delegate server" % fname)
 	    # Vet the filename for obvious gotchas.
-	    if "/../" in "/"+name+"/" or name[:1] == "/":
-		raise misc.builderr("returned file `%s' failed security check" % name)
-	    dstfile = os.path.join(cfg.workpath, name)
+	    if "/../" in "/"+fname+"/" or fname[:1] == "/":
+		raise misc.builderr("returned file `%s' failed security check" % fname)
+	    dstfile = os.path.join(cfg.workpath, fname)
 	    dstdir = os.path.dirname(dstfile)
 	    if not os.path.exists(dstdir):
 		os.makedirs(dstdir)
