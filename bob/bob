@@ -1,0 +1,248 @@
+#!/usr/bin/python 
+
+# Main entry point to my build system. This is the command run on
+# the main build host to kick off a build of something.
+
+import sys
+
+import name
+
+# We need Python 2.2 or better, for os.realpath if nothing else.
+if sys.version_info < (2, 2):
+    sys.stderr.write(name.name + " requires Python 2.2 or later\n")
+    sys.exit(1)
+
+import os
+import string
+import time
+import socket
+
+import cmdline
+import lexer
+import log
+import checkout
+import script
+import misc
+
+class config:
+    pass
+
+cfg = config()
+cfg.mainmodule = None
+cfg.outpath = "build.out"
+cfg.workpath = None
+cfg.scriptfile = "Buildscr"
+cfg.logfile = "build.log"
+cfg.remove_workdir = 1
+cfg.accept_complex_rev = 0
+cfg.baserev = ("rev", "HEAD")
+cfg.cfgfile = os.path.join(os.getenv("HOME"), name.conffile)
+cfg.specialrev = {}
+cfg.verbose = 0
+
+cl = cmdline.parse_cmdline(sys.argv[1:], "olsfrdDBW")
+
+for opt, val in cl:
+    if opt == None:
+	if cfg.mainmodule == None:
+	    # Check this to see if it's actually a module name. We
+	    # currently use the rather ad-hoc assumption that
+	    # anything with a slash in it or starting with a dot is
+	    # a directory. FIXME: can we do better than this?
+	    if val[:1] == "." or "/" in val:
+		val = os.path.realpath(val)
+		cfg.mainmodule = os.path.basename(val)
+		# Force the specialrev array to contain an entry for this module
+		cfg.specialrev[cfg.mainmodule] = cfg.specialrev.get(cfg.mainmodule, [None, None, None])
+		# And set the working-directory member of it.
+		cfg.specialrev[cfg.mainmodule][2] = val
+	    else:
+		cfg.mainmodule = val
+	else:
+	    # Additional arguments are treated as variables to set
+	    # in the build environment.
+	    equals = string.find(val, "=")
+	    if equals >= 0:
+		var = val[:equals]
+		val = val[equals+1:]
+		lexer.set_multicharvar(var, val)
+	    else:
+		# If no value is provided, we assume the variable
+		# is boolean, and set it to "yes".
+		lexer.set_multicharvar(val, "yes")
+    elif opt == "-D":
+	# Additional arguments are treated as variables to set
+	# in the build environment.
+	equals = string.find(val, "=")
+	if equals >= 0:
+	    var = val[:equals]
+	    val = val[equals+1:]
+	    lexer.set_multicharvar(var, val)
+	else:
+	    # If no value is provided, we assume the variable
+	    # is boolean, and set it to "yes".
+	    lexer.set_multicharvar(val, "yes")
+    elif opt == "-o" or opt == "--output" or opt == "--outdir":
+	if val == None:
+	    sys.stderr.write("%s: %s expects an argument\n" % (name.name, opt))
+	cfg.outpath = val
+    elif opt == "-l" or opt == "--log":
+	if val == None:
+	    sys.stderr.write("%s: %s expects an argument\n" % (name.name, opt))
+	    sys.exit(1)
+	cfg.logfile = val
+    elif opt == "-s" or opt == "--script":
+	if val == None:
+	    sys.stderr.write("%s: %s expects an argument\n" % (name.name, opt))
+	    sys.exit(1)
+	cfg.scriptfile = val
+    elif opt == "-f" or opt == "--config":
+	if val == None:
+	    sys.stderr.write("%s: %s expects an argument\n" % (name.name, opt))
+	    sys.exit(1)
+	cfg.cfgfile = val
+    elif opt == "--workdir":
+	if val == None:
+	    sys.stderr.write("%s: %s expects an argument\n" % (name.name, opt))
+	    sys.exit(1)
+	cfg.workpath = val
+    elif opt == "-k" or opt == "--keep":
+	cfg.remove_workdir = 0
+    elif opt == "--complexrev":
+	cfg.accept_complex_rev = 1
+    elif opt == "-v":
+	cfg.verbose = cfg.verbose + 1
+    elif opt == "--help":
+	bumf.usage() # FIXME: write the bumf module!
+	sys.exit(0)
+    elif opt == "--licence" or opt == "--license":
+	bumf.licence()
+	sys.exit(0)
+    elif opt == "-r":
+	if val == None:
+	    sys.stderr.write("%s: %s expects an argument\n" % (name.name, opt))
+	    sys.exit(1)
+	equals = string.find(val, "=")
+	if equals >= 0:
+	    module = val[:equals]
+	    val = val[equals+1:]
+	    # Force the specialrev array to contain an entry for this module
+	    cfg.specialrev[module] = cfg.specialrev.get(module, [None, None, None])
+	    # And set the revision/date member of it.
+	    cfg.specialrev[module][0] = ("rev", val)
+	else:
+	    cfg.baserev = ("rev", val)
+    elif opt == "-d":
+	if val == None:
+	    sys.stderr.write("%s: %s expects an argument\n" % (name.name, opt))
+	    sys.exit(1)
+	equals = string.find(val, "=")
+	if equals >= 0:
+	    module = val[:equals]
+	    val = val[equals+1:]
+	    # Force the specialrev array to contain an entry for this module
+	    cfg.specialrev[module] = cfg.specialrev.get(module, [None, None, None])
+	    # And set the revision/date member of it.
+	    cfg.specialrev[module][0] = ("date", val)
+	else:
+	    cfg.baserev = ("date", val)
+    elif opt == "-B":
+	if val == None:
+	    sys.stderr.write("%s: %s expects an argument\n" % (name.name, opt))
+	    sys.exit(1)
+	equals = string.find(val, "=")
+	if equals < 0:
+	    sys.stderr.write("%s: %s expects `module=branch' format\n" % (name.name, opt))
+	    sys.exit(1)
+	else:
+	    module = val[:equals]
+	    val = val[equals+1:]
+	    # Force the specialrev array to contain an entry for this module
+	    cfg.specialrev[module] = cfg.specialrev.get(module, [None, None, None])
+	    # And set the branch member of it.
+	    cfg.specialrev[module][1] = val
+    elif opt == "-W":
+	if val == None:
+	    sys.stderr.write("%s: %s expects an argument\n" % (name.name, opt))
+	    sys.exit(1)
+	equals = string.find(val, "=")
+	if equals < 0:
+	    sys.stderr.write("%s: %s expects `module=branch' format\n" % (name.name, opt))
+	    sys.exit(1)
+	else:
+	    module = val[:equals]
+	    val = val[equals+1:]
+	    # Force the specialrev array to contain an entry for this module
+	    cfg.specialrev[module] = cfg.specialrev.get(module, [None, None, None])
+	    # And set the working-directory member of it.
+	    cfg.specialrev[module][2] = val
+    else:
+	sys.stderr.write("%s: option %s unrecognised\n" % (name.name, opt))
+	sys.exit(1)
+
+if cfg.mainmodule == None:
+    bumf.usage()
+    sys.exit(1)
+
+if cfg.workpath == None:
+    cfg.workpath = os.path.join(cfg.outpath, ".work")
+
+# The entire build procedure takes place in a big `try', which will
+# hopefully make cleanups on error automatic.
+
+try:
+    # Open the log file and write out preliminary log information.
+    step = "opening log file %s" % cfg.logfile
+    logfp = open(cfg.logfile, "w")
+    log.init(logfp, cfg)
+    log.logmsg(name.name + " build log started on " +
+    time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())))
+    log.logmsg("Command line: " + misc.shellquote([name.name] + sys.argv[1:]))
+    log.logmsg("Master build host: " + socket.gethostname())
+    log.logmsg("Current directory: " + os.getcwd())
+
+    # Create the output build directory.
+    log.logmsg("Creating output directory %s" % cfg.outpath)
+    step = "creating output directory %s" % cfg.outpath
+    os.mkdir(cfg.outpath)
+
+    # And create the work directory.
+    log.logmsg("Creating work directory %s" % cfg.workpath)
+    step = "creating work directory %s" % cfg.workpath
+    os.mkdir(cfg.workpath)
+
+    # Check out the main build module.
+    step = "checking out main module %s" % cfg.mainmodule
+    checkout.checkout(cfg, cfg.mainmodule, os.path.join(cfg.workpath, cfg.mainmodule), 1)
+
+    # Read and process the build script in the main module. This
+    # includes directives to deliver files out of the work
+    # directory into the output directory.
+    scriptfile = os.path.join(cfg.workpath, cfg.mainmodule, cfg.scriptfile)
+    step = "running build script %s" % scriptfile
+    script.process_script(scriptfile, 0, cfg)
+
+    # So now the build is done; remove the work directory.
+    if cfg.remove_workdir:
+	step = "removing work directory %s" % cfg.workpath
+	log.logmsg("Removing work directory %s" % cfg.workpath)
+	misc.rm_rf(cfg.workpath)
+
+    # And close the log file.
+    log.logmsg("Build complete!")
+    log.logfp.close()
+
+except OSError, e:
+    if log.logfp:
+	log.logmsg("error: %s: %s" % (step, e))
+    sys.stderr.write("%s: %s: %s\n" % (name.name, step, e))
+
+except IOError, e:
+    if log.logfp:
+	log.logmsg("error: %s: %s" % (step, e))
+    sys.stderr.write("%s: %s: %s\n" % (name.name, step, e))
+
+except misc.builderr, e:
+    if log.logfp:
+	log.logmsg("error: %s: %s" % (step, e))
+    sys.stderr.write("%s: %s: %s\n" % (name.name, step, e))

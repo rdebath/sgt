@@ -1,0 +1,122 @@
+#!/usr/bin/python 
+
+# The server that accepts delegated commands from a master
+# instance of my build system.
+
+import os
+import sys
+import struct
+import glob
+import shutil
+import errno
+
+import lexer
+import script
+import misc
+import name
+
+def getstr():
+    datalen = sys.stdin.read(4)
+    if len(datalen) < 4:
+	sys.exit(1)
+    datalen = struct.unpack(">L", datalen)[0]
+    data = sys.stdin.read(datalen)
+    if len(data) < datalen:
+	sys.exit(1)
+    return data
+
+class config:
+    pass
+cfg = config()
+
+# Decide where our work directory is going to go. By default this
+# is /tmp, overridden by $TMPDIR if set, overridden by the config
+# file if that provides an answer.
+tmpdir = os.environ.get("TMPDIR", "/tmp")
+lexer.set_multicharvar("tmpdir", tmpdir)
+try:
+    script.process_script(os.path.join(os.environ["HOME"], name.conffile), 1, cfg)
+except IOError, e:
+    # Ignore absence of script.
+    pass
+tmpdir = lexer.get_multicharvar("tmpdir")
+
+# Invent a name for our work directory, and create it.
+i = 0
+while 1:
+    workdir = os.path.join(tmpdir, name.name + ".%d.%d" % (os.getpid(), i))
+    try:
+	os.mkdir(workdir, 0700)
+	break
+    except OSError, e:
+	if e.errno == errno.EEXIST:
+	    # That name already exists.
+	    i = i + 1
+	    continue
+	# Any other error is fatal.
+	sys.exit(1)
+
+# Print the banner announcing to the main build host that we're up
+# and running.
+sys.stdout.write("\n" + name.server_banner + "\n")
+sys.stdout.flush()
+
+try:
+    # Now we're in server mode. Receive commands and carry them out.
+    while 1:
+	cmd = sys.stdin.read(1)
+	if len(cmd) < 1:
+	    break
+	if cmd == "T":
+	    # Receive a tar file and unpack it into our build directory.
+	    data = getstr()
+
+	    tarcmd = misc.shellquote(["tar", "-C", workdir, "-xzf", "-"])
+	    f = os.popen(tarcmd, "w")
+	    f.write(data)
+	    f.close()
+	elif cmd == "C":
+	    # Receive a directory and a command, and execute that
+	    # command in that directory.
+	    dir = getstr()
+	    cmd = getstr()
+	    if "/../" in "/"+dir+"/" or dir[:1] == "/":
+		sys.exit(1) # dir failed security check
+	    realcmd = misc.shellquote(["cd", os.path.join(workdir, dir)]) + "; " + cmd + " 2>&1"
+	    f = os.popen(realcmd, "r")
+	    while 1:
+		output = f.readline()
+		sys.stdout.write(struct.pack(">L", len(output)) + output)
+		sys.stdout.flush()
+		if output == "":
+		    break
+	    ret = f.close()
+	    if ret == None:
+		ret = 0
+	    sys.stdout.write(struct.pack(">l", ret))
+	    sys.stdout.flush()
+	elif cmd == "R":
+	    # Receive a glob pattern, and return a sequence of
+	    # (name, data) pairs matching the pattern, terminated
+	    # with an empty name.
+	    pattern = getstr()
+	    if "/../" in "/"+pattern+"/" or pattern[:1] == "/":
+		sys.exit(1) # dir failed security check
+	    oldcwd = os.getcwd()
+	    os.chdir(workdir)
+	    files = glob.glob(pattern)
+	    os.chdir(oldcwd)
+	    for file in files:
+		f = open(os.path.join(workdir, file), "r")
+		data = f.read()
+		f.close()
+		sys.stdout.write(struct.pack(">L", len(file)) + file + struct.pack(">L", len(data)) + data)
+	    sys.stdout.write(struct.pack(">L", 0))
+	    sys.stdout.flush()
+	else:
+	    sys.exit(1) # unrecognised command letter
+
+finally:
+    # Zap our working directory, pretty much no matter what
+    # happened.
+    shutil.rmtree(workdir, 1)

@@ -1,0 +1,12 @@
+Things left to do on this build system
+--------------------------------------
+
+ - Documentation.
+    + man page
+    + actual manual
+    + bumf.py (usage and licence messages) is unwritten
+
+ - Revisit the code that guesses whether a command-line argument is
+   a real working directory or an SVN module name. There might be a
+   better heuristic, and there should almost certainly be command-
+   line options to override the heuristic if we know better.
