@@ -195,7 +195,7 @@ try:
     step = "opening log file %s" % cfg.logfile
     logfp = open(cfg.logfile, "w")
     log.init(logfp, cfg)
-    log.logmsg(name.name + " build log started on " +
+    log.logmsg(name.name + " build log started at " +
     time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())))
     log.logmsg("Command line: " + misc.shellquote([name.name] + sys.argv[1:]))
     log.logmsg("Master build host: " + socket.gethostname())
@@ -229,7 +229,8 @@ try:
 	misc.rm_rf(cfg.workpath)
 
     # And close the log file.
-    log.logmsg("Build complete!")
+    log.logmsg("Build completed at " +
+    time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())))
     log.logfp.close()
 
 except OSError, e:
