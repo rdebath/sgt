@@ -1,6 +1,6 @@
 Summary: RomSShell disconnects us with "Bad packet content"
 Class: semi-bug
-Difficulty: taxing
+Difficulty: tricky
 Priority: medium
 Present-in: 0.59
 Absent-in: 0.58
@@ -18,10 +18,33 @@ Connecting to a Foundry router fails:
 > 2007-01-29 09:37:53       Received disconnect message (protocol error)
 > 2007-01-29 09:37:53       Disconnection message text: Bad packet content
 </pre>
-We have yet to see an SSH packet log of this occurring, so it's not clear
-what the problem is, but our best guess is that
+
+<p>
+More detail from an SSH packet log of a different session (same
+RomSShell version string; "Foundry BigIron16 running 2.3.0aT145"):
+<pre>
+Outgoing packet type 21 / 0x15 (SSH2_MSG_NEWKEYS)
+Event Log: Initialised triple-DES CBC client->server encryption
+Event Log: Initialised HMAC-SHA1 client->server MAC algorithm
+Incoming packet type 21 / 0x15 (SSH2_MSG_NEWKEYS)
+Event Log: Initialised triple-DES CBC server->client encryption
+Event Log: Initialised HMAC-SHA1 server->client MAC algorithm
+Outgoing packet type 2 / 0x02 (SSH2_MSG_IGNORE)
+Outgoing packet type 5 / 0x05 (SSH2_MSG_SERVICE_REQUEST)
+  00000000  00 00 00 0c 73 73 68 2d 75 73 65 72 61 75 74 68  ....ssh-userauth
+Incoming packet type 1 / 0x01 (SSH2_MSG_DISCONNECT)
+  00000000  00 00 00 02 00 00 00 12 42 61 64 20 70 61 63 6b  ........Bad pack
+  00000010  65 74 20 63 6f 6e 74 65 6e 74 00 00 00 00        et content....
+</pre>
+
+<p>
+Our best guess is that
 <a href="http://www.allegrosoft.com/romcli.html">RomSShell</a> is having
 problems with the <a href="ssh2-cbc-weakness.html">empty SSH_MSG_IGNORE</a>
-that we send before each packet in CBC mode.
+that we send before each packet in CBC mode (since it's complaining after
+seeing the first of these). We haven't tried making diagnostic builds to
+verify this yet.
+
 <p>
-Ref: 000601c743cd$ff7e6a60$9823650a@DRMCKAY
+Refs: 000601c743cd$ff7e6a60$9823650a@DRMCKAY,
+2AB5541EB33172459EE430FFB66B1EE901C0F465@BN-EXCH01.nuance.com
