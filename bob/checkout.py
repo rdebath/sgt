@@ -59,6 +59,7 @@ def checkout(cfg, module, path, is_main):
 
 	if details[0][0] == "rev":
 	    rev = details[0][1]
+
 	    # If this is a simple revision number, use it as newrev
 	    # unless told otherwise later.
 	    ok = 1
@@ -68,6 +69,7 @@ def checkout(cfg, module, path, is_main):
 		    break
 	    if ok:
 		newrev = rev
+
 	    # If this is the special revision number HEAD, we try
 	    # to find out the real revision number after doing the
 	    # export, and we save that in the `headrevs' hash in
@@ -81,9 +83,23 @@ def checkout(cfg, module, path, is_main):
 		    rev = headrevs[svnrepos]
 		else:
 		    set_headrev = 1
+
+	    # If this revision is actually a date tag, set the
+	    # special date variable.
+	    if rev[:1] == "{" and rev[-1:] == "}":
+		date = rev[1:-1]
+		if is_main:
+		    lexer.set_multicharvar("date", date)
+		lexer.set_multicharvar("date_" + module, date)
+
 	    svnparams = ["-r"+rev]
 	else:
 	    svnparams = ["-r{"+details[0][1]+"}"]
+	    # Explicitly provided date tag. Set the date variables.
+	    if is_main:
+		lexer.set_multicharvar("date", details[0][1])
+	    lexer.set_multicharvar("date_" + module, details[0][1])
+
 	svnparams.append(svnrepos + "/" + details[1])
 
     # Now we can construct the exact svn export command we want to run.
