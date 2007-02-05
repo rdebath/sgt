@@ -37,21 +37,15 @@ def expand_varfunc(var):
     # any further expansion has been done on that); returns a
     # string containing the expansion.
     if var[0] == "!":
-	# I originally intended to support special functions here
-	# such as `run shell command', but it turned out to be less
-	# useful than I'd expected. The code is here in case I ever
-	# want to re-enable it.
-
 	# `$(!' introduces a special function.
-	#if var[:7] == "!shell ":
-	#    cmd = misc.shellquote(["cd", cfg.workpath]) + "; " + var[7:]
-	#    p = os.popen(cmd, "r")
-	#    s = p.read()
-	#    p.close()
-	#    return string.translate(s, removenewlines)
-	#else:
-	#    raise misc.builderr("unexpected string function `%s'" % var)
-	raise misc.builderr("unexpected string function `%s'" % var)
+	if var[:9] == "!numeric ":
+	    val = internal_lex(var[7:], "", 0)
+	    if misc.numeric(val):
+		return "yes"
+	    else:
+		return "no"
+	else:
+	    raise misc.builderr("unexpected string function `%s'" % var)
     else:
 	# Just look up var in our list of variables, and return its
 	# value.
