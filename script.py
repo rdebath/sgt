@@ -156,6 +156,20 @@ def run_script_line(s, is_config, cfg):
 	    raise misc.builderr("`checkout' command expects two parameters")
 	destdir = os.path.join(cfg.workpath, destdir)
 	checkout.checkout(cfg, module, destdir, 0)
+    elif w == "module":
+	if is_config:
+	    raise misc.builderr("`%s' command invalid in config file" % w)
+	newmodule, sr = lexer.get_word(sr)
+	if newmodule == None:
+	    raise misc.builderr("`module' command expects a parameter")
+	srcdir = os.path.join(cfg.workpath, cfg.mainmodule)
+	destdir = os.path.join(cfg.workpath, newmodule)
+	if srcdir == destdir:
+	    log.logmsg("main module already has correct filename")
+	else:
+	    log.logmsg("renaming main module directory `%s' to `%s'" % (srcdir, destdir))
+	    os.rename(srcdir, destdir)
+	    cfg.mainmodule = newmodule
     elif w == "delegate":
 	if is_config:
 	    raise misc.builderr("`%s' command invalid in config file" % w)
