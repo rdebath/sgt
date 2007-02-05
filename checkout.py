@@ -35,14 +35,8 @@ def checkout(cfg, module, path, is_main):
 
 	# If there's more than one revision represented here, raise
 	# an error unless we've been told to accept that.
-	if not cfg.accept_complex_rev:
-	    ok = 1
-	    for c in newrev:
-		if not (c in "0123456789M"):
-		    ok = 0
-		    break
-	    if not ok:
-		raise misc.builderr("working directory `%s' has complex revision `%s'; use `--complexrev' to proceed regardless" % (details[2], newrev))
+	if not cfg.accept_complex_rev and not misc.checkstr(newrev, "0123456789M"):
+	    raise misc.builderr("working directory `%s' has complex revision `%s'; use `--complexrev' to proceed regardless" % (details[2], newrev))
     else:
 	# Otherwise, we must read the config file to determine the
 	# right svn repository location.
@@ -62,12 +56,7 @@ def checkout(cfg, module, path, is_main):
 
 	    # If this is a simple revision number, use it as newrev
 	    # unless told otherwise later.
-	    ok = 1
-	    for c in rev:
-		if not (c in "0123456789"):
-		    ok = 0
-		    break
-	    if ok:
+	    if misc.numeric(rev):
 		newrev = rev
 
 	    # If this is the special revision number HEAD, we try
