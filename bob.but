@@ -1,0 +1,465 @@
+\define{Barename} bob
+
+\define{Name} \c{\Barename}
+
+\define{Bareconf} .bob.conf
+
+\define{Conf} \cw{\Bareconf}
+
+\define{dash} \u2013{-}
+
+\title \Name: a build system
+
+This is the manual for \Name: a build system based around Subversion
+and Python, written by Simon Tatham.
+
+\C{intro} Introduction
+
+This chapter gives a general idea of what \Name does, what it doesn't
+do, and why you might want to use it.
+
+\H{overview} Overview
+
+The function of \Name is to build binaries, installers, source
+archives, documentation and other deliverable files for a piece of
+software held in a Subversion repository.
+
+At the highest level, the course of a \Name build is as follows:
+
+\b You invoke \Name and tell it to build a piece of software.
+
+\b \Name checks that software out of your Subversion repository into a
+working directory. Alternatively, you can have it start by making a
+copy of a working directory you already have, and it will pick up
+local modifications from there.
+
+\b \Name looks for a build script inside that working directory and
+runs it. The build script, in turn, will probably invoke \c{make} at
+least once and perhaps do other things too. In particular, if it
+needs to, the build script can delegate parts of the build to other
+computers, so that (for example) binaries can be built for a
+platform whose compilers only run on that platform itself.
+
+\b The last thing the build script does is to issue a number of
+\cq{deliver} commands, which cause the end products of the build to
+be copied out of the working directory into \Name's output directory.
+
+\b \Name then deletes the working directory, leaving only the output
+directory full of actual deliverables, and terminates, having
+written a comprehensive log of everything that happened.
+
+If that isn't reasonably close to describing something you might
+want to do, you probably don't have any need to use \Name.
+
+In particular, \Name has the fundamental limitation that it expects
+your software to be stored in a Subversion repository. Even when it
+isn't actually checking anything out from that repository (if you're
+starting with a working copy), it expects to be able to run
+\c{svnversion} to find out what revision number it's working with.
+
+Also, \Name requires all the machines it runs on to have a Unix-like
+environment. This means that if you want to use it on Windows, you
+need to install Cygwin.
+
+\H{buildsys} Why do I even need a build system?
+
+That's a good question. As far as I'm concerned, there is no one
+single reason why an organised build system is worth having.
+Instead, there are lots of small reasons, but they all add up.
+
+When developing a piece of software, it's easy to write makefiles
+which build the program's binaries; it's not too hard to write
+scripts which keep several makefiles synchronised between platforms;
+it's easy to write a shell script which takes a checked-out working
+copy and generates a source tarball; and so on. And by the time
+you've got all these scripts, you're probably starting to realise
+that, for when you want to build the \e{entire program}, there's a
+niche for a top-level controlling script that runs all of the above
+in the right order.
+
+So why would you want to use a specialist build system as that
+top-level script, instead of just writing something ad-hoc in \c{sh}?
+
+Well, lots of little reasons really:
+
+\e{Checkout and build in one step}. It's often handy to be able to
+check out and build in one go, instead of having to do the two steps
+of first checking the right source directory out and then running
+the build script inside it. This is doubly true if your software
+involves multiple source directories, so that even checking out in
+the first place is a job complex enough to be worth automating.
+
+\e{Version tagging}. It's handy to be able to tag all your builds
+with an appropriate version number and not have to think about it.
+If you do daily builds, for example, an ad-hoc checkout-and-build
+approach might require you to check out with a Subversion date tag,
+\e{and} then specify that same date on the command line to \c{make}
+in order to have the resulting binaries tagged as today's snapshot.
+A one-step checkout and build can be given that information once,
+use it in both places, and make sure it doesn't make typos.
+
+\e{Delegation}. As soon as you need several machines to help with
+your build process (for example building Windows, Unix and Mac
+versions of the project), ad-hoc scripts become more difficult to
+manage. You typically need at least one script for each machine, and
+they all have to be edited and kept in sync, and you somehow have to
+ensure that each machine is running the right version of the script
+and that they've all got the same versions of the source checked
+out. In particular, having to split your build procedure into
+several pieces when really it's conceptually all one unit makes it
+harder to maintain.
+
+\e{Everything in its place}. Ad-hoc build scripts tend to mix
+together details of the project and details of the build
+environment. For example, an ad-hoc build script might well contain
+commands to set its \cw{PATH} to include directories containing the
+right build tools, or contain \cw{ssh} commands invoking sub-builds
+on other machines which mention those machines by name. The effect
+of this is to prevent the build script being usable by somebody else
+who has checked out your source and wants to build it the same way.
+With a properly designed build system, you can keep the
+project-specific information checked in alongside the project's
+source, so that they can be conveniently kept in sync (e.g. when you
+add source code for a new binary, you can simultaneously make a
+build script change that builds and delivers the new binary), and
+keep the system-specific information about \cw{PATH}s and build
+machine names in a local configuration file. Then somebody else
+checking out your project can write their own configuration file and
+re-use your build script, and conveniently run exactly the same
+build process as you do.
+
+\e{Diligent error checking}. There's a lot that can go wrong with a
+build, and you probably don't want it to do so silently. If the
+build fails, you probably want to be told about it so you can fix
+the underlying software. This goes at least double if you're running
+automated daily builds \dash the last thing you want is to find out
+that your project's web site has contained empty \cw{.zip} files for
+a week and nobody had noticed. So you have to write your ad-hoc
+build scripts with constant vigilance for anything returning an
+error code or any file not being where you expect it. A script
+engine \e{designed} for running builds will switch the defaults
+round so that you have to make a special effort to \e{ignore} an
+error in the rare case where you need to.
+
+\e{Ubiquitous logging}. Ad-hoc build scripts run from \c{cron} will
+often do a lot of their build commands with the \q{quiet} flags
+(\cq{svn co -q}, \cq{make -s} and so on), to avoid generating
+spurious output which would cause the build admin to be spammed with
+pointless \cw{cron}-mail. This means that on the rare occasion when
+a build does go wrong, you get a cryptic error in your
+\cw{cron}-mail with little or no context to explain it. You could
+instead arrange for all commands which generate output to log that
+output to somewhere, and log the commands you execute in between,
+but this typically triples the length and complexity of your ad-hoc
+build script and the effort taken to write and maintain it \dash and
+there's always scope to leave out some vital piece of information by
+mistake. A proper build system will log everything, all the time,
+without you having to tell it to, so that when something does go
+wrong you can be confident of having all the available information
+to figure out what.
+
+\e{Unified manual and automatic builds}. Ad-hoc build scripts are
+often not particularly good at adapting to different circumstances.
+For example, a daily build script which checks out using a
+Subversion date tag and then builds binaries tagged as daily source
+snapshots might not provide a convenient means of re-using it for
+building an official release, so you can easily end up doing release
+builds slightly differently from snapshot builds and leaving out
+some of the deliverables in one case or the other. A unified build
+system makes it easy to arrange for all kinds of build to be done
+the same way.
+
+\e{Unification across multiple projects}. If you work with more than
+one software project, you can easily end up with the ad-hoc build
+scripts working differently in all of them, so that when you
+suddenly want to build something you haven't worked with in a while,
+you have to stop and look up how. If you use the same build system
+everywhere, it's just a matter of typing \cq{\Barename fooproj} or
+\cq{\Barename barproj}, and having everything else done for you.
+
+None of the above items by itself is a clear justification for a
+specialist build system. Any of them is something which you can make
+your ad-hoc build scripts do just fine, if you spend enough time and
+effort polishing them. But to successfully maintain a set of ad-hoc
+build scripts that do \e{all} of those things ... well, if you
+manage that, you're most of the way to \e{having} a build system, by
+any reasonable definition. When I had a set of ad-hoc build scripts
+with most of the above limitations, I decided it would actually be
+\e{easier} to sit down, design and write a proper build system than
+to fix the existing scripts. So I did; and you're reading its manual
+now.
+
+\C{cmdline} Using \Name to launch builds
+
+This chapter describes what you need to know when running \Name from
+the command line to launch a build.
+
+\H{cmdline-basics} Basics of invoking \Name
+
+At its simplest, \Name is invoked by simply providing the name of a
+module in your Subversion repository, using a command like
+\cq{\Barename myproject}.
+
+\Name will read its configuration file \Conf (see \k{config}) to
+find the location of the Subversion repository where it can find
+that source directory; then it will check it out, run the build
+script contained inside it (see \k{script}), and produce a directory
+of deliverables called \c{build.out} and a log file called
+\c{build.log}.
+
+If the output build directory \c{build.out} already exists, this is
+a fatal error and \Name will terminate without attempting a build.
+(Yes, this is terribly annoying. But if \Name were to
+unconditionally recursively remove an entire directory, before doing
+anything else and no matter what might be in it, that would seem
+like an even worse design choice!)
+
+Alternatively, you can provide the location of a checked-out source
+directory, using a command such as \cq{\Barename ~/src/myproject},
+or even just \cq{\Barename .}. This will cause \Name to perform the
+initial checkout differently, but thereafter it will follow exactly
+the same build procedure in the same way.
+
+\H{cmdline-opts} Command-line options
+
+This section lists the command-line options and arguments supported
+by \Name.
+
+\S{cmdline-filenames} Specifying file names used by \Name
+
+\Name supports the following options to configure the names of the
+files and directories it reads and writes:
+
+\dt \cw{-o} \e{dirname}
+
+\dd Sets the output directory into which the build deliverables are
+written. By default, this is \cq{build.out}, in the current
+directory of the \Name process.
+
+\dt \cw{-l} \e{pathname}
+
+\dd Sets the name of the log file to which details of the build are
+written. By default, this is \cq{build.log}, in the current
+directory of the \Name process.
+
+\dt \cw{-s} \e{filename}
+
+\dd Sets the name of the build script which \Name reads from the
+source directory once it has checked it out. By default, this is
+\cq{Buildscr}.
+
+\dt \cw{-f} \e{pathname}
+
+\dd Sets the name of the configuration file from which \Name reads
+information about the build host. By default, this is
+\cq{\Bareconf}, in the home directory of the user running \Name.
+(See \k{config} for information about what goes in this file.)
+
+\dt \cw{--workdir=}\e{dirname}
+
+\dd Sets the name of the work directory within which \Name checks
+out source files and runs most of the build script commands. By
+default, this is called \cq{.work} and it is contained \e{within}
+the output directory (\cw{build.out}).
+
+\S{cmdline-checkout} Specifying the sources to check out
+
+\Name checks out one source directory specified on the command line,
+and can then check out additional source directories as instructed
+by the build script in the first source directory. These directories
+are referred to by \Name as \q{modules}.
+
+The first non-option argument passed to \Name tells it where to find
+its \e{main} module: this is the first one checked out, and the one
+from which the build script is read and run. This argument can be
+interpreted as the name of a module to check out from a Subversion
+repository, \e{or} the name of an already checked-out working
+directory. The heuristic that distinguishes the two cases is that if
+the argument either contains a slash or starts with a period, it
+will be considered to be a directory, otherwise it is treated as a
+Subversion module name.
+
+\Name supports the following command-line options to adjust the
+checkout procedure further:
+
+\dt \cw{-r} \e{revision}
+
+\dd Specifies a Subversion revision number to use for all modules
+being checked out. This revision number can be a Subversion numeric
+revision, or it can be a date tag enclosed in braces (exactly like
+the \c{-r} argument to the Subversion command-line client itself).
+
+\dt \cw{-r} \e{module}\cw{=}\e{revision}
+
+\dd Specifies a revision number (or date tag, as above) to use for
+one \e{specific} module being checked out.
+
+\dt \cw{-d} \e{date}
+
+\dd Specifies a date tag to use for all modules being checked out.
+This is exactly equivalent to using the \c{-r} option with a date
+tag in braces: for example, \cq{-d2007-02-06} is identical to
+\cq{-r\{2007-02-06\}}.
+
+\dt \cw{-d} \e{module}\cw{=}\e{date}
+
+\dd Specifies a date tag to use for one specific module; again,
+exactly equivalent to the corresponding \c{-r} option with braces
+around the date.
+
+\dt \cw{-B} \e{module}\cw{=}\e{branch}
+
+\dd Allows one Subversion source path to be substituted for another
+at the point of checkout. Typically you would use this when building
+from a branch or tag.
+
+\lcont{
+
+For example, suppose the build script in your main
+module \c{fooproj} includes a \cq{checkout} command (see \#{FIXME}) to
+check out a second source module called \c{foolib}, and suppose you
+have made a branch of \c{foolib} with some new experimental
+features. In order to build \c{fooproj} using your branched
+\c{foolib}, you can run a command such as \cq{\Barename fooproj -B
+foolib=foolib-mybranch}. This will check out \c{fooproj} as normal,
+but when the build script asks to check out \c{foolib}, the \cw{-B}
+option will cause \c{foolib-mybranch} to be checked out instead,
+into a directory called \c{foolib} so that the build script still
+finds all the files where it expects them.
+
+You can also use this option to override the Subversion path for the
+main module itself, but it's unlikely that you'd need to, since
+writing \cq{\Barename fooproj -Bfooproj-mybranch} is unnecessary
+when you can just write \cq{\Barename fooproj-mybranch}. These are
+not \e{exactly} equivalent: the former will check the main module
+out into a directory called \cq{fooproj} inside the work directory,
+whereas the latter will check it out into \cq{fooproj-mybranch}.
+However, a well written build script will begin with a \cq{module}
+command (see \#{FIXME}) which normalises the name of the checked-out
+directory, so in most situations the two commands will do the same
+thing.
+
+}
+
+\dt \cw{-W} \e{module}\cw{=}\e{workdir}
+
+\dd Allows a checked-out working directory to be substituted for a
+Subversion source path at the point of checkout. This works much
+like \cw{-B}, but the text after the \cq{=} is now a path name to a
+working directory on disk.
+
+\lcont{
+
+This is used in much the same way as \cw{-B}. If your experimental
+changes to \cw{foolib} in the example above were not checked in on a
+branch but were merely sitting in a working directory in your
+filespace, you could run a command like \cq{\Barename fooproj
+-Wfoolib=$HOME/src/foolib}.
+
+As with \cw{-B}, you can use this to override the main module, but
+it's not usually useful, because \dash exactly as above \dash
+\cq{\Barename fooproj -Wfooproj=.} is long and unwieldy compared to
+the much simpler \cq{\Barename .}. (Again, these are only equivalent
+if the build script contains a \cq{module} command.)
+
+}
+
+\dt \cw{--complexrev}
+
+\dd When starting a build from a local working directory, \Name will
+normally consider it a fatal error if the working directory contains
+a mix of revision numbers. (Specifically, \Name will expect the
+output of \c{svnversion} to be either a pure number, or a pure
+number followed by the letter \cw{M}.) Using \cw{--complexrev} will
+override this default and cause working directories in any state to
+be considered acceptable.
+
+\lcont{
+
+This default is in place because build scripts will often want to
+subject that revision number to complicated processing which might
+not be willing to cope with mixed revisions. (They might well not
+like the \cw{M} on the end either, of course, but since the \e{whole
+point} of wanting to use a local working directory in the first
+place was so you could do a build containing your un-checked-in
+modifications, there's no avoiding the \cw{M} really.)
+
+}
+
+\S{cmdline-variables} Setting build-control variables
+
+\Name's build scripts are controlled by a system of variables (much
+like \c{sh} or \c{make} variables). To request a special kind of
+build (e.g. a debugging build, or one tagged as being an official
+release), you might easily want to pre-define one or more variables
+before running the build script.
+
+All non-option arguments on the \Name command line following the
+main module name are expected to be of the form
+\e{var}\cw{=}\e{value} (e.g. \cq{DEBUG=yes}), and have the effect of
+predefining the specified variable \e{var} to the value \e{value}.
+This is similar to the way such variables are set in \c{make}.
+
+If no \cq{=} is present in such an argument, \Name will assume the
+variable in question is semantically boolean (though all variables
+are \e{syntactically} strings) and define it to the string \cq{yes}.
+
+As an alternative syntax for the same feature, \Name also supports
+the following command-line option:
+
+\dt \cw{-D} \e{var}[\cw{=}\e{value}]
+
+\dd Define the variable \e{var} to the value \e{value}, or to
+\cq{yes} if \e{value} is absent. Exactly equivalent to specifying
+an extra non-option argument.
+
+There are no rules about what variables you can define for what
+purpose. That's between the \Name user and the author of the build
+script.
+
+\S{cmdline-misc} Miscellaneous
+
+Finally, \Name supports the following miscellaneous command-line
+options:
+
+\dt \cw{-k} or \cw{--keep}
+
+\dd Prevents \Name from deleting the working directory after the
+build has finished.
+
+\dt \cw{-v}
+
+\dd Verbose mode: causes \Name to output a copy of its entire build
+log to its standard output. (This does not prevent the log from also
+being written to \c{build.log}, or whatever alternative file name
+was specified using the \c{-l} option.)
+
+\C{buildhost} Setting up \Name to run on a build host
+
+\H{installation} Installing \Name and its dependencies
+
+\# Section about basic installation needs:
+\#  - Python, of course (check required version)
+\#  - ssh, probably
+\#  - svn client binaries on PATH
+\#  - basically Unix-like environment (POSIXy shell, in particular)
+\#  - double-check source for invocations of subprograms which are
+\#    required; I think we've removed the need for cp and rm, but
+\#    there might be others
+
+\H{config} \Conf, the configuration file
+
+\# Section on the config file. Forward-reference the set command and
+\# the ifeq/ifneq commands in the script chapter.
+
+\# Mention that the config file is interpreted multiple times so you
+\# can conditionalise its settings on what's being looked up.
+
+\# `svnrepos'
+
+\# `host_*', `id_*', `cmd_*'
+
+\# check for anything else!
+
+\C{script} \c{Buildscr}: how to write a build script for your project
+

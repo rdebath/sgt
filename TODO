@@ -1,12 +1,26 @@
 Things left to do on this build system
 --------------------------------------
 
- - Documentation.
-    + man page
-    + actual manual
-    + bumf.py (usage and licence messages) is unwritten
+ - Finish the manual.
+
+ - A man page, just for completeness. It won't say anything that
+   isn't said better by the main manual, but it might come in handy
+   for those occasions where --help doesn't tell you quite what you
+   wanted but going to the full manual is overkill...
+
+Wishlist features for possible future work
+------------------------------------------
 
  - Revisit the code that guesses whether a command-line argument is
    a real working directory or an SVN module name. There might be a
    better heuristic, and there should almost certainly be command-
    line options to override the heuristic if we know better.
+
+ - It would be nice to be able to build from a local directory that
+   _isn't_ an svn checkout. This would involve $(revision) not being
+   set, and the build script would have to cope with that.
+
+ - It would also be nice to lose the total Subversion-centredness.
+   It's not clear whether we can manage total generality across
+   version control systems, but at least _some_ generality might be
+   nice.
