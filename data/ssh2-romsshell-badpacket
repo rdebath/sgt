@@ -1,5 +1,5 @@
 Summary: RomSShell disconnects us with "Bad packet content"
-Class: semi-bug
+Class: bug
 Difficulty: tricky
 Priority: medium
 Present-in: 0.59
