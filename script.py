@@ -35,6 +35,7 @@ def run_script_line(s, is_config, cfg):
     if w == "ifeq" or w == "ifneq":
 	w1, sr = lexer.get_word(sr)
 	w2, sr = lexer.get_word(sr)
+	log.logmsg("testing string equality of `%s' and `%s'" % (w1, w2))
 	if (w1 == w2) != (w == "ifeq"):
 	    return # condition not taken
 	w, sr = lexer.get_word(sr) # now read the main command
@@ -42,6 +43,7 @@ def run_script_line(s, is_config, cfg):
 	if is_config:
 	    raise misc.builderr("`%s' command invalid in config file" % w)
 	w1, sr = lexer.get_word(sr)
+	log.logmsg("testing existence of `%s'" % w1)
 	if (os.path.exists(os.path.join(cfg.workpath,w1))!=0) != (w=="ifexist"):
 	    return # condition not taken
 	w, sr = lexer.get_word(sr) # now read the main command

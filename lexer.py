@@ -4,6 +4,7 @@ import string
 import os
 
 import misc
+import log
 
 whitespace = " \t"
 
@@ -39,7 +40,8 @@ def expand_varfunc(var):
     if var[0] == "!":
 	# `$(!' introduces a special function.
 	if var[:9] == "!numeric ":
-	    val = internal_lex(var[7:], "", 0)
+	    val = lex_all(var[9:])
+	    log.logmsg("testing numericity of `%s'" % val)
 	    if misc.numeric(val):
 		return "yes"
 	    else:
