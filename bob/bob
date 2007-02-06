@@ -23,6 +23,7 @@ import log
 import checkout
 import script
 import misc
+import bumf
 
 class config:
     pass
@@ -113,7 +114,7 @@ for opt, val in cl:
     elif opt == "-v":
 	cfg.verbose = cfg.verbose + 1
     elif opt == "--help":
-	bumf.usage() # FIXME: write the bumf module!
+	bumf.longusage()
 	sys.exit(0)
     elif opt == "--licence" or opt == "--license":
 	bumf.licence()
@@ -181,7 +182,7 @@ for opt, val in cl:
 	sys.exit(1)
 
 if cfg.mainmodule == None:
-    bumf.usage()
+    bumf.shortusage()
     sys.exit(1)
 
 if cfg.workpath == None:
