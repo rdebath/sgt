@@ -4,6 +4,7 @@ Difficulty: tricky
 Priority: medium
 Present-in: 0.59
 Absent-in: 0.58
+Fixed-in: r7236 2007-02-07
 Content-type: text/x-html-body
 
 <p>
@@ -18,7 +19,6 @@ Connecting to a Foundry router fails:
 > 2007-01-29 09:37:53       Received disconnect message (protocol error)
 > 2007-01-29 09:37:53       Disconnection message text: Bad packet content
 </pre>
-
 <p>
 More detail from an SSH packet log of a different session (same
 RomSShell version string; "Foundry BigIron16 running 2.3.0aT145"):
@@ -38,12 +38,14 @@ Incoming packet type 1 / 0x01 (SSH2_MSG_DISCONNECT)
 </pre>
 
 <p>
-Our best guess is that
+It would appear that
 <a href="http://www.allegrosoft.com/romcli.html">RomSShell</a> is having
 problems with the <a href="ssh2-cbc-weakness.html">empty SSH_MSG_IGNORE</a>
 that we send before each packet in CBC mode (since it's complaining after
-seeing the first of these). We haven't tried making diagnostic builds to
-verify this yet.
+seeing the first of these).  This is perfectly reasonable, since SSH_MSG_IGNORE
+packets are meant to contain strings, which need four length bytes at the
+start.  As of r7236, PuTTY sends packets containing empty strings instead,
+which should help.
 
 <p>
 Refs: 000601c743cd$ff7e6a60$9823650a@DRMCKAY,
