@@ -40,7 +40,9 @@ def expand_varfunc(var):
     if var[0] == "!":
 	# `$(!' introduces a special function.
 	if var[:9] == "!numeric ":
-	    val = lex_all(var[9:])
+	    # The entire function call has already been lexed, so
+	    # don't lex it again.
+	    val = var[9:]
 	    log.logmsg("testing numericity of `%s'" % val)
 	    if misc.numeric(val):
 		return "yes"
@@ -74,7 +76,7 @@ def internal_lex(s, terminatechars, permit_comments):
 	    # Things beginning with a dollar sign are special.
 	    c2 = s[n]
 	    n = n + 1
-	    if c2 == "$":
+	    if c2 == "$" or c2 == "#":
 		out = out + c2
 	    elif c2 == "(":
 		# We have a $(...) construct. Recurse to parse the

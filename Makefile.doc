@@ -1,0 +1,10 @@
+all: bob.html bob.1
+
+bob.html: bob.but
+	halibut --html=bob.html bob.but
+
+bob.1: bobman.but
+	halibut --man=bob.1 bobman.but
+
+clean:
+	rm -f bob.html bob.1

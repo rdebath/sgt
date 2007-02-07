@@ -1,13 +1,3 @@
-Things left to do on this build system
---------------------------------------
-
- - Finish the manual.
-
- - A man page, just for completeness. It won't say anything that
-   isn't said better by the main manual, but it might come in handy
-   for those occasions where --help doesn't tell you quite what you
-   wanted but going to the full manual is overkill...
-
 Wishlist features for possible future work
 ------------------------------------------
 
@@ -22,5 +12,5 @@ Wishlist features for possible future work
 
  - It would also be nice to lose the total Subversion-centredness.
    It's not clear whether we can manage total generality across
-   version control systems, but at least _some_ generality might be
-   nice.
+   version control systems ($(revision) would be rather meaningless
+   in CVS, at least), but at least _some_ generality might be nice.

@@ -1,0 +1,142 @@
+\cfg{man-identity}{bob}{1}{2007-02-07}{Simon Tatham}{Simon Tatham}
+
+\define{dash} \u2013{-}
+
+\define{Barename} bob
+
+\define{Name} \c{\Barename}
+
+\define{Bareconf} .\Barename.conf
+
+\define{Conf} \cw{\Bareconf}
+
+\title Man page for \Name
+
+\U NAME
+
+\Name \dash Subversion-centric build system
+
+\U SYNOPSIS
+
+\c bob [ flags ] mainmodule [var=value...]
+\e bbb   iiiii   iiiiiiiiii  iii iiiii
+
+\U DESCRIPTION
+
+\Name checks source code out of Subversion and builds software
+projects from it.
+
+For details of exactly how it does this and how to configure a
+project to be built, see the proper manual. This \cw{man} page just
+gives a brief description of the command-line syntax.
+
+\U ARGUMENTS
+
+The first non-option argument to \Name is treated as the name of
+the main source module to check out from Subversion, and the place
+to look for the build script which \Name will then run to build
+the project. Howevre, if the argument begins with a period or
+contains a slash, it will instead be treated as the name of an
+existing Subversion working directory which will be copied instead
+of checking the source out fresh.
+
+Subsequent non-option arguments, if they are of the form
+\e{var}\cw{=}\e{value}, will cause the build script variable to be
+defined \e{var} to the value \e{value}; otherwise they will be
+treated as a bare variable name, and cause that variable to be
+defined to the text \cq{yes}.
+
+\U OPTIONS
+
+\dt \cw{-o} \e{builddir}
+
+\dd Sets the output directory which will contain the results of the
+build. Default is \cq{build.out} in the current directory.
+
+\dt \cw{-l} \e{logfile}
+
+\dd Sets the file name of the build log. Default is \cq{build.log}
+in the current directory.
+
+\dt \cw{--workdir=}\e{workdir}
+
+\dd Sets the work directory which will contain the source and
+intermediate files during the build. Default is \cq{.work} inside
+the output directory.
+
+\dt \cw{-s} \e{script}
+
+\dd Sets the file name of the build script which will be read from
+within the first checked-out source module. Default is
+\cq{Buildscr}.
+
+\dt \cw{-f} \e{conffile}
+
+\dd Sets the file name of the configuration file from which
+host-specific configuration will be read. Default is
+\cq{$HOME/\Bareconf}.
+
+\dt \cw{-r} \e{revision}
+
+\dd Sets the Subversion revision number to be used for all checkouts.
+
+\dt \cw{-r} \e{module}\cw{=}\e{revision}
+
+\dd Sets the Subversion revision number to be used for a particular
+source module checkout.
+
+\dt \cw{-d} \e{date}
+
+\dd Sets the Subversion date tag to be used for all checkouts.
+Equivalent to \cw{-r\{}\e{date}\cw{\}}.
+
+\dt \cw{-d} \e{module}\cw{=}\e{date}
+
+\dd Sets the Subversion date tag to be used for a particular source
+module checkout. Equivalent to \cw{-r}\e{module}\cw{=\{}\e{date}\cw{\}}.
+
+\dt \cw{-B} \e{module}\cw{=}\e{branch}
+
+\dd Specifies that a particular source module should be checked out
+from a different Subversion location (i.e. a branch).
+
+\dt \cw{-W} \e{module}\cw{=}\e{workdir}
+
+\dd Specifies that a particular source module should be copied from
+a working directory instead of being checked out from Subversion.
+
+\dt \cw{-D} \e{var}[\cw{=}\e{value}]
+
+\dd Defines the build script variable \e{var} to have value
+\e{value}, or \cq{yes} if the value is not specified. Equivalent to
+providing \e{var}\cw{=}\e{value} (or just \e{var}) as an extra
+non-option argument.
+
+\dt \cw{-k}, \cw{--keep}
+
+\dd Inhibit deletion of the work directory after the build is
+complete.
+
+\dt \cw{--complexrev}
+
+\dd Stop \Name from producing an error message if asked to build
+from a Subversion working copy with a switched or multiple revision.
+
+\dt \cw{-v}
+
+\dd Write a copy of the build log to standard output.
+
+\dt \cw{--help}
+
+\dd Display brief on-line help.
+
+\dt \cw{--licence}
+
+\dd Display the licence for \Name.
+
+\U LICENCE
+
+\Name is free software, distributed under the MIT licence. Type
+\c{\Barename --licence} to see the full licence text.
+
+\versionid $Id$

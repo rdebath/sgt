@@ -23,8 +23,8 @@ def longusage():
     "         -B <module>=<branch> set branch name for one module\n"+
     "         -W <module>=<directory> acquire a module from a working copy\n"+
     "         -D <var>=<value>    set a build variable (same as extra arg)\n"+
-    "         --workdir=<workdir> temporary working directory\n"+
-    "         -k, --keep          do not delete working directory\n"+
+    "         --workdir=<workdir> temporary work directory\n"+
+    "         -k, --keep          do not delete work directory\n"+
     "         --complexrev        accept working copies with mixed SVN rev\n"+
     "         -v                  verbose (copy the build log to stdout)\n"+
     "also:    --help              display this text and do nothing else\n"+
