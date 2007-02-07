@@ -2,9 +2,13 @@
 
 \define{Name} \c{\Barename}
 
-\define{Bareconf} .bob.conf
+\define{Bareconf} .\Barename.conf
 
 \define{Conf} \cw{\Bareconf}
+
+\define{Bareserver} \Barename-delegate-server
+
+\define{Server} \cw{\Bareserver}
 
 \define{dash} \u2013{-}
 
@@ -18,7 +22,7 @@ and Python, written by Simon Tatham.
 This chapter gives a general idea of what \Name does, what it doesn't
 do, and why you might want to use it.
 
-\H{overview} Overview
+\H{overview} What does \Name do?
 
 The function of \Name is to build binaries, installers, source
 archives, documentation and other deliverable files for a piece of
@@ -28,38 +32,53 @@ At the highest level, the course of a \Name build is as follows:
 
 \b You invoke \Name and tell it to build a piece of software.
 
-\b \Name checks that software out of your Subversion repository into a
-working directory. Alternatively, you can have it start by making a
-copy of a working directory you already have, and it will pick up
-local modifications from there.
+\b \Name checks that software out of your Subversion repository into
+a temporary work directory. Alternatively, you can have it start by
+making a copy of a checked-out Subversion working copy you already
+have, and it will pick up local modifications from there.
 
-\b \Name looks for a build script inside that working directory and
-runs it. The build script, in turn, will probably invoke \c{make} at
-least once and perhaps do other things too. In particular, if it
-needs to, the build script can delegate parts of the build to other
-computers, so that (for example) binaries can be built for a
-platform whose compilers only run on that platform itself.
+\b \Name looks for a build script inside the checked-out source
+directory and runs it. The build script, in turn, will probably
+invoke \c{make} at least once and perhaps do other things too. In
+particular, if it needs to, the build script can delegate parts of
+the build to other computers, so that (for example) binaries can be
+built for a platform whose compilers only run on that platform
+itself.
 
 \b The last thing the build script does is to issue a number of
 \cq{deliver} commands, which cause the end products of the build to
-be copied out of the working directory into \Name's output directory.
+be copied out of the work directory into \Name's output directory.
 
-\b \Name then deletes the working directory, leaving only the output
+\b \Name then deletes the work directory, leaving only the output
 directory full of actual deliverables, and terminates, having
 written a comprehensive log of everything that happened.
 
 If that isn't reasonably close to describing something you might
 want to do, you probably don't have any need to use \Name.
 
-In particular, \Name has the fundamental limitation that it expects
-your software to be stored in a Subversion repository. Even when it
-isn't actually checking anything out from that repository (if you're
-starting with a working copy), it expects to be able to run
-\c{svnversion} to find out what revision number it's working with.
+\H{limitations} What does \Name not do?
 
-Also, \Name requires all the machines it runs on to have a Unix-like
-environment. This means that if you want to use it on Windows, you
-need to install Cygwin.
+\Name has a few fundamental limitations which might make it
+unsuitable for your build needs:
+
+\b \Name expects your software to be stored in a Subversion
+repository. Even when it isn't actually checking anything out from
+that repository (if you're starting with a working copy), it expects
+to be able to run \c{svnversion} to find out what revision number
+it's working with.
+
+\b \Name requires all the machines it runs on to have a basically
+Unix-like environment. This means that if you want to use it on
+Windows, you need to install Cygwin.
+
+\b \Name insists on making a fresh copy of all the source code it's
+working with before starting to build. Even if you're building from
+an already-checked-out working copy, \Name will make a (temporary)
+copy of that directory for build purposes. This means your source
+directory is not cluttered up with intermediate build products like
+object files, but on the other hand it also means that if your
+project is \e{really} big then this process might take more time and
+disk space than you were willing to sacrifice.
 
 \H{buildsys} Why do I even need a build system?
 
@@ -181,13 +200,389 @@ None of the above items by itself is a clear justification for a
 specialist build system. Any of them is something which you can make
 your ad-hoc build scripts do just fine, if you spend enough time and
 effort polishing them. But to successfully maintain a set of ad-hoc
-build scripts that do \e{all} of those things ... well, if you
-manage that, you're most of the way to \e{having} a build system, by
-any reasonable definition. When I had a set of ad-hoc build scripts
-with most of the above limitations, I decided it would actually be
-\e{easier} to sit down, design and write a proper build system than
-to fix the existing scripts. So I did; and you're reading its manual
-now.
+build scripts that do \e{all} of those things, all the time ...
+well, if you manage that, you're most of the way to \e{having} a
+build system, by any reasonable definition.
+
+When I had a set of ad-hoc build scripts with most of the above
+limitations, I decided it would actually be \e{easier} to sit down,
+design and write a proper build system than to fix the existing
+scripts. So I did; and you're reading its manual now.
+
+The entire build system, as of writing this, weighs in at just over
+1000 lines of code \dash and the longest build script for a single
+project is just over 100 lines. Perhaps I could have written a set
+of really high-quality build scripts for that project in under 1100
+lines, but certainly in order to provide all the same functionality
+to \e{another} project I would have needed another 1100 lines of
+ad-hoc scriptery, whereas now \Name can be reused unchanged and all
+I need to do is to write another 100 lines of project-specific build
+script. (And if \Name is suitable for \e{your} project, it's an even
+easier tradeoff for you than it was for me, because you don't even
+\e{have} to write the 1000 lines of build system!)
+
+\C{buildhost} Setting up \Name to run on a build host
+
+This chapter covers what you need to know to install and configure
+\Name, before you attempt to run any builds with it.
+
+\H{dependencies} Prerequisites for \Name to run
+
+\Name is not a completely self-contained program: it's somewhere
+between a program and a script, and it depends on a few other
+programs in order to do anything useful. This section lists the
+things you need in order to run \Name.
+
+To begin with, \Name is written in Python, so you need the Python
+interpreter installed. \Name requires Python 2.2 or higher.
+
+\Name expects any machine it runs on to have a basically Unix-like
+environment. In particular, it needs a POSIX-like shell which
+supports POSIX-style quoting, POSIX I/O redirection operators, and
+the POSIX-like use of semicolons to separate multiple commands on
+the same line. Thus, any sensible Unix machine (Linux, BSD, Solaris,
+etc.) should be fine; Mac OS X should be fine; and Windows, although
+not fine out of the box, should be fine if you install the Cygwin
+environment. (At the time of writing this, I admittedly haven't
+tested the main \Name program on Windows, but I have tested the
+delegate server, and that works.)
+
+\Name expects the Subversion client binaries (specifically \c{svn}
+and \c{svnversion}) to be on the \cw{PATH} when it runs.
+
+If you plan to use \Name's delegation features (running parts of the
+build on other machines), you will also need \c{tar} on your
+\cw{PATH}, and also \c{ssh} (unless you plan to exclusively use an
+alternative mechanism for invoking commands on the delegate
+machine). The machine you are delegating \e{to} will also need most
+of the above list of prerequisites, except for the Subversion client
+and \c{ssh}. (Though, of course, it will need a working SSH
+\e{server}, unless you plan to log into it by some other means.)
+
+\H{installation} Installing \Name on a master build host
+
+\Name itself currently only exists in a Subversion repository: no
+source tarballs are available. So you first need to check it out,
+using the command \cq{svn co
+svn://ixion.tartarus.org/main/\Barename}.
+
+Having done that, you need to put the \Name program itself on your
+\cw{PATH}, either by adding the entire checked-out source directory
+to your \cw{PATH}, or by symlinking \Name into some directory which
+is already on your \cw{PATH}. Note that since \Name is a Python
+program with many submodules, it is not sufficient to \e{copy} the
+\Name executable file into a \c{bin} directory, because then the
+Python interpreter won't know where to look for the submodules.
+
+If you are planning to do self-delegation (see
+\k{config-delegation}), you will also need to put the delegate
+server program \Server on your \cw{PATH}.
+
+That's it; you should now be able to run \Name. Try running
+\cq{\Barename --help} to make sure.
+
+\H{delegation} Arranging delegation to other machines
+
+This section describes how to arrange that \Name can delegate
+operations to another computer.
+
+\Name will expect to be able to run a process on the master build
+host which causes its own server program, \Server, to run on the
+delegate host, and transfers standard input and output back and
+forth to that server process. By default, this is done by executing
+a command of the form \cq{ssh delegatehost \Bareserver}.
+
+So if you arrange that the delegate host has a copy of \Name
+installed on it and has the server program \Server on its \cw{PATH},
+and arrange some sort of passwordless SSH login from the master
+build host to the delegate host, that should be sufficient. You also
+need to edit \Conf on the master build host to tell it where to find
+a delegate host of the required type; see \k{config-delegation} for
+more details on this.
+
+If you only plan to do interactive builds, it should be sufficient
+simply to have a key in your \cw{ssh-agent} which lets you log in to
+the delegate host. If you plan to do automated builds, you will
+probably need to set up a means of invoking the build server
+\e{without} using \cw{ssh-agent}, which probably means an
+unencrypted SSH key stored on disk.
+
+You might want to set this key up as a restricted SSH key which can
+\e{only} invoke the \Name server program. This probably doesn't have
+any particularly useful security advantage (see \k{security} for
+more discussion of this), but it might have the practical advantage
+of allowing you to invoke the \Name server from a directory which is
+not on the \cw{PATH}, and/or to add directories \e{to} the \cw{PATH}
+before running the server. How to set up a restricted SSH key will
+vary with your choice of SSH server; with OpenSSH, you would have a
+line in \cw{.ssh/authorized_keys} starting with something like
+\cq{command="$HOME/bin/\Bareserver",no-pty,no-port-forwarding}
+followed by the public key.
+
+You will also need to configure \Name on the master build host so
+that it knows what delegate host to contact and how. See
+\k{config-delegation} for details of how to do this.
+
+\H{config} \Conf, the configuration file
+
+This section describes the configuration file read by \Name (and
+also by \Server) to obtain information specific to a particular
+build host.
+
+The configuration file, by default, is called \Conf and is found in
+the home directory of the account from which you run \Name. There is
+a command-line option \c{-f} which tells \Name to use a different
+configuration file, if you need it; see \k{cmdline-filenames}.
+
+The configuration file is actually written in the same miniature
+scripting language used for the build scripts themselves. So if you
+want to write complicated configuration files, you will probably
+need to read parts of \k{script}. However, most of the script
+commands are only meaningful when running a build; there are very
+few which are relevant to configuration files. You should at most
+need to read \k{script-lexing}, \k{script-if} and \k{script-set}.
+
+For simple configuration files, however, you should not need to know
+much more than the following simple rules:
+
+\b The hash character (\c{#}) causes everything after it on the line
+to be treated as a comment and ignored.
+
+\b Dollar signs (\c{$}) must be doubled (\c{$$}) in order to be
+treated literally.
+
+\b To configure aspects of \Name's behaviour, use commands of the
+form \c{set variable value}. The variable names you might want to
+set are described in the following sections.
+
+\S{config-svnrepos} Configuring a Subversion repository
+
+When you run a build command such as \cq{\Barename myproject}, the
+first thing \Name will want to do is to check out the module
+\cq{myproject} from a Subversion repository. Therefore, it needs to
+know where to find that repository.
+
+The variable \c{svnrepos}, set in the configuration file, tells it
+the location of the repository in which it can find its source
+modules. You set it to a Subversion URL, in any form normally
+acceptable to the Subversion client. (So it can start with
+\cq{http://}, \cq{https://}, \cq{svn://}, \cq{svn+ssh://}, or any
+custom Subversion access method you've configured yourself.) For
+example, this command:
+
+\c set svnrepos svn://svnserve.example.com/myrepos
+
+will cause the build command \cq{\Barename myproject} to attempt a
+checkout using a Subversion command of the form
+
+\c svn export svn://svnserve.example.com/myrepos/myproject destdir
+\e                                                         eeeeeee
+
+If you work with multiple Subversion repositories, you can make this
+variable conditional on the name of the module. You do this using
+the \c{ifeq} and \c{ifneq} commands (see \k{script-if} for details).
+\Name will read the configuration file once for every module it
+checks out, and will set the variable \cq{module} before reading it
+to indicate the name of the module it's trying to check out. So, for
+example, if you get most of your source from one repository but one
+particular module comes from another one, you could write in your
+configuration file
+
+\c set svnrepos svn://svnserve.example.com/myrepos
+\c ifeq $(module) secrets set svnrepos svn://secure.example.com/svn
+
+Then all modules except the one called \cq{secrets} would be checked
+out from the public Subversion server, but the \cq{secrets} module
+would come from a private internal one.
+
+\S{config-delegation} Configuring delegation
+
+This section describes how to configure \Name to find a host on
+which to run a delegated section of a build.
+
+To avoid build scripts having to contain non-portable details such
+as host names, \Name has the concept of a delegation host \e{type}.
+The build script will contain a command such as \cq{delegate
+windows}, and \Name will look this up in its configuration file to
+find the name of an actual Windows machine. So somebody else can run
+the same build script and change their local configuration, and
+\Name will use \e{their} local Windows machine without them having
+to make local modifications to the checked-out program source.
+
+There is no standard for delegation host types. I use \cq{windows}
+and \cq{osx} for Windows and Mac OS X, but that's just a convention
+I use in my own build scripts. You can use something else if you
+prefer; all that matters is that the host type specified in the
+\cq{delegate} command in the build script matches a definition in
+your \Conf.
+
+If you plan to access your delegate servers using SSH (the default
+mechanism), you can usually just define the variable name
+\c{host_}\e{type} (with \e{type} replaced by the delegation host
+type) to be a host name acceptable as an argument to your SSH
+client. For example, if you define
+
+\c set host_windows mywinbox
+
+then when \Name executes a build script containing the command
+\cq{delegate windows}, it will attempt to start a delegate server by
+means of running \cq{ssh mywinbox \Bareserver}. Therefore, \Name
+doesn't care whether \cq{mywinbox} is a real host name in your DNS
+or is a name you've specifically configured your SSH client to
+accept; that's between you and your SSH client.
+
+You can also set the special host name \cq{-} to indicate a
+\q{self-delegation}: in other words, this means that the master
+build host is \e{itself} a host of the required type for this
+delegation. You might do this, for example, if you were running a
+build on a different kind of machine from the one it had originally
+been designed to run on, so that build commands which needed
+delegation in the original environment can now run on the master
+build host.
+
+In a self-delegation, \Name still uses the delegate server, which
+means it still makes a second copy of the work directory.
+Maintaining this invariant prevents subtle bugs from being
+introduced in the build script: if the delegated build commands
+modify the work directory and the build script assumes that the
+modification does not propagate back to the master build host, then
+this assumption will still be valid even with self-delegation.
+Conversely, if someone using self-delegation forgets a \cw{return}
+statement \dash see \k{script-return} \dash then their build will
+fail during initial testing and they'll be able to fix it rather
+than checking in a build script which won't fail until a
+non-self-delegating user tries to run it.
+
+For example, if you define
+
+\c set host_linux -
+
+then when \Name executes a build script containing the command
+\cq{delegate linux}, it will attempt to start a delegate server by
+means of simply running the command \cq{\Bareserver}. (So you need
+to make sure the delegate server is on your \cw{PATH}.)
+
+If you need to specify a special SSH private key to authenticate to
+your delegate host, you can define a second variable called
+\c{id_}\e{type} (with \e{type} replaced as above). This will cause
+\Name to add a \c{-i} option to the \c{ssh} command, and also cause
+it to unset the environment variable \cw{SSH_AUTH_SOCK} in case a
+key in a running \c{ssh-agent} overrides the one specified on the
+command line. For example, if you configured
+
+\c set host_osx mymac
+\c set id_osx /home/fred/.ssh/mymac_build_key
+
+then when \Name executes a build script containing the command
+\cq{delegate osx}, it will attempt to start a delegate server by
+means of running \cq{ssh -i /home/fred/.ssh/mymac_build_key mymac
+\Bareserver}.
+
+Finally, if you want to access a build delegate host by some
+completely different means, you can configure an entire shell
+command to be used in place of \cw{ssh}, by defining a variable
+called \c{cmd_}\e{type} (with \e{type} replaced as above). For
+example, if you configure
+
+\c set cmd_hpux rsh myhpuxbox run-server.sh
+
+then when \Name executes a build script containing the command
+\cq{delegate hpux}, it will attempt to start a delegate server by
+means of running exactly the command specified above: \cq{rsh
+myhpuxbox run-server.sh}. (That shell script might, for example, set
+up the HP/UX machine's \cw{PATH} appropriately and then invoke
+\Server.)
+
+\S{config-tmpdir} Configuring a temporary directory for delegate
+machines
+
+When you run a build which uses a delegate host, the \Server process
+on that host will create a temporary work directory in which to
+unpack the build source and run its build commands. By default, that
+work directory will be created in \c{$TMPDIR}, or failing that
+\c{/tmp}. If you want to configure it to be somewhere else, you can
+set up a \Conf file on the delegate host, which sets the variable
+\cq{tmpdir} to point at the place you would like temporary work
+directories to be created. For example:
+
+\c set tmpdir /home/buildadm/tmp
+
+This is currently the only \Conf command used by the delegate
+server. So if you're happy with the default location of work
+directories, you don't have to set up a \Conf on your delegate host
+at all.
+
+\H{security} Security considerations
+
+This section discusses the security implications of running \Name,
+in general.
+
+Using delegation necessarily involves setting up a trust path
+between the master build host and each delegate host. This means we
+need to consider possible attacks on the delegate by the master (if
+the master is compromised), and attacks on the master by the
+delegate (if the delegate is compromised).
+
+\Name performs delegation by invoking its server program, \Server,
+on the delegate host. It then downloads a copy of its work directory
+to that host, and sends build commands to be run in that work
+directory. Therefore, the delegate host (or rather the relevant user
+account on that host) has no defence against a compromised or
+malicious master build host: such a master can take complete control
+of the delegate account at any time, simply by downloading a
+malicious program and then instructing the host to run it. If your
+threat model considers this to be a likely threat, you should
+arrange that the delegate account is not used for anything \e{other}
+than running builds, and has no unnecessary privileges. (If you can
+be really draconian and restrict it from making network connections,
+that would be even better!)
+
+I saw no realistic way that \Name could be designed to avoid this
+threat. Fundamentally, build delegation \e{has} to involve
+downloading some source code to the delegate host and then running a
+\c{make}-like command, which means that the delegate host is always
+going to be vulnerable to attacks from wherever it's getting the
+source code. I could have arranged some elaborate configuration
+options for the delegate server which restricted the commands it was
+able to run, but as long as one of those commands is anything like
+\c{make} that would have been so much wasted effort. So I was forced
+to the conclusion that the delegate account simply has to trust the
+master build host implicitly, and there's no way around this.
+
+(One could, I suppose, arrange to execute all the actual makefiles
+on the master build host, and pass individual compile commands to
+the delegate so that it was never running any script or binary which
+had just been downloaded to it. But this isn't a realistic option,
+because it requires the project's makefiles to be redesigned so that
+they can \e{only} be run by \Name, and that's going to be
+unacceptable to many users, including me. Also, I have no real
+confidence that compilers in general are designed to be robust
+against malicious input files.)
+
+In the other direction, however, \Name attempts to be reasonably
+robust. When the delegate server sends files back to the master
+build host (see \k{script-return}), \Name checks the file names to
+make sure they really are within the target directory, and rejects
+them if not. There \e{shouldn't} be any way in which a malicious or
+compromised delegate host can take over the master build host; the
+most it should be able to do is to sabotage the files it returns.
+(Though this, of course, is often a serious attack in itself; but
+again, there's no way around it. If your delegate host is the only
+thing you have which can build Windows binaries, you either have to
+trust it to do so non-maliciously or not build Windows binaries at
+all.)
+
+Finally, you should of course be aware that even in the absence of
+delegation \Name is vulnerable to attacks from a malicious or
+compromised Subversion repository, since it checks out a source
+directory from that repository and immediately runs a script
+received as part of that source directory. So if you're checking out
+across a hostile network, you should be sure to use a secure method
+of access to the Subversion server (typically \cw{svn+ssh} or
+\cw{https}); and if you don't even trust the Subversion server not
+to turn malicious, then you should create a dedicated account in
+which to run \Name, limit its capabilities as much as possible, and
+never do any builds outside that account.
 
 \C{cmdline} Using \Name to launch builds
 
@@ -273,10 +668,10 @@ The first non-option argument passed to \Name tells it where to find
 its \e{main} module: this is the first one checked out, and the one
 from which the build script is read and run. This argument can be
 interpreted as the name of a module to check out from a Subversion
-repository, \e{or} the name of an already checked-out working
-directory. The heuristic that distinguishes the two cases is that if
-the argument either contains a slash or starts with a period, it
-will be considered to be a directory, otherwise it is treated as a
+repository, \e{or} the name of an already checked-out working copy.
+The heuristic that distinguishes the two cases is that if the
+argument either contains a slash or starts with a period, it will be
+considered to be a directory, otherwise it is treated as a
 Subversion module name.
 
 \Name supports the following command-line options to adjust the
@@ -315,64 +710,56 @@ from a branch or tag.
 
 \lcont{
 
-For example, suppose the build script in your main
-module \c{fooproj} includes a \cq{checkout} command (see \#{FIXME}) to
-check out a second source module called \c{foolib}, and suppose you
-have made a branch of \c{foolib} with some new experimental
-features. In order to build \c{fooproj} using your branched
-\c{foolib}, you can run a command such as \cq{\Barename fooproj -B
-foolib=foolib-mybranch}. This will check out \c{fooproj} as normal,
-but when the build script asks to check out \c{foolib}, the \cw{-B}
-option will cause \c{foolib-mybranch} to be checked out instead,
-into a directory called \c{foolib} so that the build script still
-finds all the files where it expects them.
+For example, suppose the build script in your main module
+\c{fooproj} includes a \cq{checkout} command (see
+\k{script-checkout}) to check out a second source module called
+\c{foolib}, and suppose you have made a branch of \c{foolib} with
+some new experimental features. In order to build \c{fooproj} using
+your branched \c{foolib}, you can run a command such as
+\cq{\Barename fooproj -Bfoolib=foolib-mybranch}. This will check
+out \c{fooproj} as normal, but when the build script asks to check
+out \c{foolib}, the \cw{-B} option will cause \c{foolib-mybranch} to
+be checked out instead, into a directory called \c{foolib} so that
+the build script still finds all the files where it expects them.
 
 You can also use this option to override the Subversion path for the
 main module itself, but it's unlikely that you'd need to, since
 writing \cq{\Barename fooproj -Bfooproj-mybranch} is unnecessary
-when you can just write \cq{\Barename fooproj-mybranch}. These are
-not \e{exactly} equivalent: the former will check the main module
-out into a directory called \cq{fooproj} inside the work directory,
-whereas the latter will check it out into \cq{fooproj-mybranch}.
-However, a well written build script will begin with a \cq{module}
-command (see \#{FIXME}) which normalises the name of the checked-out
-directory, so in most situations the two commands will do the same
-thing.
+when you can just write \cq{\Barename fooproj-mybranch}.
 
 }
 
 \dt \cw{-W} \e{module}\cw{=}\e{workdir}
 
-\dd Allows a checked-out working directory to be substituted for a
+\dd Allows a checked-out working copy to be substituted for a
 Subversion source path at the point of checkout. This works much
 like \cw{-B}, but the text after the \cq{=} is now a path name to a
-working directory on disk.
+working copy on disk.
 
 \lcont{
 
 This is used in much the same way as \cw{-B}. If your experimental
 changes to \cw{foolib} in the example above were not checked in on a
-branch but were merely sitting in a working directory in your
-filespace, you could run a command like \cq{\Barename fooproj
+branch but were merely sitting in a working copy in your filespace,
+you could run a command like \cq{\Barename fooproj
 -Wfoolib=$HOME/src/foolib}.
 
 As with \cw{-B}, you can use this to override the main module, but
 it's not usually useful, because \dash exactly as above \dash
 \cq{\Barename fooproj -Wfooproj=.} is long and unwieldy compared to
-the much simpler \cq{\Barename .}. (Again, these are only equivalent
-if the build script contains a \cq{module} command.)
+the much simpler \cq{\Barename .}.
 
 }
 
 \dt \cw{--complexrev}
 
-\dd When starting a build from a local working directory, \Name will
-normally consider it a fatal error if the working directory contains
-a mix of revision numbers. (Specifically, \Name will expect the
-output of \c{svnversion} to be either a pure number, or a pure
-number followed by the letter \cw{M}.) Using \cw{--complexrev} will
-override this default and cause working directories in any state to
-be considered acceptable.
+\dd When starting a build from a local working copy, \Name will
+normally consider it a fatal error if the working copy contains a
+mix of revision numbers. (Specifically, \Name will expect the output
+of \c{svnversion} to be either a pure number, or a pure number
+followed by the letter \cw{M}.) Using \cw{--complexrev} will
+override this default and cause working copies in any state to be
+considered acceptable.
 
 \lcont{
 
@@ -380,9 +767,9 @@ This default is in place because build scripts will often want to
 subject that revision number to complicated processing which might
 not be willing to cope with mixed revisions. (They might well not
 like the \cw{M} on the end either, of course, but since the \e{whole
-point} of wanting to use a local working directory in the first
-place was so you could do a build containing your un-checked-in
-modifications, there's no avoiding the \cw{M} really.)
+point} of wanting to use a local working copy in the first place was
+so you could do a build containing your un-checked-in modifications,
+there's no avoiding the \cw{M} really.)
 
 }
 
@@ -413,9 +800,11 @@ the following command-line option:
 \cq{yes} if \e{value} is absent. Exactly equivalent to specifying
 an extra non-option argument.
 
-There are no rules about what variables you can define for what
+There is no standard about what variables you can define for what
 purpose. That's between the \Name user and the author of the build
-script.
+script. (However, you probably want your variables to start with
+capital letters, to avoid \Name's reserved namespace: see
+\k{script-lexing} for more about this.)
 
 \S{cmdline-misc} Miscellaneous
 
@@ -424,8 +813,8 @@ options:
 
 \dt \cw{-k} or \cw{--keep}
 
-\dd Prevents \Name from deleting the working directory after the
-build has finished.
+\dd Prevents \Name from deleting the work directory after the build
+has finished.
 
 \dt \cw{-v}
 
@@ -434,32 +823,496 @@ log to its standard output. (This does not prevent the log from also
 being written to \c{build.log}, or whatever alternative file name
 was specified using the \c{-l} option.)
 
-\C{buildhost} Setting up \Name to run on a build host
-
-\H{installation} Installing \Name and its dependencies
-
-\# Section about basic installation needs:
-\#  - Python, of course (check required version)
-\#  - ssh, probably
-\#  - svn client binaries on PATH
-\#  - basically Unix-like environment (POSIXy shell, in particular)
-\#  - double-check source for invocations of subprograms which are
-\#    required; I think we've removed the need for cp and rm, but
-\#    there might be others
-
-\H{config} \Conf, the configuration file
-
-\# Section on the config file. Forward-reference the set command and
-\# the ifeq/ifneq commands in the script chapter.
-
-\# Mention that the config file is interpreted multiple times so you
-\# can conditionalise its settings on what's being looked up.
-
-\# `svnrepos'
-
-\# `host_*', `id_*', `cmd_*'
-
-\# check for anything else!
-
 \C{script} \c{Buildscr}: how to write a build script for your project
 
+This chapter describes the syntax and semantics of the miniature
+scripting language in which \Name's build scripts are written.
+
+\H{script-lexing} Quoting and variable expansion in scripts
+
+Because a major part of any build script is composed of command
+lines to be executed by a shell, \Name's script language is designed
+to have as few special characters as was feasible.
+
+The only special characters in build scripts are:
+
+\b \cw{$} is always special, and introduces a variable expansion.
+
+\b \cw{"} is special in most circumstances, and is used to delimit a
+string which is semantically a single word but contains a space.
+There are some situations in which it is \e{not} special, however.
+
+\b \cw{#} is special in almost all circumstances, and introduces a
+comment.
+
+I discuss these special characters in more detail below.
+
+\S{script-comment} Comments
+
+The hash character \cw{#} is used to introduce a comment. This works
+similarly to shell and \cw{make} syntax: the hash character and
+everything after it on the line are considered to be part of the
+comment and are ignored by the script processor.
+
+\cw{#} is \e{not} special inside a \cw{$(}...\cw{)} construction
+(see \k{script-dollar} for more about these). Neither is it special
+within double quotes (see \k{script-words}). However, it is special
+everywhere else.
+
+To generate a literal \cw{#} character, you can write \cw{$#}.
+
+\S{script-words} Splitting into words
+
+Most script commands are treated as a sequence of \e{words}, of
+which the first is the actual command and subsequent words are its
+arguments.
+
+In the absence of double quote characters, a word is considered to
+start at a non-whitespace character and continue until the next
+whitespace character or end-of-line.
+
+A double quote character (\cw{"}) is special if it appears at the
+very start of a word. In this case, the word is considered to start
+at the character \e{after} the double quote, and continues until
+another double quote terminates it (unless it's doubled \dash see
+below). Thus, this permits you to put spaces in words.
+
+You can put a literal double quote inside a double-quoted word by
+doubling it, so that \cw{"a""b"} is a double-quoted word containing
+the three characters \cq{a}, \cq{"}, \cq{b}.
+
+Any double quote encountered within a double-quoted word \e{must}
+either be doubled (indicating a literal double quote), or be
+followed by whitespace or end-of-line (indicating the end of the
+double-quoted word). A double quote followed by anything else is a
+syntax error.
+
+A double quote character which does not occur at the start of a word
+is not special, and simply represents a literal double quote.
+
+Within double quotes, \cw{$} is still special, so \cw{$(}...\cw{)}
+constructions (see \k{script-dollar}) are still expanded. \cw{#} is
+\e{not} special within double quotes.
+
+Even in a \e{non}-double-quoted word, the results of a
+\cw{$(}...\cw{)} variable expansion are deemed never to contain a
+word separator. This means that on the one hand you can't do the
+\c{sh} trick of writing \cq{$a} and expecting it to expand to
+several words; but on the other hand it means you can write \cq{ifeq
+$(myvar) foo} without having to put precautionary quotes around
+\cq{$(myvar)} in case it expands to something with a space in it.
+
+Although most script commands parse their command line as a sequence
+of words, some commands parse a trailing portion of their command
+line as a \e{non-word string}, treating it as all one lump without
+trying to split it into words. In this situation, the double quote
+again stops being special. The commands which do this are:
+
+\b \cw{in} ... \cw{do} and \cw{in-dest} ... \cw{do} treat everything
+after the \c{do} as a non-word string. (This is because that text
+represents a shell command, in which you might well want to use
+double quotes without having to escape them.)
+
+\b \cw{set} treats everything after the variable name as a non-word
+string.
+
+See \k{script-commands} for more information about these commands.
+
+\S{script-dollar} Variable and function expansions
+
+The dollar sign (\cw{$}) is always special when it appears in a
+script. It introduces a variable or function expansion, or an
+escaped special character.
+
+If \cw{$} is followed by certain single characters, it denotes a
+special variable or literal character of some kind. The current
+constructions of this type are:
+
+\b \cw{$$} indicates a literal \cw{$}.
+
+\b \cw{$#} indicates a literal \cw{#}.
+
+\b \cw{$@} is a special variable used in the arguments to the
+\c{deliver} command. See \k{script-deliver} for details of this.
+
+The only other legal character that can follow a \cw{$} is an open
+parenthesis. In this case the text between that parenthesis and a
+subsequent closing parenthesis (which must appear) is treated as a
+variable name, or as a function invocation if it begins with an
+exclamation mark (\cw{!}). For example, \cw{$(FOO)} indicates the
+variable called \cw{FOO}.
+
+The text within the parentheses is subjected to recursive variable
+expansion, so that if you have variables called \cw{FOO1} and
+\cw{FOO2}, and a variable \cw{N} which is either 1 or 2, you can
+write \cw{$(FOO$(N))} to fetch the value of one or other of those
+variables.
+
+If the text within the parentheses begins with an exclamation mark,
+it is treated as a call to a string-processing function provided by
+\Name. Currently there is only one such function:
+
+\dt \cw{$(!numeric }\e{argument}\cw{)}
+
+\dd Returns the string \cq{yes} if the \e{argument} is composed
+entirely of digits, or \cq{no} otherwise. For example, you can test
+\cw{$(!numeric $(revision))} to determine whether your build was
+started from a modified working copy or not (since the Subversion
+revision number of a modified working copy ends in the non-numeric
+character \cw{M}).
+
+Otherwise, the text within the parentheses is treated as a variable
+name, and the value of that build script variable is fetched and
+substituted in place of the \cw{$(}...\cw{)} construction. A
+non-existent variable is returned as if it were the empty string.
+
+See \k{script-specialvars} for a list of special variable names.
+
+\H{script-specialvars} Special variables in build scripts
+
+Variables in \Name build scripts fall into several classes:
+
+\dt User variables
+
+\dd These have multi-character names and are accessed using
+\cw{$(}...\cw{)}. They are set by the \c{set} command (see
+\k{script-set}), or from the \Name command line (see
+\k{cmdline-variables}).
+
+\dt Reserved variables
+
+\dd These have multi-character names and are accessed using
+\cw{$(}...\cw{)}, just as if they were user variables. \Name defines
+them to useful values as side effects of operations such as
+checkouts. User scripts can redefine them if they want, but the
+effects of doing this are not necessarily useful. (Some reserved
+variables are designed \e{for} the user to define and for \Name to
+read, such as the ones described in \k{config}.)
+
+\dt Special variables
+
+\dd These are denoted by single-character names. The value of a
+truly special variable can be context-dependent: for example, the
+variable \cw{$@} used in the \c{deliver} command (see
+\k{script-deliver}) changes its value as the command processes
+multiple files matching a single wildcard. You cannot redefine these
+yourself.
+
+\Name makes the following guarantee: \e{All reserved variables, now
+or in the future, will begin with a lower-case letter}. Any valid
+variable name which does not begin with a lower-case letter is
+available for use as a user variable without fear that a future
+version of \Name will reserve it.
+
+I \e{suggest} that build script authors adopt a further convention
+to distinguish internal variables within a build script from
+variables designed to be passed in from the \Name command line: make
+the latter all-caps, and the former title-case (one initial capital
+letter and then lower case). However, that's only a suggestion;
+there's nothing stopping you from ignoring it.
+
+\k{config} lists a number of reserved variables used in the \Conf
+configuration file. This section now describes the currently defined
+reserved variables used in build scripts.
+
+\dt \cw{$(revision)}
+
+\dd This gives the Subversion revision number of the main source
+module as it was checked out from Subversion, or (if it was from a
+working copy) as it was returned by running \c{svnversion} on the
+working copy.
+
+\lcont{
+
+This variable is therefore not necessarily a pure number: if it came
+from a working copy, it might have an \cw{M} on the end. If \Name
+was invoked with the \cw{--complexrev} option (see
+\k{cmdline-checkout}), it might contain something more complex
+still, such as \cq{4212:4168MS}. (See the \cw{svnversion}
+documentation for more details.)
+
+The revision number for each module is captured \e{once}, at the
+time of checkout. So your build script can safely modify the
+checked-out sources if that's convenient for it, and not have to
+worry that \cw{$(revision)} might unexpectedly acquire a trailing
+\cw{M} as a result.
+
+\cw{$(revision)} is guaranteed to be defined to \e{something}. All
+of the ways for \Name to get a source directory involve it being
+able to find a revision number for that directory.
+
+}
+
+\dt \cw{$(revision_}\e{module}\cw{)}
+
+\dd This gives the Subversion revision number of a specific source
+module. It works exactly like \cw{$(revision)}, but you specify the
+module you are interested in.
+
+\dt \cw{$(date)}
+
+\dd This gives the date tag which was used to check out the main
+source module from Subversion. If that module was not checked out
+using the \cw{-d} or \cw{-r\{}\e{date}\cw{\}} command-line option,
+this variable expands to the empty string.
+
+\dt \cw{$(date_}\e{module}\cw{)}
+
+\dd This gives the date tag which was used to check out a specific
+source module. It works exactly like \cw{$(date)}, but you specify
+the module you are interested in.
+
+\H{script-commands} Commands supported by build scripts
+
+This section describes the actual commands you can run in a build
+script.
+
+\S{script-module} The \c{module} command: setting the main module
+name
+
+\c{module} takes one argument word, which is taken to be the name by
+which your build script intends to refer to the source directory
+containing the main module. So if your script says \cq{module
+fooproj}, for example, then you can expect to find your main source
+files in the subdirectory \cq{fooproj} of the work directory.
+
+\c{module} must be the first substantive command you run in your
+build script. (It may be preceded by commands which just modify
+internal state and don't do anything, such as \c{set}, but before
+actually doing anything you have to state your module name.) This is
+because you might have checked the main module out from a branch
+which gave it a different directory name, or from a working copy
+which happened to have a strange directory name on disk; by
+enforcing that the \c{module} command is present, \Name can
+guarantee to the person launching the build that they don't have to
+worry about this causing problems.
+
+\S{script-checkout} The \c{checkout} command: checking out
+additional sources
+
+If your project is composed of more than one source module, \Name
+will begin by checking out only the main module, and you will need
+to tell it to check out the rest. For this you use the \c{checkout}
+command.
+
+\c{checkout} takes two argument words. The first is the name of a
+source module, and the second is a directory path (relative to the
+work directory) into which you want it checked out. \Name will look
+up the name of the module in your configuration file (see
+\k{config-svnrepos}) to determine what Subversion repository to
+check it out from.
+
+If the \Name command line did not specify a revision number from
+which to check a module out, \Name will check out the most recent
+revision \dash \e{unless} it has previously checked out another
+module from the same repository using the most recent revision, in
+which case it will use the same revision number it used last time.
+The effect of this is that in the absence of command-line options
+saying otherwise, all source checked out from a given repository
+will arrive with the same revision number, achieving an effectively
+atomic checkout.
+
+\S{script-if} Conditional commands
+
+Often you will want to run build commands conditionally. \Name
+supports several conditional statements for this purpose. All of
+them are prefixes on another build command, for example \cq{ifeq
+$(A) $(B) set C yes}.
+
+You cannot currently nest conditional commands: that is, the command
+following the conditional statement must not itself be conditional.
+(This is a limitation in theory, but has not yet shown itself to be
+a problem in practice.)
+
+The supported conditional commands are:
+
+\dt \cw{ifeq} \e{word1} \e{word2} \e{command}
+
+\dd Executes \e{command} if and only if the two argument words
+\e{word1} and \e{word2} contain exactly the same text (after
+variable expansion, of course).
+
+\dt \cw{ifneq} \e{word1} \e{word2} \e{command}
+
+\dd Executes \e{command} if and only if the two argument words
+\e{word1} and \e{word2} do \e{not} contain exactly the same text.
+
+\dt \cw{ifexist} \e{filename} \e{command}
+
+\dd Executes \e{command} if and only if a file or directory called
+\e{filename} exists. \e{filename} is interpreted as a path relative
+to the work directory.
+
+\dt \cw{ifnexist} \e{filename} \e{command}
+
+\dd Executes \e{command} if and only if a file or directory called
+\e{filename} does \e{not} exist.
+
+\S{script-set} The \c{set} command: setting build script variables
+
+The \c{set} command allows you to set build script variables. It
+takes one argument word, which is the name of the variable to set.
+The remainder of the line is interpreted as a \e{non-word string}
+(see \k{script-words}), which means that double quotes are not
+special within it; that non-word string is the value to which the
+variable is set.
+
+\S{script-in} The \c{in} command: actually performing build actions
+
+The \c{in} command is the one used to actually do most of the work
+in a build script. It expects two argument words. The first word is
+a directory path, which is interpreted relative to the work
+directory. The second word is \cq{do}. After that, the rest of the
+line is interpreted as a \e{non-word string} (see \k{script-words}),
+which means that double quotes are not special within it; that
+non-word string is a command to be executed in the specified
+directory. The command string is run by the local POSIX-style shell,
+so you can use POSIX shell quoting within it. (Just remember that
+dollar signs are still special: see \k{script-lexing}.)
+
+(Yes, I know the \cq{do} keyword isn't necessary for disambiguation.
+I don't really know why I left it in. It seemed like a good idea at
+the time.)
+
+If a delegation session is open (see \k{script-delegate}), the
+command will be sent to the delegate server and run there instead of
+on the master build host. Build products generated on the delegate
+server will not be returned to the master build host unless the
+\c{return} command (see \k{script-return}) is used to upload them.
+
+\S{script-deliver} The \c{deliver} command: delivering build products
+
+The \c{deliver} command is used to copy files from \Name's work
+directory into the build output directory. It takes two argument
+words. The first word is a pathname interpreted relative to the work
+directory, and identifies a file to be copied into the output
+directory. The second word is a pathname interpreted relative to the
+output directory, and identifies the location to which that file
+should be delivered.
+
+The source file name may be a wildcard, in which case multiple files
+will be delivered. If no file name matches the wildcard, \Name will
+treat it as a fatal error.
+
+The destination file name may make use of the special variable
+\cw{$@}. This expands to the \e{file} name (i.e. not including any
+containing directory) of the file currently being delivered. So if
+you give a wildcard which expands to more than one file, \cw{$@}
+will expand to something different for each one. Hence, it's
+reasonable to say something like
+
+\c deliver fooproj/*.exe binaries/$@
+
+which will cause each \c{.exe} file to be copied into the output
+\cq{binaries} directory with the same file name as it had to begin
+with.
+
+\c{deliver} creates subdirectories in the output directory as
+necessary: in the above example, if the output directory did not
+already contain a \cq{binaries} subdirectory, it would have created
+it.
+
+\c{deliver} does not preserve permissions on the files it copies. It
+writes the output files with the default permissions of the \Name
+process. (This is deliberate. I've seen some compilation
+environments gratuitously generate output files with no public read
+permissions, and it's very embarrassing if you upload one of those
+to your distribution web server!)
+
+\S{script-in-dest} The \c{in-dest} command: working in the output
+directory
+
+Occasionally you might want to run a build command in your
+\e{output} directory (or a subdirectory of it), rather than a work
+directory. For example, you might want your output directory to
+include a file containing all the \cw{md5sum}s of the delivered
+files; this is almost certainly easiest to arrange by running a
+\c{find} command in the output directory once it already has the
+right directory structure.
+
+The \c{in-dest} command lets you do this. It is identical to \c{in}
+(\k{script-in}), except that the directory path in its first
+argument word is interpreted relative to the output directory
+instead of the work directory. Also, it is not a legal command while
+a delegation session is open (since the output directory is not
+available on the delegate host).
+
+\S{script-delegate} The \c{delegate} command: delegating to other
+build hosts
+
+The \c{delegate} command is used to open a delegation session.
+
+\c{delegate} expects one argument word, which is a \q{host type}.
+\Name will look that host type up in the configuration file to find
+an actual build host (see \k{config-delegation}), and then start a
+subprocess which runs the \Name delegation server (\Server) on that
+host. Then it will download the entire contents of the work
+directory to the delegate host.
+
+Once this has been done, all subsequent \c{in} commands
+(\k{script-in}) will be executed on the delegate host, until the
+\c{enddelegate} command (\k{script-enddelegate}) is seen.
+
+Build products created on the delegate server by those \c{in}
+commands must be explicitly uploaded back to the master build host
+if you want to keep them. Use the \c{return} command for this
+(\k{script-return}).
+
+Delegation sessions may not be nested.
+
+\S{script-return} The \c{return} command: returning files from a
+delegate host
+
+The \c{return} command is only valid during a delegation session. It
+expects one argument word, which is the pathname of a file (relative
+to the work directory), and it causes that file to be uploaded from
+the work directory on the delegate host to the work directory on the
+master build host.
+
+You almost certainly want to have at least one of these commands in
+any delegation session, or else there would be no point in running
+the session at all.
+
+The argument to \c{return} may be a wildcard, in which case all
+files matching the wildcard will be returned. It is an error if the
+wildcard does not match any files.
+
+\S{script-enddelegate} The \c{enddelegate} command: finishing a
+delegation session
+
+The \c{enddelegate} command closes a running delegation session. It
+takes no arguments.
+
+After this command, subsequent \c{in} commands (\k{script-in}) will
+be run on the master build host, as they were before the delegation
+session was opened.
+
+When the delegation session closes, the last action of the delegate
+server program \Server will be to delete the work directory on the
+delegate machine. You should therefore arrange that anything you
+want to keep from it has been uploaded to the master build host
+using the \c{return} command (\k{script-return}).
+
+\A{licence} Licence
+
+\Name is copyright 2007 Simon Tatham.
+
+Permission is hereby granted, free of charge, to any person
+obtaining a copy of this software and associated documentation files
+(the \q{Software}), to deal in the Software without restriction,
+including without limitation the rights to use, copy, modify, merge,
+publish, distribute, sublicense, and/or sell copies of the Software,
+and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED \q{AS IS}, WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

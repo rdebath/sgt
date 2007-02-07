@@ -42,6 +42,8 @@ def run_script_line(s, is_config, cfg):
     if w == "ifexist" or w == "ifnexist":
 	if is_config:
 	    raise misc.builderr("`%s' command invalid in config file" % w)
+	if not cfg.seen_module:
+	    raise misc.builderr("`%s' command seen before `module' command" % w)
 	w1, sr = lexer.get_word(sr)
 	log.logmsg("testing existence of `%s'" % w1)
 	if (os.path.exists(os.path.join(cfg.workpath,w1))!=0) != (w=="ifexist"):
@@ -58,6 +60,8 @@ def run_script_line(s, is_config, cfg):
     elif w == "in" or w == "in-dest":
 	if is_config:
 	    raise misc.builderr("`%s' command invalid in config file" % w)
+	if not cfg.seen_module:
+	    raise misc.builderr("`%s' command seen before `module' command" % w)
 	if delegatefps != None and w != "in":
 	    raise misc.builderr("`in-dest' command invalid during delegation" % w)
 	dir, sr = lexer.get_word(sr)
@@ -130,13 +134,15 @@ def run_script_line(s, is_config, cfg):
     elif w == "deliver":
 	if is_config:
 	    raise misc.builderr("`%s' command invalid in config file" % w)
+	if not cfg.seen_module:
+	    raise misc.builderr("`%s' command seen before `module' command" % w)
 	srcpath, sr = lexer.get_word(sr)
 	sr = lexer.trim(sr)
 	nfiles = 0
 	for srcfile in glob.glob(os.path.join(cfg.workpath, srcpath)):
 	    save = lexer.save_vars()
 	    lexer.set_onecharvar("@", os.path.basename(srcfile))
-	    dstfile = lexer.lex_all(sr)
+	    dstfile, sx = lexer.get_word(sr)
 	    lexer.restore_vars(save)
 	    dstfile = os.path.join(cfg.outpath, dstfile)
 	    log.logmsg("Delivering `%s' to `%s'" % (srcfile, dstfile))
@@ -152,6 +158,8 @@ def run_script_line(s, is_config, cfg):
     elif w == "checkout":
 	if is_config:
 	    raise misc.builderr("`%s' command invalid in config file" % w)
+	if not cfg.seen_module:
+	    raise misc.builderr("`%s' command seen before `module' command" % w)
 	module, sr = lexer.get_word(sr)
 	destdir, sr = lexer.get_word(sr)
 	if module == None or destdir == None:
@@ -172,9 +180,12 @@ def run_script_line(s, is_config, cfg):
 	    log.logmsg("renaming main module directory `%s' to `%s'" % (srcdir, destdir))
 	    os.rename(srcdir, destdir)
 	    cfg.mainmodule = newmodule
+	cfg.seen_module = 1
     elif w == "delegate":
 	if is_config:
 	    raise misc.builderr("`%s' command invalid in config file" % w)
+	if not cfg.seen_module:
+	    raise misc.builderr("`%s' command seen before `module' command" % w)
 	hosttype, sr = lexer.get_word(sr)
 	if hosttype == None:
 	    raise misc.builderr("expected a host type after `delegate'")
@@ -234,6 +245,8 @@ def run_script_line(s, is_config, cfg):
     elif w == "return":
 	if is_config:
 	    raise misc.builderr("`%s' command invalid in config file" % w)
+	if not cfg.seen_module:
+	    raise misc.builderr("`%s' command seen before `module' command" % w)
 	if delegatefps == None:
 	    raise misc.builderr("no delegation session open")
 
@@ -284,6 +297,8 @@ def run_script_line(s, is_config, cfg):
     elif w == "enddelegate":
 	if is_config:
 	    raise misc.builderr("`%s' command invalid in config file" % w)
+	if not cfg.seen_module:
+	    raise misc.builderr("`%s' command seen before `module' command" % w)
 	if delegatefps == None:
 	    raise misc.builderr("no delegation session open")
 
@@ -301,6 +316,7 @@ def process_script(scriptfile, is_config, cfg):
     # config file.
     if not is_config:
 	log.logmsg("Opening script file %s" % scriptfile)
+	cfg.seen_module = 0
     scriptfp = open(scriptfile, "r")
     while 1:
 	line = scriptfp.readline()
