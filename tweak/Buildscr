@@ -1,0 +1,26 @@
+# -*- sh -*-
+# Build script for making Tweak release archives.
+
+module tweak
+
+# We need the `library' module checked out alongside this one, for
+# btree.[ch].
+checkout library library
+
+# Make symlinks for those source files.
+in tweak do ln -s ../library/btree.c .
+in tweak do ln -s ../library/btree.h .
+
+# Determine the version number.
+set Ver r$(revision)
+ifneq $(RELEASE) "" set Ver $(RELEASE)
+
+# Fiddle with tweak.h to include the version number. Note use of $#
+# to escape a hash sign from the build script lexer.
+in tweak do perl -i~ -pe 's/(?<=$#define VER ")(?=")/$(Ver)/' tweak.h
+
+# Make the release archive.
+in tweak do make release VERSION=$(Ver)
+
+# And deliver it.
+deliver tweak/tweak-$(Ver).tar.gz $@
