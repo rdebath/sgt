@@ -21,7 +21,8 @@ clean:
 	rm -f *.1 *.html *.tar.gz
 
 html:
-	halibut --html=$(DESTDIR)/lns.html lns.but
+	halibut --html=lns.html lns.but
+	mv lns.html $(DESTDIR)
 
 release: lns.1
 	mkdir -p reltmp/lns

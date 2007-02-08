@@ -26,7 +26,8 @@ clean:
 	rm -f *.1 beep *.html *.tar.gz
 
 html:
-	halibut --html=$(DESTDIR)/beep.html beep.but
+	halibut --html=beep.html beep.but
+	mv beep.html $(DESTDIR)
 
 release: beep.1
 	mkdir -p reltmp/beep

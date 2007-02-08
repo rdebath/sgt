@@ -21,7 +21,8 @@ clean:
 	rm -f *.1 *.html *.tar.gz
 
 html:
-	halibut --html=$(DESTDIR)/reservoir.html reservoir.but
+	halibut --html=reservoir.html reservoir.but
+	mv reservoir.html $(DESTDIR)
 
 release: reservoir.1
 	mkdir -p reltmp/reservoir

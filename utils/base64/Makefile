@@ -24,7 +24,8 @@ clean:
 	rm -f *.1 base64 *.html *.tar.gz
 
 html:
-	halibut --html=$(DESTDIR)/base64.html base64.but
+	halibut --html=base64.html base64.but
+	mv base64.html $(DESTDIR)
 
 release: base64.1
 	mkdir -p reltmp/base64

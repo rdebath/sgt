@@ -19,7 +19,8 @@ clean:
 	rm -f *.1 *.html *.tar.gz
 
 html:
-	halibut --html=$(DESTDIR)/cvt-utf8.html cvt-utf8.but
+	halibut --html=cvt-utf8.html cvt-utf8.but
+	mv cvt-utf8.html $(DESTDIR)
 
 release: cvt-utf8.1
 	mkdir -p reltmp/cvt-utf8
