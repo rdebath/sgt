@@ -1,0 +1,14 @@
+# -*- sh -*-
+# Build script for this directory.
+
+# It's not very clear what we should be doing to `build' this
+# software, because it's distributed as individual .c files. We
+# clearly need to run standalone.pl to generate those .c files, but
+# that's about it.
+
+module pix
+
+in pix do perl standalone.pl ../
+
+deliver *.c $@
+
