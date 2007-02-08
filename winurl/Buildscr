@@ -1,0 +1,37 @@
+# -*- sh -*-
+# Build script for WinURL.
+
+module winurl
+
+# Substitute the right revision number in the README.
+in winurl do perl -i~ -pe 's/<<REV>>/$(revision)/' README
+
+# Build the Windows binary.
+delegate windows
+  in winurl do cmd /c vcvars32 \& nmake
+  return winurl/winurl.exe
+enddelegate
+
+# Begin to construct a directory of symlinks for making release
+# archives.
+in winurl do mkdir winurl
+in winurl/winurl do ln -s ../*.exe .
+in winurl/winurl do ln -s ../README .
+in winurl/winurl do ln -s ../LICENCE .
+
+# Zip up the current state of the symlink directory as a
+# binary-only archive.
+in winurl/winurl do zip -9 ../winurl.zip *
+
+# Now add the sources...
+in winurl/winurl do ln -s ../*.c .
+in winurl/winurl do ln -s ../*.rc .
+in winurl/winurl do ln -s ../*.ico .
+in winurl/winurl do ln -s ../Makefile .
+
+# ... and zip up again for a source-and-binary archive.
+in winurl/winurl do zip -9 ../winurl-src.zip *
+
+# And deliver those archives.
+deliver winurl/winurl.zip $@
+deliver winurl/winurl-src.zip $@
