@@ -1,0 +1,19 @@
+# -*- sh -*-
+# Build script for Enigma.
+
+module enigma
+
+# Determine the version number.
+set Ver r$(revision)
+ifneq $(RELEASE) "" set Ver $(RELEASE)
+
+# If this is an interim release rather than a real one, edit the
+# CHANGELOG to get rid of the FIXME which will inhibit the `make
+# release'.
+ifeq $(RELEASE) "" in enigma do perl -i~ -pe 'if (/Release FIXME/) {$$_="Since last release\n";$$n=$$.+2} elsif ($$.==$$n-1) {$$_="------------------\n"}' CHANGELOG
+
+# Build the source archive.
+in enigma do make release VERSION=$(Ver)
+
+# Deliver it.
+deliver enigma/enigma-$(Ver).tar.gz $@
