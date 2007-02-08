@@ -26,7 +26,8 @@ clean:
 	rm -f *.1 xcopy *.html *.tar.gz
 
 html:
-	halibut --html=$(DESTDIR)/xcopy.html xcopy.but
+	halibut --html=xcopy.html xcopy.but
+	mv xcopy.html $(DESTDIR)/xcopy.html
 
 release: xcopy.1
 	mkdir -p reltmp/xcopy

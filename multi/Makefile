@@ -21,7 +21,8 @@ clean:
 	rm -f *.1 *.html *.tar.gz
 
 html:
-	halibut --html=$(DESTDIR)/multi.html multi.but
+	halibut --html=multi.html multi.but
+	mv multi.html $(DESTDIR)
 
 release: multi.1
 	mkdir -p reltmp/multi

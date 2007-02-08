@@ -1,0 +1,8 @@
+# -*- sh -*-
+# Build script for utils.
+
+module utils
+
+in utils do make html release DESTDIR=..
+deliver *.html $@
+deliver *.tar.gz $@

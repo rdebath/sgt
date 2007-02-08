@@ -21,7 +21,8 @@ clean:
 	rm -f *.1 *.html *.tar.gz
 
 html:
-	halibut --html=$(DESTDIR)/nntpid.html nntpid.but
+	halibut --html=nntpid.html nntpid.but
+	mv nntpid.html $(DESTDIR)
 
 release: nntpid.1
 	mkdir -p reltmp/nntpid
