@@ -36,3 +36,21 @@ Default Settings in particular is never automatically launched
 <em>even if launchable</em>. If we do that, then perhaps we could
 also repeal the restriction on having a default host name saved in
 Default Settings.
+
+<p>
+In the meantime, if you get into this situation, the following
+workarounds are available:
+<ul>
+<li>If you're happy editing the Registry:
+<ol>
+<li>Run <tt>REGEDIT.EXE</tt>.
+<li>Go to <tt>HKEY_CURRENT_USER\Software\SimonTatham\PuTTY\Sessions\Default%20Settings</tt>
+<li>Change the value of the '<tt>Protocol</tt>' key from '<tt>serial</tt>'
+to '<tt>ssh</tt>'.
+</ol>
+</li>
+<li>If you don't mind <em>losing all your saved sessions</em>, you
+can use <tt>putty -cleanup</tt>. See
+<a href="http://the.earth.li/~sgtatham/putty/0.59/htmldoc/Chapter3.html#using-cleanup">the documentation</a>.
+</li>
+</ul>
