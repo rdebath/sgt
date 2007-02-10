@@ -4,6 +4,7 @@ Difficulty: tricky
 Priority: high
 Absent-in: 0.58
 Present-in: 0.59
+Fixed-in: 2007-02-11 r7265
 Content-type: text/x-html-body
 
 <p>
@@ -54,3 +55,15 @@ can use <tt>putty -cleanup</tt>. See
 <a href="http://the.earth.li/~sgtatham/putty/0.59/htmldoc/Chapter3.html#using-cleanup">the documentation</a>.
 </li>
 </ul>
+
+<p>
+<b>SGT, 2007-02-10</b>: Should now be fixed, by the method described
+above: Default Settings may describe a launchable session but is
+never actually launched unless PuTTY is sure the user really meant
+it. In particular, merely starting PuTTY doesn't launch the session
+described by DS, and neither does double-clicking DS from the saved
+sessions menu. Hitting Open once you've loaded it still works, and
+using "<code>-load</code>" still works. Also, as mentioned above,
+I've relaxed the restriction on storing a host name in DS, on the
+basis that since one type of launchable session is now permitted in
+DS there's no reason not to permit the other too.
