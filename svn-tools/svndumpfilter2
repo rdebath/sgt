@@ -1,5 +1,56 @@
 #!/usr/bin/env python
 
+# Utility to filter a dump file of a Subversion repository to
+# produce a dump file describing only specified subdirectories of
+# the tree contained in the original one. This is similar in
+# concept to the official tool `svndumpfilter', but it's able to
+# cope with revisions which copy files into the area of interest
+# from outside it (in which situation a Node-copyfrom won't be
+# valid in the output dump file). However, in order to support
+# this, svndumpfilter2 requires access via `svnlook' to the
+# original repository from which the input dump file was produced.
+#
+# Usage:
+#
+#     svndumpfilter source-repository regexp [regexp...]
+#
+# This command expects to receive a Subversion dump file on
+# standard input, which must correspond to the Subversion
+# repository pointed to by the first argument. It outputs a
+# filtered dump file on standard output.
+#
+# `source-repository': The first argument must be a pathname to a
+# _local_ Subversion repository. That is, it isn't a Subversion URL
+# (beginning with http:// or svn:// or anything else like that);
+# it's a simple local pathname (absolute or relative). A simple
+# test to see if it's a valid pathname is to pass it as an argument
+# to `svnlook tree'. If that succeeds, it's also a valid first
+# argument to svndumpfilter2.
+#
+# `regexp': The remaining arguments are used to select directory
+# names from the top level of the repository's internal directory
+# tree. Any directory matching any of the regexps will be
+# considered `interesting' and copied into the output dump file;
+# any directory not matching will not. Matching is performed at the
+# top level only: it is not currently possible to selectively
+# include a subset of second-level directories with a common
+# parent.
+#
+# For example, this command...
+#
+#     svndumpfilter2 /home/svnadmin/myrepos foo bar baz quu+x
+#
+# ... will read a dump file on standard input, and output one on
+# standard output which contains only the subdirectories `foo',
+# `bar', `baz', `quux', `quuux', `quuuux', etc.
+#
+# You will probably usually want to use svndumpfilter2 in
+# conjunction with the production of the dump file in the first
+# place, like this:
+#
+#     svnadmin dump /home/svnadmin/myrepos | \
+#         svndumpfilter2 /home/svnadmin/myrepos foo bar baz quu+x > msv.dump
+
 import sys
 import os
 import re
