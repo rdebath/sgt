@@ -12,6 +12,9 @@ delegate windows
   return winurl/winurl.exe
 enddelegate
 
+# Windowsify the text files.
+in winurl do perl -i~ -pe 'y/\015//d;s/$$/\015/' README LICENCE
+
 # Begin to construct a directory of symlinks for making release
 # archives.
 in winurl do mkdir winurl

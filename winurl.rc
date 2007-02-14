@@ -7,19 +7,19 @@
 201 ICON "winurlsmall.ico"
 
 /* Accelerators used: cl */
-300 DIALOG DISCARDABLE 140, 40, 136, 86
+300 DIALOG DISCARDABLE 140, 40, 184, 88
 STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "About WinURL"
 FONT 8, "MS Sans Serif"
 BEGIN
-    DEFPUSHBUTTON "&Close", IDOK, 82, 68, 48, 14
-    PUSHBUTTON "View &Licence", 112, 6, 68, 70, 14
-    CTEXT "WinURL", 110, 10, 6, 120, 8
-    CTEXT "", 100, 10, 16, 120, 16
-    CTEXT "", 101, 10, 24, 120, 16
-    CTEXT "", 102, 10, 32, 120, 16
-    CTEXT "\251 2002 Simon Tatham. All rights reserved.",
-          111, 10, 50, 120, 16
+    DEFPUSHBUTTON "&Close", IDOK, 114, 70, 64, 14
+    PUSHBUTTON "View &Licence", 112, 6, 70, 102, 14
+    CTEXT "WinURL", 110, 10, 6, 168, 8
+    CTEXT "Launch URL(s) from clipboard by left-clicking", 100, 10, 16, 168, 16
+    CTEXT "on the icon or pressing Windows+W", 101, 10, 24, 168, 16
+    CTEXT "", 102, 10, 34, 168, 16
+    CTEXT "\251 2002-2006 Simon Tatham. All rights reserved.",
+          111, 10, 52, 168, 16
 END
 
 /* No accelerators used */
@@ -30,7 +30,7 @@ FONT 8, "MS Sans Serif"
 BEGIN
     DEFPUSHBUTTON "OK", IDOK, 98, 203, 44, 14
 
-    LTEXT "Copyright \251 2002 Simon Tatham", 1000, 10, 10, 206, 8
+    LTEXT "Copyright \251 2002-2006 Simon Tatham", 1000, 10, 10, 206, 8
 
     LTEXT "Permission is hereby granted, free of charge, to any person", 1004, 10, 26, 206, 8
     LTEXT "obtaining a copy of this software and associated documentation", 1005, 10, 34, 206, 8

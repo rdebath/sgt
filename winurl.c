@@ -3,7 +3,7 @@
  * convert the Clipboard contents into a URL and launch it with the
  * Windows default browser.
  * 
- * Copyright 2002 Simon Tatham. All rights reserved.
+ * Copyright 2002-2006 Simon Tatham. All rights reserved.
  * 
  * You may copy and use this file under the terms of the MIT
  * Licence. For details, see the file LICENCE provided in the
@@ -17,6 +17,7 @@
 
 #include <windows.h>
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
 
@@ -108,6 +109,8 @@ extern int systray_init(void) {
     AppendMenu (systray_menu, MF_ENABLED, IDM_ABOUT, "About");
     AppendMenu(systray_menu, MF_SEPARATOR, 0, 0);
     AppendMenu (systray_menu, MF_ENABLED, IDM_CLOSE, "Close WinURL");
+
+    SetMenuDefaultItem(systray_menu, IDM_LAUNCH, FALSE);
 
     return res; 
 }
@@ -322,19 +325,43 @@ void do_launch_urls(void)
     ;
 }
 
+static char *makeversion(char *buffer, char *revision)
+{
+    char *p = buffer;
+    strcpy(buffer, revision);
+    p += strcspn(p, "0123456789");
+    if (*p) {
+	p[strcspn(p, " $")] = '\0';
+    }
+    if (!*p)
+	return NULL;
+    return p;
+}
+
+static void showversion(HWND hwnd, UINT ctrl, char *v, char *f)
+{
+    char versionbuf[80], buffer[80];
+
+    v = makeversion(versionbuf, v);
+    if (v)
+	sprintf(buffer, "%s revision %s", f, v);
+    else
+	sprintf(buffer, "%s unknown version", f);
+    SetDlgItemText(hwnd, ctrl, buffer);
+}
+
+
 static int CALLBACK AboutProc(HWND hwnd, UINT msg,
 			      WPARAM wParam, LPARAM lParam)
 {
     switch (msg) {
       case WM_INITDIALOG:
-	/*
-	 * May wish to SetDlgItemText() items 100, 101 and 102 to
-	 * some version-number text.
-	 */
+	showversion(hwnd, 102, "$Revision$", "winurl.c");
 	return 1;
       case WM_COMMAND:
 	switch (LOWORD(wParam)) {
 	  case IDOK:
+	  case IDCANCEL:
 	    aboutbox = NULL;
 	    DestroyWindow(hwnd);
 	    return 0;
@@ -367,6 +394,7 @@ static int CALLBACK LicenceProc(HWND hwnd, UINT msg,
       case WM_COMMAND:
 	switch (LOWORD(wParam)) {
 	  case IDOK:
+	  case IDCANCEL:
 	    EndDialog(hwnd, 1);
 	    return 0;
 	}

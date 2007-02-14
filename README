@@ -4,9 +4,9 @@ launch URLs which have been copied to the clipboard.
 Running WinURL should be pretty much self-explanatory. Just run the
 binary, and the WinURL icon should appear in the System tray. Now if
 you copy a URL to the clipboard and left-click on the WinURL System
-tray icon, your default web browser should launch that URL. Right-
-clicking on the System tray icon will produce a small menu which
-allows you to exit WinURL.
+tray icon, your default web browser should launch that URL. Pressing
+Windows+W has the same effect. Right-clicking on the System tray
+icon, will produce a small menu which allows you to exit WinURL.
 
 WinURL is distributed under the MIT licence, which is provided in the
 file LICENCE.
