@@ -156,7 +156,6 @@ PuTTYtel), and also the help files</b></td>
 <td><a href="http://the.earth.li/~sgtatham/putty/latest/x86/putty-0.59-installer.exe.RSA">(RSA sig)</a></td>
 <td><a href="http://the.earth.li/~sgtatham/putty/latest/x86/putty-0.59-installer.exe.DSA">(DSA sig)</a></td>
 </tr>
-
 <tr>
 <td colspan=4><b>MD5 checksums for all the above files</b></td>
 </tr>
@@ -176,6 +175,13 @@ you need a fix for a particularly crippling bug, you may well be
 able to find a fixed PuTTY here well before the fix makes it into
 the release version above. On the other hand, these snapshots might
 sometimes be unstable.
+</p>
+
+<p>
+(The filename of the development snapshot installer contains the
+snapshot date, so it will change every night. It is not offered by
+FTP, because FTP does not support the redirect mechanism that
+implements this.)
 </p>
 
 <table>
@@ -244,6 +250,16 @@ PuTTYtel), and also the help files</b></td>
 <td><a href="http://www.tartarus.org/~simon/putty-snapshots/x86/putty.zip.DSA">(DSA sig)</a></td>
 </tr>
 <tr>
+<td colspan=4><b>A Windows installer for everything except PuTTYtel</b></td>
+</tr>
+<tr>
+<td>Installer:</td>
+<td><a href="http://www.tartarus.org/~simon/putty-snapshots/x86/putty-installer.exe">putty&lt;version&gt;-installer.exe</a></td>
+<td></td>
+<td><a href="http://www.tartarus.org/~simon/putty-snapshots/x86/putty-installer.exe.RSA">(RSA sig)</a></td>
+<td><a href="http://www.tartarus.org/~simon/putty-snapshots/x86/putty-installer.exe.DSA">(DSA sig)</a></td>
+</tr>
+<tr>
 <td colspan=4><b>MD5 checksums for all the above files</b></td>
 </tr>
 <tr>
@@ -307,10 +323,10 @@ implements this.)
 </tr>
 <tr>
 <td>Source:</td>
-<td><a href="http://www.tartarus.org/~simon/putty-unix/putty-snapshot.tar.gz">putty-&lt;version&gt;.tar.gz</a></td>
+<td><a href="http://www.tartarus.org/~simon/putty-snapshots/putty.tar.gz">putty-&lt;version&gt;.tar.gz</a></td>
 <td></td>
-<td><a href="http://www.tartarus.org/~simon/putty-unix/putty-snapshot.tar.gz.RSA">(RSA sig)</a></td>
-<td><a href="http://www.tartarus.org/~simon/putty-unix/putty-snapshot.tar.gz.DSA">(DSA sig)</a></td>
+<td><a href="http://www.tartarus.org/~simon/putty-snapshots/putty.tar.gz.RSA">(RSA sig)</a></td>
+<td><a href="http://www.tartarus.org/~simon/putty-snapshots/putty.tar.gz.DSA">(DSA sig)</a></td>
 </tr>
 </table>
 
@@ -333,16 +349,6 @@ PuTTY from source.
 <td><a href="http://the.earth.li/~sgtatham/putty/latest/putty-src.zip.DSA">(DSA sig)</a></td>
 </tr>
 <tr>
-<td colspan=4><b>MD5 checksum for the above file</b></td>
-</tr>
-<tr>
-<td>MD5sums:</td>
-<td><a href="http://the.earth.li/~sgtatham/putty/latest/md5sums">md5sums</a></td>
-<td><a href="ftp://ftp.chiark.greenend.org.uk/users/sgtatham/putty-latest/md5sums">(or by FTP)</a></td>
-<td><a href="http://the.earth.li/~sgtatham/putty/latest/md5sums.RSA">(RSA sig)</a></td>
-<td><a href="http://the.earth.li/~sgtatham/putty/latest/md5sums.DSA">(DSA sig)</a></td>
-</tr>
-<tr>
 <td colspan=4><b>Development source code for Windows</b></td>
 </tr>
 <tr>
@@ -351,16 +357,6 @@ PuTTY from source.
 <td><a href="ftp://ftp.tartarus.org/pub/people/simon/putty-snapshots/putty-src.zip">(or by FTP)</a></td>
 <td><a href="http://www.tartarus.org/~simon/putty-snapshots/putty-src.zip.RSA">(RSA sig)</a></td>
 <td><a href="http://www.tartarus.org/~simon/putty-snapshots/putty-src.zip.DSA">(DSA sig)</a></td>
-</tr>
-<tr>
-<td colspan=4><b>MD5 checksum for the above file</b></td>
-</tr>
-<tr>
-<td>MD5sums:</td>
-<td><a href="http://www.tartarus.org/~simon/putty-snapshots/md5sums">md5sums</a></td>
-<td><a href="ftp://ftp.tartarus.org/pub/people/simon/putty-snapshots/md5sums">(or by FTP)</a></td>
-<td><a href="http://www.tartarus.org/~simon/putty-snapshots/md5sums.RSA">(RSA sig)</a></td>
-<td><a href="http://www.tartarus.org/~simon/putty-snapshots/md5sums.DSA">(DSA sig)</a></td>
 </tr>
 </table>
 
@@ -374,7 +370,8 @@ base, you can access the PuTTY master Subversion repository directly.
 <p>
 The Subversion URL you need for the PuTTY trunk development is
 <code>svn://ixion.tartarus.org/main/putty</code>. So you could check
-out the trunk version of PuTTY using a command such as <code>svn co svn://ixion.tartarus.org/main/putty</code>
+out the trunk version of PuTTY using a command such as <code>svn co
+svn://ixion.tartarus.org/main/putty</code>.
 
 <p>
 To check out branches of the code, replace <code>putty</code> with
