@@ -1,0 +1,23 @@
+Subject: Ctrl-Break to send break signal instead of ^C
+Class: wish
+Difficulty: fun
+Priority: medium
+Fixed-in: r7295 2007-02-19
+Content-type: text/x-html-body
+
+<p>
+Most of PuTTY's backends support some sort of "break" signal.
+Currently, the only way to send this signal is via the "Special
+Commands" menu. While it is possible to access this from the keyboard
+with appropriate configuration, it isn't very convenient. Many people
+would have a use for a more convenient shortcut, especially since the
+addition of <a href="serial-backend.html">serial line support</a>.
+
+<p>
+The traditional key sequence for sending this signal from a PC keyboard
+is Ctrl-Break. Currently, this sends ^C in PuTTY. It doesn't seem like
+a great loss to reassign it to sending a "break" signal.
+
+<p>
+The previous behaviour of the Ctrl-Break key sequence can be accessed
+using Ctrl-C.
