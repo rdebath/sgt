@@ -38,6 +38,7 @@ if (-f "$ENV{'HOME'}/.urllaunch") {
 }
 
 $google = 0;
+$wikipedia = 0;
 $rewrite = 1;
 $opts = 1;
 $url = undef;
@@ -45,6 +46,8 @@ while (scalar @ARGV) {
     $arg = shift @ARGV;
     if ($opts) {
         if ($arg eq "-g") { $google = 1; next; }
+        if ($arg eq "-gq") { $google = 2; next; }
+        if ($arg eq "-wp") { $wikipedia = 1; next; }
         if ($arg eq "-R") { $rewrite = 0; next; }
         if ($arg eq "--") { $opts = 0; next; }
         if ($arg =~ /^-/) { print STDERR "unknown option '$arg'\n"; next; }
@@ -57,10 +60,23 @@ $url = `xcopy -r` unless defined $url;
 if ($google) {
     # Construct a Google search URL.
     $url =~ s/\n/ /gs;
+    $url =~ s/^[\s\240]*//;
+    $url =~ s/[\s\240]*$//;
     $url =~ s/[\s\240]+/ /g;
+    $url = "\"$url\"" if $google == 2;
     $url =~ s/[^0-9a-zA-Z]/$& eq " " ? "+" : sprintf "%%%02x", ord $&/eg;
 
     $url = "http://www.google.com/search?q=" . $url;
+} elsif ($wikipedia) {
+    # Construct a Wikipedia URL.
+    $url =~ s/\n/ /gs;
+    $url =~ s/^[\s\240]*//;
+    $url =~ s/[\s\240]*$//;
+    $url =~ s/[\s\240]+/_/g;
+    $url =~ s/[^0-9a-zA-Z_]/$& eq " " ? "+" : sprintf "%%%02x", ord $&/eg;
+    $url =~ s/^[a-z]/uc $&/e;
+
+    $url = "http://en.wikipedia.org/wiki/" . $url;
 } else {
 
     # Strip leading spaces.
