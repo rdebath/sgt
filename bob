@@ -238,13 +238,16 @@ except OSError, e:
     if log.logfp:
 	log.logmsg("error: %s: %s" % (step, e))
     sys.stderr.write("%s: %s: %s\n" % (name.name, step, e))
+    sys.exit(1)
 
 except IOError, e:
     if log.logfp:
 	log.logmsg("error: %s: %s" % (step, e))
     sys.stderr.write("%s: %s: %s\n" % (name.name, step, e))
+    sys.exit(1)
 
 except misc.builderr, e:
     if log.logfp:
 	log.logmsg("error: %s: %s" % (step, e))
     sys.stderr.write("%s: %s: %s\n" % (name.name, step, e))
+    sys.exit(1)
