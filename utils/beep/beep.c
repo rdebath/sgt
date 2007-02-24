@@ -1,6 +1,5 @@
 /*
- * beep: quickly pipe text data into, or out of, the primary X
- * selection
+ * beep: make a beeping noise, by any means necessary
  */
 
 #include <stdio.h>
