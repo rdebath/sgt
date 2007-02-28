@@ -1,0 +1,26 @@
+Subject: Make access to serial ports above COM9 easier on Windows
+Class: semi-bug
+Difficulty: fun
+Priority: high
+Present-in: 0.59
+Content-type: text/x-html-body
+
+<p>
+In PuTTY 0.59, if you need to use a serial port other than COM1 to
+COM9 inclusive, you have to add the magic prefix <tt>\\.\</tt> (for
+instance, <tt>\\.\COM10</tt>) - a fact not included in the 0.59
+documentation (although we added it shortly afterwards). The same
+goes for more exotically named serial ports or similar entities.
+
+<p>
+After a suitable amount of soul-searching, it seems that it would not
+be unreasonable for PuTTY to automatically prepend <tt>\\.\</tt> to the
+serial-line string. (This works even for the traditional serial ports
+like COM1 - tested as far back as Win95.)
+
+<p>
+As a get-out in case someone finds something interesting to talk to
+that <em>doesn't</em> start with <tt>\\.\</tt>, we'll avoid adding
+the prefix iff the serial line string contains a backslash. (This
+will also mean that existing <tt>\\.\COM10</tt> style configurations
+will continue to work.)
