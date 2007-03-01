@@ -1,4 +1,4 @@
-Subject: Make access to serial ports above COM9 easier on Windows
+Summary: Make access to serial ports above COM9 easier on Windows
 Class: semi-bug
 Difficulty: fun
 Priority: high
