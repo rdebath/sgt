@@ -1,0 +1,10 @@
+Summary: Command-line tools should have an option to display licence
+Category: wish
+Priority: medium
+Difficulty: fun
+Content-type: text/plain
+
+It would make it easier for people to abide by the terms of our licence if
+the various command-line tools had options to display the licence in the
+same way that the GUI tools have licence windows.  This would mean that
+verbatim distributions of our binaries would automatically be conforming.
