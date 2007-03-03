@@ -15,6 +15,7 @@ on FreeBSD and one on Linux.
 <li>Using Blowfish or 3DES instead of AES
 </ul>
 <p>Using OpenSSH 4.4 or 4.0 (both of which support SDCTR) seems not to help.
+<p>BJH has reproduced this on Viking.
 <p>
 00dc01c75a6f$1f4c6b00$1878a8c0@atlantisweb.dailyprice.de
 45E59510.60303@noreply.suelze.de
