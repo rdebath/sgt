@@ -1,0 +1,74 @@
+Summary: PuTTY is broken on LP64 Unix systems
+Category: bug
+Priority: medium
+Present-in: 0.58
+Difficulty: fun
+Content-type: text/x-html-body
+
+From <a href="http://bugs.debian.org/336390">Debian bug #336390</a>:
+<pre>
+Symptoms:
+I start pterm. It brings up its window, which is cleared to black
+with the cursor in the top left corner. After this, nothing happens: the
+expected shell prompt isn't printed. Pressing keys has no visible effect.
+When I click the mouse on the window or use the window manager to switch
+away this causes pterm to suddenly update, printing the shell prompt plus
+any characters corresponding to keys I had pressed earlier (and if say
+I had pressed 'ls<RET>' I also get the ls output now).
+...
+Actual problem:
+The gtkwin.c timer code implicitly assumes sizeof(int)==sizeof(long).
+On alpha, long is 64 bit, so timer ticks as returned by GETTICKCOUNT()
+are 64 bits (and at time of writing well overflowing into the high
+word). However, we pass this through to the timer_trigger() routine
+with GINT_TO_POINTER() and then retrieve it with GPOINTER_TO_INT().
+Unfortunately on alpha GPOINTER_TO_INT(x) is defined as
+((gint)  (glong) (x)), which truncates the count to 32 bits.
+The upshot is that the next timeout is scheduled for aeons in the
+future, and we never actually draw anything.
+
+Patch:
+
+---begin---
+--- gtkwin.c.orig       2005-10-29 22:58:37.000000000 +0100
++++ gtkwin.c    2005-10-30 00:22:57.000000000 +0100
+@@ -1187,14 +1187,14 @@
+ 
+ static gint timer_trigger(gpointer data)
+ {
+-    long now = GPOINTER_TO_INT(data);
++    long now = (long)(data);
+     long next;
+     long ticks;
+ 
+     if (run_timers(now, &next)) {
+        ticks = next - GETTICKCOUNT();
+        timer_id = gtk_timeout_add(ticks > 0 ? ticks : 1, timer_trigger,
+-                                  GINT_TO_POINTER(next));
++                                  (gpointer)(next));
+     }
+ 
+     /*
+@@ -1216,7 +1216,7 @@
+        ticks = 1;                     /* just in case */
+ 
+     timer_id = gtk_timeout_add(ticks, timer_trigger,
+-                              GINT_TO_POINTER(next));
++                              (gpointer)(next));
+ }
+ 
+ void fd_input_func(gpointer data, gint sourcefd, GdkInputCondition condition)
+---endit---
+
+Disclaimer: works for me on the Alpha, but totally untested on
+32 bit machines. Almost certainly won't work on systems where
+pointers are 32 bit but long is 64 bit.
+
+I think that we only ever have one outstanding timer (since
+timer_id is a single global, not an array), so we could just
+keep 'next' in a global, rather than trying to stuff it into
+a pointer and pull it back out again; maybe that'd be cleaner?
+
+Or we could force timer ticks to be 32 bit integers on all
+platforms...
+</pre>
