@@ -1,11 +1,17 @@
-Summary: Garbled packets from OpenSSH when using aes256-ctr
+Summary: Garbled packets from OpenSSH when using OpenSSL 0.9.8e
 Present-in: 0.59
 Absent-in: 0.58
 Content-type: text/x-html-body
 
 <p>There have been a couple of reports of PuTTY reporting "Incoming packet
-was garbled on decryption", and of OpenSSH's sshd reporting "Bad packet length"
-when using aes256-ctr.
+was garbled on decryption" when connecting to versions of OpenSSH built
+against OpenSSL 0.9.8e.  This problem isn't specific to PuTTY -- using
+a version of OpenSSH built agains OpenSSL 0.9.8d and configuring it to
+use the same ciphers as PuTTY gives the same result.
+<p>The best workaround is to configure OpenSSH not to offer the
+"aes256-ctr", "aes192-ctr", or "arcfour256" ciphers.  Failing that,
+configure PuTTY to prefer either triple-DES or Blowfish
+to AES and Arcfour.
 <p>Both reports involved "OpenSSH_4.5p1, OpenSSL 0.9.8e 23 Feb 2007", one
 on FreeBSD and one on Linux.
 <p>The following changes seem to make the problem go away:
@@ -15,7 +21,6 @@ on FreeBSD and one on Linux.
 <li>Using Blowfish or 3DES instead of AES
 </ul>
 <p>Using OpenSSH 4.4 or 4.0 (both of which support SDCTR) seems not to help.
-<p>BJH has reproduced this on Viking.
 <p>
 00dc01c75a6f$1f4c6b00$1878a8c0@atlantisweb.dailyprice.de
 45E59510.60303@noreply.suelze.de
