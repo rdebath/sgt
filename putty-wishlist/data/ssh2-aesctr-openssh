@@ -8,6 +8,8 @@ was garbled on decryption" when connecting to versions of OpenSSH built
 against OpenSSL 0.9.8e.  This problem isn't specific to PuTTY -- using
 a version of OpenSSH built agains OpenSSL 0.9.8d and configuring it to
 use the same ciphers as PuTTY gives the same result.
+<p>This bug is in OpenSSH's Bugzilla as
+<a href="http://bugzilla.mindrot.org/show_bug.cgi?id=1291">Bug 1291</a>.
 <p>The best workaround is to configure OpenSSH not to offer the
 "aes256-ctr", "aes192-ctr", or "arcfour256" ciphers.  Failing that,
 configure PuTTY to prefer either triple-DES or Blowfish
