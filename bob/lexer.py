@@ -2,6 +2,7 @@
 
 import string
 import os
+import types
 
 import misc
 import log
@@ -25,8 +26,12 @@ def set_onecharvar(var, val):
 def set_multicharvar(var, val):
     multicharvars[var] = val
 
-def get_multicharvar(var):
-    return multicharvars.get(var, None)
+def get_multicharvar(var, default=None):
+    ret = multicharvars.get(var, default)
+    if type(ret) == types.TupleType:
+	# Function and parameter.
+	ret = ret[0](ret[1])
+    return ret
 
 def unset_multicharvar(var):
     if multicharvars.has_key(var):
@@ -53,7 +58,7 @@ def expand_varfunc(var):
     else:
 	# Just look up var in our list of variables, and return its
 	# value.
-	return multicharvars.get(var, "")
+	return get_multicharvar(var, "")
 
 def internal_lex(s, terminatechars, permit_comments):
     # Lex string s until a character in `terminatechars', or
