@@ -1,0 +1,70 @@
+Summary: Support for host key fingerprints in DNS
+Class: wish
+Difficulty: tricky
+Priority: low
+Content-type: text/x-html-body
+
+<p>
+We occasionally get requests to support reading SSH host key
+fingerprints from the DNS, as defined by
+<a href="http://www.ietf.org/rfc/rfc4255.txt">RFC 4255</a>.
+
+<p>
+To implement this, there are two major things to be dealt with:
+
+<ul>
+<li>
+Since the SSHFP DNS records are a type of record not natively
+supported by operating systems' resolvers, we'd firstly need access to
+the resolver at a level permitting us to query for SSHFP and parse the
+returned records directly (since I very much doubt we'd want to
+implement an entire resolver ourselves).
+
+<p>
+At least some operating systems provide some suitable facilities:
+<ul>
+<li>
+OpenSSH (for Unix), for example, uses a function called
+<tt>getrrsetbyname()</tt>, which appears to exist natively on
+<a href="http://www.openbsd.org/cgi-bin/man.cgi?query=getrrsetbyname&apropos=0&sektion=0&manpath=OpenBSD+Current&arch=i386&format=html">OpenBSD</a>,
+and can perhaps also be provided by BIND9;
+<li>Portable OpenSSH also has a local version of this function based
+on the slightly lower-level <tt>res_query()</tt> in <tt>-lresolv</tt>,
+which is claimed to come from 4.3BSD and exists on at least Linux,
+NetBSD, and Solaris, so may be a better bet;
+<li>Similarly, recent versions of Windows (from 2000) provide
+<tt>DnsQuery()</tt>, which appears to be at the right level.
+</ul>
+
+</li>
+
+<li>
+More importantly, the RFC expects that the records should be
+accompanied by trusted DNSSEC signatures. Many common operating
+systems don't obviously appear to provide DNSSEC facilities to clients
+(although OpenBSD <tt>getrrsetbyname()</tt> claims to), and I don't
+think we'd want to attempt to implement the whole of DNSSEC signature
+verification in PuTTY.
+
+<p>
+If we can't trust the SSHFP records not to have been tampered with,
+they could only ever be used as a hint; for instance, to bring up a
+"host key has changed" dialog, or to mention in the "new host key"
+dialog. We wouldn't automatically accept a connection to an unknown
+host solely on the basis of an untrusted SSHFP record. (In fact, we
+might have to have use of DNS fingerprints off by default, to avoid
+the possible nuisance value of getting "host key changed" prompts
+based on DNS.)
+
+<p>
+Even if the OS did indicate that it had verified a DNSSEC signature, I
+think we'd want the decision of whether PuTTY <em>trusted</em> that
+signature to be configurable.
+
+</li>
+
+</ul>
+
+<p>
+All in all, on the platforms we support, what we could easily
+implement may not be useful enough to be worth the effort.
