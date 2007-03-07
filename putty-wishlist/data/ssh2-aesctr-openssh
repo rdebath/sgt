@@ -11,10 +11,10 @@ use the same ciphers as PuTTY gives the same result.
 <p>This bug is in OpenSSH's Bugzilla as
 <a href="http://bugzilla.mindrot.org/show_bug.cgi?id=1291">Bug 1291</a>.
 It is acknowledged to be a bug in OpenSSL 0.9.8e, and is fixed in
-OpenSSL CVS.
-<p>The best workaround is to configure OpenSSH not to offer the
-"aes256-ctr", "aes192-ctr", or "arcfour256" ciphers.  Failing that,
-configure PuTTY to prefer either triple-DES or Blowfish
+OpenSSL CVS. There is also a workaround in OpenSSH 4.6p1.
+<p>The best workaround in affected versions of OpenSSH is to configure
+sshd not to offer the "aes256-ctr", "aes192-ctr", or "arcfour256" ciphers.
+Failing that, configure PuTTY to prefer either triple-DES or Blowfish
 to AES and Arcfour.
 <p>Both reports involved "OpenSSH_4.5p1, OpenSSL 0.9.8e 23 Feb 2007", one
 on FreeBSD and one on Linux.
