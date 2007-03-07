@@ -1,0 +1,12 @@
+#!/bin/sh 
+
+# `web browser file': open a given file in a web browser. Uses
+# urllaunch, and assumes it to be installed (as is my normal
+# practice) in ~/adm .
+
+case "$1" in
+  /*) f="$1" ;;
+  *) f="$PWD/$1" ;;
+esac
+
+$HOME/adm/urllaunch.pl file://"$f"

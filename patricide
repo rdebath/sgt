@@ -1,0 +1,5 @@
+#!/usr/bin/perl
+
+# Occasionally useful script which kills its parent process.
+
+kill 15, getppid;
