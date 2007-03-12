@@ -1701,6 +1701,28 @@ define rot13() {
 add_completion("rot13");
 
 %}}}
+%{{{ M-x start-of-region
+
+% Occasionally handy when defining macros: this puts the cursor at
+% the start of the current selection region, by either exchanging
+% POINT and MARK or doing nothing. This allows, for example, the
+% convenient definition of a macro which wraps the selected region
+% in an HTML tag <foo>...</foo>.
+define start_of_region() {
+    variable l1, c1, l2, c2;
+
+    l1 = what_line();
+    c1 = what_column();
+    exchange_point_and_mark();
+    l2 = what_line();
+    c2 = what_column();
+    if (l2 > l1 or (l2 == l1 and c2 > c1)) {
+	exchange_point_and_mark();
+    }
+}
+add_completion("start_of_region");
+
+%}}}
 %{{{ Standard exit hook to allow multiple exit hook registrations
 
 % This is a generally useful exit hook. On an attempt to exit Jed,
