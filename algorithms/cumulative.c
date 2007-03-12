@@ -1,1 +1,1 @@
-../../src/misc/cfreq.c
+../../src/misc/libcode/cfreq.c
