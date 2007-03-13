@@ -9,7 +9,8 @@ Content-type: text/x-html-body
 implementation-independent subsystem <code>publickey</code>
 (previously <code>publickey@vandyke.com</code>)
 for the distribution of public keys over SSH-2 connections. See
-<a href="http://tools.ietf.org/wg/secsh/draft-ietf-secsh-publickey-subsystem/">draft-ietf-secsh-publickey-subsystem</a>.
+<a href="http://www.ietf.org/rfc/rfc4819.txt">RFC 4819</a>
+(formerly draft-ietf-secsh-publickey-subsystem).
 
 <p>
 We get quite a lot of mail from people having trouble setting up PK on
