@@ -1,0 +1,34 @@
+Summary: Configurable per-character and per-line delays
+Class: wish
+Difficulty: fun
+Priority: medium
+Content-type: text/x-html-body
+
+<p>
+We've had several requests for PuTTY to be able to impose rate
+limiting on data sent to the backend (remote device) -- particularly
+large pastes, but perhaps also interactive user input. When
+implemented in terminal software (e.g., Hyperterminal), there is
+traditionally a separate delay per-character and per-line (user
+pressed Return, or similar). Delay is typically configured in
+milliseconds.
+
+<p>
+This is apparently required for interoperation with some devices (for
+instance, some Cisco devices require a line delay of 10ms).
+
+<p>
+We've had quite a few requests for this since we added the
+<a href="serial-backend.html">serial backend</a>, but we also had
+requests even before that existed (to work around broken terminal
+servers that didn't pass on SSH flow control, among other things), so
+it clearly shouldn't be tied to the serial backend. (Although a
+per-character delay is likely to make the network backends hideously
+inefficient when transferring large volumes of data, due to per-packet
+overheads.)
+
+<p>
+(We do already have some mechanism for breaking up large pastes, as
+experience has shown that even with a reliable, flow-controlled
+network channel, sending massive amounts of data in one go tends to
+cause trouble. But it's not configurable.)
