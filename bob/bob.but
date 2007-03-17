@@ -248,7 +248,9 @@ tested the main \Name program on Windows, but I have tested the
 delegate server, and that works.)
 
 \Name expects the Subversion client binaries (specifically \c{svn}
-and \c{svnversion}) to be on the \cw{PATH} when it runs.
+and \c{svnversion}) to be on the \cw{PATH} when it runs. It also
+requires Subversion 1.2 or higher, because it uses \c{svn info -r}
+which was not present in 1.1.
 
 If you plan to use \Name's delegation features (running parts of the
 build on other machines), you will also need \c{tar} on your
@@ -1041,6 +1043,21 @@ worry that \cw{$(revision)} might unexpectedly acquire a trailing
 of the ways for \Name to get a source directory involve it being
 able to find a revision number for that directory.
 
+\e{Important:} \cw{$(revision)} is adjusted to give the revision
+number corresponding to the \e{most recent change} in any source
+module checked out on the same revision number. So if you're
+checking out from the head of the repository, \cw{$(revision)} might
+actually end up quoting a revision number further back than the
+head; and if you passed a specific revision number to check out
+from, \cw{$(revision)} might end up quoting one further back than
+that. This means that if you have two or more projects sharing a
+Subversion repository, then changes checked in to one project will
+not affect the value of \cw{$(revision)} seen when building the
+other: each project's builds will report a revision number which
+only changes when a file affecting that project is updated. If you
+want to know the revision number on which the checkout was really
+based, you can ask for \cw{$(crevision)}, described below.
+
 }
 
 \dt \cw{$(revision_}\e{module}\cw{)}
@@ -1048,6 +1065,23 @@ able to find a revision number for that directory.
 \dd This gives the Subversion revision number of a specific source
 module. It works exactly like \cw{$(revision)}, but you specify the
 module you are interested in.
+
+\dt \cw{$(crevision)}
+
+\dd This gives the Subversion revision number \e{used to check out}
+the main source module from Subversion. The difference between
+\cw{$(revision)} and \cw{$(crevision)} is that \cw{$(crevision)}
+will always match the revision number passed in via \cw{-r}, or (if
+none was) the latest revision existing in the repository, whereas
+\cw{$(revision)} will instead report the (potentially earlier)
+revision number of the last change \e{affecting the checked-out
+files}.
+
+\dt \cw{$(crevision_}\e{module}\cw{)}
+
+\dd This gives the Subversion revision number used to check out a
+specific source module. It works exactly like \cw{$(crevision)}, but
+you specify the module you are interested in.
 
 \dt \cw{$(date)}
 
