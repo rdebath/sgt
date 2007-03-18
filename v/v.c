@@ -479,9 +479,17 @@ static int win_key_press(GtkWidget *widget, GdkEventKey *event, gpointer data)
     return FALSE;
 }
 
-static struct window *new_window(struct ilist *il, int maxsize)
+static struct window *new_window(struct ilist *il, int maxsize, int fullscr)
 {
     struct window *w = snew(struct window);
+
+    if (fullscr) {
+	/*
+	 * Ignore all that careful work with the work area.
+	 */
+	il->maxw = gdk_screen_width();
+	il->maxh = gdk_screen_height();
+    }
 
     w->il = il;
 
@@ -492,6 +500,9 @@ static struct window *new_window(struct ilist *il, int maxsize)
     w->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     w->area = gtk_drawing_area_new();
     w->ww = w->wh = 0;
+
+    if (fullscr)
+	gtk_window_fullscreen(GTK_WINDOW(w->window));
 
     gtk_widget_show(w->area);
     gtk_container_add(GTK_CONTAINER(w->window), w->area);
@@ -508,6 +519,26 @@ static struct window *new_window(struct ilist *il, int maxsize)
     switch_to_image(w, 0);             /* just to calculate the size */
 
     gtk_widget_show(w->window);
+
+    if (fullscr) {
+	GdkPixmap *ptr;
+	GdkColor cfg = { 0, 65535, 65535, 65535 };
+	GdkColor cbg = { 0, 0, 0, 0 };
+	GdkCursor *cur;
+
+	/*
+	 * Give this window the focus.
+	 */
+	gtk_window_present(GTK_WINDOW(w->window));
+
+	/*
+	 * Hide the mouse pointer.
+	 */
+	ptr = gdk_pixmap_new(NULL, 1, 1, 1);
+	cur = gdk_cursor_new_from_pixmap(ptr, ptr, &cfg, &cbg, 0, 0);
+	gdk_pixmap_unref(ptr);
+	gdk_window_set_cursor(w->window->window, cur);
+    }
 
     switch_to_image(w, 0);             /* now actually create the pixmap */
 
@@ -540,7 +571,7 @@ int main(int argc, char **argv)
 {
     struct ilist *il;
     int opts = TRUE, errs = FALSE, nogo = FALSE, maxsize = FALSE;
-    int ignoreloaderrs = FALSE, rootwin = FALSE;
+    int fullscr = FALSE, ignoreloaderrs = FALSE, rootwin = FALSE;
 
     /*
      * GTK will gratuitously eat an argument which is a single
@@ -656,6 +687,7 @@ int main(int argc, char **argv)
 		  case 'V':
 		  case 'L':
 		  case 'm':
+		  case 'f':
 		  case 'i':
 		  case 'a':
 		  case 'n':
@@ -677,6 +709,9 @@ int main(int argc, char **argv)
 			break;
 		      case 'm':
 			maxsize = TRUE;
+			break;
+		      case 'f':
+			fullscr = TRUE;
 			break;
 		      case 'a':
 			scale = ALWAYS;
@@ -774,7 +809,7 @@ int main(int argc, char **argv)
     if (rootwin) {
         set_root_window(il->images[0]);
     } else {
-        new_window(il, maxsize);
+        new_window(il, maxsize, fullscr);
         gtk_main();
     }
 
