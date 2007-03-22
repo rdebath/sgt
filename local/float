@@ -58,6 +58,7 @@ foreach $arg (@ARGV) {
       $n = 8; $order = \@dblorder; $pack = "d";
     }
     if ($mode eq "h") {
+      $arg =~ s/^0x//i;
       $arg =~ y/0-9a-zA-Z//cd;
       @array = (unpack "C*", pack "H*", $arg), 0,0,0,0,0,0,0,0;
       @data = ();
