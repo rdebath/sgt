@@ -6,10 +6,47 @@
 unset HISTFILE
 rm -f ~/.bash_history
 #}}}
+#{{{ `realpath', just in case it isn't available as a real command
+
+bashrc_dorealpath() {
+  local foo
+  foo=`type -p realpath`
+  if [ ! -e "$foo" ]; then
+    # Try Perl.
+    realpath() {
+      perl -e 'use Cwd '\''realpath'\''; print +(realpath $ARGV[0]), "\n"' "$1"
+    }
+    foo=`realpath / 2>/dev/null`
+    if [ "z$foo" != "z/" ]; then
+      # Now try Python.
+      realpath() {
+        python -c 'import os;import sys;print os.path.realpath(sys.argv[1])' \
+          "$1"
+      }
+      foo=`realpath / 2>/dev/null`
+      if [ "z$foo" != "z/" ]; then
+        # Give up.
+        realpath() {
+          echo "$PWD/$1"
+        }
+      fi
+    fi
+  fi
+}
+bashrc_dorealpath
+unset bashrc_dorealpath
+
+#}}}
 #{{{ addpath, addpathback and rmpath, for idempotent path management
 
 addpath() {
   local a b c
+  # Canonicalise a supplied relative pathname, unless -x is given.
+  case "$1" in
+    -x) shift ;; # treat the next argument literally
+    /*) ;; # the pathname is already absolute
+    *) a="$1"; shift; set -- "`realpath $a`" "$@" ;; # canonicalise it
+  esac
   # Be able to accept a second argument which is an envvar name.
   # Otherwise, default to managing PATH.
   a=${2:-PATH}
@@ -27,6 +64,12 @@ addpath() {
 
 addpathback() {
   local a b c
+  # Canonicalise a supplied relative pathname, unless -x is given.
+  case "$1" in
+    -x) shift ;; # treat the next argument literally
+    /*) ;; # the pathname is already absolute
+    *) a="$1"; shift; set -- "`realpath $a`" "$@" ;; # canonicalise it
+  esac
   # Be able to accept a second argument which is an envvar name
   # Otherwise, default to managing PATH.
   a=${2:-PATH}
@@ -239,6 +282,15 @@ bashrc_do_bindings() {
 }
 bashrc_do_bindings
 unset bashrc_do_bindings
+
+#}}}
+#{{{ F7 to execute macro
+
+# My Jed configuration uses F7 for execute-macro as a more pleasant
+# alternative to ^X e. Since the record-macro keys are the same
+# between bash and Jed, I want my favourite execute-macro key in
+# both places as well.
+bind '"\e[18~": call-last-kbd-macro'
 
 #}}}
 #{{{ fix tput weirdnesses
@@ -600,5 +652,11 @@ verbose() {
   shellquote "$@"
   "$@"
 }
+
+#}}}
+#{{{ $sp for doing `find' in svn source dirs
+
+# usage: find <paths> $sp <args>
+sp='-name .svn -prune -o'
 
 #}}}
