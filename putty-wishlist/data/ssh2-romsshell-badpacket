@@ -47,8 +47,12 @@ packets are meant to contain strings, which need four length bytes at the
 start.  As of r7236, PuTTY sends packets containing empty strings instead,
 which should help.
 
-cryptlib apparently complains about this bug as well.
+<a href="http://www.cs.auckland.ac.nz/~pgut001/cryptlib/">cryptlib</a>
+complains about this bug as well, probably returning
+CRYPT_ERROR_BADDATA and (in the next release) the message
+"Bad message payload length 0 for packet type 2".
 
 <p>
 Refs: 000601c743cd$ff7e6a60$9823650a@DRMCKAY,
-2AB5541EB33172459EE430FFB66B1EE901C0F465@BN-EXCH01.nuance.com
+2AB5541EB33172459EE430FFB66B1EE901C0F465@BN-EXCH01.nuance.com,
+E1HVpbz-0002Zv-00@medusa01.cs.auckland.ac.nz
