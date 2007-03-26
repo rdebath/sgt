@@ -1,4 +1,4 @@
-Summary: RomSShell disconnects us with "Bad packet content"
+Summary: PuTTY emits invalid SSH_MSG_IGNORE packets
 Class: bug
 Difficulty: tricky
 Priority: medium
@@ -46,6 +46,8 @@ seeing the first of these).  This is perfectly reasonable, since SSH_MSG_IGNORE
 packets are meant to contain strings, which need four length bytes at the
 start.  As of r7236, PuTTY sends packets containing empty strings instead,
 which should help.
+
+cryptlib apparently complains about this bug as well.
 
 <p>
 Refs: 000601c743cd$ff7e6a60$9823650a@DRMCKAY,
