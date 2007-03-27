@@ -85,6 +85,9 @@ while 1:
 	rcfile[line[:space]] = line[space+1:]
 rc.close()
 
+searchtext = ""
+searchdir = +1
+
 def centre(texts):
     centrelen = 0
     for i in range(0, len(texts), 2):
@@ -315,6 +318,8 @@ def getinput(prompt, inittext):
 	    ret = ret + "<%d>" % c
 
 def pageitem(indexentry, item, override, formatitem=formatitem):
+    global searchtext
+    global searchdir
     "Page through an item. Might return an itemid to go to instead."
     class holder:
 	"Holding class"
@@ -375,7 +380,6 @@ def pageitem(indexentry, item, override, formatitem=formatitem):
 	h.contfrom = (item.contfrom != "")
 	h.continued = (item.contin != "")
 	if h.ymax < 0: h.ymax = 0
-	searchtext = ""
 	redraw = 1
 	while 1:
 	    # Redraw if necessary
@@ -433,20 +437,30 @@ def pageitem(indexentry, item, override, formatitem=formatitem):
 	    elif c == ord(">"):
 		if item.contin != "":
 		    return item.contin, 1
-	    elif c == ord("/"):
-		text = getinput("Search (blank=last): ", "")
-		if text != "": searchtext = text
-		ysrch = h.y + height - 1
-		while ysrch < len(data):
+	    elif c == ord("/") or c == ord("n") or c == ord("\\"):
+		if c == ord("/") or c == ord("\\"):
+		    text = getinput("Search (blank=last): ", "")
+		    if text != "": searchtext = text
+		    if c == ord("\\"):
+			searchdir = -1
+		    else:
+			searchdir = +1
+		ysrch = h.y + height - 2 + searchdir
+		if ysrch < 0: ysrch = 0
+		if ysrch >= len(data): ysrch = len(data)-1
+		while ysrch > 0 and ysrch < len(data):
 		    if string.find(data[ysrch], searchtext) != -1:
 			break
-		    ysrch = ysrch + 1
+		    ysrch = ysrch + searchdir
 		else:
-		    ysrch = len(data)-1
+		    if searchdir > 0:
+			ysrch = len(data)-1
+		    else:
+			ysrch = 0
 		    curses.beep()
-		if ysrch > h.ymax: ysrch = h.ymax
 		h.y = ysrch - (height - 2)
-		if h.y < 0: h.y = 0 # shouldn't happen
+		if h.y > h.ymax: h.y = h.ymax
+		if h.y < 0: h.y = 0
 		redraw = 1
 	    elif c == ord("g"):
 		text = getinput("Goto line (now " + "%d"%h.y + "), or end" +\
