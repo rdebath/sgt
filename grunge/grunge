@@ -1220,7 +1220,7 @@ def editor(title, inittext):
 		    y = y - 1
 		    if ytop > y: ytop = y
 		    x = len(ret[y])
-	    elif c >= 32 and c <= 126:
+	    elif (c >= 32 and c <= 126) or (c >= 160 and c <= 255):
 		ret[y] = ret[y][:x] + chr(c) + ret[y][x+1-insert:]
 		x = x + 1
 		py = y
@@ -1384,7 +1384,10 @@ while len(args) > 0 and args[0][:1] == "-":
 	    print "Socket error:", err[1]
 	    sys.exit(1)
 	c.setsecret(os.path.normpath(os.path.join(os.environ["HOME"], ".groggsecret")))
-	c.login(rcfile["userid"])
+	ret = c.login(rcfile["userid"])
+	if ret:
+	    print "Login error:", ret
+	    sys.exit(1)
 	itm = c.item(args[1])
 	c.close()
 	for i in formatitem(itm):
@@ -1398,7 +1401,10 @@ while len(args) > 0 and args[0][:1] == "-":
 	    print "Socket error:", err[1]
 	    sys.exit(1)
 	c.setsecret(os.path.normpath(os.path.join(os.environ["HOME"], ".groggsecret")))
-	c.login(rcfile["userid"])
+	ret = c.login(rcfile["userid"])
+	if ret:
+	    print "Login error:", ret
+	    sys.exit(1)
 	items, lastseq = loadindex(indexpath)
 	index = c.index(sequence=lastseq+1)
 	c.close()
@@ -1447,7 +1453,10 @@ except socket.error, err:
     sys.exit(1)
 c.setsecret(secretpath)
 userid = rcfile["userid"]
-c.login(userid)
+ret = c.login(userid)
+if ret:
+    print "Login error:", ret
+    sys.exit(1)
 
 items, lastseq = loadindex(indexpath)
 items, lastseq = indexupdate(c, items, lastseq)
