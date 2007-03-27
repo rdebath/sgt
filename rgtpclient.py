@@ -232,7 +232,8 @@ class RGTPConnection:
 	    elif s[0:3] == "330":
 	        throwerror() # we shouldn't get this in MD5 mode
 	    else:
-	        throwerror() # 280 ok-will-email, 482 access-denied, other oddities
+		return s
+	return None # means no error
 
     def motd(self):
 	"Retrieve the MOTD, as an RGTPContribution"
