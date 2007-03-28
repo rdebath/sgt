@@ -1,7 +1,7 @@
 Summary: Bombs out with line==NULL in terminal.c
 Class: bug
 Priority: medium
-Present-in: 0.56
+Present-in: 0.56 0.58 0.59
 Content-type: text/x-html-body
 
 <p>
@@ -31,6 +31,11 @@ thought of a plausible mechanism for <tt>screen</tt> or
 (Possibly related, although we've no hard evidence for this:
 <a href="assert-fail-newsavelines.html">`assert-fail-newsavelines'</a>.)
 
+<p>
+There seem to be a lot of reports of this error from people using the serial
+backend in 0.59, which suggests that it can be a symptom of
+<a href="win-handle-double-free.html">win-handle-double-free</a>.
+
 <ul>
 <li><tt>Pine.0410290832480.79579@mozart.musicbox.net</tt>
   <br>0.56 on WinME and 2K; terminal.c:159
@@ -50,6 +55,36 @@ count(scrollback=00890758)=2
 count(screen=008BE508)=65
 count(alt=00890768)=65 alt_sblines=64
 whichtree=008BE508 treeindex=65
+</pre>
+<li><tt>D4EFE24E74186242BCFA48FB1BC47C2802E6681D@ore-mail2.ne.ad.ner.capgemini.com</tt>
+  <br>0.59, using a serial port
+  <br><pre>
+line==NULL in terminal.c
+lineno=4754 y=51 w=153 h=56
+count(scrollback=003F1BF0)=382
+count(screen=003F1C00)=56
+count(alt=00B620C8)=56 alt_sblines=0
+whichtree=003F1C00 treeindex=51
+</pre>
+<li><tt>FA37BC94952941AC89BFF98CD9997327@jamesPC</tt>
+  <br>Also a serial connection
+  <br><pre>
+line==NULL in terminal.c
+lineno=4754 y=18 w=89 h=47
+count(scrollback=011E1AA8)=200
+count(screen=011E1AB8)=47
+count(alt=011F9BF0)=47 alt_sblines=0
+whichtree=011E1AB8 treeindex=18
+</pre>
+<li><tt>53b8f8fe0703261035q65cafd48i4f2f2387996a07d9@mail.gmail.com</tt>
+  <br>Using a serial port, so presumably 0.59
+  <br><pre>
+linux==NULL in terminal.c
+lineno=4754 y=10 w=80 h=24
+count(scrollback=003A1C60)=200
+count(screen=003A1C70)=24
+count(alt=003A1F90)=24 alt_sblines=0
+whichtree=003A1C70 treeindex=10
 </pre>
 </ul>
 
