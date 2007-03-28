@@ -1,0 +1,43 @@
+Summary: PSFTP "mput -r *" misses some items in subdirectories
+Class: bug
+Priority: medium
+Present-in: 0.59
+Content-type: text/plain
+
+As reported to us:
+
+I think I have found a problem with mput -r * in PSFTP version 0.59.
+I'm running XP (32bit) with all service packs loaded.
+I'm experiencing a problem when I use mput -r * to upload my files to
+sourceforge.net.
+It uploads the files in the current directory, but in the subdirectories it
+only uploads the last file.
+
+example
+If my directory looks like this:
+index.html
+install.html
+usage.html
+en <- subdirectory
+  index.html
+  install.html
+  usage.html
+  images <- sub-subdirectory
+    a.jpg
+    b.jpg
+de <- another subdirectory
+  index.html
+  install.html
+  usage.html
+  images <- sub-subdirectory
+    a.jpg
+    b.jpg
+
+the following files get transferred only
+index.html
+usage.html
+install.html
+en/usage.html
+de/usage.html
+
+the sub-subdirectories are not processed at all.
