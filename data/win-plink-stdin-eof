@@ -1,0 +1,68 @@
+Summary: Plink reports an error when it gets EOF from standard input
+Class: bug
+Priority: high
+Absent-in: 0.58
+Present-in: 0.59
+Fixed-in: r7415 2007-03-28
+Content-type: text/x-html-body
+
+<p>From a report received (42994.55835.qm@web56205.mail.re3.yahoo.com):
+<pre>
+The following command is designed to pipe through a remote command back to  
+the local host and demonstrates an issue found while using mercurial.  I  
+have looked through your existing bug list but failed to spot anything  
+similar.
+
+dir | PLINK.EXE -v -ssh -l duncan -i "C:\Program Files\PuTTY\hugo.ppk"  
+remote_host cat > tmp
+
+fails on 0.59 and 2007-03-21:r7403.  works on 0.58.
+
+localhost : Win XP home edition SP2 all updates applied
+remote: suse linux 10.2 : SSH-2.0-OpenSSH_4.4
+
+
+dir | "c:\Program Files\Putty\PLINK.EXE" -v -ssh -l duncan -i "C:\Program  
+Files\PuTTY\hugo.ppk" cyclops cat > tmp
+
+Looking up host "cyclops"
+Connecting to 192.168.0.101 port 22
+Server version: SSH-2.0-OpenSSH_4.4
+We claim version: SSH-2.0-PuTTY_Snapshot_2007_03_21:r7403
+Using SSH protocol version 2
+Doing Diffie-Hellman group exchange
+Doing Diffie-Hellman key exchange with hash SHA-256
+Host key fingerprint is:
+ssh-rsa 1024 18:d1:50:e9:e4:79:83:f5:42:6a:eb:52:5e:9b:06:dc
+Initialised AES-256 SDCTR client->server encryption
+Initialised HMAC-SHA1 client->server MAC algorithm
+Initialised AES-256 SDCTR server->client encryption
+Initialised HMAC-SHA1 server->client MAC algorithm
+Reading private key file "C:\Program Files\PuTTY\hugo.ppk"
+Using username "duncan".
+Offered public key
+Offer of public key accepted
+Authenticating with public key "imported-openssh-key"
+Access granted
+Opened channel for session
+Started a shell/command
+Unable to read from standard input
+</pre>
+This particular instance of "Unable to read from standard input" should
+be fixed now:
+<pre>
+> Does that fix the "Unable to read from standard input" bug?
+
+The answer, currently, is `I don't know'. It certainly fixes _a_ bug which
+gives rise to that error message: if you do something along the lines of
+
+  echo -e 'wibble\nscrark' | plink foovax sort
+
+then you should now no longer get that error.
+
+However, I can't be sure that the same error when doing complicated things
+launched from a service is due to the same Windows error, so it might not fix
+all instances of the problem. This is why I also added more detailed error
+reporting to that error message, so that if any instances of the problem remain
+we'll have more information with which to investigate them.
+</pre>
