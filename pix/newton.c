@@ -96,20 +96,24 @@ double cdistsquared(Complex a, Complex b) {
 
 typedef struct {
     Complex *list;
+    Complex *factor;
     int n, size;
-} ComplexList;
+} RootList;
 
-void zero_list(ComplexList *l) {
-    l->list = NULL;
+void zero_list(RootList *l) {
+    l->list = l->factor = NULL;
     l->n = l->size = 0;
 }
 
-void add_list(ComplexList *l, Complex z) {
+void add_list(RootList *l, Complex z, Complex factor) {
     if (l->n >= l->size) {
         l->size = l->n + 16;
         l->list = realloc(l->list, l->size * sizeof(Complex));
+        l->factor = realloc(l->factor, l->size * sizeof(Complex));
     }
-    l->list[l->n++] = z;
+    l->list[l->n] = z;
+    l->factor[l->n] = factor;
+    l->n++;
 }
 
 /* ----------------------------------------------------------------------
@@ -118,6 +122,7 @@ void add_list(ComplexList *l, Complex z) {
 struct Colours {
     int ncolours;
     struct RGB *colours;
+    struct RGB nullcol;
 };
 
 /*
@@ -165,6 +170,8 @@ static void colfree(struct Colours *cols) {
  */
 static struct RGB colfind(struct Colours *cols, int i) {
     int n;
+    if (i < 0)
+        return cols->nullcol;
     n = i % cols->ncolours;
     if (n < 0) n += cols->ncolours;
     return cols->colours[n];
@@ -179,7 +186,7 @@ struct Params {
     int outtype;
     double x0, x1, y0, y1;
     int width, height;
-    ComplexList roots;
+    RootList roots;
     struct Colours *colours;
     int nfade, limit;
     double overpower;
@@ -206,7 +213,15 @@ int plot(struct Params params) {
     double iflt, fade;
     double tolerance;
 
+    /*
+     * Raising the whole function to a power is equivalent to
+     * raising each individual term to that power. It's a bit
+     * hacky, but by far the easiest way to do this is to modify
+     * the factors list at the start.
+     */
     overpower = cfromreal(params.overpower);
+    for (k = 0; k < params.roots.n; k++)
+        params.roots.factor[k] = cmul(overpower, params.roots.factor[k]);
 
     bm = bmpinit(params.outfile, params.width, params.height, params.outtype);
 
@@ -238,10 +253,7 @@ int plot(struct Params params) {
 		    if (cdistsquared(z, params.roots.list[k]) < tolerance)
 			root = k;
 		}
-		if (root >= 0)
-		    c = colfind(params.colours, root);
-		else
-		    c.r = c.g = c.b = 0;
+                c = colfind(params.colours, root);
                 bmppixel(bm, toint(c.r*255.0), toint(c.g*255.0),
 			 toint(c.b*255.0));
 		continue;
@@ -267,8 +279,8 @@ int plot(struct Params params) {
                 prevz = z;
 
                 /*
-                 * Newton-Raphson on a polynomial is very easy.
-                 * We're computing
+                 * Newton-Raphson on a function of this type is
+                 * very easy. We're computing
                  * 
                  *    z <- z - f(z) / f'(z)
                  * 
@@ -293,51 +305,38 @@ int plot(struct Params params) {
                  * => f'(z) = f(z) . sum ( fi'(z) / fi(z) )
                  *                    i
                  * 
-                 * Now each fi(z) will be (z-a), a single root. So
+                 * Now each fi(z) will be of the form (z-a)^alpha.
+                 * So
                  * 
-                 *    fi(z) = z-a
-                 * => fi'(z) = 1
-                 * => fi'(z)/fi(z) = 1/(z-a)
+                 *    fi(z) = (z-a)^alpha
+                 * => fi'(z) = alpha*(z-a)^(alpha-1)
+                 * => fi'(z)/fi(z) = alpha/(z-a)
                  * 
                  * Hence, our complete formula says that
                  * 
-                 *    f'(z)/f(z) =  sum  1/(z-a)
-                 *                 roots
+                 *    f'(z)/f(z) =  sum  alpha_i/(z-a_i)
+                 *                   i
                  * 
                  * So we compute that, and then subtract its
                  * reciprocal from z, and we're done!
                  */
-		
-		/*
-		 * If we are raising the entire function to an
-		 * overall power, this only changes the result very
-		 * slightly. Suppose our new function g is equal to
-		 * f^k for some k. Then
-		 * 
-		 *   g         f^k         1 f
-		 *   -- = -------------- = - --
-		 *   g'   k f^(k-1) . f'   k f'
-		 * 
-		 * In other words, the _only_ difference it makes
-		 * to the iteration is to multiply a constant
-		 * factor into the value subtracted from each
-		 * approximation to produce the next. So it simply
-		 * slows down (or speeds up) convergence.
-		 */
                 d = czero;
                 for (k = 0; k < params.roots.n; k++)
-                    d = cadd(d, cdiv(overpower,
+                    d = cadd(d, cdiv(params.roots.factor[k],
 				     csub(z, params.roots.list[k])));
+                if (d.r == 0 && d.i == 0) {
+                    root = -1;
+                    break;
+                }
                 z = csub(z, cdiv(cone, d));
                 icount++;
                 if (icount > params.limit) {
-                    fprintf(stderr, "problem point at %g + %g i\n", w.r, w.i);
                     root = -1;
                     break;
                 }
             }
 
-            if (params.blur) {
+            if (params.blur && root > 0) {
                 /*
                  * Adjust the integer iteration count by an ad-hoc
                  * measure of the `fractional iteration count'. We
@@ -353,9 +352,12 @@ int plot(struct Params params) {
                  * This is done on a logarithmic scale, because
                  * tests show that works much better.
                  */
-                double dist0 = cdistsquared(prevz, params.roots.list[k]);
-                double dist1 = cdistsquared(z, params.roots.list[k]);
+                double dist0, dist1;
                 double logt, log0, log1, proportion;
+
+                dist0 = cdistsquared(prevz, params.roots.list[root]);
+                dist1 = cdistsquared(z, params.roots.list[root]);
+
                 if (dist1 < tolerance && dist0 > tolerance) {
                     logt = log(tolerance);
                     log0 = log(dist0);
@@ -374,10 +376,6 @@ int plot(struct Params params) {
                 fade = pow(1.0 - 1.0 / params.nfade, iflt);
             }
             fade = params.minfade + (1.0 - params.minfade) * fade;
-
-            /*
-             * 
-             */
 
             /*
              * Now colour according to icount and root.
@@ -450,11 +448,21 @@ int parsecomplex(char const *string, Complex *z) {
 
 int addroot(char *string, void *vret)
 {
-    ComplexList *list = (ComplexList *)vret;
-    Complex z;
+    RootList *list = (RootList *)vret;
+    Complex z, factor;
+    char *s2;
+
+    s2 = strchr(string, '/');
+    if (s2)
+        *s2++ = '\0';
+    else
+        s2 = "1";
+
     if (!parsecomplex(string, &z))
 	return 0;
-    add_list(list, z);
+    if (!parsecomplex(s2, &factor))
+	return 0;
+    add_list(list, z, factor);
     return 1;
 }
 
@@ -481,9 +489,10 @@ int main(int argc, char **argv) {
 	    gotoverpower;
 	int cyclic, blur;
 	struct Colours *colours;
+        struct RGB nullcol;
 	int fade, limit;
 	int preview;
-	ComplexList roots;
+	RootList roots;
     } optdata = {
 	FALSE,
 	NULL,
@@ -493,6 +502,7 @@ int main(int argc, char **argv) {
 	FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE,
 	-1, -1,
 	NULL,
+        {0,0,0},
 	-1, -1,
 	FALSE,
 	{NULL,0,0},
@@ -531,9 +541,13 @@ int main(int argc, char **argv) {
                 "overall power", parseflt, offsetof(struct optdata, overpower), offsetof(struct optdata, gotoverpower)},
 	{2, "--colours\0--colors", 'c', "1,0,0:0,1,0", "colours for roots",
 		"colour specification", parsecols, offsetof(struct optdata, colours), -1},
+	{2, "--nullcolour\0--nullcolor", 'n', "0,0,0", "null colour for non-converging points",
+		"colour specification", parsecol, offsetof(struct optdata, nullcol), -1},
 	{1, "--verbose", 'v', NULL, "report details of what is done",
 		NULL, NULL, -1, offsetof(struct optdata, verbose)},
 	{0, NULL, 0, "<root>", "a complex root of the polynomial",
+		"complex number", addroot, offsetof(struct optdata, roots), -1},
+	{0, NULL, 0, "<root>/<factor>", "a root with convergence modifier",
 		"complex number", addroot, offsetof(struct optdata, roots), -1},
     };
 
@@ -579,6 +593,7 @@ int main(int argc, char **argv) {
 	par.colours = colread("1,0,0:1,1,0:0,1,0:0,0,1:1,0,1:0,1,1");
     else
 	par.colours = optdata.colours;
+    par.colours->nullcol = optdata.nullcol;
 
     /*
      * If a scale was specified, use it to deduce xrange and
