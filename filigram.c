@@ -327,6 +327,7 @@ struct Params {
     double xscale, yscale, oscale;
     int fading;
     char const *filename;
+    int outtype;
     struct Poly *poly;
     struct Colours *colours;
 };
@@ -348,18 +349,22 @@ static int plot(struct Params params) {
     double dzdx, dzdy, dxscale, dyscale;
     double z, xfade, yfade, fade;
     struct RGB c;
-    int i, j, xg, yg;
+    int ii, i, j, xg, yg;
 
     dfdx = polypdiff(params.poly, 1);
     dfdy = polypdiff(params.poly, 0);
 
-    bm = bmpinit(params.filename, params.width, params.height);
+    bm = bmpinit(params.filename, params.width, params.height, params.outtype);
 
     xstep = (params.x1 - params.x0) / params.width;
     ystep = (params.y1 - params.y0) / params.height;
     dxscale = params.xscale * params.oscale;
     dyscale = params.yscale * params.oscale;
-    for (i = 0; i < params.height; i++) {
+    for (ii = 0; ii < params.height; ii++) {
+	if (params.outtype == BMP)
+	    i = ii;
+	else
+	    i = params.height-1 - ii;
         y = params.y0 + ystep * i;
         yfrac = y / params.yscale; yfrac -= toint(yfrac);
 
@@ -424,6 +429,7 @@ int main(int argc, char **argv) {
 
     struct options {
 	char *outfile;
+	int outppm;
 	struct Size imagesize, basesize;
 	double xcentre, ycentre, xrange, yrange, iscale, oscale;
 	int gotxcentre, gotycentre, gotxrange, gotyrange, gotiscale, gotoscale;
@@ -431,7 +437,7 @@ int main(int argc, char **argv) {
 	struct Poly *poly;
 	struct Colours *colours;
     } optdata = {
-	NULL, {0,0}, {0,0},
+	NULL, FALSE, {0,0}, {0,0},
 	0, 0, 0, 0, 0, 0,
 	FALSE, FALSE, FALSE, FALSE, FALSE, FALSE,
 	FALSE, FALSE, FALSE, NULL, NULL
@@ -440,6 +446,8 @@ int main(int argc, char **argv) {
     static const struct Cmdline options[] = {
 	{1, "--output", 'o', "file.bmp", "output bitmap name",
 		"filename", parsestr, offsetof(struct options, outfile), -1},
+        {1, "--ppm", 0, NULL, "output PPM rather than BMP",
+		NULL, NULL, -1, offsetof(struct options, outppm)},
 	{1, "--size", 's', "NNNxNNN", "output bitmap size",
 		"output bitmap size", parsesize, offsetof(struct options, imagesize), -1},
 	{1, "--xrange", 'x', "NNN", "mathematical x range",
@@ -502,6 +510,7 @@ int main(int argc, char **argv) {
 	return EXIT_FAILURE;
     } else
 	par.filename = optdata.outfile;
+    par.outtype = (optdata.outppm ? PPM : BMP);
 
     /* If no polynomial, complain. */
     if (!optdata.poly) {

@@ -85,6 +85,7 @@ void transform(double *c, Matrix m)
 
 struct Params {
     char *outfile;
+    int outtype;
     struct RGB c[4];
     int width, height, side;
     int show_edges, colour_vertices;
@@ -105,16 +106,20 @@ double dist(double dx, double dy)
 }
 
 int plot(struct Params params) {
-    int i, j, yi, xi;
+    int ii, i, j, yi, xi;
     double xf, nxf, yf;
     struct Bitmap *bm;
     int height;
 
     height = (sqrt(3)/2) * params.side;
 
-    bm = bmpinit(params.outfile, params.width, params.height);
+    bm = bmpinit(params.outfile, params.width, params.height, params.outtype);
 
-    for (i = 0; i < params.height; i++) {
+    for (ii = 0; ii < params.height; ii++) {
+	if (params.outtype == BMP)
+	    i = ii;
+	else
+	    i = params.height-1 - ii;
 	yf = (float)i / height;
 	yi = (int)yf;
 	yf -= yi;
@@ -245,6 +250,7 @@ int main(int argc, char **argv) {
 	int vertex_mode, face_mode, cuboid, edges;
 	int verbose;
 	char *outfile;
+	int outppm;
 	struct Size imagesize;
 	int side;
     } optdata = {
@@ -255,6 +261,7 @@ int main(int argc, char **argv) {
 	FALSE, FALSE, FALSE, FALSE,
 	FALSE,
 	NULL,
+	FALSE,
 	{0,0},
 	0,
     };
@@ -278,6 +285,8 @@ int main(int argc, char **argv) {
 		"grid size", parseint, offsetof(struct optdata, side), -1},
 	{1, "--output", 'o', "file.bmp", "output bitmap name",
 		"filename", parsestr, offsetof(struct optdata, outfile), -1},
+	{1, "--ppm", 0, NULL, "output PPM rather than BMP",
+		NULL, NULL, -1, offsetof(struct optdata, outppm)},
 	{1, "--size", 's', "NNNxNNN", "output bitmap size",
 		"output bitmap size", parsesize, offsetof(struct optdata, imagesize), -1},
 	{1, "--verbose", 'v', NULL, "report details of what is done",
@@ -303,6 +312,7 @@ int main(int argc, char **argv) {
 	return EXIT_FAILURE;
     } else
 	par.outfile = optdata.outfile;
+    par.outtype = (optdata.outppm ? PPM : BMP);
 
     /* If no colours, default to a standard set. */
     if (optdata.colourlist.n == 0) {

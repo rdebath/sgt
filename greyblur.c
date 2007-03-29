@@ -106,21 +106,32 @@ static void generate(int w, int h, unsigned char *retgrid, int steps,
 
 struct Params {
     char *outfile;
+    int outtype;
     int width, height;
     int steps, levels;
 };
 
 int plot(struct Params par)
 {
-    int i, j;
+    int ii, i, j;
     unsigned char *grid;
     struct Bitmap *bm;
 
     grid = malloc(par.width*par.height);
     generate(par.width, par.height, grid, par.steps, par.levels);
 
-    bm = bmpinit(par.outfile, par.width, par.height);
-    for (i = 0; i < par.height; i++) {
+    bm = bmpinit(par.outfile, par.width, par.height, par.outtype);
+    for (ii = 0; ii < par.height; ii++) {
+	/*
+	 * Since the grey blur is random anyway, this shouldn't
+	 * make a real difference, but it seems more elegant to
+	 * arrange that _for the same random seed_ we will output
+	 * BMP and PPM images looking identical.
+	 */
+	if (par.outtype == BMP)
+	    i = ii;
+	else
+	    i = par.height-1 - ii;
         for (j = 0; j < par.width; j++) {
             int val = grid[par.width * i + j];
             bmppixel(bm, val, val, val);
@@ -143,11 +154,13 @@ int main(int argc, char **argv) {
     struct optdata {
 	int verbose;
 	char *outfile;
+	int outppm;
 	struct Size imagesize;
 	int steps, levels;
     } optdata = {
 	0,
 	NULL,
+	FALSE,
 	{0,0},
 	0, 0,
     };
@@ -155,6 +168,8 @@ int main(int argc, char **argv) {
     static const struct Cmdline options[] = {
 	{1, "--output", 'o', "file.bmp", "output bitmap name",
 		"filename", parsestr, offsetof(struct optdata, outfile), -1},
+	{1, "--ppm", 0, NULL, "output PPM rather than BMP",
+		NULL, NULL, -1, offsetof(struct optdata, outppm)},
 	{1, "--size", 's', "NNNxNNN", "output bitmap size",
 		"output bitmap size", parsesize, offsetof(struct optdata, imagesize), -1},
 	{1, "--steps", 'n', "NNN", "number of iterations of smoothing",
@@ -181,6 +196,7 @@ int main(int argc, char **argv) {
 	return EXIT_FAILURE;
     } else
 	par.outfile = optdata.outfile;
+    par.outtype = (optdata.outppm ? PPM : BMP);
 
     /*
      * Now complain if no output image size was specified.
