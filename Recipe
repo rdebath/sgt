@@ -12,7 +12,7 @@
 
 COMMON   = bmpwrite cmdline
 
-bubbles  : [U] bubbles COMMON
+bubbles  : [U] bubbles COMMON -lm
 filigram : [U] filigram COMMON
 greyblur : [U] greyblur COMMON
 newton   : [U] newton COMMON -lm
