@@ -401,7 +401,7 @@ if (defined $makefiles{'cygwin'}) {
       if ($d->{obj} =~ /\.res\.o$/) {
 	  print "\t\$(RC) \$(FWHACK) \$(RCFL) \$(RCFLAGS) ".$d->{deps}->[0]." ".$d->{obj}."\n\n";
       } else {
-	  print "\t\$(CC) \$(COMPAT) \$(FWHACK) \$(XFLAGS) \$(CFLAGS) -c ".$d->{deps}->[0]."\n\n";
+	  print "\t\$(CC) \$(COMPAT) \$(FWHACK) \$(CFLAGS) \$(XFLAGS) -c ".$d->{deps}->[0]."\n\n";
       }
     }
     print "\n";
@@ -453,7 +453,7 @@ if (defined $makefiles{'borland'}) {
     "\n".
     ".c.obj:\n".
     &splitline("\tbcc32 -w-aus -w-ccc -w-par -w-pia \$(COMPAT) \$(FWHACK)".
-	       " \$(XFLAGS) \$(CFLAGS) ".
+	       "\$(CFLAGS) \$(XFLAGS)  ".
 	       (join " ", map {"-I$dirpfx$_"} @srcdirs) .
 	       " /c \$*.c",69)."\n".
     ".rc.res:\n".
@@ -571,7 +571,7 @@ if (defined $makefiles{'vc'}) {
 	print &splitline(sprintf("%s: %s", $d->{obj}, join " ", @{$d->{deps}})),
 	  "\n";
         if ($d->{obj} =~ /.obj$/) {
-	    print "\tcl \$(COMPAT) \$(FWHACK) \$(XFLAGS) \$(CFLAGS) /c ".$d->{deps}->[0],"\n\n";
+	    print "\tcl \$(COMPAT) \$(FWHACK) \$(CFLAGS) \$(XFLAGS) /c ".$d->{deps}->[0],"\n\n";
 	} else {
 	    print "\trc \$(FWHACK) \$(RCFL) -r -DWIN32 -D_WIN32 -DWINVER=0x0400 ".$d->{deps}->[0],"\n\n";
 	}
@@ -898,7 +898,7 @@ if (defined $makefiles{'gtk'}) {
     ".SUFFIXES:\n".
     "\n".
     "%.o:\n".
-    "\t\$(CC) \$(COMPAT) \$(FWHACK) \$(XFLAGS) \$(CFLAGS) -c \$<\n".
+    "\t\$(CC) \$(COMPAT) \$(FWHACK) \$(CFLAGS) \$(XFLAGS) -c \$<\n".
     "\n";
     print &splitline("all:" . join "", map { " $_" } &progrealnames("XU"));
     print "\n\n";
@@ -954,7 +954,7 @@ if (defined $makefiles{'unix'}) {
     ".SUFFIXES:\n".
     "\n".
     "%.o:\n".
-    "\t\$(CC) \$(COMPAT) \$(FWHACK) \$(XFLAGS) \$(CFLAGS) -c \$<\n".
+    "\t\$(CC) \$(COMPAT) \$(FWHACK) \$(CFLAGS) \$(XFLAGS) -c \$<\n".
     "\n";
     print &splitline("all:" . join "", map { " $_" } &progrealnames("U"));
     print "\n\n";
@@ -1160,7 +1160,7 @@ if (defined $makefiles{'lcc'}) {
         "\n";
       if ($d->{obj} =~ /\.obj$/) {
 	  print &splitline("\tlcc -O -p6 \$(COMPAT) \$(FWHACK)".
-			   " \$(XFLAGS) \$(CFLAGS) ".$d->{deps}->[0],69)."\n";
+			   " \$(CFLAGS) \$(XFLAGS) ".$d->{deps}->[0],69)."\n";
       } else {
 	  print &splitline("\tlrc \$(FWHACK) \$(RCFL) -r ".$d->{deps}->[0],69)."\n";
       }
