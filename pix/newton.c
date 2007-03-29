@@ -186,6 +186,7 @@ struct Params {
     double minfade;                    /* minimum colour intensity for fade */
     int cyclic;                        /* do colours cycle, or asymptote? */
     int blur;                          /* are iteration boundaries blurred? */
+    int preview;
 };
 
 static int toint(double d) {
@@ -203,11 +204,19 @@ int plot(struct Params params) {
     struct Bitmap *bm;
     int icount, root;
     double iflt, fade;
-    const double tolerance = 1e-10;
+    double tolerance;
 
     overpower = cfromreal(params.overpower);
 
     bm = bmpinit(params.outfile, params.width, params.height, params.outtype);
+
+    if (params.preview) {
+	tolerance = 8*8 *
+	    fabs((params.y1-params.y0) * (params.x1-params.x0)) /
+	    (params.height * params.width);
+    } else {
+	tolerance = 1e-10;
+    }
 
     for (i = 0; i < params.height; i++) {
         for (j = 0; j < params.width; j++) {
@@ -215,6 +224,28 @@ int plot(struct Params params) {
             z.r = params.x0 + (params.x1-params.x0) * j / params.width;
             w = z;
             prevz = z;
+
+	    if (params.preview) {
+		struct RGB c;
+
+		/*
+		 * Special mode for previewing the movement of the
+		 * roots in an animation. In this mode we simply
+		 * draw a small and crude circle around each root.
+		 */
+		root = -1;
+		for (k = 0; k < params.roots.n; k++) {
+		    if (cdistsquared(z, params.roots.list[k]) < tolerance)
+			root = k;
+		}
+		if (root >= 0)
+		    c = colfind(params.colours, root);
+		else
+		    c.r = c.g = c.b = 0;
+                bmppixel(bm, toint(c.r*255.0), toint(c.g*255.0),
+			 toint(c.b*255.0));
+		continue;
+	    }
 
             /*
              * For each point, begin an iteration at z.
@@ -451,6 +482,7 @@ int main(int argc, char **argv) {
 	int cyclic, blur;
 	struct Colours *colours;
 	int fade, limit;
+	int preview;
 	ComplexList roots;
     } optdata = {
 	FALSE,
@@ -462,6 +494,7 @@ int main(int argc, char **argv) {
 	-1, -1,
 	NULL,
 	-1, -1,
+	FALSE,
 	{NULL,0,0},
     };
 
@@ -470,6 +503,8 @@ int main(int argc, char **argv) {
 		"filename", parsestr, offsetof(struct optdata, outfile), -1},
 	{1, "--ppm", 0, NULL, "output PPM rather than BMP",
 		NULL, NULL, -1, offsetof(struct optdata, outppm)},
+	{1, "--preview", 0, NULL, "just preview positions of roots",
+		NULL, NULL, -1, offsetof(struct optdata, preview)},
 	{1, "--size", 's', "NNNxNNN", "output bitmap size",
 		"output bitmap size", parsesize, offsetof(struct optdata, imagesize), -1},
 	{1, "--xrange", 'x', "NNN", "mathematical x range",
@@ -528,6 +563,7 @@ int main(int argc, char **argv) {
     } else
 	par.outfile = optdata.outfile;
     par.outtype = (optdata.outppm ? PPM : BMP);
+    par.preview = optdata.preview;
 
     /* If no roots, complain. */
     if (!optdata.roots.n) {
