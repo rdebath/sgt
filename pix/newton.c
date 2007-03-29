@@ -176,6 +176,7 @@ static struct RGB colfind(struct Colours *cols, int i) {
 
 struct Params {
     char *outfile;
+    int outtype;
     double x0, x1, y0, y1;
     int width, height;
     ComplexList roots;
@@ -206,7 +207,7 @@ int plot(struct Params params) {
 
     overpower = cfromreal(params.overpower);
 
-    bm = bmpinit(params.outfile, params.width, params.height);
+    bm = bmpinit(params.outfile, params.width, params.height, params.outtype);
 
     for (i = 0; i < params.height; i++) {
         for (j = 0; j < params.width; j++) {
@@ -299,7 +300,7 @@ int plot(struct Params params) {
                 z = csub(z, cdiv(cone, d));
                 icount++;
                 if (icount > params.limit) {
-                    printf("problem point at %g + %g i\n", w.r, w.i);
+                    fprintf(stderr, "problem point at %g + %g i\n", w.r, w.i);
                     root = -1;
                     break;
                 }
@@ -442,6 +443,7 @@ int main(int argc, char **argv) {
     struct optdata {
 	int verbose;
 	char *outfile;
+	int outppm;
 	struct Size imagesize;
 	double xcentre, ycentre, xrange, yrange, scale, minfade, overpower;
 	int gotxcentre, gotycentre, gotxrange, gotyrange, gotscale, gotminfade,
@@ -453,6 +455,7 @@ int main(int argc, char **argv) {
     } optdata = {
 	FALSE,
 	NULL,
+	FALSE,
 	{0,0},
 	0, 0, 0, 0, 0, 0, 0,
 	FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE,
@@ -465,6 +468,8 @@ int main(int argc, char **argv) {
     static const struct Cmdline options[] = {
 	{1, "--output", 'o', "file.bmp", "output bitmap name",
 		"filename", parsestr, offsetof(struct optdata, outfile), -1},
+	{1, "--ppm", 0, NULL, "output PPM rather than BMP",
+		NULL, NULL, -1, offsetof(struct optdata, outppm)},
 	{1, "--size", 's', "NNNxNNN", "output bitmap size",
 		"output bitmap size", parsesize, offsetof(struct optdata, imagesize), -1},
 	{1, "--xrange", 'x', "NNN", "mathematical x range",
@@ -522,6 +527,7 @@ int main(int argc, char **argv) {
 	return EXIT_FAILURE;
     } else
 	par.outfile = optdata.outfile;
+    par.outtype = (optdata.outppm ? PPM : BMP);
 
     /* If no roots, complain. */
     if (!optdata.roots.n) {
@@ -595,12 +601,13 @@ int main(int argc, char **argv) {
 		"use something like `-x 2 -y 2'\n");
 	return EXIT_FAILURE;
     } else {
+	int ysign = (optdata.outppm ? -1 : +1);
 	if (!optdata.gotxcentre) optdata.xcentre = 0.0;
 	if (!optdata.gotycentre) optdata.ycentre = 0.0;
 	par.x0 = optdata.xcentre - optdata.xrange;
 	par.x1 = optdata.xcentre + optdata.xrange;
-	par.y0 = optdata.ycentre - optdata.yrange;
-	par.y1 = optdata.ycentre + optdata.yrange;
+	par.y0 = optdata.ycentre - ysign * optdata.yrange;
+	par.y1 = optdata.ycentre + ysign * optdata.yrange;
     }
 
     /*

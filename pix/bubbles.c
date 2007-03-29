@@ -138,6 +138,7 @@ int randomupto(int n) {
 
 struct Params {
     char *outfile;
+    int outtype;
     int width, height;
     int prefradius, maxradius, minradius, distance;
     int metal, trace;
@@ -150,7 +151,7 @@ struct Params {
 int plot(struct Params params) {
     int w = params.width, h = params.height;
     int r = params.prefradius, d = params.distance;
-    int i,j;
+    int i, j, jj;
     struct Bitmap *bm;
 
     int *pixels;                       /* store max possible radius at point */
@@ -342,8 +343,18 @@ int plot(struct Params params) {
         }
     }
 
-    bm = bmpinit(params.outfile, params.width, params.height);
-    for (j = 0; j < h; j++) {
+    bm = bmpinit(params.outfile, params.width, params.height, params.outtype);
+    for (jj = 0; jj < h; jj++) {
+	/*
+	 * Since the bubble locations are random anyway, this
+	 * shouldn't make a real difference, but it seems more
+	 * elegant to arrange that _for the same random seed_ we
+	 * will output BMP and PPM images looking identical.
+	 */
+	if (params.outtype == BMP)
+	    j = jj;
+	else
+	    j = h-1 - jj;
         for (i = 0; i < w; i++) {
             struct RGB p = pvals[j*w+i];
             bmppixel(bm, p.r, p.g, p.b);
@@ -369,12 +380,14 @@ int main(int argc, char **argv) {
 	int verbose;
 	int metal;
 	char *outfile;
+	int outppm;
 	struct Size imagesize;
 	int radius, minradius, prefradius, distance;
     } optdata = {
 	0,
 	FALSE,
 	NULL,
+	FALSE,
 	{0,0},
 	0, 0, 0, 0,
     };
@@ -382,6 +395,8 @@ int main(int argc, char **argv) {
     static const struct Cmdline options[] = {
 	{1, "--output", 'o', "file.bmp", "output bitmap name",
 		"filename", parsestr, offsetof(struct optdata, outfile), -1},
+        {1, "--ppm", 0, NULL, "output PPM rather than BMP",
+		NULL, NULL, -1, offsetof(struct optdata, outppm)},
 	{1, "--size", 's', "NNNxNNN", "output bitmap size",
 		"output bitmap size", parsesize, offsetof(struct optdata, imagesize), -1},
 	{1, "--radius", 'r', "NNN", "maximum bubble radius",
@@ -416,6 +431,7 @@ int main(int argc, char **argv) {
 	return EXIT_FAILURE;
     } else
 	par.outfile = optdata.outfile;
+    par.outtype = (optdata.outppm ? PPM : BMP);
 
     /*
      * Now complain if no output image size was specified.
