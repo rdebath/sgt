@@ -537,11 +537,11 @@ value of <code>f</code> at the point where we started our integration.
 Well, since <code>t</code> is a positive real, it means that whatever
 path <code>z</code> follows from our starting point <code>z0</code>
 must have the property that at all times <code>f(z)</code> is equal
-to <code>k f(z0)</code>, where <code>k</code> is a real which
-continuously and monotonically decreases from 1 toward 0. So we
-normally expect the limit of such an "iteration" to be a point at
-which <code>f(z)</code> is actually equal to zero, i.e. a root of
-<code>f</code>.
+to <code>k f(z0)</code>, where <code>k = Ae^-t</code> is a real
+value which continuously and monotonically decreases from 1 toward
+0. So we normally expect the limit of such an "iteration" to be a
+point at which <code>f(z)</code> is actually equal to zero, i.e. a
+root of <code>f</code>.
 
 <p>
 But that's not the only thing that can happen. It's also possible to
@@ -624,10 +624,10 @@ approximately equal to <code>Ke^2</code> for some (complex) constant
 <code>K</code>. This means that we expect to have <em>two</em>
 directions in which we can head in order to make
 <code>f(r+e)/f(r)-1</code> real and positive: one direction
-corresponding to each square root of <code>K</code>. This fits with
-what we expect, because in the usual case a root of <code>f'</code>
-gives rise to a region boundary extending away from it in two
-opposite directions.
+corresponding to each square root of <code>1/K</code>. This fits
+with what we expect, because in the usual case a root of
+<code>f'</code> gives rise to a region boundary extending away from
+it in two opposite directions.
 
 <p>
 But if <code>f''(r)</code> is zero as well, then the
@@ -636,7 +636,7 @@ expansion; so for small values of <code>e</code>,
 <code>f(r+e)/f(r)-1</code> will be approximately equal to
 <code>Ke^3</code> for some <code>K</code>. And now we expect to have
 <em>three</em> region boundaries coming out of our root
-<code>r</code>, one for each cube root of <code>K</code>. If the
+<code>r</code>, one for each cube root of <code>1/K</code>. If the
 third derivative of <code>f</code> is zero at <code>r</code> too,
 then we can have four region boundaries, and so on.
 
@@ -650,21 +650,22 @@ particular, this translates into <code>r</code> being a <em>repeated
 root</em> of <code>f'</code>, and the more repeated the merrier.
 
 <p>
-To demonstrate this beyond reasonable doubt, I will now construct
-from first principles a Newton-Raphson fractal containing two points
-at each of which <em>five</em> regions meet. For a five-way meeting
-point we need <code>f'</code> to have a four-times-repeated root; so
-let's set <code>f'</code> to be <code>(z-1)^4(z+1)^4</code>, which
-has two repeated roots as desired. We "integrate" this in the
-na&iuml;ve way (actually what we're doing is finding an
-anti-derivative of it, integration in the complex plane being a
-generally messy concept) to obtain the nasty-looking polynomial
-<code>(35z^9 - 180z^7 + 378z^5 - 420z^3 + 315z)/315</code>. We can
-discard the constant factor of <code>1/315</code> since it makes no
-difference to the convergence, and this gives us <code>35z^9 -
-180z^7 + 378z^5 - 420z^3 + 315z</code>. We find the roots of this
-(using Newton-Raphson for its more conventional purpose) and feed
-them into our fractal plotter, and get this picture:
+To demonstrate beyond reasonable doubt that this actually works, I
+will now construct from first principles a Newton-Raphson fractal
+containing two points at each of which <em>five</em> regions meet.
+For a five-way meeting point we need <code>f'</code> to have a
+four-times-repeated root; so let's set <code>f'</code> to be
+<code>(z-1)^4(z+1)^4</code>, which has two repeated roots as
+desired. We "integrate" this in the na&iuml;ve way (actually what
+we're doing is finding an anti-derivative of it, integration in the
+complex plane being a generally messy concept) to obtain the
+nasty-looking polynomial <code>(35z^9 - 180z^7 + 378z^5 - 420z^3 +
+315z)/315</code>. We can discard the constant factor of
+<code>1/315</code> since it makes no difference to the convergence,
+and this gives us <code>35z^9 - 180z^7 + 378z^5 - 420z^3 +
+315z</code>. We find the roots of this (using Newton-Raphson for its
+more conventional purpose) and feed them into our fractal plotter,
+and get this picture:
 
 <p align=center>
 <picture five>
