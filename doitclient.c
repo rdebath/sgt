@@ -18,6 +18,7 @@
 #include <string.h>
 #include <errno.h>
 #include <stdarg.h>
+#include <limits.h>
 
 #include <unistd.h>
 
