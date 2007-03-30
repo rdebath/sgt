@@ -336,7 +336,7 @@ int plot(struct Params params) {
                 }
             }
 
-            if (params.blur && root > 0) {
+            if (params.blur && root >= 0) {
                 /*
                  * Adjust the integer iteration count by an ad-hoc
                  * measure of the `fractional iteration count'. We
