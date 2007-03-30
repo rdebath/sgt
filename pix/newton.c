@@ -600,11 +600,19 @@ int main(int argc, char **argv) {
      * yrange from optdata.imagesize.w and optdata.imagesize.h, or vice versa.
      */
     if (optdata.gotscale) {
-	if (optdata.imagesize.w && !optdata.gotxrange) optdata.xrange = optdata.imagesize.w * optdata.scale;
-	else if (optdata.gotxrange && !optdata.imagesize.w) optdata.imagesize.w = optdata.xrange / optdata.scale;
+	if (optdata.imagesize.w && !optdata.gotxrange) {
+            optdata.xrange = optdata.imagesize.w * optdata.scale;
+            optdata.gotxrange = TRUE;
+        } else if (optdata.gotxrange && !optdata.imagesize.w) {
+            optdata.imagesize.w = optdata.xrange / optdata.scale;
+        }
 
-	if (optdata.imagesize.h && !optdata.gotyrange) optdata.yrange = optdata.imagesize.h * optdata.scale;
-	else if (optdata.gotyrange && !optdata.imagesize.h) optdata.imagesize.h = optdata.yrange / optdata.scale;
+	if (optdata.imagesize.h && !optdata.gotyrange) {
+            optdata.yrange = optdata.imagesize.h * optdata.scale;
+            optdata.gotyrange = TRUE;
+        } else if (optdata.gotyrange && !optdata.imagesize.h) {
+            optdata.imagesize.h = optdata.yrange / optdata.scale;
+        }
     }
 
     /*
