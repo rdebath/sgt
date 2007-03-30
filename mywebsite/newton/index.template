@@ -17,9 +17,8 @@ method of solving equations.
 <p>
 This is not a new idea to me; I was given the idea by a colleague at
 work, and several other people have web pages about it too. I'm
-putting up yet another one because it contains one or two additions
-to the concept which I haven't seen anywhere else (such as animating
-it).
+putting up yet another one because it contains some additions to the
+concept which I haven't seen anywhere else.
 
 <h2>Explanation</h2>
 
@@ -60,7 +59,7 @@ viewed at sufficient magnification, this explains why it works so
 well: the curve itself does not diverge from the tangent line by
 very much, and the points where they cross the x-axis are very close
 to each other. Hence, this technique massively improves an already
-good approximation
+good approximation.
 
 <p>
 However, if you start with a really <em>bad</em> approximation, much
@@ -286,8 +285,8 @@ Then <code>g' = k f^(k-1) f'</code>; so when we compute
 <code>g/g'</code>, the <code>f^(k-1)</code> term cancels out, and we
 are left with simply <code>(1/k) . (f/f')</code>. In other words,
 the sole effect of raising the entire function to the power
-<code>k</code> is to multiply a constant factor into the distance
-moved per iteration - simply slowing down the convergence.
+<code>k</code> is to multiply a constant factor of <code>1/k</code>
+into the distance moved per iteration.
 
 <p>
 So this had to be worth a try. Here are the results from taking the
@@ -328,19 +327,365 @@ fractal blobs, which is good; and they've become more complex and
 spiky in shape as well, because the smaller fractal blobs on
 </em>them</em> have also expanded. What I wasn't expecting, however,
 was that the dividing lines between the main convergence regions
-have entirely changed shape, becoming more wiggly. Note in
-particular that the shape of the red and purple sections at the ends
-of the 0.52 picture is beginning to look interestingly like the
-shape of the Mandelbrot set; this suggests that there's some sort of
-close relationship between these fractals and Mandelbrot/Julia sets,
-although I haven't done the maths to work out what it is.
+have entirely changed shape, becoming more wiggly.
 
 <p>
-(It turned out that actually taking the square root of the function
-(raising it to the power 0.5) was <em>not</em> feasible, since the
+It turns out that actually taking the square root of the function
+(raising it to the power 0.5) is <em>not</em> feasible, since the
 algorithm converges more and more slowly the closer to 0.5 you get.
-0.52 was the smallest value I could use without having to increase
-my iteration limit.)
+This is because raising the function to the power 0.5 causes us to
+double the distance moved per iteration; so once we're near to a
+root, <code>f/f'</code> gives you an accurate estimate of the
+distance to the root, and we go <em>twice as far</em>, causing us to
+end up just as far away from the root on the far side, so no wonder
+the iteration fails to converge. 0.52 was the smallest value I could
+use without having to increase my iteration limit.
+
+<p>
+This tendency to overshoot the root we're aiming at when using
+<code>k&lt;1</code> also offers an alternative intuitive explanation
+for the fractal shapes becoming bigger. The fractal shapes arise
+because near to a boundary between convergence regions there is a
+tendency for a single iteration step to travel a long distance into
+remote regions of the complex plane; so if we're moving even further
+in a single iteration, then we would indeed expect not to have to be
+so close to the boundary before experiencing this phenomenon.
+
+<p>
+Raising the value of <code>k</code> to something <em>greater</em>
+than 1 has the opposite effect: we now converge toward our root in
+smaller steps, more slowly but more surely, and so we're less likely
+to overshoot and the fractal effects on the boundary lines become
+less pronounced. I'm not going to exhibit any pictures of that,
+because they're boring. However, I'll come back to this later.
+
+<h2>Imitation</h2>
+
+<p>
+If you look again at the images in the above section, particularly
+the one where the seven-root polynomial is raised to the power 0.52,
+you may notice that the shape of the red and purple sections at the
+ends of the 0.52 picture is beginning to look interestingly like the
+shape of the Mandelbrot set. This suggested to me that there might
+be some sort of close relationship between these fractals and
+Mandelbrot/Julia sets.
+
+<p>
+So an obvious question to ask along these lines is, is there a
+function to which we could apply the Newton-Raphson formula and end
+up with the Julia set iteration <code>z := z^2+c</code>?
+
+<p>
+Well, if you write down the equation <code>z - f(z)/f'(z) =
+z^2+c</code>, or equivalently <code>z - f/(df/dz) = z^2+c</code>,
+then it looks a lot like a differential equation. If only we were
+working in the positive reals instead of the complex numbers, we
+could solve it quite easily by separating variables into <code>df/f
+= -dz/(z^2-z+c)</code>, factorising the denominator of the RHS and
+turning it into partial fractions, and integrating to get <code>f =
+(z-a)^(1/(b-a)) . (z-b)^(1/(a-b))</code>, where <code>a</code> and
+<code>b</code> are the roots of the quadratic <code>z^2-z+c</code>.
+(Unless <code>c=1/4</code>, which is a special case arising from
+<code>z^2-z+c</code> being a perfect square and looks rather
+different; but I'll ignore that, because it's not a very interesting
+Julia set anyway.) And it turns out that even in the complex numbers
+this answer works plausibly, as I'll explain in a moment.
+
+<p>
+But first, a note on implementation of the Newton-Raphson iteration
+for functions of the type under discussion. Observe that if you have
+a function made up of the product of a lot of smaller factors
+<code>f = abcd</code>, then the product rule gives its derivative as
+the sum of a list of terms <code>f' = a'bcd + ab'cd + abc'd +
+abcd'</code>, in which each term looks very similar to <code>f</code>
+itself. In fact we can divide both sides by <code>f</code> to give
+us <code>f'/f = a'/a + b'/b + c'/c + d'/d</code>, which is precisely
+the thing whose reciprocal we subtract from <code>z</code> in the
+N-R formula. Now when each factor <code>a</code> is of the form
+<code>(z-k)</code>, then the resulting term <code>a'/a</code> looks
+like <code>1/(z-k)</code>; and as we observed in the previous
+section, if the factor is raised to a power so that it's of the form
+<code>(z-k)^e</code> then the resulting term <code>a'/a</code> is
+only altered by a constant, so it becomes <code>e/(z-k)</code>.
+
+<p>
+So our function <code>(z-a)^(1/(b-a)) . (z-b)^(1/(a-b))</code> is of
+precisely this form (the product of linear terms raised to arbitrary
+powers); hence we can conveniently do the Newton-Raphson iteration
+for this function by computing <code>1/((b-a)(z-a)) +
+1/((a-b)(z-b))</code> and subtracting its reciprocal from
+<code>z</code>. If you do that, remembering that by construction
+<code>a+b=1</code> and <code>ab=c</code>, you will indeed find that a
+lot of algebraic mess cancels out and you end up with the iteration
+<code>z := z^2+c</code>.
+
+<p>
+So there is a family of functions to which the application of the
+Newton-Raphson formula yields a Julia set iteration, and moreover
+those functions aren't very far away from the ones we've already
+been considering here. To prove it works, here are a couple of plots
+of Julia sets, with their corresponding Newton-Raphson plot:
+
+<p>
+<table width="100%" border="0">
+<tr>
+<td align="center" valign="top" width="25%">
+<picture julia1>
+</td>
+<td align="center" valign="top" width="25%">
+<picture julia2>
+</td>
+</tr>
+<tr>
+<td align="center">Julia set for <code>0.28+0.528i</code></td>
+<td align="center">Julia set for <code>-0.656+0.272i</code></td>
+</tr>
+<tr>
+<td align="center" valign="top" width="25%">
+<picture njulia1>
+</td>
+<td align="center" valign="top" width="25%">
+<picture njulia2>
+</td>
+</tr>
+<tr>
+<td align="center">Newton-Raphson fractal for<br>
+<code>(z-(0.9994-0.5286i))^(-0.4722-0.4998i) *<br>
+(z-(0.0006+0.5286i))^(0.4722+0.4998i)</code>
+</td>
+<td align="center">Newton-Raphson fractal for<br>
+<code>(z-(1.4623-0.1413i))^(-0.5086-0.0747i) *<br>
+(z-(-0.4623+0.1413i))^(0.5086+0.0747i)</code>
+</td>
+</tr>
+</table>
+
+<p>
+You will have noticed, of course, that the colouring is very
+different. The two types of fractal are using matching iteration
+formulae, but a Julia set plotter concentrates on how long it takes
+the iteration value to land outside a critical circle, whereas the
+Newton-Raphson plotter is actually waiting for the iterates to
+converge to a point, and is only incidentally observing what happens
+when they don't. So you wouldn't actually want to throw away your
+dedicated Julia-set plotting programs; but it's interesting,
+nonetheless, that something very like Julia sets are a special case
+of Newton-Raphson fractals.
+
+<h2>Dissection</h2>
+
+<p>
+Another noticeable thing about some of the above fractals is that
+some have much more fractal content than others. The original
+fractal at the top of this page with roots at -1, +1,
+<code>-i</code>, <code>+i</code> has four big regions of flat colour
+meeting at the origin, and the self-similar nature of the fractal
+causes that quadruple contact point to be replicated in other parts
+of the plane. This gives rise to qualitatively more interesting
+fractal phenomena than the plot with seven roots in a line, in which
+all the large convergence regions are separated by boring curves
+which never meet, and the fractal blobs reflect this structure.
+
+<p>
+So I wondered, is there a way that we can predict how the
+convergence regions are going to be shaped, and thereby construct
+polynomials which have triple or quadruple meeting points exactly
+where we want them?
+
+<p>
+Yes, as it turns out, there is.
+
+<p>
+I observed above that raising a polynomial to a real power greater
+than 1 has the effect of causing the iteration to take smaller steps
+towards the root, which in turn causes convergence to be slower but
+surer and reduces the incidence of overshoot leading to fractal
+phenomena. As a result of this, the boundary lines between regions
+become clearer and smoother and simpler. This seemed like a good
+thing if we wanted to know the overall structure of the fractal; but
+merely <em>clearer</em> isn't good enough. I wanted <em>clearest</em>.
+
+<p>
+So I wondered what would happen "in the limit", as the iteration
+speed slowed down more and more. In other words, I was interested in
+what I'm going to describe as <em>continuous</em> Newton-Raphson,
+in which you start your "iteration" at an arbitrary point
+<code>z0</code> on the plane and then let <code>z</code> evolve
+continuously according to the <em>differential equation</em>
+<code>dz/dt = -f(z)/f'(z)</code>.
+
+<p>
+As in the previous section, we can "solve" this equation by
+separating variables and na&iuml;vely integrating, trying hard to
+ignore the question of whether this is rigorous or even meaningful
+in the complex numbers. This time we end up with <code>1/f df/dz dz
+= -dt</code>, and then we can apply the integration-by-substitution
+formula to the LHS to give us <code>df/f = -dt</code>, which
+integrates to give us <code>f(z) = Ae^-t</code> for some constant
+<code>A</code>. We can check by differentiating with respect to
+<code>t</code> that this does indeed turn out to be a plausible
+answer to the equation even in the complex numbers: the chain rule
+tells us <code>d/dt f(z) = f'(z) dz/dt</code>, so we end up with
+<code>f'(z) dz/dt = -Ae^-t = -f(z)</code> as required. And the
+constant <code>A</code> is clearly equal to <code>f(z0)</code>, the
+value of <code>f</code> at the point where we started our integration.
+
+<p>
+"Very nice", I hear you protest, "but what does that <em>mean</em>?"
+
+<p>
+Well, since <code>t</code> is a positive real, it means that whatever
+path <code>z</code> follows from our starting point <code>z0</code>
+must have the property that at all times <code>f(z)</code> is equal
+to <code>k f(z0)</code>, where <code>k</code> is a real which
+continuously and monotonically decreases from 1 toward 0. So we
+normally expect the limit of such an "iteration" to be a point at
+which <code>f(z)</code> is actually equal to zero, i.e. a root of
+<code>f</code>.
+
+<p>
+But that's not the only thing that can happen. It's also possible to
+imagine that we might encounter a point along this path at which
+<code>f(z)</code> is not zero, but is a <em>locally closest
+approach</em> to zero, and hence there is no direction in which we
+can head from <code>z</code> which will cause <code>f(z)</code> to
+continue decreasing as a real multiple of its initial value.
+
+<p>
+How do we find such points? Well, for most points in the complex
+plane the differential equation we started with will usually give us
+a direction in which we <em>can</em> head to linearly decrease
+<code>f(z)</code>: we compute <code>f(z)/f'(z)</code>, and head in
+the direction pointed to by that complex number. This fails if
+<code>f(z)=0</code>, in which case there is no clear direction to
+head in; we expect that, of course, because if <code>f(z)=0</code>
+then we've already reached a root. But it can also fail if
+<code>f'(z)=0</code>. So this suggests that the roots of the
+<em>derivative</em> of <code>f</code> might be worth investigating.
+
+<p>
+So consider some root <code>r</code> of <code>f'</code>, at which
+<code>f</code> itself is non-zero. If we can find any continuous
+paths in the complex plane which start at <code>r</code> and have
+<code>f</code> <em>increasing</em> as a real multiple of
+<code>f(r)</code>, then any point on one of those paths will be a
+point at which starting a continuous Newton-Raphson process will
+cause it to head backwards along the same path and terminate at
+<code>r</code> rather than at a root. In other words, we expect
+those paths to be precisely the <em>boundaries</em> between the
+convergence regions for the various roots (since that's the obvious
+set of points which we expect not to converge to a root); and
+moreover, on <em>every</em> such boundary we expect to find a root
+of <code>f'</code> (because a continuous Newton-Raphson process
+started on any boundary has to end up <em>somewhere</em>).
+
+<p>
+That's a lot of maths to endure without a break for a pretty
+picture, and it's also a long and rather handwavey chain of
+reasoning to endure without some sort of reassurance that what I'm
+saying still makes sense. So, here I present a sample polynomial
+Newton-Raphson fractal, with the roots of the polynomial's
+derivative marked as black blobs. Observe that each dividing line
+between convergence regions has a blob somewhere on it, and that in
+particular the point where three regions (and three such lines) meet
+has a blob.
+
+<p align=center>
+<picture droots>
+
+<p>
+So now we know, at least in theory, how to find the lines dividing
+the different convergence regions. Now, what distinguishes a simple
+dividing <em>line</em>, separating only two regions, from a point at
+which three or more regions meet?
+
+<p>
+Let's consider our root <code>r</code> of <code>f'</code> again.
+We're now interested in how many <em>directions</em> we can head
+away from <code>r</code> in, such that <code>f</code> increases as a
+real multiple of <code>f(r)</code>. Equivalently, we're interested
+in directions we can head in such that <code>f(z)=(1+k)f(r)</code>
+for some real positive <code>k</code>; in other words, we want small
+values <code>e</code> such that <code>f(r+e)/f(r)-1</code> is real
+and positive.
+
+<p>
+So now let's consider the Taylor series expansion for the function
+<code>f(r+e)/f(r)-1</code>. <code>f(r+e)</code> is equal to
+<code>f(r) + ef'(r) + e^2 f''(r) + e^3 f'''(r) + ...</code>, and we
+know that <code>f'(r) = 0</code> by construction, so this gives us
+<code>f(r+e)/f(r)-1 = e^2 f''(r)/f(r) + e^3 f'''(r)/f(r) +
+...</code>.
+
+<p>
+In the usual case, <code>f''(r)</code> will be non-zero, so for
+small values of <code>e</code>, <code>f(r+e)/f(r)-1</code> will be
+approximately equal to <code>Ke^2</code> for some (complex) constant
+<code>K</code>. This means that we expect to have <em>two</em>
+directions in which we can head in order to make
+<code>f(r+e)/f(r)-1</code> real and positive: one direction
+corresponding to each square root of <code>K</code>. This fits with
+what we expect, because in the usual case a root of <code>f'</code>
+gives rise to a region boundary extending away from it in two
+opposite directions.
+
+<p>
+But if <code>f''(r)</code> is zero as well, then the
+<code>e^3</code> term will now be the dominating one in the Taylor
+expansion; so for small values of <code>e</code>,
+<code>f(r+e)/f(r)-1</code> will be approximately equal to
+<code>Ke^3</code> for some <code>K</code>. And now we expect to have
+<em>three</em> region boundaries coming out of our root
+<code>r</code>, one for each cube root of <code>K</code>. If the
+third derivative of <code>f</code> is zero at <code>r</code> too,
+then we can have four region boundaries, and so on.
+
+<p>
+And there it is: that's the result I've been working towards for
+this entire section. A multiple-region meeting point occurs when a
+root <code>r</code> of <code>f'</code> is also a root of
+<code>f''</code>, and the more higher derivatives are zero at
+<code>r</code> the more regions meet there. For polynomials in
+particular, this translates into <code>r</code> being a <em>repeated
+root</em> of <code>f'</code>, and the more repeated the merrier.
+
+<p>
+To demonstrate this beyond reasonable doubt, I will now construct
+from first principles a Newton-Raphson fractal containing two points
+at each of which <em>five</em> regions meet. For a five-way meeting
+point we need <code>f'</code> to have a four-times-repeated root; so
+let's set <code>f'</code> to be <code>(z-1)^4(z+1)^4</code>, which
+has two repeated roots as desired. We "integrate" this in the
+na&iuml;ve way (actually what we're doing is finding an
+anti-derivative of it, integration in the complex plane being a
+generally messy concept) to obtain the nasty-looking polynomial
+<code>(35z^9 - 180z^7 + 378z^5 - 420z^3 + 315z)/315</code>. We can
+discard the constant factor of <code>1/315</code> since it makes no
+difference to the convergence, and this gives us <code>35z^9 -
+180z^7 + 378z^5 - 420z^3 + 315z</code>. We find the roots of this
+(using Newton-Raphson for its more conventional purpose) and feed
+them into our fractal plotter, and get this picture:
+
+<p align=center>
+<picture five>
+
+<p>
+And, exactly as we asked for, this has two five-way meeting points
+at locations +1 and -1. Bingo!
+
+<p>
+Of course, integration lets us add an arbitrary constant term
+without affecting the derivative of our result. Here's what we get
+if we add a constant term of <code>50+200i</code> to the above
+polynomial:
+
+<p align=center>
+<picture five2>
+
+<p>
+The roots of the polynomial have moved around, and the picture is
+distorted, but the region meeting points are still exactly where we
+asked for them.
 
 <h2>Participation</h2>
 
@@ -368,7 +713,7 @@ selection of sample command lines you might like to try:
 <code>newton -o simple.bmp -s 256x256 -x 2 -c
 1,0,0:1,1,0:0,0.7,0:0,0.5,1 -- -1 +1 -i +i</code>
 <br>
-This one is the cross-shaped plot I've been using throughout this
+This one is the cross-shaped plot I used at the top of this
 page, based on the polynomial <code>z^4-1</code>. To zoom in on one
 of the boundary lines as I did above, replace "<code>-x 2</code>"
 with "<code>-x 0.4 -X 1.05 -Y 1.05</code>".
@@ -415,11 +760,10 @@ Here are some pre-generated larger versions of the above images:
 <h2>Recognition</h2>
 
 <p>
-Newton-Raphson fractals are not a new idea of mine, although I
-haven't heard of anyone else doing the smoothing trick, and I
-haven't heard of anyone else making animations out of them. Here are
-a few other pages on the subject; you can probably find more by
-googling for "Newton-Raphson fractal".
+Newton-Raphson fractals are not a new idea of mine, although most
+other pages I've seen don't go so far into the maths. Here are a few
+such pages; you can probably find more by googling for
+"Newton-Raphson fractal".
 
 <ul>
 <li>
@@ -427,11 +771,12 @@ googling for "Newton-Raphson fractal".
 Donovan</a> was the person who introduced me to these fractals in
 the first place.
 <li>
+<a href="http://www.tom.womack.net/projects/newton-sets.html">Tom
+Womack</a> also thought of animating them, although his page
+unfortunately doesn't include any actual movie files.
+<li>
 <a href="http://astronomy.swin.edu.au/~pbourke/fractals/newtonraphson/">Paul
 Bourke</a> has some particularly well-chosen and pretty images.
-Unfortunately his polynomials are quoted in unfactorised form, so it
-will take some work before I can make my own program generate the
-same ones!
 <li>
 <a href="http://www.krofchok.com/fractals/">Bryan Krofchok</a> has a
 more varied - and more colourful - gallery.
