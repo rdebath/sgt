@@ -17,3 +17,4 @@ filigram : [U] filigram COMMON
 greyblur : [U] greyblur COMMON
 newton   : [U] newton COMMON -lm
 tetra    : [U] tetra COMMON -lm
+mj       : [U] mj COMMON -lm
