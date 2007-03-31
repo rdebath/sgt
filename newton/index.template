@@ -359,16 +359,104 @@ to overshoot and the fractal effects on the boundary lines become
 less pronounced. I'm not going to exhibit any pictures of that,
 because they're boring. However, I'll come back to this later.
 
+<p>
+As well as raising the <em>entire</em> polynomial to a power, it's
+also interesting to see what happens if we try raising only one of
+the <code>(z-a)</code> factors to a power. To do this we must first
+think about whether this can be efficiently implemented in software.
+
+<p>
+It can, it turns out. Observe that if you have a function made up of
+the product of a lot of smaller factors
+<code>f = abcd</code>, then the product rule gives its derivative as
+the sum of a list of terms <code>f' = a'bcd + ab'cd + abc'd +
+abcd'</code>, in which each term looks very similar to <code>f</code>
+itself. In fact we can divide both sides by <code>f</code> to give
+us <code>f'/f = a'/a + b'/b + c'/c + d'/d</code>, which is precisely
+the thing whose reciprocal we subtract from <code>z</code> in the
+N-R formula. Now when each factor <code>a</code> is of the form
+<code>(z-k)</code>, then the resulting term <code>a'/a</code> looks
+like <code>1/(z-k)</code>; and as we observed in the previous
+section, if the factor is raised to a power so that it's of the form
+<code>(z-k)^e</code> then the resulting term <code>a'/a</code> is
+only altered by a constant, so it becomes <code>e/(z-k)</code>.
+
+<p>
+So if we have a function which is the product of a number of terms
+of the form <code>(z-a1)^b1</code>, then we can efficiently perform
+its Newton-Raphson iteration without ever computing the entire
+function itself. We simply compute <code>b1/(z-a1)</code> for each
+term, sum them, take the reciprocal, and subtract that from
+<code>z</code>.
+
+<p>
+A useful point about this procedure is that it means we can
+conveniently raise each factor of our "polynomial" (which isn't very
+polynomial any more, really) to not only an arbitrary <em>real</em>
+power, but to a <em>complex</em> power if we so wish. And it turns
+out that we do so wish, because some very impressive fractals turn
+up if we do. Here's a map of 121 small fractal images, all generated
+from functions with the same three roots, namely the complex roots
+of 1. But the red root (1 itself) has been raised to a different
+power in each picture: across the map the real part of the power
+runs from 0 to 1, and downwards the imaginary part runs from 0 to 1.
+
+<p align=center>
+<picture powermap>
+
+<p>
+As mentioned above, raising a root to a power of 0.5 or less
+inhibits convergence of the iteration to that root at all. But in
+the presence of other roots to which we <em>can</em> still converge,
+the region of non-convergence - shown in black on the above map -
+forms complex and interesting fractal shapes. Meanwhile, applying an
+imaginary part to the power of the red root causes a twisting
+effect: the higher the power, the more the shape is less straight
+and more spirally; and it appears that it's the <em>real</em> part
+of the power which must be greater than 0.5 to manage to converge.
+
+<p>
+Some of the images in that map are well worth expanding to a larger
+size to admire in more detail. Here are four particularly good ones:
+
+<p>
+<table width="100%" border="0">
+<tr>
+<td align="center" valign="top" width="25%">
+<picture power1>
+</td>
+<td align="center" valign="top" width="25%">
+<picture power2>
+</td>
+</tr>
+<tr>
+<td align="center"><code>0.5</code></td>
+<td align="center"><code>0.5+0.3i</code></td>
+</tr>
+<tr>
+<td align="center" valign="top" width="25%">
+<picture power3>
+</td>
+<td align="center" valign="top" width="25%">
+<picture power4>
+</td>
+</tr>
+<tr>
+<td align="center"><code>i</code></td>
+<td align="center"><code>0.4+0.9i</code></td>
+</tr>
+</table>
+
+
 <h2>Imitation</h2>
 
 <p>
-If you look again at the images in the above section, particularly
-the one where the seven-root polynomial is raised to the power 0.52,
-you may notice that the shape of the red and purple sections at the
-ends of the 0.52 picture is beginning to look interestingly like the
-shape of the Mandelbrot set. This suggested to me that there might
-be some sort of close relationship between these fractals and
-Mandelbrot/Julia sets.
+If you look again at the images in the above section, you may notice
+that some of the shapes - particularly the ones that occur when
+things are raised to real powers near 0.5 - are beginning to look
+interestingly like the shape of the Mandelbrot set. This suggested
+to me that there might be some sort of close relationship between
+these fractals and Mandelbrot/Julia sets.
 
 <p>
 So an obvious question to ask along these lines is, is there a
@@ -388,36 +476,20 @@ turning it into partial fractions, and integrating to get <code>f =
 (Unless <code>c=1/4</code>, which is a special case arising from
 <code>z^2-z+c</code> being a perfect square and looks rather
 different; but I'll ignore that, because it's not a very interesting
-Julia set anyway.) And it turns out that even in the complex numbers
-this answer works plausibly, as I'll explain in a moment.
+Julia set anyway.)
 
 <p>
-But first, a note on implementation of the Newton-Raphson iteration
-for functions of the type under discussion. Observe that if you have
-a function made up of the product of a lot of smaller factors
-<code>f = abcd</code>, then the product rule gives its derivative as
-the sum of a list of terms <code>f' = a'bcd + ab'cd + abc'd +
-abcd'</code>, in which each term looks very similar to <code>f</code>
-itself. In fact we can divide both sides by <code>f</code> to give
-us <code>f'/f = a'/a + b'/b + c'/c + d'/d</code>, which is precisely
-the thing whose reciprocal we subtract from <code>z</code> in the
-N-R formula. Now when each factor <code>a</code> is of the form
-<code>(z-k)</code>, then the resulting term <code>a'/a</code> looks
-like <code>1/(z-k)</code>; and as we observed in the previous
-section, if the factor is raised to a power so that it's of the form
-<code>(z-k)^e</code> then the resulting term <code>a'/a</code> is
-only altered by a constant, so it becomes <code>e/(z-k)</code>.
-
-<p>
-So our function <code>(z-a)^(1/(b-a)) . (z-b)^(1/(a-b))</code> is of
-precisely this form (the product of linear terms raised to arbitrary
-powers); hence we can conveniently do the Newton-Raphson iteration
-for this function by computing <code>1/((b-a)(z-a)) +
-1/((a-b)(z-b))</code> and subtracting its reciprocal from
-<code>z</code>. If you do that, remembering that by construction
-<code>a+b=1</code> and <code>ab=c</code>, you will indeed find that a
-lot of algebraic mess cancels out and you end up with the iteration
-<code>z := z^2+c</code>.
+And it turns out that even in the complex numbers this answer works
+plausibly. The function <code>(z-a)^(1/(b-a)) .
+(z-b)^(1/(a-b))</code> is of precisely the form discussed in the
+previous section: it's the product of linear terms raised to
+arbitrary powers. Hence we can conveniently do the Newton-Raphson
+iteration for this function by the method described above: compute
+<code>1/((b-a)(z-a)) + 1/((a-b)(z-b))</code> and subtract its
+reciprocal from <code>z</code>. If you do that, remembering that by
+construction <code>a+b=1</code> and <code>ab=c</code>, you will
+indeed find that a lot of algebraic mess cancels out and you end up
+with the iteration <code>z := z^2+c</code>.
 
 <p>
 So there is a family of functions to which the application of the
