@@ -618,15 +618,15 @@ root of <code>f</code>.
 <p>
 But that's not the only thing that can happen. It's also possible to
 imagine that we might encounter a point along this path at which
-<code>f(z)</code> is not zero, but is a <em>locally closest
-approach</em> to zero, and hence there is no direction in which we
-can head from <code>z</code> which will cause <code>f(z)</code> to
-continue decreasing as a real multiple of its initial value.
+there isn't a clear direction we should head in: either there is no
+direction in which we can head from <code>z</code> which will cause
+<code>f(z)</code> to continue decreasing as a real multiple of its
+initial value, or perhaps there is more than one such direction.
 
 <p>
 How do we find such points? Well, for most points in the complex
 plane the differential equation we started with will usually give us
-a direction in which we <em>can</em> head to linearly decrease
+a unique direction in which we <em>can</em> head to linearly decrease
 <code>f(z)</code>: we compute <code>f(z)/f'(z)</code>, and head in
 the direction pointed to by that complex number. This fails if
 <code>f(z)=0</code>, in which case there is no clear direction to
@@ -646,9 +646,9 @@ cause it to head backwards along the same path and terminate at
 <code>r</code> rather than at a root. In other words, we expect
 those paths to be precisely the <em>boundaries</em> between the
 convergence regions for the various roots (since that's the obvious
-set of points which we expect not to converge to a root); and
-moreover, on <em>every</em> such boundary we expect to find a root
-of <code>f'</code> (because a continuous Newton-Raphson process
+set of points which we expect not to converge sensibly to a root);
+and moreover, on <em>every</em> such boundary we expect to find a
+root of <code>f'</code> (because a continuous Newton-Raphson process
 started on any boundary has to end up <em>somewhere</em>).
 
 <p>
