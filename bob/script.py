@@ -278,10 +278,10 @@ def run_script_line(s, is_config, cfg):
 	    data = delegatefps[1].read(datalen)
 	    if len(data) < datalen:
 		raise misc.builderr("unexpected EOF from delegate server")
-	    log.logmsg("Returned file `%s' from delegate server" % fname)
+	    log.logmsg("Returned file `%s' from delegate server" % fname) #'
 	    # Vet the filename for obvious gotchas.
-	    if "/../" in "/"+fname+"/" or fname[:1] == "/":
-		raise misc.builderr("returned file `%s' failed security check" % fname)
+	    if string.find("/"+fname+"/", "/../") >= 0 or fname[:1] == "/":
+		raise misc.builderr("returned file `%s' failed security check" % fname) #'
 	    dstfile = os.path.join(cfg.workpath, fname)
 	    dstdir = os.path.dirname(dstfile)
 	    if not os.path.exists(dstdir):
