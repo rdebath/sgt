@@ -879,6 +879,23 @@ This one is the rainbow-coloured plot with seven roots strung out in
 a long line.
 
 <li>
+<code>newton -o powermap.bmp -s 256x256 -x 2 -c 1,0,0:1,1,0:0,1,0 --
+1/</code><em>power</em>
+-0.5-0.8660254i -0.5+0.8660254i</code>
+<br>
+This command plots the various images from the large map shown
+above, with the red root raised to an arbitrary power. Replace
+<em>power</em> with the power you want; for example, replace it with
+<code>0.5</code> to get the Mandelbrot-like picture, and with
+<code>0.4+0.9i</code> to get the disconnected yellow-and-green plot.
+
+<li>
+<code>newton -o holes.bmp -s 320x256 -y 2 -c
+1,0,0:1,1,0:0,0.7,0:0,0.5,1 -- -2.3 +2.3 -i +i</code>
+<br>
+This one is the plot with black non-converging areas.
+
+<li>
 By default the program will use the cyclic shading behaviour with 16
 shades of each colour. You can specify <code>-C no</code> to turn
 off cyclic shading (so the colours get uniformly darker as more
@@ -894,8 +911,18 @@ of shades of colour (the <code>-f</code> option, as discussed above)
 in order to make the result look nice.
 
 <li>
+To raise an individual root to a power other than 1, put a slash
+after that root followed by the power value. For example, an
+argument of <code>2+i/1-0.5i</code> specifies a factor of
+<code>(x-(2+i))^(1-0.5i)</code>.
+
+<li>
 If you want a larger version of an image, just change the picture
 size specified in the <code>-s</code> option.
+
+<li>
+The program has a number of other options; just type
+<code>newton</code> on its own to list them.
 
 </ul>
 
