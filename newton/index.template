@@ -760,6 +760,85 @@ The roots of the polynomial have moved around, and the picture is
 distorted, but the region meeting points are still exactly where we
 asked for them.
 
+<h2>Oscillation</h2>
+
+<p>
+Here's another curiosity. The following fractal is plotted using a
+pure polynomial <code>f</code>, placing the roots at
+<code>+i</code>, <code>-i</code>, <code>-2.3</code> and
+<code>+2.3</code>:
+
+<p align=center>
+<picture holes>
+
+<p>
+The interesting feature of this picture is the black areas, which
+are regions in which Newton-Raphson failed to converge to a root
+within the program's limit of 256 iterations. At first sight one
+might assume that this is an artifact of having a finite iteration
+limit at all, but one would (it turns out) be wrong. Even if you
+crank up the iteration limit to a much larger number, those black
+areas stay black, because they represent genuine non-convergence.
+
+<p>
+What's actually happening here is that for this particular
+polynomial the Newton-Raphson method gives rise to period-2 cyclic
+behaviour. There's a pair of points <code>a</code> and
+<code>b</code>, one in the middle of each of the two main black
+areas, which have the property that a single iteration of
+Newton-Raphson starting from <code>a</code> takes you to
+<code>b</code>, and vice versa. But this is more than just a cycle
+between those two points: it's an <em>attracting</em> cycle. If you
+start from a point <em>somewhere near</em> <code>a</code>, an
+iteration of Newton-Raphson will take you to somewhere <em>even
+nearer</em> to <code>b</code>, from which another iteration will
+land you nearer still to <code>a</code> again. Hence, there's a
+sizeable region around each point of the cycle which all converges
+to the cycle itself, and hence never settles down to a root of the
+polynomial.
+
+<p>
+This is interesting to me because it happens so rarely; I've plotted
+quite a lot of these fractals, including a lot of animated ones in
+which the points wander continuously around the plane, and this
+particular arrangement of roots is the <em>only</em> case I've
+found in which a polynomial gives rise to a non-converging area.
+(It's not the only actual <em>polynomial</em>: you can obviously
+rotate or translate the root positions to obtain other polynomials
+with the same behaviour, and you can also move the roots around by a
+small amount relative to each other before the black areas go away.
+But this general pattern - four roots in a diamond layout of
+<em>roughly</em> this shape - is the only pattern I know of that
+does this.)
+
+<p>
+On one level, it's reasonably easy to see "why" it happens:
+simply define <code>g(x) = x - f(x)/f'(x)</code> to be the
+Newton-Raphson iteration for this polynomial, then find roots of the
+equation <code>g(g(x))=x</code> (probably using a computer algebra
+package, since it's a pretty ugly mess) and observe that it has
+roots which are not also roots of the similar first-order equation
+<code>g(x)=x</code> (and hence of <code>f</code>). That proves that
+there are cycles at all; then, to prove there are
+<em>attracting</em> cycles, compute the derivative of
+<code>g(x)</code> at those roots and find the ones where it has
+modulus less than 1 (since for small <code>h</code>,
+<code>g(r+h)</code> will be approximately <code>g(r)+g'(r)h</code>,
+and if <code>g(r) = r</code> and <code>|g'(r)| &lt; 1</code> then
+this will be closer to <code>r</code> than we started out.
+
+<p>
+But that doesn't really <em>explain</em> the phenomenon, or predict
+what other sorts of polynomial will give rise to cyclic behaviour of
+this type. Do there exist polynomials which exhibit
+period-<code>n</code> cycles for all <code>n &gt; 1</code>, for
+example? How often does this happen? How would one go about
+constructing polynomials with non-converging regions to order?
+
+<p>
+I don't currently know the answers to these questions, but I'd be
+interested to hear them if anyone else does.
+
 <h2>Participation</h2>
 
 <p>

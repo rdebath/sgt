@@ -73,6 +73,8 @@ makeimage bigrainbow.png ./newton --ppm -o - -s 800x600 -x 5 -f 10 -C no -B yes 
 makeimage bigrainbowz1.png ./newton --ppm -o - -s 600x600 -Y 3.5125 -X 1.08125 -x 0.06 -f 10 -C no -B yes -c 1,0,0:1,0.7,0:1,1,0:0,1,0:0,0.7,1:0,0,1:0.5,0,1 -- -3 -2 -1 0 1 2 3
 makeimage bigrainbowz2.png ./newton --ppm -o - -s 600x600 -X 4.5275 -Y -1.5275 -x 0.12 -f 10 -C no -B yes -c 1,0,0:1,0.7,0:1,1,0:0,1,0:0,0.7,1:0,0,1:0.5,0,1 -- -3 -2 -1 0 1 2 3
 
+makeimage holes.png ./newton --ppm -o - -s 320x256 -y 2 -f 10 -C no -B yes -c 1,0,0:1,1,0:0,0.7,0:0,0.5,1 -- -2.3 +2.3 -i +i
+
 rm newton
 
 perl -pe '/^<picture (.*)>/ and do {' \
