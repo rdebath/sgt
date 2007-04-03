@@ -253,7 +253,10 @@ int plot(struct Params params) {
 		    if (cdistsquared(z, params.roots.list[k]) < tolerance)
 			root = k;
 		}
-                c = colfind(params.colours, root);
+		if (root >= 0)
+		    c = colfind(params.colours, root);
+		else
+		    c.r = c.g = c.b = 0;
                 bmppixel(bm, toint(c.r*255.0), toint(c.g*255.0),
 			 toint(c.b*255.0));
 		continue;
