@@ -812,11 +812,11 @@ But this general pattern - four roots in a diamond layout of
 does this.)
 
 <p>
-On one level, it's reasonably easy to see "why" it happens:
-simply define <code>g(x) = x - f(x)/f'(x)</code> to be the
+On one level, it's reasonably easy to see "why" it happens.
+If you define <code>g(x) = x - f(x)/f'(x)</code> to be the
 Newton-Raphson iteration for this polynomial, then find roots of the
 equation <code>g(g(x))=x</code> (probably using a computer algebra
-package, since it's a pretty ugly mess) and observe that it has
+package, since it's a pretty ugly mess) you will observe that it has
 roots which are not also roots of the similar first-order equation
 <code>g(x)=x</code> (and hence of <code>f</code>). That proves that
 there are cycles at all; then, to prove there are
@@ -825,7 +825,7 @@ there are cycles at all; then, to prove there are
 modulus less than 1 (since for small <code>h</code>,
 <code>g(r+h)</code> will be approximately <code>g(r)+g'(r)h</code>,
 and if <code>g(r) = r</code> and <code>|g'(r)| &lt; 1</code> then
-this will be closer to <code>r</code> than we started out.
+this will be closer to <code>r</code> than we started out).
 
 <p>
 But that doesn't really <em>explain</em> the phenomenon, or predict
