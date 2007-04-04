@@ -821,10 +821,10 @@ roots which are not also roots of the similar first-order equation
 <code>g(x)=x</code> (and hence of <code>f</code>). That proves that
 there are cycles at all; then, to prove there are
 <em>attracting</em> cycles, compute the derivative of
-<code>g(x)</code> at those roots and find the ones where it has
+<code>G(x)=g(g(x))</code> at those roots and find the ones where it has
 modulus less than 1 (since for small <code>h</code>,
-<code>g(r+h)</code> will be approximately <code>g(r)+g'(r)h</code>,
-and if <code>g(r) = r</code> and <code>|g'(r)| &lt; 1</code> then
+<code>G(r+h)</code> will be approximately <code>G(r)+G'(r)h</code>,
+and if <code>G(r) = r</code> and <code>|G'(r)| &lt; 1</code> then
 this will be closer to <code>r</code> than we started out).
 
 <p>
