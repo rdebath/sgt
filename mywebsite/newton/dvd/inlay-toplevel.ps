@@ -1,0 +1,83 @@
+%!PS-Adobe-1.0
+
+% http://www.hvs.co.uk/printdimsbookletdvd.html
+% says that a DVD inlay is 273mm x 183mm,
+% with the width divided into two 129.5mm covers and a 14mm spine.
+
+/mm 72 25.4 div def
+/w 273 mm mul def /h 183 mm mul def
+/cw 129.5 mm mul def /sw 14 mm mul def
+
+% To fit this on an A4 sheet, of course, we'll have to go landscape.
+
+90 rotate
+
+clippath flattenpath pathbbox
+3 -1 roll add 2 div 3 1 roll add 2 div
+w 2 div sub exch h 2 div sub
+translate
+
+% Crop marks and fold marks.
+/cnear mm def /cfar 20 mm mul def
+0.001 setlinewidth
+newpath
+cnear neg 0 moveto cfar neg 0 lineto
+0 cnear neg moveto 0 cfar neg lineto
+w cnear add 0 moveto w cfar add 0 lineto
+w cnear neg moveto w cfar neg lineto
+cnear neg h moveto cfar neg h lineto
+0 h cnear add moveto 0 h cfar add lineto
+w cnear add h moveto w cfar add h lineto
+w h cnear add moveto w h cfar add lineto
+cw cnear neg moveto cw cfar neg lineto
+cw h cnear add moveto cw h cfar add lineto
+cw sw add cnear neg moveto cw sw add cfar neg lineto
+cw sw add h cnear add moveto cw sw add h cfar add lineto
+stroke
+
+% Procedures to translate and clip to individual sides of the case.
+/frontcover { % gives a rectangle at (0,0) width cw height h
+  cw sw add 0 translate
+  newpath 0 0 moveto cw 0 lineto cw h lineto 0 h lineto clip
+} def
+/backcover { % gives a rectangle at (0,0) width cw height h
+  newpath 0 0 moveto cw 0 lineto cw h lineto 0 h lineto clip
+} def
+/spinevert { % gives a rectangle at (0,0) width sw height h
+  cw 0 translate
+  newpath 0 0 moveto sw 0 lineto sw h lineto 0 h lineto clip
+} def
+/spinehoriz { % gives a rectangle at (0,0) width h height sw
+  spinevert
+  0 h translate -90 rotate
+} def
+
+% Clip to the entire inlay, by default.
+newpath 0 0 moveto w 0 lineto w h lineto 0 h lineto clip
+
+% Generally useful things.
+/vcentre { % move currentpos downwards so that centre of caps X is at this y
+  currentpoint
+  newpath 0 0 moveto (A) true charpath flattenpath pathbbox
+  exch pop 3 2 roll pop add 2 div sub moveto
+} def
+/cshow { % horizontally centre the given text at currentpoint
+  dup stringwidth pop 2 div neg 0 rmoveto show
+} def
+
+% ----- End of definitions. Remainder is the content of the specific inlay.
+
+% I can't be bothered to do a proper EPS import. I happen to know the
+% bounding box of the EPS file, so I'll just hard-code that.
+
+w 3224 div h 2161 div scale
+[[perl:
+open FOO, "inlay.eps";
+$a="";
+while (<FOO>) {
+  $a.=$_ unless /^%%/;
+}
+$a;
+]]
+
+showpage

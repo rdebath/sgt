@@ -1,0 +1,44 @@
+\input menu
+\hsize=5.5in \hoffset=0.25in
+\vsize=4.5in
+
+\ifnum\type=4
+\def\cv#1{#1}
+\else
+\def\cv#1{\phantom{\vbox{#1}}}
+\fi
+
+\phantom{x}
+\vskip0.1in
+
+\line{
+\hbox to2.65in{\hfil\vbox{
+\menuitem{21. \vbox{\cv{\hrule width1.5in depth1.125in height0in}
+\vskip0.1in
+\hbox{\strut Outro}}}
+\vskip0.3in
+\vphantom{
+\menuitem{18. \vbox{\cv{\hrule width1.5in depth1.125in height0in}
+\vskip0.1in
+\hbox{\strut Chorus Line}}}
+}
+}\hfil}
+\hfill
+\hbox to2.65in{\hfil\vbox{
+\menuitem{22. \vbox{\cv{\hrule width1.5in depth1.125in height0in}
+\vskip0.1in
+\hbox{\strut End Credits}}}
+\vskip0.3in
+\vphantom{
+\menuitem{20. \vbox{\cv{\hrule width1.5in depth1.125in height0in}
+\vskip0.1in
+\hbox{\strut Finale}}}
+}
+}\hfil}
+}
+
+\vskip0.3in
+\line{\phantom{X}\menuitem{17--20} \hfill \menuitem{Main Menu}
+\hfill \menuitem{1--4}\phantom{X}}
+
+\bye

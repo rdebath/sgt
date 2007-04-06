@@ -1,0 +1,448 @@
+<dvdauthor dest="dvd">
+
+  <vmgm>
+    <menus>
+      <video aspect="4:3" widescreen="noletterbox" />
+      <pgc>
+        <pre>{ if ((s14 &amp; 3072) == 3072) { g10 = 2048; } else { g10 = 1024; }
+	       jump menu 2; } </pre>
+      </pgc>
+      <pgc entry="title">
+        <button> {
+	g9 = 1;
+	if ((g10 &amp; 1024) == 0) {jump titleset 2 menu entry root;}
+	else {jump titleset 1 menu entry root;}
+	} </button>
+        <button> { jump menu 3; } </button>
+        <button> { jump menu 4; } </button>
+        <vob file="mainmenu.mpg" />
+        <post> jump cell 1; </post>
+      </pgc>
+      <pgc>
+        <button> { g10 = 1024; jump menu 2; } </button>
+        <button> { g10 = 2048; jump menu 2; } </button>
+        <button> { g10 = 3072; jump menu 2; } </button>
+        <button> { g10 = 4096; jump menu 2; } </button>
+        <vob file="aspectmenu.mpg" />
+        <post> jump cell 1; </post>
+      </pgc>
+      <pgc>
+        <button> {
+	  g9 = 1;
+	  if ((g10 &amp; 1024) == 0) {jump titleset 2 menu entry root;}
+	  else {jump titleset 1 menu entry root;}
+	} </button>
+        <button> {
+	  g9 = 3;
+	  if ((g10 &amp; 1024) == 0) {jump titleset 2 menu entry root;}
+	  else {jump titleset 1 menu entry root;}
+	} </button>
+        <button> {
+	  g9 = 2;
+	  if ((g10 &amp; 1024) == 0) {jump titleset 2 menu entry root;}
+	  else {jump titleset 1 menu entry root;}
+	} </button>
+        <button> {
+	  g9 = 4;
+	  if ((g10 &amp; 1024) == 0) {jump titleset 2 menu entry root;}
+	  else {jump titleset 1 menu entry root;}
+	} </button>
+        <button> jump menu 9; </button>
+        <button> jump menu 2; </button>
+        <button> jump menu 5; </button>
+        <vob file="chapter1menu.mpg" />
+        <post> jump cell 1; </post>
+      </pgc>
+      <pgc>
+        <button> {
+	  g9 = 5;
+	  if ((g10 &amp; 1024) == 0) {jump titleset 2 menu entry root;}
+	  else {jump titleset 1 menu entry root;}
+	} </button>
+        <button> {
+	  g9 = 7;
+	  if ((g10 &amp; 1024) == 0) {jump titleset 2 menu entry root;}
+	  else {jump titleset 1 menu entry root;}
+	} </button>
+        <button> {
+	  g9 = 6;
+	  if ((g10 &amp; 1024) == 0) {jump titleset 2 menu entry root;}
+	  else {jump titleset 1 menu entry root;}
+	} </button>
+        <button> {
+	  g9 = 8;
+	  if ((g10 &amp; 1024) == 0) {jump titleset 2 menu entry root;}
+	  else {jump titleset 1 menu entry root;}
+	} </button>
+        <button> jump menu 4; </button>
+        <button> jump menu 2; </button>
+        <button> jump menu 6; </button>
+        <vob file="chapter2menu.mpg" />
+        <post> jump cell 1; </post>
+      </pgc>
+      <pgc>
+        <button> {
+	  g9 = 9;
+	  if ((g10 &amp; 1024) == 0) {jump titleset 2 menu entry root;}
+	  else {jump titleset 1 menu entry root;}
+	} </button>
+        <button> {
+	  g9 = 11;
+	  if ((g10 &amp; 1024) == 0) {jump titleset 2 menu entry root;}
+	  else {jump titleset 1 menu entry root;}
+	} </button>
+        <button> {
+	  g9 = 10;
+	  if ((g10 &amp; 1024) == 0) {jump titleset 2 menu entry root;}
+	  else {jump titleset 1 menu entry root;}
+	} </button>
+        <button> {
+	  g9 = 12;
+	  if ((g10 &amp; 1024) == 0) {jump titleset 2 menu entry root;}
+	  else {jump titleset 1 menu entry root;}
+	} </button>
+        <button> jump menu 5; </button>
+        <button> jump menu 2; </button>
+        <button> jump menu 7; </button>
+        <vob file="chapter3menu.mpg" />
+        <post> jump cell 1; </post>
+      </pgc>
+      <pgc>
+        <button> {
+	  g9 = 13;
+	  if ((g10 &amp; 1024) == 0) {jump titleset 2 menu entry root;}
+	  else {jump titleset 1 menu entry root;}
+	} </button>
+        <button> {
+	  g9 = 15;
+	  if ((g10 &amp; 1024) == 0) {jump titleset 2 menu entry root;}
+	  else {jump titleset 1 menu entry root;}
+	} </button>
+        <button> {
+	  g9 = 14;
+	  if ((g10 &amp; 1024) == 0) {jump titleset 2 menu entry root;}
+	  else {jump titleset 1 menu entry root;}
+	} </button>
+        <button> {
+	  g9 = 16;
+	  if ((g10 &amp; 1024) == 0) {jump titleset 2 menu entry root;}
+	  else {jump titleset 1 menu entry root;}
+	} </button>
+        <button> jump menu 6; </button>
+        <button> jump menu 2; </button>
+        <button> jump menu 8; </button>
+        <vob file="chapter4menu.mpg" />
+        <post> jump cell 1; </post>
+      </pgc>
+      <pgc>
+        <button> {
+	  g9 = 17;
+	  if ((g10 &amp; 1024) == 0) {jump titleset 2 menu entry root;}
+	  else {jump titleset 1 menu entry root;}
+	} </button>
+        <button> {
+	  g9 = 19;
+	  if ((g10 &amp; 1024) == 0) {jump titleset 2 menu entry root;}
+	  else {jump titleset 1 menu entry root;}
+	} </button>
+        <button> {
+	  g9 = 18;
+	  if ((g10 &amp; 1024) == 0) {jump titleset 2 menu entry root;}
+	  else {jump titleset 1 menu entry root;}
+	} </button>
+        <button> {
+	  g9 = 20;
+	  if ((g10 &amp; 1024) == 0) {jump titleset 2 menu entry root;}
+	  else {jump titleset 1 menu entry root;}
+	} </button>
+        <button> jump menu 7; </button>
+        <button> jump menu 2; </button>
+        <button> jump menu 9; </button>
+        <vob file="chapter5menu.mpg" />
+        <post> jump cell 1; </post>
+      </pgc>
+      <pgc>
+        <button> {
+	  g9 = 21;
+	  if ((g10 &amp; 1024) == 0) {jump titleset 2 menu entry root;}
+	  else {jump titleset 1 menu entry root;}
+	} </button>
+        <button> {
+	  g9 = 22;
+	  if ((g10 &amp; 1024) == 0) {jump titleset 2 menu entry root;}
+	  else {jump titleset 1 menu entry root;}
+	} </button>
+        <button> jump menu 8; </button>
+        <button> jump menu 2; </button>
+        <button> jump menu 4; </button>
+        <vob file="chapter6menu.mpg" />
+        <post> jump cell 1; </post>
+      </pgc>
+    </menus>
+  </vmgm>
+
+  <titleset>
+
+    <menus>
+      <pgc entry="root">
+          <pre>
+	  {
+	      if (g9 &gt; 0) {
+	          if (g10 &gt; 2048) {jump title 2;} else {jump title 1;}
+	      }
+	      jump vmgm menu entry title;
+	  }
+	  </pre>
+      </pgc>
+    </menus>
+    <titles>
+      <video aspect="4:3" widescreen="noletterbox" />
+      <pgc>
+        <pre>
+	  {
+	    g8 = g9;
+	    g9 = 0;
+	    if (g8 == 2) {
+	      jump chapter 2;
+	    } else if (g8 == 3) {
+	      jump chapter 3;
+	    } else if (g8 == 4) {
+	      jump chapter 4;
+	    } else if (g8 == 5) {
+	      jump chapter 5;
+	    } else if (g8 == 6) {
+	      jump chapter 6;
+	    } else if (g8 == 7) {
+	      jump chapter 7;
+	    } else if (g8 == 8) {
+	      jump chapter 8;
+	    } else if (g8 == 9) {
+	      jump chapter 9;
+	    } else if (g8 == 10) {
+	      jump chapter 10;
+	    } else if (g8 == 11) {
+	      jump chapter 11;
+	    } else if (g8 == 12) {
+	      jump chapter 12;
+	    } else if (g8 == 13) {
+	      jump chapter 13;
+	    } else if (g8 == 14) {
+	      jump chapter 14;
+	    } else if (g8 == 15) {
+	      jump chapter 15;
+	    } else if (g8 == 16) {
+	      jump chapter 16;
+	    } else if (g8 == 17) {
+	      jump chapter 17;
+	    } else if (g8 == 18) {
+	      jump chapter 18;
+	    } else if (g8 == 19) {
+	      jump chapter 19;
+	    } else if (g8 == 20) {
+	      jump chapter 20;
+	    } else if (g8 == 21) {
+	      jump chapter 21;
+	    } else if (g8 == 22) {
+	      jump chapter 22;
+	    }
+	  }
+	</pre>
+        <vob file="newton.mpg" chapters="[[perl:
+@chaps=`./newtonvideo.py --chapters | cut -f1 -d' '`;
+join ",",map{chomp;$_}@chaps
+]]"/>
+          <post> call menu entry root; </post>
+      </pgc>
+      <pgc>
+        <pre>
+	  {
+	    g8 = g9;
+	    g9 = 0;
+	    if (g8 == 2) {
+	      jump chapter 2;
+	    } else if (g8 == 3) {
+	      jump chapter 3;
+	    } else if (g8 == 4) {
+	      jump chapter 4;
+	    } else if (g8 == 5) {
+	      jump chapter 5;
+	    } else if (g8 == 6) {
+	      jump chapter 6;
+	    } else if (g8 == 7) {
+	      jump chapter 7;
+	    } else if (g8 == 8) {
+	      jump chapter 8;
+	    } else if (g8 == 9) {
+	      jump chapter 9;
+	    } else if (g8 == 10) {
+	      jump chapter 10;
+	    } else if (g8 == 11) {
+	      jump chapter 11;
+	    } else if (g8 == 12) {
+	      jump chapter 12;
+	    } else if (g8 == 13) {
+	      jump chapter 13;
+	    } else if (g8 == 14) {
+	      jump chapter 14;
+	    } else if (g8 == 15) {
+	      jump chapter 15;
+	    } else if (g8 == 16) {
+	      jump chapter 16;
+	    } else if (g8 == 17) {
+	      jump chapter 17;
+	    } else if (g8 == 18) {
+	      jump chapter 18;
+	    } else if (g8 == 19) {
+	      jump chapter 19;
+	    } else if (g8 == 20) {
+	      jump chapter 20;
+	    } else if (g8 == 21) {
+	      jump chapter 21;
+	    } else if (g8 == 22) {
+	      jump chapter 22;
+	    }
+	  }
+	</pre>
+        <vob file="newtonp.mpg" chapters="[[perl:
+@chaps=`./newtonvideo.py --chapters | cut -f1 -d' '`;
+join ",",map{chomp;$_}@chaps
+]]"/>
+          <post> call menu entry root; </post>
+      </pgc>
+    </titles>
+
+  </titleset>
+
+  <titleset>
+
+    <menus>
+      <pgc entry="root">
+          <pre>
+	  {
+	      if (g9 &gt; 0) {
+	          if (g10 &gt; 2048) {jump title 2;} else {jump title 1;}
+	      }
+	      jump vmgm menu entry title;
+	  }
+	  </pre>
+      </pgc>
+    </menus>
+    <titles>
+      <video aspect="16:9" widescreen="nopanscan" />
+      <pgc>
+        <pre>
+	  {
+	    g8 = g9;
+	    g9 = 0;
+	    if (g8 == 2) {
+	      jump chapter 2;
+	    } else if (g8 == 3) {
+	      jump chapter 3;
+	    } else if (g8 == 4) {
+	      jump chapter 4;
+	    } else if (g8 == 5) {
+	      jump chapter 5;
+	    } else if (g8 == 6) {
+	      jump chapter 6;
+	    } else if (g8 == 7) {
+	      jump chapter 7;
+	    } else if (g8 == 8) {
+	      jump chapter 8;
+	    } else if (g8 == 9) {
+	      jump chapter 9;
+	    } else if (g8 == 10) {
+	      jump chapter 10;
+	    } else if (g8 == 11) {
+	      jump chapter 11;
+	    } else if (g8 == 12) {
+	      jump chapter 12;
+	    } else if (g8 == 13) {
+	      jump chapter 13;
+	    } else if (g8 == 14) {
+	      jump chapter 14;
+	    } else if (g8 == 15) {
+	      jump chapter 15;
+	    } else if (g8 == 16) {
+	      jump chapter 16;
+	    } else if (g8 == 17) {
+	      jump chapter 17;
+	    } else if (g8 == 18) {
+	      jump chapter 18;
+	    } else if (g8 == 19) {
+	      jump chapter 19;
+	    } else if (g8 == 20) {
+	      jump chapter 20;
+	    } else if (g8 == 21) {
+	      jump chapter 21;
+	    } else if (g8 == 22) {
+	      jump chapter 22;
+	    }
+	  }
+	</pre>
+        <vob file="newtonws.mpg" chapters="[[perl:
+@chaps=`./newtonvideo.py --widescreen --chapters | cut -f1 -d' '`;
+join ",",map{chomp;$_}@chaps
+]]"/>
+          <post> call menu entry root; </post>
+      </pgc>
+      <pgc>
+        <pre>
+	  {
+	    g8 = g9;
+	    g9 = 0;
+	    if (g8 == 2) {
+	      jump chapter 2;
+	    } else if (g8 == 3) {
+	      jump chapter 3;
+	    } else if (g8 == 4) {
+	      jump chapter 4;
+	    } else if (g8 == 5) {
+	      jump chapter 5;
+	    } else if (g8 == 6) {
+	      jump chapter 6;
+	    } else if (g8 == 7) {
+	      jump chapter 7;
+	    } else if (g8 == 8) {
+	      jump chapter 8;
+	    } else if (g8 == 9) {
+	      jump chapter 9;
+	    } else if (g8 == 10) {
+	      jump chapter 10;
+	    } else if (g8 == 11) {
+	      jump chapter 11;
+	    } else if (g8 == 12) {
+	      jump chapter 12;
+	    } else if (g8 == 13) {
+	      jump chapter 13;
+	    } else if (g8 == 14) {
+	      jump chapter 14;
+	    } else if (g8 == 15) {
+	      jump chapter 15;
+	    } else if (g8 == 16) {
+	      jump chapter 16;
+	    } else if (g8 == 17) {
+	      jump chapter 17;
+	    } else if (g8 == 18) {
+	      jump chapter 18;
+	    } else if (g8 == 19) {
+	      jump chapter 19;
+	    } else if (g8 == 20) {
+	      jump chapter 20;
+	    } else if (g8 == 21) {
+	      jump chapter 21;
+	    } else if (g8 == 22) {
+	      jump chapter 22;
+	    }
+	  }
+	</pre>
+        <vob file="newtonwsp.mpg" chapters="[[perl:
+@chaps=`./newtonvideo.py --widescreen --chapters | cut -f1 -d' '`;
+join ",",map{chomp;$_}@chaps
+]]"/>
+          <post> call menu entry root; </post>
+      </pgc>
+    </titles>
+
+  </titleset>
+
+</dvdauthor>

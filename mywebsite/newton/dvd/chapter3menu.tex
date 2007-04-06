@@ -1,0 +1,40 @@
+\input menu
+\hsize=5.5in \hoffset=0.25in
+\vsize=4.5in
+
+\ifnum\type=4
+\def\cv#1{#1}
+\else
+\def\cv#1{\phantom{\vbox{#1}}}
+\fi
+
+\phantom{x}
+\vskip0.1in
+
+\line{
+\hbox to2.65in{\hfil\vbox{
+\menuitem{\phantom{0}9. \vbox{\cv{\hrule width1.5in depth1.125in height0in}
+\vskip0.1in
+\hbox{\strut Square Dance II}}}
+\vskip0.3in
+\menuitem{11. \vbox{\cv{\hrule width1.5in depth1.125in height0in}
+\vskip0.1in
+\hbox{\strut Clover Simple}}}
+}\hfil}
+\hfill
+\hbox to2.65in{\hfil\vbox{
+\menuitem{10. \vbox{\cv{\hrule width1.5in depth1.125in height0in}
+\vskip0.1in
+\hbox{\strut Square Dance III}}}
+\vskip0.3in
+\menuitem{12. \vbox{\cv{\hrule width1.5in depth1.125in height0in}
+\vskip0.1in
+\hbox{\strut Clover Double}}}
+}\hfil}
+}
+
+\vskip0.3in
+\line{\phantom{X}\menuitem{5--8} \hfill \menuitem{Main Menu}
+\hfill \menuitem{13--16}\phantom{X}}
+
+\bye

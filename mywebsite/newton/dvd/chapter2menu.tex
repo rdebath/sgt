@@ -1,0 +1,40 @@
+\input menu
+\hsize=5.5in \hoffset=0.25in
+\vsize=4.5in
+
+\ifnum\type=4
+\def\cv#1{#1}
+\else
+\def\cv#1{\phantom{\vbox{#1}}}
+\fi
+
+\phantom{x}
+\vskip0.1in
+
+\line{
+\hbox to2.65in{\hfil\vbox{
+\menuitem{5. \vbox{\cv{\hrule width1.5in depth1.125in height0in}
+\vskip0.1in
+\hbox{\strut Loop}}}
+\vskip0.3in
+\menuitem{7. \vbox{\cv{\hrule width1.5in depth1.125in height0in}
+\vskip0.1in
+\hbox{\strut Fountain}}}
+}\hfil}
+\hfill
+\hbox to2.65in{\hfil\vbox{
+\menuitem{6. \vbox{\cv{\hrule width1.5in depth1.125in height0in}
+\vskip0.1in
+\hbox{\strut Cascade Reprise}}}
+\vskip0.3in
+\menuitem{8. \vbox{\cv{\hrule width1.5in depth1.125in height0in}
+\vskip0.1in
+\hbox{\strut Square Dance}}}
+}\hfil}
+}
+
+\vskip0.3in
+\line{\phantom{X}\menuitem{1--4} \hfill \menuitem{Main Menu}
+\hfill \menuitem{9--12}\phantom{X}}
+
+\bye

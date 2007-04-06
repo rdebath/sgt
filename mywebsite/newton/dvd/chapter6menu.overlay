@@ -1,0 +1,2 @@
+./newtonvideo.py $NTSC --chaptermenu | sed -n 21p
+./newtonvideo.py $NTSC --chaptermenu | sed -n 22p

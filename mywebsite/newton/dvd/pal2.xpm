@@ -1,0 +1,9 @@
+/* XPM */
+static char *pal4[] = {
+/* columns rows colors chars-per-pixel */
+"2 1 2 1",
+"0 c #000000",
+"1 c #ffffff",
+/* pixels */
+"01"
+};
