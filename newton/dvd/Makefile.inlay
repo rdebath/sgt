@@ -1,0 +1,59 @@
+LIGHT=1.0
+MID=0.85
+DARK=0.7
+MULT=${1:-1}
+
+inlay-background.png:
+	./newton --ppm -o - -s 3224x2161 -y 4 -C no -B yes \
+		-c $(LIGHT),$(DARK),$(DARK):$(LIGHT),$(MID),$(DARK):$(LIGHT),$(LIGHT),$(DARK):$(MID),$(DARK),$(LIGHT):$(DARK),$(MID),$(LIGHT):$(DARK),$(LIGHT),$(DARK) \
+		--  2.6018639486115966+1.6642403693831995i  3  i \
+		   -2.6018639486115966-1.6642403693831995i -3 -i | \
+		convert ppm:- inlay-background.png
+
+inlay-frontcover.dvi: inlay-frontcover.tex
+	tex $<
+inlay-frontcover.png: inlay-frontcover.dvi
+	# Believe it or not, dvipng appears to be unable to convert
+	# correctly between millimetres and inches!
+	dvipng -D 300 -T 5.1in,7.2in -o $@ $<
+inlay-frontcover-mask.png: inlay-frontcover.png
+	# While we're here, scale this image to make absolutely sure it's
+	# the size we're expecting.
+	convert -negate -scale 1529x2161! $< $@
+inlay-with-frontcover.png: inlay-frontcover-mask.png inlay-background.png
+	composite -size 1529x2161 -geometry +1695+0 \
+		xc:black inlay-background.png inlay-frontcover-mask.png $@
+
+inlay-spine.dvi: inlay-spine.tex
+	tex $<
+inlay-spine.png: inlay-spine.dvi
+	# Believe it or not, dvipng appears to be unable to convert
+	# correctly between millimetres and inches!
+	dvipng -D 300 -T 7.2in,0.55in -o $@ $<
+inlay-spine-mask.png: inlay-spine.png
+	# While we're here, scale this image to make absolutely sure it's
+	# the size we're expecting.
+	convert -negate -rotate '90>' -scale 165x2161! $< $@
+inlay-with-spine.png: inlay-spine-mask.png inlay-with-frontcover.png
+	composite -size 165x2161 -geometry +1529+0 \
+		xc:black inlay-with-frontcover.png inlay-spine-mask.png $@
+
+inlay-backcover.dvi: inlay-backcover.tex
+	tex $<
+inlay-backcover.png: inlay-backcover.dvi
+	# Believe it or not, dvipng appears to be unable to convert
+	# correctly between millimetres and inches!
+	dvipng -D 300 -T 5.1in,7.2in -o $@ $<
+inlay-backcover-mask.png: inlay-backcover.png
+	# While we're here, scale this image to make absolutely sure it's
+	# the size we're expecting.
+	convert -negate -scale 1529x2161! $< $@
+inlay-with-backcover.png: inlay-backcover-mask.png inlay-with-spine.png
+	composite -size 1529x2161 -geometry +0+0 \
+		xc:black inlay-with-spine.png inlay-backcover-mask.png $@
+
+inlay.eps: inlay-with-backcover.png
+	convert $< $@
+
+inlay.ps: inlay-toplevel.ps inlay.eps
+	perl -e '$$a.=$$_ while<>; $$a=~s/\[\[perl:(.*?)\]\]/eval $$1/egs;print$$a' $< > $@

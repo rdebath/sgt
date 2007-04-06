@@ -1,0 +1,65 @@
+\font\tenbb=msbm10\font\sevenbb=msbm7\font\fivebb=msbm5
+\newfam\bbfam \def\bb{\fam\bbfam\tenbb}
+\textfont\bbfam=\tenbb\scriptfont\bbfam=\sevenbb\scriptscriptfont\bbfam=\fivebb
+
+\hsize=5in \hoffset=0.5in
+\vsize=100in
+\nopagenumbers
+
+\def\credit#1#2{\line{\hbox to1.75in{\hfill#1}\hskip0.25in
+\hbox to3in{#2\hfill}\hfill}}
+\def\followon#1{\credit{}{#1}}
+
+\phantom{x}
+\vskip4.5in
+
+\credit{Artistic Design}{Simon Tatham}
+\vskip20pt
+
+\credit{Script Writing}{Simon Tatham}
+\vskip20pt
+
+\credit{Script Execution}{Python 2.3.5}
+\vskip20pt
+
+\credit{Set Design}{Sir Isaac Newton}
+\followon{Joseph Raphson}
+\vskip20pt
+
+\credit{Set Construction}{Given $P \in {\bb C}[X]$, let $f_P: z \mapsto z - {P(z)\over P'(z)}$}
+\followon{and for all $r \in {\bb C}$ with $P(r) = 0$}
+\followon{define $B_{P,r} = \{z \in {\bb C} : \displaystyle \lim_{n\to\infty} f_P^n(z) = r\}$}
+\vskip20pt
+
+\credit{Editor}{{\tt jed} 0.99.16}
+\vskip20pt
+\credit{Assistant Editor}{{\tt vim} 6.3.82}
+\vskip20pt
+
+\credit{Music}{{\tt /dev/zero}}
+\vskip20pt
+
+\credit{Titling}{\TeX}
+\vskip20pt
+
+\credit{DVD Production}{{\tt dvdauthor} 0.6.11}
+\vskip20pt
+
+\credit{Production Assistants}{{\tt mjpegtools} 1.9.0rc2}
+\followon{SOX 12.17.7}
+\followon{ImageMagick 6.0.6}
+\vskip20pt
+
+\credit{Production Coordinator}{GNU {\tt make} 3.80}
+
+\vskip100pt
+
+\line{\hfill Filmed on location in \hfill}
+\line{\hfill THE COMPLEX PLANE \hfill}
+
+\vskip90pt
+
+\line{\hfill Copyright 2007 Simon Tatham. \hfill}
+\line{\hfill All rights reserved. \hfill}
+
+\bye

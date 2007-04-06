@@ -1,0 +1,62 @@
+This directory contains the source files for the `Newton In Motion'
+animated fractal DVD.
+
+If you have all the right software installed and at least 15Gb of
+free disk space, you should be able to run `make' in this directory
+and have it generate you a `dvd' directory containing a filesystem
+suitable for burning to a PAL DVD. To generate an NTSC DVD instead,
+run `make NTSC=--ntsc'. (Neither one will be region-locked.) You may
+also wish to run `make inlay' to create a PostScript file which
+prints an inlay for the DVD case.
+
+I've tested this procedure on Debian Linux 3.1, with some additional
+software installed as described below. It may work on other
+operating systems as well, but I can't be confident of that.
+
+The software required to run the makefile is as follows. Where
+version numbers are quoted, they indicate the version _I'm_ using.
+Other versions may very well work too.
+
+ - a basically POSIXy system containing `rm', `dd', `echo', /bin/sh
+   and other standard Unix commands
+ - GNU make 3.80
+ - the ImageMagick utilities (`convert', `identify', `composite'
+   etc), version 6.0.6
+ - dvdauthor 0.6.11 (both the `dvdauthor' and `spumux' programs are
+   required)
+ - perl 5.8.4
+ - ffmpeg, Debian package version 0.cvs20050313-2sarge1
+ - TeX from Debian package tetex-bin 2.0.2-30sarge4
+ - dvipng 1.5
+ - sox 12.17.7
+ - mjpegtools 1.9.0rc2 (`mpeg2enc', `mplex', `ppmtoy4m')
+ - Last but not least, the `newton' fractal-plotting program from
+   http://www.chiark.greenend.org.uk/~sgtatham/newton/ .
+
+Of these, the mjpegtools suite and `newton' are the only things I
+wasn't able to install as standard Debian packages.
+
+Note that the scripts assume the `newton' binary is in the current
+directory, although they assume everything else is on $PATH.
+
+The scripts are currently optimised for a dual-processor machine,
+because that's what I've got. If you have a different number of
+processors, you might find performance is improved by editing
+newtonvideo.py and altering the definition of `maxjobs' from 2 to
+something else.
+
+Total rendering time is about 15 hours on my 2.4GHz Core 2 Duo, or
+more like 20 hours for the NTSC version. This will vary with your
+hardware, of course. The finished DVD filesystem should take up
+about 4.3Gb.
+
+(I'm not sure why there's such a big difference in rendering times
+between PAL and NTSC. NTSC has more frames per second than PAL but
+less data per frame, leading to about the same overall data rate, so
+I wouldn't have expected a big difference in the total number of
+fractal pixels that needed to be rendered. I can only assume there's
+some fairly large overhead per frame which I haven't noticed.)
+
+The source files for this video are copyright 2007 Simon Tatham. You
+may redistribute them in accordance with the terms of the MIT
+licence. See the file LICENCE for full details.

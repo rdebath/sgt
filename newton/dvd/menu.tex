@@ -1,0 +1,63 @@
+\hsize=5in \hoffset=0.5in
+\vsize=100in
+\font\rm=cmr20
+\nopagenumbers
+
+\font\ms=cmsy20
+\chardef\zeroeff="0F
+\def\tbullet{{\ms\zeroeff}}
+\font\mi=cmmi20
+\chardef\threeeff="3F
+\def\tstar{{\mi\threeeff}}
+
+% We expect a number on standard input giving the mode in which this
+% file is to be rendered:
+%
+%  - Mode 0 gives the base image for the DVD menu.
+%  - Mode 1 draws rule boxes around all the menu items, so that dvitype
+%    can be used to extract the rule positions and determine the menu
+%    items' bounding rectangles.
+%  - Mode 2 draws the menu items highlighted.
+%  - Mode 3 draws the menu items selected.
+\read16 to\type
+
+% In mode 1, \menuitem replaces the item box with a rule.
+\ifnum\type=1
+\def\menuouter#1{
+\setbox1=\hbox{#1}
+\vbox{\hrule width\wd1 height\ht1 depth\dp1}
+}
+\else
+\def\menuouter#1{
+\setbox1=\hbox{#1}
+\vbox{\hbox to\wd1{\copy1}}
+}
+\fi
+
+\def\menuitem#1{\menuouter{\menuinner{#1}}}
+
+% Actually displaying the menu item is done differently depending on
+% mode.
+%
+% In mode 0 (unhighlighted) we display the actual item text.
+% In mode 1 (highlighted) we omit the item text (to avoid overlaying
+% it on itself), but instead display a bullet to its left.
+% In mode 2 (selected) we replace the bullet with a star.
+
+\ifnum\type=2
+\def\menuinner#1{\hbox{\hbox to0em{}\hbox to 1.2em{\hfill\tbullet\hfill}\phantom{#1}\hbox to0em{}}}
+\else
+\ifnum\type=3
+\def\menuinner#1{\hbox{\hbox to0em{}\hbox to 1.2em{\hfill\tstar\hfill}\phantom{#1}\hbox to0em{}}}
+\else
+\def\menuinner#1{\hbox{\hbox to0em{}\hbox to 1.2em{\hfill}\hbox{#1}\hbox to0em{}}}
+\fi
+\fi
+
+\def\titleline#1{\line{\hfill#1\hfill}}
+
+\def\title#1{\vbox to0pt{\phantom{x}\vskip1in#1\vss}}
+
+\def\menu#1{\vskip2.5in\line{\hfill \vbox{#1}\hfill}}
+
+\rm

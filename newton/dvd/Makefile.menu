@@ -1,0 +1,78 @@
+# -*- sh -*-
+
+# Sub-makefile for DVD menu creation. Set NAME=`main' or something
+# else.
+
+$(NAME)menu-main.png: $(NAME)menu-main.dvi
+	dvipng -D 360 -o $@ -T 6in,4.5in $<
+
+$(NAME)menu-main.dvi: $(NAME)menu.tex menu.tex
+	echo 0 | tex $(NAME)menu
+	mv $(NAME)menu.dvi $@
+
+$(NAME)menu-highlight.png: $(NAME)menu-highlight.dvi
+	dvipng -D 360 -o $@ -T 6in,4.5in $<
+
+$(NAME)menu-highlight.dvi: $(NAME)menu.tex menu.tex
+	echo 2 | tex $(NAME)menu
+	mv $(NAME)menu.dvi $@
+
+$(NAME)menu-select.png: $(NAME)menu-select.dvi
+	dvipng -D 360 -o $@ -T 6in,4.5in $<
+
+$(NAME)menu-select.dvi: $(NAME)menu.tex menu.tex
+	echo 3 | tex $(NAME)menu
+	mv $(NAME)menu.dvi $@
+
+# This entry is here for completeness, but isn't used by the main
+# make process. You can make it manually for diagnostic purposes,
+# if you really need to.
+$(NAME)menu-boxes.png: $(NAME)menu-boxes.dvi
+	dvipng -D 360 -o $@ -T 6in,4.5in $<
+
+$(NAME)menu-boxes.dvi: $(NAME)menu.tex menu.tex
+	echo 1 | tex $(NAME)menu
+	mv $(NAME)menu.dvi $@
+
+# This entry is here for completeness, but isn't used by the main
+# make process. You can make it manually for diagnostic purposes,
+# if you really need to.
+$(NAME)menu-oboxes.png: $(NAME)menu-oboxes.dvi
+	dvipng -D 360 -o $@ -T 6in,4.5in $<
+
+$(NAME)menu-oboxes.dvi: $(NAME)menu.tex menu.tex
+	echo 4 | tex $(NAME)menu
+	mv $(NAME)menu.dvi $@
+
+$(NAME)menu.xml: $(NAME)menu-boxes.dvi findboxes.pl makemenuxml.pl $(BUTTONS)
+	./findboxes.pl $(NAME)menu-boxes.dvi | \
+		./makemenuxml.pl $(NTSC) $(NAME)menu-highlight-final.png \
+		$(NAME)menu-select-final.png $(BUTTONS) > $@
+
+ifeq ($(NTSC),--ntsc)
+SIZE=720x480
+FPS=30
+else
+SIZE=720x576
+FPS=25
+endif
+
+$(NAME)menu.mpg: $(NAME)menu-main.png $(NAME)menu-highlight.png \
+	      $(NAME)menu-select.png $(NAME)menu.xml \
+	      findboxes.pl $(NAME)menu-oboxes.dvi ./menuppm.pl
+	convert -scale $(SIZE)'!' -negate \
+		$(NAME)menu-main.png $(NAME)menu-main-final.png
+	convert -scale $(SIZE)'!' -colors 2 +dither \
+		-map pal2.xpm -negate \
+		$(NAME)menu-highlight.png xpm:- | \
+		convert -transparent '#000000' xpm:- $(NAME)menu-highlight-final.png
+	convert -scale $(SIZE)'!' -colors 2 +dither \
+		-map pal2.xpm -negate \
+		$(NAME)menu-select.png xpm:- | \
+		convert -transparent '#000000' xpm:- $(NAME)menu-select-final.png
+	./findboxes.pl $(NAME)menu-oboxes.dvi > $(NAME)menu-oboxes.dat
+	./menuppm.pl $(NAME) | ppmtoy4m -n5000 -F$(FPS):1 -A59:54 -I p -r -S 420mpeg2 | mpeg2enc -n p -f8 -b5000 -a2 -o $(NAME)menu.mp2v
+	rm -f $(NAME)menu.ac3
+	dd if=/dev/zero bs=3840 count=5000 | sox -t raw -wsr 48000 - -t wav -r 48000 - | ffmpeg -i - -ab 64 -ar 48000 -ac 2 $(NAME)menu.ac3
+	mplex -f 8 -o $(NAME)menu-pre.mpg $(NAME)menu.mp2v $(NAME)menu.ac3
+	spumux $(NAME)menu.xml < $(NAME)menu-pre.mpg > $@

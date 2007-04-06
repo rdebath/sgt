@@ -1,0 +1,40 @@
+\input menu
+\hsize=5.5in \hoffset=0.25in
+\vsize=4.5in
+
+\ifnum\type=4
+\def\cv#1{#1}
+\else
+\def\cv#1{\phantom{\vbox{#1}}}
+\fi
+
+\phantom{x}
+\vskip0.1in
+
+\line{
+\hbox to2.65in{\hfil\vbox{
+\menuitem{1. \vbox{\cv{\hrule width1.5in depth1.125in height0in}
+\vskip0.1in
+\hbox{\strut Opening Titles}}}
+\vskip0.3in
+\menuitem{3. \vbox{\cv{\hrule width1.5in depth1.125in height0in}
+\vskip0.1in
+\hbox{\strut Cascade}}}
+}\hfil}
+\hfill
+\hbox to2.65in{\hfil\vbox{
+\menuitem{2. \vbox{\cv{\hrule width1.5in depth1.125in height0in}
+\vskip0.1in
+\hbox{\strut Weave}}}
+\vskip0.3in
+\menuitem{4. \vbox{\cv{\hrule width1.5in depth1.125in height0in}
+\vskip0.1in
+\hbox{\strut Mills}}}
+}\hfil}
+}
+
+\vskip0.3in
+\line{\phantom{X}\menuitem{21--22} \hfill \menuitem{Main Menu}
+\hfill \menuitem{5--8}\phantom{X}}
+
+\bye

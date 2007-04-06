@@ -1,0 +1,40 @@
+\input menu
+\hsize=5.5in \hoffset=0.25in
+\vsize=4.5in
+
+\ifnum\type=4
+\def\cv#1{#1}
+\else
+\def\cv#1{\phantom{\vbox{#1}}}
+\fi
+
+\phantom{x}
+\vskip0.1in
+
+\line{
+\hbox to2.65in{\hfil\vbox{
+\menuitem{17. \vbox{\cv{\hrule width1.5in depth1.125in height0in}
+\vskip0.1in
+\hbox{\strut Wheels}}}
+\vskip0.3in
+\menuitem{19. \vbox{\cv{\hrule width1.5in depth1.125in height0in}
+\vskip0.1in
+\hbox{\strut Chorus Line II}}}
+}\hfil}
+\hfill
+\hbox to2.65in{\hfil\vbox{
+\menuitem{18. \vbox{\cv{\hrule width1.5in depth1.125in height0in}
+\vskip0.1in
+\hbox{\strut Chorus Line}}}
+\vskip0.3in
+\menuitem{20. \vbox{\cv{\hrule width1.5in depth1.125in height0in}
+\vskip0.1in
+\hbox{\strut Finale}}}
+}\hfil}
+}
+
+\vskip0.3in
+\line{\phantom{X}\menuitem{13--16} \hfill \menuitem{Main Menu}
+\hfill \menuitem{21--22}\phantom{X}}
+
+\bye
