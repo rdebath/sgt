@@ -64,7 +64,7 @@ mainmenu.mpg: mainmenu.tex Makefile.menu
 aspectmenu.mpg: aspectmenu.tex Makefile.menu
 	$(MAKE) -f Makefile.menu NAME=aspect NTSC=$(NTSC) $@
 
-chapter1menu.mpg: chapter1menu.tex chapter1menu.overlay fullmenu.buttons Makefile.menu credits.png
+chapter1menu.mpg: chapter1menu.tex chapter1menu.overlay fullmenu.buttons Makefile.menu title.png credits.png
 	$(MAKE) -f Makefile.menu NAME=chapter1 NTSC=$(NTSC) BUTTONS=fullmenu.buttons $@
 chapter2menu.mpg: chapter2menu.tex chapter2menu.overlay fullmenu.buttons Makefile.menu credits.png
 	$(MAKE) -f Makefile.menu NAME=chapter2 NTSC=$(NTSC) BUTTONS=fullmenu.buttons $@
