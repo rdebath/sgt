@@ -72,6 +72,22 @@ def factors(n):
 def prime(n):
     return len(factors(n)) == 1
 
+def primes(n):
+    "Return a list of primes up to n, by the Sieve of Eratosthenes."
+    ret = []
+    s = [1] * n
+    cut = int(math.floor(math.sqrt(n)))+1
+    for k in range(2, cut):
+	if not s[k]:
+	    continue
+	ret.append(k)
+	for j in range(k, n, k):
+	    s[j] = 0
+    for k in range(cut, n):
+	if s[k]:
+	    ret.append(k)
+    return ret
+
 def intexp(f):
     "Render a finite float into the form integer * 2^exponent. Return (i,e)."
     m, e = math.frexp(f)
