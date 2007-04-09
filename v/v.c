@@ -106,7 +106,7 @@ GdkColor bg = {0, 32768, 32768, 32768};
  * out of my svn repository and doesn't like this approach is
  * welcome to send me code...
  */
-void setup_maxw_maxh(void)
+void setup_maxw_maxh(int fullscr)
 {
     int minx, miny, maxx, maxy;
     Display *disp;
@@ -120,29 +120,39 @@ void setup_maxw_maxh(void)
     maxx = gdk_screen_width();
     maxy = gdk_screen_height();
 
-    disp = GDK_DISPLAY();
-    root = RootWindow(disp, DefaultScreen(disp));
-    prop = XInternAtom(disp, "_NET_WORKAREA", True);
-    if (prop != None &&
-        XGetWindowProperty(disp, root, prop, 0, 4, False, XA_CARDINAL,
-                           &proptype, &format, &nitems, &bytes,
-                           (unsigned char **)(void *)&propdata) == Success &&
-        proptype == XA_CARDINAL &&
-        nitems >= 4) {
+    if (!fullscr) {
+	disp = GDK_DISPLAY();
+	root = RootWindow(disp, DefaultScreen(disp));
+	prop = XInternAtom(disp, "_NET_WORKAREA", True);
+	if (prop != None &&
+	    XGetWindowProperty(disp, root, prop, 0, 4, False, XA_CARDINAL,
+			       &proptype, &format, &nitems, &bytes,
+			       (unsigned char **)(void *)&propdata) == Success &&
+	    proptype == XA_CARDINAL &&
+	    nitems >= 4) {
 
-        minx = propdata[0];
-        miny = propdata[1];
-        maxx = propdata[2];
-        maxy = propdata[3];
+	    minx = propdata[0];
+	    miny = propdata[1];
+	    maxx = propdata[2];
+	    maxy = propdata[3];
 
-        XFree(propdata);
+	    XFree(propdata);
+	}
     }
 
     maxw = maxx - minx;
     maxh = maxy - miny;
 
-    maxw -= fw;
-    maxh -= fh;
+    if (!fullscr) {
+	maxw -= fw;
+	maxh -= fh;
+    }
+
+    /*
+     * Leave space for the one-pixel border.
+     */
+    maxw -= 2;
+    maxh -= 2;
 }
 
 /*
@@ -470,8 +480,16 @@ static int win_key_press(GtkWidget *widget, GdkEventKey *event, gpointer data)
     } else {
 	int c = event->keyval;
 
-	if (c == GDK_BackSpace && w->pos > 0) {
+	if ((c == GDK_BackSpace ||
+	     c == GDK_Page_Up ||
+	     c == GDK_KP_Page_Up) && w->pos > 0) {
 	    switch_to_image(w, w->pos-1);
+	    return TRUE;
+	}
+
+	if ((c == GDK_Page_Down ||
+	     c == GDK_KP_Page_Down) && w->pos+1 < w->il->n) {
+	    switch_to_image(w, w->pos+1);
 	    return TRUE;
 	}
     }
@@ -489,6 +507,9 @@ static struct window *new_window(struct ilist *il, int maxsize, int fullscr)
 	 */
 	il->maxw = gdk_screen_width();
 	il->maxh = gdk_screen_height();
+    } else {
+	il->maxw = maxw;
+	il->maxh = maxh;
     }
 
     w->il = il;
@@ -602,8 +623,6 @@ int main(int argc, char **argv)
 	memcpy(argv, gtk_argv, gtk_argc * sizeof(char *));
 	memcpy(argv + gtk_argc, trail_argv, trail_argc * sizeof(char *));
     }
-
-    setup_maxw_maxh();
 
     image_init();
 
@@ -789,6 +808,8 @@ int main(int argc, char **argv)
 	    }
 	}
     }
+
+    setup_maxw_maxh(fullscr);
 
     {
 	GdkColormap *cm = gdk_colormap_get_system();
