@@ -1,0 +1,24 @@
+Summary: Pageant -c continues even if key load fails
+Class: bug
+Present-in: 0.59
+Content-type: text/plain
+
+A user reports:
+
+Is there any way you can modify pageant to allow the -c command only to run
+if the key passed on the command line loaded successfully? This is the
+behaviour implied by the manual:
+
+
+You can arrange for Pageant to start another program once it has initialised
+itself and loaded any keys specified on its command line. This program
+(perhaps a PuTTY, or a WinCVS making use of Plink, or whatever) will then be
+able to use the keys Pageant has loaded.
+
+You do this by specifying the -c option followed by the command, like this:
+
+C:\PuTTY\pageant.exe d:\main.ppk -c C:\PuTTY\putty.exe
+
+However it continues to run the -c command even if the key fails to load
+(say if I press "cancel" when asked for a passphrase or even if the key file
+does not exist).
