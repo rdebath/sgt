@@ -1,0 +1,83 @@
+Summary: When using some bitmap TrueType fonts, underlined characters vanish
+Present-in: 0.59 2007-04-10
+Class: semi-bug
+Content-type: text/plain
+
+Reported by a user:
+
+This one's a bit hard to explain, so here it goes:
+
+  Client: PuTTY 0.59, and current snapshots
+      OS: Windows XP Professional SP2
+Protocol: SSHv2
+  Server: FreeBSD 6.2-STABLE
+
+Quite a few people (myself included) use the famous xterm 6x13 terminal
+font on Windows (converted using Fontforge from the original 6x13.bdf to
+an OpenType/TTF Bitmap font) with PuTTY.  This font contains a very
+large glyph set, and line drawing characters, thus is quite useful.
+
+All gylphs are shown correctly with this font... except for characters
+which should be displayed with underlines (ex: \e[4m).  The underlines
+are shown, but the gylph is blank/empty.  PuTTY does not appear to be
+"drawing its own underline" with this font -- yeah I've read the code,
+and this font does not suffer from the same problem "Courier New" 9pt
+does (see some of the debug output I added below).
+
+The font size selected must be 10pt.  All other point sizes (9pt, 11pt,
+etc.) show the gylphs and show underlining.  Of course, the font is
+intended to be used in 10pt...
+
+The PuTTY client "Translation" mode (e.g. ISO-8859-1, UTF-8, etc.) has
+no effect on this problem either -- it happens in all translations.
+
+The font metrics are indeed 6x13, and I've verified as such with some
+debugging code I threw into windows/window.c a few hours ago.  The
+applicable font details:
+
+Primary font H=13, AW=6, MW=4
+fonts[FONT_UNDERLINE]
+  tmHeight          = 13
+  tmAscent          = 11
+  tmDescent         = 2
+  tmInternalLeading = 0
+  tmExternalLeading = 1
+  tmAveCharWidth    = 6
+  tmMaxCharWidth    = 4
+  tmWeight          = 500
+  tmOverhang        = 0
+  tmItalic          = 0
+  tmUnderlined      = 0
+  tmStruckOut       = 0
+  tmPitchAndFamily  = 0x36
+  tmCharSet         = 0
+
+I'm ~99% positive this is not the result of a badly converted font.
+Other applications work just fine with this font: Wordpad, mIRC,
+Internet Explorer, and SecureCRT all function normally with this font,
+with underlining.  Here's a screenshot of `man ls` which should speak
+for itself:
+
+http://jdc.parodius.com/putty_securecrt_6x13.png
+
+The font itself is available here:
+
+http://jdc.parodius.com/FixedMedium.ttf
+
+I have been hacking at the PuTTY code for the past 6 hours trying to
+figure out why this is happening, and I am completely stumped.
+
+The only thing I *have* found:
+
+In init_fonts(), forcing PuTTY to draw the underline itself and thus
+deleting fonts[FONT_UNDERLINE] causes the problem to disappear.  I have no
+explanation for why.  In windows/window.c around line 1481 -- before
+the if (bold_mode == BOLD_FONT) check...
+
+und_mode = UND_LINE;
+DeleteObject(fonts[FONT_UNDERLINE]);
+fonts[FONT_UNDERLINE] = 0;
+
+Again, don't know why this helps solve the issue, but it does.  This
+isn't the correct "fix" obviously -- I'm just pointing it out to help
+track down the source of the problem (I hope).
