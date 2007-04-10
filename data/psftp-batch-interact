@@ -1,0 +1,17 @@
+Summary: PSFTP: continue interactively after a batch script
+Class: wish
+Content-type: text/x-html-body
+
+<p>A user requests:
+
+<blockquote><p>
+I would like to be able to run a batch file and then _not_ exit, but
+instead simply continue interactively while still logged in to the host.
+The key reason is to be able to set default to a particular directory
+but then take interactive control. Allowing a batch file to run before
+the user takes control would be a general purpose way to do this.
+
+<p>I could image a command line option (-bu  for Batch and continUe?), but
+a batch command (end ?) would tie into a possible general purpose
+<a href="scripting">scripting</a> capability at some time in the future.
+</blockquote>
