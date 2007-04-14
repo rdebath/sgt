@@ -21,7 +21,7 @@ inlay-frontcover-mask.png: inlay-frontcover.png
 	# the size we're expecting.
 	convert -negate -scale 1529x2161! $< $@
 inlay-with-frontcover.png: inlay-frontcover-mask.png inlay-background.png
-	composite -size 1529x2161 -geometry +1695+0 \
+	composite -compose atop -size 1529x2161 -geometry +1695+0 \
 		xc:black inlay-background.png inlay-frontcover-mask.png $@
 
 inlay-spine.dvi: inlay-spine.tex
@@ -35,7 +35,7 @@ inlay-spine-mask.png: inlay-spine.png
 	# the size we're expecting.
 	convert -negate -rotate '90>' -scale 165x2161! $< $@
 inlay-with-spine.png: inlay-spine-mask.png inlay-with-frontcover.png
-	composite -size 165x2161 -geometry +1529+0 \
+	composite -compose atop -size 165x2161 -geometry +1529+0 \
 		xc:black inlay-with-frontcover.png inlay-spine-mask.png $@
 
 inlay-backcover.dvi: inlay-backcover.tex
@@ -49,7 +49,7 @@ inlay-backcover-mask.png: inlay-backcover.png
 	# the size we're expecting.
 	convert -negate -scale 1529x2161! $< $@
 inlay-with-backcover.png: inlay-backcover-mask.png inlay-with-spine.png
-	composite -size 1529x2161 -geometry +0+0 \
+	composite -compose atop -size 1529x2161 -geometry +0+0 \
 		xc:black inlay-with-spine.png inlay-backcover-mask.png $@
 
 inlay.eps: inlay-with-backcover.png
