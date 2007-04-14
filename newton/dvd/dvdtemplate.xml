@@ -3,26 +3,23 @@
   <vmgm>
     <menus>
       <video aspect="4:3" widescreen="noletterbox" />
-      <pgc>
-        <pre>{ if ((s14 &amp; 3072) == 3072) { g10 = 2048; } else { g10 = 1024; }
-	       jump menu 2; } </pre>
-      </pgc>
       <pgc entry="title">
+        <pre>{ if (g10 == 0) { if ((s14 &amp; 3072) == 3072) { g10 = 2048; } else { g10 = 1024; } } } </pre>
         <button> {
 	g9 = 1;
 	if ((g10 &amp; 1024) == 0) {jump titleset 2 menu entry root;}
 	else {jump titleset 1 menu entry root;}
 	} </button>
+        <button> { jump menu 2; } </button>
         <button> { jump menu 3; } </button>
-        <button> { jump menu 4; } </button>
         <vob file="mainmenu.mpg" />
         <post> jump cell 1; </post>
       </pgc>
       <pgc>
-        <button> { g10 = 1024; jump menu 2; } </button>
-        <button> { g10 = 2048; jump menu 2; } </button>
-        <button> { g10 = 3072; jump menu 2; } </button>
-        <button> { g10 = 4096; jump menu 2; } </button>
+        <button> { g10 = 1024; jump menu 1; } </button>
+        <button> { g10 = 2048; jump menu 1; } </button>
+        <button> { g10 = 3072; jump menu 1; } </button>
+        <button> { g10 = 4096; jump menu 1; } </button>
         <vob file="aspectmenu.mpg" />
         <post> jump cell 1; </post>
       </pgc>
@@ -47,9 +44,9 @@
 	  if ((g10 &amp; 1024) == 0) {jump titleset 2 menu entry root;}
 	  else {jump titleset 1 menu entry root;}
 	} </button>
-        <button> jump menu 9; </button>
-        <button> jump menu 2; </button>
-        <button> jump menu 5; </button>
+        <button> jump menu 8; </button>
+        <button> jump menu 1; </button>
+        <button> jump menu 4; </button>
         <vob file="chapter1menu.mpg" />
         <post> jump cell 1; </post>
       </pgc>
@@ -74,9 +71,9 @@
 	  if ((g10 &amp; 1024) == 0) {jump titleset 2 menu entry root;}
 	  else {jump titleset 1 menu entry root;}
 	} </button>
-        <button> jump menu 4; </button>
-        <button> jump menu 2; </button>
-        <button> jump menu 6; </button>
+        <button> jump menu 3; </button>
+        <button> jump menu 1; </button>
+        <button> jump menu 5; </button>
         <vob file="chapter2menu.mpg" />
         <post> jump cell 1; </post>
       </pgc>
@@ -101,9 +98,9 @@
 	  if ((g10 &amp; 1024) == 0) {jump titleset 2 menu entry root;}
 	  else {jump titleset 1 menu entry root;}
 	} </button>
-        <button> jump menu 5; </button>
-        <button> jump menu 2; </button>
-        <button> jump menu 7; </button>
+        <button> jump menu 4; </button>
+        <button> jump menu 1; </button>
+        <button> jump menu 6; </button>
         <vob file="chapter3menu.mpg" />
         <post> jump cell 1; </post>
       </pgc>
@@ -128,9 +125,9 @@
 	  if ((g10 &amp; 1024) == 0) {jump titleset 2 menu entry root;}
 	  else {jump titleset 1 menu entry root;}
 	} </button>
-        <button> jump menu 6; </button>
-        <button> jump menu 2; </button>
-        <button> jump menu 8; </button>
+        <button> jump menu 5; </button>
+        <button> jump menu 1; </button>
+        <button> jump menu 7; </button>
         <vob file="chapter4menu.mpg" />
         <post> jump cell 1; </post>
       </pgc>
@@ -155,9 +152,9 @@
 	  if ((g10 &amp; 1024) == 0) {jump titleset 2 menu entry root;}
 	  else {jump titleset 1 menu entry root;}
 	} </button>
-        <button> jump menu 7; </button>
-        <button> jump menu 2; </button>
-        <button> jump menu 9; </button>
+        <button> jump menu 6; </button>
+        <button> jump menu 1; </button>
+        <button> jump menu 8; </button>
         <vob file="chapter5menu.mpg" />
         <post> jump cell 1; </post>
       </pgc>
@@ -172,9 +169,9 @@
 	  if ((g10 &amp; 1024) == 0) {jump titleset 2 menu entry root;}
 	  else {jump titleset 1 menu entry root;}
 	} </button>
-        <button> jump menu 8; </button>
-        <button> jump menu 2; </button>
-        <button> jump menu 4; </button>
+        <button> jump menu 7; </button>
+        <button> jump menu 1; </button>
+        <button> jump menu 3; </button>
         <vob file="chapter6menu.mpg" />
         <post> jump cell 1; </post>
       </pgc>
