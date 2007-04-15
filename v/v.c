@@ -4,7 +4,7 @@
  */
 
 /*
- * Things I don't like about other viewers:
+ * Things I didn't like about other viewers:
  *
  *  - eeyes is mostly nice but really, really needs keypresses to
  *    be interpreted identically whether the list or image window
@@ -26,42 +26,62 @@
  */
 
 /*
- * Desired features:
- *
- *  - ability to load lots of images and step back and forth
- *    between them.
- *     + passing wildcards / file lists on the command line,
- *       obviously
- *     + also it might be handy to be able to prepare a text file
- *       containing a list of image file names, and have v read
- *       from the text file (or stdin). Might be handy next time I
- *       want to create an animation (fractal, raytraced or
- *       whatever).
- *
- *  - scaling of images so they fit on the screen.
- *     + should also be able to switch back to 1-1 viewing, which
- *       probably means scrollbars.
- *     + manual scaling would probably be nice too.
+ * I therefore intended to write a viewer which had an eeyes-like
+ * list window which was optional, but after I wrote the basic
+ * version which didn't yet have the list window I found that in
+ * fact I never missed it. So v doesn't, and probably won't.
+ */
+
+/*
+ * Feature wishlist:
  * 
- *  - manual rotation by 90 degrees at a time would be helpful.
+ *  - in full screen mode, the ability to find out the name of the
+ *    current image file.
+ *     + one option is to print the name in the spare space around
+ * 	 the image. My current vision is that this text goes in the
+ * 	 TL corner and is wrapped to fit. So if the image is more
+ * 	 landscapey than the screen then there'll be space along
+ * 	 the top and the filename probably won't need wrapping,
+ * 	 whereas if the image is more portraitey than the screen
+ * 	 then there'll be space down the left and the name will
+ * 	 probably fit with some wrapping. If neither works, then
+ * 	 the image should be scaled down slightly until one does
+ * 	 (although it's unclear how to efficiently determine the
+ * 	 minimum necessary shrinkage for this).
+ *     + Another, simpler, option is to pop up the name in a
+ * 	 tooltip on some sort of keyboard request; then it doesn't
+ * 	 matter if it covers part of the image, because it's not
+ * 	 staying for long anyway.
  *
- *  - an ee-like list window is a possibility, but can get in the
- *    way as much as it helps when viewing a big image. Uncertain.
+ *  - manual rotation by 90 degrees at a time, and perhaps
+ *    reflection too, would be occasionally handy.
+ *
+ *  - ability to change the viewing scale of an image from the
+ *    default, meaning that scrollbars must appear if it ends up
+ *    exceeding the window size. Generalised zoom-in and zoom-out
+ *    controls would be good; a `force 1:1' option would be good
+ *    too.
  * 
- *  - I'm wondering about a mode in which the window stays the same
- *    size and images are centred in it (or scaled down /
- *    scrollbarred to fit), as well as the obvious mode in which
- *    the window changes size to adapt to each image.
- *     + in this mode, a good initial window size might be the
- *       maximum of all the images being shown?
- *     + perhaps a one-pixel black border within the grey default
- *       window background, which would have the advantage of
- *       making it always unambiguous where the image actually
- *       began?
+ *  - when blowing up small images to large size, the blurry scaler
+ *    is nice for low-resolution photos and other such continuous
+ *    content but it would be good to also have a simplistic scaler
+ *    for examining images in exact detail. xmag is all very well,
+ *    but it would be nicer not to have to invoke it every time.
  * 
- *  - sort out sensible alpha channel handling. I _think_ we're
- *    currently compositing the image on to black, which isn't
- *    ideal.
+ *  - aspect ratio control might occasionally be handy, although
+ *    this is low priority. The primary use I can currently see for
+ *    it is viewing DVD stills, since DVD-resolution images have a
+ *    non-square aspect ratio.
+ * 
+ *  - when viewing mathematical diagrams (graphs, fractals) it
+ *    might be quite handy to be able to click in the image and be
+ *    told the coordinates of the target point, not necessarily in
+ *    _pixels_ but in the appropriate mathematical coordinates. So
+ *    that would mean some command-line method for specifying the
+ *    coordinate space for a given image. Probably this should be
+ *    done the same way as my various image-plotting programs such
+ *    as newton and filigram, so that I can use the same options
+ *    for the generation and viewing phases.
  */
 
 #include <stdio.h>
