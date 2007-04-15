@@ -698,7 +698,7 @@ def shellquote(list):
 
 def cmdline(t):
     power, title, credits, points = findpoints(frameoffset + float(t) / fps)
-    cmdline2 = None
+    cmdline2 = cmdline3 = None
     if title != None:
 	if preview:
 	    titlename = "ptitle.png"
@@ -720,12 +720,14 @@ def cmdline(t):
 	else:
 	    cmdline = ["convert", "-negate", "-modulate", "%f" % (100.0*title),
 	    "-scale", "%dx%d!" % (width, height), titlename, "ppm:-"]
+	cmdline3 = ["./vblur.pl"]
     elif credits != None:
 	cmdline = ["convert", "-negate", "-crop",
 	"%dx%d+0+%d" % (cwidth, pheight, credits),
 	"credits.png", "ppm:-"]
 	cmdline2 = ["convert", "-scale", "%dx%d!" % (width, height),
 	"ppm:-", "ppm:-"]
+	cmdline3 = ["./vblur.pl"]
     else:
 	cmdline = ["./newton"]
 	if preview:
@@ -747,6 +749,8 @@ def cmdline(t):
     ret = shellquote(cmdline)
     if cmdline2 != None:
 	ret = ret + " | " + shellquote(cmdline2)
+    if cmdline3 != None:
+	ret = ret + " | " + shellquote(cmdline3)
     return ret
 
 def startjobs():

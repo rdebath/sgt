@@ -61,7 +61,8 @@ $(NAME)menu.mpg: $(NAME)menu-main.png $(NAME)menu-highlight.png \
 	      $(NAME)menu-select.png $(NAME)menu.xml \
 	      findboxes.pl $(NAME)menu-oboxes.dvi ./menuppm.pl
 	convert -scale $(SIZE)'!' -negate \
-		$(NAME)menu-main.png $(NAME)menu-main-final.png
+		$(NAME)menu-main.png ppm:- | \
+		./vblur.pl | convert ppm:- $(NAME)menu-main-final.png
 	convert -scale $(SIZE)'!' -colors 2 +dither \
 		-map pal2.xpm -negate \
 		$(NAME)menu-highlight.png xpm:- | \
