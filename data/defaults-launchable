@@ -61,7 +61,6 @@ that PuTTY 0.59 does not attempt to launch a serial connection.
 to carry on using a development snapshot in any case, as the serial
 support is <a href="win-handle-double-free.html">prone to crashes</a>.)
 </li>
-<ul>
 <li>If you're happy editing the Registry:
 <ol>
 <li>Run <tt>REGEDIT.EXE</tt>.
