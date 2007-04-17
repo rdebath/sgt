@@ -39,8 +39,28 @@ also repeal the restriction on having a default host name saved in
 Default Settings.
 
 <p>
-In the meantime, if you get into this situation, the following
-workarounds are available:
+<b>SGT, 2007-02-10</b>: Should now be fixed, by the method described
+above: Default Settings may describe a launchable session but is
+never actually launched unless PuTTY is sure the user really meant
+it. In particular, merely starting PuTTY doesn't launch the session
+described by DS, and neither does double-clicking DS from the saved
+sessions menu. Hitting Open once you've loaded it still works, and
+using "<code>-load</code>" still works. Also, as mentioned above,
+I've relaxed the restriction on storing a host name in DS, on the
+basis that since one type of launchable session is now permitted in
+DS there's no reason not to permit the other too.
+
+<p>
+If you get into this situation, the following workarounds are
+available:
+<ul>
+<li>Download a development snapshot of PuTTY, which does not suffer
+from this problem. You will then be able to edit Default Settings so
+that PuTTY 0.59 does not attempt to launch a serial connection.
+(Although if you're using the serial backend, you are likely to need
+to carry on using a development snapshot in any case, as the serial
+support is <a href="win-handle-double-free.html">prone to crashes</a>.)
+</li>
 <ul>
 <li>If you're happy editing the Registry:
 <ol>
@@ -55,15 +75,3 @@ can use <tt>putty -cleanup</tt>. See
 <a href="http://the.earth.li/~sgtatham/putty/0.59/htmldoc/Chapter3.html#using-cleanup">the documentation</a>.
 </li>
 </ul>
-
-<p>
-<b>SGT, 2007-02-10</b>: Should now be fixed, by the method described
-above: Default Settings may describe a launchable session but is
-never actually launched unless PuTTY is sure the user really meant
-it. In particular, merely starting PuTTY doesn't launch the session
-described by DS, and neither does double-clicking DS from the saved
-sessions menu. Hitting Open once you've loaded it still works, and
-using "<code>-load</code>" still works. Also, as mentioned above,
-I've relaxed the restriction on storing a host name in DS, on the
-basis that since one type of launchable session is now permitted in
-DS there's no reason not to permit the other too.
