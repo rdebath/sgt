@@ -58,6 +58,11 @@ import string
 import types
 import md5
 
+# Quoting function which should render any string impervious to
+# POSIX shell metacharacter expansion.
+def quote(word):
+    return "'" + string.replace(word, "'", "'\\''") + "'"
+
 # First, the sensible way to deal with a pathname is to split it
 # into pieces at the slashes and thereafter treat it as a list.
 def splitpath(s):
@@ -255,7 +260,7 @@ class Filter:
 			# extract the subtree and convert it into
 			# lumps.
 			treecmd = "svnlook tree -r%d %s %s" % \
-			(srcrev, repos, srcpath)
+			(srcrev, quote(repos), quote(srcpath))
 			tree = os.popen(treecmd, "r")
 			pathcomponents = []
 			while 1:
@@ -277,14 +282,14 @@ class Filter:
 			    newlump.sethdr("Node-path", thisdstpath)
 			    newlump.sethdr("Node-action", "add")
 			    props = os.popen("svnlook pl -r%d %s %s" % \
-			    (srcrev, repos, thissrcpath), "r")
+			    (srcrev, quote(repos), quote(thissrcpath)), "r")
 			    while 1:
 				propname = props.readline()
 				if propname == "": break
 				if propname[-1:] == "\n": propname = propname[:-1]
 				while propname[:1] == " ": propname = propname[1:]
 				propf = os.popen("svnlook pg -r%d %s %s %s" % \
-				(srcrev, repos, propname, thissrcpath), "r")
+				(srcrev, quote(repos), quote(propname), quote(thissrcpath)), "r")
 				proptext = propf.read()
 				propf.close()
 				newlump.setprop(propname, proptext)
@@ -294,7 +299,7 @@ class Filter:
 			    else:
 				newlump.sethdr("Node-kind", "file")
 				f = os.popen("svnlook cat -r%d %s %s" % \
-				(srcrev, repos, thissrcpath), "r")
+				(srcrev, quote(repos), quote(thissrcpath)), "r")
 				newlump.text = f.read()
 				f.close()
 			    contents2.append(newlump)
