@@ -116,10 +116,9 @@ silently and successfully and my third mode will be enabled.)
 
 \U The patch
 
-Here are patches to versions 2.05, 2.05a and 2.05b of \c{bash}. (The
-various Linux systems I use do not all run the same distribution or
-version of \c{bash}, so I prepared patches against three different
-versions.)
+Here are patches to several versions of \c{bash}. (The various Linux
+systems I use do not all run the same distribution or version of
+\c{bash}, so I prepared patches against three different versions.)
 
 \b \W{patch-bash-2.05-notify}\cw{patch-bash-2.05-notify}
 
@@ -127,9 +126,14 @@ versions.)
 
 \b \W{patch-bash-2.05b-notify}\cw{patch-bash-2.05b-notify}
 
+\b \W{patch-bash-3.1-notify}\cw{patch-bash-3.1-notify}
+
 In addition, here are Debian binary packages (for \cw{i386}) of the
 patched \c{bash}. These should install cleanly on any system running
-Debian 3.1 (\q{sarge}) or 3.0 (\q{woody}).
+Debian 4.0 (\q{etch}), 3.1 (\q{sarge}) or 3.0 (\q{woody}).
+
+\b For \q{etch}:
+\W{bash_3.1dfsg-8+notify_i386.deb}\cw{bash_3.1dfsg-8+notify_i386.deb}
 
 \b For \q{sarge}:
 \W{bash_2.05b-26+notify_i386.deb}\cw{bash_2.05b-26+notify_i386.deb}
