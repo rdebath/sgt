@@ -10,6 +10,8 @@
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <termios.h>
+#include <sys/ioctl.h>
 
 #include "filter.h"
 
@@ -43,6 +45,16 @@ int pty_get(char *name)
 
     name[FILENAME_MAX-1] = '\0';
     strncpy(name, ptsname(fd), FILENAME_MAX-1);
+
+    {
+	struct winsize ws;
+	struct termios ts;
+
+	if (!ioctl(0, TIOCGWINSZ, &ws))
+	    ioctl(fd, TIOCSWINSZ, &ws);
+	if (!tcgetattr(0, &ts))
+	    tcsetattr(fd, TCSANOW, &ts);
+    }
 
     return fd;
 }
