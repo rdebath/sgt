@@ -469,7 +469,7 @@ int backup_file (void) {
 }
 
 static unsigned char *scrbuf = NULL;
-static int scrbuflines = 0;
+static int scrbufsize = 0;
 
 /*
  * Draw the screen, for normal usage.
@@ -484,16 +484,15 @@ void draw_scr (void) {
     char *linebuf;
 
     scrlines = display_rows - 2;
-    if (scrlines > scrbuflines) {
-	scrbuf = (scrbuf ?
-		  realloc(scrbuf, scrlines*width) :
-		  malloc(scrlines*width));
+    scrsize = scrlines * width;
+    if (scrsize > scrbufsize) {
+	scrbuf = (scrbuf ? realloc(scrbuf, scrsize) : malloc(scrsize));
 	if (!scrbuf) {
 	    done();
 	    fprintf(stderr, "%s: out of memory!\n", pname);
 	    exit (2);
 	}
-	scrbuflines = scrlines;
+	scrbufsize = scrsize;
     }
 
     linebuf = malloc(width*4+20);
@@ -509,7 +508,8 @@ void draw_scr (void) {
 	scroff = width - offset;
     else
 	scroff = 0;
-    scrsize = scrlines * width - scroff;
+
+    scrsize -= scroff;
     if (scrsize > file_size - top_pos)
 	scrsize = file_size - top_pos;
 
