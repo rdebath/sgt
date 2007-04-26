@@ -107,6 +107,14 @@ enum { NEVER, TOOBIG, ALWAYS } scale = TOOBIG;
 
 GdkColor bg = {0, 32768, 32768, 32768};
 
+#ifndef SUPPORT_FULLSCREEN
+  #if GTK_CHECK_VERSION(2,0,0)
+    #define SUPPORT_FULLSCREEN 1
+  #else
+    #define SUPPORT_FULLSCREEN 0
+  #endif
+#endif
+
 /*
  * Determine the maximum usable area of the screen. At a pinch we
  * can do this simply by querying the screen size, but if there are
@@ -521,13 +529,16 @@ static struct window *new_window(struct ilist *il, int maxsize, int fullscr)
 {
     struct window *w = snew(struct window);
 
+#if SUPPORT_FULLSCREEN
     if (fullscr) {
 	/*
 	 * Ignore all that careful work with the work area.
 	 */
 	il->maxw = gdk_screen_width();
 	il->maxh = gdk_screen_height();
-    } else {
+    } else
+#endif
+    {
 	il->maxw = maxw;
 	il->maxh = maxh;
     }
@@ -542,8 +553,10 @@ static struct window *new_window(struct ilist *il, int maxsize, int fullscr)
     w->area = gtk_drawing_area_new();
     w->ww = w->wh = 0;
 
+#if SUPPORT_FULLSCREEN
     if (fullscr)
 	gtk_window_fullscreen(GTK_WINDOW(w->window));
+#endif
 
     gtk_widget_show(w->area);
     gtk_container_add(GTK_CONTAINER(w->window), w->area);
@@ -561,6 +574,7 @@ static struct window *new_window(struct ilist *il, int maxsize, int fullscr)
 
     gtk_widget_show(w->window);
 
+#if SUPPORT_FULLSCREEN
     if (fullscr) {
 	GdkPixmap *ptr;
 	GdkColor cfg = { 0, 65535, 65535, 65535 };
@@ -580,6 +594,7 @@ static struct window *new_window(struct ilist *il, int maxsize, int fullscr)
 	gdk_pixmap_unref(ptr);
 	gdk_window_set_cursor(w->window->window, cur);
     }
+#endif
 
     switch_to_image(w, 0);             /* now actually create the pixmap */
 
@@ -750,7 +765,13 @@ int main(int argc, char **argv)
 			maxsize = TRUE;
 			break;
 		      case 'f':
+#if SUPPORT_FULLSCREEN
 			fullscr = TRUE;
+#else
+                        fprintf(stderr, "v: full screen not supported in"
+                                " this build\n");
+                        errs = TRUE;
+#endif
 			break;
 		      case 'a':
 			scale = ALWAYS;
