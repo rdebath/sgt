@@ -1529,7 +1529,7 @@ define cvssvn_log() {
     set_blocal_var(file, "cvssvn-file");
 }
 define cvssvn_diff() {
-    variable file, dir, name, bufname, bufnum, which, rev1, rev2, args;
+    variable file, dir, name, bufname, bufnum, which, rev1, rev2, dr1, args;
     (file, dir, name, ) = getbuf_info();
     if (strcmp(substr(name, 1, 10), "*cvs-log*:") == 0 or
 	strcmp(substr(name, 1, 10), "*svn-log*:") == 0) {
@@ -1560,8 +1560,14 @@ define cvssvn_diff() {
     if (which == "") {
 	error("Unable to find an applicable version control tool");
     }
-    rev2 = read_mini ("Later revision [default: working copy]:", "", "");
-    rev1 = read_mini ("Earlier revision [default: current]:", "", "");
+    rev2 = read_mini ("Later revision: (default: working copy)", "", "");
+    if (rev2 != "" and strtrim(rev2, "0123456789") == "") {
+        % rev2 is numeric, so default to the previous revision as rev1.
+        dr1 = sprintf("%d", integer(rev2) - 1);
+        rev1 = read_mini ("Earlier revision:", dr1, "");
+    } else {
+        rev1 = read_mini ("Earlier revision: (default: current)", "", "");
+    }
     bufname = "*" + which + "-diff*:" + name;
     bufnum = 0;
     while (bufferp(bufname)) {

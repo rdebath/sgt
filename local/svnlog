@@ -2,12 +2,12 @@
 
 # Wrapper on `svn log' that does what I usually want.
 
-uuid=`svn info | grep '^Repository UUID:' | cut -f3- -d' '`
-
 case "$1" in
   -r*) dashr=;;
   *) dashr=-rHEAD:1;;
 esac
+
+uuid=`svn info "$1" | grep '^Repository UUID:' | cut -f3- -d' '`
 
 svn log -v $dashr "$@" | \
   perl -e '
@@ -15,12 +15,15 @@ svn log -v $dashr "$@" | \
 $uuid = shift @ARGV;
 while (<>) {
     print;
-    next unless /^r(\d+).*(\d+) lines$/;
+    next unless /^r(\d+).*(\d+) lines?$/;
     ($rev,$lines) = ($1,$2);
     # Now parsing a revision record. Omit the changed paths section
     # if it is going to be a problematic one.
-    if ($uuid eq "cda61777-01e9-0310-a592-d414129be87e" and
-        ($rev eq "4787" or $rev eq "4788" or $rev eq "4813")) {
+    if (($uuid eq "cda61777-01e9-0310-a592-d414129be87e" and
+         ($rev eq "4787" or $rev eq "4788" or $rev eq "4813")) or
+        ($uuid eq "07687609-9ffd-0310-b3d8-e1e92c021e09" and
+         ($rev eq "91719" or $rev eq "91739" or
+          $rev eq "91768" or $rev eq "91721"))) {
 	print "[svnlog: changed paths section omitted]\n\n";
 	while (<>) {
             chomp;
