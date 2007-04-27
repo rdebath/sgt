@@ -2,20 +2,23 @@
 
 import sys
 
-# Spigot algorithm to produce the digits of pi, without having to
-# commit in advance to the number of digits desired (so you can
-# just keep going until memory or CPU time runs out). Implemented
-# from the description given in
+# Spigot algorithm to produce the digits of pi and e, without
+# having to commit in advance to the number of digits desired (so
+# you can just keep going until memory or CPU time runs out).
+# Implemented from the description given in
 #
 # http://web.comlab.ox.ac.uk/oucl/work/jeremy.gibbons/publications/spigot.pdf
 #
-# and enhanced to generate e as well by me.
+# and enhanced (for e, different bases and continued fractions) by
+# me.
 
 # Usage:
-#   spigot.py                    # generates pi in base 10
-#   spigot.py 7                  # generates pi in another base, e.g. 7
+#   spigot.py pi                 # generates pi in base 10
+#   spigot.py -b7 pi             # generates pi in another base, e.g. 7
+#   spigot.py -c pi              # generates continued fraction for pi
 #   spigot.py e                  # generates e in base 10
-#   spigot.py e 7                # generates e in another base, e.g. 7
+#   spigot.py -b7 e              # generates e in another base, e.g. 7
+#   spigot.py -c e               # generates continued fraction for e (boring!)
 
 # Method (hopefully a slightly more accessible description than the
 # one in the paper cited above):
@@ -116,23 +119,58 @@ import sys
 #
 # Fortunately, all the functions _other_ than the first one have
 # the property that they map [0,2] to a subinterval of itself. So
-# once the image of [0,2] under one `partial sum' of this function
-# series contains e, its image under subsequent partial sums will
-# be a subinterval of that and hence will always contain e as well.
-# So we need only check that no spurious `digits' are output before
-# that happens, and then we're safe. And this is OK, because under
-# the identity matrix [0,2] maps to [0,2] which doesn't have a
-# constant integer part, under the first function it maps to [1,3]
-# which doesn't either, and under the first two functions it maps
-# to [2,3] which contains e.
+# once the image of [0,2] under a `partial sum' of at least two
+# terms of this function series contains e, its image under
+# subsequent partial sums will be a subinterval of that and hence
+# will always contain e as well. So we need only check that no
+# spurious `digits' are output before that happens, and then we're
+# safe. And this is OK, because the identity matrix maps [0,2] to
+# [0,2] which doesn't have a constant integer part, the first
+# function maps it to [1,3] which doesn't either, and the first two
+# functions map it to [2,3] which contains e and is late enough in
+# the series to be safe.
+#
+# At the output end, we can obviously modify the algorithm to yield
+# digits in any base we like instead of ten. Mathematically, our
+# means of generating digits involves repeatedly subtracting off
+# the integer part and then multiplying by ten; so, clearly, if we
+# subtract off the integer part and then multiply by some other
+# number, we'll get the digits of pi or e in that base instead. (Of
+# course, the _first_ digit extracted will be the original integer
+# part of the number, which won't be within the right range if the
+# target base is 2 or 3. But that's easy to correct for, and all
+# subsequent digits will be in range.)
+#
+# Another neat trick is that this algorithm can be trivially
+# switched to generate the terms of the continued fraction for pi
+# (or e, although e's continued fraction is boringly regular). A
+# theoretical algorithm for finding the terms of the continued
+# fraction for a number, given exact real arithmetic, is to
+# subtract off the integer part, take the reciprocal of the result,
+# and repeat. And just like `subtract n and multiply by ten', the
+# operation `subtract n and take the reciprocal' can also be
+# written as a Mobius transformation - so by simply premultiplying
+# by a different matrix every time we output a `digit', we can
+# generate the continued fraction for pi to arbitrary length using
+# exactly the same core algorithm.
+#
+# (Doing this does mean we have to watch out for division by zero
+# when computing the candidate digit (3p+q)/(3r+s), for all values
+# of 3. Division by zero indicates that the image of our starting
+# interval under our current function is an interval with one end
+# at infinity, so when this occurs we simply decide that a digit
+# cannot safely be extracted at this time, and keep going. The
+# interval will shrink to finite size as soon as another matrix is
+# folded in.)
 
-def writedigit(digit):
+def consume_base(state, digit):
     global start
+
     if start:
-	# Special case: the first digit generated is the
-	# integer part, and hence is always 3. Therefore, we
-	# want to write a decimal point after it, and also we
-	# need special handling if `base' is too small.
+	# Special case: the first digit generated is the integer
+	# part of the target number. Therefore, we want to write a
+	# decimal point after it, and also we need special handling
+	# if `base' is too small.
 	if digit >= base:
 	    assert digit < base*base
 	    sys.stdout.write("%d%d" % (digit / base, digit % base))
@@ -146,9 +184,22 @@ def writedigit(digit):
 	sys.stdout.write("%c" % (48 + digit + 39*(digit>9)))
     sys.stdout.flush()
 
+    return mmul((base, -base*digit, 0, 1), state)
+
+def consume_confrac(state, digit):
+    global start
+
+    sys.stdout.write("%d\n" % digit)
+    sys.stdout.flush()
+
+    return mmul((0, 1, 1, -digit), state)
+
 def mtrans(m, x):
     # Interpret a 2x2 matrix as a Mobius transformation.
-    return (m[0]*x+m[1]) / (m[2]*x+m[3])
+    try:
+	return (m[0]*x+m[1]) / (m[2]*x+m[3])
+    except ZeroDivisionError, e:
+	return None
 
 def mmul(m1, m2):
     # 2x2 matrix multiplication.
@@ -161,19 +212,44 @@ def pi_matrix(k):
 def e_matrix(k):
     return (1, k, 0, k)
 
-bot = 3
-top = 4
-matrix = pi_matrix
+bot, top, matrix = None, None, None
+base, consume = 10, consume_base
 
-base = 10
-for arg in sys.argv[1:]:
-    if arg == "e":
-	bot = 0
-	top = 2
-	matrix = e_matrix
+args = sys.argv[1:]
+while len(args) > 0:
+    arg = args[0]
+    args = args[1:]
+    if arg == "-c":
+	base, consume = None, consume_confrac
+    elif arg[0:2] == "-b":
+	val = arg[2:]
+	if val == "":
+	    if len(args) > 0:
+		val = args[0]
+		args = args[1:]
+	    else:
+		sys.stderr.write("option '-b' requires an argument\n")
+		sys.exit(1)
+	try:
+	    base = int(val)
+	except ValueError, e:
+	    base = 0
+	if base < 2:
+	    sys.stderr.write("base '%s' is not an integer greater than 1\n" \
+	    % val)
+	    sys.exit(1)
+	consume = consume_base
+    elif arg == "pi":
+	bot, top, matrix = 3, 4, pi_matrix
+    elif arg == "e":
+	bot, top, matrix = 0, 2, e_matrix
     else:
-	base = int(arg)
-	assert base >= 2
+	sys.stderr.write("unrecognised argument '%s'\n" % arg)
+	sys.exit(1)
+
+if matrix == None:
+    sys.stderr.write("usage: %s [ -c | -b base ] ( pi | e )\n" % sys.argv[0])
+    sys.exit(len(sys.argv) > 1)
 
 state = (1, 0, 0, 1)
 k = 1
@@ -181,10 +257,9 @@ start = 1
 
 while 1:
     digit = mtrans(state, bot)
-    if digit == mtrans(state, top):
+    if digit != None and digit == mtrans(state, top):
 	# Generate a digit.
-	writedigit(digit)
-	state = mmul((base, -base*digit, 0, 1), state)
+	state = consume(state, digit)
     else:
 	# Fold in another matrix.
 	state = mmul(state, matrix(k))
