@@ -214,6 +214,8 @@ def mtrans(m, x):
 	if x == None:
 	    if m[0]:
 		return m[0] / m[2]
+	    elif m[2]:
+		return 0
 	    else:
 		return m[1] / m[3]
 	else:
