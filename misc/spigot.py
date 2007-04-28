@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import sys
+import errno
 
 # Spigot algorithm to produce the digits of pi and e, without
 # having to commit in advance to the number of digits desired (so
@@ -171,7 +172,7 @@ import sys
 def consume_base(state, digit):
     global start
 
-    if start:
+    if start == 0:
 	# Special case: the first digit generated is the integer
 	# part of the target number. Therefore, we want to write a
 	# decimal point after it, and also we need special handling
@@ -181,9 +182,13 @@ def consume_base(state, digit):
 	    sys.stdout.write("%d%d" % (digit / base, digit % base))
 	else:
 	    sys.stdout.write("%d" % digit) # can't go above 9!
-	sys.stdout.write(".")
-	start = 0
+	start = 1
     else:
+	if start == 1:
+	    # Write the decimal point, once we know there's a digit
+	    # following it.
+	    sys.stdout.write(".")
+	    start = 2
 	# Once we're going, we just write out each digit in the
 	# requested base.
 	sys.stdout.write("%c" % (48 + digit + 39*(digit>9)))
@@ -203,7 +208,10 @@ def mtrans(m, x):
     # Interpret a 2x2 matrix as a Mobius transformation.
     try:
 	if x == None:
-	    return m[0] / m[2]
+	    if m[0]:
+		return m[0] / m[2]
+	    else:
+		return m[1] / m[3]
 	else:
 	    return (m[0]*x+m[1]) / (m[2]*x+m[3])
     except ZeroDivisionError, e:
@@ -225,6 +233,11 @@ def phi_matrix(k):
 
 def cfrac_matrix(k):
     s = sys.stdin.readline()
+    if s == "":
+	# The continued fraction terminated. We therefore return
+	# the matrix that always returns infinity, so that the last
+	# term (k+1/x) becomes (k+1/infinity) == k.
+	return (0, 1, 0, 0)
     i = int(s)
     return (i, 1, 1, 0)
 
@@ -240,20 +253,29 @@ class base_matrix:
 	elif c >= 'a' and c <= 'z':
 	    return ord(c) - ord('a') + 10
 	else:
-	    raise "Invalid digit '%s'" % c
+	    return None
     def __call__(self, k):
 	if self.start:
 	    self.start = 0
 	    i = 0
 	    while 1:
 		c = sys.stdin.read(1)
-		if c == ".":
+		if c == "" or c == ".":
 		    break
 		else:
-		    i = i * self.base + self.val(c)
+		    v = self.val(c)
+		    if v != None:
+			i = i * self.base + self.val(c)
 	else:
-	    c = sys.stdin.read(1)
-	    i = self.val(c)
+	    while 1:
+		c = sys.stdin.read(1)
+		if c == "":
+		    # The expansion terminated, so return a matrix
+		    # which gives a constant.
+		    return (0, 0, 0, 1)
+		i = self.val(c)
+		if i != None:
+		    break
 	return (1, i*self.base, 0, self.base)
 
 def isqrt(n):
@@ -302,14 +324,19 @@ class root_matrix:
 	self.list = [(0, 1, self.a0)]
 	self.resume = None
 	self.listpos = 0
+
+	# Special case of an actually square number.
+	if self.a0 * self.a0 == radicand:
+	    self.list.append((None, None, None))
+	    self.resume = 1
     def __call__(self, k):
 	if self.listpos >= len(self.list) and self.resume == None:
 	    # Compute the next triple.
-	    mold, dold, aold = self.list[-1]
-	    mnew = dold * aold - mold
-	    dnew = (self.radicand - mnew*mnew) / dold
-	    anew = (self.a0 + mnew) / dnew
-	    t = (mnew, dnew, anew)
+	    m, d, a = self.list[-1]
+	    m = d * a - m
+	    d = (self.radicand - m*m) / d
+	    a = (self.a0 + m) / d
+	    t = (m, d, a)
 	    try:
 		self.resume = self.list.index(t)
 	    except ValueError, e:
@@ -321,10 +348,14 @@ class root_matrix:
 	assert self.listpos < len(self.list)
 	a = self.list[self.listpos][2]
 	self.listpos = self.listpos + 1
-	return (a, 1, 1, 0)
+	if a == None:
+	    return (0, 1, 0, 0) # fraction terminated
+	else:
+	    return (a, 1, 1, 0)
 
 bot, top, matrix = None, None, None
 base, consume = 10, consume_base
+earlyterm = 1
 
 args = sys.argv[1:]
 while len(args) > 0:
@@ -350,6 +381,8 @@ while len(args) > 0:
 	    % val)
 	    sys.exit(1)
 	consume = consume_base
+    elif arg == "-n":
+	earlyterm = 0
     elif arg == "pi":
 	bot, top, matrix = 3, 4, pi_matrix
     elif arg == "e":
@@ -391,26 +424,49 @@ while len(args) > 0:
 	sys.exit(1)
 
 if matrix == None:
-    sys.stderr.write("usage: %s z -c | -b <base> ] <number>\n" % sys.argv[0])
+    sys.stderr.write("usage: %s [ -c | -b <base> ] [ -n ] <number>\n" % sys.argv[0])
     sys.stderr.write("where: -b <base>        output in base <base> instead of 10\n")
     sys.stderr.write("       -c               output continued fraction terms, one per line\n")
+    sys.stderr.write("       -n               continue writing digits even if fraction terminates\n")
     sys.stderr.write("and <number> is:\n")
     sys.stderr.write("       pi | e | phi     mathematical constants\n")
-    sys.stderr.write("       root <n>         the square root of any positive non-square integer <n>\n")
+    sys.stderr.write("       root <n>         the square root of any positive integer <n>\n")
     sys.stderr.write("       cfrac            a continued fraction read from standard input\n")
     sys.stderr.write("       base <n>         a base-<n> number read from standard input\n")
     sys.exit(len(sys.argv) > 1)
 
 state = (1, 0, 0, 1)
 k = 1
-start = 1
+start = 0
 
-while 1:
-    digit = mtrans(state, bot)
-    if digit != None and digit == mtrans(state, top):
-	# Generate a digit.
-	state = consume(state, digit)
+try:
+    while 1:
+	digit = mtrans(state, bot)
+	dcheck = mtrans(state, top)
+	if digit == dcheck:
+	    if digit == None:
+		# This case arises when we have been asked to generate the
+		# continued fraction for a rational. Simply stop.
+		assert consume == consume_confrac
+		sys.exit(0)
+	    if earlyterm and state[0] == 0 and state[1] == 0 and state[2] == 0:
+		# This case arises when we have been asked to generate
+		# a base-n fraction which terminates. Stop again.
+		assert consume == consume_base
+		print # a trailing newline is generally considered polite
+		sys.exit(0)
+	    # Otherwise, generate a digit.
+	    state = consume(state, digit)
+	else:
+	    # Fold in another matrix.
+	    state = mmul(state, matrix(k))
+	    k = k + 1
+except IOError, e:
+    # This typically means `broken pipe', i.e. we've been piped
+    # into head or some such. Don't panic; just calmly shut down.
+    if e.errno == errno.EPIPE:
+	sys.exit(0)
     else:
-	# Fold in another matrix.
-	state = mmul(state, matrix(k))
-	k = k + 1
+	raise e
+except KeyboardInterrupt, e:
+    sys.exit(0)
