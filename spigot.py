@@ -16,9 +16,14 @@ import sys
 #   spigot.py pi                 # generates pi in base 10
 #   spigot.py -b7 pi             # generates pi in another base, e.g. 7
 #   spigot.py -c pi              # generates continued fraction for pi
-#   spigot.py e                  # generates e in base 10
-#   spigot.py -b7 e              # generates e in another base, e.g. 7
-#   spigot.py -c e               # generates continued fraction for e (boring!)
+#   spigot.py e                  # generates e
+#   spigot.py phi                # generates phi
+#   spigot.py root 3             # generates the square root of 3
+#
+# You can also feed a stream of input to the program and it will
+# convert between continued fraction terms and an arbitrary number base, or between number bases:
+#   spigot.py cfrac              # reads continued fraction terms from stdin
+#   spigot.py base 9             # reads a base-9 number from stdin
 
 # Method (hopefully a slightly more accessible description than the
 # one in the paper cited above):
@@ -197,7 +202,10 @@ def consume_confrac(state, digit):
 def mtrans(m, x):
     # Interpret a 2x2 matrix as a Mobius transformation.
     try:
-	return (m[0]*x+m[1]) / (m[2]*x+m[3])
+	if x == None:
+	    return m[0] / m[2]
+	else:
+	    return (m[0]*x+m[1]) / (m[2]*x+m[3])
     except ZeroDivisionError, e:
 	return None
 
@@ -211,6 +219,109 @@ def pi_matrix(k):
 
 def e_matrix(k):
     return (1, k, 0, k)
+
+def phi_matrix(k):
+    return (1, 1, 1, 0)
+
+def cfrac_matrix(k):
+    s = sys.stdin.readline()
+    i = int(s)
+    return (i, 1, 1, 0)
+
+class base_matrix:
+    def __init__(self, base):
+	self.base = base
+	self.start = 1
+    def val(self, c):
+	if c >= '0' and c <= '9':
+	    return ord(c) - ord('0')
+	elif c >= 'A' and c <= 'Z':
+	    return ord(c) - ord('A') + 10
+	elif c >= 'a' and c <= 'z':
+	    return ord(c) - ord('a') + 10
+	else:
+	    raise "Invalid digit '%s'" % c
+    def __call__(self, k):
+	if self.start:
+	    self.start = 0
+	    i = 0
+	    while 1:
+		c = sys.stdin.read(1)
+		if c == ".":
+		    break
+		else:
+		    i = i * self.base + self.val(c)
+	else:
+	    c = sys.stdin.read(1)
+	    i = self.val(c)
+	return (1, i*self.base, 0, self.base)
+
+def isqrt(n):
+    d = long(n)
+    a = 0L
+    # b must start off as a power of 4 at least as large as n
+    ndigits = len(hex(long(n)))
+    b = 1L << (ndigits*4)
+    while 1:
+        a = a >> 1
+        di = 2*a + b
+        if di <= d:
+            d = d - di
+            a = a + b
+        b = b >> 2
+	if b == 0: break
+    return a
+
+class root_matrix:
+    # To compute the square root of an arbitrary non-square
+    # integer, we use the following magic algorithm to find its
+    # continued fraction. The continued fraction is periodic, so
+    # this costs us a bounded amount of work, after which we can
+    # cheerfully return the same sequence of matrices over and over
+    # again.
+    #
+    # The algorithm, taken from Wikipedia
+    # (http://en.wikipedia.org/wiki/Methods_of_computing_square_roots
+    # as of 2007-04-28), is as follows:
+    #
+    #  - Let m <- 0, d <- 1, and a <- floor(sqrt(n)).
+    #  - Repeatedly:
+    #     + output a as a continued fraction term.
+    #     + let m <- d*a-m.
+    # 	  + let d <- (n-m^2)/d. (Wikipedia asserts that this
+    # 	    division always yields an exact integer, although I
+    # 	    don't currently understand why.)
+    # 	  + let a <- floor((sqrt(n)-m)/d). (We can safely replace
+    # 	    sqrt(n) with floor(sqrt(n)) here.)
+    # 	  + check if (m,d,a) repeats a set of values which it
+    # 	    previously had at this point. If so, we need not
+    # 	    continue calculating.
+    def __init__(self, radicand):
+	self.radicand = radicand
+	self.a0 = isqrt(radicand)
+	self.list = [(0, 1, self.a0)]
+	self.resume = None
+	self.listpos = 0
+    def __call__(self, k):
+	if self.listpos >= len(self.list) and self.resume == None:
+	    # Compute the next triple.
+	    mold, dold, aold = self.list[-1]
+	    mnew = dold * aold - mold
+	    dnew = (self.radicand - mnew*mnew) / dold
+	    anew = (self.a0 + mnew) / dnew
+	    t = (mnew, dnew, anew)
+	    try:
+		self.resume = self.list.index(t)
+	    except ValueError, e:
+		self.resume = None
+		self.list.append(t)
+	if self.listpos >= len(self.list):
+	    assert self.resume != None
+	    self.listpos = self.resume
+	assert self.listpos < len(self.list)
+	a = self.list[self.listpos][2]
+	self.listpos = self.listpos + 1
+	return (a, 1, 1, 0)
 
 bot, top, matrix = None, None, None
 base, consume = 10, consume_base
@@ -243,12 +354,51 @@ while len(args) > 0:
 	bot, top, matrix = 3, 4, pi_matrix
     elif arg == "e":
 	bot, top, matrix = 0, 2, e_matrix
+    elif arg == "phi":
+	bot, top, matrix = 1, 2, phi_matrix
+    elif arg == "root":
+	if len(args) > 0:
+	    radicand = args[0]
+	    args = args[1:]
+	else:
+	    sys.stderr.write("input type 'root' requires an argument\n")
+	    sys.exit(1)
+	radicand = int(radicand)
+	bot, top, matrix = 0, None, root_matrix(radicand)
+    elif arg == "cfrac":
+	# Read a list of continued fraction terms on standard
+	# input, and spigot them into some ordinary number base on
+	# output.
+	
+	# `None' here represents infinity; the general continued
+	# fraction transformation x -> k+1/x always maps
+	# [0,infinity] to a subinterval of itself.
+	bot, top, matrix = 0, None, cfrac_matrix
+    elif arg == "base":
+	# Read a number in a specified integer base on standard
+	# input, and spigot it into a different base or a continued
+	# fraction.
+	if len(args) > 0:
+	    ibase = args[0]
+	    args = args[1:]
+	else:
+	    sys.stderr.write("input type 'base' requires an argument\n")
+	    sys.exit(1)
+	ibase = int(ibase)
+	bot, top, matrix = 0, ibase, base_matrix(ibase)
     else:
 	sys.stderr.write("unrecognised argument '%s'\n" % arg)
 	sys.exit(1)
 
 if matrix == None:
-    sys.stderr.write("usage: %s [ -c | -b base ] ( pi | e )\n" % sys.argv[0])
+    sys.stderr.write("usage: %s z -c | -b <base> ] <number>\n" % sys.argv[0])
+    sys.stderr.write("where: -b <base>        output in base <base> instead of 10\n")
+    sys.stderr.write("       -c               output continued fraction terms, one per line\n")
+    sys.stderr.write("and <number> is:\n")
+    sys.stderr.write("       pi | e | phi     mathematical constants\n")
+    sys.stderr.write("       root <n>         the square root of any positive non-square integer <n>\n")
+    sys.stderr.write("       cfrac            a continued fraction read from standard input\n")
+    sys.stderr.write("       base <n>         a base-<n> number read from standard input\n")
     sys.exit(len(sys.argv) > 1)
 
 state = (1, 0, 0, 1)
