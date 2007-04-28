@@ -177,11 +177,15 @@ def consume_base(state, digit):
 	# part of the target number. Therefore, we want to write a
 	# decimal point after it, and also we need special handling
 	# if `base' is too small.
-	if digit >= base:
-	    assert digit < base*base
-	    sys.stdout.write("%d%d" % (digit / base, digit % base))
-	else:
-	    sys.stdout.write("%d" % digit) # can't go above 9!
+	b = 1
+	x = digit
+	while digit >= b*base:
+	    b = b * base
+	while b > 0:
+	    d = x / b
+	    x = x % b
+	    sys.stdout.write("%c" % (48 + d + 39*(d>9)))
+	    b = b / base
 	start = 1
     else:
 	if start == 1:
