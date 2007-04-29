@@ -35,7 +35,32 @@ not updating, which happens sometimes):
 For features planned for the next full release (and already available in
 the development snapshots), see the <a href="wishlist/">wishlist page</a>.
 
-<p>These features are new in beta 0.59 (released 2007-01-24):
+<p>These features are new in beta 0.60 (released 2007-04-29):
+
+<ul>
+<li>
+Pressing Ctrl+Break now sends a serial break signal.
+<li>
+Serial ports higher than <code>COM9</code> now no longer need a
+leading <code>\\.\<code>.
+<li>
+You can now store a host name in the Default Settings.
+<li>
+Bug fix: serial connections and local proxies should no longer crash
+all the time.
+<li>
+Bug fix: configuring the default connection type to serial should no
+longer cause the configuration dialog to be skipped on startup.
+<li>
+Bug fix: "Unable to read from standard input" should now not happen,
+or if it still does it should produce more detailed diagnostics.
+<li>
+Bug fix: fixed some malformed SSH-2 packet generation.
+<li>
+Other minor bug fixes.
+</ul>
+
+<p>These features were new in beta 0.59 (released 2007-01-24):
 
 <ul>
 <li>
