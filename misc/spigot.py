@@ -316,14 +316,28 @@ class root_matrix:
     #  - Repeatedly:
     #     + output a as a continued fraction term.
     #     + let m <- d*a-m.
-    # 	  + let d <- (n-m^2)/d. (Wikipedia asserts that this
-    # 	    division always yields an exact integer, although I
-    # 	    don't currently understand why.)
+    # 	  + let d <- (n-m^2)/d. (This division always yields an
+    # 	    exact integer; see below.)
     # 	  + let a <- floor((sqrt(n)-m)/d). (We can safely replace
-    # 	    sqrt(n) with floor(sqrt(n)) here.)
+    # 	    sqrt(n) with floor(sqrt(n)) here without affecting the
+    # 	    result.)
     # 	  + check if (m,d,a) repeats a set of values which it
     # 	    previously had at this point. If so, we need not
     # 	    continue calculating.
+    #
+    # Proof by induction that every value of d is an integer:
+    #  - Base case: d_0 is an integer, because it's defined to be
+    # 	 1.
+    #  - Suppose d_i and all previous d_j are integers.
+    # 	  + d_i was computed as (n-m_i^2)/d_{i-1}, and hence if
+    # 	    it's an integer then d_{i-1} is a factor of (n-m_i^2),
+    # 	    and so d_i is _also_ a factor of that.
+    # 	  + Now m_{i+1} = d_i a_i - m_i. So n - m_{i+1}^2 is equal
+    # 	    to n - (m_i - d_i a_i)^2 = n - m_i^2 + 2 d_i a_i m_i - d_i^2 a_i^2.
+    # 	  + And d_i divides n - m_i^2 (by construction), and
+    # 	    divides any multiple of d_i (obviously), so it divides
+    # 	    that. Hence d_{i+1} will be an integer too. []
+
     def __init__(self, radicand):
 	self.radicand = radicand
 	self.a0 = isqrt(radicand)
