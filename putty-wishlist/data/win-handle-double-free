@@ -10,4 +10,4 @@ Content-type: text/x-html-body
 <p>PuTTY (and PuTTYtel) frequently crash when using the serial port
 backend.  This is caused by a double free in the depths of the Windows
 handle code, so it should also affect the use of proxy commands on
-Windows.  It's fixed in the development snapshots.
+Windows.  It's fixed in 0.60.

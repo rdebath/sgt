@@ -51,14 +51,14 @@ basis that since one type of launchable session is now permitted in
 DS there's no reason not to permit the other too.
 
 <p>
-If you get into this situation, the following workarounds are
-available:
+If you get into this situation, and can't upgrade permanently to 0.60
+or later, the following workarounds are available:
 <ul>
-<li>Download a development snapshot of PuTTY, which does not suffer
+<li>Download 0.60, which does not suffer
 from this problem. You will then be able to edit Default Settings so
 that PuTTY 0.59 does not attempt to launch a serial connection.
 (Although if you're using the serial backend, you are likely to need
-to carry on using a development snapshot in any case, as the serial
+to carry on using 0.60 or later in any case, as the serial
 support is <a href="win-handle-double-free.html">prone to crashes</a>.)
 </li>
 <li>If you're happy editing the Registry:
