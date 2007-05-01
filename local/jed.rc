@@ -1365,7 +1365,7 @@ define jedrc_format_paragraph(prefix) {
         push_spot();
         call("trim_whitespace");
         what_column();
-        insert("\n");
+        insert("\n\n");
         whitespace(());
     }
     WRAP -= prefixlen;
@@ -1373,8 +1373,17 @@ define jedrc_format_paragraph(prefix) {
     WRAP += prefixlen;
     if (item) {
         pop_spot();
+	deln(1);
+	i = what_column();
+	push_mark();
+	go_down_1();
+	bol_skip_white();
+	what_column();
+	trim();
+	del_region();
         deln(left(j));
         whitespace(j);
+	whitespace(() - i);
     }
     if (prefix != "") {
 	goto_user_mark(mktop);
