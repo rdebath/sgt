@@ -244,7 +244,7 @@ def cfrac_matrix(k):
 	# the matrix that always returns infinity, so that the last
 	# term (k+1/x) becomes (k+1/infinity) == k.
 	return (0, 1, 0, 0)
-    i = int(s)
+    i = long(s)
     return (i, 1, 1, 0)
 
 class base_matrix:
@@ -376,6 +376,7 @@ class root_matrix:
 bot, top, matrix = None, None, None
 base, consume = 10, consume_base
 earlyterm = 1
+digitlimit = None
 
 args = sys.argv[1:]
 while len(args) > 0:
@@ -393,7 +394,7 @@ while len(args) > 0:
 		sys.stderr.write("option '-b' requires an argument\n")
 		sys.exit(1)
 	try:
-	    base = int(val)
+	    base = long(val)
 	except ValueError, e:
 	    base = 0
 	if base < 2:
@@ -401,6 +402,16 @@ while len(args) > 0:
 	    % val)
 	    sys.exit(1)
 	consume = consume_base
+    elif arg[0:2] == "-d":
+	val = arg[2:]
+	if val == "":
+	    if len(args) > 0:
+		val = args[0]
+		args = args[1:]
+	    else:
+		sys.stderr.write("option '-d' requires an argument\n")
+		sys.exit(1)
+        digitlimit = long(val)
     elif arg == "-n":
 	earlyterm = 0
     elif arg == "pi":
@@ -416,7 +427,7 @@ while len(args) > 0:
 	else:
 	    sys.stderr.write("input type 'root' requires an argument\n")
 	    sys.exit(1)
-	radicand = int(radicand)
+	radicand = long(radicand)
 	bot, top, matrix = 0, None, root_matrix(radicand)
     elif arg == "cfrac":
 	# Read a list of continued fraction terms on standard
@@ -437,17 +448,18 @@ while len(args) > 0:
 	else:
 	    sys.stderr.write("input type 'base' requires an argument\n")
 	    sys.exit(1)
-	ibase = int(ibase)
+	ibase = long(ibase)
 	bot, top, matrix = 0, ibase, base_matrix(ibase)
     else:
 	sys.stderr.write("unrecognised argument '%s'\n" % arg)
 	sys.exit(1)
 
 if matrix == None:
-    sys.stderr.write("usage: %s [ -c | -b <base> ] [ -n ] <number>\n" % sys.argv[0])
+    sys.stderr.write("usage: %s [ -c | -b <base> ] [ -n ] [ -d <digits> ] <number>\n" % sys.argv[0])
     sys.stderr.write("where: -b <base>        output in base <base> instead of 10\n")
     sys.stderr.write("       -c               output continued fraction terms, one per line\n")
     sys.stderr.write("       -n               continue writing digits even if fraction terminates\n")
+    sys.stderr.write("       -d <digits>      terminate after writing that many digits\n")
     sys.stderr.write("and <number> is:\n")
     sys.stderr.write("       pi | e | phi     mathematical constants\n")
     sys.stderr.write("       root <n>         the square root of any positive integer <n>\n")
@@ -460,7 +472,7 @@ k = 1
 start = 0
 
 try:
-    while 1:
+    while digitlimit == None or digitlimit > 0:
 	digit = mtrans(state, bot)
 	dcheck = mtrans(state, top)
 	if digit == dcheck:
@@ -477,6 +489,8 @@ try:
 		sys.exit(0)
 	    # Otherwise, generate a digit.
 	    state = consume(state, digit)
+            if digitlimit != None:
+                digitlimit = digitlimit - 1
 	else:
 	    # Fold in another matrix.
 	    state = mmul(state, matrix(k))
