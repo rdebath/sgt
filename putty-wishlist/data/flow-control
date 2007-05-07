@@ -1,7 +1,7 @@
 Summary: Be cleverer with SSH-2 flow control to improve bulk throughput
-Class: wish
+Class: semi-bug
 Difficulty: tricky
-Priority: low
+Priority: medium
 Content-type: text/x-html-body
 
 <p>
