@@ -1,0 +1,19 @@
+Summary: RSA KEX ends up at the bottom of pref list on upgrade
+Class: bug
+Priority: high
+Difficulty: tricky
+Absent-in: 0.60
+Present-in: 2007-05-07
+Content-type: text/x-html-body
+
+<p>The addition of <a href="ssh2-rsa-kex.html">ssh2-rsa-kex</a> has caused
+a problem with the KEX algorithm preference list, in that while the new
+default list puts RSA ahead of WARN, loading a saved session from an older
+PuTTY version that didn't support RSA KEX will leave RSA after warn.
+This is an inherent consequence of the way <tt>gprefs()</tt> works.
+
+<p>Fixing the problem isn't trivial.  In this case, it would probably
+be reasonable to promote RSA to just above WARN if it's absent, but there
+probably isn't a suitable general rule.  Another approach would be to
+scrap the preference lists and have a better <a href="cipher-selection.html">
+cipher selection</a> mechanism.
