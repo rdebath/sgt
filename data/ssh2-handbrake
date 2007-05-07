@@ -1,0 +1,26 @@
+Summary: Fixed-size windows in SSH-2 artifically limit performance
+Class: semi-bug
+Difficulty: tricky
+Priority: medium
+Present-in: 0.60
+Content-type: text/x-html-body
+
+<p>As Peter Gutmann has
+<a href="http://www.cs.auckland.ac.nz/~pgut001/pubs/app_sec.pdf">observed</a>,
+naive implementations of the SSH-2 sliding window protocol place an arbitrary
+limit on the throughput of each channel, limiting it to the product of the
+window size and the round-trip time.  PuTTY is one such naive implementation.
+
+<p>There are various things that could be done to work around this.  In an
+ideal world, PuTTY would measure the bandwidth-delay product of the link it's
+running over and use that to set the window so as to fully use the available
+bandwidth without completely breaking flow control.  A rather simpler approach
+is possible where a connection only has (and only ever will have) one channel
+running over it, since in that case PuTTY can open the window fully and leave
+flow control to TCP.  Happily, the applications in which the latter approach
+will work (PSFTP and PSCP) are also the ones in which it's most needed.
+
+<p>As something of an aside, it might also be helpful for PuTTY to indicate
+somehow to the server that it only plans to use a single channel on a
+connection so that the server can open its window fully too.  Otherwise, we
+only get improved download performance.
