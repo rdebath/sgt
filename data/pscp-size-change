@@ -1,6 +1,7 @@
 Summary: PSCP assertion failure if remote source file changes size
-Class: semi-bug
-Priority: medium
+Class: bug
+Difficulty: tricky
+Priority: high
 Content-type: text/x-html-body
 
 <p>
