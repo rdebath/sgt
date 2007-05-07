@@ -2,6 +2,7 @@ Summary: Implement SSH-2 RSA key exchange
 Class: wish
 Priority: medium
 Difficulty: fun
+Fixed-in: r7496 2007-05-01
 Content-type: text/x-html-body
 
 <p>
@@ -10,7 +11,3 @@ Content-type: text/x-html-body
 exchange in SSH-2 (similar to SSH-1's key exchange, but without the
 other disadvantages of SSH-1). This might be particularly suitable for
 slow client systems.
-
-<p>
-There is a patch somewhere. We should find another implementation to
-test it against, and commit it.
