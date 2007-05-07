@@ -1,0 +1,14 @@
+Summary: pscp suffers an assertion failure when a remote file changes size
+Class: bug
+Difficulty: tricky
+Priority: high
+Present-in: 0.60 2007-05-04 r7503
+Content-type: text/plain
+
+When copying a file from a remote system whose size changes during a copy
+(for instance, an active log file), pscp suffers an assertion failure:
+
+  Assertion failed: actuallen <= len, file ..\pscp.c, line 1523
+
+001001c78e71$39889710$ac99c530$@com
+BAY124-DAV16037F706A79B2754694D3D4400@phx.gbl
