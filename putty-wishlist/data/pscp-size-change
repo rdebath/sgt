@@ -12,12 +12,12 @@ actuallen &lt;= len, file scp.c, line 1435".
 
 <p>
 (Note that the same error used to occur for static but
-<a href="large-files.html">particularly large files</a>.)
+<a href="large-files.html">particularly large files</a>, but that
+hasn't been possible since 0.55.)
 
 <p>
 This assertion is associated with the SFTP backend. A workaround may
 be to persuade PSCP to use its SCP backend instead (for instance, with
 the <a href="pscp-select-backend.html"><tt>-scp</tt> option</a> added
-in the development snapshots); you'll avoid the assertion, but I
-haven't checked that the file will be safely transferred in its
-entirety.
+in 0.55); you'll avoid the assertion, but I haven't checked that the
+file will be safely transferred in its entirety.
