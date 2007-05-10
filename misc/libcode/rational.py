@@ -1,6 +1,7 @@
 # Rationals module for Python.
 
 import types
+import math
 
 def gcd(a,b):
     "Return the greatest common divisor of a modulo b"
@@ -20,6 +21,13 @@ class Rational:
 
     def __init__(self, x, y=1):
         assert y != 0
+        if type(x) == types.FloatType:
+            x, e = math.frexp(x)
+            x, e = long(2.0**52 * x), e-52
+            if e >= 0:
+                x = x * 2L**e
+            else:
+                y = y * 2L**-e
         g = gcd(x, y)
         if (g < 0) != (y < 0):
             g = -g
@@ -29,7 +37,7 @@ class Rational:
     def __coerce__(self, r2):
         if isinstance(r2, Rational):
             return self, r2
-        if type(r2) == types.IntType or type(r2) == types.LongType:
+        if type(r2) == types.IntType or type(r2) == types.LongType or type(r2) == types.FloatType:
             return self, Rational(r2)
         return None # failure
 
