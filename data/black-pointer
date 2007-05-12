@@ -2,45 +2,43 @@ Summary: Mouse pointer appears black on some systems
 Class: semi-bug
 Priority: low
 Difficulty: taxing
-Present-in:  0.51 0.52 2002-12-28 0.58
+Present-in: 0.51 0.52 2002-12-28 0.58 0.60
 Content-type: text/x-html-body
 
 <p>
 Some people have reported that PuTTY's default mouse pointer (the Windows
 I-beam) appears black-on-black, and is hence invisible.  It usually consists
 entirely of inverted pixels, and hence should appear white on PuTTY's default
-black background.  Reports so far:
-</p>
+black background.
+
+<p>
+There have been sporadic reports of this for years, but they have become
+more frequent recently (2007), particularly associated with Windows Vista
+(but also
+<a href="http://osdir.com/ml/network.rdesktop.user/2005-03/msg00012.html">reported with rdesktop</a>).
+Some possible causes:
 <ul>
-<li> &lt;Pine.OSF.4.50.0212281329190.12205-100000@kosh.hut.fi&gt;
-  <i>et seq.</i>:<br>
-<ul>
-<li>Windows 98SE
-<li>PuTTY 0.51 through 2002-12-28
-<li>"WinFast?" GeForce2 MX 400, BIOS ver. 06.13.2001
-<li>GDI(Mini) Driver 4.13.01.3100
-<li>WinFast 2000 Driver 5.13.01.2002-1.07
-<li>All colour depths
+<li>
+Perhaps on some installations, the I-beam pointer is black, rather than
+inverted. This wouldn't be very obvious with most Windows applications,
+with their light-coloured backgrounds, but would be obvious with PuTTY's
+default black background. We haven't personally seen this one, so it's
+pure speculation; please let us know if it turns out to be the case for
+you.
+<li>
+Even when the cursor <em>is</em> inverted, some video cards have an
+off-by-one error. In this case, a tiny change to PuTTY's background colour
+can help. See below. (We have had several reports where this did not
+help.)
 </ul>
-<li> &lt;5.2.0.9.2.20030101131051.00a1b8f0@pop.telekabel.at&gt;
-  <i>et seq.</i>:<br>
-<ul>
-<li>Windows 98SE
-<li>PuTTY 0.52
-<li>16-bit colour
-<li>Gforce 2 MX compatible MSI video card
-</ul>
-<li> &lt;Pine.GSO.4.64.0512161443510.18707@brains.eng.cse.dmu.ac.uk&gt;
-  <i>et seq.</i>:<br>
-<ul>
-<li>Windows XP
-<li>PuTTY 0.58
-<li>Setting background to 0,0,1 or 1,1,1 (see below) didn't help
-<li>Using accessibility wiazard to set "inverting cursor" didn't help
-<li>Using accessibility wizard to set black cursor with white outline
-gave something usable
-</ul>
-</ul>
+
+<p>
+In all cases, changing the Windows I-beam cursor to something chunkier
+(via Control Panel / Mouse / Pointers or similar) should give you
+something usable.
+
+<hr>
+
 <p>
 From SGT:
 <blockquote>
@@ -66,6 +64,3 @@ their PuTTY colour scheme so that black is RGB 1,1,1 instead of RGB
 0,0,0. I <em>suspect</em> that that will make the problem go away;
 if so, that would confirm my theory about its cause.
 </blockquote>
-
-<p>
-However, we have had reports of the above workaround not helping.
