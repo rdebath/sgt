@@ -7,6 +7,11 @@
 import sys
 import math
 
+try:
+    from pymaths import *
+except ImportError, e:
+    pass # if this native module isn't available, don't worry
+
 def fmt(n, func=str):
     "format number n without a trailing L; can be given hex or oct as func"
     s = func(n)
