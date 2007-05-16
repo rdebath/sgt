@@ -20,6 +20,7 @@ import errno
 #   spigot.py e                  # generates e
 #   spigot.py phi                # generates phi
 #   spigot.py root 3             # generates the square root of 3
+#   spigot.py frac 3 15          # generates the rational 3/15
 #
 # You can also feed a stream of input to the program and it will
 # convert between continued fraction terms and an arbitrary number base, or between number bases:
@@ -373,6 +374,13 @@ class root_matrix:
 	else:
 	    return (a, 1, 1, 0)
 
+class frac_matrix:
+    def __init__(self, n, d):
+	self.n = n
+	self.d = d
+    def __call__(self, k):
+	return (0, self.n, 0, self.d)
+
 bot, top, matrix = None, None, None
 base, consume = 10, consume_base
 earlyterm = 1
@@ -429,6 +437,19 @@ while len(args) > 0:
 	    sys.exit(1)
 	radicand = long(radicand)
 	bot, top, matrix = 0, None, root_matrix(radicand)
+    elif arg == "frac":
+	if len(args) >= 2:
+	    numerator = args[0]
+	    denominator = args[1]
+	    args = args[2:]
+	else:
+	    sys.stderr.write("input type 'frac' requires two arguments\n")
+	    sys.exit(1)
+	numerator = long(numerator)
+	denominator = long(denominator)
+	bot, top, matrix = numerator/denominator, \
+	(numerator+denominator-1)/denominator, \
+	frac_matrix(numerator, denominator)
     elif arg == "cfrac":
 	# Read a list of continued fraction terms on standard
 	# input, and spigot them into some ordinary number base on
@@ -495,6 +516,10 @@ try:
 	    # Fold in another matrix.
 	    state = mmul(state, matrix(k))
 	    k = k + 1
+    # If we get here in base-conversion mode (probably because we
+    # hit our digit limit), output a trailing newline.
+    if consume == consume_base:
+	print
 except IOError, e:
     # This typically means `broken pipe', i.e. we've been piped
     # into head or some such. Don't panic; just calmly shut down.
