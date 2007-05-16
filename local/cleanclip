@@ -1,0 +1,10 @@
+#!/bin/sh 
+
+# Clean up the contents of the X selection so as to remove multiple
+# spaces, strange kinds of whitespace, newlines, and leading and
+# trailing space. Depends on xcopy.
+
+xcopy -r | \
+  tr -s ' \n\t\r\v\f' '      ' | \
+  sed 's/^ //;s/ $//' | \
+  xcopy
