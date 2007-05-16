@@ -73,7 +73,7 @@ static PyMethodDef pymaths_methods[] = {
     "distribution, integrated from zero rather than infinity."},
     {"invPhi", python_invPhi, METH_VARARGS,
     "The inverse of the cumulative probability function of the\n"
-    " standard normal distribution."},
+    "standard normal distribution."},
     {"invPhi0", python_invPhi0, METH_VARARGS,
     "The inverse of the cumulative probability function of the\n"
     "standard normal distribution integrated from zero."},
