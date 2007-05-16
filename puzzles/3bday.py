@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+import sys
+
 # Program to solve the following problem: how many people do you
 # need before _three_ all share the same birthday?
 #
@@ -58,10 +60,33 @@ def P(n):
 	total = total + k
     return total
 
+if len(sys.argv) > 1:
+    Y = int(sys.argv[1])
+
+nfmt = "%%%dd" % len("%d" % (2*Y+1))
+
 for n in range(1,Y*2+2):
     N = P(n)
     D = 365 ** n
     assert 0 <= N and N <= D
+    # Probability, rounded down (so as to show the clean transition
+    # from just-less-than-1 at 2Y to exactly 1 at 2Y+1), of there
+    # being a triple birthday.
     prob = (D-N) * (10**25) / D
-    print n, "%d.%025d" % (prob / 10**25, prob % 10**25)
+    # Probability, in scientific notation, of there _not_ being a
+    # triple birthday.
+    if N == 0:
+	npexpt = npmant = 0
+    else:
+	npexpt = len("%d" % N) - len("%d" % D) # rough logs to base 10
+	# Round to nearest this time.
+	npmant = ((N * (10**(25-npexpt))) * 2 + D) / (2*D)
+	if npmant < 10**25:
+	    # Try again.
+	    npexpt = npexpt - 1
+	    npmant = ((N * (10**(25-npexpt))) * 2 + D) / (2*D)
+    npstr = "%d.%025d" % (npmant / 10**25, npmant % 10**25)
+    if npexpt != 0:
+	npstr = npstr + "e%+02d" % npexpt
+    print nfmt % n, "%d.%025d" % (prob / 10**25, prob % 10**25), npstr
     #print n, N, D
