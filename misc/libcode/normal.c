@@ -195,7 +195,7 @@ double inverfc(double d)
  */
 double Phi(double x)
 {
-    return -0.5 * erfc(x/sqrt2);
+    return 0.5 * erfc(-x/sqrt2);
 }
 
 /*
@@ -213,7 +213,9 @@ double Phi0(double x)
  */
 double invPhi(double x)
 {
-    return sqrt2 * inverfc(-2.0 * x);
+    if (x == 0.5)
+	return 0.0;		       /* special case to avoid giving -0 */
+    return -sqrt2 * inverfc(2.0 * x);
 }
 
 /*
