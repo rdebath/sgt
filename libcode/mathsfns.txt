@@ -1,0 +1,422 @@
+Implementation notes for my IEEE-precision maths function collection
+====================================================================
+
+Lambert W
+---------
+
+Computing the Lambert W function in frunc was fiddly, because it
+turned out that the obvious technique of using Newton-Raphson to
+invert x*e^x failed to converge usefully outside a relatively small
+region around zero. (It got tricky both out in the large-x regions
+_and_ near the infinite-derivative point at -1/e.)
+
+So I ended up with two entirely separate frunc implementations of W.
+The Newton-Raphson one:
+
+W(x) =
+  let f(y) = (y^2+x*exp(-y))/(y+1),
+      iterate(y) = let y1=f(y)
+                    in if abs(y1-y)/abs(y1+y) < 1e-20 then y1
+		     else iterate(y1)
+   in iterate(0)
+
+And a very slow but much more reliable binary-search one:
+
+W(x) =
+  let f(x)=x*exp(x),
+      wb(x,lo,hi) = let mid=(lo+hi)/2
+                     in if abs(hi-lo) < 1e-30 then mid
+                      else if f(mid) < x then wb(x,mid,hi) else wb(x,lo,mid)
+   in if x<0 then wb(x,-1,0) else wb(x,0,log(1+x)+1)
+
+Binary search was also the technique I used to obtain a reference
+implementation of the negative branch Wn: I simply flipped some
+signs round and changed the limits.
+
+Wn(x) =
+  let f(x)=x*exp(x),
+      wb(x,lo,hi) = let mid=(lo+hi)/2
+                     in if abs(hi-lo) < 1e-30 then mid
+                      else if f(mid) > x then wb(x,mid,hi) else wb(x,lo,mid)
+   in wb(x,-755,-1)
+
+My implementation strategy basically revolved around trying all
+sorts of transformations of W until I found curves for which good
+rational approximations existed. This was largely a trial and error
+basis.
+
+On a central interval between -1/4 and +1, W is relatively well
+behaved and it was feasible to simply use direct rational
+approximations. However, the region near -1/e was problematic due to
+the infinite derivative, and most of the positive reals were also
+problematic due to the large range.
+
+The region near -1/e was reasonably mathematically tractable: the
+shape at the endpoint is that of a function's minimum turned on its
+side (because that's what it is), which is to say that it's
+basically parabolic in nature. So if you translate the endpoint to
+(0,0) and then take the square root of the x-coordinate, it turns
+into a reasonably sensible curve. In other words, I found an
+approximation R(t) to W(t^2-1/e)+1, and used this to compute W(x) as
+R(sqrt(x+1/e)) - 1. R is then a reasonably sensible function, and
+since it goes through (0,0) I was confident that even inputs very
+near -1/e would return very accurate W values - provided I added 1/e
+to x very carefully so as not to lose precision.
+
+So I derived this approximation by running
+
+  frunc -l0 -u'sqrt(1/e-1/8)' -d6 -n6 'let W(x) = let f(x)=x*exp(x), wb(x,lo,hi) = let mid=(lo+hi)/2 in if abs(hi-lo) < 1e-75 then mid else if f(mid) < x then wb(x,mid,hi) else wb(x,lo,mid) in if x<0 then wb(x,-1,0) else wb(x,0,log(1+x)+1) in (W(x^2-1/e)+1)/x'
+
+which yields W(x) on [-1/e,-1/8]. -1/8 is the limit of this method's
+effectiveness, because it's the largest number which we can add to
+the best double-precision approximation of 1/e and have the
+operation be exact and not lose significance.
+
+(Note that I had to fiddle with the convergence threshold in the
+binary search in the above command line: it now demands _75_ decimal
+digits of accuracy in the reference W. Anything less than that and
+frunc failed to converge fully.)
+
+So -1/8 also had to be where some other method took over; namely a
+simple rational approximation on the region around zero. For this I
+simply ran
+
+  frunc -l-1/8 -u1 -d8 -n8 -R 'let f(y) = (y^2+x*exp(-y))/(y+1), iterate(y) = let y1=f(y) in if abs(y1-y)/abs(y1+y) < 1e-20 then y1 else iterate(y1) in iterate(0)/x'
+
+(note that I'm computing W(x)/x here and then multiplying by x when
+I've finished, which forces it to really go through (0,0)).
+
+In fact this approximation yielded by this is noticeably just a
+little bit off at -1/8: it drops about three ULPs near the
+changeover point, which is worse than it does anywhere else. I'm not
+entirely sure why this is. _Mathematically_ the approximation should
+be good to well under one ULP, so it must be something about IEEE
+rounding. My best guess is that one or other of the polynomials in
+the numerator or denominator (or possibly both) suffer significance
+loss through subtraction at this point. If I cared enough, I could
+try using yet another approximation for values near -1/8; I could
+shift the centre of the approximation so that -1/8 was translated to
+the origin, and then it would be very hard to lose significance
+there.
+
+Next we have the region [+1,infinity], which was bound to be
+fundamentally difficult because rational function approximations
+only work on bounded intervals.
+
+This was really where the trial and error came in. One obvious trick
+is to try taking the reciprocal of x, compressing the infinite range
+[1,infinity) into (0,1]. However, this turned out not to work well,
+because W grows without bound as x tends to infinity, so W(1/x)
+becomes infinite at zero. We can turn the infinity into a zero by
+considering x*W(1/x), but then we have an infinite _derivative_.
+Several other variations on this theme yielded functions which
+looked plausible to the naked eye, but which turned out to be very
+poorly approximable by a rational function. A lot of the problem is
+that W(x) grows so slowly that if you draw the graph of W(1/x), or
+anything related to W(1/x), on [0,1] then the region of misbehaviour
+near the origin is too small to see. So lots of functions _look_
+nicely behaved, but turn out not to be on closer inspection.
+
+In fact I never managed to find any single function on a bounded
+interval which yielded a good approximation for W(x) on x>1. Instead
+I had to change tactics totally: rather than trying to fold the
+whole infinite interval into a finite one, simply take advantage of
+the fact that we don't _have_ to compute W out to infinity, only out
+to 2^1024.
+
+So I took logs: compute y=log(x), and then develop approximations
+for W(e^y). The IEEE range limit means that y cannot be more than
+about 710, so we can divide [0,710] into a few subintervals and use
+a separate approximation on each one. This _did_ turn out to be
+reasonably plausibly piecewise approximable, and not require too
+many subintervals. In fact I ended up using three subintervals:
+[0,10], [10,100] and [100,710]. The command lines I used are
+
+  frunc -l0 -u10 -n11 -d11 'let W(x) = let f(x)=x*exp(x), wb(x,lo,hi) = let mid=(lo+hi)/2 in if abs(hi-lo) < 1e-50 then mid else if f(mid) < x then wb(x,mid,hi) else wb(x,lo,mid) in if x<0 then wb(x,-1,0) else wb(x,0,log(1+x)+1) in W(exp(x))'
+  frunc -l10 -u100 -n10 -d10 'let W(x) = let f(x)=x*exp(x), wb(x,lo,hi) = let mid=(lo+hi)/2 in if abs(hi-lo) < 1e-50 then mid else if f(mid) < x then wb(x,mid,hi) else wb(x,lo,mid) in if x<0 then wb(x,-1,0) else wb(x,0,log(1+x)+1) in W(exp(x))'
+  frunc -l100 -u710 -n10 -d10 'let W(x) = let f(x)=x*exp(x), wb(x,lo,hi) = let mid=(lo+hi)/2 in if abs(hi-lo) < 1e-50 then mid else if f(mid) < x then wb(x,mid,hi) else wb(x,lo,mid) in if x<0 then wb(x,-1,0) else wb(x,0,log(1+x)+1) in W(exp(x))'
+
+So that was W.
+
+I also wanted the negative branch Wn, which is only defined on the
+pleasantly bounded-looking interval [-1/e,0). Near -1/e the
+technique is very similar to the technique for computing W itself
+near -1/e, for pretty much the same reasons; so I found an
+approximation to (Wn(x^2-1/e)-1)/x on [0,sqrt(1/e-1/4)] which I used
+to compute Wn(x) on [-1/e,-1/4]:
+
+  frunc -l0 -u'sqrt(1/e-1/4)' -d6 -n6 'let Wn(x) = let f(x)=x*exp(x), wb(x,lo,hi) = let mid=(lo+hi)/2 in if abs(hi-lo) < 1e-85 then mid else if f(mid) > x then wb(x,mid,hi) else wb(x,lo,mid) in wb(x,-755,-1) in (Wn(x^2-1/e)+1)/x'
+
+Oddly, frunc didn't seem to manage to make this converge to a spread
+of less than 1e-20, no matter how much I bumped up the accuracy of
+the target function. Not sure why. Still, that spread is more than
+good enough in practice, so I didn't worry too much!
+
+On the remaining interval (-1/4,0), Wn shoots off to minus infinity.
+It turns out that it does this in quite a log-like way, so again it
+made sense to compute log(x) and use that as the variable in a
+rational approximation. So I was looking for approximations of
+Wn(-e^x), with x starting at log(1/4) (which is negative, of course)
+and going out to about -745. (The existence of denormals means that
+log(x) for x in IEEE double precision can go further below zero than
+it does above.)
+
+As with the positive end of W(x), it turned out that I needed about
+three subintervals here. They were [-745,-100], [-100,-10], and
+[-10,log(1/4)]:
+
+  frunc -l-745 -u-100 -d10 -n10 'let Wn(x) = let f(x)=x*exp(x), wb(x,lo,hi) = let mid=(lo+hi)/2 in if abs(hi-lo) < 1e-50 then mid else if f(mid) > x then wb(x,mid,hi) else wb(x,lo,mid) in wb(x,-755,-1) in Wn(-exp(x))'
+  frunc -l-100 -u-10 -d14 -n14 'let Wn(x) = let f(x)=x*exp(x), wb(x,lo,hi) = let mid=(lo+hi)/2 in if abs(hi-lo) < 1e-50 then mid else if f(mid) > x then wb(x,mid,hi) else wb(x,lo,mid) in wb(x,-755,-1) in Wn(-exp(x))'
+  frunc -l-10 -u'log(1/4)' -d14 -n14 'let Wn(x) = let f(x)=x*exp(x), wb(x,lo,hi) = let mid=(lo+hi)/2 in if abs(hi-lo) < 1e-50 then mid else if f(mid) > x then wb(x,mid,hi) else wb(x,lo,mid) in wb(x,-755,-1) in Wn(-exp(x))'
+
+The one in the middle, again, didn't converge fully in frunc no
+matter what I did. But it reached a spread of 3e-27, which is
+_nearly_ the default limit of 1e-29, so again that was easily good
+enough.
+
+Inverse erf
+-----------
+
+The key problem here was actually _computing_ the reference
+function. It's surprisingly hard to compute extreme values of erf
+(and more particularly erfc).
+
+erf itself, in double precision, only remains interesting out to
+about x = +/- 5.92 (== inverse erfc of 2^-54), at which point erf(x)
+becomes indistinguishable from +/- 1. Within that range, it's easy
+enough to compute erf in frunc's working precision by summing the
+Taylor series.
+
+But erf isn't the end of the problem; erfc is the hard one, because
+it places the sensitive part of the double precision spectrum right
+on the long tail of erf, and as a result erfc is distinguishable
+from zero right out to about 27.226 (== inverse erfc of 2^-1075).
+And computing erf(27) is _much_ harder.
+
+The only way I found to accurately compute erf in this region was
+still to sum the Taylor series. It still converges, but it chews up
+a _lot_ of precision in the process, because powers of 27 grow
+pretty quickly and it takes a while for the factorials to catch up.
+So the Taylor series involves quite a lot of really quite big
+numbers, all of which if computed _just right_ will cancel each
+other out and you'll end up with things in the region of 10^-300.
+Thus you need to do your computation in enough precision to take in
+the largest partial sum of the series (hundreds of digits of integer
+part), and the 300 zeroes between the decimal point and the eventual
+significant result, _and_ enough space below that to get the
+eventual result in useful precision itself. In order to compute erfc
+out to the required range I had to run frunc in 3072-bit internal
+working precision, at which point computing a single value of erfc
+became very painful - an appreciable fraction of a second.
+
+Given that, I really didn't feel good about the idea of computing
+erfc^-1 by doing Newton-Raphson iteration, when even a single value
+of the forward function took that long to compute. But what
+alternative was there? Other approximations for erf didn't seem to
+exist.
+
+The answer is that we have frunc, which can _create_ approximations.
+So first I used frunc to derive a high-degree rational approximation
+which I could use to compute erfc over the required range to
+significantly _more_ than IEEE double precision; and then I used
+that approximation itself as a fast reference implementation of erfc
+while doing the N-R iteration to find erfc^-1. Nasty, but it seemed
+to work.
+
+Examining log(erfc(x)) showed that it looks very much like -x^2; in
+other words, out in the tail regions erfc(x) is very similar to
+e^-x^2, the function whose integral it is! Not sure why that is, but
+it's true. So what I actually computed as my reference approximation
+was not erfc itself, but log(erfc), over the interval [5,30]. 30 is
+beyond where I needed to get to for IEEE range, and 5 is near enough
+to zero that frunc can directly compute erf in its default working
+precision.
+
+So I ran
+
+  frunc -p3072 -l5 -u30 -n13 -d13 'log(1-erf(x))'
+
+(frunc at this point didn't have an internal implementation of erfc,
+though it does now), which after a very long run yielded
+
+  Converged to within tolerance
+  num0: 290858616466466884.9930231
+  num1: -70065877071926689535436.49
+  num2: -156174571347146515755366.5
+  num3: -166139556220906388109752.6
+  num4: -108018121195654642126144.5
+  num5: -46483585135712551207309.45
+  num6: -13467502520327844150736.67
+  num7: -2570183657923811381474.751
+  num8: -301992934906200734088.799
+  num9: -20470427404397012087.15188
+  num10: -758885703341411966.0313868
+  num11: -14410005330443865.47582932
+  num12: -124384396641086.7886486437
+  num13: -362598996491.8504460365157
+  den0: 62093094749530500091880.18
+  den1: 103376459167851636006914.9
+  den2: 83254139141225081969362.98
+  den3: 40398713538547332662141.5
+  den4: 12580153934464136596428.96
+  den5: 2497705707109500333716.519
+  den6: 298818550870395371130.2534
+  den7: 20399794991298981773.50905
+  den8: 758165692664020535.8132075
+  den9: 14407398232938058.70723518
+  den10: 124383699670082.4371191828
+  den11: 362599836817.4502505081762
+  den12: -1144.040800591382806934426
+  den13: 1.0
+  errmax: 1.32123154079641943034e-25
+  function: (290858616466466884.9930231 + x * (-70065877071926689535436.49 + x * (-156174571347146515755366.5 + x * (-166139556220906388109752.6 + x * (-108018121195654642126144.5 + x * (-46483585135712551207309.45 + x * (-13467502520327844150736.67 + x * (-2570183657923811381474.751 + x * (-301992934906200734088.799 + x * (-20470427404397012087.15188 + x * (-758885703341411966.0313868 + x * (-14410005330443865.47582932 + x * (-124384396641086.7886486437 + x * (-362598996491.8504460365157)))))))))))))) / (62093094749530500091880.18 + x * (103376459167851636006914.9 + x * (83254139141225081969362.98 + x * (40398713538547332662141.5 + x * (12580153934464136596428.96 + x * (2497705707109500333716.519 + x * (298818550870395371130.2534 + x * (20399794991298981773.50905 + x * (758165692664020535.8132075 + x * (14407398232938058.70723518 + x * (124383699670082.4371191828 + x * (362599836817.4502505081762 + x * (-1144.040800591382806934426 + x)))))))))))))
+
+Now I had a usable erf (or near equivalent), so I was ready to start
+computing inverse erf.
+
+My basic implementation strategy was to develop two primitive
+functions which inverted pieces of erf: erf^-1 on [0,1/2], and
+erfc^-1 on the same interval. That way, I could reflect each one on
+to the interval [1/2,1] by subtracting from 1.
+
+(I considered putting the dividing line somewhere more like 15/16
+than 1/2, because the middle segment of erf is much nicer to work
+with than the tail. But then I realised the dividing line had to be
+1/2 precisely, because otherwise subtracting from 1 would introduce
+rounding error: if my primitive erf^-1 had worked on [0,15/16] and
+my primitive erfc^-1 on [0,1/16], then the full erfc^-1 would have
+had to deal with numbers slightly above 1/16 by subtracting them
+from 1, which wouldn't have been exact. So although I did in the end
+use direct rational function approximators for everything in
+[0,15/16], I did have to use two of them for the erf^-1 part and the
+erfc^-1 part.)
+
+Newton-Raphson inversion works well for erf, so I was able to use
+this implementation
+
+ierf(x) =
+  let c = 2/sqrt(pi)
+    , derf(x) = c * exp(-x^2)
+    , iterate(x,a) = let x1 = x - (erf(x)-a)/derf(x)
+                      in if abs((x1-x)/(x1+x)) < 1e-20 then x1
+		       else iterate(x1,a)
+   in iterate(0,x)
+
+to give me decent approximations for erf^-1 on [0,15/16]. So I used
+this to obtain a single approximation adequate for use as my
+primitive erf^-1:
+
+  frunc -l0 -u1/2 -n7 -d6 -W 'x*(a-t)' 'let c = 2/sqrt(pi) , derf(x) = c * exp(-x^2) , iterate(x,a) = let x1 = x - (erf(x)-a)/derf(x) in if abs((x1-x)/(x1+x)) < 1e-20 then x1 else iterate(x1,a) in x==0 ? 1/c : iterate(0,x)/x'
+
+  Converged to within tolerance
+  num0: 24.79891658395006602700752
+  num1: -26.52635103384296143068798
+  num2: -17.85810303277236842617414
+  num3: 22.8587626983257943607289
+  num4: -0.5074692037602971426958849
+  num5: -2.776933661208881431905754
+  num6: 0.4049114938195780283526959
+  num7: -0.07055737814581092921659848
+  den0: 27.98258083986896288839596
+  den1: -29.93178188569917931793058
+  den2: -27.47653395615149002951928
+  den3: 33.62947370592647835963619
+  den4: 2.593142223250945639233033
+  den5: -7.629492654451346583181029
+  den6: 1.0
+  errmax: 1.802965360853533604703413e-17
+  function: (24.79891658395006602700752 + x * (-26.52635103384296143068798 + x * (-17.85810303277236842617414 + x * (22.8587626983257943607289 + x * (-0.5074692037602971426958849 + x * (-2.776933661208881431905754 + x * (0.4049114938195780283526959 + x * (-0.07055737814581092921659848)))))))) / (27.98258083986896288839596 + x * (-29.93178188569917931793058 + x * (-27.47653395615149002951928 + x * (33.62947370592647835963619 + x * (2.593142223250945639233033 + x * (-7.629492654451346583181029 + x))))))
+
+(Note the idiom here where I divide off a factor of x and multiply
+it back on afterwards, to force the function to really be zero at
+zero and to save a coefficient for somewhere it'll be more useful.)
+
+The same technique also gave me an approximation for the easy part
+of erfc^-1 (on [1/16,1/2]):
+
+  frunc -l1/16 -u1/2 -n10 -d10 'let c = 2/sqrt(pi) , derf(x) = c * exp(-x^2) , iterate(x,a) = let x1 = x - (erf(x)-a)/derf(x) in if abs((x1-x)/(x1+x)) < 1e-20 then x1 else iterate(x1,a) in iterate(0,1-x)'
+
+  Converged to within tolerance
+  num0: 6.284896345197495558914915e-7
+  num1: 0.0002577706562380964540010194
+  num2: 0.02171627440943737650223214
+  num3: 0.5994343192985166803686503
+  num4: 6.214364923561344146875889
+  num5: 22.97630938478630941255748
+  num6: 14.96546442106547243010588
+  num7: -37.01638747310264847513728
+  num8: -18.56336812766293229150158
+  num9: 10.53743323023856072904245
+  num10: 0.2648027830515574706759769
+  den0: 2.556586132314347240329708e-7
+  den1: 0.0001291489824420862308603112
+  den2: 0.01287643023540355677181042
+  den3: 0.4243915015475855750650172
+  den4: 5.503107620656153774579376
+  den5: 29.11336129036108144362395
+  den6: 56.63105655514271194404333
+  den7: 19.85383430129493305366594
+  den8: -20.79897356647317849288248
+  den9: -2.864571681563122371751799
+  den10: 1.0
+  errmax: 6.354117983815733386879639e-18
+  function: (6.284896345197495558914915e-7 + x * (0.0002577706562380964540010194 + x * (0.02171627440943737650223214 + x * (0.5994343192985166803686503 + x * (6.214364923561344146875889 + x * (22.97630938478630941255748 + x * (14.96546442106547243010588 + x * (-37.01638747310264847513728 + x * (-18.56336812766293229150158 + x * (10.53743323023856072904245 + x * (0.2648027830515574706759769))))))))))) / (2.556586132314347240329708e-7 + x * (0.0001291489824420862308603112 + x * (0.01287643023540355677181042 + x * (0.4243915015475855750650172 + x * (5.503107620656153774579376 + x * (29.11336129036108144362395 + x * (56.63105655514271194404333 + x * (19.85383430129493305366594 + x * (-20.79897356647317849288248 + x * (-2.864571681563122371751799 + x))))))))))
+
+That left the hard part: the tail.
+
+Since in the tail regions erfc(x) is about e^-x^2, it seemed nicest
+to develop an approximation which actually played off this great
+similarity. In other words, to compute erfc^-1(x) in the tail
+region, I actually find y = sqrt(-log(x)) (so that x = e^-y^2), and
+then compute R(y), where R(t) is a rational approximation to
+erfc^-1(e^-t^2)), i.e. the inverse function of sqrt(-log(erfc(x))).
+So I devised the following N-R iterator based on the above reference
+approximation of erfc:
+
+ierfcexpminussquare(x) =
+  let logerfc(x) = if x < 5 then log(1-erf(x)) else (290858616466466884.9930231 + x * (-70065877071926689535436.49 + x * (-156174571347146515755366.5 + x * (-166139556220906388109752.6 + x * (-108018121195654642126144.5 + x * (-46483585135712551207309.45 + x * (-13467502520327844150736.67 + x * (-2570183657923811381474.751 + x * (-301992934906200734088.799 + x * (-20470427404397012087.15188 + x * (-758885703341411966.0313868 + x * (-14410005330443865.47582932 + x * (-124384396641086.7886486437 + x * (-362598996491.8504460365157)))))))))))))) / (62093094749530500091880.18 + x * (103376459167851636006914.9 + x * (83254139141225081969362.98 + x * (40398713538547332662141.5 + x * (12580153934464136596428.96 + x * (2497705707109500333716.519 + x * (298818550870395371130.2534 + x * (20399794991298981773.50905 + x * (758165692664020535.8132075 + x * (14407398232938058.70723518 + x * (124383699670082.4371191828 + x * (362599836817.4502505081762 + x * (-1144.040800591382806934426 + x)))))))))))))
+    , sqrtminuslogerfc(x) = sqrt(-logerfc(x))
+    , c = 2/sqrt(pi)
+    , derf(x) = c * exp(-x^2)
+    , dlogerfc(x) = -derf(x) / exp(logerfc(x))
+    , dsqrtminuslogerfc(x) = -dlogerfc(x)/(2*sqrtminuslogerfc(x))
+    , iterate(x,a) = let x1 = x - (sqrtminuslogerfc(x)-a)/dsqrtminuslogerfc(x)
+                      in if abs((x1-x)/(x1+x)) < 1e-20 then x1
+		       else iterate(x1,a)
+   in iterate(10,x)
+
+and then I used that to develop my target approximation.
+
+  frunc -n12 -d12 -l'sqrt(-log(1/16))' -u30 'let logerfc(x) = if x < 5 then log(1-erf(x)) else (290858616466466884.9930231 + x * (-70065877071926689535436.49 + x * (-156174571347146515755366.5 + x * (-166139556220906388109752.6 + x * (-108018121195654642126144.5 + x * (-46483585135712551207309.45 + x * (-13467502520327844150736.67 + x * (-2570183657923811381474.751 + x * (-301992934906200734088.799 + x * (-20470427404397012087.15188 + x * (-758885703341411966.0313868 + x * (-14410005330443865.47582932 + x * (-124384396641086.7886486437 + x * (-362598996491.8504460365157)))))))))))))) / (62093094749530500091880.18 + x * (103376459167851636006914.9 + x * (83254139141225081969362.98 + x * (40398713538547332662141.5 + x * (12580153934464136596428.96 + x * (2497705707109500333716.519 + x * (298818550870395371130.2534 + x * (20399794991298981773.50905 + x * (758165692664020535.8132075 + x * (14407398232938058.70723518 + x * (124383699670082.4371191828 + x * (362599836817.4502505081762 + x * (-1144.040800591382806934426 + x))))))))))))) , sqrtminuslogerfc(x) = sqrt(-logerfc(x)) , c = 2/sqrt(pi) , derf(x) = c * exp(-x^2) , dlogerfc(x) = -derf(x) / exp(logerfc(x)) , dsqrtminuslogerfc(x) = -dlogerfc(x)/(2*sqrtminuslogerfc(x)) , iterate(x,a) = let x1 = x - (sqrtminuslogerfc(x)-a)/dsqrtminuslogerfc(x) in if abs((x1-x)/(x1+x)) < 1e-20 then x1 else iterate(x1,a) in iterate(10,x)'
+
+  Converged to within tolerance
+  num0: -349366007580.4958895573563
+  num1: 9043414967534.380502796925
+  num2: 1857822948916374.626592314
+  num3: 4812123485476295.702116669
+  num4: 7292899729204705.017000335
+  num5: 8569045805509224.581248963
+  num6: 4275366175771342.90991371
+  num7: 1340599960363150.11997151
+  num8: 297156676500564.4624472177
+  num9: 35208799518987.69892507065
+  num10: 1856733892503.900506111505
+  num11: 38269583498.1045351023821
+  num12: 230688308.5925711650525207
+  den0: 2172630249358955.7478382
+  den1: 5131191834319428.430450343
+  den2: 10037123376125059.64844583
+  den3: 11119213378955259.95291082
+  den4: 9919885878857128.212683678
+  den5: 4633106880931229.423154537
+  den6: 1395304430324187.739548646
+  den7: 300834561033734.0249471817
+  den8: 35304304741929.59260956419
+  den9: 1857487692619.404790811993
+  den10: 38269978560.88646946230056
+  den11: 230687605.1269198485907946
+  den12: 1.0
+  errmax: 3.175149411067984917080628e-18
+  function: (-349366007580.4958895573563 + x * (9043414967534.380502796925 + x * (1857822948916374.626592314 + x * (4812123485476295.702116669 + x * (7292899729204705.017000335 + x * (8569045805509224.581248963 + x * (4275366175771342.90991371 + x * (1340599960363150.11997151 + x * (297156676500564.4624472177 + x * (35208799518987.69892507065 + x * (1856733892503.900506111505 + x * (38269583498.1045351023821 + x * (230688308.5925711650525207))))))))))))) / (2172630249358955.7478382 + x * (5131191834319428.430450343 + x * (10037123376125059.64844583 + x * (11119213378955259.95291082 + x * (9919885878857128.212683678 + x * (4633106880931229.423154537 + x * (1395304430324187.739548646 + x * (300834561033734.0249471817 + x * (35304304741929.59260956419 + x * (1857487692619.404790811993 + x * (38269978560.88646946230056 + x * (230687605.1269198485907946 + x))))))))))))
+
+And that, pretty much, was that.

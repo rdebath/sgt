@@ -53,42 +53,6 @@ plot W(x), Wn(x)
  *    -1/e < log y < 0 there is a second solution.
  */
 
-/*
- * This implementation is based on accurate rational function
- * approximations constructed by frunc. In order to do this, we
- * need an implementation of W in frunc's expression language. In
- * fact we use several. The first implementation (of the principal
- * branch) uses Newton-Raphson iteration to converge rapidly to
- * its target value, but fails to converge in the difficult area
- * near -1/e or for very large x:
-
-let f(y) = (y^2+x*exp(-y))/(y+1),
-    iterate(y) = let y1=f(y)
-                  in if abs(y1-y)/abs(y1+y) < 1e-20 then y1
-		   else iterate(y1)
- in iterate(0)
-
- * The second implementation uses simple binary search, and is
- * reliable over pretty much the whole range of W but slow:
-
-let f(x)=x*exp(x),
-    wb(x,lo,hi) = let mid=(lo+hi)/2
-                   in if abs(hi-lo) < 1e-30 then mid
-                    else if f(mid) < x then wb(x,mid,hi) else wb(x,lo,mid)
- in if x<0 then wb(x,-1,0) else wb(x,0,log(1+x)+1)
-
- * This version of the binary-search implementation provides the
- * negative branch (I've simply flipped round the inequality sign
- * in the binary search and changed the limits):
-
-let f(x)=x*exp(x),
-    wb(x,lo,hi) = let mid=(lo+hi)/2
-                   in if abs(hi-lo) < 1e-30 then mid
-                    else if f(mid) > x then wb(x,mid,hi) else wb(x,lo,mid)
- in wb(x,-755,-1)
-
- */
-
 #include <math.h>
 #include <errno.h>
 
@@ -122,14 +86,6 @@ double W(double x)
 	 * first term of the function's numerator to be zero,
 	 * which ensures full precision down to extremely small
 	 * values of x.)
-	 *
-	 * Our rational-function approximation to W(x)/x on
-	 * [-1/8,1] was found using the command line
-
-frunc -l-1/8 -u1 -d8 -n8 -R 'let f(y) = (y^2+x*exp(-y))/(y+1), iterate(y) = let y1=f(y) in if abs(y1-y)/abs(y1+y) < 1e-20 then y1 else iterate(y1) in iterate(0)/x'
-
-	 * We use the N-R reference implementation of W in this
-	 * command line.
 	 */
 	double R =
 	    (9.029872804969977696957285 + x *
@@ -165,17 +121,6 @@ frunc -l-1/8 -u1 -d8 -n8 -R 'let f(y) = (y^2+x*exp(-y))/(y+1), iterate(y) = let 
 	 * to really be zero at zero; this seems to improve
 	 * accuracy at the extreme low end.
 	 *
-	 * Our rational-function approximation to
-	 * (W(x^2-1/e)+1)/x on [0,sqrt(1/e-1/8)], which will
-	 * give us W(x) on [-1/e,-1/8], was found by frunc
-	 * using the command line
-
-frunc -l0 -u'sqrt(1/e-1/8)' -d6 -n6 'let W(x) = let f(x)=x*exp(x), wb(x,lo,hi) = let mid=(lo+hi)/2 in if abs(hi-lo) < 1e-75 then mid else if f(mid) < x then wb(x,mid,hi) else wb(x,lo,mid) in if x<0 then wb(x,-1,0) else wb(x,0,log(1+x)+1) in (W(x^2-1/e)+1)/x'
-
-	 * We're using the binary-search implementation of W
-	 * here. Note also that the precision of the search
-	 * has been increased to enable full convergence.
-	 *
 	 * Before we can apply this approximation, we must
 	 * first compute y such that y^2-1/e equals our input
 	 * x. In order to do this accurately, we provide two
@@ -203,42 +148,14 @@ frunc -l0 -u'sqrt(1/e-1/8)' -d6 -n6 'let W(x) = let f(x)=x*exp(x), wb(x,lo,hi) =
 	return F*xx3 - 1.0;
     } else /* x >= 1.0 */ {
 	/*
-	 * Finding W on the infinite range [+1,+infinity) is
-	 * rather hard. Rational function approximations only work
-	 * on bounded intervals; so an obvious trick is to take
-	 * the reciprocal of x, compressing the infinite range
-	 * into (0,1]. However, this doesn't work well, because W
-	 * grows without bound as x tends to infinity, so W(1/x)
-	 * becomes infinite at zero. We can turn the infinity into
-	 * a zero by considering x*W(1/x), but then we have an
-	 * infinite derivative. Several other variations on this
-	 * theme yield functions which look plausible to the naked
-	 * eye, but which turn out to be very poorly approximable
-	 * by a rational function. (A lot of the problem is that
-	 * W(x) grows so slowly that if you draw the graph of
-	 * W(1/x), or anything related to W(1/x), on [0,1] then
-	 * the region of misbehaviour near the origin is too small
-	 * to see. So lots of functions _look_ nicely behaved, but
-	 * turn out not to be on closer inspection.)
-	 * 
-	 * Of all the things I've tried, the most plausible one
-	 * I've found is to take y=log(x), and then develop
-	 * approximations for W(e^y). This _is_ reasonably
-	 * plausibly approximable, as long as we don't try to take
-	 * the approximation all the way out to infinity. Instead
-	 * we observe that since x was limited by IEEE double
-	 * precision, y cannot be more than about 710, so we
-	 * simply divide [0,710] into a few subintervals and use a
-	 * separate approximation on each one.
+	 * For x above 1, we take y=log(x), and then develop
+	 * approximations for W(e^y).
 	 */
 	double y = log(x);
 
 	if (y <= 10) {
 	    /*
-	     * Approximation for W(e^y) on [0,10], found by
-
-frunc -l0 -u10 -n11 -d11 'let W(x) = let f(x)=x*exp(x), wb(x,lo,hi) = let mid=(lo+hi)/2 in if abs(hi-lo) < 1e-50 then mid else if f(mid) < x then wb(x,mid,hi) else wb(x,lo,mid) in if x<0 then wb(x,-1,0) else wb(x,0,log(1+x)+1) in W(exp(x))'
-
+	     * Approximation for W(e^y) on [0,10].
 	     */
 	    double W =
 		(-4986469650616.322779304023 + y *
@@ -269,9 +186,6 @@ frunc -l0 -u10 -n11 -d11 'let W(x) = let f(x)=x*exp(x), wb(x,lo,hi) = let mid=(l
 	} else if (y <= 100) {
 	    /*
 	     * Approximation for W(e^y) on [10,100], found by
-
-frunc -l10 -u100 -n10 -d10 'let W(x) = let f(x)=x*exp(x), wb(x,lo,hi) = let mid=(lo+hi)/2 in if abs(hi-lo) < 1e-50 then mid else if f(mid) < x then wb(x,mid,hi) else wb(x,lo,mid) in if x<0 then wb(x,-1,0) else wb(x,0,log(1+x)+1) in W(exp(x))'
-
 	     */
 	    double W =
 		(-40553477473955668629.77298 + y *
@@ -301,9 +215,6 @@ frunc -l10 -u100 -n10 -d10 'let W(x) = let f(x)=x*exp(x), wb(x,lo,hi) = let mid=
 	     * Approximation for W(e^y) on [100,710] (this is far
 	     * enough, since e^710 is outside IEEE double range),
 	     * found by:
-
-frunc -l100 -u710 -n10 -d10 'let W(x) = let f(x)=x*exp(x), wb(x,lo,hi) = let mid=(lo+hi)/2 in if abs(hi-lo) < 1e-50 then mid else if f(mid) < x then wb(x,mid,hi) else wb(x,lo,mid) in if x<0 then wb(x,-1,0) else wb(x,0,log(1+x)+1) in W(exp(x))'
-
 	     */
 
 	    double W =
@@ -355,19 +266,6 @@ double Wn(double x)
 	 * As above in W(), on the interval [-1/e,-1/4] we
 	 * approximate Wn(x^2-1/e) in order to avoid infinite
 	 * derivatives.
-	 * 
-	 * Our rational-function approximation to
-	 * (Wn(x^2-1/e)-1)/x on [0,sqrt(1/e-1/4)], which will give
-	 * us Wn(x) on [-1/e,-1/4], was found by frunc using the
-	 * command line
-
-frunc -l0 -u'sqrt(1/e-1/4)' -d6 -n6 'let Wn(x) = let f(x)=x*exp(x), wb(x,lo,hi) = let mid=(lo+hi)/2 in if abs(hi-lo) < 1e-85 then mid else if f(mid) > x then wb(x,mid,hi) else wb(x,lo,mid) in wb(x,-755,-1) in (Wn(x^2-1/e)+1)/x'
-
-	 * (This doesn't seem to converge to a spread of less than
-	 * 1e-20 no matter how much I bump up the limit of the
-	 * binary search. Not sure why. Still, that spread is more
-	 * than good enough in practice!)
-
 	 */
 	double xx1 = x + 0.3678794411714418899892777;   /* this is exact */
 	double xx2 = xx1 + 4.3166045617727425300173078e-16;
@@ -401,11 +299,7 @@ frunc -l0 -u'sqrt(1/e-1/4)' -d6 -n6 'let Wn(x) = let f(x)=x*exp(x), wb(x,lo,hi) 
 
 	if (y <= -100) {
 	    /*
-	     * An approximation to Wn(-e^y) on [-745,-100] was found
-	     * by
-
-frunc -l-745 -u-100 -d10 -n10 'let Wn(x) = let f(x)=x*exp(x), wb(x,lo,hi) = let mid=(lo+hi)/2 in if abs(hi-lo) < 1e-50 then mid else if f(mid) > x then wb(x,mid,hi) else wb(x,lo,mid) in wb(x,-755,-1) in Wn(-exp(x))'
-
+	     * An approximation to Wn(-e^y) on [-745,-100].
 	     */
 	    double W =
 		(-3.055827598594469889548451e+28 + y *
@@ -433,13 +327,7 @@ frunc -l-745 -u-100 -d10 -n10 'let Wn(x) = let f(x)=x*exp(x), wb(x,lo,hi) = let 
 	    return W;
 	} else if (y <= -10) {
 	    /*
-	     * An approximation to Wn(-e^y) on [-100,-10] was
-	     * found by
-
-frunc -l-100 -u-10 -d14 -n14 'let Wn(x) = let f(x)=x*exp(x), wb(x,lo,hi) = let mid=(lo+hi)/2 in if abs(hi-lo) < 1e-50 then mid else if f(mid) > x then wb(x,mid,hi) else wb(x,lo,mid) in wb(x,-755,-1) in Wn(-exp(x))'
-
-	     * Again, this didn't converge fully, but a spread of
-	     * 3e-27 is plenty good enough.
+	     * An approximation to Wn(-e^y) on [-100,-10].
 	     */
 	    double W =
 		(-3789501314066018470043779.0 + y *
@@ -475,10 +363,7 @@ frunc -l-100 -u-10 -d14 -n14 'let Wn(x) = let f(x)=x*exp(x), wb(x,lo,hi) = let m
 	    return W;
 	} else {
 	    /*
-	     * An approximation to Wn(-e^y) on [-10,log(1/4)] was found by
-
-frunc -l-10 -u'log(1/4)' -d14 -n14 'let Wn(x) = let f(x)=x*exp(x), wb(x,lo,hi) = let mid=(lo+hi)/2 in if abs(hi-lo) < 1e-50 then mid else if f(mid) > x then wb(x,mid,hi) else wb(x,lo,mid) in wb(x,-755,-1) in Wn(-exp(x))'
-
+	     * An approximation to Wn(-e^y) on [-10,log(1/4)].
 	     */
 	    double W =
 		(-4386805158.601123266755079 + y *
