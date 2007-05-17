@@ -660,3 +660,16 @@ verbose() {
 sp='-name .svn -prune -o'
 
 #}}}
+#{{{ my Python library code should be available via PYTHONPATH if present
+if test -d $HOME/src/misc/libcode; then
+  addpath $HOME/src/misc/libcode PYTHONPATH
+  py() {
+    python -i -c 'import math
+from math import *
+import mathlib
+from mathlib import *
+import rational
+from rational import *' "$@"
+  }
+fi
+#}}}
