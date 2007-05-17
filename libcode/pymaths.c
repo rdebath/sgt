@@ -80,7 +80,12 @@ static PyMethodDef pymaths_methods[] = {
     {NULL, NULL, 0, NULL}
 };
 
-PyMODINIT_FUNC initpymaths(void)
+#ifdef PyMODINIT_FUNC
+PyMODINIT_FUNC
+#else
+void
+#endif
+initpymaths(void)
 {
     (void)Py_InitModule("pymaths", pymaths_methods);
 }
