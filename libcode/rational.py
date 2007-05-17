@@ -90,7 +90,9 @@ class Rational:
             tp = 1L            
         return float(self.n/tp) / float(self.d/tp)
 
-    def __cmp__(self, r2):
+    def __cmp__(self, r2): 
+        if not isinstance(r2, Rational):
+            return 1
         n = self.n * r2.d - r2.n * self.d
         if n < 0: return -1
         if n > 0: return +1
