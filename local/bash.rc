@@ -661,7 +661,7 @@ sp='-name .svn -prune -o'
 
 #}}}
 #{{{ my Python library code should be available via PYTHONPATH if present
-if test -d $HOME/src/misc/libcode; then
-  addpath $HOME/src/misc/libcode PYTHONPATH
+if test -d $HOME/${SRCMISC:-src/misc}/libcode; then
+  addpath $HOME/${SRCMISC:-src/misc}/libcode PYTHONPATH
 fi
 #}}}
