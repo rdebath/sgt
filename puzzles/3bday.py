@@ -67,7 +67,7 @@ nfmt = "%%%dd" % len("%d" % (2*Y+1))
 
 for n in range(1,Y*2+2):
     N = P(n)
-    D = 365 ** n
+    D = Y ** n
     assert 0 <= N and N <= D
     # Probability, rounded down (so as to show the clean transition
     # from just-less-than-1 at 2Y to exactly 1 at 2Y+1), of there
