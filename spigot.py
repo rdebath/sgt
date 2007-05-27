@@ -3,6 +3,12 @@
 import sys
 import errno
 
+# TODO:
+#  - Rationalise command line syntax?
+#  - Update comments significantly. We do quite a lot of new stuff!
+#  - See if we can support any more algorithms. Gosper provides a
+#    square root, for example.
+
 # Spigot algorithm to produce the digits of pi and e, without
 # having to commit in advance to the number of digits desired (so
 # you can just keep going until memory or CPU time runs out).
@@ -23,7 +29,8 @@ import errno
 #   spigot.py frac 3 15          # generates the rational 3/15
 #
 # You can also feed a stream of input to the program and it will
-# convert between continued fraction terms and an arbitrary number base, or between number bases:
+# convert between continued fraction terms and an arbitrary number
+# base, or between number bases:
 #   spigot.py cfrac              # reads continued fraction terms from stdin
 #   spigot.py base 9             # reads a base-9 number from stdin
 
@@ -88,8 +95,8 @@ import errno
 #   (1, 0, 0, 1).
 #
 #   For ever:
-#       If the integer parts of (3p+q)/(3r+s) and (4p+q)/(4r+s) are equal, then 
-#       they are both equal to the next digit of pi.
+# 	If the integer parts of (3p+q)/(3r+s) and (4p+q)/(4r+s) are
+# 	equal, then they are both equal to the next digit of pi.
 #           So output that digit d, and pre-multiply our matrix by
 #           (10,-10*d,0,1).
 #       Otherwise, we don't currently have enough precision to know the
@@ -170,44 +177,86 @@ import errno
 # interval will shrink to finite size as soon as another matrix is
 # folded in.)
 
-def consume_base(state, digit):
-    global start
+class output_base:
+    def __init__(self, base):
+	self.base = base
+	self.state = 0
+    def consume(self, matrix, digit):
+	# Update a matrix state to reflect the consumption of a
+	# digit.
+	if digit < 0:
+	    # Special case that can occur on the very first call if
+	    # our number is negative. In this situation we don't
+	    # want to map x |-> base * (x - digit) as usual,
+	    # because that would lead to us producing a fraction
+	    # going _upwards_ from the number instead of downwards
+	    # (think of it as (-1).12345 instead of -0.87655). So
+	    # instead we map x |-> base * (digit+1 - x).
+	    return mmul((-self.base, self.base*(digit+1), 0, 1), matrix)
+	else:
+	    return mmul((self.base, -self.base*digit, 0, 1), matrix)
+    def output(self, digit):
+	if self.state == 0:
+	    # Special case: the first digit generated is the
+	    # integer part of the target number. Therefore, we want
+	    # to write a decimal point after it, and also we need
+	    # special handling if `base' is too small.
+	    #
+	    # Also, this digit may be negative, in which case we
+	    # print a minus sign and _subtract 1_ from it.
+	    if digit < 0:
+		digit = -1 - digit
+		sys.stdout.write("-")
+	    b = 1
+	    x = digit
+	    while digit >= b*self.base:
+		b = b * self.base
+	    while b > 0:
+		d = x / b
+		x = x % b
+		sys.stdout.write("%c" % (48 + d + 39*(d>9)))
+		b = b / self.base
+	    self.state = 1
+	else:
+	    if self.state == 1:
+		# Write the decimal point, once we know there's a digit
+		# following it.
+		sys.stdout.write(".")
+		self.state = 2
+	    # Once we're going, we just write out each digit in the
+	    # requested base.
+	    sys.stdout.write("%c" % (48 + digit + 39*(digit>9)))
+	sys.stdout.flush()
+    def run(self, spig, digitlimit, earlyterm):
+	while digitlimit == None or digitlimit > 0:
+	    digit = spig.gendigit(self, earlyterm)
+	    assert digit != (-1,)
+	    if digit == (-2,):
+		print # a trailing newline is generally considered polite
+		return
+	    else:
+		self.output(digit)
+		if digitlimit != None:
+		    digitlimit = digitlimit - 1
+	# If we hit our digit limit, output a trailing newline.
+	print
 
-    if start == 0:
-	# Special case: the first digit generated is the integer
-	# part of the target number. Therefore, we want to write a
-	# decimal point after it, and also we need special handling
-	# if `base' is too small.
-	b = 1
-	x = digit
-	while digit >= b*base:
-	    b = b * base
-	while b > 0:
-	    d = x / b
-	    x = x % b
-	    sys.stdout.write("%c" % (48 + d + 39*(d>9)))
-	    b = b / base
-	start = 1
-    else:
-	if start == 1:
-	    # Write the decimal point, once we know there's a digit
-	    # following it.
-	    sys.stdout.write(".")
-	    start = 2
-	# Once we're going, we just write out each digit in the
-	# requested base.
-	sys.stdout.write("%c" % (48 + digit + 39*(digit>9)))
-    sys.stdout.flush()
-
-    return mmul((base, -base*digit, 0, 1), state)
-
-def consume_confrac(state, digit):
-    global start
-
-    sys.stdout.write("%d\n" % digit)
-    sys.stdout.flush()
-
-    return mmul((0, 1, 1, -digit), state)
+class output_confrac:
+    def consume(self, matrix, digit):
+	# Update a matrix state to reflect the consumption of a
+	# digit.
+	return mmul((0, 1, 1, -digit), matrix)
+    def output(self, digit):
+	sys.stdout.write("%d\n" % digit)
+	sys.stdout.flush()
+    def run(self, spig, digitlimit, earlyterm):
+	while digitlimit == None or digitlimit > 0:
+	    digit = spig.gendigit(self, earlyterm)
+	    assert digit != (-2,)
+	    if digit == (-1,):
+		return
+	    else:
+		self.output(digit)
 
 def mtrans(m, x):
     # Interpret a 2x2 matrix as a Mobius transformation.
@@ -381,17 +430,245 @@ class frac_matrix:
     def __call__(self, k):
 	return (0, self.n, 0, self.d)
 
-bot, top, matrix = None, None, None
-base, consume = 10, consume_base
+class gosper_matrix:
+    def __init__(self, numbers, spig1, spig2):
+        self.numbers = numbers
+        self.x = spig1
+        self.y = spig2
+	self.xdone = self.ydone = 0
+    def consume(self, matrix, digit):
+	# Update a matrix state to reflect the consumption of a
+	# digit.
+	return mmul((0, 1, 1, -digit), matrix)
+    def getx(self):
+        a, b, c, d, e, f, g, h = self.numbers
+	p = self.x.gendigit(self, 0)
+	q = 1
+        if p == (-1,):
+            self.numbers = (0, 0, a, b, 0, 0, e, f)
+	    self.xdone = 1
+        else:
+            self.numbers = (p*a+c, p*b+d, q*a, q*b, p*e+g, p*f+h, q*e, q*f)
+    def gety(self):
+        a, b, c, d, e, f, g, h = self.numbers
+	r = self.y.gendigit(self, 0)
+	s = 1
+        if r == (-1,):
+            self.numbers = (0, a, 0, c, 0, e, 0, g)
+	    self.ydone = 1
+        else:
+            self.numbers = (r*a+b, s*a, r*c+d, s*c, r*e+f, s*e, r*g+h, s*g)
+    def output_term(self, t, u):
+        a, b, c, d, e, f, g, h = self.numbers
+        self.numbers = (u*e, u*f, u*g, u*h, a-t*e, b-t*f, c-t*g, d-t*h)
+    def dostep(self):
+        a, b, c, d, e, f, g, h = self.numbers
+	# Termination check: if we have no remaining dependency on
+	# x and y, and the remaining ratio d/h has become infinite,
+	# then our output continued fraction has terminated.
+	if a==0 and b==0 and c==0 and e==0 and f==0 and g==0 and h==0:
+	    return -1, -1
+        # The four extreme positions of z, as x and y vary between
+        # 0 and infinity, are a/e, b/f, c/g and d/h. First we must
+        # check whether the denominator changes sign or is zero.
+        if (not self.xdone and not self.ydone and e<=0) or \
+	(not self.xdone and f<=0) or (not self.ydone and g<=0) or h<=0:
+            # I couldn't immediately work out the rule for which
+            # fraction we should fetch a term from in this
+            # situation, so I gave up and just did both :-)
+            if not self.xdone: self.getx()
+	    if not self.ydone: self.gety()
+            return None
+        # Now find the integer parts of the four ratios, and see
+        # which ones aren't equal to decide whether to get another
+        # term.
+	term = None
+	if not self.xdone and not self.ydone:
+	    ra, rb, rc, rd = a/e, b/f, c/g, d/h
+	    if ra == rb and rb == rc and rc == rd:
+		term = ra
+	elif not self.xdone:
+	    rb, rd = b/f, d/h
+	    if rb == rd:
+		term = rb
+	elif not self.ydone:
+	    rc, rd = c/g, d/h
+	    if rc == rd:
+		term = rc
+	else:
+	    term = rd = d/h
+	if term != None:
+            # Output a term.
+            self.output_term(term, 1)
+            return term, 1
+        # Otherwise, decide which of x and y to fetch another term
+        # from.
+        if not self.xdone and (rb != rd or (not self.ydone and ra != rc)):
+            self.getx()
+        if not self.ydone and (rc != rd or (not self.xdone and ra != rb)):
+            self.gety()
+    def __call__(self, k):
+        while 1:
+            term = self.dostep()
+            if term != None:
+                break
+	if term == (-1, -1):
+	    return (0, 1, 0, 0) # fraction terminated
+	else:
+	    assert term[1] == 1
+	    return (term[0], 1, 1, 0)
+
+class recip_matrix:
+    def __init__(self, spig):
+	self.spig = spig
+	self.state = 0
+    def consume(self, matrix, digit):
+	# Update a matrix state to reflect the consumption of a
+	# digit.
+	return mmul((0, 1, 1, -digit), matrix)
+    def __call__(self, k):
+	if self.state == 0:
+	    self.state = 1
+	    return (0, 1, 1, 0)
+	else:
+	    d1 = self.spig.gendigit(self, 0)
+	    if d1 == (-1,):
+		return (0, 1, 0, 0) # fraction terminated
+	    else:
+		return (d1, 1, 1, 0)
+
+class spigot:
+    def __init__(self, bot, top, matrix):
+	self.bot = bot
+	self.top = top
+	self.matrix = matrix
+	self.state = (1, 0, 0, 1)
+	self.k = 1
+    def gendigit(self, consume, earlyterm=0):
+	while 1:
+	    digit = mtrans(self.state, self.bot)
+	    dcheck = mtrans(self.state, self.top)
+	    if digit == dcheck:
+		if digit == None:
+		    # This case arises when we have been asked to generate the
+		    # continued fraction for a rational.
+		    return (-1,)
+		if earlyterm and self.state[0] == 0 \
+		and self.state[1] == 0 and self.state[2] == 0:
+		    # This case arises when we have been asked to generate
+		    # a base-n fraction which terminates.
+		    return (-2,)
+		# Otherwise, generate a digit.
+		self.state = consume.consume(self.state, digit)
+		return digit
+	    else:
+		# Fold in another matrix.
+		self.state = mmul(self.state, self.matrix(self.k))
+		self.k = self.k + 1
+
+def get_spig(arg, args):
+    if arg == "pi":
+	return spigot(3, 4, pi_matrix)
+    elif arg == "e":
+	return spigot(0, 2, e_matrix)
+    elif arg == "phi":
+	return spigot(1, 2, phi_matrix)
+    elif arg == "root":
+	if len(args) > 0:
+	    radicand = args[0]
+	    del args[0]
+	else:
+	    sys.stderr.write("input type 'root' requires an argument\n")
+	    sys.exit(1)
+	radicand = long(radicand)
+	return spigot(0, None, root_matrix(radicand))
+    elif arg == "frac":
+	if len(args) >= 2:
+	    numerator = args[0]
+	    denominator = args[1]
+	    del args[0:2]
+	else:
+	    sys.stderr.write("input type 'frac' requires two arguments\n")
+	    sys.exit(1)
+	numerator = long(numerator)
+	denominator = long(denominator)
+	return spigot(numerator/denominator, \
+	(numerator+denominator-1)/denominator, \
+	frac_matrix(numerator, denominator))
+    elif arg == "cfrac":
+	# Read a list of continued fraction terms on standard
+	# input, and spigot them into some ordinary number base on
+	# output.
+	
+	# `None' here represents infinity; the general continued
+	# fraction transformation x -> k+1/x always maps
+	# [0,infinity] to a subinterval of itself.
+	return spigot(0, None, cfrac_matrix)
+    elif arg == "base":
+	# Read a number in a specified integer base on standard
+	# input, and spigot it into a different base or a continued
+	# fraction.
+	if len(args) > 0:
+	    ibase = args[0]
+	    args = args[1:]
+	else:
+	    sys.stderr.write("input type 'base' requires an argument\n")
+	    sys.exit(1)
+	ibase = long(ibase)
+	return spigot(0, ibase, base_matrix(ibase))
+    elif arg == "add" or arg == "sub" or arg == "mul" or arg == "div":
+	# Read two other spigot definitions, and produce a spigot
+	# giving their sum.
+	if len(args) < 1:
+	    sys.stderr.write("input type 'add' requires operands\n")
+	    sys.exit(1)
+	x = args[0]
+	del args[0]
+	spig1 = get_spig(x, args)
+	if len(args) < 1:
+	    sys.stderr.write("input type 'add' requires two operands\n")
+	    sys.exit(1)
+	x = args[0]
+	del args[0]
+	spig2 = get_spig(x, args)
+	if arg == "add":
+	    numbers = (0,1,1,0,0,0,0,1)
+	elif arg == "sub":
+	    numbers = (0,1,-1,0,0,0,0,1)
+	elif arg == "mul":
+	    numbers = (1,0,0,0,0,0,0,1)
+	elif arg == "div":
+	    numbers = (0,1,0,0,0,0,1,0)
+	return spigot(0, None, gosper_matrix(numbers, spig1, spig2))
+    elif arg == "reciprocal":
+	# Read another spigot definition, and produce a spigot
+	# giving its reciprocal.
+	if len(args) < 1:
+	    sys.stderr.write("input type 'reciprocal' requires operands\n")
+	    sys.exit(1)
+	x = args[0]
+	del args[0]
+	spig1 = get_spig(x, args)
+	return spigot(0, None, recip_matrix(spig1))
+    else:
+	try:
+	    number = long(arg)
+	except ValueError:
+	    sys.stderr.write("unrecognised argument '%s'\n" % arg)
+	    sys.exit(1)
+	return spigot(number, number, frac_matrix(number, 1))
+
+spig = None
+output = output_base(10)
 earlyterm = 1
 digitlimit = None
 
 args = sys.argv[1:]
 while len(args) > 0:
     arg = args[0]
-    args = args[1:]
+    del args[0]
     if arg == "-c":
-	base, consume = None, consume_confrac
+	output = output_confrac()
     elif arg[0:2] == "-b":
 	val = arg[2:]
 	if val == "":
@@ -409,7 +686,7 @@ while len(args) > 0:
 	    sys.stderr.write("base '%s' is not an integer greater than 1\n" \
 	    % val)
 	    sys.exit(1)
-	consume = consume_base
+	output = output_base(base)
     elif arg[0:2] == "-d":
 	val = arg[2:]
 	if val == "":
@@ -422,60 +699,13 @@ while len(args) > 0:
         digitlimit = long(val)
     elif arg == "-n":
 	earlyterm = 0
-    elif arg == "pi":
-	bot, top, matrix = 3, 4, pi_matrix
-    elif arg == "e":
-	bot, top, matrix = 0, 2, e_matrix
-    elif arg == "phi":
-	bot, top, matrix = 1, 2, phi_matrix
-    elif arg == "root":
-	if len(args) > 0:
-	    radicand = args[0]
-	    args = args[1:]
-	else:
-	    sys.stderr.write("input type 'root' requires an argument\n")
-	    sys.exit(1)
-	radicand = long(radicand)
-	bot, top, matrix = 0, None, root_matrix(radicand)
-    elif arg == "frac":
-	if len(args) >= 2:
-	    numerator = args[0]
-	    denominator = args[1]
-	    args = args[2:]
-	else:
-	    sys.stderr.write("input type 'frac' requires two arguments\n")
-	    sys.exit(1)
-	numerator = long(numerator)
-	denominator = long(denominator)
-	bot, top, matrix = numerator/denominator, \
-	(numerator+denominator-1)/denominator, \
-	frac_matrix(numerator, denominator)
-    elif arg == "cfrac":
-	# Read a list of continued fraction terms on standard
-	# input, and spigot them into some ordinary number base on
-	# output.
-	
-	# `None' here represents infinity; the general continued
-	# fraction transformation x -> k+1/x always maps
-	# [0,infinity] to a subinterval of itself.
-	bot, top, matrix = 0, None, cfrac_matrix
-    elif arg == "base":
-	# Read a number in a specified integer base on standard
-	# input, and spigot it into a different base or a continued
-	# fraction.
-	if len(args) > 0:
-	    ibase = args[0]
-	    args = args[1:]
-	else:
-	    sys.stderr.write("input type 'base' requires an argument\n")
-	    sys.exit(1)
-	ibase = long(ibase)
-	bot, top, matrix = 0, ibase, base_matrix(ibase)
     else:
-	sys.stderr.write("unrecognised argument '%s'\n" % arg)
-	sys.exit(1)
+	spig = get_spig(arg, args)
+	if spig == None:
+	    sys.stderr.write("unrecognised argument '%s'\n" % arg)
+	    sys.exit(1)
 
-if matrix == None:
+if spig == None:
     sys.stderr.write("usage: %s [ -c | -b <base> ] [ -n ] [ -d <digits> ] <number>\n" % sys.argv[0])
     sys.stderr.write("where: -b <base>        output in base <base> instead of 10\n")
     sys.stderr.write("       -c               output continued fraction terms, one per line\n")
@@ -488,38 +718,8 @@ if matrix == None:
     sys.stderr.write("       base <n>         a base-<n> number read from standard input\n")
     sys.exit(len(sys.argv) > 1)
 
-state = (1, 0, 0, 1)
-k = 1
-start = 0
-
 try:
-    while digitlimit == None or digitlimit > 0:
-	digit = mtrans(state, bot)
-	dcheck = mtrans(state, top)
-	if digit == dcheck:
-	    if digit == None:
-		# This case arises when we have been asked to generate the
-		# continued fraction for a rational. Simply stop.
-		assert consume == consume_confrac
-		sys.exit(0)
-	    if earlyterm and state[0] == 0 and state[1] == 0 and state[2] == 0:
-		# This case arises when we have been asked to generate
-		# a base-n fraction which terminates. Stop again.
-		assert consume == consume_base
-		print # a trailing newline is generally considered polite
-		sys.exit(0)
-	    # Otherwise, generate a digit.
-	    state = consume(state, digit)
-            if digitlimit != None:
-                digitlimit = digitlimit - 1
-	else:
-	    # Fold in another matrix.
-	    state = mmul(state, matrix(k))
-	    k = k + 1
-    # If we get here in base-conversion mode (probably because we
-    # hit our digit limit), output a trailing newline.
-    if consume == consume_base:
-	print
+    output.run(spig, digitlimit, earlyterm)
 except IOError, e:
     # This typically means `broken pipe', i.e. we've been piped
     # into head or some such. Don't panic; just calmly shut down.
