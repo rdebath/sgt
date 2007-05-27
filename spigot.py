@@ -610,7 +610,7 @@ def get_spig(arg, args):
 	# fraction.
 	if len(args) > 0:
 	    ibase = args[0]
-	    args = args[1:]
+	    del args[0]
 	else:
 	    sys.stderr.write("input type 'base' requires an argument\n")
 	    sys.exit(1)
@@ -674,7 +674,7 @@ while len(args) > 0:
 	if val == "":
 	    if len(args) > 0:
 		val = args[0]
-		args = args[1:]
+		del args[0]
 	    else:
 		sys.stderr.write("option '-b' requires an argument\n")
 		sys.exit(1)
@@ -692,7 +692,7 @@ while len(args) > 0:
 	if val == "":
 	    if len(args) > 0:
 		val = args[0]
-		args = args[1:]
+		del args[0]
 	    else:
 		sys.stderr.write("option '-d' requires an argument\n")
 		sys.exit(1)
