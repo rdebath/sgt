@@ -23,12 +23,22 @@
 # permutations, which would take O(n!) time. So this is a practical
 # algorithm as well as being an adjunct to the proof.
 
+import string
+import sys
+
+# Compensate for older versions of Python.
+try:
+    s = sum([1,2])
+except NameError:
+    def sum(list):
+	return reduce(lambda x,y:x+y, list)
+
 debugging = 0
 randomise = 0
 
 def debug(*a):
     if debugging:
-	print " ".join(map(str, a))
+	print string.join(" ", map(str, a))
 
 def siteswaptest(list):
     # Return true iff list is a valid siteswap.
@@ -140,8 +150,6 @@ def makeperm(list):
     assert siteswaptest([list[perm[i]] for i in range(n)])
     return perm
 
-import string
-import sys
 args = sys.argv[1:]
 
 while len(args) > 0 and args[0][0] == "-":
