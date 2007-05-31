@@ -179,6 +179,7 @@ void candidate(struct root **roots, int n, DOUBLE x)
 	    ADD(total, total, roots[i]->root);
 	}
 	printf("%.17g %.17g\n", TO_DOUBLE(total), TO_DOUBLE(x));
+	fflush(stdout);
 
 	CLEAR(total);
     }
