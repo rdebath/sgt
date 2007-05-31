@@ -134,7 +134,7 @@ GdkColor bg = {0, 32768, 32768, 32768};
  * out of my svn repository and doesn't like this approach is
  * welcome to send me code...
  */
-void setup_maxw_maxh(int fullscr)
+void setup_maxw_maxh(int full_screen)
 {
     int minx, miny, maxx, maxy;
     Display *disp;
@@ -148,7 +148,7 @@ void setup_maxw_maxh(int fullscr)
     maxx = gdk_screen_width();
     maxy = gdk_screen_height();
 
-    if (!fullscr) {
+    if (!full_screen) {
 	disp = GDK_DISPLAY();
 	root = RootWindow(disp, DefaultScreen(disp));
 	prop = XInternAtom(disp, "_NET_WORKAREA", True);
@@ -171,7 +171,7 @@ void setup_maxw_maxh(int fullscr)
     maxw = maxx - minx;
     maxh = maxy - miny;
 
-    if (!fullscr) {
+    if (!full_screen) {
 	maxw -= fw;
 	maxh -= fh;
     }
@@ -305,9 +305,10 @@ void ilist_reload(struct ilist *il, int n)
 struct window {
     struct ilist *il;
     int pos;
-    int use_max_size;
+    int use_max_size, full_screen, show_nametip;
     int iw, ih, ox, oy, ww, wh;
-    GtkWidget *window, *area;
+    GtkWidget *window, *fixed, *area, *nametip;
+    GtkTextBuffer *buffer;
     GdkPixmap *pm;
 };
 
@@ -341,7 +342,7 @@ static void switch_to_image(struct window *w, int index)
     w->ih = ih;
     w->ox = w->oy = 0;
 
-    if (w->use_max_size)
+    if (w->use_max_size || w->full_screen)
         gtk_drawing_area_size(GTK_DRAWING_AREA(w->area),
                               w->il->maxw + 2*BORDER,
                               w->il->maxh + 2*BORDER);
@@ -365,6 +366,16 @@ static void switch_to_image(struct window *w, int index)
         w->pm = gdk_pixmap_new(w->area->window, iw, ih, -1);
 	set_bg(w->pm, iw, ih);
         image_to_pixmap(im, w->pm, iw, ih);
+    }
+
+    if (w->buffer) {
+	gtk_text_buffer_set_text(w->buffer, w->il->filenames[index], -1);
+    }
+    if (w->nametip) {
+	if (w->full_screen && w->show_nametip)
+	    gtk_widget_show(w->nametip);
+	else
+	    gtk_widget_hide(w->nametip);
     }
 }
 
@@ -505,6 +516,11 @@ static int win_key_press(GtkWidget *widget, GdkEventKey *event, gpointer data)
 	    switch_to_image(w, w->pos-1);
 	    return TRUE;
 	}
+	if ((c == '\'' || c == '`' || c == '"') && w->full_screen) {
+	    w->show_nametip = !w->show_nametip;
+	    switch_to_image(w, w->pos);
+	    return TRUE;
+	}
     } else {
 	int c = event->keyval;
 
@@ -525,23 +541,13 @@ static int win_key_press(GtkWidget *widget, GdkEventKey *event, gpointer data)
     return FALSE;
 }
 
-static struct window *new_window(struct ilist *il, int maxsize, int fullscr)
+static struct window *new_window(struct ilist *il, int maxsize,
+				 int full_screen)
 {
     struct window *w = snew(struct window);
 
-#if SUPPORT_FULLSCREEN
-    if (fullscr) {
-	/*
-	 * Ignore all that careful work with the work area.
-	 */
-	il->maxw = gdk_screen_width();
-	il->maxh = gdk_screen_height();
-    } else
-#endif
-    {
-	il->maxw = maxw;
-	il->maxh = maxh;
-    }
+    il->maxw = maxw;
+    il->maxh = maxh;
 
     w->il = il;
 
@@ -550,16 +556,27 @@ static struct window *new_window(struct ilist *il, int maxsize, int fullscr)
     w->use_max_size = maxsize;
 
     w->window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    w->fixed = gtk_fixed_new();
     w->area = gtk_drawing_area_new();
     w->ww = w->wh = 0;
 
-#if SUPPORT_FULLSCREEN
-    if (fullscr)
+    w->full_screen = w->show_nametip = full_screen;
+
+#if SUPPORT_FULLSCREEN 
+    if (full_screen)
 	gtk_window_fullscreen(GTK_WINDOW(w->window));
 #endif
 
     gtk_widget_show(w->area);
-    gtk_container_add(GTK_CONTAINER(w->window), w->area);
+    gtk_widget_show(w->fixed);
+    gtk_fixed_put(GTK_FIXED(w->fixed), w->area, 0, 0);
+    gtk_container_add(GTK_CONTAINER(w->window), w->fixed);
+
+    w->nametip = gtk_text_view_new();
+    gtk_text_view_set_editable(GTK_TEXT_VIEW(w->nametip), FALSE);
+    gtk_widget_hide(w->nametip);
+    gtk_fixed_put(GTK_FIXED(w->fixed), w->nametip, 0, 0);
+    w->buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(w->nametip));
 
     gtk_signal_connect(GTK_OBJECT(w->window), "destroy",
                        GTK_SIGNAL_FUNC(window_destroy), NULL);
@@ -575,7 +592,7 @@ static struct window *new_window(struct ilist *il, int maxsize, int fullscr)
     gtk_widget_show(w->window);
 
 #if SUPPORT_FULLSCREEN
-    if (fullscr) {
+    if (full_screen) {
 	GdkPixmap *ptr;
 	GdkColor cfg = { 0, 65535, 65535, 65535 };
 	GdkColor cbg = { 0, 0, 0, 0 };
@@ -627,7 +644,7 @@ int main(int argc, char **argv)
 {
     struct ilist *il;
     int opts = TRUE, errs = FALSE, nogo = FALSE, maxsize = FALSE;
-    int fullscr = FALSE, ignoreloaderrs = FALSE, rootwin = FALSE;
+    int full_screen = FALSE, ignoreloaderrs = FALSE, rootwin = FALSE;
 
     /*
      * GTK will gratuitously eat an argument which is a single
@@ -766,7 +783,7 @@ int main(int argc, char **argv)
 			break;
 		      case 'f':
 #if SUPPORT_FULLSCREEN
-			fullscr = TRUE;
+			full_screen = TRUE;
 #else
                         fprintf(stderr, "v: full screen not supported in"
                                 " this build\n");
@@ -850,7 +867,7 @@ int main(int argc, char **argv)
 	}
     }
 
-    setup_maxw_maxh(fullscr);
+    setup_maxw_maxh(full_screen);
 
     {
 	GdkColormap *cm = gdk_colormap_get_system();
@@ -871,7 +888,7 @@ int main(int argc, char **argv)
     if (rootwin) {
         set_root_window(il->images[0]);
     } else {
-        new_window(il, maxsize, fullscr);
+        new_window(il, maxsize, full_screen);
         gtk_main();
     }
 
