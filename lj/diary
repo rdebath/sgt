@@ -112,6 +112,12 @@ class output:
 	self.mono_bullet_txt = ""
 	self.warnings = []
 	self.mono_title = []
+	self.mono_suppress_space = 0
+	self.news_suppress_space = 0
+	self.mono_in_word = 0
+	self.news_in_word = 0
+	self.mono_wordcount = 0
+	self.news_wordcount = 0
 	pass
 
     def mono_blankline(self):
@@ -142,10 +148,24 @@ class output:
 	self.warnings.append(msg)
 
     def mono_add_word(self, text, attrs, isbreak):
+	if not isbreak:
+	    if not self.mono_in_word:
+		self.mono_in_word = 1
+		self.mono_wordcount = self.mono_wordcount + 1
+	else:
+	    self.mono_in_word = 0
         self.mono_words.append((text, attrs, isbreak))
+	self.mono_suppress_space = 0
 
     def news_add_word(self, text, isbreak):
+	if not isbreak:
+	    if not self.news_in_word:
+		self.news_in_word = 1
+		self.news_wordcount = self.news_wordcount + 1
+	else:
+	    self.news_in_word = 0
         self.news_words.append((text, isbreak))
+	self.news_suppress_space = 0
 
     def mono_append(self, attr, currwid, word):
         text = word[0]
@@ -595,10 +615,27 @@ class output:
 	    self.subj = self.subj + ["</em>","<em>"][on != 0]
 
 	if self.emph_level == 1 or on == 1:
-	    self.mono_add_word("_", self.mono_attr, 0)
-	    self.news_add_word("_", 0)
+	    if self.mono_ok:
+		self.mono_add_word("_", self.mono_attr, 0)
+	    if self.news_ok:
+		self.news_add_word("_", 0)
 
 	self.emph_level = on
+
+    def deletion(self, on):
+	if self.html_ok:
+	    self.html = self.html + ["</strike>","<strike>"][on != 0]
+	elif self.html_title:
+	    self.subj = self.subj + ["</strike>","<strike>"][on != 0]
+	if on:
+	    self.mono_wordcount = self.news_wordcount = 0
+	else:
+	    if self.mono_ok:
+		self.mono_add_word("^W" * self.mono_wordcount, self.mono_attr, 0)
+		self.mono_suppress_space = 1
+	    if self.news_ok:
+		self.news_add_word("^W" * self.news_wordcount, 0)
+		self.news_suppress_space = 1
 
     def code(self, on):
 	if self.html_ok:
@@ -768,9 +805,15 @@ class output:
 	elif self.html_title:
 	    self.subj = self.subj + text
         if self.mono_ok and (len(self.mono_words) > 0 or self.para_type == PPRE):
-            self.mono_add_word(text, self.mono_attr, 1)
+	    if self.mono_suppress_space:
+		self.mono_suppress_space = 0
+	    else:
+		self.mono_add_word(text, self.mono_attr, 1)
         if self.news_ok and (len(self.news_words) > 0 or self.para_type == PPRE):
-            self.news_add_word(text, 1)
+	    if self.news_suppress_space:
+		self.news_suppress_space = 0
+	    else:
+		self.news_add_word(text, 1)
 
     def default_mbreak(self):
 	# Invent an mbreak paragraph with default text in it.
@@ -1174,6 +1217,8 @@ def rdinput(file):
 			o.emph(1)
 		    elif tok[1] == "we":
 			o.emph(0.5)
+		    elif tok[1] == "del":
+			o.deletion(1)
 		    elif tok[1] == "c":
 			o.code(1)
 		    elif tok[1] == "b":
@@ -1191,6 +1236,8 @@ def rdinput(file):
 			o.quote(0)
 		    elif s == "e" or s == "we":
 			o.emph(0)
+		    elif s == "del":
+			o.deletion(0)
 		    elif s == "c":
 			o.code(0)
 		    elif s == "b":
