@@ -100,13 +100,20 @@ except IOError:
     lastupdate = ""
 
 dict = {"mode":"checkfriends", "lastupdate":lastupdate}
-if verbose:
-    print "Input:", dict
-try:
-    ret = ljproto.ljcall(dict)
-except IOError, e:
-    print "checkfriends:", e
-    sys.exit(1)
+tries = 0
+while 1:
+    if verbose:
+	print "Input:", dict
+    try:
+	error = None
+	ret = ljproto.ljcall(dict)
+	break
+    except IOError, e:
+	if verbose or tries > 0:
+	    print "checkfriends:", e
+	if tries > 0:
+	    sys.exit(1)
+	tries = tries + 1
 if verbose:
     print "Output:", ret
 
