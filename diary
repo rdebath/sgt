@@ -438,6 +438,7 @@ class output:
         self.news_bullet_wid = 0
 	self.news_bullet_txt = ""
 	self.emph_level = 0
+	self.code_level = 0
 	self.para_type = typ
 
 	if typ == PBULLET:
@@ -638,14 +639,20 @@ class output:
 		self.news_suppress_space = 1
 
     def code(self, on):
+	assert self.code_level == 0 or on == 0
+	assert self.code_level != 0 or on != 0
+
 	if self.html_ok:
 	    self.html = self.html + ["</code>","<code>"][on != 0]
 	elif self.html_title:
 	    self.subj = self.subj + ["</code>","<code>"][on != 0]
-	if on:
-            self.mono_attr = self.mono_attr | ATTR_QUOTED
-	else:
-            self.mono_attr = self.mono_attr & ~ATTR_FG
+	if self.code_level == 1 or on == 1:
+	    if on:
+		self.mono_attr = self.mono_attr | ATTR_QUOTED
+	    else:
+		self.mono_attr = self.mono_attr & ~ATTR_FG
+
+	self.code_level = on
 
     def bold(self, on):
 	if self.html_ok:
@@ -1217,6 +1224,8 @@ def rdinput(file):
 			o.emph(1)
 		    elif tok[1] == "we":
 			o.emph(0.5)
+		    elif tok[1] == "wc":
+			o.code(0.5)
 		    elif tok[1] == "del":
 			o.deletion(1)
 		    elif tok[1] == "c":
@@ -1238,7 +1247,7 @@ def rdinput(file):
 			o.emph(0)
 		    elif s == "del":
 			o.deletion(0)
-		    elif s == "c":
+		    elif s == "c" or s == "wc":
 			o.code(0)
 		    elif s == "b":
 			o.bold(0)
