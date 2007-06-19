@@ -5,6 +5,6 @@
 # trailing space. Depends on xcopy.
 
 xcopy -r | \
-  tr -s ' \n\t\r\v\f' '      ' | \
+  tr -s ' \n\t\r\v\f\240' '      ' | \
   sed 's/^ //;s/ $//' | \
   xcopy
