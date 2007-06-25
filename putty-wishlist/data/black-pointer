@@ -37,6 +37,11 @@ In all cases, changing the Windows I-beam cursor to something chunkier
 (via Control Panel / Mouse / Pointers or similar) should give you
 something usable.
 
+<p>
+At least one user has found that updating Windows caused the problem to
+go away, suggesting that either Vista itself or a video driver had a
+relevant bug that got fixed.
+
 <hr>
 
 <p>
