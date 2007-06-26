@@ -1,0 +1,9 @@
+Summary: Use other corners for menu in full-screen mode
+Class: wish
+Difficulty: fun
+Content-type: text/plain
+
+Maybe it should be possible to use corners of the screen other than the
+top-left to get at the system menu in full-screen mode on Windows.
+This would be nice for those people who use multiple monitors and have one
+to the left of the one with PuTTY on.
