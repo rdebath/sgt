@@ -69,7 +69,7 @@ Windows box.
 <hr>
 <p>
 <a name="puttycyg"></a>Mark Edgar has created
-<a href="http://gecko.gc.maricopa.edu/~medgar/puttycyg/">PuTTYcyg</a>,
+PuTTYcyg (link on <a href="../links.html">Links page</a>),
 which allows PuTTY to act as a terminal for
 <a href="http://www.cygwin.com">Cygwin</a> (with the aid of a helper
 application linked against Cygwin).

@@ -30,7 +30,7 @@ than pasting into a browser window by hand.
 
 <p>
 There is a third-party patch to PuTTY to add this feature, called
-<a href="http://www.groehn.net/nutty/">Nutty</a>.
+Nutty (see our <a href="../links.html">Links page</a>).
 We won't be incorporating it into PuTTY as it doesn't take account of
 several of our
 <a href="http://www.tartarus.org/~simon/puttydoc/AppendixD.html">design principles</a>:

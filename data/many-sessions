@@ -16,8 +16,7 @@ sessions, perhaps by introducing a hierarchical directory structure
 within the saved-sessions list. (Some list entries would be
 directories, which you could click on to go down a level; in any
 non-root directory there would be a `back up a level' item you could
-click on to go back up.)  <a href="http://putty.dwalin.ru/">TuTTY</a>
-apparently does something like this.
+click on to go back up.)
 
 <p>
 A smaller and simpler alternative would be simply to allow the PuTTY
@@ -37,3 +36,7 @@ sessions' being shuffled all the time, though.
 <p>
 It's not impossible that we might want to do all of these things,
 or something else entirely. Some design is required.
+
+<p>
+There are various third-party forks and tools which try to address
+this problem on our <a href="../links.html">Links page</a>.

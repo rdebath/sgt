@@ -11,10 +11,9 @@ operating system.  A port is in the pipeline, although it's only in
 its early stages yet.
 
 <p>
-There's a third-party port at <a
-href="http://pocketputty.duxy.net/">pocketputty.duxy.net</a>. At the
-time of writing, I don't think any of us have tried it, it's in an
-early stage of development, and there's no source yet. It's possible
+There's a third-party port called PocketPuTTY on our
+<a href="../links.html">Links page</a>. At the
+time of writing, I don't think any of us have tried it. It's possible
 that it could be merged into the main tree at some point, but there'd
 need to be some upheaval, primarily to cope with everything being
 wide strings and the like on WinCE.

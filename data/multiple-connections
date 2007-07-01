@@ -47,18 +47,13 @@ implementation of this concept for Windows 2000/XP.
 </ul>
 
 <p>
-There are also a couple of third-party tools to do this sort of thing:
-<ul>
-<li><a href="http://www.raisin.de/putty-tabs/putty-tabs.html">PuttyTabs</a>
-provides a floating tab bar to switch between PuTTY windows.
-<li><a href="http://spoox.org/projects/twsc/">TWSC</a> provides a menu
-of open terminal windows (PuTTY and some other terminal programs).
-</ul>
+There are also a couple of other third-party tools to do this sort of
+thing on our <a href="../links.html">Links page</a>.
 
 <p>
 A related suggestion is that separate PuTTY windows could know about
 each other, and a key combination such as Ctrl-Tab could switch
-between just PuTTY windows. A (scary) patch implementing this can
-be found
+between just PuTTY windows. A (scary) patch implementing this was
+once to be found
 <a href="http://hp.vector.co.jp/authors/VA024651/#PuTTYctrltab_top">here</a>
 (web page in Japanese).

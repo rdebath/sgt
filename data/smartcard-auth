@@ -13,20 +13,20 @@ an SSH agent, either as part of Pageant or as a plug-in replacement for it.
 After all, the purpose of a smartcard is to generate cryptographic signatures
 on demand, which is what an SSH agent does too.
 
-<p>Some patches we've seen:
+<p>Some patches we've seen (links are on our
+<a href="../links.html">Links page</a>):
 <ul>
 <li><tt>&lt;200409231510.55383.kstef@mtppi.org&gt;</tt>
 <br>Patches against PuTTY/Pageant 0.55 to use PKCS#11 libraries (tested with 
 <a href="http://www.opensc-project.org/">OpenSC</a>)
 <br>These patches can be found in
 <a href="http://www.opensc-project.org/files/contrib/">opensc-project.org's contrib directory</a>.
-The <a href="http://www.opensc-project.org/scb/">Smart Card Bundle</a>
-contains a packaged version.
+There is a packaged version called the Smart Card Bundle.
 <li><tt>&lt;300242548@web.de&gt;</tt>
 <br>Patch with extended key file format that uses external (PuTTY-specific?)
 DLL
 <br>A compiled binary called PuTTYcard can <em>also</em> be found in
 <a href="http://www.opensc-project.org/files/contrib/">opensc-project.org's contrib directory</a>,
 although confusingly it apparently doesn't <em>use</em> OpenSC.
-<li><a href="http://www.joebar.ch/puttysc/">PuTTY SC</a> uses PKCS#11.
+<li>PuTTY SC uses PKCS#11.
 </ul>
