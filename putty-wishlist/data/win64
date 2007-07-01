@@ -17,4 +17,5 @@ This should now be fixed. (You'll need to build with the
 (Note that we have no plans to provide native 64-bit builds ourselves.
 Even ignoring the fact that we don't have appropriate hardware/compilers,
 it's not clear what advantage there is to be had from running PuTTY
-in native 64-bit mode.)
+in native 64-bit mode. There is a third-party build on our
+<a href="../links.html">Links page</a>.)

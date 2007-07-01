@@ -55,3 +55,8 @@ and if found, use that in the first instance? (Supports convenient
 Finally, although the above design makes it obvious how PuTTY should
 <em>read</em> its configuration, how should it write it? When the
 user wants to save a config change, where should it be saved to?
+
+<p>
+Some people have got fed up waiting for us to sort the design issues
+out, and made forks of PuTTY which store settings in files; some of
+these can be found on our <a href="../links.html">Links page</a>.

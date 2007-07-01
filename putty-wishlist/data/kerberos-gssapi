@@ -34,14 +34,12 @@ GSI</a> authentication also uses GSSAPI, though for some reason needs
 a different client implementation (and yet a third if you want to support
 both).
 
-<p>Patches we've seen:
+<p>Patches we've seen (links are on our <a href="../links.html">Links page</a>):
 
 <ul>
 
-<li><a href="http://www.certifiedsecuritysolutions.com/">Certified Security
-Solutions</a> have a
-<a href="http://www.certifiedsecuritysolutions.com/downloads.html">patched
-version of PuTTY</a> which supports Kerberos 5 in SSH-1 and GSSAPI key
+<li>Certified Security Solutions have a patched
+version of PuTTY which supports Kerberos 5 in SSH-1 and GSSAPI key
 exchange and user authentication in SSH-2. For GSSAPI, Win9x/NT
 require the 
 <a href="http://web.mit.edu/kerberos/www/dist/index.html">MIT Kerberos library</a>;
@@ -53,13 +51,12 @@ Another patch (unreviewed): <tt>1067597353.3fa23e29bf70c@webmail.technion.ac.il<
 <tt>krb5-config</tt> (Unix)
 
 <li>
-Another patch <a href="http://sweb.cz/v_t_m/">here</a> adds support
+Another patch from sweb.cz adds support
 for GSSAPI user authentication using the MIT Kerberos library. (A
 previous version of this patch has been reviewed and found wanting.)
 
 <li>
-Yet another patch, at
-<a href="http://rc.vintela.com/topics/putty/downloads/putty-0.56vrc0.1-2.patch">vintela.com</a>
+Yet another patch: Quest PuTTY (formerly Vintela PuTTY)
 <br>3-term BSD licence; GSSAPI (Kerberos-specific?) user
 authentication using MS SSPI; not thoroughly reviewed but doesn't look
 hopeful

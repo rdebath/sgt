@@ -11,12 +11,13 @@ It's not yet clear whether we want to do this at compile time,
 post-compile time, or using a Windows string resource (probably not
 the latter since we require portability to non-Windows environments;
 for an example of a patch implementing this approach, see
-<a href="http://hp.vector.co.jp/authors/VA024651/#PuTTYkj_top">PuTTYkj</a>).
+PuTTYjp on our <a href="../links.html">Links page</a>.
 
 <p>
 (Having special markup for strings &agrave; la
 <a href="http://www.gnu.org/software/gettext/">gettext</a>
-may be useful in other ways; for instance, IIRC WinCE requires all UI
+may be useful in other ways; for instance, IIRC
+<a href="port-wince.html">WinCE</a> requires all UI
 strings to be marked up as wide-character strings with
 <code>L"foo"</code>. We could hide this behind the same markup we use
 for l10n.)
