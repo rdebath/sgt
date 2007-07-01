@@ -1,9 +1,9 @@
-Summary: puttygen can create world-readable private keys
+Summary: Unix puttygen can create world-readable private keys
 Class: bug
 Difficulty: fun
 Priority: medium
 Present-in: 0.58
-Fixed-in: 2007-01-10 r7084
+Fixed-in: 2007-01-10 r7084 0.59
 Content-type: text/x-html-body
 
 From <a href="http://bugs.debian.org/400804">Debian bug 400804</a>:
@@ -21,3 +21,9 @@ matter what the current umask.
 when it comes to public keys, and it's a better idea to make these
 things safe-by-default.
 </blockquote>
+
+This issue corresponds to
+<a href="http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2006-7162">CVE-2006-7162</a>.
+(Note that some versions of the advisories for this issue incorrectly
+state that 0.59 is vulnerable. For the avoidance of doubt, this issue
+only affects 0.58 and prior, and only the Unix version.)
