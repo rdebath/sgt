@@ -89,7 +89,14 @@ class InterestingPaths:
 	    self.res.append(re.compile(a))
     def interesting(self, path):
 	a = splitpath(path)
-	assert len(a) > 0
+	if len(a) == 0:
+	    # It's possible that the path may have no elements at
+	    # all, in which case we can't match on its first
+	    # element. This generally occurs when svn properties
+	    # are being changed on the root of the repository; we
+	    # consider those to be always interesting and never
+	    # filter them out.
+	    return 1
 	for r in self.res:
 	    if r.match(a[0]):
 		return 1
