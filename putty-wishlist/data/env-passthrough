@@ -1,0 +1,9 @@
+Summary: Option to pass through certain environment variables
+Class: wish
+Difficulty: fun
+Priority: low
+Content-type: text/plain
+
+It's been suggested that it would be useful if PuTTY, in addition to being
+able to pass fixed values of environment variables to servers, could also
+pass through the values of variables from its own environment.
