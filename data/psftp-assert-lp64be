@@ -1,0 +1,11 @@
+Summary: PSFTP doesn't work on big-endian 64-bit systems
+Class: bug
+Difficulty: fun
+Present-in: 0.60
+Content-type: text/plain
+
+When compiled as a 64-bit application on Solaris 10, PSFTP fails on
+assert (rreq == req) in file psftp.c, function do_sftp_init().  This
+doesn't happen if it's compiled 32-bit.  A crude replacement of all
+instances of "unsigned long" with "uint32" (equivalent to "unsigned int")
+throughout psftp.c and psftp.h makes the problem go away.
