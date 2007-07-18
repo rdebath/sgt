@@ -1,0 +1,27 @@
+This patch fixes my only serious gripe about Firefox 2: that you
+can't simultaneously have tab-bar-always-visible and ^W-on-last-tab-
+closes-window.
+
+In Debian's iceweasel distribution, the file against which to apply
+this patch is out in the open, at
+
+  /usr/share/iceweasel/chrome/browser/content/browser/browser.js
+
+On a stock Firefox 2 install, the `chrome' directory (wherever it
+ended up) will contain a file browser.jar which replaces the
+`browser' subdirectory. So you need to extract
+content/browser/browser.js from that .jar file using unzip, apply
+the patch to it, and use zip to put it back into the jar.
+
+--- browser.js.orig	2007-07-18 14:13:08.000000000 +0100
++++ browser.js	2007-07-18 14:13:08.000000000 +0100
+@@ -1642,8 +1642,7 @@
+ {
+ //@line 1901 "/builds/tinderbox/Fx-Mozilla1.8-release/Linux_2.4.21-27.0.4.EL_Depend/mozilla/browser/base/content/browser.js"
+ 
+-  if (gBrowser.localName == "tabbrowser" && (gBrowser.tabContainer.childNodes.length > 1 ||
+-      !gPrefService.getBoolPref("browser.tabs.autoHide") && window.toolbar.visible)) {
++  if (gBrowser.localName == "tabbrowser" && (gBrowser.tabContainer.childNodes.length > 1)) {
+     // Just close up a tab (and focus the address bar if it was the last one).
+     if (gBrowser.tabContainer.childNodes.length == 1 && gURLBar)
+       setTimeout(function() { gURLBar.focus(); }, 0);
