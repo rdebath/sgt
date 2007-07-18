@@ -1,6 +1,7 @@
 Summary: PSFTP doesn't work on big-endian 64-bit systems
 Class: bug
 Difficulty: fun
+Priority: medium
 Present-in: 0.60
 Content-type: text/plain
 
