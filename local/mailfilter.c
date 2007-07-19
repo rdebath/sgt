@@ -136,6 +136,8 @@ const char *japanese_filter(int len, const char *data)
  *    get if I bin it due to being unable to tell it from spam.
  */
 
+static int greetingspam = 0;
+
 /* --------------------------------------------------
  * Scanner submodule to detect animated GIFs.
  */
@@ -690,6 +692,12 @@ static void scanner_cleanup_text(scanner *s, stream *st, void *vctx)
     if (!wcsncmp(ctx->firstbit, str, wcslen(str)) ||
 	!wcsncmp(ctx->firstbit + linelen + 1, str, wcslen(str)))
 	specific_msg = "This appears to be a prolific pharmacy spam.";
+    str = L"See your card as often as you wish during the next 15 days.\n";
+    if (!wcsncmp(ctx->firstbit + linelen + 1, str, wcslen(str))) {
+	greetingspam |= 2;
+	if (greetingspam == 3)
+	    specific_msg = "This appears to be a prolific greetings card spam.";
+    }
 }
 
 static int agif_found = 0;
@@ -863,6 +871,12 @@ void process_subjword(const char *word)
     return;
 }
 
+void process_subject(const char *subject)
+{
+    if (!strncmp(subject, "You've received a", 17))
+	greetingspam |= 1;
+}
+
 /*
  * We use the RFC 2822 definition of whitespace, rather than
  * relying on ctype.h.
@@ -874,11 +888,13 @@ const char *header_filter(int len, const char *data)
 {
     static int state = 0;
     static char hdrbuf[64];
-    unsigned hdrlen = 0;
+    static unsigned hdrlen = 0;
     static char addrbuf[512];
-    unsigned addrlen = 0;
+    static unsigned addrlen = 0;
     static char wordbuf[512];
-    unsigned wordlen = 0;
+    static unsigned wordlen = 0;
+    static char wholesubjbuf[2048];
+    static unsigned wholesubjlen = 0;
     const char *msg;
 
     while (len--) {
@@ -1103,10 +1119,14 @@ const char *header_filter(int len, const char *data)
 	     */
 	    if (c == '\n')
 		state = 31;
-	    else if (!WSP(c)) {
-		wordbuf[0] = c;
-		wordlen = 1;
-		state = 32;
+	    else {
+		if (!WSP(c)) {
+		    if (wholesubjlen < lenof(wholesubjbuf)-1)
+			wholesubjbuf[wholesubjlen++] = c;
+		    wordbuf[0] = c;
+		    wordlen = 1;
+		    state = 32;
+		}
 	    }
 	    break;
 	  case 31:
@@ -1125,6 +1145,11 @@ const char *header_filter(int len, const char *data)
 		if (seen_pharm_word && !seen_strange_word)
 		    return "This looks like an online pharmacy spam. "
 		    "I'm not interested, thanks.";
+
+		assert(wholesubjlen>=0 && wholesubjlen<lenof(wholesubjbuf));
+		wholesubjbuf[wholesubjlen] = '\0';
+		process_subject(wholesubjbuf);
+
 		if (c == '\n')
 		    state = -1;
 		else {
@@ -1140,6 +1165,8 @@ const char *header_filter(int len, const char *data)
 	     * word.
 	     */
 	    if (!FWS(c)) {
+		if (wholesubjlen < lenof(wholesubjbuf)-1)
+		    wholesubjbuf[wholesubjlen++] = c;
 		if (wordlen < lenof(wordbuf))
 		    wordbuf[wordlen++] = c;
 	    } else {
@@ -1150,8 +1177,11 @@ const char *header_filter(int len, const char *data)
 		wordlen = 0;
 		if (c == '\n')
 		    state = 31;
-		else
+		else {
+		    if (wholesubjlen < lenof(wholesubjbuf)-1)
+			wholesubjbuf[wholesubjlen++] = c;
 		    state = 30;
+		}
 	    }
 	    break;
 	}
