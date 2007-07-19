@@ -781,6 +781,36 @@ const char *process_address(const char *hdr, const char *addr)
 	    !strcmp(addr, "reply2@engageculture.com"))
 	    return "You have been spamming me with this drivel since 2004. "
 	    "Stop it!";
+
+	/*
+	 * greetings.com (a sudden slew on the morning of
+	 * 2007-01-17)
+	 */
+	if (!strcasecmp(addr, "greeting@greetings.com"))
+	    return "I'm assuming this to be spam.";
+    }
+
+    if (!strcasecmp(hdr, "Reply-to")) {
+	/*
+	 * `tothesource' again
+	 */
+	if (!strcmp(addr, "comments@tothesource.org"))
+	    return "You have been spamming me with this drivel since 2004. "
+	    "Stop it!";
+
+	/*
+	 * greetings.com (a sudden slew on the morning of
+	 * 2007-01-17)
+	 */
+	if (!strcasecmp(addr, "greeting@greetings.com"))
+	    return "I'm assuming this to be spam.";
+    }
+
+    if (!strcasecmp(hdr, "Cc")) {
+	if (!strcmp(addr, "alsaplayer-announce@lists.tartarus.org") ||
+	    !strcmp(addr, "alsaplayer-devel@lists.tartarus.org"))
+	    return "Anything copied to both me and the alsaplayer developers"
+	    " is unlikely to be real mail.";
     }
 
     return NULL;
@@ -929,7 +959,10 @@ const char *header_filter(int len, const char *data)
 		state = 1;	       /* skip header, unless we change mind */
 		if (hdrlen < lenof(hdrbuf)) {
 		    hdrbuf[hdrlen] = '\0';
-		    if (!strcasecmp(hdrbuf, "From")) {
+		    if (!strcasecmp(hdrbuf, "From") ||
+			!strcasecmp(hdrbuf, "Reply-to") ||
+			!strcasecmp(hdrbuf, "To") ||
+			!strcasecmp(hdrbuf, "Cc")) {
 			state = 10;    /* header containing addresses */
 		    } else if (!strcasecmp(hdrbuf, "Subject")) {
 			state = 30;    /* subject line */
