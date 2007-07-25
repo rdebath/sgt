@@ -1,0 +1,25 @@
+Summary: An embedded version of Dropbear gets confused by SSH_MSG_IGNORE
+Difficulty: taxing
+Absent-in: 0.58
+Present-in: 0.60
+Content-type: text/x-html-body
+
+<p>We've had a report of a problem with SSH-2 connections to a Tandberg
+video conferencing codec running what claims to be "dropbear_0.45".  
+The codec announces itself as "TANDBERG Codec Release F6.0 NTSC /
+SW Release Date: 2007-04-27".
+
+<p>The
+connection ends up using a CBC cipher mode, and the codec drops the TCP
+connection after receiving the first empty SSH_MSG_IGNORE from PuTTY.
+This problem doesn't affect PuTTY 0.58 because it doesn't send such
+messages.  A version of PuTTY clobbered to never send SSH_MSG_IGNORE works,
+as does 0.56 (modulo an independent bug), despite the latter's sending
+non-zero-size SSH_MSG_IGNOREs along with SSH_MSG_USERAUTH_REQUEST.
+
+<p>This problem doesn't seem to occur with vanilla
+<a href="http://matt.ucc.asn.au/dropbear/dropbear.html">Dropbear</a> 0.45.
+
+<p>A bug-compatibility option could be added to deal with this, but it's
+not very clear either what systems are affected or what the limits of the bug
+are.
