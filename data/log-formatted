@@ -1,0 +1,16 @@
+Summary: Logging formatted terminal output
+Class: wish
+Difficulty: tricky
+Content-type: text/plain
+
+A user wrote:
+>Are you interested in adding a new "logging" option that would write
+>formatted output to the log file (as if it had been screen-scraped or
+>cut/pasted)?
+
+It's certainly something I think we ought to have.  How would you 
+suggest doing it?  The obvious approach is to log each line as it gets  
+pushed into the scrollback, but this might get a bit awkward when the 
+window gets enlarged (which pulls lines back _out_ of the scrollback).  
+It also wouldn't log full-screen applications that don't scroll the 
+screen, but I'm not sure you'd want to.
