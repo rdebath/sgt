@@ -3,11 +3,10 @@ Class: bug
 Priority: medium
 Difficulty: fun
 Content-type: text/plain
+Present-in: 0.58 0.59 0.60
+Fixed-in: r7651 2007-07-30
 
 If an SCP server sends data (the initial zero byte of an SCP session) too
 early, it can get processed by from_backend() before ssh_scp_recv() has started
 and hence before outptr is set.  This causes the data to be discarded,
 and PSCP to hang forever waiting for the handshake it's already received.
-The obvious fix it to simply remove the check for (!outptr) in from_backend()
-and depend on the correct handling of (outlen == 0), but this hasn't been
-tested.
