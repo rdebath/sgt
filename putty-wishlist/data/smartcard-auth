@@ -28,5 +28,7 @@ DLL
 <br>A compiled binary called PuTTYcard can <em>also</em> be found in
 <a href="http://www.opensc-project.org/files/contrib/">opensc-project.org's contrib directory</a>,
 although confusingly it apparently doesn't <em>use</em> OpenSC.
+<li><tt>&lt;1673247798@web.de&gt;</tt>
+<br>... which was replaced by a directly smartcard-enabled Pageant.
 <li>PuTTY SC uses PKCS#11.
 </ul>
