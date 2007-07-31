@@ -11,7 +11,14 @@ On a stock Firefox 2 install, the `chrome' directory (wherever it
 ended up) will contain a file browser.jar which replaces the
 `browser' subdirectory. So you need to extract
 content/browser/browser.js from that .jar file using unzip, apply
-the patch to it, and use zip to put it back into the jar.
+the patch to it, and use zip to put it back into the jar. So, for
+example, on one Unix machine on which I run such an install, I would
+type
+
+  cd ~/local/opt/firefox/chrome   # or wherever else you might keep it
+  unzip -o browser.jar content/browser/browser.js
+  (cd content/browser; patch) < ~/src/local/firefox2.patch # or wherever
+  zip browser.jar content/browser/browser.js
 
 --- browser.js.orig	2007-07-18 14:13:08.000000000 +0100
 +++ browser.js	2007-07-18 14:13:08.000000000 +0100
