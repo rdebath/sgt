@@ -7,8 +7,13 @@ Content-type: text/x-html-body
 <p>
 OpenSSH 4.2 introduces a variety of ZLIB compression called "zlib@openssh.com"
 which delays starting compression until after the server has sent
-SSH_MSG_USERAUTH_ACCEPT. (It is specified in
-<a href="http://tools.ietf.org/html/draft-miller-secsh-compression-delayed">draft-miller-secsh-compression-delayed</a>, currently -00.)
+SSH_MSG_USERAUTH_ACCEPT.  It's configured to use this by default (or with
+the "Compression delayed" option), but ordinary "zlib"
+compression can be reinstated with "Compression yes".
+
+<p>
+The new method is specified in
+<a href="http://tools.ietf.org/html/draft-miller-secsh-compression-delayed">draft-miller-secsh-compression-delayed</a>, currently -00.
 
 <p>
 As far as we can tell, this is inherently subject
