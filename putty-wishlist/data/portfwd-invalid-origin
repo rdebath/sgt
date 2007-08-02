@@ -20,7 +20,8 @@ and port 0.
 <p>
 Apparently, some servers take exception to this (with some
 justification) and refuse the forwarding. Specifically, a problem
-was reported with
+has reported with
 <a href="http://www.ssh.com/products/tectia/server/">SSH Tectia Server (T)</a>
-for Windows, version 5.0.0-844. Using <tt>0.0.0.0</tt> instead appears
-to mollify this server.
+for Windows, version 5.0.0-844, and also with F-Secure SSH for Unix,
+version 3.1.0. Using <tt>0.0.0.0</tt> instead appears
+to mollify these servers.
