@@ -596,7 +596,7 @@ static void ab_lower_case_fn (char *value)
       */
 {
     unsigned char *p = (unsigned char *) value;
-    for (; *p; ++p) *p = tolower(*p);
+    for (; *p; ++p) *p = tolower((unsigned char)*p);
 }
 
 static void ab_pstn_fn (char *value)
@@ -605,7 +605,7 @@ static void ab_pstn_fn (char *value)
     char c;
     do {
 	c = *(value++);
-	if ((isascii(c) && isdigit(c)) || '+' == c || '\0' == c) *(new++) = c;
+	if ((isdigit((unsigned char)c)) || '+' == c || '\0' == c) *(new++) = c;
     } while(c);
 }
 
