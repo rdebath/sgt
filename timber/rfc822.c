@@ -40,20 +40,20 @@ struct mime_record {
     /*
      * We are going to need to hold some extra bookkeeping data in
      * a mime_details. So rather than cluttering up the structure
-     * definition in timber.h, I'm just going to define a container
-     * structure here which adds a couple of extra fields.
+     * definition in timber.h, I'm just going to define a
+     * container structure here which adds a couple of extra
+     * fields.
      */
     struct mime_record *next;	       /* for linking them in a list */
     const char *rawdescription;	       /* the one in md isn't const */
     int description_len;	       /* for while description is still raw */
     struct mime_details md;
     /*
-     * A file name can come from a `name' parameter in
-     * Content-Type, or a `filename' parameter in
-     * Content-Disposition. The former is deprecated in favour of
-     * the latter (as stated in RFC 2046), so the latter takes
-     * priority. Hence, we track at all times where our current
-     * filename has come from.
+     * A file name can come from a `name' parameter in Content-
+     * Type, or a `filename' parameter in Content-Disposition. The
+     * former is deprecated in favour of the latter (as stated in
+     * RFC 2046), so the latter takes priority. Hence, we track at
+     * all times where our current filename has come from.
      */
     enum { NO_FNAME, CT_NAME, CD_FILENAME } filename_location;
     char *boundary;		       /* dynamically allocated */
@@ -125,11 +125,11 @@ int latoi(const char *text, int len);
  *  - To the `output' function, it passes the entire text of the
  *    message, piece by piece. Each piece is annotated with a type
  *    (`header', `body') and a charset. The idea is that the
- *    implementation of the output function can construct a version
- *    of the message designed for displaying to a user on a
- *    terminal with a fixed charset, and also potentially highlight
- *    the headers and other structurally significant parts of the
- *    message.
+ *    implementation of the output function can construct a
+ *    version of the message designed for displaying to a user on
+ *    a terminal with a fixed charset, and also potentially
+ *    highlight the headers and other structurally significant
+ *    parts of the message.
  * 
  *  - To the `info' function, it passes a sequence of pieces of
  *    information about the message. Among these are the date, the
@@ -145,11 +145,11 @@ void parse_message(const char *message, int msglen,
 		   int default_charset)
 {
     /*
-     * We are not intending to be a _strict_ RFC822 parser here: if
-     * we receive a malformatted mail, our goal is to make as much
-     * sense of it as we still can, not to refuse to read it at
-     * all. Thus, we skip over any line containing something that
-     * doesn't look like a proper header.
+     * We are not intending to be a _strict_ RFC822 parser here:
+     * if we receive a malformatted mail, our goal is to make as
+     * much sense of it as we still can, not to refuse to read it
+     * at all. Thus, we skip over any line containing something
+     * that doesn't look like a proper header.
      */
 
     int pass;
@@ -158,9 +158,9 @@ void parse_message(const char *message, int msglen,
     /*
      * `default_charset' might have been passed in to us if we are
      * parsing a message to be sent (in which case we consider it
-     * to be in whatever charset the compose buffer was edited in).
-     * If we're parsing a received message, a default charset of
-     * CS_NONE means we should choose our own sensible default.
+     * to be in whatever charset the compose buffer was edited
+     * in). If we're parsing a received message, a default charset
+     * of CS_NONE means we should choose our own sensible default.
      */
     if (default_charset == CS_NONE)
 	default_charset = CS_CP1252;
@@ -180,22 +180,22 @@ void parse_message(const char *message, int msglen,
 	 * if the first character set mentioned is a reasonable
 	 * superset of ASCII (i.e. not a 7-bit transport format
 	 * such as HZ or UTF-7), we adopt it as the default
-	 * character set in which to parse any text in the headers.
-	 * This is to deal with evil producers which assume the
-	 * target MUA is in the same character set as them and
-	 * hence feel free to put 8-bit text in headers, _but_
-	 * which also have the minimal sanity to leave a character
-	 * set header so that the reader can at least guess how the
-	 * 8-bit text should be interpreted.
+	 * character set in which to parse any text in the
+	 * headers. This is to deal with evil producers which
+	 * assume the target MUA is in the same character set as
+	 * them and hence feel free to put 8-bit text in headers,
+	 * _but_ which also have the minimal sanity to leave a
+	 * character set header so that the reader can at least
+	 * guess how the 8-bit text should be interpreted.
 	 * 
-	 * In the second pass, we do the main header processing and
-	 * are now able to output a best-effort charset-translated
-	 * form of each header.
+	 * In the second pass, we do the main header processing
+	 * and are now able to output a best-effort charset-
+	 * translated form of each header.
 	 * 
 	 * There's a slight phase-order problem in that
-	 * Content-Description headers are best parsed in the first
-	 * pass, but contain arbitrary textual information that
-	 * wants to be interpreted in the default charset.
+	 * Content-Description headers are best parsed in the
+	 * first pass, but contain arbitrary textual information
+	 * that wants to be interpreted in the default charset.
 	 * Therefore, the first pass saves the Content-Description
 	 * header in its raw form, and after we've finished we go
 	 * back through and charset-parse it.
@@ -226,8 +226,8 @@ void parse_message(const char *message, int msglen,
 
     /*
      * Now walk the list of MIME parts, RFC2047-translating each
-     * one's Content-Description, passing it to info(), and freeing
-     * it.
+     * one's Content-Description, passing it to info(), and
+     * freeing it.
      */
     {
 	struct mime_record *mr, *mrtmp;
@@ -375,8 +375,8 @@ void parse_headers(char const *base, char const *message, int msglen,
 	    /*
 	     * \n at the start of a header line means we are
 	     * looking at the blank line separating headers from
-	     * body. Advance past that newline, exit this loop, and
-	     * go on to the message body.
+	     * body. Advance past that newline, exit this loop,
+	     * and go on to the message body.
 	     */
 	    message++, msglen--;
 	    break;
@@ -384,7 +384,8 @@ void parse_headers(char const *base, char const *message, int msglen,
 
 	/*
 	 * Find the word introducing the header line. We expect a
-	 * number of non-whitespace characters, followed by a colon.
+	 * number of non-whitespace characters, followed by a
+	 * colon.
 	 */
 	p = message;
 	while (msglen > 0 && *message != ':' &&
@@ -400,9 +401,9 @@ void parse_headers(char const *base, char const *message, int msglen,
 		message++, msglen--;   /* scan up to \n */
 	    if (pass == 1) {
 		/*
-		 * It may be a bogus header, but we still need
-		 * to translate and output it. The line runs
-		 * from p to message.
+		 * It may be a bogus header, but we still need to
+		 * translate and output it. The line runs from p
+		 * to message.
 		 */
 		output(outctx, p, message-p,
 		       TYPE_HEADER_TEXT, default_charset);
@@ -414,15 +415,14 @@ void parse_headers(char const *base, char const *message, int msglen,
 	}
 
 	/*
-	 * Find the full extent of the header line, by
-	 * searching to the next newline not followed by
-	 * whitespace.
+	 * Find the full extent of the header line, by searching
+	 * to the next newline not followed by whitespace.
 	 *
-	 * (We can't actually remove the newlines at this
-	 * stage, because we may need to know where they were
-	 * later for RFC2047 purposes - two RFC2047 encoded
-	 * words separated by exactly (newline, space) must be
-	 * concatenated without a separating space.)
+	 * (We can't actually remove the newlines at this stage,
+	 * because we may need to know where they were later for
+	 * RFC2047 purposes - two RFC2047 encoded words separated
+	 * by exactly (newline, space) must be concatenated
+	 * without a separating space.)
 	 *
 	 * We are currently sitting on the colon.
 	 */
@@ -442,15 +442,14 @@ void parse_headers(char const *base, char const *message, int msglen,
 	/*
 	 * We have a header. Process it.
 	 *
-	 * p points to the start of the header line. q points
-	 * to the end of the header _name_. r points to the
-	 * start of the header text (i.e. between q and r is
-	 * the colon and any whitespace). `message' points to
-	 * the end of the header (just before the final
-	 * newline).
+	 * p points to the start of the header line. q points to
+	 * the end of the header _name_. r points to the start of
+	 * the header text (i.e. between q and r is the colon and
+	 * any whitespace). `message' points to the end of the
+	 * header (just before the final newline).
 	 *
-	 * Slight ick: this block is enclosed in `do while (0)'
-	 * so that `continue' will leave it early.
+	 * Slight ick: this block is enclosed in `do while (0)' so
+	 * that `continue' will leave it early.
 	 */
 
 #ifdef DIAGNOSTICS
@@ -530,7 +529,8 @@ void parse_headers(char const *base, char const *message, int msglen,
 		ourlen = q - p;
 
 		while (namelen > 0 && ourlen > 0) {
-		    cmp = tolower(*name) - tolower(*ourname);
+		    cmp = (tolower((unsigned char)*name) -
+			   tolower((unsigned char)*ourname));
 		    if (cmp)
 			break;
 		    name++, namelen--;
@@ -556,15 +556,15 @@ void parse_headers(char const *base, char const *message, int msglen,
 	     * In-Reply-To header for semantics the important
 	     * thing is the message-ids, and comments are to be
 	     * ignored, but when parsing the same header for
-	     * output the comments are the only _interesting_
-	     * bit in terms of RFC2047 encoding.
+	     * output the comments are the only _interesting_ bit
+	     * in terms of RFC2047 encoding.
 	     */
 
 	    /*
-	     * Abandon this header entirely and move straight on to
-	     * the next one if there isn't _something_ interesting
-	     * in the header. During pass 0, and in sub-MIME-parts,
-	     * we only care about MIME headers. */
+	     * Abandon this header entirely and move straight on
+	     * to the next one if there isn't _something_
+	     * interesting in the header. During pass 0, and in
+	     * sub-MIME-parts, we only care about MIME headers. */
 	    if ((pass == 0 || !full_message) &&
 		hdr->action != CONTENT_TYPE &&
 		hdr->action != CONTENT_TRANSFER_ENCODING &&
@@ -592,16 +592,15 @@ void parse_headers(char const *base, char const *message, int msglen,
 		/*
 		 * Every address appears before a comma, a
 		 * semicolon, or end-of-string. So the simplest
-		 * way is if first we scan forward to find one
-		 * of those, and _then_ we look back from there
-		 * to deal with what we've found.
+		 * way is if first we scan forward to find one of
+		 * those, and _then_ we look back from there to
+		 * deal with what we've found.
 		 */
 		while (lh->token) {
 		    struct lexed_header *lh2 = lh;
 
 		    /*
-		     * Scan forwards for a terminating
-		     * character.
+		     * Scan forwards for a terminating character.
 		     */
 		    while (lh2->token &&
 			   (!lh2->is_punct ||
@@ -609,12 +608,12 @@ void parse_headers(char const *base, char const *message, int msglen,
 			     lh2->token[0] != ',')))
 			lh2++;
 		    /*
-		     * Now look backwards. If we see a >, then
-		     * we expect to find it preceded by an
-		     * address, a <, and then a display phrase.
-		     * If instead we see a word, that _is_ the
-		     * address, and its following comment (if
-		     * any) is the display name.
+		     * Now look backwards. If we see a >, then we
+		     * expect to find it preceded by an address, a
+		     * <, and then a display phrase. If instead we
+		     * see a word, that _is_ the address, and its
+		     * following comment (if any) is the display
+		     * name.
 		     */
 		    if (lh2 >= lh+3 &&
 			lh2[-1].is_punct && lh2[-1].token[0] == '>' &&
@@ -905,19 +904,17 @@ void parse_headers(char const *base, char const *message, int msglen,
 		 * structured header in which comments are
 		 * permitted:
 		 *
-		 *  - If we see an open paren, we parse a
-		 *    comment, which means we scan up to
-		 *    the closing paren (dodging
-		 *    backslash-quoted characters on the
-		 *    way), and feed the inside of the
-		 *    parens to rfc2047_decode().
+		 *  - If we see an open paren, we parse a comment,
+		 *    which means we scan up to the closing paren
+		 *    (dodging backslash-quoted characters on the
+		 *    way), and feed the inside of the parens to
+		 *    rfc2047_decode().
 		 *
-		 *  - If we see a double quote, we parse a
-		 *    quoted string, which means we scan up
-		 *    to the closing quote (dodging
-		 *    backslash-quoted characters on the
-		 *    way of course) and pass that lot
-		 *    straight to output().
+		 *  - If we see a double quote, we parse a quoted
+		 *    string, which means we scan up to the
+		 *    closing quote (dodging backslash-quoted
+		 *    characters on the way of course) and pass
+		 *    that lot straight to output().
 		 */
 		p = r;
 		while (r < message) {
@@ -954,37 +951,34 @@ void parse_headers(char const *base, char const *message, int msglen,
 		break;
 	      case ENCODED_CPHRASES:
 		/*
-		 * This is the most complex case for
-		 * display parsing. The syntax is:
+		 * This is the most complex case for display
+		 * parsing. The syntax is:
 		 *
-		 *  - a `mailbox' is either a bare address,
-		 *    or a potentially-RFC2047able-phrase
-		 *    followed by an address in angle
-		 *    brackets.
+		 *  - a `mailbox' is either a bare address, or a
+		 *    potentially-RFC2047able-phrase followed by
+		 *    an address in angle brackets.
 		 *
-		 *  - an `address' is either a mailbox, or
-		 *    a group. A group is a potentially-
+		 *  - an `address' is either a mailbox, or a
+		 *    group. A group is a potentially-
 		 *    RFC2047able-phrase, a colon, a comma-
-		 *    separated list of mailboxes, and a
-		 *    final semicolon.
+		 *    separated list of mailboxes, and a final
+		 *    semicolon.
 		 *
-		 *  - an `address-list' is a comma-
-		 *    separated list of addresses.
+		 *  - an `address-list' is a comma-separated list
+		 *    of addresses.
 		 *
-		 * In theory there is also a `mailbox-list'
-		 * which is a comma-separated list of
-		 * mailboxes; this is used in some address
-		 * headers. For example, `Reply-To' takes
-		 * an address-list and hence may contain
-		 * groups, but `From' takes a mailbox-list
+		 * In theory there is also a `mailbox-list' which
+		 * is a comma-separated list of mailboxes; this is
+		 * used in some address headers. For example,
+		 * `Reply-To' takes an address-list and hence may
+		 * contain groups, but `From' takes a mailbox-list
 		 * and cannot.
 		 *
-		 * However, I'm going to ignore this
-		 * distinction; anyone using group syntax
-		 * in a From header coming into this parser
-		 * will find that the parser will DWIM.
-		 * This doesn't seem to me to be a large
-		 * practical problem, and it makes my life
+		 * However, I'm going to ignore this distinction;
+		 * anyone using group syntax in a From header
+		 * coming into this parser will find that the
+		 * parser will DWIM. This doesn't seem to me to be
+		 * a large practical problem, and it makes my life
 		 * easier.
 		 *
 		 * So what I actually do here is:
@@ -992,37 +986,35 @@ void parse_headers(char const *base, char const *message, int msglen,
 		 *  - Place a marker.
 		 *
 		 *  - Scan along the string, dodging
-		 *    quoted-strings, backslash-quoted
-		 *    characters and comments, until we see
-		 *    a significant punctuation event.
-		 *    Significant punctuation events are
-		 *    `:', `;', `<', `>', `,' and
+		 *    quoted-strings, backslash-quoted characters
+		 *    and comments, until we see a significant
+		 *    punctuation event. Significant punctuation
+		 *    events are `:', `;', `<', `>', `,' and
 		 *    end-of-string.
 		 *
 		 *  - If we see `:' or `<', then everything
-		 *    between the marker and here is part
-		 *    of a potentially-RFC2047able phrase.
-		 *    Whereas if we see `>', `,', `;' or
-		 *    end-of-string, everything between the
-		 *    marker and here was an addr-spec or
-		 *    nothing at all.
+		 *    between the marker and here is part of a
+		 *    potentially-RFC2047able phrase. Whereas if
+		 *    we see `>', `,', `;' or end-of-string,
+		 *    everything between the marker and here was
+		 *    an addr-spec or nothing at all.
 		 *
 		 *  - So now we re-scan from the marker. Anything
 		 *    in a quoted-string or in parens we parse as
-		 *    an RFC2047able string; anything not in either
-		 *    we deal with _as appropriate_ given the
-		 *    above.
+		 *    an RFC2047able string; anything not in
+		 *    either we deal with _as appropriate_ given
+		 *    the above.
 		 * 
 		 * DELIBERATE DEPARTURE FROM STANDARD: RFC2047 is
-		 * very clear that a quoted string MUST NOT contain
-		 * encoded-words. However, it is the experience of
-		 * my large and varied mail archive that it often
-		 * does, and it is my opinion that the best
-		 * indication of the email author's intent is given
-		 * by decoding them anyway. (Of course, I wouldn't
-		 * dream of _generating_ an encoded-word within a
-		 * quoted string; that would be evil on entirely
-		 * another level.)
+		 * very clear that a quoted string MUST NOT
+		 * contain encoded-words. However, it is the
+		 * experience of my large and varied mail archive
+		 * that it often does, and it is my opinion that
+		 * the best indication of the email author's
+		 * intent is given by decoding them anyway. (Of
+		 * course, I wouldn't dream of _generating_ an
+		 * encoded-word within a quoted string; that would
+		 * be evil on entirely another level.)
 		 */
 		while (r < message) {
 		    int rfc2047able;
@@ -1102,7 +1094,8 @@ void parse_headers(char const *base, char const *message, int msglen,
 			}
 		    }
 		    /*
-		     * And finally output the whitespace and punctuation.
+		     * And finally output the whitespace and
+		     * punctuation.
 		     */
 		    output(outctx, rr, r-rr, TYPE_HEADER_TEXT, CS_ASCII);
 		}
@@ -1133,8 +1126,8 @@ struct lexed_header *lex_header(char const *header, int length, int type)
     char const *punct, *p;
 
     /*
-     * The interesting punctuation elements vary with the type
-     * of header.
+     * The interesting punctuation elements vary with the type of
+     * header.
      */
     switch (type) {
       default: punct = ""; break;
@@ -1275,11 +1268,11 @@ void parse_content_type(struct lexed_header *lh, struct mime_record *mr)
 	int i;
 	mr->md.major = snewn(1+lh[0].length, char);
 	for (i = 0; i < lh[0].length; i++)
-	    mr->md.major[i] = tolower(lh[0].token[i]);
+	    mr->md.major[i] = tolower((unsigned char)lh[0].token[i]);
 	mr->md.major[lh[0].length] = '\0';
 	mr->md.minor = snewn(1+lh[2].length, char);
 	for (i = 0; i < lh[2].length; i++)
-	    mr->md.minor[i] = tolower(lh[2].token[i]);
+	    mr->md.minor[i] = tolower((unsigned char)lh[2].token[i]);
 	mr->md.minor[lh[2].length] = '\0';
 	lh += 3;
     }
@@ -1364,8 +1357,8 @@ void parse_content_transfer(struct lexed_header *lh, struct mime_record *mr)
 void parse_content_disp(struct lexed_header *lh, struct mime_record *mr)
 {
     /*
-     * If the first token is a word, we can collect the disposition
-     * type itself.
+     * If the first token is a word, we can collect the
+     * disposition type itself.
      */
     if ((!lh[0].is_punct && lh[0].length > 0)) {
 	if (!istrlencmp(lh[0].token, lh[0].length, SL("inline"))) {
@@ -1416,8 +1409,8 @@ void parse_content_disp(struct lexed_header *lh, struct mime_record *mr)
 }
 
 /*
- * Remove backslash-quoted pairs, and optionally double quotes too,
- * from a string. Returns the output length.
+ * Remove backslash-quoted pairs, and optionally double quotes
+ * too, from a string. Returns the output length.
  */
 int unquote(const char *in, int inlen, int dblquot, char *out)
 {

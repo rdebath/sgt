@@ -191,7 +191,7 @@ int istrlencmp(const char *s1, int l1, const char *s2, int l2)
     int cmp;
 
     while (l1 > 0 && l2 > 0) {
-	cmp = tolower(*s1) - tolower(*s2);
+	cmp = tolower((unsigned char)*s1) - tolower((unsigned char)*s2);
 	if (cmp)
 	    return cmp;
 	s1++, l1--;
