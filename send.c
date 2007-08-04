@@ -5,19 +5,34 @@
 /*
  * TODO:
  * 
- *  - instead of accumulating the received headers in a single
- *    buffer, we should break them down and store them one by one,
- *    because some of them we're going to interpret ourselves.
+ *  - actually process the special headers Attach, Attachment and
+ *    Queue.
  *     + Attach and Attachment headers should add external data to
  * 	 our list of MIME parts to be sent. Probably another one
  * 	 which extracts a message from the database by ego, for
  * 	 forwarding.
- *     + Queue header should do something, although as yet I'm
- * 	 uncertain of exactly what.
- *     + MIME headers from the input should be thrown away,
- * 	 because we're going to construct our own.
- *     + I think it would be good to sort the remaining headers
- * 	 into a sensible order.
+ *     + Queue header should do _something_, although as yet I'm
+ * 	 uncertain of exactly what. I suppose at present all I
+ * 	 really know is that it changes the mechanism by which the
+ * 	 message is sent.
+ * 	  * I have a sort of a plan here which revolves around
+ * 	    storing queued messages in a special place within the
+ * 	    database together with their scheduled time, and then
+ * 	    having a command `timber run-queue' which checks the
+ * 	    current time and sends off anything it should be
+ * 	    sending. Better yet, `timber run-queue <date>', to
+ * 	    avoid messages failing to go because at fired a second
+ * 	    early. Point of all this, anyway, is that we can then
+ * 	    edit the queue later on, delete or unqueue or modify
+ * 	    messages and suchlike, and any detritus in the at
+ * 	    queue will simply be spare run-queue commands and so
+ * 	    will clear itself up harmlessly when its time arrives.
+ * 	  * This might also tie in to my other plan, which is to
+ * 	    tag messages as `reply expected by <date>', and have
+ * 	    them automatically moved into an `outstanding' folder
+ * 	    or otherwise flagged for my attention if no reply has
+ * 	    arrived (which we can tell _automatically_) by that
+ * 	    time.
  * 
  *  - Then we should construct our outgoing message by means of:
  *     + enumerating the MIME parts (both from the input message
@@ -166,6 +181,42 @@ void append_wrap(struct buffer *buf, struct wrap_details *wrap,
     }
 }
 
+/*
+ * List of headers we treat specially when they appear in the
+ * incoming message.
+ */
+enum {
+    /*
+     * Headers requiring special treatment.
+     */
+    SH_ATTACH,
+    SH_ATTACHMENT,
+    SH_QUEUE,
+    /*
+     * Headers which we throw out completely, because they were
+     * specific to the MIME structure of the incoming message, and
+     * we don't want them confusing the MIME structure we're going
+     * to construct on the outgoing one.
+     */
+    SH_IGNORE
+};
+#define STRANDLEN(x) x, sizeof(x)-1
+struct specialhdr {
+    const char *name;
+    int len;
+    int type;
+};
+static const struct specialhdr specialhdrs[] = {
+    {STRANDLEN("Attach"), SH_ATTACH},
+    {STRANDLEN("Attachment"), SH_ATTACHMENT},
+    {STRANDLEN("Content-Description"), SH_IGNORE},
+    {STRANDLEN("Content-Disposition"), SH_IGNORE},
+    {STRANDLEN("Content-Transfer-Encoding"), SH_IGNORE},
+    {STRANDLEN("Content-Type"), SH_IGNORE},
+    {STRANDLEN("Mime-Version"), SH_IGNORE},
+    {STRANDLEN("Queue"), SH_QUEUE},
+};
+
 struct send_output_ctx {
     charset_state main_instate, instate;
     int default_input_charset, curr_input_charset;
@@ -174,7 +225,8 @@ struct send_output_ctx {
     struct wrap_details wrap;
     const int *charset_list;
     int ncharsets;
-    struct buffer headers, pre2047;
+    const struct specialhdr *specialhdr_desc;
+    struct buffer headers, pre2047, specialhdr_text;
     int pre2047type;
     int gotdate, gotmid;
     struct mime_details *parts;
@@ -225,48 +277,107 @@ static void send_output_fn(void *vctx, const char *text, int len,
     }
     ctx->curr_input_charset = charset;
 
+    /*
+     * Some headers which come through here need special
+     * treatment, because we're going to extract them and use them
+     * for some other purpose (Attachment, Queue). Other headers
+     * we ignore completely.
+     */
+    if (type == TYPE_HEADER_NAME) {
+	/*
+	 * I haven't bothered with a binary search here because
+	 * there just aren't enough headers requiring special
+	 * treatment to make it worth the effort. If we got
+	 * another ten or twenty, I might change my mind.
+	 */
+	int len2, i;
+
+	for (len2 = 0; len2 < len && text[len2] && text[len2] != ':'; len2++);
+
+	for (i = 0; i < lenof(specialhdrs); i++)
+	    if (!istrlencmp(text, len2, specialhdrs[i].name,
+			    specialhdrs[i].len))
+		break;
+
+	if (i < lenof(specialhdrs)) {
+	    /*
+	     * This is a special header. Prepare to accumulate its
+	     * text separately.
+	     */
+	    assert(ctx->specialhdr_desc == NULL);
+	    ctx->specialhdr_desc = &specialhdrs[i]; /* doesn't need freeing */
+	    buffer_cleanup(&ctx->specialhdr_text);
+	} else {
+	    if (ctx->specialhdr_desc) {
+		/*
+		 * FIXME: process the special header!
+		 */~|~
+	    }
+	    ctx->specialhdr_desc = NULL;
+	}
+    }
+
     if (is_type_header_decoded(type)) {
+	/*
+	 * No special header which we deal with by any method
+	 * other than ignoring it is defined by RFC822. Hence we
+	 * don't expect to see any RFC2047-decoded text for a
+	 * non-ignored special header.
+	 */
+	assert(!ctx->specialhdr_desc ||
+	       ctx->specialhdr_desc->type == SH_IGNORE);
+
 	output_charset = CS_UTF8;
 	buf = &ctx->pre2047;
 	ctx->pre2047type = type;
     } else {
-	if (ctx->pre2047.length > 0) {
-	    char *post2047 =
-		rfc2047_encode(ctx->pre2047.text, ctx->pre2047.length,
-			       CS_UTF8, ctx->charset_list, ctx->ncharsets,
-			       ctx->pre2047type,
-			       /* Reduce first RFC2047 word to fit on line
-				* with a shortish header. */
-			       ctx->wrap.linelen <= 17 ?
-			       74 - ctx->wrap.linelen : 74);
-	    append_wrap(&ctx->headers, &ctx->wrap,
-			post2047, strlen(post2047));
-	    sfree(post2047);
-	    buffer_cleanup(&ctx->pre2047);
+	if (ctx->specialhdr_desc) {
+	    output_charset = CS_NONE;
+	    buf = &ctx->specialhdr_text;
+	} else {
+	    if (ctx->pre2047.length > 0) {
+		char *post2047 =
+		    rfc2047_encode(ctx->pre2047.text, ctx->pre2047.length,
+				   CS_UTF8, ctx->charset_list, ctx->ncharsets,
+				   ctx->pre2047type,
+				   /* Reduce first RFC2047 word to fit on line
+				    * with a shortish header. */
+				   ctx->wrap.linelen <= 17 ?
+				   74 - ctx->wrap.linelen : 74);
+		append_wrap(&ctx->headers, &ctx->wrap,
+			    post2047, strlen(post2047));
+		sfree(post2047);
+		buffer_cleanup(&ctx->pre2047);
+	    }
+
+	    output_charset = CS_ASCII;
+	    buf = &ctx->headers;
 	}
-
-	output_charset = CS_ASCII;
-	buf = &ctx->headers;
     }
 
-    if (output_charset != ctx->curr_output_charset) {
-	ctx->outstate = charset_init_state;
-    }
-    ctx->curr_output_charset = output_charset;
+    if (buf == &ctx->specialhdr_text) {
+	buffer_append(buf, text, len);
+    } else {
+	if (output_charset != ctx->curr_output_charset) {
+	    ctx->outstate = charset_init_state;
+	}
+	ctx->curr_output_charset = output_charset;
 
-    while ( (inret = charset_to_unicode(&text, &len, midbuf,
-					lenof(midbuf), charset,
-					&ctx->instate, NULL, 0)) > 0) {
-	midlen = inret;
-	midptr = midbuf;
-	while ( (midret = charset_from_unicode(&midptr, &midlen, outbuf,
-					       lenof(outbuf),
-					       output_charset,
-					       &ctx->outstate, NULL)) > 0) {
-	    if (buf == &ctx->headers)
-		append_wrap(buf, &ctx->wrap, outbuf, midret);
-	    else
-		buffer_append(buf, outbuf, midret);
+	while ( (inret = charset_to_unicode(&text, &len, midbuf,
+					    lenof(midbuf), charset,
+					    &ctx->instate, NULL, 0)) > 0) {
+	    midlen = inret;
+	    midptr = midbuf;
+	    while ( (midret = charset_from_unicode(&midptr, &midlen, outbuf,
+						   lenof(outbuf),
+						   output_charset,
+						   &ctx->outstate,
+						   NULL)) > 0) {
+		if (buf == &ctx->headers)
+		    append_wrap(buf, &ctx->wrap, outbuf, midret);
+		else
+		    buffer_append(buf, outbuf, midret);
+	    }
 	}
     }
 }
@@ -305,6 +416,7 @@ void send_message (int charset, char *message, int msglen)
     ctx.ncharsets = lenof(charset_list);
     buffer_init(&ctx.headers);
     buffer_init(&ctx.pre2047);
+    buffer_init(&ctx.specialhdr_text);
     ctx.pre2047type = TYPE_HEADER_DECODED_TEXT;
     ctx.gotmid = ctx.gotdate = FALSE;
     ctx.parts = NULL;
@@ -313,8 +425,11 @@ void send_message (int charset, char *message, int msglen)
 
     parse_message(message, msglen, send_output_fn, &ctx,
 		  send_info_fn, &ctx, charset);
-    /* Ensure the last RFC2047 string has been finished, just in case. */
-    send_output_fn(&ctx, "", 0, TYPE_HEADER_TEXT, CS_ASCII);
+    /*
+     * Send a blank TYPE_HEADER_NAME record, which will ensure
+     * that the final header's text has finished being processed.
+     */
+    send_output_fn(&ctx, "", 0, TYPE_HEADER_NAME, CS_ASCII);
 
     /*
      * No matter what happened just now, we should expect to see a
@@ -404,6 +519,9 @@ void send_message (int charset, char *message, int msglen)
 	sfree(fqdn);
     }
 
+    buffer_cleanup(&ctx.headers);
+    buffer_cleanup(&ctx.pre2047);
+    buffer_cleanup(&ctx.specialhdr_text);
     if (ctx.parts) {
 	int i;
 
