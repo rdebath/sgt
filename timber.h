@@ -246,6 +246,13 @@ enum {				       /* values for above `type' argument */
     TYPE_HEADER_DECODED_TEXT,
     TYPE_HEADER_DECODED_PHRASE,
     TYPE_HEADER_DECODED_COMMENT,
+    /*
+     * The following constants are not used by the rfc822.c
+     * parser. They are included in the enumeration so that other
+     * modules in Timber (such as display.c) can augment the
+     * stream of output blocks coming from the RFC822 parser with
+     * other blocks generated outside it.
+     */
     TYPE_ATTACHMENT_ID_LINE,
     TYPE_BODY_TEXT
 };
@@ -293,6 +300,7 @@ int disposition_val(const char *disposition_name);
 int write_wrapped(int fd, char *data, int length);
 char *read_from_stdin(int *len);
 void init_mime_details(struct mime_details *md);
+void copy_mime_details(struct mime_details *dst, struct mime_details *src);
 void free_mime_details(struct mime_details *md);
 char *dupstr(const char *s);
 int istrlencmp(const char *s1, int l1, const char *s2, int l2);

@@ -171,6 +171,24 @@ void init_mime_details(struct mime_details *md)
     md->length = 0;
 }
 
+void copy_mime_details(struct mime_details *dst, struct mime_details *src)
+{
+    /*
+     * Start by copying the whole structure.
+     */
+    *dst = *src;
+
+    /*
+     * Now dupstr the various string fields.
+     */
+    dst->major = dupstr(dst->major);
+    dst->minor = dupstr(dst->minor);
+    if (dst->filename)
+	dst->filename = dupstr(dst->filename);
+    if (dst->description)
+	dst->description = dupstr(dst->description);
+}
+
 void free_mime_details(struct mime_details *md)
 {
     sfree(md->major);

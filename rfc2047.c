@@ -129,7 +129,7 @@ void rfc2047_decode(const char *text, int length, parser_output_fn_t output,
 
 	    if (!strcmp(enc, "B") || !strcmp(enc, "b")) {
 		wbuf2 = snewn(base64_decode_length(dlen), char);
-		tlen = base64_decode(data, dlen, wbuf2);
+		tlen = base64_decode(data, dlen, (unsigned char *)wbuf2);
 	    } else if (!strcmp(enc, "Q") || !strcmp(enc, "q")) {
 		wbuf2 = snewn(dlen, char);
 		tlen = qp_decode(data, dlen, wbuf2, TRUE);
@@ -531,7 +531,8 @@ char *rfc2047_encode(const char *text, int length, int input_charset,
 		blen = base64_encode_length(rawlen, FALSE);
 		qlen = qp_rfc2047_encode(rawbuf, rawlen, NULL);
 		if (blen < qlen) {
-		    enclen = base64_encode(rawbuf, rawlen, encbuf, FALSE);
+		    enclen = base64_encode((unsigned char *)rawbuf,
+					   rawlen, encbuf, FALSE);
 		    enc = 'B';
 		    assert(enclen == blen);
 		} else {

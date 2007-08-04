@@ -275,7 +275,6 @@ struct display_parse_ctx {
 void display_info_fn(void *vctx, struct message_parse_info *info)
 {
     struct display_parse_ctx *ctx = (struct display_parse_ctx *)vctx;
-    struct mime_details *md;
 
     if (info->type == PARSE_MIME_PART) {
 	if (ctx->nmd >= ctx->mdsize) {
@@ -283,22 +282,7 @@ void display_info_fn(void *vctx, struct message_parse_info *info)
 	    ctx->md = sresize(ctx->md, ctx->mdsize, struct mime_details);
 	}
 
-	md = &ctx->md[ctx->nmd++];
-
-	/*
-	 * Start by copying the whole structure.
-	 */
-	*md = info->u.md;
-
-	/*
-	 * Now dupstr the various string fields.
-	 */
-	md->major = dupstr(md->major);
-	md->minor = dupstr(md->minor);
-	if (md->filename)
-	    md->filename = dupstr(md->filename);
-	if (md->description)
-	    md->description = dupstr(md->description);
+	copy_mime_details(&ctx->md[ctx->nmd++], &info->u.md);
     }
 }
 
@@ -454,7 +438,7 @@ void display_internal(char *message, int msglen,
 	      case BASE64:
 		dbuffer = snewn(base64_decode_length(md[i].length), char);
 		declen = base64_decode(message + md[i].offset,
-				       md[i].length, dbuffer);
+				       md[i].length, (unsigned char *)dbuffer);
 		decoded = dbuffer;
 		break;
 	    }
@@ -511,7 +495,6 @@ void display_internal(char *message, int msglen,
 	sfree(pctx.md);
     }
     sfree(parents);
-    sfree(message);
 }
 
 void display_msgtext(char *message, int msglen,
@@ -551,5 +534,6 @@ void display_message(char *ego, int charset, int type, int full)
 	}
 
 	sfree(separator);
+	sfree(message);
     }
 }
