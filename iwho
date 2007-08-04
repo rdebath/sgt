@@ -269,8 +269,9 @@ while 1:
 	elif code == "352":
 	    chan, user, host, serv, nick, type, hops, name = words(7, params)
 	    users[chan].append(nick)
-	    nicks[nick] = [user, host, name, -1, -1]
-	    whois[nick] = 1
+	    key = string.lower(nick)
+	    nicks[key] = [user, host, name, -1, -1]
+	    whois[key] = 1
 	elif code == "332":
 	    chan, topic = words(1, params)
 	    if topic[0:1] == ":":
@@ -287,6 +288,7 @@ while 1:
 	break
 
 for i in usernames:
+    key = string.lower(i)
     whois[i] = 1
     nicks[i] = [None, None, None, -1, -1]
 
@@ -312,25 +314,28 @@ while 1:
 		    users[chan].append(nick)
 	elif code == "317":
 	    nick, idle, connect, rest = words(3, params)
-	    nicks[nick][3] = string.atoi(idle)
+	    key = string.lower(nick)
+	    nicks[key][3] = string.atoi(idle)
 	    if connect[0] in string.digits:
-		nicks[nick][4] = string.atoi(connect)
+		nicks[key][4] = string.atoi(connect)
 	elif code == "311":
 	    nick, user, host, asterisk, name = words(4, params)
 	    if name[0:1] == ":":
 		name = name[1:]
-	    nicks[nick][0] = user
-	    nicks[nick][1] = host
-	    nicks[nick][2] = name
+	    key = string.lower(nick)
+	    nicks[key][0] = user
+	    nicks[key][1] = host
+	    nicks[key][2] = name
 	elif code == "401" or code == "402":
 	    # User not found.
 	    whoisgot = whoisgot + 1
 	    nick, rest = words(1, params)
-	    nicks[nick][0] = "<nobody>"
-	    nicks[nick][1] = "<nowhere>"
-	    nicks[nick][2] = "<absent>"
-	    nicks[nick][3] = -1
-	    nicks[nick][4] = -1
+	    key = string.lower(nick)
+	    nicks[key][0] = "<nobody>"
+	    nicks[key][1] = "<nowhere>"
+	    nicks[key][2] = "<absent>"
+	    nicks[key][3] = -1
+	    nicks[key][4] = -1
     if whoisgot < whoissent and not done:
 	send("")
     else:
@@ -352,11 +357,13 @@ for chan in channels:
 	if user != None:
 	    print " Topic set by", user, "on", time.asctime(time.localtime(date))
     for nick in u:
-	n = nicks[nick]
+	key = string.lower(nick)
+	n = nicks[key]
 	print fmtnick(nick, n)
 
 if len(usernames) > 0:
     print "Users specified on command line:"
     for nick in usernames:
-	n = nicks[nick]
+	key = string.lower(nick)
+	n = nicks[key]
 	print fmtnick(nick, n)
