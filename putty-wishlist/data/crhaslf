@@ -1,0 +1,9 @@
+Summary: Add "Implicit LF with every CR" option
+Class: wish
+Priority: medium
+Difficulty: fun
+Content-type: text/plain
+Fixed-in: r7669 2007-08-04
+
+Paul Coldrey sent us a patch for implying an LF into every CR, for symmetry.
+We liked it.
