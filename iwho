@@ -9,6 +9,7 @@ import sys
 import os
 import pwd
 import select
+import time
 
 data = []
 done = 0
@@ -244,8 +245,10 @@ whosent = 0
 users = {}
 nicks = {}
 whois = {}
+topics = {}
 send("TIME\r\n")
 for chan in channels:
+    send("TOPIC " + chan + "\r\n")
     send("WHO " + chan + "\r\n")
     users[chan] = []
     whosent = whosent + 1
@@ -260,14 +263,24 @@ while 1:
 	if code == "315":
 	    whogot = whogot + 1
 	elif code == "391":
-	    server, time, rest = words(2, params)
-	    if time[0] in string.digits:
-		now = string.atoi(time)
+	    server, stime, rest = words(2, params)
+	    if stime[0] in string.digits:
+		now = string.atoi(stime)
 	elif code == "352":
 	    chan, user, host, serv, nick, type, hops, name = words(7, params)
 	    users[chan].append(nick)
 	    nicks[nick] = [user, host, name, -1, -1]
 	    whois[nick] = 1
+	elif code == "332":
+	    chan, topic = words(1, params)
+	    if topic[0:1] == ":":
+		topic = topic[1:]
+	    toplist = topics.get(chan, (None, None, None))
+	    topics[chan] = (topic,) + toplist[1:]
+	elif code == "333":
+	    chan, user, date = words(2, params)
+	    toplist = topics.get(chan, (None, None, None))
+	    topics[chan] = toplist[:1] + (user, string.atoi(date))
     if whogot < whosent and not done:
 	send("")
     else:
@@ -332,6 +345,12 @@ for chan in channels:
     u = users[chan]
     u.sort(strcompare)
     print chan + ":"
+    if topics.has_key(chan):
+	topic, user, date = topics[chan]
+	if topic != None:
+	    print " Topic:", topic
+	if user != None:
+	    print " Topic set by", user, "on", time.asctime(time.localtime(date))
     for nick in u:
 	n = nicks[nick]
 	print fmtnick(nick, n)
