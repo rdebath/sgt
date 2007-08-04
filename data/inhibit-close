@@ -1,0 +1,23 @@
+Summary: Ability to remove close box from window
+Class: wish
+Difficulty: fun
+Priority: never
+Content-type: text/x-html-body
+
+<p>We're frequently asked for an option to either remove the close button from
+PuTTY's window title, or to disable it.  This is usually because some server
+to which PuTTY is connecting requires incoming sessions to be terminated
+in a particular way, and can't cope with the connection being dropped.
+We have no intention of implementing this.
+
+<p>If you have the user's
+co-operation, the "warn before closing window" option should be
+sufficient to prevent them accidentally closing the window.  If you
+don't have their co-operation, then they could just use the Task Manager
+when the found that PuTTY's close button wasn't working.  In neither of 
+these cases would disabling the close button help significantly.
+
+<p>In any case, the server has to be able to cope gracefully with the loss
+of a connection, since this could happen in the event of PuTTY's, or the
+client computer's crashing.  Once this is done, there should be no need to
+prevent PuTTY closing.
