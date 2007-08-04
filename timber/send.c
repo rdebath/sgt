@@ -2,6 +2,37 @@
  * send.c: Timber mail-sending functionality.
  */
 
+/*
+ * TODO:
+ * 
+ *  - instead of accumulating the received headers in a single
+ *    buffer, we should break them down and store them one by one,
+ *    because some of them we're going to interpret ourselves.
+ *     + Attach and Attachment headers should add external data to
+ * 	 our list of MIME parts to be sent. Probably another one
+ * 	 which extracts a message from the database by ego, for
+ * 	 forwarding.
+ *     + Queue header should do something, although as yet I'm
+ * 	 uncertain of exactly what.
+ *     + MIME headers from the input should be thrown away,
+ * 	 because we're going to construct our own.
+ *     + I think it would be good to sort the remaining headers
+ * 	 into a sensible order.
+ * 
+ *  - Then we should construct our outgoing message by means of:
+ *     + enumerating the MIME parts (both from the input message
+ * 	 and from attachment headers)
+ *     + if there's exactly one, add its content-type headers to
+ * 	 the main message and use its data as the message body
+ *     + otherwise, add multipart headers to the main message and
+ * 	 construct a multipart message body.
+ * 
+ *  - At some point we need to distinguish `send-format' (given a
+ *    message on input in the form the user will have written it,
+ *    format it into a proper RFC822 message for sending) from
+ *    `send' (do that, then actually _send_ it, and also Fcc it).
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -146,6 +177,8 @@ struct send_output_ctx {
     struct buffer headers, pre2047;
     int pre2047type;
     int gotdate, gotmid;
+    struct mime_details *parts;
+    int nparts, partsize;
 };
 
 static void send_info_fn(void *vctx, struct message_parse_info *info)
@@ -155,6 +188,19 @@ static void send_info_fn(void *vctx, struct message_parse_info *info)
 	ctx->gotmid = TRUE;
     else if (info->type == PARSE_DATE)
 	ctx->gotdate = TRUE;
+    else if (info->type == PARSE_MIME_PART) {
+	/*
+	 * We have an explicit MIME part in the input message. Add
+	 * it to the list of parts to be marshalled into the
+	 * output one.
+	 */
+	if (ctx->nparts >= ctx->partsize) {
+	    ctx->partsize = ctx->nparts * 3 / 2 + 16;
+	    ctx->parts = sresize(ctx->parts, ctx->partsize,
+				 struct mime_details);
+	}
+	copy_mime_details(&ctx->parts[ctx->nparts++], &info->u.md);
+    }
 }
 
 static void send_output_fn(void *vctx, const char *text, int len,
@@ -261,10 +307,12 @@ void send_message (int charset, char *message, int msglen)
     buffer_init(&ctx.pre2047);
     ctx.pre2047type = TYPE_HEADER_DECODED_TEXT;
     ctx.gotmid = ctx.gotdate = FALSE;
+    ctx.parts = NULL;
+    ctx.nparts = ctx.partsize = 0;
     wrap_init(&ctx.wrap);
 
     parse_message(message, msglen, send_output_fn, &ctx,
-		  send_info_fn, NULL, charset);
+		  send_info_fn, &ctx, charset);
     /* Ensure the last RFC2047 string has been finished, just in case. */
     send_output_fn(&ctx, "", 0, TYPE_HEADER_TEXT, CS_ASCII);
 
@@ -354,6 +402,14 @@ void send_message (int charset, char *message, int msglen)
 	fqdn = get_fqdn();
 	printf("Message-ID: <%s@%s>\n", idbuf, fqdn);
 	sfree(fqdn);
+    }
+
+    if (ctx.parts) {
+	int i;
+
+	for (i = 0; i < ctx.nparts; i++)
+	    free_mime_details(&ctx.parts[i]);
+	sfree(ctx.parts);
     }
 }
 
