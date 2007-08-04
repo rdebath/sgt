@@ -1,0 +1,16 @@
+Summary: PuTTY is confused by servers that don't respect its window
+Class: semi-bug
+Priority: medium
+Difficulty: fun
+Present-in: 0.58 0.59 0.60
+Fixed-in: r7661 2007-08-05
+Content-type: text/plain
+
+If an SSH-2 server sends PuTTY more data than its window allows,
+PuTTY gets confused, and stops sending SSH_MSG_CHANNEL_WINDOW_ADJUST.
+While such servers are buggy, PuTTY should behave better.  Simply
+dropping the connection would be unnecessarily rude, especially
+since overrunning the window is a recommended way to get better
+performance out of naive SSH-2 implementations.  Better would be
+for PuTTY to send an extra WINDOW_ADJUST to retrospectively permit
+the excess data.  This is what it now does.
