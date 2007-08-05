@@ -104,7 +104,7 @@ void recurse_mime_part(const char *base, struct mime_record *md,
 		       struct mime_record ***next, int default_charset,
 		       parser_info_fn_t info, void *infoctx);
 struct lexed_header *lex_header(char const *header, int length, int type);
-void init_mime_record(struct mime_record *md);
+void init_mime_record(struct mime_record *md, int default_charset);
 void free_mime_record(struct mime_record *md);
 void parse_content_type(struct lexed_header *lh, struct mime_record *mr);
 void parse_content_disp(struct lexed_header *lh, struct mime_record *mr);
@@ -163,11 +163,11 @@ void parse_message(const char *message, int msglen,
      * of CS_NONE means we should choose our own sensible default.
      */
     if (default_charset == CS_NONE)
-	default_charset = CS_CP1252;
+	default_charset = charset_upgrade(CS_ASCII);
 
     toplevel_part = snew(struct mime_record);
 
-    init_mime_record(toplevel_part);
+    init_mime_record(toplevel_part, default_charset);
 
     for (pass = 0; pass < 2; pass++) {
 	/*
@@ -312,7 +312,7 @@ void recurse_mime_part(const char *base, struct mime_record *mr,
 		    if (partstart) {
 			struct mime_record *this_part;
 			this_part = snew(struct mime_record);
-			init_mime_record(this_part);
+			init_mime_record(this_part, default_charset);
 			**next = this_part;
 			*next = &this_part->next;
 			parse_headers(base, partstart, partend - partstart,
@@ -344,7 +344,7 @@ void recurse_mime_part(const char *base, struct mime_record *mr,
 	 */
 	struct mime_record *this_part;
 	this_part = snew(struct mime_record);
-	init_mime_record(this_part);
+	init_mime_record(this_part, default_charset);
 	**next = this_part;
 	*next = &this_part->next;
 	parse_headers(base, base + mr->md.offset, mr->md.length,
@@ -1240,7 +1240,7 @@ struct lexed_header *lex_header(char const *header, int length, int type)
     return ret;
 }
 
-void init_mime_record(struct mime_record *mr)
+void init_mime_record(struct mime_record *mr, int default_charset)
 {
     init_mime_details(&mr->md);
     mr->filename_location = NO_FNAME;
@@ -1248,6 +1248,7 @@ void init_mime_record(struct mime_record *mr)
     mr->next = NULL;
     mr->rawdescription = 0;
     mr->description_len = 0;
+    mr->md.charset = default_charset;
 }
 
 void free_mime_record(struct mime_record *mr)
