@@ -22,8 +22,8 @@ running over and use that to set the window so as to fully use the available
 bandwidth without completely breaking flow control.  A rather simpler approach
 is possible where a connection only has (and only ever will have) one channel
 running over it, since in that case PuTTY can open the window fully and leave
-flow control to TCP.  PSCP and PSFTP do this as of r7672, and get decent
-download performance.
+flow control to TCP.  This is covered by
+<a href="flow-control-filexfer.html">flow-control-filexfer</a>.
 
 <p>As something of an aside, it might also be helpful for PuTTY to indicate
 somehow to the server that it only plans to use a single channel on a
@@ -39,7 +39,9 @@ Of course, things become more complicated if multiple channels were to be used
 Another approach: the Pittsburgh Supercomputing Center
 <a href="http://www.psc.edu/networking/hpn-ssh/">suggest</a>
 that basing the SSH window size on the TCP window size from the
-underlying OS can help in some circumstances.
+underlying OS can help in some circumstances.  This would only
+be valid where the SSH and TCP connections are coterminous, with no
+tunnelling taking place.
 
 <p>
 If this is done, some higher-level protocols could probably benefit

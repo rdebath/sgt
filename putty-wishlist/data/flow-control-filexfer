@@ -1,0 +1,33 @@
+Summary: Be cleverer with SSH-2 flow control to improve bulk throughput
+Class: semi-bug
+Difficulty: tricky
+Priority: medium
+Content-type: text/x-html-body
+Fixed-in: r7679 2007-08-06
+
+<p>
+(This wish applies to SSH-2; SSH-1 doesn't provide flow control above
+TCP's.)
+
+<p>As Peter Gutmann has
+<a href="http://www.cs.auckland.ac.nz/~pgut001/pubs/app_sec.pdf">observed</a>,
+naive implementations of the SSH-2 sliding window protocol place an arbitrary
+limit on the throughput of each channel, limiting it to the product of the
+window size and the round-trip time (the so-called "SSH-2 handbrake").
+PuTTY is one such naive implementation (it uses a fixed channel window size
+of 16k).
+
+<p>The full generality of this problem is addressed in
+<a href="flow-control.html">flow-control</a>.
+A simple approach
+is possible where a connection only has (and only ever will have) one channel
+running over it, since in that case PuTTY can open the window fully and leave
+flow control to TCP.
+
+<p>As something of an aside, it might also be helpful for PuTTY to indicate
+somehow to the server that it only plans to use a single channel on a
+connection so that the server can open its window fully too.  Otherwise, we
+only get improved download performance.
+
+<p>PSCP and PSFTP do both of these as of r7679, and get decent
+download performance.
