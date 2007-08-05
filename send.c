@@ -5,9 +5,6 @@
 /*
  * TODO:
  * 
- *  - Cleanup for basic message-formatting:
- *     * sort out charset fallbacks for the main text part.
- * 
  *  - Instead of spewing the message straight to stdout, we should
  *    accumulate it in an in-memory buffer. Then our send command
  *    will be able to send the same data to sendmail and its Fcc;
@@ -313,46 +310,35 @@ static char *read_word(char **p)
  */
 static char *convcs(const char *str, int incs, int outcs)
 {
+    const char *ci;
+    const wchar_t *wi;
+    int cilen, wilen;
     wchar_t *ubuf;
-    int usize, ulen;
+    int ulen, ul2;
     char *obuf;
-    int osize, olen;
+    int olen, ol2;
 
-    usize = strlen(str) * 2;
-    ubuf = NULL;
+    ci = str;
+    cilen = strlen(ci);
+    ulen = charset_to_unicode(&ci, &cilen, NULL, -1, incs, NULL, NULL, 0);
+    ubuf = snewn(ulen, wchar_t);
+    ci = str;
+    cilen = strlen(ci);
+    ul2 = charset_to_unicode(&ci, &cilen, ubuf, ulen, incs, NULL, NULL, 0);
+    assert(ulen == ul2 && cilen == 0);
 
-    while (1) {
-	const char *input = str;
-	int inlen = strlen(str);
+    wi = ubuf;
+    wilen = ulen;
+    olen = charset_from_unicode(&wi, &wilen, NULL, -1, outcs, NULL, NULL);
+    obuf = snewn(olen+1, char);
+    wi = ubuf;
+    wilen = ulen;
+    ol2 = charset_from_unicode(&wi, &wilen, obuf, olen, outcs, NULL, NULL);
+    assert(olen == ol2 && wilen == 0);
 
-	ubuf = sresize(ubuf, usize, wchar_t);
-	ulen = charset_to_unicode(&input, &inlen, ubuf, usize,
-				  incs, NULL, NULL, 0);
-
-	if (inlen == 0)
-	    break;
-	usize = usize * 3 / 2;
-    }
-
-    osize = ulen * 6 + 1;
-    obuf = NULL;
-
-    while (1) {
-	const wchar_t *input = ubuf;
-	int inlen = ulen;
-
-	obuf = sresize(obuf, osize, char);
-	olen = charset_from_unicode(&input, &inlen, obuf, osize-1,
-				    outcs, NULL, NULL);
-
-	if (inlen == 0)
-	    break;
-	osize = osize * 3 / 2;
-    }
-
-    sfree(ubuf);
-    assert(olen < osize);
     obuf[olen] = '\0';
+    sfree(ubuf);
+
     return obuf;
 }
 
@@ -765,6 +751,74 @@ void send_message(int charset, char *message, int msglen)
 		data = message + ctx.parts[i].offset;
 		len = ctx.parts[i].length;
 		freedata = FALSE;
+
+		/*
+		 * However, we now have to adjust the character
+		 * set on any text/ input part to the first of our
+		 * list of preferred charsets in which it fits.
+		 */
+		if (!istrcmp(major, "text")) {
+		    /*
+		     * First convert the entire text part into
+		     * Unicode.
+		     */
+		    wchar_t *wdata;
+		    const char *inbuf;
+		    int inlen, wlen, wl2;
+		    int k;
+
+		    inbuf = data;
+		    inlen = len;
+		    wlen = charset_to_unicode(&inbuf, &inlen, NULL, -1,
+					      charset, NULL, NULL, 0);
+		    wdata = snewn(wlen, wchar_t);
+		    inbuf = data;
+		    inlen = len;
+		    wl2 = charset_to_unicode(&inbuf, &inlen, wdata, wlen,
+					     charset, NULL, NULL, 0);
+		    assert(wl2 == wlen && inlen == 0);
+
+		    /*
+		     * Now do a dry-run conversion back into each
+		     * of the charsets in the list. As soon as we
+		     * find one which doesn't cause an error, we
+		     * redo the run for real.
+		     * 
+		     * For the last charset in the list, we ignore
+		     * errors, because we have nothing left to
+		     * fall back to if one occurs.
+		     */
+		    for (k = 0; k < ctx.ncharsets; k++) {
+			wchar_t const *winbuf;
+			int winlen, olen, ol2, error;
+			int cs = ctx.charset_list[k];
+
+			winbuf = wdata;
+			winlen = wlen;
+			error = FALSE;
+			olen = charset_from_unicode
+			    (&winbuf, &winlen, NULL, -1, cs, NULL,
+			     (k == ctx.ncharsets-1 ? NULL : &error));
+
+			if (!error) {
+			    assert(!freedata);   /* no need to free it here */
+
+			    data = snewn(olen+1, char);
+			    winbuf = wdata;
+			    winlen = wlen;
+			    ol2 = charset_from_unicode(&winbuf, &winlen,
+						       data, olen,
+						       cs, NULL, NULL);
+			    assert(olen == ol2 && winlen == 0);
+			    data[ol2] = '\0';
+			    len = olen;
+			    charset = cs;
+			    freedata = TRUE;
+			    break;
+			}
+		    }
+		    assert(freedata);
+		}
 	    } else {
 		/*
 		 * If we're constructing an attachment from an
