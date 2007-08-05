@@ -1,4 +1,4 @@
-Summary: Be cleverer with SSH-2 flow control to improve bulk throughput
+Summary: Be less clever with SSH-2 flow control in PSFTP and PSCP
 Class: semi-bug
 Difficulty: tricky
 Priority: medium
