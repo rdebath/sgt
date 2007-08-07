@@ -2,8 +2,8 @@ Summary: PuTTY is confused by servers that don't respect its window
 Class: semi-bug
 Priority: medium
 Difficulty: fun
-Present-in: 0.58 0.59 0.60
-Fixed-in: r7661 2007-08-05
+Present-in: 0.58 0.59 0.60 r7682 2007-08-06
+Fixed-in: r7683 2007-08-07
 Content-type: text/plain
 
 If an SSH-2 server sends PuTTY more data than its window allows,
