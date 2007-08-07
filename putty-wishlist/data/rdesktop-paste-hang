@@ -38,6 +38,12 @@ Another workaround is apparently to paste into some other local
 application and re-copy from there before pasting into PuTTY.
 
 <p>
+This deadlock can also show up when copying data from a tunnelled
+X session and pasting into the PuTTY session doing the tunnelling;
+this has been reported with Seagull Software BlueZoneX versions
+7 and up.
+
+<p>
 Reports:
 <ul>
 <li><tt>&lt;000001c3f126$ee1b8ca0$6401a8c0@COMPAQ&gt;</tt>
