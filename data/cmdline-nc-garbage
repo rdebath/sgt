@@ -1,0 +1,24 @@
+Summary: -nc on the command line mangles the host name
+Class: bug
+Difficulty: fun
+Present-in: r7683
+Fixed-in: r7685 2007-08-08
+Content-type: text/plain
+
+From the original report:
+
+I just have a quick bug report and patch for you.  I wasn't having any
+success getting plink to work as a local proxy for putty, so I tried plink
+verbosely on the command line.  The troublesome output was something like:
+
+> plink host1 -v -nc host2:22
+[...]
+Access granted
+Opening direct-tcpip channel to host2####:22 in place of session
+Server refused to open a direct-tcpip channel
+FATAL ERROR: Server refused to open a direct-tcpip channel
+
+... where "####" was a bunch of garbage characters.  It turns out that after
+the strncpy to ssh_nc_host, a '\0' is being written at the end of the entire
+array, rather than at the end of the hostname.  A simple patch is attached,
+against putty SVN r7683.
