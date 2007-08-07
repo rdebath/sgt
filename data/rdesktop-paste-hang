@@ -1,5 +1,6 @@
 Summary: Paste from tunneled Remote Desktop session into PuTTY causes hang
 Difficulty: taxing
+Class: semi-bug
 Present-in: 0.53b 2004-02-12 0.56 0.57 0.58
 Content-type: text/x-html-body
 
