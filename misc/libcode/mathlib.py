@@ -74,6 +74,19 @@ def factors(n):
     factorise_main(n, out)
     return list
 
+def allfactors(n):
+    pfact = factors(n)
+    pcount = {}
+    for f in pfact:
+	pcount[f] = pcount.get(f, 0) + 1
+    ret = [1]
+    for f, c in pcount.items():
+	n = len(ret)
+	for i in xrange(n*c):
+	    ret.append(ret[-n] * f)
+    ret.sort()
+    return ret
+
 def prime(n):
     return len(factors(n)) == 1
 
