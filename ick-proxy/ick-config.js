@@ -15,8 +15,11 @@ function RewriteURL(url)
     if (strprefix(url, "http://www.livejournal.com/users/") ||
         strprefix(url, "http://www.livejournal.com/~") ||
         strprefix(url, "http://www.livejournal.com/community/")) {
-	if (!strprefix(url, "http://www.livejournal.com/users/simont/"))
+	if (!strprefix(url, "http://www.livejournal.com/users/simont/") &&
+            !strprefix(url, "http://www.livejournal.com/community/join.bml") &&
+            !strprefix(url, "http://www.livejournal.com/community/leave.bml")){
 	    style = true;
+        }
     }
 
     if (strprefix(url, "http://") && url.indexOf(".livejournal.com/") > 0) {
