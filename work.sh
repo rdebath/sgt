@@ -11,6 +11,7 @@ function FindProxyForURL(url, host)
         return "PROXY localhost:$ICK_PROXY";
 
     if (shExpMatch(host, "*.arm.com") ||
+        shExpMatch(host, "*.local") ||
         isPlainHostName(host) ||
         isInNet(host, "127.0.0.0", "255.0.0.0"))
         return "DIRECT";
