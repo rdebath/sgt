@@ -1,0 +1,55 @@
+#!/usr/local/bin/perl 
+
+# Conditionally invoke a command, if the same command has not
+# already been invoked by this script within a specified (usually
+# short) timespan.
+#
+# On one Linux machine I use, there's a mysterious bug which causes
+# my window-manager hot keys to often fire three times when I only
+# pressed them once. I've given up trying to actually debug this,
+# and have resorted to having all the hot keys invoke this script
+# as a kludgey workaround.
+
+use POSIX;
+use Fcntl ':flock';
+
+$interval = shift @ARGV; # potentially-fractional value in seconds
+@cmd = @ARGV;
+
+# Render @cmd into a transport format.
+@tmpcmd = @cmd; # otherwise the map modifies @cmd, annoyingly
+$cmdstr = join ",", map { s/(.)/sprintf "%02x", ord$&/eg; $_ } @tmpcmd;
+
+$file = "$ENV{'HOME'}/.dedup/last";
+$lock = "$ENV{'HOME'}/.dedup/lock";
+
+open LOCK, ">", $lock;
+flock LOCK, LOCK_EX;
+
+# Annoyingly, the machine in question doesn't have Time::HiRes, so
+# I have to kludge this.
+chomp($time = `date +%s.%N`);
+
+open FILE, "<", $file;
+chomp($lasttime = <FILE>);
+chomp($lastcmdstr = <FILE>);
+close FILE;
+
+if ($lastcmdstr ne $cmdstr or $time >= $lasttime + $interval) {
+    # Do it.
+    
+    open FILE, ">", $file;
+    print FILE "$time\n$cmdstr\n";
+    close FILE;
+
+    $doit = 1;
+} else {
+    $doit = 0;
+}
+
+flock LOCK, LOCK_UN;
+close LOCK;
+
+if ($doit) {
+    exec @cmd;
+}
