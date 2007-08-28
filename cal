@@ -4,6 +4,7 @@
 # parsing.
 
 REALCAL=/usr/bin/cal
+OPTS="-3 -m"
 
 month=`date +%m`
 month=$[1$month - 100]  # trim leading zero, avoiding octal trap
@@ -23,13 +24,21 @@ year=`date +%Y`
 #  - `cal <n>' where n > 12: prints the entire calendar for that
 #    year, as usual.
 
+doingopts=true
+while $doingopts; do
+  case "$1" in
+    -m | -s | -1 | -3 | -j | -y ) OPTS="$OPTS $1"; shift;;
+    *) doingopts=false;;
+  esac
+done
+
 if test "$#" = 2; then
   month=$1
   year=$2
 elif test "$#" -gt 2; then
-  exec $REALCAL "$1"
+  exec $REALCAL $OPTS "$1"
 elif test "$#" = 1 && test "$1" -gt 12; then
-  exec $REALCAL "$1"
+  exec $REALCAL $OPTS "$1"
 elif test "$#" = 1; then
   if test "$1" -gt $[$month + 6]; then
     year=$[$year - 1]
@@ -38,30 +47,4 @@ elif test "$#" = 1; then
   fi
   month=$1
 fi
-
-if test "$month" = 1; then
-  pmonth=12
-  pyear=$[$year - 1]
-else
-  pmonth=$[$month - 1]
-  pyear=$year
-fi
-if test "$month" = 12; then
-  nmonth=1
-  nyear=$[$year + 1]
-else
-  nmonth=$[$month + 1]
-  nyear=$year
-fi
-
-{ $REALCAL $pmonth $pyear ; echo "SEPARATOR" ;
-  $REALCAL  $month  $year ; echo "SEPARATOR" ;
-  $REALCAL $nmonth $nyear ; } | \
-    perl -ne 'chomp; if (/SEPARATOR/) { push @things,$a; $a=[] } else {' \
-          -e 'push @$a,$_; $wid=length $_; $maxwid=$wid if $maxwid < $wid;' \
-          -e '$maxht=scalar @$a if $maxht < scalar @$a }' \
-          -e 'END { push @things,$a; for ($y=0; $y<$maxht; $y++) {' \
-          -e '$s=""; $x=0; foreach $thing (@things) {' \
-          -e '$s .= " " x ($maxwid+2); $s=substr($s,0,($maxwid+2)*$x);' \
-          -e '$s.=$thing->[$y]; $x++;' \
-          -e '} print "$s\n"; } }'
+exec $REALCAL $OPTS "$month" "$year"
