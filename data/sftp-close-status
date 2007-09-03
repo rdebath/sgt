@@ -1,0 +1,47 @@
+Summary: Psftp doesn't check return value for SSH2_FXP_CLOSE request
+Class: bug
+Priority: medium
+Difficulty: fun
+Present-in: 0.60
+Content-type: text/plain
+
+From a user:
+
+Psftp doesn't check return value for SSH2_FXP_CLOSE
+request. The specifictaions of sftp protocol state:
+"The response to this request will be a SSH_FXP_STATUS
+message.  One should note that on some server
+platforms even a close can fail. This can happen e.g. 
+if the server operating system caches writes, and an
+error occurs while flushing cached writes during the
+close."
+http://www.openssh.org/txt/draft-ietf-secsh-filexfer-02.txt
+
+The server we use will identify failure when closing
+the file. Currently psftp doesn't give any indication
+of the failure. 
+
+Psftp should check the return value and if close is
+not succesfull after writing to a file, 
+user should be informed about failed file transfer
+operation.
+
+psftp -h
+PuTTY Secure File Transfer (SFTP) client
+Release 0.60
+
+The problem happens at least on Windows, but I would
+assume that it affects all platforms. 
+
+Unfortunately the only server I know that has this
+problem is not shared in public (only sold to certain
+group of organizations), so mentioning it wouldn't
+help as you wouldn't be able to test it anyway. But
+the problem should be quite trivial to fix without
+testing. 
+
+The server in question doesn't overwrite old file if
+such exists with the same name, if closing fails. So
+please don't try to use stat() or similar to find out
+if the transfer was successful, even if close fails.
+If close fails, file is not transfered. 
