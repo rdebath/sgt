@@ -1,0 +1,15 @@
+Summary: Command-line option to edit a session rather than launching it
+Class: wish
+Difficulty: fun
+Priority: low
+Content-type: text/plain
+
+From a user:
+
+The feature I request would be a "-edit my_session" command line option.
+This option would open the PuTTY control panel, with the session
+"my_session" preloaded.
+(Like TuTTY does ;)
+
+And why not a "-delete my_session" command line option, that could do what
+it says (with a confirmation dialog) ?
