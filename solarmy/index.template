@@ -78,11 +78,11 @@ moves on a peg solitaire board.
 
 <p>
 One obvious thing you could do would be to make a lot of moves
-<em>in parallel</em>, if none of them interfered with any other
-move. For example, you could simultaneously jump every peg in the
+<em>in parallel</em>, if none of them interfered with each other.
+For example, you could simultaneously jump every peg in the
 <i>y</i>=-1 row two spaces upwards, thus removing all the pegs in
 the <i>y</i>=0 row and completely filling the <i>y</i>=+1 row. This
-is an entirely well defined idea, but not particularly useful.
+would be an entirely well defined idea, but not particularly useful.
 
 <p align=center>
 <picture parallel>
@@ -110,14 +110,14 @@ the moves in that sequence, and going on forever. Doing so has the
 property that each individual board position changes between empty
 and full a small finite number of times; no position changes
 infinitely often. So for each board position, we can meaningfully
-talk about its <em>eventual</em> value: whether it <em>ends up</em>
+talk about its <em>eventual</em> state: whether it <em>ends up</em>
 with a peg in it or not after our move sequence finishes messing
 about with it.
 
 <p>
 So what we would like to do is to allow ourselves to make all the
-moves in the above sequence, <em>and then make some more moves
-afterwards</em>.
+moves in the above sequence, leaving every peg in its eventual
+state, <em>and then make some more moves afterwards</em>.
 
 <p>
 A nice way to make this rigorous is to imagine making all those
@@ -413,7 +413,9 @@ original board, and left only one peg at the end of the solution.
 
 <p>
 Here's an animation of the entire solution run in the forward
-direction:
+direction. (It takes about 75 seconds to run fully, so if it's half
+way through by the time you've read this far, wait a little while
+and it'll start again.)
 
 <p align=center>
 <picture solution>
