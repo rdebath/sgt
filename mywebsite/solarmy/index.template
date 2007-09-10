@@ -40,7 +40,7 @@ many other pegs as you need to help get it there. Reaching
 twenty moves even with optimal play.
 
 <p>
-There is a well-known proof that reaching <i>y</i>=5 is actually
+There is a well-<wbr>known proof that reaching <i>y</i>=5 is actually
 impossible. I won't give <em>all</em> the details of the proof here,
 so as not to spoil it for anyone who would like to try proving it
 themself; but the basic approach is to define a numeric value for a
@@ -80,7 +80,7 @@ moves on a peg solitaire board.
 One obvious thing you could do would be to make a lot of moves
 <em>in parallel</em>, if none of them interfered with each other.
 For example, you could simultaneously jump every peg in the
-<i>y</i>=-1 row two spaces upwards, thus removing all the pegs in
+<i>y</i>=&#8722;1 row two spaces upwards, thus removing all the pegs in
 the <i>y</i>=0 row and completely filling the <i>y</i>=+1 row. This
 would be an entirely well defined idea, but not particularly useful.
 
@@ -151,15 +151,12 @@ either exactly three values of <i>x</i>,<i>y</i> for which
 <li>
 <b>No peg switches infinitely often</b>. For any fixed
 <i>x</i>,<i>y</i>, there are only finitely many values of <i>t</i>
-for which <i>f</i>(<i>x</i>,<i>y</i>,<i>t</i>)=1/2. Hence, whenever
-<i>f</i>(<i>x</i>,<i>y</i>,<i>t</i>)=1/2, there is some open
-interval containing <i>t</i> such that <i>f</i> is 1/2 nowhere on
-that interval <em>except</em> <i>t</i> (for fixed <i>x</i>,<i>y</i>).
+for which <i>f</i>(<i>x</i>,<i>y</i>,<i>t</i>)=1/2.
 <li>
 <b>Legal peg solitaire moves only</b>. For any <i>t</i> which
 represents a move (i.e. there are three <i>x</i>,<i>y</i> with
 <i>f</i>(<i>x</i>,<i>y</i>,<i>t</i>)=1/2), the three coordinates
-either occupy three adjacent <i>x</i>-coordinates for a fixed
+either occupy three adjacent <i>x</i>-<wbr>coordinates for a fixed
 <i>y</i> or vice versa. Also, the centre space of the three must
 change its value of <i>f</i> from 1 to 0, while one of the outer two
 does the same and the other changes from 0 to 1.
@@ -182,12 +179,36 @@ construction I've exhibited above satisfies all the constraints on
 reader shouldn't find it too difficult to do so.
 
 <p>
-Note also that the model I've defined here actually rules out my
-example of <em>parallel</em> moves, in the precise form I stated it.
+The model I've defined here actually rules out my example of
+<em>parallel</em> moves, in the precise form I exhibited it above.
 The one-<wbr>move-<wbr>at-<wbr>a-<wbr>time rule forbids us from
 making infinitely many moves in the same instant, as I talked about
 above. Instead, we must make the moves one after another, in some
 arbitrary order (although any order will do).
+
+<p align=center>
+<picture parskew>
+
+<p>
+Incidentally, a consequence of the rules as I state them above is
+the following theorem:
+<blockquote>
+for every time instant <i>t</i><br>
+for every (<i>x</i>,<i>y</i>)<br>
+there exists some <i>&#949;</i>&nbsp;&gt;&nbsp;0 such that<br>
+within the time interval
+(<i>t</i>&#8722;<i>&#949;</i>,<i>t</i>+<i>&#949;</i>)<br>
+the position (<i>x</i>,<i>y</i>) is not involved in any move which
+is not at time <i>t</i>.
+</blockquote>
+The interesting thing about this is that if I were to merely swap
+round the <em>second and third lines</em> of the statement of that
+theorem, so that a single value of <i>&#949;</i> had to work for all
+(<i>x</i>,<i>y</i>), this would turn it into a constraint which
+permitted only finitely many moves in any bounded time interval, and
+hence we would have reverted to exactly the <em>standard</em>
+definition of the game. This illustrates just how little I've had to
+change the rules to permit infinite move sequences.
 
 <h2>Another useful move</h2>
 
@@ -218,7 +239,7 @@ this? Well, we have to start by making some move: let's jump our
 starting peg to the left, turning it into two pegs. Suppose we then
 jump the leftmost of those two pegs left again, turning that into
 two pegs; and suppose we jump the leftmost peg left again, and keep
-going. This gives us a forward-infinite sequence of moves in reverse
+going. This gives us a forward-<wbr>infinite sequence of moves in reverse
 peg solitaire which turns a single peg into an infinite line of
 which every other space is occupied.
 
@@ -228,7 +249,7 @@ which every other space is occupied.
 <p>
 And because every valid sequence in the reverse game can be
 time-<wbr>reversed into a valid sequence in the forward game, we can
-reverse the above manoeuvre to give us a <em>backward</em>-infinite
+reverse the above manoeuvre to give us a <em>backward</em>-<wbr>infinite
 sequence of moves in <em>forward</em> peg solitaire.
 
 <p align=center>
@@ -237,12 +258,15 @@ sequence of moves in <em>forward</em> peg solitaire.
 <p>
 This trick, for some reason, tends to make people's brains hurt.
 People seem to find it easier and more intuitive to imagine starting
-a sensible-looking process, carrying it on forever, and then doing
+a sensible-<wbr>looking process, carrying it on forever, and then doing
 other things than to imagine a process which somehow magically gets
-going and then comes to a halt in a sensible way. However, both are
-equally legal according to the rules I laid down in the previous
-section; a forward-<wbr>infinite chain of moves can legally be
-performed by doing them at times 0, 1/2, 3/4, 7/8, 15/16, ..., and a
+going and then comes to a halt in a sensible way. &#8216;At the start of
+that sequence,&#8217; they complain, &#8216;no two pegs are adjacent, so no move
+can be possible. How do you get started?&#8217; However, backward infinite
+move chains are just as legal as forward infinite ones according to
+the rules I laid down in the previous section; a
+forward-<wbr>infinite chain of moves can legally be performed by
+doing them at times 0, 1/2, 3/4, 7/8, 15/16, ..., and a
 backward-<wbr>infinite chain of moves can be just as legally
 performed by doing them at times ..., 1/16, 1/8, 1/4, 1/2, 1. If you
 focus on any individual position (<i>x</i>,<i>y</i>) and any finite
@@ -266,10 +290,10 @@ single peg two spaces beyond its original starting point.
 <picture whoosh>
 
 <p>
-In the following section this doubly-infinite sequence will be used
+In the following section this doubly-<wbr>infinite sequence will be used
 quite a lot, so we'll need a snappy name for it. <a
 href="http://www.tartarus.org/~gareth/">Gareth</a> called it a
-"whoosh".
+&#8216;whoosh&#8217;.
 
 <h2>The solution</h2>
 
@@ -280,7 +304,7 @@ actual method for reaching the fifth row.
 <p>
 A new concept that will be introduced in this section is the idea of
 performing an infinite sequence of steps <em>of which each step</em>
-contains several "whooshes" as described in the previous section,
+contains several &#8216;whooshes&#8217; as described in the previous section,
 each of which in turn contains infinitely many moves. This isn't too
 difficult: once we've got the idea of performing infinitely many
 moves in a finite time, it's then reasonably simple to divide a
@@ -310,7 +334,7 @@ starting two spaces further up, we could use it to reach <i>y</i>=5.
 This, it turns out, is a good starting point. Let's start at that
 T-shape position, and work backwards. That is, we're now playing
 reverse peg solitaire (with infinite moves allowed), and our aim is
-to turn this T-shape into an entire half-plane.
+to turn this T-shape into an entire half-<wbr>plane.
 
 <p align=center>
 <picture solution0>
@@ -330,7 +354,7 @@ into two pegs (since we're playing in reverse):
 <picture solution1>
 
 <p>
-Then we "whoosh" the two bottom pegs downwards, turning them into
+Then we &#8216;whoosh&#8217; the two bottom pegs downwards, turning them into
 two filled columns of pegs:
 
 <p align=center>
@@ -348,8 +372,8 @@ one space above the line:
 Now we begin a sequence which we're going to repeat infinitely many
 times. We use the top pegs of those two columns (the ones above the
 line). We move the left one further left, to place a peg in each of
-the next two columns; then we "whoosh" those two pegs downwards, and
-then we "whoosh" the right-hand peg of our starting two to the left.
+the next two columns; then we &#8216;whoosh&#8217; those two pegs downwards, and
+then we &#8216;whoosh&#8217; the right-<wbr>hand peg of our starting two to the left.
 
 <p align=center>
 <picture solution4>
@@ -365,7 +389,7 @@ columns (just below the gap), and do the same thing again:
 Then we do it again in the next two columns, and again, and again,
 and so on out to infinity. After we have performed this infinite
 sequence of steps each containing a single move and three
-"whooshes", our board looks like this:
+&#8216;whooshes&#8217;, our board looks like this:
 
 <p align=center>
 <picture solution6>
@@ -374,13 +398,13 @@ sequence of steps each containing a single move and three
 Now all we have to do is to move those alternating pegs downwards in
 each column to fill in the gaps. This takes only a finite number of
 moves in each column, and we end up with a tightly packed
-quarter-plane:
+quarter-<wbr>plane:
 
 <p align=center>
 <picture solution7>
 
 <p>
-Now we have to fill in the right-hand quarter-plane. We do this in
+Now we have to fill in the right-<wbr>hand quarter-<wbr>plane. We do this in
 exactly the same way. First we take the lower peg in the central
 column and move it downwards, turning it into two pegs:
 
@@ -388,9 +412,9 @@ column and move it downwards, turning it into two pegs:
 <picture solution8>
 
 <p>
-And now we have four pegs in the mirror-image positions of the ones
-we used to populate the left-hand quadrant. Hence, we can do the
-entire procedure again as above, and populate the right-hand
+And now we have four pegs in the mirror-<wbr>image positions of the ones
+we used to populate the left-<wbr>hand quadrant. Hence, we can do the
+entire procedure again as above, and populate the right-<wbr>hand
 quadrant in the same way:
 
 <p align=center>
@@ -400,12 +424,12 @@ quadrant in the same way:
 And now we have almost arrived at the starting position. We only
 have the centre column left to populate, and one peg at (0,2) to do
 it with. This is exactly the problem which is solved by a single
-"whoosh".
+&#8216;whoosh&#8217;.
 
 <p>
 So the above sequence, in reverse peg solitaire, gets us all the way
 from the T-shape we started with to the initial position. Hence, by
-time-reversing it, we can get from the initial position to that
+time-<wbr>reversing it, we can get from the initial position to that
 T-shape, and from there it's only a matter of seven simple moves to
 the target position. And, exactly as predicted by the impossibility
 proof, reaching <i>y</i>=5 has required every single peg on the
@@ -422,9 +446,9 @@ and it'll start again.)
 
 <p>
 (Note, in particular, that the above construction which populates a
-quadrant was specified as a forward-infinite sequence of "whooshes"
+quadrant was specified as a forward-<wbr>infinite sequence of &#8216;whooshes&#8217;
 in reverse peg solitaire. Hence, in the forward direction, it of
-course becomes a <em>backward</em> infinite sequence of "whooshes",
+course becomes a <em>backward</em> infinite sequence of &#8216;whooshes&#8217;,
 but &#8211; just as before &#8211; it's no less legal for that.)
 
 <h2>Credits</h2>
@@ -439,10 +463,10 @@ the Solitaire Army problem itself.
 <a href="http://www.chiark.greenend.org.uk/~sgtatham/">Simon
 Tatham</a> had the idea of making a serious effort to reach
 <i>y</i>=5 by means of making infinitely many moves; he laid down
-the ground rules, invented the "whoosh", and wrote this web page.
+the ground rules, invented the &#8216;whoosh&#8217;, and wrote this web page.
 
 <p>
-Simon was, however, unable to arrange moves and "whooshes" into an
+Simon was, however, unable to arrange moves and &#8216;whooshes&#8217; into an
 actual solution to the problem.
 <a href="http://www.tartarus.org/~gareth/">Gareth Taylor</a>
 did that.

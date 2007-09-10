@@ -155,6 +155,16 @@ elif arg == "parallel":
     ymin = -5
     ymax = +2
 
+elif arg == "parskew":
+    tloop = 0
+    for xa in range(0,limit+1):
+	bounce(xa, 1, 0, -1, f(tloop + 0.5)); tloop = tloop + 1
+	if xa > 0:
+	    bounce(-xa, 1, 0, -1, f(tloop + 0.5)); tloop = tloop + 1
+    t = t + 1
+    ymin = -5
+    ymax = +2
+
 elif arg == "halfwhoosh1":
     startpos = lambda x,y: y == 0 and x <= 0
     ymin = -1
