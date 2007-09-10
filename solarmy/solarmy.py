@@ -122,7 +122,7 @@ if arg[:8] == "solution":
         # to provide the raw material for the second.
         if dx == -1:
             bounce(0,1,0,-1,t-0.25); t = t - 0.5
-	    snapshots.append((t,t))
+            snapshots.append((t,t))
 
     # Now whoosh the peg at (0,2) downwards to fill the centre column.
     whoosh(0,2,0,-1,lambda T: t-1+T); t = t - 1
@@ -158,47 +158,47 @@ elif arg == "parallel":
 elif arg == "parskew":
     tloop = 0
     for xa in range(0,limit+1):
-	bounce(xa, 1, 0, -1, f(tloop + 0.5)); tloop = tloop + 1
-	if xa > 0:
-	    bounce(-xa, 1, 0, -1, f(tloop + 0.5)); tloop = tloop + 1
+        bounce(xa, 1, 0, -1, f(tloop + 0.5)); tloop = tloop + 1
+        if xa > 0:
+            bounce(-xa, 1, 0, -1, f(tloop + 0.5)); tloop = tloop + 1
     t = t + 1
     ymin = -5
     ymax = +2
 
 elif arg == "halfwhoosh1":
-    startpos = lambda x,y: y == 0 and x <= 0
-    ymin = -1
-    ymax = +1
+    startpos = lambda x,y: y == -5 and x <= 0
+    ymin = -6
+    ymax = -4
     xmin = -20
     xmax = +3
     for x in range(1, xmin-1, -2):
-        bounce(x, 0, -1, 0, t + 0.25); t = t + 0.5
+        bounce(x, -5, -1, 0, t + 0.25); t = t + 0.5
 
 elif arg == "halfwhoosh2r":
-    startpos = lambda x,y: y == 0 and x == 2
-    ymin = -1
-    ymax = +1
+    startpos = lambda x,y: y == -5 and x == 2
+    ymin = -6
+    ymax = -4
     xmin = -20
     xmax = +3
     for x in range(2, xmin-1, -2):
-        bounce(x-2, 0, +1, 0, t + 0.25, centre=ON); t = t + 0.5
+        bounce(x-2, -5, +1, 0, t + 0.25, centre=ON); t = t + 0.5
 
 elif arg == "halfwhoosh2":
-    startpos = lambda x,y: y == 0 and x <= 1 and x%2 == 1
-    ymin = -1
-    ymax = +1
+    startpos = lambda x,y: y == -5 and x <= 1 and x%2 == 1
+    ymin = -6
+    ymax = -4
     xmin = -20
     xmax = +3
     for x in range(2, xmin-1, -2):
-        bounce(x, 0, -1, 0, t - 0.25); t = t - 0.5
+        bounce(x, -5, -1, 0, t - 0.25); t = t - 0.5
 
 elif arg == "whoosh":
-    startpos = lambda x,y: y == 0 and x <= 0
-    ymin = -1
-    ymax = +1
+    startpos = lambda x,y: y == -5 and x <= 0
+    ymin = -6
+    ymax = -4
     xmin = -20
     xmax = +3
-    whoosh(2, 0, -1, 0, lambda T: t+T); t = t + 1
+    whoosh(2, -5, -1, 0, lambda T: t+T); t = t + 1
 
 elif arg == "three":
 
