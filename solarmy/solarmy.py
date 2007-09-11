@@ -10,6 +10,8 @@ grid = {}
 
 ON, OFF = 1, 0
 
+debug = 0
+
 def f(x, limit=limit):
     return math.tanh(x/(limit*0.75))
 
@@ -24,13 +26,15 @@ def bounce(x, y, dx, dy, time, centre=OFF):
     grid[(x,y)] = grid.get((x,y),[]) + [(time, ON)]
     grid[(x+dx,y+dy)] = grid.get((x+dx,y+dy),[]) + [(time, centre)]
     grid[(x+dx*2,y+dy*2)] = grid.get((x+dx*2,y+dy*2),[]) + [(time, OFF)]
-    print "%.10f: on (%d,%d), off (%d,%d), off (%d,%d)" % \
-    (time, x, y, x+dx,y+dy, x+dx*2,y+dy*2)
+    if debug:
+        print "%.10f: on (%d,%d), off (%d,%d), off (%d,%d)" % \
+        (time, x, y, x+dx,y+dy, x+dx*2,y+dy*2)
 
 # Make a double infinite sequence of moves, from time func(0) to
 # func(1) (exclusive).
 def whoosh(x, y, dx, dy, func):
-    print "%.10f - %.10f: whoosh (%d,%d) +(%d,%d):" % (func(0), func(1), x, y, dx, dy)
+    if debug:
+        print "%.10f - %.10f: whoosh (%d,%d) +(%d,%d):" % (func(0), func(1), x, y, dx, dy)
     # Forward infinite sequence compressed into [0,0.5].
     i = 0
     X, Y = x+dx, y+dy
@@ -45,7 +49,8 @@ def whoosh(x, y, dx, dy, func):
         bounce(X, Y, dx, dy, func(1 - g(i+0.5)/2))
         X, Y = X+dx*2, Y+dy*2
         i = i + 1
-    print "whoosh done"
+    if debug:
+        print "whoosh done"
 
 startpos = lambda x,y: y <= 0
 xmin = -limit
@@ -57,7 +62,15 @@ t = 0
 tmin = tmax = None
 reverse = 0
 
-arg = sys.argv[1]
+args = sys.argv[1:]
+
+if args[0] == "-d":
+    # debug: print lots of output, and leave auxiliary files
+    debug = 1
+    args = args[1:]
+
+arg = args[0]
+
 if arg[:8] == "solution":
 
     snapshots = []
@@ -107,15 +120,29 @@ if arg[:8] == "solution":
         if dx == -1: snapshots.append((t,t))
 
         # Fix up the columns with some downward bounces.
-        print "fixup:"
+        if debug:
+            print "fixup:"
         tloop = 0
-        ttotal = 5
-        for x in range(3,limit+1):
-            bottom = 5 - (x+x%2)
-            for y in range(1, bottom-2, -2):
-                bounce(x*dx, y, 0, -1, t-ttotal+ttotal*f(tloop+0.5,limit*(limit+1)/4)); tloop = tloop + 1
+        if arg == "solution7":
+            # When we do this in reverse for the illustration, we
+            # do it in the other order, i.e. still starting with
+            # the innermost column.
+            ttotal = 15
+            for x in range(3, limit+1):
+                bottom = 5 - (x+x%2)
+                for y in range(bottom, 3, 2):
+                    bounce(x*dx, y, 0, -1, t-ttotal*f(-tloop+0.5,limit*(limit+1)/4)); tloop = tloop - 1
+        else:
+            ttotal = 5
+            for x in range(3, limit+1):
+                bottom = 5 - (x+x%2)
+                for y in range(1, bottom-2, -2):
+                    bounce(x*dx, y, 0, -1, t-ttotal+ttotal*f(tloop+0.5,limit*(limit+1)/4)); tloop = tloop + 1
+        if dx == -1:
+            snapshots.append((t-ttotal,t))
         t = t - ttotal
-        print "fixup done"
+        if debug:
+            print "fixup done"
         snapshots.append((t,t)) # whether dx==-1 or not
 
         # If this is the first of the two quarters, bounce (1,0) down
@@ -130,7 +157,7 @@ if arg[:8] == "solution":
     if len(arg) > 8:
         snapshotindex = int(arg[8:])
         tmin, tmax = snapshots[snapshotindex]
-        if snapshotindex == 4: reverse = 1
+        if snapshotindex == 4 or snapshotindex == 7: reverse = 1
 
 elif arg == "startpoint":
     pass
@@ -234,7 +261,8 @@ for x in range(-limit,limit+1):
         if list == []: # completely unused space
             continue
         list.sort()
-        print x, y, list
+        if debug:
+            print x, y, list
         if startpos(x, y):
             assert list[0][1] == OFF
         else:
@@ -300,19 +328,26 @@ for tround in timelist:
                     else:
                         p.write("\xC0\xC0\xC0")
     p.close()
-    print "wrote", filename, "(%d of %d)" % (len(images), len(timelist))
+    if debug:
+        print "wrote", filename, "(%d of %d)" % (len(images), len(timelist))
 
 cmdline = "convert"
 for i in range(len(images)):
     if i == 0 or i == len(images)-1:
         delay = 200
     else:
-        delay = images[i+1][0] - images[i][0]
+        if reverse:
+            delay = images[i][0] - images[i-1][0]
+        else:
+            delay = images[i+1][0] - images[i][0]
     if len(images) > 1:
         cmdline = cmdline + " -delay %d" % delay
     cmdline = cmdline + " %s" % images[i][1]
 cmdline = cmdline + " gif:- | gifsicle --optimize > %s.gif" % arg
-print len(cmdline)
-print cmdline
-print len(cmdline)
+if debug:
+    print cmdline
 os.system(cmdline)
+
+if not debug:
+    for time, filename in images:
+        os.remove(filename)

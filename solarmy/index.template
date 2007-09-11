@@ -397,11 +397,16 @@ sequence of steps each containing a single move and three
 <p>
 Now all we have to do is to move those alternating pegs downwards in
 each column to fill in the gaps. This takes only a finite number of
-moves in each column, and we end up with a tightly packed
-quarter-<wbr>plane:
+moves in each column:
 
 <p align=center>
 <picture solution7>
+
+<p>
+And we end up with a tightly packed quarter-<wbr>plane:
+
+<p align=center>
+<picture solution8>
 
 <p>
 Now we have to fill in the right-<wbr>hand quarter-<wbr>plane. We do this in
@@ -409,7 +414,7 @@ exactly the same way. First we take the lower peg in the central
 column and move it downwards, turning it into two pegs:
 
 <p align=center>
-<picture solution8>
+<picture solution9>
 
 <p>
 And now we have four pegs in the mirror-<wbr>image positions of the ones
@@ -418,7 +423,7 @@ entire procedure again as above, and populate the right-<wbr>hand
 quadrant in the same way:
 
 <p align=center>
-<picture solution9>
+<picture solution10>
 
 <p>
 And now we have almost arrived at the starting position. We only
