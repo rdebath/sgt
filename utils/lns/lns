@@ -107,6 +107,11 @@ $target =~ s/// if $target =~ /\/$/;    # strip trailing slash if present
 
 if ($multiple) {
   foreach $source (@ARGV) {
+    # We must path-normalise $source _before_ looking for the final
+    # filename component, to deal with the case of `lns . subdir'
+    # in which we want the link to be called subdir/<dirname> rather
+    # than subdir/. .
+    $source = &normalise($source);
     $source =~ /^(.*\/)?([^\/]*)$/;     # find final file name component
     &makelink($source, "$target/$2");   # actually make a link
   }
