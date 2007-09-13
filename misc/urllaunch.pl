@@ -66,7 +66,7 @@ if ($google) {
     $url = "\"$url\"" if $google == 2;
     $url =~ s/[^0-9a-zA-Z]/$& eq " " ? "+" : sprintf "%%%02x", ord $&/eg;
 
-    $url = "http://www.google.com/search?q=" . $url;
+    $url = "http://www.google.co.uk/search?q=" . $url;
 } elsif ($wikipedia) {
     # Construct a Wikipedia URL.
     $url =~ s/\n/ /gs;
