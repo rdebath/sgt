@@ -140,7 +140,7 @@ which changes the value of that position). The function <i>f</i> is
 then subject to some constraints:
 <ul>
 <li>
-<b>Pegs only change state by means of a move</b>. For any fixed
+<b>Positions only change state by means of a move</b>. For any fixed
 <i>x</i>,<i>y</i> and any continuous interval of time during which
 <i>f</i>(<i>x</i>,<i>y</i>,<i>t</i>) is never equal to 1/2,
 <i>f</i>(<i>x</i>,<i>y</i>,<i>t</i>) is constant on that interval.
@@ -149,7 +149,7 @@ then subject to some constraints:
 either exactly three values of <i>x</i>,<i>y</i> for which
 <i>f</i>(<i>x</i>,<i>y</i>,<i>t</i>)=1/2, or there are none.
 <li>
-<b>No peg switches infinitely often</b>. For any fixed
+<b>No position switches infinitely often</b>. For any fixed
 <i>x</i>,<i>y</i>, there are only finitely many values of <i>t</i>
 for which <i>f</i>(<i>x</i>,<i>y</i>,<i>t</i>)=1/2.
 <li>
