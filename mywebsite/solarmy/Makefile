@@ -1,9 +1,10 @@
 # Makefile for solarmy pictures and animations.
 
-IMAGES = startpoint solution randommoves parallel parskew \
-         halfwhoosh1 halfwhoosh2r halfwhoosh2 whoosh three \
-	 solution0 solution1 solution2 solution3 solution4 \
-	 solution5 solution6 solution7 solution8 solution9 solution10
+IMAGES = startpoint randommoves parallel halfwhoosh1 parskew halfwhoosh2r \
+         halfwhoosh2 whoosh badmega megawhoosh0 megawhoosh1 megawhoosh2 \
+         megawhoosh3 megawhoosh4 megawhoosh5 megawhoosh6 megawhoosh7 \
+         megawhoosh8 megawhoosh9 solution
+
 GIFS = $(patsubst %,%.gif,$(IMAGES))
 
 all: $(GIFS) index.html
