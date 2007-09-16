@@ -52,6 +52,60 @@ def whoosh(x, y, dx, dy, func):
     if debug:
         print "whoosh done"
 
+# Perform the complex infinite backward sequence of whooshes which
+# turns a quarter-plane (x*dx > 0, y <= 0) into a single peg (0,3).
+#
+# Takes as input the desired value of t _after_ the move, and
+# returns the vaue before it.
+def megawhoosh(dx, t, index=-1, snapshots=[]):
+    # The first infinite loop, doing downward whooshes.
+    tloop = 0
+    ttotal = 5
+    for i in range(limit+2):
+        if i == 0: snapshots.append((t-ttotal*f(-tloop,limit/2), t-ttotal*f(-tloop,limit/2)))
+        bounce((2*i)*dx, (3-2*i), dx, 0, t-ttotal*f(-tloop+0.125,limit/2)); tloop = tloop - 0.25
+        if i == 0 or i == 1: snapshots.append((t-ttotal*f(-tloop,limit/2), t-ttotal*f(-tloop,limit/2)))
+        whoosh((2*i+1)*dx, (3-2*i), 0, -1, lambda T: t-ttotal*f(-(tloop+0.25*(T-1)),limit/2)); tloop = tloop - 0.25
+        whoosh((2*i+2)*dx, (3-2*i), 0, -1, lambda T: t-ttotal*f(-(tloop+0.25*(T-1)),limit/2)); tloop = tloop - 0.25
+        if i == 0 or i == 1 or i == 2: snapshots.append((t-ttotal*f(-tloop,limit/2), t-ttotal*f(-tloop,limit/2)))
+    t = t - ttotal
+    snapshots.append((t,t))
+
+    # The second infinite loop, doing outward whooshes.
+    tloop = 0
+    ttotal = 5
+    for i in range(limit+1):
+        whoosh((2*i+1)*dx, (1-2*i), dx, 0, lambda T: t-ttotal+ttotal*f(tloop+T)); tloop = tloop + 1
+    t = t - ttotal
+    snapshots.append((t,t))
+
+    # Fix up the columns with some downward bounces.
+    if debug:
+        print "fixup:"
+    tloop = 0
+    if index == 8:
+        # When we do this in reverse for the illustration, we
+        # do it in the other order, i.e. still starting with
+        # the innermost column.
+        ttotal = 15
+        for x in range(3, limit+1):
+            bottom = 5 - (x+x%2)
+            for y in range(bottom, 3, 2):
+                bounce(x*dx, y, 0, -1, t-ttotal*f(-tloop+0.5,limit*2)); tloop = tloop - 1
+    else:
+        ttotal = 5
+        for x in range(3, limit+1):
+            bottom = 5 - (x+x%2)
+            for y in range(1, bottom-2, -2):
+                bounce(x*dx, y, 0, -1, t-ttotal+ttotal*f(tloop+0.5,limit*(limit+1)/4)); tloop = tloop + 1
+    snapshots.append((t-ttotal,t))
+    t = t - ttotal
+    if debug:
+        print "fixup done"
+    snapshots.append((t,t))
+
+    return t
+
 startpos = lambda x,y: y <= 0
 xmin = -limit
 xmax = +limit
@@ -61,6 +115,7 @@ ymax = +5
 t = 0
 tmin = tmax = None
 reverse = 0
+yaxis = xaxis = 0
 
 args = sys.argv[1:]
 
@@ -71,98 +126,43 @@ if args[0] == "-d":
 
 arg = args[0]
 
-if arg[:8] == "solution":
-
-    snapshots = []
-
+if arg == "solution":
+    yaxis = xaxis = 1
     # We construct our sequence backwards, from a single piece at y=5
     # at time zero.
 
-    # Start with simple finite moves to give us a T-shape five pieces
-    # wide and four high with its centre at (3,0).
+    # Move (0,5) down to (0,4) and (0,3).
     bounce(0,5,0,-1,t-0.25); t = t - 0.5
-    bounce(0,3,0,-1,t-0.25); t = t - 0.5
-    bounce(0,2,1,0,t-0.25); t = t - 0.5
+
+    # Megawhoosh (0,3) to the right half-plane.
+    t = megawhoosh(+1, t)
+
+    # Move (0,4) down into (0,3) and (0,2).
     bounce(0,4,0,-1,t-0.25); t = t - 0.5
-    bounce(0,2,-1,0,t-0.25); t = t - 0.5
-    bounce(0,1,0,-1,t-0.25); t = t - 0.5
-    bounce(0,3,0,-1,t-0.25); t = t - 0.5
 
-    snapshots.append((t,t))
-
-    # Now repeat, for left and right in turn, the infinity of infinite
-    # moves which fills a quarter of the plane.
-    for dx in [-1,+1]:
-        # Preparation for the infinite loop.
-        bounce(0,0,dx,0,t-0.25); t = t - 0.5
-        bounce(0,-1,dx,0,t-0.25); t = t - 0.5
-        if dx == -1: snapshots.append((t,t))
-        whoosh(dx,-1,0,-1,lambda T: t-1+T); t = t - 1
-        whoosh(dx*2,-1,0,-1,lambda T: t-1+T); t = t - 1
-        if dx == -1: snapshots.append((t,t))
-        bounce(dx,0,0,-1,t-0.25); t = t - 0.5
-        bounce(dx*2,0,0,-1,t-0.25); t = t - 0.5
-        bounce(dx,2,0,-1,t-0.25); t = t - 0.5
-        bounce(dx*2,2,0,-1,t-0.25); t = t - 0.5
-        if dx == -1: snapshots.append((t,t))
-
-        # The infinite loop.
-        tloop = 0
-        ttotal = 5
-        for i in range(limit+1):
-            bounce((2*i+2)*dx, (1-2*i), dx, 0, t-ttotal*f(-tloop+0.125,limit/2)); tloop = tloop - 0.25
-            whoosh((2*i+3)*dx, (1-2*i), 0, -1, lambda T: t-ttotal*f(-(tloop+0.25*(T-1)),limit/2)); tloop = tloop - 0.25
-            whoosh((2*i+4)*dx, (1-2*i), 0, -1, lambda T: t-ttotal*f(-(tloop+0.25*(T-1)),limit/2)); tloop = tloop - 0.25
-            whoosh((2*i+1)*dx, (1-2*i), dx, 0, lambda T: t-ttotal*f(-(tloop+0.25*(T-1)),limit/2)); tloop = tloop - 0.25
-            if dx == -1 and i == 0: snapshots.append((t-ttotal*f(-tloop,limit/2), t-ttotal*f(-tloop-1,limit/2)))
-            if dx == -1 and i == 1: snapshots.append((t-ttotal*f(-tloop,limit/2), t-ttotal*f(-tloop,limit/2)))
-        t = t - ttotal
-        if dx == -1: snapshots.append((t,t))
-
-        # Fix up the columns with some downward bounces.
-        if debug:
-            print "fixup:"
-        tloop = 0
-        if arg == "solution7":
-            # When we do this in reverse for the illustration, we
-            # do it in the other order, i.e. still starting with
-            # the innermost column.
-            ttotal = 15
-            for x in range(3, limit+1):
-                bottom = 5 - (x+x%2)
-                for y in range(bottom, 3, 2):
-                    bounce(x*dx, y, 0, -1, t-ttotal*f(-tloop+0.5,limit*(limit+1)/4)); tloop = tloop - 1
-        else:
-            ttotal = 5
-            for x in range(3, limit+1):
-                bottom = 5 - (x+x%2)
-                for y in range(1, bottom-2, -2):
-                    bounce(x*dx, y, 0, -1, t-ttotal+ttotal*f(tloop+0.5,limit*(limit+1)/4)); tloop = tloop + 1
-        if dx == -1:
-            snapshots.append((t-ttotal,t))
-        t = t - ttotal
-        if debug:
-            print "fixup done"
-        snapshots.append((t,t)) # whether dx==-1 or not
-
-        # If this is the first of the two quarters, bounce (1,0) down
-        # to provide the raw material for the second.
-        if dx == -1:
-            bounce(0,1,0,-1,t-0.25); t = t - 0.5
-            snapshots.append((t,t))
-
-    # Now whoosh the peg at (0,2) downwards to fill the centre column.
+    # Whoosh (0,2) down into the central column.
     whoosh(0,2,0,-1,lambda T: t-1+T); t = t - 1
 
-    if len(arg) > 8:
-        snapshotindex = int(arg[8:])
-        tmin, tmax = snapshots[snapshotindex]
-        if snapshotindex == 4 or snapshotindex == 7: reverse = 1
+    # And megawhoosh (0,3) to the left half-plane.
+    t = megawhoosh(-1, t)
+
+elif arg[:10] == "megawhoosh":
+
+    yaxis = xaxis = 1
+    index = int(arg[10:])
+    snapshots = []
+    startpos = lambda x,y: y <= 0 and x < 0
+    t = megawhoosh(-1, t, index, snapshots)
+    tmin, tmax = snapshots[index]
+    if index == 8:
+        reverse = 1
 
 elif arg == "startpoint":
+    yaxis = xaxis = 1
     pass
 
 elif arg == "randommoves":
+    yaxis = xaxis = 1
     bounce(0, 1, 0, -1, t + 0.25); t = t + 0.5
     bounce(0, -1, 0, -1, t + 0.25); t = t + 0.5
     bounce(0, -2, -1, 0, t + 0.25); t = t + 0.5
@@ -176,6 +176,7 @@ elif arg == "randommoves":
     ymax = +3
 
 elif arg == "parallel":
+    yaxis = xaxis = 1
     for x in range(-limit,limit+1):
         bounce(x, 1, 0, -1, t + 0.25)
     t = t + 0.5
@@ -183,6 +184,7 @@ elif arg == "parallel":
     ymax = +2
 
 elif arg == "parskew":
+    yaxis = xaxis = 1
     tloop = 0
     for xa in range(0,limit+1):
         bounce(xa, 1, 0, -1, f(tloop + 0.5)); tloop = tloop + 1
@@ -227,20 +229,15 @@ elif arg == "whoosh":
     xmax = +3
     whoosh(2, -5, -1, 0, lambda T: t+T); t = t + 1
 
-elif arg == "three":
-
-    startpos = lambda x,y: (y==0 and abs(x)<=2) or (x==0 and y<=0 and y>=-3)
-    bounce(0,3,0,-1,t-0.25); t = t - 0.5
-    bounce(0,1,0,-1,t-0.25); t = t - 0.5
-    bounce(0,0,1,0,t-0.25); t = t - 0.5
-    bounce(0,2,0,-1,t-0.25); t = t - 0.5
-    bounce(0,0,-1,0,t-0.25); t = t - 0.5
-    bounce(0,-1,0,-1,t-0.25); t = t - 0.5
-    bounce(0,1,0,-1,t-0.25); t = t - 0.5
-    ymin = -4
-    xmin = -3
-    xmax = +3
-    ymax = 4
+elif arg == "badmega":
+    startpos = lambda x,y: y <= 0 and x <= -2
+    ttotal = 5
+    tloop = 0
+    for i in range(-2, -limit-2, -1):
+        whoosh(i, 2, 0, -1, lambda T: t+ttotal*f(tloop+T)); tloop = tloop + 1
+    t = t + ttotal
+    whoosh(0, 2, -1, 0, lambda T: t+T); t = t + 1
+    yaxis = xaxis = 1
 
 # Now check that we have a consistent story for each individual peg
 # position within the region we'll end up displaying. In
@@ -313,20 +310,20 @@ for tround in timelist:
                     i = i + 1
                 peg = list[i][1]
             # Draw the pixel.
-            if y == 1 and yc == tilesize-1:
-                p.write("\x80\x80\x80")
-            else:
-                d2 = (yc-centre)**2+(xc-centre)**2
-                if peg:
-                    if d2 < (centre**2/2):
-                        p.write("\x00\x00\xFF")
-                    else:
-                        p.write("\xC0\xC0\xC0")
+            d2 = (yc-centre)**2+(xc-centre)**2
+            bg = "\xC0\xC0\xC0"
+            if (yaxis and x==0 and xc==centre) or (xaxis and y==0 and yc==centre):
+                bg = "\xA0\xA0\xA0"
+            if peg:
+                if d2 < (centre**2/2):
+                    p.write("\x00\x00\xFF")
                 else:
-                    if d2 < (centre**2/5):
-                        p.write("\x80\x80\x80")
-                    else:
-                        p.write("\xC0\xC0\xC0")
+                    p.write(bg)
+            else:
+                if d2 < (centre**2/5):
+                    p.write("\x80\x80\x80")
+                else:
+                    p.write(bg)
     p.close()
     if debug:
         print "wrote", filename, "(%d of %d)" % (len(images), len(timelist))

@@ -128,6 +128,15 @@ acceleration. We make the first jump in the sequence at time
 we have therefore made all the moves in the sequence, and yet we
 haven't run out of time in which we can make more moves.
 
+<h2>Making it mathematically rigorous</h2>
+
+<p>
+In this section I set up a more formal mathematical foundation for
+the intuitive idea of infinite move sequences described in the
+previous section. If mathematical notation scares you, you can
+safely skip this section and move on to the next one, where you'll
+find more actual infinite solitaire moves to scare you instead.
+
 <p>
 Formally speaking, my model is as follows. I define a function
 <i>f</i>(<i>x</i>,<i>y</i>,<i>t</i>), with <i>x</i>,<i>y</i>
@@ -213,10 +222,10 @@ change the rules to permit infinite move sequences.
 <h2>Another useful move</h2>
 
 <p>
-In the previous section I've given an example of what I describe as
-a <em>forward infinite</em> move sequence: a sequence of moves which
-has a clear beginning, but no end, compressed into finite time so
-that we can make more moves after it. I now give an example of a
+I've given, above, an example of what I describe as a <em>forward
+infinite</em> move sequence: a sequence of moves which has a clear
+beginning, but no end, compressed into finite time so that we can
+make more moves after it. I now give an example of a
 <em>backward</em> infinite sequence: one with a clear end, but no
 beginning.
 
@@ -257,12 +266,14 @@ sequence of moves in <em>forward</em> peg solitaire.
 
 <p>
 This trick, for some reason, tends to make people's brains hurt.
-People seem to find it easier and more intuitive to imagine starting
-a sensible-<wbr>looking process, carrying it on forever, and then doing
-other things than to imagine a process which somehow magically gets
-going and then comes to a halt in a sensible way. &#8216;At the start of
-that sequence,&#8217; they complain, &#8216;no two pegs are adjacent, so no move
-can be possible. How do you get started?&#8217; However, backward infinite
+People I've talked to seem to take the previous section in their
+stride: they find it reasonably easy and intuitive to imagine
+starting a sensible-<wbr>looking process, carrying it on forever,
+and then doing other things &#8216;once it's finished&#8217;; but
+they find it much harder to imagine the analogous process in the
+reverse direction. &#8216;At the start of that sequence,&#8217; they
+complain, &#8216;no two pegs are adjacent, so no move can be
+possible. How do you get started?&#8217; However, backward infinite
 move chains are just as legal as forward infinite ones according to
 the rules I laid down in the previous section; a
 forward-<wbr>infinite chain of moves can legally be performed by
@@ -295,11 +306,13 @@ quite a lot, so we'll need a snappy name for it. <a
 href="http://www.tartarus.org/~gareth/">Gareth</a> called it a
 &#8216;whoosh&#8217;.
 
-<h2>The solution</h2>
+<h2>Further complication</h2>
 
 <p>
-Having explained those basics, I'm now in a position to describe the
-actual method for reaching the fifth row.
+I've now described a move sequence which turns a semi-<wbr>infinite
+line of pegs into a single peg. Next I'm going to describe a move
+sequence which turns an entire <em>quarter-</wbr>plane</em> into a
+single peg: a &#8216;megawhoosh&#8217;, if you like.
 
 <p>
 A new concept that will be introduced in this section is the idea of
@@ -316,83 +329,100 @@ every move still happens at a distinct instant of time, and no
 square is filled or emptied infinitely often.
 
 <p>
-So, on to the solution.
-
-<p>
-To begin with, we observe that you can reach <i>y</i>=3 using only a
-few pegs. In particular, a T-shape of width 5 and height 4 is
-sufficient:
-
-<p align=center>
-<picture three>
-
-<p>
-So <em>if</em> we could arrange to have that same T-shape structure
-starting two spaces further up, we could use it to reach <i>y</i>=5.
-
-<p>
-This, it turns out, is a good starting point. Let's start at that
-T-shape position, and work backwards. That is, we're now playing
-reverse peg solitaire (with infinite moves allowed), and our aim is
-to turn this T-shape into an entire half-<wbr>plane.
+One obvious way to perform a megawhoosh, using that
+idea, would be to whoosh every column of our
+quarter-<wbr>plane upwards independently, and then to
+whoosh the resulting row inwards to create a single
+peg:
 
 <p align=center>
-<picture solution0>
+<picture badmega>
 
 <p>
-We're now going to construct the entire lower left quadrant of the
-board (not including the centre line; i.e. all the squares with
-<i>y</i>&nbsp;&#8804;&nbsp;0 and <i>x</i>&nbsp;&lt;&nbsp;0), starting
-from the two pegs on the left side of the T and the two pegs at the
-bottom.
+But this, it turns out, isn't particularly useful. The single
+resulting peg ends up two spaces inwards from the quarter-<wbr>plane; so
+if we want that peg to end up on the central column, our
+megawhoosh will have to consume the quarter-<wbr>plane
+starting two spaces out from there. That leaves the column
+<em>next</em> to the central one still to be dealt with, and there's
+just no sensible way to deal with it.
 
 <p>
-To begin with, we move the two bottom pegs to the left, turning each
-into two pegs (since we're playing in reverse):
+So we need to do something rather different. I'm now going to
+exhibit a more complicated but more useful megawhoosh:
+one which consumes
+the entire quarter-<wbr>plane left of the central column, and leaves
+one peg at (0,3).
+
+<p>
+This procedure is going to involve a large backwards-<wbr>infinite
+sequence of operations, so it's most convenient to describe it in
+reverse. Hence, we <em>start</em> with a peg at (0,3), and our aim
+is to make reverse solitaire moves to turn it into the required
+quarter-<wbr>plane.
 
 <p align=center>
-<picture solution1>
+<picture megawhoosh0>
 
 <p>
-Then we &#8216;whoosh&#8217; the two bottom pegs downwards, turning them into
-two filled columns of pegs:
+We begin by moving our peg left. This first move gets us out of the
+central column, and hereafter we will not touch the central column
+at all.
 
 <p align=center>
-<picture solution2>
+<picture megawhoosh1>
 
 <p>
-Now we move the next two pegs downwards, and then the two above
-those from the crossbar of the T, leaving two full columns starting
-one space above the line:
+Next, we whoosh these two pegs downwards, leaving two full columns
+starting one space above the line. (Since we're currently playing
+reverse solitaire, of course, the whoosh sequence is also performed
+in reverse, converting one peg into a semi-infinite line of them
+rather than vice versa. When we replay this forwards, it will become
+a normal whoosh again.)
 
 <p align=center>
-<picture solution3>
+<picture megawhoosh2>
 
 <p>
-Now we begin a sequence which we're going to repeat infinitely many
-times. We use the top pegs of those two columns (the ones above the
-line). We move the left one further left, to place a peg in each of
-the next two columns; then we &#8216;whoosh&#8217; those two pegs downwards, and
-then we &#8216;whoosh&#8217; the right-<wbr>hand peg of our starting two to the left.
+Now we move the top peg of the left column left:
 
 <p align=center>
-<picture solution4>
+<picture megawhoosh3>
+
+<p>Then we whoosh the resulting two pegs downwards again:
+
+<p align=center>
+<picture megawhoosh4>
 
 <p>
-Then we take the top two pegs of the <em>next</em> two filled
-columns (just below the gap), and do the same thing again:
+Now repeat those two steps with the top peg of the new left column:
 
 <p align=center>
-<picture solution5>
+<picture megawhoosh5>
 
 <p>
-Then we do it again in the next two columns, and again, and again,
-and so on out to infinity. After we have performed this infinite
-sequence of steps each containing a single move and three
-&#8216;whooshes&#8217;, our board looks like this:
+Then keep repeating those two steps infinitely many times. Once we
+finish that, we have a perfect staircase of pegs descending off to
+the left:
 
 <p align=center>
-<picture solution6>
+<picture megawhoosh6>
+
+<p>
+(What we've just done is a forward-<wbr>infinite sequence of moves
+and whooshes in reverse peg solitaire. Hence,
+of course, when run in the forward direction, it becomes a
+<em>backward</em> infinite sequence of moves and
+whooshes, but &#8211; just as in the previous section
+&#8211; it's no less legal for that.)
+
+<p>
+Next we take every <em>other</em> peg on the outer edge of that
+staircase, starting with the topmost one, and whoosh
+them all to the left:
+
+<p align=center>
+<picture megawhoosh7>
 
 <p>
 Now all we have to do is to move those alternating pegs downwards in
@@ -400,45 +430,37 @@ each column to fill in the gaps. This takes only a finite number of
 moves in each column:
 
 <p align=center>
-<picture solution7>
+<picture megawhoosh8>
 
 <p>
 And we end up with a tightly packed quarter-<wbr>plane:
 
 <p align=center>
-<picture solution8>
+<picture megawhoosh9>
 
 <p>
-Now we have to fill in the right-<wbr>hand quarter-<wbr>plane. We do this in
-exactly the same way. First we take the lower peg in the central
-column and move it downwards, turning it into two pegs:
+And that's our desired megawhoosh, in reverse. Run the
+same sequence of moves in the forward direction, and we convert the
+quarter-<wbr>plane with <i>x</i>&nbsp;&lt;&nbsp;0 and
+<i>y</i>&nbsp;&#8804;&nbsp;0 into a single peg at (0,3), as promised.
 
-<p align=center>
-<picture solution9>
-
-<p>
-And now we have four pegs in the mirror-<wbr>image positions of the ones
-we used to populate the left-<wbr>hand quadrant. Hence, we can do the
-entire procedure again as above, and populate the right-<wbr>hand
-quadrant in the same way:
-
-<p align=center>
-<picture solution10>
+<h2>The solution</h2>
 
 <p>
-And now we have almost arrived at the starting position. We only
-have the centre column left to populate, and one peg at (0,2) to do
-it with. This is exactly the problem which is solved by a single
-&#8216;whoosh&#8217;.
-
-<p>
-So the above sequence, in reverse peg solitaire, gets us all the way
-from the T-shape we started with to the initial position. Hence, by
-time-<wbr>reversing it, we can get from the initial position to that
-T-shape, and from there it's only a matter of seven simple moves to
-the target position. And, exactly as predicted by the impossibility
-proof, reaching <i>y</i>=5 has required every single peg on the
-original board, and left only one peg at the end of the solution.
+Now that we have the whoosh and the
+megawhoosh, the actual solution is quick to state:
+<ul>
+<li>
+Megawhoosh the left quarter-<wbr>plane up to (0,3).
+<li>
+Whoosh the central column up to (0,2), and jump it
+over (0,3) to (0,4).
+<li>
+Megawhoosh the right quarter-<wbr>plane up to (0,3),
+and jump it over (0,4) to (0,5). We have now reached (0,5), and as
+predicted we have had to use absolutely every peg on the board to do
+it.
+</ul>
 
 <p>
 Here's an animation of the entire solution run in the forward
@@ -448,13 +470,6 @@ and it'll start again.)
 
 <p align=center>
 <picture solution>
-
-<p>
-(Note, in particular, that the above construction which populates a
-quadrant was specified as a forward-<wbr>infinite sequence of &#8216;whooshes&#8217;
-in reverse peg solitaire. Hence, in the forward direction, it of
-course becomes a <em>backward</em> infinite sequence of &#8216;whooshes&#8217;,
-but &#8211; just as before &#8211; it's no less legal for that.)
 
 <h2>Credits</h2>
 
@@ -468,13 +483,13 @@ the Solitaire Army problem itself.
 <a href="http://www.chiark.greenend.org.uk/~sgtatham/">Simon
 Tatham</a> had the idea of making a serious effort to reach
 <i>y</i>=5 by means of making infinitely many moves; he laid down
-the ground rules, invented the &#8216;whoosh&#8217;, and wrote this web page.
+the ground rules, invented the whoosh, and wrote this
+web page.
 
 <p>
-Simon was, however, unable to arrange moves and &#8216;whooshes&#8217; into an
-actual solution to the problem.
-<a href="http://www.tartarus.org/~gareth/">Gareth Taylor</a>
-did that.
+<a href="http://www.tartarus.org/~gareth/">Gareth Taylor</a> named
+the whoosh and invented the useful form of the megawhoosh,
+completing the solution.
 
 </body>
 </html>
