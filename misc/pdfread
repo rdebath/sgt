@@ -194,7 +194,7 @@ def fetchobj(f, xoff, number, gen, printout=0):
             if s == "": break
             d = d + s
             d = pdflex(d, lexed)
-            if lexed[-1] == "startxref":
+            if len(lexed) > 0 and lexed[-1] == "startxref":
                 break
         parsed = pdfparse(lexed)
         if number == -1:
