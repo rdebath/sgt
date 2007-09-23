@@ -6,9 +6,9 @@ Present-in: 2006-08-27 0.59 0.60 2007-09-23
 Content-type: text/x-html-body
 
 <p>
-PSCP and PSFTP can hang on exit in various failure situations. Many of
-these involve the <tt>-batch</tt> option, which is embarrassing. For
-example:
+PSCP and PSFTP on Windows can hang on exit in various failure situations.
+Many of these involve the <tt>-batch</tt> option, which is embarrassing.
+For example:
 
 <ul>
 <li>User aborts at host key verification (or <tt>-batch</tt> is specified,
