@@ -1,0 +1,46 @@
+Summary: PSCP/PSFTP hang on exit in some failure cases
+Class: bug
+Priority: high
+Absent-in: 0.58 2006-08-13
+Present-in: 2006-08-27 0.59 0.60 2007-09-23
+Content-type: text/x-html-body
+
+<p>
+PSCP and PSFTP can hang on exit in various failure situations. Many of
+these involve the <tt>-batch</tt> option, which is embarrassing. For
+example:
+
+<ul>
+<li>User aborts at host key verification (or <tt>-batch</tt> is specified,
+which has the same effect).
+<li><tt>-batch</tt> is specified and no non-interactive authentication
+method is successful.
+</ul>
+
+<p>
+Interestingly, Plink does not appear to hang in similar situations (and
+nor does PuTTY proper).
+
+<p>
+PSCP/PSFTP do not hang in <em>all</em> failure situations -- for instance,
+they appear not to hang when interactive password authentication fails.
+
+<p>
+Looking at when this crept in, it might be another side-effect of the
+introduction of the <tt>winhandl.c</tt> mechanism.
+
+<p>
+Reports:
+
+<ul>
+<li>b56aaa9a0707310805j19d579edl771f744c76ce0eaa@mail.gmail.com
+<br>Suggests that it's hanging in <tt>WaitForMultipleObjects()</tt>,
+and gives a patch which checks for <tt>INVALID_SOCKET</tt> which makes
+the hanging stop. Not investigated.
+<li>3D5BAD49F3A5A041B739E301A5E337A5026C999F@CWYMSX06.Corp.Acxiom.net
+<li>000801c7adf0$2244f7d0$0200a8c0@lsdbotii
+<li>1ea6a0550705150757x5faba2a6y5f717f5f822d8451@mail.gmail.com
+<li>NDBBJBPCLJGMOADENDIAEEOECHAA.oru@opre.co.uk
+<li><a href="http://groups.google.com/groups?as_umsgid=1187014011.602670.71550%40g4g2000hsf.googlegroups.com">1187014011.602670.71550@g4g2000hsf.googlegroups.com</a>
+on comp.security.ssh
+</ul>
