@@ -7,11 +7,12 @@ Content-type: text/x-html-body
 
 <p>
 A lot of people seem to want a single PuTTY to be able to manage
-multiple connections. Some want an MDI-style application, with one
-large main window containing several session windows; other people
-want the window to stay the same size and the multiple sessions to
-be selected by Alt-F1, Alt-F2 etc., or by selecting tabs on the
-window (like Firefox or kterm).
+multiple connections. The
+<a href="http://www.ipetitions.com/petition/putty-tabs/">most popular</a>
+UI is per-session tabs on the window, like Firefox or konsole.
+Other options include selection with Alt-F1, Alt-F2 etc (like the
+Linux console) or an an MDI-style application, with one large main
+window containing several session windows.
 
 <p>
 For a start, this involves arranging to be able to run more than one
@@ -41,14 +42,9 @@ a Notepad and a Firefox, say. (This is another way of saying that
 the deficiency isn't specific to PuTTY, but is a lack of flexibility
 in the policies of most window managers.)
 
-<ul>
-<li><a href="http://www.wintabber.com/">WinTabber</a> is an
-implementation of this concept for Windows 2000/XP.
-</ul>
-
 <p>
-There are also a couple of other third-party tools to do this sort of
-thing on our <a href="../links.html">Links page</a>.
+There are now several third-party implementations of this concept on
+our <a href="../links.html">Links page</a>.
 
 <p>
 A related suggestion is that separate PuTTY windows could know about
