@@ -1,0 +1,12 @@
+Summary: Unix Plink should set O_NONBLOCK on stdout and stderr
+Class: bug
+Present-in: r7735
+Fixed-in: r7738
+Difficulty: fun
+Priority: medium
+Content-type: text/plain
+
+If stdout from Unix Plink is going to a FIFO, and the reader of that
+FIFO stops reading (say someone has ^Zed it), Plink hangs, stopping
+port-forwardings and so forth.  This is silly, and seems to result
+from failing to set O_NONBLOCK on stdout and stderr.
