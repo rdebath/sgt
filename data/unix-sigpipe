@@ -1,4 +1,5 @@
 Summary: Unix Plink dies with SIGPIPE when a forwarded port closes
+Class: bug
 Present-in: r7735
 Difficulty: fun
 Priority: medium
