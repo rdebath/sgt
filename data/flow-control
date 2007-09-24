@@ -3,6 +3,7 @@ Class: semi-bug
 Difficulty: tricky
 Priority: medium
 Content-type: text/x-html-body
+Fixed-in: 2007-09-25 r7735
 
 <p>
 (This wish applies to SSH-2; SSH-1 doesn't provide flow control above
@@ -25,15 +26,27 @@ running over it, since in that case PuTTY can open the window fully and leave
 flow control to TCP.  This is covered by
 <a href="flow-control-filexfer.html">flow-control-filexfer</a>.
 
-<p>As something of an aside, it might also be helpful for PuTTY to indicate
-somehow to the server that it only plans to use a single channel on a
-connection so that the server can open its window fully too.  Otherwise, we
-only get improved download performance.
-
 <p>
 Of course, things become more complicated if multiple channels were to be used
 (e.g., port-forwarding of bulk transfers, or some of the wilder excesses of
 <a href="ssh2-generality.html">SSH-2 generality</a>).
+
+<p>As of 2007-09-25, PuTTY has much improved window handling.  From the
+commit message:
+
+<blockquote>
+<p>The basic idea is that when the connection isn't being limited by our ability
+to process data, we want to ensure that the window size <em>as seen by the server</em>
+never drops to zero.  Measuring the server's view of the window size is done
+by arranging for it to acknowledge every SSH_MSG_CHANNEL_WINDOW_ADJUST, or 
+rather an SSH_MSG_CHANNEL_REQUEST sent just before it.  That way we can tell
+when it its outgoing data stream it recieved the window adjustment, and
+thus how small the server's view of the window got.
+
+<p>At present, we only ever increase the window size.  In theory, we could
+arrange to reduce it again if the server's view of it seemed to be persistently
+too large, but my experiments suggest that getting this right will be tricky.
+</blockquote>
 
 <p>
 Another approach: the Pittsburgh Supercomputing Center
