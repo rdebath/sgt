@@ -1,0 +1,10 @@
+Summary: Unix Plink dies with SIGPIPE when a forwarded port closes
+Present-in: r7735
+Difficulty: fun
+Priority: medium
+Content-type: text/plain
+
+If I set up a remote-to-local port forwarding, and use "nc -l" on the
+local end and "nc" on the far end, killing the local "nc" causes Plink
+to die with SIGPIPE.  It should just tidy up the forwarded connection
+and carry on.
