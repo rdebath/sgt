@@ -2,6 +2,7 @@ Summary: When stdout and stderr are ttys, plink's messages stair-step
 Class: bug
 Absent-in: 0.58
 Present-in: 2005-04-27
+Fixed-in: r7745 2007-09-30
 Difficulty: tricky
 Priority: medium
 Content-type: text/plain
