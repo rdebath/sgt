@@ -1,6 +1,7 @@
 Summary: Unix Plink should set O_NONBLOCK on stdout and stderr
 Class: bug
 Present-in: r7735
+Fixed-in: r7748 2007-10-01
 Difficulty: fun
 Priority: medium
 Content-type: text/plain
