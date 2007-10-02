@@ -1,0 +1,18 @@
+Summary: GTk port gives BadAtom errors when talking to Xsun
+Class: bug
+Present-in: 0.60
+Difficulty: tricky
+Priority: medium
+Content-type: text/plain
+
+A problem reported when running PuTTY on Solaris 10:
+
+% : PROBLEM 2: pterm/putty exit when X server is /usr/openwin/bin/Xsun
+% /usr/local/bin/pterm
+Gdk-ERROR **: BadAtom (invalid Atom parameter)
+  serial 3596 error_code 5 request_code 17 minor_code 0
+
+% : putty falls over once you enter a hostname and press return
+% :     (I guess that is when pterm gets started in this case?)
+% : the same binaries seem to work fine when displaying via SSH to
+% :     a debian box running xserver-xorg_1:7.2-5 / fglrx-driver_8.38.6-2
