@@ -1,4 +1,10 @@
-all: icos.ps dodec.ps
+all: icos.ps dodec.ps dodec.pdf wing.pdf
+
+dodec.pdf: dodec.ps
+	ps2pdf dodec.ps
+
+wing.pdf: wing.ps
+	ps2pdf wing.ps
 
 dodec.ps: pic.ps desc
 	$$HOME/src/polyhedra/drawnet.py \
