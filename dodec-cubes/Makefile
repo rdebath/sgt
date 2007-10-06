@@ -16,3 +16,5 @@ dodec.ps: pic.ps dodec
 clean:
 	rm -f dodec.ps
 
+spotless: clean
+	rm -f *.pdf

@@ -29,3 +29,6 @@ pic.ps: map.ps desc
 
 clean:
 	rm -f desc pic.ps dodec.ps icos.ps desc.d
+
+spotless: clean
+	rm -f *.pdf

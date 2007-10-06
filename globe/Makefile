@@ -45,4 +45,7 @@ makebmp: makebmp.c
 	gcc -o makebmp makebmp.c
 
 clean:
-	rm -f makebmp makecube *.eps *.bmp *.shape desc.* *-pre.ps *.pdf
+	rm -f makebmp makecube *.eps *.bmp *.shape desc.* *-pre.ps
+
+spotless: clean
+	rm -f *.pdf
