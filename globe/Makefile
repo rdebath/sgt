@@ -1,9 +1,5 @@
 CFLAGS = -g
 
-# makecmap.sh depends on makemap.sh, and generates `desc'
-
-# makemap.sh uses convert, potrace and makebmp
-
 IMAGES = icos-bw-vert icos-colour-vert icos-bw-face icos-colour-face
 PSPRE = $(patsubst %,%-pre.ps,$(IMAGES))
 PDF = $(patsubst %,%.pdf,$(IMAGES))
@@ -38,14 +34,29 @@ desc.bw: makebmp makemap.sh
 desc.colour: makebmp makecmap.sh
 	./makecmap.sh
 
-makecube: makecube.c
-	gcc -o makecube makecube.c -lm
-
 makebmp: makebmp.c
 	gcc -o makebmp makebmp.c
 
+CUBEFACES = 1 2 3 4 5 6
+CUBEFACEPNGS = $(patsubst %,cube%.png,$(CUBEFACES))
+CUBEFACEBMPS = $(patsubst %,cube%.bmp,$(CUBEFACES))
+ANGLES = 000 015 030 045 060 075 090 105 120 135 150 165 \
+         180 195 210 225 240 255 270 285 300 315 330 345
+CUBEPICS = $(patsubst %,cubevert%.png,$(ANGLES))
+cube: $(CUBEPICS)
+$(CUBEPICS): cubevert%.png: $(CUBEFACEPNGS) cube.pov
+	povray +fn +Icube.pov +O$@ +W500 +H500 +V -D +X +K$(patsubst cubevert%.png,%,$@)
+$(CUBEFACEPNGS): %.png: %.bmp
+	convert $< $@
+$(CUBEFACEBMPS): makecube
+	./makecube -v 500
+
+makecube: makecube.c
+	gcc -o makecube makecube.c -lm
+
 clean:
-	rm -f makebmp makecube *.eps *.bmp *.shape desc.* *-pre.ps
+	rm -f makebmp makecube *.eps *.bmp *.shape desc.* *-pre.ps Memory.Log
+	rm -f cube?.bmp cube?.png
 
 spotless: clean
 	rm -f *.pdf
