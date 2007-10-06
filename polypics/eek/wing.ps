@@ -1,0 +1,36 @@
+%!PS-Adobe-1.0
+
+/wing {
+  gsave
+  1 -1 scale
+  -2 -19 translate
+
+  newpath
+  5 10 moveto
+  7 10 10 9 11 6 curveto
+  15 9 15 14 13 19 curveto
+  12 16 10 15 8 18 curveto
+  8 15 6 14 5 15 curveto
+  5 13 5 12 5 10 curveto
+  closepath
+  fill
+
+  newpath
+  5 10 moveto
+  2 11 lineto
+  2 14 lineto
+  5 15 lineto
+  closepath
+  0.01 setlinewidth
+  stroke
+
+  grestore
+} def
+
+70 1.2360679775007533 mul 5 div dup scale
+gsave 2 6 translate wing grestore
+gsave 2 22 translate wing grestore
+gsave 32 6 translate -1 1 scale wing grestore
+gsave 32 22 translate -1 1 scale wing grestore
+
+showpage
