@@ -1,0 +1,81 @@
+/steps 1 def
+
+/dotransform {
+  /z exch def /y exch def /x exch def
+  x mx 0 get mul y mx 3 get mul z mx 6 get mul add add
+  x mx 1 get mul y mx 4 get mul z mx 7 get mul add add
+  x mx 2 get mul y mx 5 get mul z mx 8 get mul add add
+} def
+
+/point {
+  dotransform
+  /z exch def /y exch def /x exch def
+  /len x x mul y y mul z z mul add add sqrt def
+  /x x len div def
+  /y y len div def
+  /z z len div def
+  z -0.5 lt { /pathpresent false def } if
+  z 0.1 lt {
+    /len x x mul y y mul add sqrt def
+    len 0 eq { /pathpresent false def } {
+      /x x len div def
+      /y y len div def
+      /z 0.1 def
+    } ifelse
+  } if
+  x height mul z div y height mul z div op
+  /op {lineto} def
+} def
+
+/cube {
+  8 array astore /vertices exch def
+  [[0 1] [2 3] [4 5] [6 7]
+   [0 2] [1 3] [4 6] [5 7]
+   [0 4] [1 5] [2 6] [3 7]] {
+    aload pop
+    vertices exch get /point1 exch def
+    vertices exch get /point2 exch def
+    newpath /pathpresent true def
+    /op { moveto } def
+    0 1 steps { /step exch def
+      0 1 2 { /i exch def
+        point1 i get steps step sub mul
+	point2 i get step mul
+	add steps div
+      } for
+      point
+    } for
+    pathpresent {
+      height 0.02 mul setlinewidth 1 setlinecap 1 setlinejoin stroke
+    } if
+  } forall
+} def
+
+/A [ -1.0 -1.0 -1.0 ]  def
+/B [ -1.0 -1.0 1.0 ]  def
+/C [ -1.0 1.0 -1.0 ]  def
+/D [ -1.0 1.0 1.0 ]  def
+/E [ 1.0 -1.0 -1.0 ]  def
+/F [ 1.0 -1.0 1.0 ]  def
+/G [ 1.0 1.0 -1.0 ]  def
+/H [ 1.0 1.0 1.0 ]  def
+/I [ -1.6180339887498945 -0.61803398874989479 0.0 ]  def
+/J [ -1.6180339887498945 0.61803398874989479 0.0 ]  def
+/K [ 1.6180339887498945 -0.61803398874989479 0.0 ]  def
+/L [ 1.6180339887498945 0.61803398874989479 0.0 ]  def
+/M [ 0.0 -1.6180339887498945 -0.61803398874989479 ]  def
+/N [ 0.0 -1.6180339887498945 0.61803398874989479 ]  def
+/O [ 0.0 1.6180339887498945 -0.61803398874989479 ]  def
+/P [ 0.0 1.6180339887498945 0.61803398874989479 ]  def
+/Q [ -0.61803398874989479 0.0 -1.6180339887498945 ]  def
+/R [ 0.61803398874989479 0.0 -1.6180339887498945 ]  def
+/S [ -0.61803398874989479 0.0 1.6180339887498945 ]  def
+/T [ 0.61803398874989479 0.0 1.6180339887498945 ]  def
+
+/picture { /height exch def /mx exch def
+  1.00 0.85 0.00 setrgbcolor D I O Q T N L E cube
+  0.00 1.00 0.00 setrgbcolor B M T K J Q P G cube
+  0.00 1.00 1.00 setrgbcolor C P R L I S M F cube
+  1.00 0.00 0.00 setrgbcolor A N J S R K O H cube
+  0.00 0.00 0.00 setrgbcolor A B C D E F G H cube
+} def
