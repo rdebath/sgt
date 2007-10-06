@@ -1,0 +1,39 @@
+/newshape {
+  pathpresent { closepath fill } if
+  exec
+  newpath
+  /pathpresent true def
+} def
+
+/point {
+  /op exch def
+  dotransform
+  /z exch def /y exch def /x exch def
+  z -0.5 lt { /pathpresent false def } if
+  z 0.1 lt {
+    /len x x mul y y mul add sqrt def
+    len 0 eq { /pathpresent false def } {
+      /x x len div def
+      /y y len div def
+      /z 0.1 def
+    } ifelse
+  } if
+  x height mul z div y height mul z div op
+} def
+
+/pmove { {moveto} point } def
+/pline { {lineto} point } def
+/pclose { closepath } def
+
+/dotransform {
+  /z exch def /y exch def /x exch def
+  x mx 0 get mul y mx 3 get mul z mx 6 get mul add add
+  x mx 1 get mul y mx 4 get mul z mx 7 get mul add add
+  x mx 2 get mul y mx 5 get mul z mx 8 get mul add add
+} def
+
+/picture { /height exch def /mx exch def
+  /pathpresent false def
+  (desc.bw) (r) file cvx exec
+  {} newshape
+} def

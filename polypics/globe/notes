@@ -1,0 +1,451 @@
+GTOPO30 - Global Topographic Data
+=================================
+
+2004-08-31
+----------
+
+http://edcdaac.usgs.gov/gtopo30/gtopo30.asp
+
+Divides world into 33 rectangular tiles and provides elevation above
+sea level at about 1km grid resolution in all of them. A sample URL
+for one of the tiles is
+
+  ftp://edcftp.cr.usgs.gov/pub/data/gtopo30/global/w180n90.tar.gz
+
+So I used lftp to go into that directory of that FTP site and
+retrieved all 33 tar.gz files (by getting `*0.tar.gz').
+
+Next I wanted to extract the main .DEM files into a usable format,
+but still without taking up too much disk space:
+
+  for i in *.tar.gz; do k=`echo $i | sed s/.tar.gz// | tr a-z A-Z`; \
+    tar xOzvf $i $k.DEM | gzip -9 > $k.DEM.gz; done
+
+This gave me a bunch of files with names like `W020N90.DEM.gz'.
+
+Now I wrote makebmp.c, which you give a scale factor and an altitude
+threshold and it generates you a b&w BMP. (Sadly upside down, since
+makebmp carefully streams data and never reads everything into
+memory at once. You then have to use `convert -flip'.)
+
+So now I can pick my threshold and resolution, and do something like
+
+  ./makebmp 0 20
+  convert -flip output.bmp outputup.bmp
+  ./potrace outputup.bmp
+
+and end up with outputup.eps being an outline description of a
+particular contour of the world map. Not bad for a beginning, I feel.
+
+A bit of experimentation suggests that a scale factor of 10 is a
+decent compromise between keeping the outlines simple and getting an
+acceptable level of detail. Annoyingly, the biggest bottleneck is
+the speed of `convert': you can push makebmp and potrace quite a bit
+further with no ill effects, but that `convert -flip' suddenly
+starts to run like a dog. We could bypass convert and flip the data
+the right way up at a later stage, of course; but also the outlines
+start to get really large at about this point, and I'm unconvinced
+that it's worth the additional aggro for what's basically going to
+be a cardboard polyhedron.
+
+So. Next steps required are:
+
+ - untangle the LZWed EPSes coming out of potrace. I suspect the
+   simplest thing is to redefine `fill' to do something more like
+   `<stuff> pathforall', which lets gs do all the hard work.
+    * in fact potrace has a nice simple option to tell it not to
+      compress, although I'm unconvinced that the above approach
+      isn't nonetheless the simplest.
+
+ - convert Bezier curves back into lines. (Annoying that there was
+   no way to persuade potrace not to do curves in the first place,
+   but.) If I end up doing the simple approach above, I just stick
+   an appropriate `flattenpath' into the `fill' redefinition and
+   that'll do it.
+
+ - carve the globe up into overlapping sections that are small
+   enough, and process them separately. Probably simplest here to
+   just use convert to grab subsections of the BMP. Squares aren't
+   the optimal grid covering, but they'll do.
+
+ - somehow deal with the South Pole.
+
+ - convert into spherical coordinates, and then we have a spherical
+   image description directly suitable for feeding to drawnet.py.
+
+ - sort out a set of altitude thresholds and colours which give a
+   nice-looking physical-topography globe.
+
+ - once we've done all _that_, figure out how best to turn the
+   result back into a 3D picture for Sally's userpic.
+    * one option is to arrange that drawpoly.py can take the same
+      additional image parameter as drawnet.py, and when you do this
+      it stops drawing outlines and instead arranges to completely
+      omit back faces and light-source-shade front ones. Then do
+      this at high res, and antialias down into a userpic.
+    * the only other option I can think of is to somehow turn each
+      face of the cubical globe back into a raster image, and use
+      them as textures in a raytracing run. Trouble is, I have no
+      idea how to fly a raytracer.
+
+ - keep the non-userpic-related results on ice until I get a colour
+   printer!
+
+2004-09-01
+----------
+
+Right. Now I've written unpack.ps, which is a simple piece of PS
+that redefines `fill' as a diagnostic function. Run it with
+something like
+
+  gs -dBATCH -dQUIET -sDEVICE=nullpage unpack.ps outputup.eps
+
+and it produces simple and valid PostScript on stdout. Only caveat
+is that it doesn't handle changes to currentmatrix, so that the
+coordinates come out in the 43200x21600 space defined by the
+original image rather than in the 468x234 bounding box specified in
+the EPS. But that's not a problem - one arbitrary coordinate system
+is as good as another for these purposes.
+
+Next step, flattenpath and conversion to spherical coordinates.
+sphunpack.ps is used in the same way as unpack.ps, but generates
+data suitable for map.ps to include. So:
+
+  gs -dBATCH -dQUIET -sDEVICE=nullpage sphunpack.ps outputup.eps > desc
+
+(map.ps is slightly tweaked from the one I used in the Dodecahedral
+Panda Project. newshape now does not take the centroid parameters,
+since they weren't actually used anyway, and also the trailing
+`newshape' is added in map.ps rather than being required in desc.)
+
+This lot _ought_ to work in principle, except that I still need to
+carve the bitmap up into manageable pieces. Also, it's just occurred
+to me that the coordinate system used in the potrace output surely
+_can't_ be 43200x21600 like the original gtopo data, because potrace
+is getting an image that has been scaled down from there! So I also
+need to find out what the potrace output coordinates really are, and
+use those. Perhaps I might even need to scale to the bounding box,
+although that'd be nasty.
+
+So. Revised TODO list:
+
+ - Chop up bitmap.
+
+ - Deal with coordinate system in potrace output (which will also
+   probably change as a result of chopping up the bitmap).
+
+ - At this point we ought to be able to actually test against
+   drawnet.py!
+
+ - Hack around the South Pole.
+
+ - Sort out multiple altitude thresholds and colours.
+
+ - Figure out how to do a userpic.
+
+2004-09-03
+----------
+
+Right. Time to analyse potrace's coordinate system.
+
+Let's take the output from an unpack.ps run ...
+
+  gs -dBATCH -dQUIET -sDEVICE=nullpage unpack.ps outputup.eps
+
+... and pull out all the coordinate pairs ...
+
+  | perl -ne 'print "$1\n" while s/([\d\.]+ [\d\.]+)//'
+
+... and then use `sort -n' and `sort -n +1' to determine the min and
+max coordinates.
+
+In the x direction, min and max are 0 .. 21603. In the y direction,
+168 .. 10418.
+
+Aha, and the bitmap in question was originally 2160x1080. Good good;
+that actually makes some sense. potrace's internal coordinates
+appear to have simply multiplied the bitmap coords by 10. (And since
+I usually use makebmp with a scale factor _of_ 10, giving 4320x2160,
+no wonder potrace's internal coords initially looked very like the
+original gtopo coords!)
+
+Experimenting with a different makebmp scale factor, this time of
+100, gives a 432x216 bitmap, and this time the same coordinate
+analysis trick tells me that potrace coords are about 4320 by 2160.
+Bingo, I think. potrace coordinate confusion is now rectified.
+
+Some doodling on paper (specifically, mapping an icosahedron with
+vertices at the poles back into the coordinate space used by gtopo)
+convinces me that it ought to be sufficient to chop the map up into
+15 rectangles, in three rows of five. The top and bottom rows can
+get away with being a little taller than the middle row, but not
+_much_ taller; we're looking at about 64 degrees versus about 53. We
+need some overlap in any case, so.
+
+So here's my rectangle map definition:
+
+ - Top and bottom rows: 8400 pixels high (out of 21600)
+ - Middle row: 7200 pixels high.
+ - Width of each rectangle: 9600 pixels.
+
+(This definition has the cunning property that all the dimensions
+are multiples of 1200, which is gcd(43200,21600); therefore they
+will scale without complaint no matter how I faff with the scale
+factor.)
+
+Right. Now I've written makemap.sh, which runs makebmp once and
+generates a set of 15 tiles. Next step, I must potrace them and then
+convert to spherical coordinates in an appropriate manner. (I would
+prefer to have potraced a single bitmap and chopped up the EPS, but
+in order to do that properly I'd have had to have a custom tracer
+which could cope with a cylindrical bitmap and which never generated
+curves.)
+
+A bit of hacking later, makemap.sh now generates `desc' suitable for
+inclusion in map.ps. Running
+
+  ~/src/polyhedra/drawnet.py -pmap.ps \
+    ~/src/polyhedra/regular/icosahedron icos.ps
+
+generates an icos.ps which we can view with gv.
+
+Sadly this doesn't seem to work very well; there are bits of maplike
+stuff, but also quite a lot of goo and completely filled triangles.
+Something isn't right. I shall probably wait to debug it until I'm
+feeling more energetic and/or in a better mood.
+
+Ooh, hang on. The `setgray fill' line out of unpack.ps was still in
+sphunpack.ps. D'oh! That's an improvement, though still not perfect.
+
+Right. One major debugging run later:
+
+ - {x,y,z}{pos,neg}.eps are EPSes which include `desc', and which
+   print an orthographic projection of the entire globe image _just_
+   by tracing outlines (not filling shapes). All include the common
+   code view.ps.
+
+ - By inspecting the output from this, I fixed many orientation bugs
+   in makemap.sh until it looked more sensible.
+
+ - Also I've expanded on the feeble `point' abstraction used in
+   `desc': we now have separate move, line and closepath commands,
+   because that way we can cope with non-simply-connected shapes.
+
+ - _Now_ testing against drawnet.py appears vaguely sane.
+
+After this the globe was a strange way round: it was mirrored on the
+output net, and also the North Pole was at z=-1 and the South at
+z=+1 which really ought to be the other way up. Fixed that by
+inserting some `neg' operators basically randomly into sphunpack.ps.
+Now z=+1 is the North Pole, and the Greenwich meridian is in the
+positive x direction.
+
+So. Revised todo list yet again:
+
+ - Put together a believable icosahedral globe framework. To do
+   this, we need to decide where we're putting the poles. With the
+   default icosahedron description from polyhedra/regular, the poles
+   are each at the midpoint of an edge, which is certainly silly.
+   Use isometry.py to construct a globe with poles in face centres
+   or at vertices; unsure of which, but either is better than this.
+
+ - Altitudes and colours.
+
+ - Userpic.
+
+ - Hack round the South Pole if this becomes an issue, though I
+   suspect it might turn out to Just Work as it turns out.
+
+OK. So I've copied polyhedra/regular/icosahedron to `icos-edges' in
+this directory. Now to apply some isometries:
+
+  ~/src/polyhedra/isometry.py \
+     0 -1 0 \
+     0.35682208977308993 0 0.93417235896271567 \
+     0.93417235896271567 0 -0.35682208977308993 icos-edges icos-faces
+
+  ~/src/polyhedra/isometry.py \
+     0 -1 0 \
+     0.85065080835203999 0 0.52573111211913359 \
+     -0.52573111211913359 0 0.85065080835203999 icos-edges icos-vertices
+
+Each of these, when run through a drawnet command similar to the one
+given above, gives a globe with England half way across a triangular
+face, i.e. with the Greenwich meridian in a sensible place. Each of
+these is in fact a workable icosaglobe. Ooh!
+
+Printing the thing is fiddly. We can't send it to lpr while it
+requires an auxiliary disk file (map.ps, and hence the output of
+drawnet, works by including `desc'). But we also can't shove the
+contents of desc into map.ps in place of the line which includes it,
+since then Ghostscript hits a stack overflow just trying to set up
+the `picture' procedure! Arse. So unless and until I can figure out
+a way round Ghostscript's limitations, I think it's going to be a
+matter of working out precisely what command magicfilter would have
+executed on my behalf, and doing it myself.
+
+  /usr/bin/gs  -q -dSAFER -dNOPAUSE -r300 -sDEVICE=ljet4 \
+    -sOutputFile=- - -c quit < icos.ps | lpr
+
+And this works! I now have two physical icosahedral globes sitting
+on my dining room table, differing only in pole placement. And the
+South Pole appears not to have been an issue in practice.
+
+Therefore, remaining TODOs:
+
+ - Altitude bands and colour, to give a more informationful and more
+   colourful globe which I can build when I get a colour printer.
+
+ - Try it on a cube, see what happens, work out what to do for Sally.
+
+The cube thing looks easy enough to begin with.
+polyhedra/regular/cube is already correct for a face-centred globe:
+
+  ~/src/polyhedra/drawnet.py -pmap.ps ~/src/polyhedra/regular/cube cube.ps
+
+Finding a single isometry that will convert this into a
+vertex-centred globe sounds like a lot of work, so let's do it in
+two stages:
+
+  ~/src/polyhedra/isometry.py \
+    0.70710678118654757 -0.70710678118654757 0 \
+    0.70710678118654757 0.70710678118654757 0 \
+    0 0 1 ~/src/polyhedra/regular/cube cube-tmp
+  ~/src/polyhedra/isometry.py \
+    0.57735026918962584 0 -0.81649658092772615 \
+    0 1 0 \
+    0.81649658092772615 0 0.57735026918962584 cube-tmp cube-vertices
+  ~/src/polyhedra/drawnet.py -pmap.ps cube-vertices cube.ps
+
+2004-09-04
+----------
+
+OK, time to learn some POV.
+
+I've created demo.pov from reading through the POV-Ray instructions.
+It isn't the way I'd have wanted it: I'd have liked to define a
+macro for the matrix that moves each square on to the appropriate
+face of the cube. But the macro definition syntax in POV-Ray 3.0
+doesn't appear to match the docs for 3.5, and isn't documented in
+the 3.0 docs, and I can't figure it out by trial and error; so this
+version will do well enough.
+
+So, next I need six bitmaps. And. Well. On the one hand, I _could_
+do what I had originally planned to do, which was to convert the map
+data into layered PS and then somehow back into bitmaps; but in fact
+I think I've got a better idea.
+
+First we decide what resolution of bitmaps we want. Then we set up
+models of the bitmaps themselves: for each pixel on each face of the
+cube, we figure out the location in 3-D space of that pixel's
+centre, translate to latitude/longitude and hence to coordinates on
+the GTOPO data. Then we _sort_ the entire list of those GTOPO
+coordinates - which means we can then take a single linear run
+through GTOPO, figure out each pixel's altitude, and generate six
+bitmaps.
+
+So, no sooner a word than a whatnot, as Mum used to say. I've
+written makecube.c which generates six bitmaps in this manner; they
+mostly work, though the colour-coding of elevation needs work
+because even the Himalayas are barely visible. And I've written
+cube.pov which correctly maps those six images on to a cubic globe.
+
+  ./makecube 500
+  multi convert 's/bmp/png/' cube*.bmp
+  povray +fn +Icube.pov +Ocubeface.png +W500 +H500 +V -D +X
+
+I'd like a vertex-centred one too, though, so the next step is to
+put some matrix algebra into makecube.c together with a switch to
+turn it on and off.
+
+  ./makecube -v 500
+  multi convert 's/bmp/png/' cube*.bmp
+  povray +fn +Icube.pov +Ocubevert.png +W500 +H500 +V -D +X
+
+Agh! I've just discovered a bug in the GTOPO data. There's a
+one-pixel line of -9999s down the left of the W180S60 tile, which
+means there's a thin slice taken out of Antarctica. I've reported
+this to NASA, though heaven knows if anything will ever come of that
+:-) Meanwhile, I've worked around it in makecube.
+
+Now I have a correct-looking vertex-centred cubic globe. I think I'd
+quite like to hack up an _easy_ way of rotating it around its
+central axis. I shall ponder.
+
+Aha, that was really easy. Simply tell POVRay to combine the six
+polygons as a `union', and then we can put a single `rotate y*123'
+directive at the end of the union declaration and the globe rotates.
+That opens the way to creating an animated userpic that has a
+_rotating_ cubic globe. Ooh. And better still, I can make it `rotate
+y*(-360*clock)', and then running a single trace will give the
+front-facing globe while asking for an animation gives me a full
+rotation. Simplest thing in the world.
+
+Revised TODO (here we go again):
+
+ - Sort out a better colour coding for elevation.
+
+ - Sally's userpic:
+    + should now be ready to generate some real pictures.
+    + decide whether to do 100x100 pics, or to POVray bigger ones
+      and antialias them down.
+    + see if we can easily generate a rotating animation.
+    + send her some samples and see what she says!
+
+ - Main PS globe:
+    + use the colour coding worked out on Sally's userpic to produce
+      some layers for a colourful PS globe.
+
+So. My atlas has an elevation/colour mapping, so I've taken a
+digital photo of it and had a close look. It is, roughly:
+
+ - 0-200m:     #a0b79d
+ - 200-400m:   #b6c2b4
+ - 400-1000m:  #b6c0b5
+ - 1000-1500m: #beae9e
+ - 1500-2000m: #b58f68
+ - 2000-3000m: #98876d
+ - 3000-4000m: #7a8dae
+ - 4000-6000m: #778ba4
+ - 6000m+:     #b4c0cc
+
+But the background is about #b3c1cc. If we scale that up so that it
+becomes white, we'll have a non-uniform effect on the R, G and B
+axes of the rest of those colours. So let's see what happens:
+
+  perl -e 'for $_ (@ARGV) { /(..)(..)(..)/; ($r,$g,$b) = map{hex}($1,$2,$3);' \
+       -e 'print "<$1><$2><$3>: ";' \
+       -e '$r *= 255.0/0xb3; $g *= 255.0/0xc1; $b*=255.0/0xcc;' \
+       -e '$r = 255 if $r > 255; $g = 255 if $g > 255; $b = 255 if $b > 255;' \
+       -e 'printf "%02x%02x%02x\n", $r, $g, $b; }' \
+       b3c1cc a0b79d b6c2b4 b6c0b5 beae9e b58f68 98876d 7a8dae 778ba4 b4c0cc
+
+Armed with that, I've created colours.eps which is a decent start.
+Now to tweak it manually.
+
+Much manual tweaking later, I've produced a set of colours which
+make reasonable sense in layers. Since that isn't the limit of what
+makecube can do (though it'll be needed in the PS), I've enhanced
+makecube's colour mapping so that it actually _fades_ between
+colours so as to get a (theoretically) complete elevation
+representation. This looks basically right now, so I'm satisfied.
+
+Final steps for Sally:
+
+ - adjust camera position and frame size
+ - balance number of frames against image size for animated GIF
+ - generate some globes and send them to her.
+
+This all being done (though sadly I was unable to bring the animated
+GIF anywhere near LJ's 40K userpic limit), I now just need to sort
+out the elevation layers for the PostScript version, and then I'm
+done for the moment (phew).
+
+So I've written makecmap.sh, which _hopefully_ should be a wrapper
+on makemap.sh which invokes it repeatedly with different altitude
+settings. In particular, by far the easiest way to get a uniform
+blue covering of the globe for the background sea is to pass -10000
+to makemap.sh - it means a completely gratuitous run of makebmp, but
+it does _work_. And indeed, once makecmap.sh has run, it generates a
+(huge) desc file that gives rise to believable-looking colourful
+physical-topography polyhedral globes. Result!
