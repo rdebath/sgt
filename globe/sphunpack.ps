@@ -1,0 +1,42 @@
+%!PS-Adobe-1.0
+
+/sgt-xoff where { pop } { /sgt-xoff 0 def } ifelse
+/sgt-yoff where { pop } { /sgt-yoff 0 def } ifelse
+/sgt-xmul where { pop } { /sgt-xmul 10 def } ifelse
+/sgt-ymul where { pop } { /sgt-ymul 10 def } ifelse
+/sgt-dict 10 dict def
+/sgt-colour where { pop } { /sgt-colour ({0 setgray}) def } ifelse
+
+(% xmul=) =only sgt-xmul =
+(% ymul=) =only sgt-ymul =
+(% xoff=) =only sgt-xoff =
+(% yoff=) =only sgt-yoff =
+
+/sgt-point {
+  sgt-dict begin
+    /op exch def
+    dup /yorig exch def
+    %(y: ) =only dup =only
+    sgt-ymul mul sgt-yoff 10 mul add
+    %( -> ) =only dup =
+    108000 sub 216000 div 180 mul /y exch def
+    dup /xorig exch def
+    %(x: ) =only dup =only
+    sgt-xmul mul sgt-xoff 10 mul add
+    %( -> ) =only dup =
+    216000 sub 216000 div 180 mul /x exch def
+    y cos neg dup
+    x cos mul =only ( ) =only
+    x sin mul =only ( ) =only
+    y sin neg =only ( ) =only op =only
+    ( % ) =only xorig =only ( ) =only yorig =
+  end
+} def
+
+/fill {
+  ({) =only sgt-colour =only (}) =only ( newshape) =
+  flattenpath
+  { (pmove)sgt-point } { (pline)sgt-point }
+  { shouldnt-get-here } { (pclose)= } pathforall
+  newpath
+} def
