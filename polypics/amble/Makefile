@@ -4,12 +4,20 @@ dodec.ps: pic.ps desc
 	$$HOME/src/polyhedra/drawnet.py \
 		-sSTHPD -aKLHTF,ERGLK -aBSDJI,IJCQA \
 		-aQREMA,IJCQA -aCOGRQ,ERGLK \
-		-ppic.ps dodec | sed 's/.* scale/70 dup scale/' > dodec.ps
+		-ppic.ps dodec | \
+	sed > dodec.ps \
+		-e 's/288 400 translate/288 430 translate/' \
+		-e 's/[0-9\.]* dup scale/70 dup scale/' \
+		-e 's/[0-9\.]* setlinewidth/0.002 setlinewidth/'
 
 icos.ps: pic.ps desc
 	$$HOME/src/polyhedra/drawnet.py \
 		-sEGB -aIFC,IKF -aFHC,IFC -aDHF,FHC \
-		-ppic.ps icos | sed 's/.* scale/70 dup scale/' > icos.ps
+		-ppic.ps icos | sed 's/.* scale/70 dup scale/' | \
+	sed > icos.ps \
+		-e 's/288 400 translate/288 430 translate/' \
+		-e 's/[0-9\.]* dup scale/70 dup scale/' \
+		-e 's/[0-9\.]* setlinewidth/0.002 setlinewidth/'
 
 desc: b.dia c.dia d.dia e.dia makedesc.py
 	./makedesc.py > desc
