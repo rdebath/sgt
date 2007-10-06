@@ -59,4 +59,4 @@ clean:
 	rm -f cube?.bmp cube?.png
 
 spotless: clean
-	rm -f *.pdf
+	rm -f *.pdf cubevert*.png
