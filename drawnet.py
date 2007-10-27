@@ -7,14 +7,13 @@ import string
 import random
 from math import pi, asin, atan2, cos, sin, sqrt
 from crosspoint import crosspoint
-import sph
 
 args = sys.argv[1:]
 
 firstface = None
 facelabels = 0
 cmpsign = +1
-picture = None
+picfile = None
 adjpairs = {}
 while len(args) > 0 and args[0][:1] == "-":
     a = args[0]
@@ -30,11 +29,23 @@ while len(args) > 0 and args[0][:1] == "-":
 	facelabels = 1
     elif a[:2] == "-p":
         # Undocumented option which allows you to specify a file
-        # containing a spherical image file. This allows a net to
-        # be drawn which folds up to produce a polyhedron covered
-        # in a projection of the spherical image (e.g. an
+        # containing a PostScript fragment. That file is included
+        # at the top of the output, and is expected to define a
+        # function called `picture'.
+        #
+        # `picture' will then be called once for each face of the
+        # polyhedron, and passed two arguments. The first argument
+        # will be an orthogonal matrix (a length-9 array listing
+        # the elements of the matrix ordered primarily by columns)
+        # and the second a height. When called, the origin and
+        # clipping path will be set appropriately for `picture' to
+        # transform some sort of spherical graphical description
+        # using the given matrix, project it on to the plane
+        # (z=height), and draw it. This allows a net to be drawn
+        # which folds up to produce a polyhedron covered in a
+        # projection of the original spherical image (e.g. an
         # icosahedral globe).
-        picture = sph.SphericalPic(a[2:])
+        picfile = a[2:]
     elif a[:2] == "-a":
         # Undocumented option which attempts to force a pair of
         # faces to be placed adjacent to one another in the net.
@@ -186,30 +197,24 @@ class struct:
 #  - facepos[face].adjacent is a hash mapping other faces to
 #    further container classes containing the above `matrix',
 #    `pos', `vpos' and `bbox' elements.
-#  - facepos[face].z is the perpendicular distance from the origin
-#    to this face.
 facepos = {}
 
 def do_vpos_bbox(placement, face):
     # Find the position of each vertex in face f.
     vpos = {}
     xmin = ymin = xmax = ymax = None
-    zsum, zn = 0, 0
     for v in faces[face]:
 	xa, ya, za = vertices[v]
 	xb, yb, zb = transform(placement.matrix, xa, ya, za)
 	xb = xb + placement.pos[0]
 	yb = yb + placement.pos[1]
 	vpos[v] = (xb, yb)
-	zsum = zsum + zb
-	zn = zn + 1
 	if xmin == None or xmin > xb: xmin = xb
 	if ymin == None or ymin > yb: ymin = yb
 	if xmax == None or xmax < xb: xmax = xb
 	if ymax == None or ymax < yb: ymax = yb
     placement.vpos = vpos
     placement.bbox = (xmin, ymin, xmax, ymax)
-    placement.z = zsum / zn
 
 # Go through the edges of each face and build up some quick
 # reference hashes: one mapping each face to a list of edges, the
@@ -1022,6 +1027,14 @@ psprint("%%Pages: 1")
 psprint("%%EndComments")
 psprint("%%Page: 1")
 
+if picfile:
+    f = open(picfile, "r")
+    while 1:
+        s = f.readline()
+        if s == "": break
+        outfile.write(s)
+    f.close()
+
 psprint("gsave")
 
 # Compute the overall bbox.
@@ -1050,17 +1063,23 @@ psprint(scale, "dup scale")
 psprint(-(xmax+xmin)/2, -(ymax+ymin)/2, "translate")
 psprint(0.5 / scale, "setlinewidth 1 setlinejoin 1 setlinecap")
 # Draw the picture, if we have one.
-if picture:
+if picfile:
     for f in faces.keys():
-	facepoints = []
+        psprint("gsave newpath")
+        cmd = "moveto"
         placement = facepos[f]
         for v in faces[f]:
             vid = placement.vid[v]
-            facepoints.append(((vids[vid][0] - placement.pos[0])/placement.z, \
-	    (vids[vid][1] - placement.pos[1])/placement.z))
-	picture.projection(sph.GnomonicPolygon(outfile, facepoints, \
-	origin=(placement.pos[0], placement.pos[1]), scale=placement.z), \
-	matrix=placement.matrix)
+            psprint(vids[vid][0], vids[vid][1], cmd)
+            cmd = "lineto"
+        psprint("closepath clip")
+        psprint(placement.pos[0], placement.pos[1], "translate")
+        psprint("[")
+        matrix = placement.matrix
+        for x in range(3):
+            psprint(matrix[0][x], matrix[1][x], matrix[2][x])
+        psprint("]", placement.height, "picture")
+        psprint("grestore")
 
 # Draw the cut edges, including tabs.
 psprint("newpath")
