@@ -71,7 +71,7 @@ icos-bw-vert-frag.pov: icos-vertices mapbw.ps desc.bw
 clean:
 	rm -f makebmp makecube *.eps *.bmp *.shape desc.* *-pre.ps Memory.Log
 	rm -f cube?.bmp cube?.png
-	rm -f *-frag.pov*
+	rm -f *-frag.pov* Memory.Log
 
 spotless: clean
 	rm -f *.pdf cubevert*.png *globe.png

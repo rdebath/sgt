@@ -38,7 +38,7 @@ amble-frag.pov: pic.ps desc dodec
 	$$HOME/src/polyhedra/povpoly.py -ppic.ps dodec $@
 
 clean:
-	rm -f desc pic.ps dodec.ps icos.ps *-frag.pov*
+	rm -f desc pic.ps dodec.ps icos.ps *-frag.pov* Memory.Log
 
 spotless: clean
 	rm -f *.pdf *.png
