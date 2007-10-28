@@ -22,7 +22,7 @@ dodec-cubes-frag.pov: pic.ps dodec
 	$$HOME/src/polyhedra/povpoly.py -ppic.ps dodec $@
 
 clean:
-	rm -f dodec.ps *-frag.pov*
+	rm -f dodec.ps *-frag.pov* Memory.Log
 
 spotless: clean
 	rm -f *.pdf *.png
