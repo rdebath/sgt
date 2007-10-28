@@ -5,10 +5,10 @@ background { color Gray }
 
 camera {
   location <-5, +3.5, -10>
-  up <0,0.51,0>
-  right <0,0,-0.68>
+  up <0,0.54,0>
+  right <0,0,-0.72>
   sky <0,1,0>
-  look_at <0, 0.5, 0>
+  look_at <-0.55, 0.5, 0>
 }
 
 // Include the polyhedron description, generated for us by povpoly.py.
@@ -36,12 +36,11 @@ polygon {
   #declare K = <1.61803398875, 0.324919696233, 0.525731112119>;
   // Our y-coordinate is along the FK axis.
   #declare FKy = F-K;
-  // Our x-coordinate points directly away from the far corner of
-  // the face EKFNM, to which the wing is parallel centre of the
-  // dodecahedron, making it perpendicular to the BI axis. So we
-  // construct it by taking the average of B and I, subtracting M,
-  // and normalising to the same length as our y-vector.
-  #declare FKx = vlength(FKy) * vnormalize((F+K)/2-M);
+  // Our x-coordinate is half way between being parallel to the face
+  // EKFNM, and being aligned with the radius of the dodecahedron.
+  // Fiddly, but I've checked Gareth's real model and that's where it
+  // points.
+  #declare FKx = vlength(FKy) * vnormalize(vnormalize((F+K)/2-M)+vnormalize((F+K)/2));
   matrix <
     vdot(FKx, <1,0,0>), vdot(FKx, <0,1,0>), vdot(FKx, <0,0,1>),
     vdot(FKy, <1,0,0>), vdot(FKy, <0,1,0>), vdot(FKy, <0,0,1>),
@@ -68,12 +67,11 @@ polygon {
   #declare I = <-1.61803398875, 0.324919696233, 0.525731112119>;
   // Our y-coordinate is along the BI axis.
   #declare BIy = B-I;
-  // Our x-coordinate points directly away from the far corner of
-  // the face MNBIA, to which the wing is parallel centre of the
-  // dodecahedron, making it perpendicular to the BI axis. So we
-  // construct it by taking the average of B and I, subtracting M,
-  // and normalising to the same length as our y-vector.
-  #declare BIx = vlength(BIy) * vnormalize((B+I)/2-M);
+  // Our x-coordinate is half way between being parallel to the face
+  // MNBIA, and being aligned with the radius of the dodecahedron.
+  // Fiddly, but I've checked Gareth's real model and that's where it
+  // points.
+  #declare BIx = vlength(BIy) * vnormalize(vnormalize((B+I)/2-M)+vnormalize((B+I)/2));
   matrix <
     vdot(BIx, <1,0,0>), vdot(BIx, <0,1,0>), vdot(BIx, <0,0,1>),
     vdot(BIy, <1,0,0>), vdot(BIy, <0,1,0>), vdot(BIy, <0,0,1>),
