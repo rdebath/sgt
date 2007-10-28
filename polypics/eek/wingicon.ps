@@ -1,0 +1,11 @@
+% Draw a standalone wing image for raytracing purposes.
+
+% Import the definition of `wing' from wing.ps, having first
+% defined DONOTHING to inhibit it actually doing a showpage.
+/DONOTHING true def
+(wing.ps)(r)file cvx exec
+
+72 dup scale -3 0 translate wing
+
+showpage
+
