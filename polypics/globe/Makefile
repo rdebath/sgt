@@ -54,9 +54,24 @@ $(CUBEFACEBMPS): makecube
 makecube: makecube.c
 	gcc -o makecube makecube.c -lm
 
+icon: bwglobe.png cglobe.png
+
+cglobe.png: icosc.pov icos-colour-vert-frag.pov
+	povray +fn +I$< +O$@ +W150 +H150 +V -D +X
+
+icos-colour-vert-frag.pov: icos-vertices mapcolour.ps desc.colour
+	$$HOME/src/polyhedra/povpoly.py -pmapcolour.ps icos-vertices $@
+
+bwglobe.png: icosb.pov icos-bw-vert-frag.pov
+	povray +fn +I$< +O$@ +W150 +H150 +V -D +X
+
+icos-bw-vert-frag.pov: icos-vertices mapbw.ps desc.bw
+	$$HOME/src/polyhedra/povpoly.py -pmapbw.ps icos-vertices $@
+
 clean:
 	rm -f makebmp makecube *.eps *.bmp *.shape desc.* *-pre.ps Memory.Log
 	rm -f cube?.bmp cube?.png
+	rm -f *-frag.pov*
 
 spotless: clean
-	rm -f *.pdf cubevert*.png
+	rm -f *.pdf cubevert*.png *globe.png
