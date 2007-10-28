@@ -32,11 +32,15 @@ pic.ps: map.ps desc
 
 icon: eek.png
 
-eek.png: eek.pov eek-frag.pov
-	povray +fn +I$< +O$@ +W150 +H150 +V -D +X
+eek.png: eek.pov eek-frag.pov wingicon.png
+	povray +fn +I$< +O$@ +W200 +H150 +V -D +X
 
 eek-frag.pov: pic.ps desc dodec
 	$$HOME/src/polyhedra/povpoly.py -ppic.ps dodec $@
+
+wingicon.png: wingicon.ps
+	gs -dNOPAUSE -dBATCH -sDEVICE=pngmono -sOutputFile=$@ \
+		-r50 -g500x650 -q $<
 
 clean:
 	rm -f desc pic.ps dodec.ps icos.ps desc.d *-frag.pov* Memory.Log

@@ -5,10 +5,10 @@ background { color Gray }
 
 camera {
   location <-5, +5, -10>
-  up <0,0.7,0>
-  right <0,0,-0.7>
+  up <0,0.48,0>
+  right <0,0,-0.64>
   sky <0,1,0>
-  look_at <-1, 0, 0>
+  look_at <-1, 1.1, 0>
 }
 
 // Include the polyhedron description, generated for us by povpoly.py.
