@@ -30,8 +30,16 @@ pic.ps: map.ps desc
 	perl -ne 'if (/\((.*)\) \(r\) file cvx exec/)' \
 	      -e '{ system "cat $$1" } else { print }' map.ps > pic.ps
 
+icon: eek.png
+
+eek.png: eek.pov eek-frag.pov
+	povray +fn +I$< +O$@ +W150 +H150 +V -D +X
+
+eek-frag.pov: pic.ps desc dodec
+	$$HOME/src/polyhedra/povpoly.py -ppic.ps dodec $@
+
 clean:
-	rm -f desc pic.ps dodec.ps icos.ps desc.d
+	rm -f desc pic.ps dodec.ps icos.ps desc.d *-frag.pov*
 
 spotless: clean
-	rm -f *.pdf
+	rm -f *.pdf *.png
