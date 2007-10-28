@@ -27,10 +27,12 @@
   grestore
 } def
 
-70 1.2360679775007533 mul 5 div dup scale
-gsave 2 6 translate wing grestore
-gsave 2 22 translate wing grestore
-gsave 32 6 translate -1 1 scale wing grestore
-gsave 32 22 translate -1 1 scale wing grestore
+userdict /DONOTHING known {} {
+  70 1.2360679775007533 mul 5 div dup scale
+  gsave 2 6 translate wing grestore
+  gsave 2 22 translate wing grestore
+  gsave 32 6 translate -1 1 scale wing grestore
+  gsave 32 22 translate -1 1 scale wing grestore
 
-showpage
+  showpage
+} ifelse
