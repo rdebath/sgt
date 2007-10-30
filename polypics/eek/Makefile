@@ -30,13 +30,22 @@ pic.ps: map.ps desc
 	perl -ne 'if (/\((.*)\) \(r\) file cvx exec/)' \
 	      -e '{ system "cat $$1" } else { print }' map.ps > pic.ps
 
-icon: eek.png
+icon: eeksmall.jpeg eeklarge.jpeg eekwingdiag.png
+
+eeksmall.jpeg: eek.png
+	convert -scale 200x150 $< $@
+eeklarge.jpeg: eek.png
+	convert -scale 600x450 $< $@
 
 eek.png: eek.pov eek-frag.pov wingicon.png
-	povray +fn +I$< +O$@ +W200 +H150 +V -D +X
+	povray +fn +I$< +O$@ +W1200 +H900 +V -D +X
 
 eek-frag.pov: pic.ps desc dodec
 	$$HOME/src/polyhedra/povpoly.py -ppic.ps dodec $@
+
+eekwingdiag.png: wingdiag.ps wing.ps
+	gs -sDEVICE=pnggray -sOutputFile=tmp.$@ -g6000x2000 -r1440 -dNOPAUSE -dBATCH -q $<
+	convert -scale 600x200 tmp.$@ $@
 
 wingicon.png: wingicon.ps
 	gs -dNOPAUSE -dBATCH -sDEVICE=pngmono -sOutputFile=$@ \
@@ -44,6 +53,7 @@ wingicon.png: wingicon.ps
 
 clean:
 	rm -f desc pic.ps dodec.ps icos.ps desc.d *-frag.pov* Memory.Log
+	rm -f eek.png
 
 spotless: clean
-	rm -f *.pdf *.png
+	rm -f *.pdf *.png *.jpeg
