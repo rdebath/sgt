@@ -1,0 +1,121 @@
+<html>
+<head>
+<title>Designing a polyhedral model of a small bat</title>
+</head>
+<link rel="stylesheet" type="text/css" href="../sitestyle.css" name="Simon Tatham's Home Page Style">
+<body>
+<h1 align=center>Printing Pictures on the Surface of Polyhedra</h1>
+<h2 align=center>Designing a polyhedral model of a small bat</h2>
+
+<p align=center>
+[go back to the main <a href="./">polyhedral pictures page</a>]
+
+<p align=center>
+<img alt="" width=600 height=450 border=0 src="eeklarge.jpeg" />
+
+<p>
+Making the polyhedral part of my model of Eek! the bat was a simple
+enough process after having already designed
+<a href="amble.html">Amble the panda</a>
+and
+<a href="badger.html">my unnamed badger</a>.
+My Dia processing script required only trivial tweaks to make sure
+it handled colour correctly, and then it was just a matter of
+drawing another set of
+<a href="http://live.gnome.org/Dia">Dia</a>
+diagram files and defining what parts of the sphere they should be
+projected on to. Having done that, <code>drawnet.py</code> produced
+an entirely acceptable net of Eek!'s body.
+
+<p align=center>
+<img src="eek-backdrop.png" border=0>
+<img src="eek-ear.png" border=0>
+<img src="eek-eyes.png" border=0>
+<img src="eek-foot.png" border=0>
+<img src="eek-nose.png" border=0>
+<img src="eek-nosepiece.png" border=0>
+
+<p>
+As you can see from the above images, I coloured the background
+brown using the same simple approach as in the
+<a href="badger.html">badger</a>.
+Then there's an individual image for the ear (mirrored on each
+side), the eye (copied to each side without mirroring, so the
+highlights point the same way), the paw and the nose. The final
+image gives one of the two teeth (and is mirrored to provide the
+other one), and the mouth. I was hampered in the mouth by the
+limitations of Dia, which didn't want to let me draw only a
+<em>section</em> of an ellipse; so I had to draw the entire ellipse
+with a black outline, and then cover the top half with another
+ellipse that had no outline. Silly, but it worked.
+
+<p>
+The big challenge in making a bat is that you can't really get away
+with not giving him wings. So I had to come up with a way to stick
+wings on to a polyhedron, without affecting any of the artwork I had
+so carefully drawn on the outside of the polyhedron, and without
+compromising the solid's structural integrity.
+
+<p>
+Clearly the easiest way to attach a wing is at an edge of the
+polyhedron: that's where you're already gluing things together, so
+gluing something else in there as well shouldn't make matters much
+worse.
+
+<p>
+After some thought, I decided the best thing to do would be to make
+a double-sided wing out of two pieces of cardboard stuck back to
+back (which enables it to be printed black on both sides without the
+need for exciting printer technology), and give it a pair of flaps
+folding out in opposite directions. Then you remove the tab which
+would normally glue together the two faces meeting at the target
+edge, and instead of that flap you insert your wing, with one of its
+flaps glued to the inside of each of the two adjacent faces. So the
+wing sticks out between the two pentagons, and holds them together
+itself in place of the original flap.
+
+<p align=center>
+<img alt="" src="eekwingdiag.png" border=0 width=600 height=200>
+
+<p>
+So I had to tweak the net of the dodecahedron to make sure the edges
+where I wanted the wings to go were cut edges rather than folded
+edges. I might also usefully have pre-removed the tabs for those
+edges, but in fact I didn't bother; the user can just as easily
+cut them off at construction time, and doing it like that simplifies
+the software considerably.
+
+<p>
+Finally, of course, I had to carefully measure the edge length of
+the dodecahedron in the final net, and make sure to generate the
+wings at the right size so that the attached end was exactly as long
+as the dodecahedron edge.
+
+<h2>Downloads</h2>
+
+<p>
+Here's the <a href="eek.pdf">PDF net of Eek!</a>, without the wings.
+
+<p>
+Here's the <a href="eekwings.pdf">PDF of the second sheet that
+generates the wings</a>. Cut all four wings out, glue them
+back-to-back in pairs leaving the flaps unglued, and fold the flaps
+outwards in opposite directions. Then, for each wing, remove a tab
+from the dodecahedron net, and use the two flaps of the wing in 
+place of that tab to hold the two pentagons together.
+
+<hr>
+
+<p>
+[go back to the main <a href="./">polyhedral pictures page</a>]
+<p>
+(comments to <a href="mailto:&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;">&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;</a>)
+<br>
+(thanks to
+<a href="http://www.chiark.greenend.org.uk/">chiark</a>
+for hosting this page)
+<br>
+(last modified on <!--LASTMOD-->[insert date here]<!--END-->)
+
+</body>
+</html>
