@@ -54,24 +54,34 @@ $(CUBEFACEBMPS): makecube
 makecube: makecube.c
 	gcc -o makecube makecube.c -lm
 
-icon: bwglobe.png cglobe.png
+icon: bwglobesmall.jpeg bwglobelarge.jpeg \
+      cglobesmall.jpeg cglobelarge.jpeg
+
+bwglobesmall.jpeg: bwglobe.png
+	convert -scale 150x150 $< $@
+bwglobelarge.jpeg: bwglobe.png
+	convert -scale 450x450 $< $@
+cglobesmall.jpeg: cglobe.png
+	convert -scale 150x150 $< $@
+cglobelarge.jpeg: cglobe.png
+	convert -scale 450x450 $< $@
 
 cglobe.png: icosc.pov icos-colour-vert-frag.pov
-	povray +fn +I$< +O$@ +W150 +H150 +V -D +X
+	povray +fn +I$< +O$@ +W900 +H900 +V -D +X
 
 icos-colour-vert-frag.pov: icos-vertices mapcolour.ps desc.colour
 	$$HOME/src/polyhedra/povpoly.py -pmapcolour.ps icos-vertices $@
 
 bwglobe.png: icosb.pov icos-bw-vert-frag.pov
-	povray +fn +I$< +O$@ +W150 +H150 +V -D +X
+	povray +fn +I$< +O$@ +W900 +H900 +V -D +X
 
 icos-bw-vert-frag.pov: icos-vertices mapbw.ps desc.bw
 	$$HOME/src/polyhedra/povpoly.py -pmapbw.ps icos-vertices $@
 
 clean:
 	rm -f makebmp makecube *.eps *.bmp *.shape desc.* *-pre.ps Memory.Log
-	rm -f cube?.bmp cube?.png
+	rm -f cube?.bmp cube?.png bwglobe.png cglobe.png
 	rm -f *-frag.pov* Memory.Log
 
 spotless: clean
-	rm -f *.pdf cubevert*.png *globe.png
+	rm -f *.pdf cubevert*.png *globe.png *.jpeg

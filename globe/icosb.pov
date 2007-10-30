@@ -23,3 +23,7 @@ light_source {
   area_light
   <1,0,0>, <0,1,0>, 50, 50
 }
+
+light_source {
+  <+20, +20, -2.5> color <1,1,1>
+}
