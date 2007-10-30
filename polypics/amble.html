@@ -1,0 +1,123 @@
+<html>
+<head>
+<title>Designing a polyhedral model of a small panda</title>
+</head>
+<link rel="stylesheet" type="text/css" href="../sitestyle.css" name="Simon Tatham's Home Page Style">
+<body>
+<h1 align=center>Printing Pictures on the Surface of Polyhedra</h1>
+<h2 align=center>Designing a polyhedral model of a small panda</h2>
+
+<p align=center>
+[go back to the main <a href="./">polyhedral pictures page</a>]
+
+<p align=center>
+<img alt="" width=450 height=450 border=0 src="amblelarge.jpeg" /> 
+
+<p>
+My model of Amble the panda was the first picture I tried to
+<em>draw</em> on the surface of a dodecahedron. Generating the globe
+required no drawing, just software: it was a matter of stringing
+together a long line of mechanical data processing utilities (some
+of which I had to write myself) to convert some pre-supplied data
+into the right format. Amble, by contrast, required me to do actual
+graphic design and artwork.
+
+<p>
+Lacking any particularly sensible way to draw directly on the
+surface of a sphere, I decided the simplest approach would be to
+take advantage of the fact that Amble is mostly plain white, with
+only a few small black markings (paws, ears, tail, facial features).
+So I drew each of those markings separately in an ordinary Euclidean
+drawing package, and then projected each one on to the appropriate
+area of the spherical image.
+
+<p>
+The drawing package I picked was
+<a href="http://live.gnome.org/Dia">Dia</a>,
+mostly because it was already conveniently available on my Debian
+system. Dia isn't really ideally suited to artwork of this type,
+being more designed for box-and-line diagrams, but it does have a
+general B&#233;zier curve tool, so I just about coped. With
+hindsight, I might have tried
+<a href="http://www.inkscape.org/">Inkscape</a>
+instead, but I hadn't heard of it at the time.
+
+<p>
+So I drew a number of small pictures in Dia, representing Amble's
+face, hand and ear, tail and foot.
+
+<p align="center">
+<img src="amble-b.png" border=0>
+<img src="amble-c.png" border=0>
+<img src="amble-d.png" border=0>
+<img src="amble-e.png" border=0>
+
+<p>
+Having done that, I then had to import those images into my
+spherical image mechanism. This involved writing a script which read
+the Dia file format and generated a fragment of PostScript I could
+feed to the projection engine I'd already written for the
+<a href="globe.html">globe</a>.
+
+
+<p>
+Dia's file format is <code>gzip</code>ped XML. This made it fairly
+easy to read, since the nice thing about XML is that you don't have
+to understand the entire format in order to parse it basically
+successfully and extract just the bits you need. So I wrote a Python
+script which read in a Dia file and extracted the coordinates of all
+the lines, B&#233;zier curves and so on, then projected them into
+spherical coordinates and converted them into PostScript.
+
+<p>
+One important part of this process was to flatten B&#233;zier curves
+into sequences of straight lines. There's no particularly sensible
+definition of a B&#233;zier curve on a sphere, and even if there
+were, it wouldn't be exactly the same as what you get from
+projecting the control points on to a plane and drawing the
+resulting curve. This wouldn't matter for a curve contained entirely
+within one face of the polyhedron, but if a curve crosses a face
+boundary then I needed to be sure the two halves would match up
+exactly at the boundary. Straight lines (or, more accurately, great
+circle arcs) do give this guarantee, since the gnomonic projection
+of a great circle is given by intersecting the solid with a plane
+passing through the origin and the line, and hence joins up
+correctly when the projection surface changes direction.
+
+<p>
+So my final artwork and processing framework for the Amble picture
+ended up consisting of several Dia files, and a Python script; that
+script, as well as containing the general code to convert Dia into
+spherical-image data, also contains the Amble-specific information
+about what Dia files exist and what parts of the sphere to project
+them on to. (Some of the above pictures were projected twice on to
+opposite sides of the sphere, once in mirror image. This saved me
+having to draw each paw and ear twice by hand.)
+
+<p>
+This was a thoroughly ad-hoc way to do anything, but it worked well
+enough, and in fact it worked well enough that I was able to adapt
+the same technique to my subsequent models of
+<a href="badger.html">a badger</a>
+and
+<a href="eek.html">Eek! the bat</a>.
+
+<h2>Downloads</h2>
+
+Here's the <a href="amble.pdf">PDF net of Amble</a>.
+
+<hr>
+
+<p>
+[go back to the main <a href="./">polyhedral pictures page</a>]
+<p>
+(comments to <a href="mailto:&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;">&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;</a>)
+<br>
+(thanks to
+<a href="http://www.chiark.greenend.org.uk/">chiark</a>
+for hosting this page)
+<br>
+(last modified on <!--LASTMOD-->[insert date here]<!--END-->)
+
+</body>
+</html>

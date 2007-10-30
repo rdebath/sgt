@@ -1,0 +1,76 @@
+<html>
+<head>
+<title>Designing a polyhedral model of a badger</title>
+</head>
+<link rel="stylesheet" type="text/css" href="../sitestyle.css" name="Simon Tatham's Home Page Style">
+<body>
+<h1 align=center>Printing Pictures on the Surface of Polyhedra</h1>
+<h2 align=center>Designing a polyhedral model of a badger</h2>
+
+<p align=center>
+[go back to the main <a href="./">polyhedral pictures page</a>]
+
+<p align=center>
+<img alt="" width=450 height=450 border=0 src="badgerlarge.jpeg" />
+
+<p>
+My polyhedral badger model was drawn in much the same way as my
+previous animal model,
+<a href="amble.html">Amble the panda</a>.
+I reused essentially the same processing scripts, and simply
+substituted a different set of
+<a href="http://live.gnome.org/Dia">Dia</a>
+diagram files.
+
+<p align="center">
+<img src="badger-face.png" border=0>
+<img src="badger-shiny.png" border=0>
+<img src="badger-belly.png" border=0>
+<img src="badger-feet.png" border=0>
+<img src="badger-tail.png" border=0>
+
+<p>
+(The face was complicated here. The first image above is
+superimposed on its reflection to get the same stripes, eye and ear
+on both sides. However, the highlights in the eyes and nose are
+asymmetric, so I had to draw the second image, which is not
+reflected and which contains just those highlights.)
+
+<p>
+The badger model differed from Amble in that the background is filled 
+in a colour other than the default white. I could probably have
+hacked up an infrastructure change which made the PostScript picture
+description retrieve <code>clippath</code> and fill it in the
+appropriate colour; instead I simply drew an additional Dia diagram
+containing a set of overlapping polygons which covered a sixth of
+the sphere, then replicated it six times across the entire sphere,
+and coloured all the polygons in the same mid-grey.
+
+<p align="center">
+<img src="badger-backdrop.png" border=0>
+
+<p>
+Also, the badger's nose detail contained stroked rather than filled
+drawing, for which I had to add another few clauses to the script
+that processed Dia files, to make it recognise a couple more types
+of drawing object.
+
+<h2>Downloads</h2>
+
+Here's the <a href="badger.pdf">PDF net of the badger</a>.
+
+<hr>
+
+<p>
+[go back to the main <a href="./">polyhedral pictures page</a>]
+<p>
+(comments to <a href="mailto:&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;">&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;</a>)
+<br>
+(thanks to
+<a href="http://www.chiark.greenend.org.uk/">chiark</a>
+for hosting this page)
+<br>
+(last modified on <!--LASTMOD-->[insert date here]<!--END-->)
+
+</body>
+</html>

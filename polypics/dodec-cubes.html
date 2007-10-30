@@ -1,0 +1,81 @@
+<html>
+<head>
+<title>Building a dodecahedron with the cube edges marked</title>
+</head>
+<link rel="stylesheet" type="text/css" href="../sitestyle.css" name="Simon Tatham's Home Page Style">
+<body>
+<h1 align=center>Printing Pictures on the Surface of Polyhedra</h1>
+<h2 align=center>Building a dodecahedron with the cube edges marked</h2>
+
+<p align=center>
+[go back to the main <a href="./">polyhedral pictures page</a>]
+
+<p align=center>
+<img alt="" width=450 height=450 border=0 src="dodec-cubes-large.jpeg" />
+
+<p>
+When
+<a href="http://tartarus.org/gareth/">Gareth</a>
+asked if I could make a dodecahedron with the five inscribed cubes
+marked on its surface, I wasn't immediately sure how best to do it.
+All my other polyhedral pictures are basically <em>spherical</em>
+images, without any specific reference to the polyhedron they'll end
+up drawn on; you can re-project them on to a different solid
+relatively trivially. But to construct the net of a dodecahedron
+with an extra set of lines drawn between its vertices, this seemed
+like overkill: what I'd be drawing would be fundamentally
+<em>based</em> on the vertices I already knew about, and there would
+be no need to project it on to a different solid at all.
+
+<p>
+Nonetheless, it turned out, using the existing spherical-image
+mechanism was still the easiest way to go about it, not least
+because in order to do it any other way I'd have had to modify my
+net-drawing utility again, and it's complicated enough that that
+would have outweighed any saving due to conceptual parsimony.
+
+<p>
+And, in fact, it wasn't too hard to do it directly using the
+spherical image code. First I found the polyhedron description file
+I was going to use for my dodecahedron; that has the 3-D coordinates
+of the 20 vertices already specified. So it was just a question of
+identifying the eight subsets of those vertices which formed cubes,
+and directly writing a PostScript spherical-image description
+consisting of appropriately coloured straight lines between those
+points in space. My projection code doesn't change the orientation
+of the image relative to the polyhedron, so this naturally produced
+the right result when projected on to the same dodecahedron
+description file I'd started with.
+
+<p>
+Of course, geodesics in spherical image space (great circle arcs)
+project into straight lines on the resulting solid, so there wasn't
+even any difficulty in making the lines straight.
+
+<p>
+Identifying the actual cubes was a moderately frustrating ten-minute
+task with a pencil and paper, in which I figured out the quick and
+easy way to do it just as I was finishing the last cube. But it only
+had to be done once, and then it was just a matter of tweaking the
+colours and line thicknesses.
+
+<h2>Downloads</h2>
+
+Here's the <a href="dodec-cubes.pdf">PDF net of the cube-marked
+dodecahedron</a>.
+
+<hr>
+
+<p>
+[go back to the main <a href="./">polyhedral pictures page</a>]
+<p>
+(comments to <a href="mailto:&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;">&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;</a>)
+<br>
+(thanks to
+<a href="http://www.chiark.greenend.org.uk/">chiark</a>
+for hosting this page)
+<br>
+(last modified on <!--LASTMOD-->[insert date here]<!--END-->)
+
+</body>
+</html>

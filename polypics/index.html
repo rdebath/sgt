@@ -1,0 +1,271 @@
+<html>
+<head>
+<title>Printing Pictures on the Surface of Polyhedra</title>
+</head>
+<link rel="stylesheet" type="text/css" href="../sitestyle.css" name="Simon Tatham's Home Page Style">
+<body>
+<h1 align=center>Printing Pictures on the Surface of Polyhedra</h1>
+
+<p>
+<i>by <a href="../">Simon Tatham</a></i>
+</p>
+
+<h2>Introduction</h2>
+
+<p>
+In late 2003, I wrote a set of small programs to work with
+polyhedra, as part of a project investigating the
+<a href="../polyhedra/">construction of polyhedra from repelling
+points on a sphere</a>.
+
+<p>
+In particular, among those programs is a script,
+<code>drawnet.py</code>,
+which takes as input a file containing a 3D model of a polyhedron
+and produces a flat net, complete with tabs, which you can cut out
+and glue together to make the polyhedron in question.
+
+<p>
+Once I'd written that script, I started to wonder if there were any
+other interesting uses for it. One quickly sprang to mind: if I had
+some sort of machine-processable description of a picture drawn on
+the surface of a sphere, then it surely shouldn't be too difficult
+to adapt
+<code>drawnet.py</code>
+so that it projected that image on to its input polyhedron, and
+produced a net with pieces of the picture drawn on the faces. Then
+you could cut, score, fold and glue as usual, and you'd end up with
+a polyhedron that had your picture drawn on its surface. This would
+enable me to make, for example, polyhedral globes.
+
+<p>
+(Yes, I know you can just <em>buy</em> icosahedral globes, or
+freely download an
+<a href="http://www.ngdc.noaa.gov/mgg/fliers/04mgg02.html">existing printable net</a>.
+But I thought it would be more fun to make my own, starting from raw
+data about the shape of the Earth. Also, my technique of starting
+with a spherical image and specifying the polyhedron at the last
+moment is more adaptable: if I happen to want a cubic globe, or a
+dodecahedral one, or an icosahedron with the poles in the centres of
+faces instead of at vertices, or even a <em>tetrahedral</em> globe
+for some strange reason, it's the work of a couple of minutes to
+re-run the program with different parameters and print a different
+net.)
+
+<p>
+Once I'd put together the infrastructure to do this, I found a few
+other uses for it. On this page I exhibit the various polyhedral
+pictures I've developed, provide PDF nets for download, and talk a
+bit about how they were done.
+
+<h2>General technique</h2>
+
+<p>
+All the pictures I've drawn have been created by first designing a
+spherical image and then projecting it on to a polyhedron. The
+projection I used is the obvious one for this purpose, the <a
+href="http://en.wikipedia.org/wiki/Gnomonic_projection">gnomonic
+projection</a>: to determine the colour of a point on the
+polyhedron, a line is drawn between that point and the centre of the
+sphere, and whatever point on the sphere it intersects determines
+the colour used. This projection has the property that great circle
+arcs (geodesics on the sphere) are mapped to straight lines
+(geodesics in the plane).
+
+<p>
+Distortion due to the gnomonic projection increases the greater the
+angle between the sphere surface and the corresponding piece of
+plane. This means that in my polyhedral models, the greatest
+faithfulness to the original spherical image is found at the centres
+of the faces of the polyhedron, and the greatest distortion at the
+edges and vertices.
+
+<p>
+Generally I've designed my spherical images by means of defining
+polygons on the sphere: sequences of points connected in a cycle by
+great circle arcs. Each polygon is filled in a given colour; if many
+colours are needed, many polygons must be used.
+
+<p>
+Defining a polygon on a sphere does not give a clearly defined
+inside and outside: any closed curve on a sphere merely divides the
+surface into two disjoint regions, and you must then establish a
+convention as to which is inside and which outside. The cleanest
+solution to this would have been to define the boundary curve as
+always going in the same direction around the region: if we chose
+that direction to be anticlockwise, for example, then the inside
+region would be the one on your left if you stood on the surface of
+the sphere and walked along the curve.
+
+<p>
+I did try designing a spherical image format based on this approach,
+but it proved impractical: projecting a region of this type on to an
+arbitrary plane polygon turns out to have a lot more special cases
+than you think it does. So instead I resorted to a much more ad-hoc
+approach: I simply constrain all my spherical polygons to cover a
+reasonably small area of the sphere's surface, and then provided a
+polygon remains closed when projected on to a plane, I always know
+that the inside of the polygon on the plane is the inside of it on
+the sphere. This enables me to do the projection in PostScript,
+which turns out to be convienient, and then to simply rely on
+PostScript's <code>clip</code> operator to constrain the projected
+image to the appropriate plane polygon. Another advantage of this
+comparatively ad-hoc approach is that it also allows me to use
+PostScript's other graphical primitives when they seem appropriate:
+for example, I can use <code>stroke</code> if I want to do line
+drawings on the polyhedron's surface.
+
+<h2>The pictures</h2>
+
+<p>
+Click on the pictures of the polyhedra below to see a detailed page
+about each model, complete with downloadable PDF nets to make your
+own.
+
+<p style="clear: both">
+<a href="globe.html"><img style="float: right; margin-left: 1em; margin-bottom: 1em" alt="" width=150 height=150 border=0 src="bwglobesmall.jpeg" /></a>
+My first picture of this type was a polyhedral globe. I generated
+the data using the
+<a href="http://edc.usgs.gov/products/elevation/gtopo30/gtopo30.html">GTOPO30</a>
+data set from the 
+<a href="http://www.usgs.gov/">US Geological Survey</a>,
+which gives the elevation in metres above sea level for a set of
+points spaced across the entire globe with maximum separation of
+about a kilometre. However, since I only had a black and white
+printer at the time, my initial globe ignored most of the detail of
+the elevation data, and simply drew land in black and sea in white.
+
+<p style="clear: both">
+<a href="amble.html"><img style="float: right; margin-left: 1em; margin-bottom: 1em" alt="" width=150 height=150 border=0 src="amblesmall.jpeg" /></a>
+<img style="float: right; margin-left: 1em; margin-bottom: 1em" alt="" width=150 height=150 border=0 src="amble-orig.png" />
+Searching for other things I could do with a black and white
+printer, I hit on the idea of making a polyhedral model of
+<a href="http://tartarus.org/gareth/people/eek/index2.html">Amble</a>,
+a small fluffy panda who lives with some good friends of mine. Amble
+is entirely black and white, and basically spherical in shape, so he
+was an excellent model for learning the art of actually
+<em>drawing</em> spherical images (as opposed to mechanically
+constructing them from existing data, as I did for the globe).
+
+<p style="clear: both">
+<a href="badger.html"><img style="float: right; margin-left: 1em; margin-bottom: 1em" alt="" width=150 height=150 border=0 src="badgersmall.jpeg" /></a>
+Amble was a success, so I wondered about modelling other animals.
+Finding a good one within my monochrome constraint proved difficult,
+though: there are quite a few attractive black and white animals
+(zebra, penguin, Dalmatian), but most of them depend critically on
+their <em>shape</em>. A polyhedral model of a Dalmatian, for
+instance, would just be a spotty polyhedron with a face, and
+wouldn't really capture the appeal of the original. I eventually
+found a good subject in the
+<a href="http://en.wikipedia.org/wiki/Badger">badger</a>;
+and as an added bonus, my friend
+<a href="http://www.chiark.greenend.org.uk/~janetmck/">Janet</a>
+is fond of badgers, so I knew she'd like to have one after I'd made
+it.
+
+<p style="clear: both">
+<a href="globe.html"><img style="float: right; margin-left: 1em; margin-bottom: 1em" alt="" width=150 height=150 border=0 src="cglobesmall.jpeg" /></a>
+At this point, my frustration with these models being constrained to
+black and white finally motivated me (along with a few other things)
+to buy a colour laser printer. One of the first things I did with it
+was to go back to my original polyhedral globe, and turn it into
+full colour by rendering different elevations in different colours.
+The result is much more attractive than the black and white globe,
+if you have the printer technology to build it.
+
+<p style="clear: both">
+<a href="eek.html"><img style="float: right; margin-left: 1em; margin-bottom: 1em" alt="" width=200 height=150 border=0 src="eeksmall.jpeg" /></a>
+<img style="float: right; margin-left: 1em; margin-bottom: 1em" alt="" width=200 height=150 border=0 src="eek-orig.png" />
+Also, my polyhedral model of Amble was feeling a bit lonely without
+a polyhedral model of Amble's best friend
+<a href="http://tartarus.org/gareth/people/eek/index2.html">Eek!</a>
+the bat to talk to. Now that I had colour, Eek! became a feasible
+project, although I had to perpetrate a bit of a bodge to get his
+wings on.
+
+<p style="clear: both">
+<a href="dodec-cubes.html"><img style="float: right; margin-left: 1em; margin-bottom: 1em" alt="" width=150 height=150 border=0 src="dodec-cubes-small.jpeg" /></a>
+It's well known among polyhedra enthusiasts that the regular
+dodecahedron has a special relationship with the cube: given a
+dodecahedron, you can find eight of its 20 vertices which are the
+vertices of a cube, such that the edges of the cube run along face
+diagonals of the dodecahedron. In fact, by symmetry, you can find
+five overlapping such sets of eight vertices.
+My friend
+<a href="http://tartarus.org/gareth/">Gareth</a>
+teaches maths to undergraduates, and thought it would be instructive
+(and pretty) to have a model of a dodecahedron with those cubes
+drawn on its surface, for discussing the symmetry group of the
+dodecahedron. So I made him one.
+
+<h2 style="clear: both">Designing your own pictures</h2>
+
+<p>
+If you want to design polyhedral pictures of your own using my
+software, here's how. Unfortunately you will need to understand some
+linear algebra and some PostScript programming to do this: I don't
+have a pre-cooked solution for people who just want to play with a
+drawing package. (A drawing package which used a sphere as its
+canvas would be a really nice way to do this sort of thing, but it
+would cost an enormous amount of implementation effort for a
+relatively minor application.)
+
+<p>
+You need to start by downloading my software suite, 
+<a href="../polyhedra/polyhedra.tar.gz">polyhedra.tar.gz</a>,
+from my other
+<a href="../polyhedra/">polyhedra page</a>. This is all written in
+basic core Python, so provided you have Python installed on your
+system you should be able to run the programs. (If you don't have
+Python installed, you'll need to
+<a href="http://www.python.org/">install it</a>, which should be
+possible on most major operating systems.)
+
+<p>
+Now you'll need to write a piece of PostScript which creates a
+spherical image. In fact the PostScript must define not only the
+image, but also the projection on to the faces of the solid.
+Specifically, it must define a procedure called
+<code>picture</code>, which takes two arguments:
+<ul>
+<li>
+An array of length 9, containing a 3&#215;3 matrix in columns-first
+order. (That is, the first column of the matrix is stored in
+elements 0,1,2 of the array, and the first row is stored in elements
+0,3,6.) This matrix is guaranteed to be orthogonal.
+<li>
+A z-coordinate.
+</ul>
+The <code>picture</code> procedure is then expected to transform its
+spherical image by premultiplying all coordinates by the given
+matrix, project the result on to the plane which has the specified
+z-coordinate, and draw it using PostScript drawing operators. The
+caller will have already transformed the coordinate space so that
+the result appears in the right place, and used <code>clip</code> to
+constrain the output to the appropriate polygon.
+
+<p>
+Once you have such a picture file, producing a polyhedral net should
+be as simple as running <code>drawnet.py</code> in the normal way
+(providing an input polyhedron file and an output PostScript file
+name), but also giving an extra argument which uses <code>-p</code>
+to specify the picture file. For example, one might run
+<pre>
+./drawnet.py -pmypicture.ps dodecahedron mynet.ps
+</pre>
+(having previously acquired a polyhedron file describing a
+dodecahedron, and written a picture description in
+<code>mypicture.ps</code>). This should generate a file called
+<code>mynet.ps</code> which is the net of a dodecahedron with your
+picture projected on to it.
+
+<hr>
+(comments to <a href="mailto:&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;">&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;</a>)
+<br>
+(thanks to
+<a href="http://www.chiark.greenend.org.uk/">chiark</a>
+for hosting this page)
+<br>
+(last modified on <!--LASTMOD-->[insert date here]<!--END-->)
+</body>
+</html>
