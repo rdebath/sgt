@@ -1,0 +1,84 @@
+/steps 64 def
+
+/dotransform {
+  /z exch def /y exch def /x exch def
+  x mx 0 get mul y mx 3 get mul z mx 6 get mul add add
+  x mx 1 get mul y mx 4 get mul z mx 7 get mul add add
+  x mx 2 get mul y mx 5 get mul z mx 8 get mul add add
+} def
+
+/point {
+  dotransform
+  /z exch def /y exch def /x exch def
+  /len x x mul y y mul z z mul add add sqrt def
+  /x x len div def
+  /y y len div def
+  /z z len div def
+  z -0.5 lt { /pathpresent false def } if
+  z 0.1 lt {
+    /len x x mul y y mul add sqrt def
+    len 0 eq { /pathpresent false def } {
+      /x x len div def
+      /y y len div def
+      /z 0.1 def
+    } ifelse
+  } if
+  x height mul z div y height mul z div op
+  /op {lineto} def
+} def
+
+/face {
+  /yv exch def
+  /xv exch def
+  /ov exch def
+  0 1 steps {
+    dup steps div /xc exch def
+    dup 0.5 sub dup 0 lt { pop 0 } if steps div /xmin exch def
+    0.5 add dup steps gt { pop steps } if steps div /xmax exch def
+    0 1 steps {
+      dup steps div /yc exch def
+      dup 0.5 sub dup 0 lt { pop 0 } if steps div /ymin exch def
+      0.5 add dup steps gt { pop steps } if steps div /ymax exch def
+      3 1 5 { cvi /i exch def
+        ov i get xv i get xc mul yv i get yc mul add add
+      } for
+%2 index =only ( )=only 1 index =only ( )=only 0 index =only ( setrgbcolor)=
+      setrgbcolor
+      newpath /pathpresent true def
+      /op {moveto} def
+      0 1 2 { /i exch def
+        ov i get xv i get xmin mul yv i get ymin mul add add
+      } for
+%2 index =only ( )=only 1 index =only ( )=only 0 index =only ( moveto)=
+      point
+      0 1 2 { /i exch def
+        ov i get xv i get xmax mul yv i get ymin mul add add
+      } for
+%2 index =only ( )=only 1 index =only ( )=only 0 index =only ( lineto)=
+      point
+      0 1 2 { /i exch def
+        ov i get xv i get xmax mul yv i get ymax mul add add
+      } for
+%2 index =only ( )=only 1 index =only ( )=only 0 index =only ( lineto)=
+      point
+      0 1 2 { /i exch def
+        ov i get xv i get xmin mul yv i get ymax mul add add
+      } for
+%2 index =only ( )=only 1 index =only ( )=only 0 index =only ( lineto)=
+      point
+      pathpresent {
+%(closepath fill)=
+        closepath fill
+      } if
+    } for
+  } for
+} def
+
+/picture { /height exch def /mx exch def
+  [-1 -1 -1 0 0 0] [2 0 0 1 0 0] [0 2 0 0 1 0] face
+  [-1 -1 -1 0 0 0] [2 0 0 1 0 0] [0 0 2 0 0 1] face
+  [-1 -1 -1 0 0 0] [0 2 0 0 1 0] [0 0 2 0 0 1] face
+  [1 1 1 1 1 1] [-2 0 0 -1 0 0] [0 -2 0 0 -1 0] face
+  [1 1 1 1 1 1] [-2 0 0 -1 0 0] [0 0 -2 0 0 -1] face
+  [1 1 1 1 1 1] [0 -2 0 0 -1 0] [0 0 -2 0 0 -1] face
+} def
