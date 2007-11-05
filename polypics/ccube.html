@@ -1,0 +1,76 @@
+<html>
+<head>
+<title>Building a colour cube</title>
+</head>
+<link rel="stylesheet" type="text/css" href="../sitestyle.css" name="Simon Tatham's Home Page Style">
+<body>
+<h1 align=center>Printing Pictures on the Surface of Polyhedra</h1>
+<h2 align=center>Building a colour cube</h2>
+
+<p align=center>
+[go back to the main <a href="./">polyhedral pictures page</a>]
+
+<p align=center>
+<img alt="" width=450 height=450 border=0 src="ccubelarge.jpeg" />
+
+<p>
+Making a colour cube is kind of an obvious thing to do if you're
+looking around for interesting or significant things to draw on the
+surface of a polyhedron.
+
+<p>
+For anyone who doesn't already understand the concept: a colour on a
+computer is generally represented using three numbers giving the
+intensities of red, green and blue light that make up the colour. An
+obvious way to plot these in a graphical representation is to assign
+one to each of the three coordinates in 3-D space, which gives you a
+notional cube in which every point represents a different colour.
+For more information (and links to far more detail than you could
+reasonably want), see
+<a href="http://en.wikipedia.org/wiki/RGB_color_model">Wikipedia</a>.
+
+<p>
+Of course, most of the available colours are in the
+<em>interior</em> of the colour cube, but a model of this type can
+only show the surface. But that's OK; all the most vivid colours are
+on the surface, so that's the part that looks the prettiest!
+
+<p>
+Much like the construction of the
+<a href="dodec-cubes.html">cube-marked dodecahedron</a>,
+this project was most simply done by hand-writing a picture
+description file which defined a load of small filled rectangles in
+3-D space, and made sure the locations of those rectangles matched
+up to the cube.
+
+<p>
+When I came to print it, it turned out that it's quite a demanding
+test of a colour printer, and shows up interesting features of its
+colour response which you might not have expected. On my printer,
+for example, there's a clearly visible part of the surface of the
+cube which looks like a particularly pure cyan &#8211; but it's not
+at what ought to be the cyan corner of the cube. Instead, it's
+part-way along one edge from that corner. Presumably the printer is
+doing some sort of non-trivial internal processing when translating
+PostScript <code>setrgbcolor</code> commands into CMYK.
+
+<h2>Downloads</h2>
+
+<p>
+Here's the <a href="ccube.pdf">PDF net of the colour cube</a>.
+
+<hr>
+
+<p>
+[go back to the main <a href="./">polyhedral pictures page</a>]
+<p>
+(comments to <a href="mailto:&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;">&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;</a>)
+<br>
+(thanks to
+<a href="http://www.chiark.greenend.org.uk/">chiark</a>
+for hosting this page)
+<br>
+(last modified on <!--LASTMOD-->[insert date here]<!--END-->)
+
+</body>
+</html>
