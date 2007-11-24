@@ -187,6 +187,25 @@ function fix_tables(string t) : string
     return fix_tables($t);
 }
 
+function fix_objects(string t) : string
+{
+    # For a reason I don't yet fully understand, <object> tags
+    # output by this style cause complete chaos in some subsequent
+    # processing by LJ. So I remove them mercilessly.
+
+    var int objpos;
+    var int closepos;
+
+    $objpos = rindex($t, "<object");
+    if ($objpos > 0) {
+        $closepos = rindex($t, "</object>");
+	$t = $t->substr(0, $objpos) + "[object tag omitted]" + $t->substr($closepos+9, $t->length()-$closepos-9);
+    } else {
+        return $t;
+    }
+    return fix_objects($t);
+}
+
 function print_stylesheet () {
 """body, td {
 font-family: verdana, sans-serif;
@@ -440,7 +459,7 @@ function print_entry (Page p, Entry e, Color bgcolor, Color fgcolor, bool hide_t
         $metadata = """$metadata</table><p>""";
     }
     if (not $hide_text) {
-        print fix_tables($e.text);
+	print fix_objects(fix_tables($e.text));
 	print $metadata;
     }
 """</td></tr>
