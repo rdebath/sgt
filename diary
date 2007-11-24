@@ -780,6 +780,14 @@ class output:
         if self.news_ok:
             self.news_add_word(text, 0)
 
+    def wbr(self):
+	if self.html_ok:
+	    self.html = self.html + "<wbr>"
+	if self.mono_ok:
+	    self.mono_add_word("", self.mono_attr, 1)
+	if self.news_ok:
+	    self.news_add_word("", 1)
+
     def special(self, keyword):
 	if keyword == "pound":
 	    if self.html_ok:
@@ -1151,6 +1159,8 @@ def rdinput(file):
 		    # Eat a real line break immediately following a {br}.
 		    if tok2[0] == NL:
 			t.next()
+		elif tok[1] == "wbr":
+		    o.wbr()
 		elif tok[1] == "tl":
 		    if para_type != PTALKER:
 			sys.stderr.write("{tl} tag not in {talker} para\n")
