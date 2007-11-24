@@ -63,6 +63,7 @@ def isint(s):
 #    on title-using systems, but is formatted normally on Mono).
 #  - PTITLEONLY is a title paragraph which _only_ appears in
 #    title-using systems.
+#  - PFOOTNOTE is a footnote paragraph, for systems which care.
 #  - PTALKER is a talker-formatted paragraph.
 PNORMAL = 1
 PPRE = 2
@@ -71,7 +72,8 @@ PMBREAK = 4
 PTITLE = 5
 PTITLEQUIET = 6
 PTITLEONLY = 7
-PTALKER = 8
+PFOOTNOTE = 8
+PTALKER = 9
 def is_title(typ): return typ in [PTITLE,PTITLEQUIET,PTITLEONLY]
 # Mono attribute definitions.
 mono_colours = "AAAAAAAAKRGYBMCW" # 0-7 normal, 8-15 coloured
@@ -118,6 +120,7 @@ class output:
 	self.news_in_word = 0
 	self.mono_wordcount = 0
 	self.news_wordcount = 0
+	self.para_type = -1
 	pass
 
     def mono_blankline(self):
@@ -439,6 +442,7 @@ class output:
 	self.news_bullet_txt = ""
 	self.emph_level = 0
 	self.code_level = 0
+	self.prev_para = self.para_type
 	self.para_type = typ
 
 	if typ == PBULLET:
@@ -467,6 +471,10 @@ class output:
 		self.mono_ok = 0
 	if typ == PNORMAL:
 	    self.html = self.html + "<p>"
+	if typ == PFOOTNOTE:
+	    if self.prev_para != PFOOTNOTE:
+		self.html = self.html + "<hr align=left style=\"border: none; border-bottom: solid 0.02em; margin-bottom: 0.2em; width: 10em\">"
+	    self.html = self.html + "<p style=\"margin-top: 0pt; margin-bottom: 0pt; font-size: 80%\">"
 	if typ == PTALKER:
 	    self.html = self.html + "<table cellspacing=\"0\" cellpadding="
 	    self.html = self.html + "\"0\" border=\"0\">"
@@ -479,7 +487,7 @@ class output:
         bullet = 0
 	if typ == PPRE:
 	    self.html = self.html + "</code></pre>"
-	if typ == PNORMAL:
+	if typ == PNORMAL or typ == PFOOTNOTE:
 	    self.html = self.html + "</p>"
 	if typ == PBULLET:
 	    self.html = self.html + "</li>"
@@ -574,7 +582,10 @@ class output:
 
     def footnote(self, text):
 	if self.html_ok:
-	    self.html = self.html + "<span style=\"color: red\">["+text+"]</span>"
+	    if self.para_type == PFOOTNOTE:
+		self.html = self.html + text + "."
+	    else:
+		self.html = self.html + "<span style=\"font-size: 70%; vertical-align: top\">"+text+"</span>"
         if self.mono_ok:
             self.mono_add_word("["+text+"]", ATTR_FOOTNOTE, 0)
         if self.news_ok:
@@ -1095,6 +1106,12 @@ def rdinput(file):
 		t.next()
 		stack = ["tonly"]
 		para_type = PTITLEONLY
+		break
+	    elif tok[0] == TSIMPLE and isint(tok[1]):
+		# Do not eat the token; it's a paragraph type
+		# identifier _and_ used as part of the paragraph's
+		# body text.
+		para_type = PFOOTNOTE
 		break
 	    elif tok == (NL,) or tok == (PARA,) or tok == (WHITE,):
 		t.next()
