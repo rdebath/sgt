@@ -76,34 +76,37 @@ struct group {
 
 /* ----------------------------------------------------------------------
  * Group parameter structure which deals with groups that are
- * basically permutations.
+ * basically permutations. In this section we also handle groups
+ * which are permutations of multisets, i.e. which have some sets
+ * of identical elements.
  */
 struct perm {
     struct group vtable;
-    int n;
+    int total, n, *counts;
     int nmoves;
     char *movenames;
     int **moves;
 };
 
-
 int perm_eltsize(struct group *gctx)
 {
     struct perm *ctx = (struct perm *)gctx;
 
-    return ctx->n * sizeof(int);
+    return ctx->total * sizeof(int);
 }
 
 int perm_identity(struct group *gctx, void *velt, int index)
 {
     struct perm *ctx = (struct perm *)gctx;
     int *elt = (int *)velt;
-    int i;
+    int i, j, k;
 
     if (index > 0) return 0;
 
-    for (i = 0; i < ctx->n; i++)
-	elt[i] = i;
+    for (i = j = 0; i < ctx->n; i++) {
+	for (k = 0; k < ctx->counts[i]; k++)
+	    elt[j++] = i;
+    }
 
     return 1;
 }
@@ -112,17 +115,71 @@ int perm_index(struct group *gctx, void *velt)
 {
     struct perm *ctx = (struct perm *)gctx;
     int *elt = (int *)velt;
-    int i, j, mult, ret;
+    int i, j, k, n, nck, K, N, NcK, subindex, mult, ret;
+    int *p;
+
+    n = ctx->total;
 
     ret = 0;
-    mult = ctx->n;
-    for (i = 0; i < ctx->n-1; i++) {
-	int k = 0;
-	for (j = 0; j < i; j++)
-	    if (elt[j] < elt[i])
-		k++;
-	ret = ret * mult + elt[i] - k;
-	mult--;
+    mult = 1;
+    for (i = 0; i < ctx->n; i++) {
+	k = ctx->counts[i];
+
+	/*
+	 * We are completely ignoring elements of elt[] less than
+	 * i; among the remaining n, we are looking for the k
+	 * elements equal to i, and constructing an index in the
+	 * range 0 to (n choose k)-1 indicating their positions in
+	 * the list.
+	 * 
+	 * So, first compute n choose k.
+	 */
+	K = k;
+	if (K+K > n)
+	    K = n - K;
+	nck = 1;
+	for (j = 0; j < K; j++)
+	    nck = (nck * (n-j)) / (j+1);
+
+	/*
+	 * Now adjust this gradually as we go through the array.
+	 */
+	p = elt;
+	subindex = 0;
+	K = k;
+	N = n;
+	NcK = nck;
+	while (1) {
+	    if (K == 0)
+		break;
+
+	    while (*p < i)
+		p++;		       /* ignore this element */
+
+	    if (*p == i) {
+		/*
+		 * First element found.
+		 */
+		NcK = NcK * K / N;
+		K--;
+	    } else {
+		/*
+		 * First element not found, meaning we have just
+		 * skipped over (N-1 choose K-1) positions.
+		 */
+		subindex += NcK * K / N;
+		NcK = NcK * (N-K) / N;
+	    }
+	    p++;
+	    N--;
+	}
+
+	/*
+	 * Now subindex is the value we want.
+	 */
+	ret += subindex * mult;
+	mult *= nck;
+	n -= k;
     }
 
     return ret;
@@ -132,28 +189,84 @@ void perm_fromindex(struct group *gctx, void *velt, int index)
 {
     struct perm *ctx = (struct perm *)gctx;
     int *elt = (int *)velt;
-    int i, j, mult;
+    int i, j, k, n, nck, K, N, NcK, subindex, max;
+    int *p;
 
-    elt[ctx->n-1] = 0;
-    mult = 2;
-    for (i = ctx->n-1; i-- ;) {
-	elt[i] = index % mult;
-	index /= mult;
-	for (j = i+1; j < ctx->n; j++)
-	    if (elt[j] >= elt[i])
-		elt[j]++;
-	mult++;
+    n = max = ctx->total;
+
+    for (i = 0; i < n; i++)
+	elt[i] = max;		       /* `not set yet' value */
+
+    for (i = 0; i < ctx->n; i++) {
+	k = ctx->counts[i];
+
+	/*
+	 * We divide index by (n choose k) and use the remainder
+	 * to decide which of the n elements of elt[] currently
+	 * set to max we should set to i.
+	 * 
+	 * So, first compute n choose k.
+	 */
+	K = k;
+	if (K+K > n)
+	    K = n - K;
+	nck = 1;
+	for (j = 0; j < K; j++)
+	    nck = (nck * (n-j)) / (j+1);
+
+	subindex = index % nck;
+	index /= nck;
+
+	/*
+	 * Now adjust this gradually as we go through the array.
+	 */
+	p = elt;
+	K = k;
+	N = n;
+	NcK = nck;
+	while (K > 0) {
+	    while (*p != max)
+		p++;
+	    if (subindex < NcK * K / N) {
+		/*
+		 * First element is here.
+		 */
+		*p = i;
+		NcK = NcK * K / N;
+		K--;
+	    } else {
+		/*
+		 * It isn't.
+		 */
+		subindex -= NcK * K / N;
+		NcK = NcK * (N-K) / N;
+	    }
+	    p++;
+	    N--;
+	}
+
+	n -= k;
     }
 }
 
 int perm_maxindex(struct group *gctx)
 {
     struct perm *ctx = (struct perm *)gctx;
-    int f, i;
+    int f, i, j, k, n, nck;
+
+    n = ctx->total;
 
     f = 1;
-    for (i = 1; i <= ctx->n; i++)
-	f *= i;
+    for (i = 0; i < ctx->n; i++) {
+	k = ctx->counts[i];
+	if (k+k > n)
+	    k = n - k;
+	nck = 1;
+	for (j = 0; j < k; j++)
+	    nck = (nck * (n-j)) / (j+1);
+	f *= nck;
+	n -= k;
+    }
 
     return f;
 }
@@ -164,7 +277,7 @@ void perm_printelt(struct group *gctx, void *velt)
     int *elt = (int *)velt;
     int i;
 
-    for (i = 0; i < ctx->n; i++)
+    for (i = 0; i < ctx->total; i++)
         printf("%s%d", i ? "," : "", elt[i]+1);
 }
 
@@ -174,7 +287,7 @@ char *perm_parseelt(struct group *gctx, void *velt, char *s)
     int *elt = (int *)velt;
     int i, j;
 
-    for (i = 0; i < ctx->n; i++) {
+    for (i = 0; i < ctx->total; i++) {
         while (*s && !isdigit((unsigned char)*s)) s++;
         if (!*s)
             return "Not enough numbers in list";
@@ -183,11 +296,12 @@ char *perm_parseelt(struct group *gctx, void *velt, char *s)
     }
 
     for (i = 0; i < ctx->n; i++) {
-        for (j = 0; j < ctx->n; j++)
-            if (elt[i] == j)
-                break;
-        if (j == ctx->n)
-            return "Numbers were not a permutation";
+	int c = 0;
+        for (j = 0; j < ctx->total; j++)
+            if (elt[j] == i)
+		c++;
+        if (c != ctx->counts[i])
+            return "Wrong number of some index";
     }
 
     return NULL;
@@ -253,10 +367,20 @@ int *twiddle3x3_moves[] = {
     twiddle3x3_movedata + 7 * 6,
 };
 
+int twiddle3x3counts[] = { 1,1,1,1,1,1,1,1,1 };
+int rtwiddle3x3counts[] = { 3,3,3 };
+
 struct perm twiddle3x3 = {
     {perm_eltsize, perm_identity, perm_index, perm_fromindex, perm_maxindex,
      perm_printelt, perm_parseelt, perm_moves, perm_makemove, perm_movename},
-    9,
+    9, 9, twiddle3x3counts,
+    8, "a\0b\0c\0d\0A\0B\0C\0D", twiddle3x3_moves
+};
+
+struct perm rtwiddle3x3 = {
+    {perm_eltsize, perm_identity, perm_index, perm_fromindex, perm_maxindex,
+     perm_printelt, perm_parseelt, perm_moves, perm_makemove, perm_movename},
+    9, 3, rtwiddle3x3counts,
     8, "a\0b\0c\0d\0A\0B\0C\0D", twiddle3x3_moves
 };
 
@@ -441,11 +565,13 @@ int *twiddle4x4_moves[] = {
     twiddle4x4_movedata + 7 * 11,
 };
 
+int twiddle4x4counts[] = { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 };
+
 struct perm twiddle4x4 = {
     {perm_eltsize, perm_identity, twiddle4x4_index, twiddle4x4_fromindex,
      twiddle4x4_maxindex, perm_printelt, twiddle4x4_parseelt, perm_moves,
      perm_makemove, perm_movename},
-    16,
+    16, 16, twiddle4x4counts,
     8, "a\0b\0c\0d\0A\0B\0C\0D", twiddle4x4_moves
 };
 
@@ -970,6 +1096,7 @@ struct namedgroup {
     {"twiddle3x3", &twiddle3x3.vtable},
     {"twiddle4x4", &twiddle4x4.vtable},
     {"otwiddle3x3", &otwiddle3x3.vtable},
+    {"rtwiddle3x3", &rtwiddle3x3.vtable},
     {"cube3x3", &cube3x3.vtable},
     {"cube4x4", &cube4x4.vtable},
 };
