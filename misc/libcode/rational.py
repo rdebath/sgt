@@ -310,7 +310,6 @@ class Rational:
             
             nn = abs(self.n) * nexp
             dd = self.d * dexp
-            print nn, dd
             digits = nn / dd
 
             # round appropriately
@@ -454,3 +453,21 @@ def sqrt(r, maxerr=2L**128, maxsteps=None):
         return 1/result
     else:
         return result
+
+# Return the exact value of an IEEE 754 number.
+def rat754(x):
+    sign = (x >> 63) & 1
+    exp = (x >> 52) & 0x7FF
+    mant = x & 0x000FFFFFFFFFFFFFL
+    if exp == 0x7FF:
+        raise ValueError, "Cannot convert infinity or NaN to a rational"
+    elif exp > 0:
+        mant = mant | 0x0010000000000000L
+    else:
+        exp = exp + 1 # denorms have the same real exponent value as exp=1
+    exp = exp - 0x3FF
+    exp = exp - 52
+    if exp < 0:
+        return Rational(mant, 2**-exp)
+    else:
+        return Rational(mant * 2**exp)
