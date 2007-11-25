@@ -1,0 +1,96 @@
+/* -*- c -*-
+ * 
+ * Derive a parametric model of a Mobius strip transformed to have
+ * a circular edge.
+ * 
+ * Background: a Mobius strip embedded in R^3 has a single edge,
+ * which forms a continuous closed curve. That curve is
+ * _unknotted_, meaning that it can be continuously deformed into
+ * a circle. (Specifically, the usual shape of the curve is
+ * roughly the shape you get if you double up a rubber band so it
+ * goes round something twice.) So one can imagine performing a
+ * homeomorphism on R^3 which transforms the Mobius strip's edge
+ * into a circle; and the question is, after you do that, what
+ * happens to the _surface_ of the strip?
+ * 
+ * This is not a new question; Wikipedia describes the resulting
+ * object as a `Sudanese Mobius Strip'. However, it came up in
+ * conversation among some friends of mine and I thought it would
+ * be satisfying to construct my own mathematical model of the
+ * resulting surface. Here it is.
+ * 
+ * This file is designed to be used as input to the free computer
+ * algebra program Maxima; it derives and constructs a relatively
+ * simple and aesthetically pleasing parametric formula for the
+ * surface in terms of two parameters u,v. A convenient way to
+ * visualise the result is to plot it in gnuplot. To do this most
+ * easily, simply issue the following command line on a reasonably
+ * modern Linux box equipped with Maxima, gnuplot, perl and my
+ * `xcopy' program:
+ * 
+maxima -b mobius.max | perl -pe 's/\\\n//sg' | tail -1 | perl -pe 'BEGIN{print "set urange [0:1]\nset vrange [0:1]\nset parametric\nset hidden\nset isosamples 30\nsplot "} s/^.*\[(.*)\].*$/$1/; s/%pi/pi/g; s:\^:**:g' | xcopy; gnuplot
+ * 
+ * Then hit the terminal's paste button once the gnuplot prompt
+ * appears.
+ */
+
+/*
+ * Construct a series of transformations which turn the unit
+ * circle in the x-y plane into something which might plausibly
+ * form the edge of an ordinary embedding of a Mobius strip. Each
+ * transformation must a homeomorphism of R^3, and hence in
+ * particular invertible.
+ *
+ * The individual transformations are as follows:
+ * 
+ *  - f applies a twist about the x-axis, by rotating the plane
+ *    x=k by an amount proportional to k, for all k in R. The
+ *    twist is set up so that the x=1 end of the unit circle
+ *    remains where it started, and the x=-1 end is in the same
+ *    place but rotated 180 degrees so that it's heading in the
+ *    opposite direction.
+ * 
+ *  - g is a squash in the z-direction, squishing the twisted
+ *    circle down into something that's closer to a flat
+ *    figure-eight.
+ * 
+ *  - h elevates the two extreme-x ends of the circle in the z
+ *    direction.
+ * 
+ * So what we do is to take a unit circle; apply those
+ * transformations in order to make it an ordinary Mobius-strip
+ * edge; now construct an actual Mobius strip as the union of all
+ * straight line segments connecting pairs of points on that
+ * transformed circle which were originally 180 degrees apart;
+ * then apply the inverse homeomorphism to restore the edge to
+ * circularity.
+ * 
+ * (We rely on the fact that our transformations have mangled the
+ * unit circle into a state in which none of those line segments
+ * intersect each other. Otherwise we'd end up with a
+ * self-intersecting surface.)
+ */
+f(x,y,z) := [x, y*sin(%pi*x/2) + z*cos(%pi*x/2), -y*cos(%pi*x/2) + z*sin(%pi*x/2)];
+g(x,y,z) := [x, y, z/1.5];
+h(x,y,z) := [x, y, z+x^2];
+
+finv(x,y,z) := [x, y*sin(%pi*x/2) - z*cos(%pi*x/2), y*cos(%pi*x/2) + z*sin(%pi*x/2)];
+ginv(x,y,z) := [x, y, z*1.5];
+hinv(x,y,z) := [x, y, z-x^2];
+
+fv(v) := f(v[1],v[2],v[3]);
+gv(v) := g(v[1],v[2],v[3]);
+hv(v) := h(v[1],v[2],v[3]);
+
+finvv(v) := finv(v[1],v[2],v[3]);
+ginvv(v) := ginv(v[1],v[2],v[3]);
+hinvv(v) := hinv(v[1],v[2],v[3]);
+
+hgf(v) := hv(gv(fv(v)));
+fghinv(v) := finvv(ginvv(hinvv(v)));
+
+circle(t) := [cos(pi*t), sin(pi*t), 0];
+
+ms(t,u) := fghinv(u*hgf(circle(t)) + (1-u)*hgf(-circle(t)));
+
+string(ms(v,u));
