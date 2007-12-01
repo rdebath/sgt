@@ -231,6 +231,11 @@ mcd() {
   mkdir -p "$1" && cd "$1"
 }
 
+# `xu', to dump a UTF-8 analysis of the contents of the clipboard.
+xu() {
+  xcopy -u -r | cvt-utf8 -i
+}
+
 #}}}
 #{{{ keybindings to run Timber
 
