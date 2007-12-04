@@ -1209,7 +1209,7 @@ if (jedrc_is_in_lib("treemode.sl")) { %{{{
     autoload("du_mode", "treemode");
 }
 %}}}
-if (jedrc_is_in_lib("diary.sl")) { %{{{
+if (jedrc_is_in_lib("diarymode.sl")) { %{{{
     autoload("diary_mode", "diarymode");
 }
 %}}}
