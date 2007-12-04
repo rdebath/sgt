@@ -1210,7 +1210,7 @@ if (jedrc_is_in_lib("treemode.sl")) { %{{{
 }
 %}}}
 if (jedrc_is_in_lib("diary.sl")) { %{{{
-    autoload("diary_mode", "diary");
+    autoload("diary_mode", "diarymode");
 }
 %}}}
 if (jedrc_is_in_lib("sokoban.sl")) { %{{{
