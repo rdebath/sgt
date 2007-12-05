@@ -8,3 +8,7 @@ z       goto-end
 0       goto-line
 [       left-scroll
 ]       right-scroll
+\e\e[6~ next-file
+\e\     next-file
+\e\e[5~ prev-file
+\eb     prev-file
