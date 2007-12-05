@@ -1,0 +1,40 @@
+Summary: Servers send oversize packets, leading to garbled packet errors
+Class: wish
+Difficulty: fun
+Priority: medium
+Absent-in: 0.60
+Present-in: 2007-11-29 r7796
+Fixed-in: 2007-12-06 r7804
+Content-type: text/x-html-body
+
+<p>When using one SSH-2 server, identifying itself as "1.36_sshlib GlobalSCAPE",
+PuTTY reports "Incoming packet was garbled on decryption".  This was
+originally
+<a href="http://forum.filezilla-project.org/viewtopic.php?f=2&t=4925">reported
+as a bug in FileZilla</a>, and turns out to be a bug in the server.
+
+<p>When PuTTY opens the data channel for the SFTP session, it sends
+SSH_MSG_CHANNEL_OPEN, and states a window size of 0x7FFFFFFF
+(2147483647) bytes but a maximum packet size of 0x4000 (32768). That
+is, the server is permitted to send almost any amount of data
+without requiring an SSH-level acknowledgment from PuTTY, but may
+not send an <em>individual packet</em> larger than 32768 bytes.
+
+<p>The server is disregarding the specified maximum packet size, and is
+sending a packet of 65548 bytes. PuTTY treats this as a decryption
+failure, since the most common reason for the packet length to be
+out of range is because there was a disagreement in the bulk
+encryption between client and server, causing the packet length
+field to decrypt to random garbage data. In fact that isn't the
+cause of the problem in this case, but PuTTY unfortunately can't
+determine that by itself.
+
+<p>This appears to have started happening as of r7672 in the PuTTY
+source base, which is when PSFTP began presenting a window size
+larger than its packet size. Prior to that, this server would not
+have generated too-large packets because it was honouring the window
+size limit. However, it is the server which is behaving incorrectly;
+PuTTY's change in behaviour is entirely legitimate.
+
+<p>PuTTY now detects this particular server software and limits the
+window size it advertises in order to work around the problem.
