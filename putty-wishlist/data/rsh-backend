@@ -1,7 +1,10 @@
-Summary: rsh backend
+Summary: rsh and rexec backends
 Class: wish
 Difficulty: tricky
 Priority: low
 Content-type: text/plain
 
-There's no technical reason we shouldn't support rsh.
+There's no technical reason we shouldn't support rsh and rexec.  The only
+difference between them is that rsh relies on privileged ports while
+rexec passes a password.  Oh, and they run on different ports.  The
+protocols are documented in the manual pages for rshd and rexecd.
