@@ -10,7 +10,7 @@ this patch is out in the open, at
 so one might patch it simply by running (as root)
 
   patch /usr/share/iceweasel/chrome/browser/content/browser/browser.js \
-    < ~/src/local/firefox2.patch # or wherever
+    < ~simon/src/local/firefox2.patch # or wherever
 
 On a stock Firefox 2 install, the `chrome' directory (wherever it
 ended up) will contain a file browser.jar which replaces the
