@@ -1,19 +1,11 @@
 #!/bin/sh
 
-tmpfile=/tmp/ssh-fp-$$
+# Print the SSH key fingerprint(s) for a given host.
 
-fingerprints() {
-  while { IFS= read z; }; do
-    echo "$z" > $tmpfile
-    ssh-keygen -l -f $tmpfile
-    rm -f $tmpfile
-  done
-}
-
-if [ $# = 0 ]; then
-  fingerprints
-else
-  for i in "$@"; do
-    fingerprints < $i
-  done
-fi
+umask 077
+filename=`tempfile`
+exec 3<>$filename
+rm -f $filename
+ssh-keygen -F "$1" > /dev/fd/3
+test -s /dev/fd/3 || { echo "No key found for '$1'" >&2; exit 1; }
+ssh-keygen -lf /dev/fd/3 | awk '{print $1,$2}'
