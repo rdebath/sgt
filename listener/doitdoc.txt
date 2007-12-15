@@ -68,8 +68,8 @@ found, try compiling with -DHAVE_NO_REALPATH.
 
 Install `doitclient' somewhere on your Unix PATH. You may optionally
 want to symlink the binary to some of the alternative names `wf',
-`win', `wcmd', `wclip', `www' and `wpath'. (What each of these does
-is explained below.)
+`win', `winwait', `wcmd', `wclip', `www' and `wpath'. (What each of
+these does is explained below.)
 
 Setting up a shared secret
 --------------------------
@@ -240,7 +240,16 @@ run (for example) `win notepad'.
 
  - `win command' runs a Windows command, in much the same way as
    typing it into the Run box on the Start Menu. `win notepad', for
-   example, or `win msdev'.
+   example, or `win msdev'. It's usually useful for GUI programs,
+   although `win cmd' is occasionally also useful to start up a
+   Command Prompt in the Windows equivalent of your current Unix
+   directory.
+
+ - `winwait command' is just like `win command', but waits for the
+   command to complete before returning control to the Unix prompt.
+   You might use this if you wanted to invoke a Windows GUI
+   configuration program of some sort and then do further processing
+   once the user had finished configuring.
 
  - `wcmd command' runs a Windows command-line command, and returns
    the output to your Unix session. As a simple example, type `wcmd

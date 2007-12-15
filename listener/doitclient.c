@@ -321,6 +321,7 @@ enum {
     WCLIP,                             /* read/write the clipboard */
     WCMD,                              /* run a process with output */
     WIN,                               /* just run a process */
+    WINWAIT,			       /* run a process and wait for completion */
     WPATH,                             /* just translate a path */
 };
 
@@ -333,6 +334,7 @@ int parse_cmd(char *verb)
     if (!strcmp(verb, "wclip")) return WCLIP;
     if (!strcmp(verb, "wcmd")) return WCMD;
     if (!strcmp(verb, "win")) return WIN;
+    if (!strcmp(verb, "winwait")) return WINWAIT;
     if (!strcmp(verb, "wpath")) return WPATH;
     return NOTHING;
 }
@@ -458,6 +460,7 @@ void help(void)
 	"  -v, --verbose      log the transaction to stderr",
 	"subcommands are:",
 	"  win <command>      start Windows GUI process and don't wait",
+	"  winwait <command>  start Windows GUI process and wait for completion",
 	"  wcmd <command>     start Windows CLI process and return output",
 	"  wf <file>          path-translate a file and open in Windows",
 	"  www <URL>          open a URL in Windows's default browser",
@@ -1071,8 +1074,10 @@ int main(int argc, char **argv)
 	}
         break;
       case WIN:
+      case WINWAIT:
         if (!arg) {
-            fprintf(stderr, "doit: \"win\" requires an argument\n");
+            fprintf(stderr, "doit: \"win%s\" requires an argument\n",
+		    (cmd == WINWAIT ? "wait" : ""));
             exit(EXIT_FAILURE);
         }
 	/* For win, we do not do path translation on TRI_MAYBE. */
@@ -1087,12 +1092,14 @@ int main(int argc, char **argv)
 	}
 	if (arg2)
 	    path = dupcat(path, " ", arg2, NULL);
-        do_doit_send_str(sock, ctx, "CreateProcessNoWait\n");
+        do_doit_send_str(sock, ctx, 
+			 cmd == WINWAIT ? "CreateProcessWait\n" :
+			 "CreateProcessNoWait\n");
         do_doit_send_str(sock, ctx, path);
         do_doit_send_str(sock, ctx, "\n");
 	if (verbose)
-	    fprintf(stderr, "doit: >>> CreateProcessNoWait\ndoit: >>> %s\n",
-		    path);
+	    fprintf(stderr, "doit: >>> CreateProcess%sWait\ndoit: >>> %s\n",
+		    cmd == WINWAIT ? "" : "No", path);
         break;
       case WWW:
         if (!arg) {
