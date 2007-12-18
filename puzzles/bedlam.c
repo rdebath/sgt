@@ -74,9 +74,11 @@ static const struct piece {
      * square of an L-tetromino. Named, somewhat loosely, after the
      * place where the knobble goes.
      * 
-     * Note that the O pentacube above can also be considered in
+     * Note that the H pentacube above can also be considered in
      * this category, in which case its mnemonic letter must be
-     * considered to stand for `Half way along'.
+     * considered to stand for `Half way along'. Or you could
+     * consider it to be `Half way between the two categories', if
+     * you preferred.
      */
     {'L', 0x100074ULL},		       /* the Long leg's end */
     {'S', 0x010071ULL},		       /* the Short leg's end */
@@ -410,10 +412,14 @@ int main(void)
  * those which put the Z piece in the middle. So here's a grep
  * command which filters out the subset of solutions in which Z is
  * contained entirely within the central 2x2x2 cube.
- * (Interestingly, there are 99 such solutions, not the 198 quoted
- * on the packaging. I suspect they've somehow got confused by the
- * fact that the Z piece has an order-2 symmetry group, and
- * somehow counted each answer twice.)
+ * (Interestingly, there are 99 such solutions, but the packaging
+ * on my cube quotes 198, exactly twice as many. My guess is that
+ * they made their count by placing the Z in the centre in a fixed
+ * orientation, and enumerating the possible ways to arrange the
+ * other twelve pieces around it. This would have led them to
+ * overcount by a factor of two, since the Z has two-way
+ * rotational symmetry about an axis of the form (1, 1, 0) which
+ * they might easily have failed to notice.)
  *
  * grep -x '[^Z][^Z][^Z][^Z][^Z][^Z][^Z][^Z][^Z][^Z][^Z][^Z][^Z][^Z][^Z][^Z][^Z][^Z][^Z][^Z][^Z]..[^Z][^Z]..[^Z][^Z][^Z][^Z][^Z][^Z][^Z][^Z][^Z][^Z]..[^Z][^Z]..[^Z][^Z][^Z][^Z][^Z][^Z][^Z][^Z][^Z][^Z][^Z][^Z][^Z][^Z][^Z][^Z][^Z][^Z][^Z][^Z][^Z]'
  *
