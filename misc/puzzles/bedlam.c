@@ -20,15 +20,6 @@
  *    bounding cuboid would still be constrained to have area <=
  *    64.)
  * 
- *  - indicating that multiple pieces are interchangeable, so that
- *    many indistinguishable solutions to the Slothouber-Graatsma
- *    puzzle would not be generated. Simplest way I can think of
- *    is to tag some pieces with a `follower' flag: a follower
- *    piece may not be placed unless its predecessor has already
- *    been placed. Then a set of interchangeable pieces would be
- *    specified by setting the follower flag on all but the first
- *    of them.
- * 
  *  - permitting reflections, although I currently don't know of
  *    any puzzle which requires that (2D puzzles such as
  *    pentominoes are easily dealt with by considering them to be
@@ -66,7 +57,26 @@
  */
 
 struct piece {
-    char identifier;		       /* a vaguely mnemonic letter */
+    /*
+     * `identifier' is used during output, to indicate which piece
+     * occupies a particular square of the space. Identifier
+     * letters should ideally be mnemonic in some fashion of the
+     * piece they represent.
+     */
+    char identifier;
+    /*
+     * `followflag' is used to indicate interchangeable pieces. A
+     * piece with followflag set is inhibited from ever being
+     * placed until the previous piece in the list has already
+     * been placed. Thus, if several pieces are exactly the same
+     * shape and you want to avoid marking solutions as distinct
+     * if they differ only by permuting those pieces, you should
+     * put all of them together in one lump and mark all but the
+     * first with followflag.
+     * 
+     * This field is ignored unless you also #define USE_FOLLOWFLAG.
+     */
+    char followflag;
     unsigned long long bitpattern;
 };
 
@@ -83,18 +93,38 @@ struct piece {
  * The piece shapes.
  */
 static const struct piece pieces[] = {
-    {'F', (0x04ULL << (XMAX*2)) | (0x07ULL << XMAX) | (0x02ULL)},
-    {'I', (0x00ULL << (XMAX*2)) | (0x00ULL << XMAX) | (0x1FULL)},
-    {'L', (0x00ULL << (XMAX*2)) | (0x01ULL << XMAX) | (0x0FULL)},
-    {'N', (0x00ULL << (XMAX*2)) | (0x03ULL << XMAX) | (0x0EULL)},
-    {'P', (0x00ULL << (XMAX*2)) | (0x03ULL << XMAX) | (0x07ULL)},
-    {'T', (0x02ULL << (XMAX*2)) | (0x02ULL << XMAX) | (0x07ULL)},
-    {'U', (0x00ULL << (XMAX*2)) | (0x05ULL << XMAX) | (0x07ULL)},
-    {'V', (0x01ULL << (XMAX*2)) | (0x01ULL << XMAX) | (0x07ULL)},
-    {'W', (0x01ULL << (XMAX*2)) | (0x03ULL << XMAX) | (0x06ULL)},
-    {'X', (0x02ULL << (XMAX*2)) | (0x07ULL << XMAX) | (0x02ULL)},
-    {'Y', (0x00ULL << (XMAX*2)) | (0x02ULL << XMAX) | (0x0FULL)},
-    {'Z', (0x01ULL << (XMAX*2)) | (0x07ULL << XMAX) | (0x04ULL)},
+    {'F', 0, (0x04ULL << (XMAX*2)) | (0x07ULL << XMAX) | (0x02ULL)},
+    {'I', 0, (0x00ULL << (XMAX*2)) | (0x00ULL << XMAX) | (0x1FULL)},
+    {'L', 0, (0x00ULL << (XMAX*2)) | (0x01ULL << XMAX) | (0x0FULL)},
+    {'N', 0, (0x00ULL << (XMAX*2)) | (0x03ULL << XMAX) | (0x0EULL)},
+    {'P', 0, (0x00ULL << (XMAX*2)) | (0x03ULL << XMAX) | (0x07ULL)},
+    {'T', 0, (0x02ULL << (XMAX*2)) | (0x02ULL << XMAX) | (0x07ULL)},
+    {'U', 0, (0x00ULL << (XMAX*2)) | (0x05ULL << XMAX) | (0x07ULL)},
+    {'V', 0, (0x01ULL << (XMAX*2)) | (0x01ULL << XMAX) | (0x07ULL)},
+    {'W', 0, (0x01ULL << (XMAX*2)) | (0x03ULL << XMAX) | (0x06ULL)},
+    {'X', 0, (0x02ULL << (XMAX*2)) | (0x07ULL << XMAX) | (0x02ULL)},
+    {'Y', 0, (0x00ULL << (XMAX*2)) | (0x02ULL << XMAX) | (0x0FULL)},
+    {'Z', 0, (0x01ULL << (XMAX*2)) | (0x07ULL << XMAX) | (0x04ULL)},
+};
+
+#elif defined WHITE_IMPUZZABLE
+
+#define XMAX 3
+#define YMAX 3
+#define ZMAX 3
+#define ORIENTMASK 1
+#define USE_FOLLOWFLAG
+
+/*
+ * The piece shapes.
+ */
+static const struct piece pieces[] = {
+    {'S', 0, 0200311ULL},	       /* the S piece from the Bedlam Cube */
+    {'Z', 0, 0010013ULL},	       /* the Z piece from the Bedlam Cube */
+    {'z', 1, 0010013ULL},	       /* a second copy of Z */
+    {'L', 0, 0000071ULL},	       /* a simple L-tetromino */
+    {'T', 0, 0022130ULL},	       /* the T piece from the Bedlam Cube */
+    {'H', 0, 0200740ULL},	       /* the H piece from the Bedlam Cube */
 };
 
 #else /* ifdef BEDLAM */
@@ -112,17 +142,17 @@ static const struct piece pieces[] = {
      * Plane pentominoes, named after their identifying letter in
      * the usual pentomino nomenclature.
      */
-    {'F', 0x000472ULL},
-    {'X', 0x000272ULL},
-    {'W', 0x000463ULL},
+    {'F', 0, 0x000472ULL},
+    {'X', 0, 0x000272ULL},
+    {'W', 0, 0x000463ULL},
     /*
      * Pentacubes derived by adding a knobble above or below one
      * square of a T-tetromino. Named, somewhat loosely, after the
      * place where the knobble goes.
      */
-    {'M', 0x200072ULL},		       /* the Middle */
-    {'B', 0x020072ULL},		       /* the Base end */
-    {'H', 0x100072ULL},		       /* the Horizontal end */
+    {'M', 0, 0x200072ULL},	       /* the Middle */
+    {'B', 0, 0x020072ULL},	       /* the Base end */
+    {'H', 0, 0x100072ULL},	       /* the Horizontal end */
     /*
      * Pentacubes derived by adding a knobble above or below one
      * square of an L-tetromino. Named, somewhat loosely, after the
@@ -134,23 +164,23 @@ static const struct piece pieces[] = {
      * consider it to be `Half way between the two categories', if
      * you preferred.
      */
-    {'L', 0x100074ULL},		       /* the Long leg's end */
-    {'S', 0x010071ULL},		       /* the Short leg's end */
-    {'C', 0x100071ULL},		       /* the Corner */
+    {'L', 0, 0x100074ULL},	       /* the Long leg's end */
+    {'S', 0, 0x010071ULL},	       /* the Short leg's end */
+    {'C', 0, 0x100071ULL},	       /* the Corner */
     /*
      * Pentacubes derived by adding a knobble above or below one
      * square of a skew tetromino. Named, somewhat loosely, after
      * the place where the knobble goes.
      */
-    {'E', 0x100036ULL},		       /* an End */
-    {'I', 0x200036ULL},		       /* an Interior square */
+    {'E', 0, 0x100036ULL},	       /* an End */
+    {'I', 0, 0x200036ULL},	       /* an Interior square */
     /*
      * The two pieces left over don't fit into any particularly
      * sensible category, and are named unsystematically. To say
      * the least.
      */
-    {'T', 0x300026ULL},		       /* the Twisty one */
-    {'Z', 0x100013ULL},		  /* the Zmallest (ran out of good letters!) */
+    {'T', 0, 0x300026ULL},	       /* the Twisty one */
+    {'Z', 0, 0x100013ULL},	  /* the Zmallest (ran out of good letters!) */
 };
 
 #endif
@@ -453,6 +483,10 @@ static void recurse(unsigned long long cube, unsigned long long *placed)
 	if (unfilled >= (1ULL <<  1)) { unfilled >>=  1; bit +=  1; }
 
 	for (i = 0; i < NPIECES; i++) if (!placed[i]) {
+#ifdef USE_FOLLOWFLAG
+	    if (pieces[i].followflag && !placed[i-1])
+		continue;
+#endif
 	    for (j = 0; j < bitplacements[i][bit].len; j++) {
 		unsigned long long candidate = bitplacements[i][bit].ptr[j];
 		if (candidate & cube)
