@@ -1,5 +1,8 @@
 /*
- * Enumerate all solutions of the Bedlam Cube.
+ * Enumerate all solutions of the Bedlam Cube, and other puzzles
+ * which can be considered in the same format (namely packing
+ * arbitrarily specified polycubes into a cuboidal space of total
+ * area not more than 64).
  * 
  * The idea for optimising the search algorithm was cribbed from
  * http://www.danieltebbutt.com/bedlam.java by Daniel Tebbutt, but
@@ -9,20 +12,35 @@
  * runs in just under 40 minutes and produces all 19186 solutions.
  */
 
+/*
+ * Possible future features for other search spaces:
+ * 
+ *  - specifying an initial set of used bits, so that it would be
+ *    possible to search non-cuboidal spaces. (However, the
+ *    bounding cuboid would still be constrained to have area <=
+ *    64.)
+ * 
+ *  - indicating that multiple pieces are interchangeable, so that
+ *    many indistinguishable solutions to the Slothouber-Graatsma
+ *    puzzle would not be generated. Simplest way I can think of
+ *    is to tag some pieces with a `follower' flag: a follower
+ *    piece may not be placed unless its predecessor has already
+ *    been placed. Then a set of interchangeable pieces would be
+ *    specified by setting the follower flag on all but the first
+ *    of them.
+ * 
+ *  - permitting reflections, although I currently don't know of
+ *    any puzzle which requires that (2D puzzles such as
+ *    pentominoes are easily dealt with by considering them to be
+ *    NxMx1 puzzles in 3D, whereupon rotation about the x- or
+ *    y-axis is a non-reflecting 3D transform with the effect of a
+ *    reflection in 2D).
+ */
+
 #include <stdio.h>
 #include <assert.h>
 
 #define lenof(x) ( sizeof((x))/sizeof(*(x)) )
-
-/*
- * Upper bound on the number of ways any piece may be placed. The
- * top left corner can be in any of 4 x-, y- and z-coordinates,
- * and the piece can be in any of 24 orientations (that being the
- * size of the non-reflecting symmetry group of a cube - any of
- * the 6 faces can be uppermost, and the cube can then be any of 4
- * ways round given the top face).
- */
-#define MAXPLACEMENTS (4*4*4*24)
 
 /*
  * We express the shapes of pieces within the cube by using a
@@ -47,13 +65,49 @@
  *    3  2  1  0.
  */
 
+struct piece {
+    char identifier;		       /* a vaguely mnemonic letter */
+    unsigned long long bitpattern;
+};
+
+#ifdef PENTOMINOES
+
+#ifndef XMAX
+#define XMAX 10
+#endif
+#define YMAX (60 / XMAX)
+#define ZMAX 1
+#define ORIENTMASK ((1<<0) | (1<<9))
+
 /*
  * The piece shapes.
  */
-static const struct piece {
-    char identifier;		       /* a vaguely mnemonic letter */
-    unsigned long long bitpattern;
-} pieces[] = {
+static const struct piece pieces[] = {
+    {'F', (0x04ULL << (XMAX*2)) | (0x07ULL << XMAX) | (0x02ULL)},
+    {'I', (0x00ULL << (XMAX*2)) | (0x00ULL << XMAX) | (0x1FULL)},
+    {'L', (0x00ULL << (XMAX*2)) | (0x01ULL << XMAX) | (0x0FULL)},
+    {'N', (0x00ULL << (XMAX*2)) | (0x03ULL << XMAX) | (0x0EULL)},
+    {'P', (0x00ULL << (XMAX*2)) | (0x03ULL << XMAX) | (0x07ULL)},
+    {'T', (0x02ULL << (XMAX*2)) | (0x02ULL << XMAX) | (0x07ULL)},
+    {'U', (0x00ULL << (XMAX*2)) | (0x05ULL << XMAX) | (0x07ULL)},
+    {'V', (0x01ULL << (XMAX*2)) | (0x01ULL << XMAX) | (0x07ULL)},
+    {'W', (0x01ULL << (XMAX*2)) | (0x03ULL << XMAX) | (0x06ULL)},
+    {'X', (0x02ULL << (XMAX*2)) | (0x07ULL << XMAX) | (0x02ULL)},
+    {'Y', (0x00ULL << (XMAX*2)) | (0x02ULL << XMAX) | (0x0FULL)},
+    {'Z', (0x01ULL << (XMAX*2)) | (0x07ULL << XMAX) | (0x04ULL)},
+};
+
+#else /* ifdef BEDLAM */
+
+#define XMAX 4
+#define YMAX 4
+#define ZMAX 4
+#define ORIENTMASK 1		       /* constrain F to be one way round */
+
+/*
+ * The piece shapes.
+ */
+static const struct piece pieces[] = {
     /*
      * Plane pentominoes, named after their identifying letter in
      * the usual pentomino nomenclature.
@@ -99,7 +153,27 @@ static const struct piece {
     {'Z', 0x100013ULL},		  /* the Zmallest (ran out of good letters!) */
 };
 
+#endif
+
+#define AREA (XMAX*YMAX*ZMAX)
+/* Compile-time assertion to ensure we fit in a 64-bit box. */
+enum { dummy = 1 / (AREA <= 64) };
+
+#define FULL ((1ULL<<(AREA-1)) + (1ULL<<(AREA-1))-1)    /* avoid overflow */
+
+/*
+ * Upper bound on the number of ways any piece may be placed. The
+ * top left corner can be anywhere, and the piece can be in any of
+ * 24 orientations (that being the size of the non-reflecting
+ * symmetry group of a cube - any of the 6 faces can be uppermost,
+ * and the cube can then be any of 4 ways round given the top
+ * face).
+ */
+#define MAXPLACEMENTS (AREA*24)
+
 #define NPIECES lenof(pieces)
+
+static const int coordmax[3] = { XMAX, YMAX, ZMAX };
 
 /*
  * Workspace within which we build lists of piece bitmaps
@@ -187,7 +261,7 @@ static void setup_piecelists(void)
 	    }
 	}
     }
-
+ 
     /*
      * Now prepare the complete list of placement bitmaps for
      * every piece. We constrain the first piece - the F-pentomino
@@ -210,21 +284,26 @@ static void setup_piecelists(void)
 
 	for (piece = 0; piece < NPIECES; piece++) {
 	    source = pieces[piece].bitpattern;
-	    orients = (piece > 0 ? 24 : 1);
 	    placements[piece].ptr = workspaceptr;
-	    for (orient = 0; orient < orients; orient++) {
-		for (oc[0] = -4; oc[0] < 4; oc[0]++)
-		    for (oc[1] = -4; oc[1] < 4; oc[1]++)
-			for (oc[2] = -4; oc[2] < 4; oc[2]++) {
+	    for (orient = 0; orient < 24; orient++) {
+		if (piece == 0 && !(ORIENTMASK & (1ULL << orient)))
+		    continue;
+		for (oc[0] = -XMAX; oc[0] < XMAX; oc[0]++)
+		    for (oc[1] = -YMAX; oc[1] < YMAX; oc[1]++)
+			for (oc[2] = -ZMAX; oc[2] < ZMAX; oc[2]++) {
 			    placement = 0ULL;
 			    ok = 1;
 			    for (bit = 0; bit < 64; bit++) {
-				if (!(source & (1ULL<<bit)))
-				    continue;
 				int c[3], nc[3];
 				int i;
-				for (i = 0; i < 3; i++)
-				    c[i] = (bit >> (2*i)) & 3;
+
+				if (!(source & (1ULL<<bit)))
+				    continue;
+
+				c[0] = bit % XMAX;
+				c[1] = (bit / XMAX) % YMAX;
+				c[2] = (bit / (XMAX*YMAX));
+
 				for (i = 0; i < 3; i++) {
 				    nc[i] = c[transforms[orient][i] & 3];
 				    if (transforms[orient][i] & 0x80)
@@ -233,14 +312,12 @@ static void setup_piecelists(void)
 				for (i = 0; i < 3; i++)
 				    nc[i] += oc[i];
 				for (i = 0; i < 3; i++)
-				    if (nc[i] < 0 || nc[i] >= 4) {
+				    if (nc[i] < 0 || nc[i] >= coordmax[i]) {
 					ok = 0;
 					break;
 				    }
 				if (i == 3) {
-				    newbit = 0;
-				    for (i = 0; i < 3; i++)
-					newbit |= nc[i] << (2*i);
+				    newbit = (nc[2]*YMAX+nc[1])*XMAX+nc[0];
 				    placement |= 1ULL << newbit;
 				}
 			    }
@@ -342,9 +419,9 @@ static void recurse(unsigned long long cube, unsigned long long *placed)
      * Special case: if we've finished a recursion, print the
      * solution and bottom out.
      */
-    if (cube == 0xFFFFFFFFFFFFFFFFULL) {
+    if (cube == FULL) {
 	int i, bit;
-	for (bit = 64; bit-- > 0 ;) {
+	for (bit = AREA; bit-- > 0 ;) {
 	    char c = '*';
 	    for (i = 0; i < NPIECES; i++)
 		if (placed[i] & (1ULL << bit)) {
@@ -366,7 +443,7 @@ static void recurse(unsigned long long cube, unsigned long long *placed)
      */
     {
 	int i, j, bit = 0;
-	unsigned long long unfilled = cube ^ 0xFFFFFFFFFFFFFFFFULL;
+	unsigned long long unfilled = cube ^ FULL;
 
 	if (unfilled >= (1ULL << 32)) { unfilled >>= 32; bit += 32; }
 	if (unfilled >= (1ULL << 16)) { unfilled >>= 16; bit += 16; }
