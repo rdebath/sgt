@@ -1,0 +1,9 @@
+#!/usr/bin/perl 
+
+$line = "";
+$count = 0;
+while (<>) {
+    $count++;
+    $line = $_ if int(rand($count)) == 0;
+}
+print $line;
