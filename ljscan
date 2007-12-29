@@ -1,5 +1,6 @@
 #!/usr/bin/python 
 
+import cookurl
 import urllib
 import string
 import os
@@ -7,51 +8,40 @@ import time
 import xmllib
 import sys
 
-# Restore a sensible response to HTTP errors.
-
-class MyURLopener(urllib.FancyURLopener):
-    def http_error_default(self, url, fp, errcode, errmsg, headers):
-        """Default error handler: close the connection and raise IOError."""
-        void = fp.read()
-        fp.close()
-        raise IOError, str(errcode) + " " + errmsg
-
-urllib._urlopener = MyURLopener()
-
 def makedict(attrs):
     attrdict = {}
     for attr in attrs:
-	attrdict[string.lower(attr[0])] = attr[1]
-    return attrdict				    
+        attrdict[string.lower(attr[0])] = attr[1]
+    return attrdict                                 
 
 transtable = string.maketrans("\240", " ")
 
 def chomp(s):
     if s[-1:] == "\n":
-	s = s[:-1]
+        s = s[:-1]
     return s
 
 def gettopdate(page):
     class myparser(xmllib.XMLParser):
-	def __init__(self):
-	    xmllib.XMLParser.__init__(self)
-	    self.topdate = ""
-	    self.state = 0
-	def unknown_starttag(self, tag, attrs):
-	    if tag == "pubDate" and self.state == 0:
-		self.state = 1
-	def unknown_endtag(self, tag):
-	    if tag == "pubDate" and self.state == 1:
-		self.state = 2
-	def handle_data(self, data):
-	    if self.state == 1:
-		self.topdate = self.topdate + data
+        def __init__(self):
+            xmllib.XMLParser.__init__(self)
+            self.topdate = ""
+            self.state = 0
+        def unknown_starttag(self, tag, attrs):
+            if tag == "pubDate" and self.state == 0:
+                self.state = 1
+        def unknown_endtag(self, tag):
+            if tag == "pubDate" and self.state == 1:
+                self.state = 2
+        def handle_data(self, data):
+            if self.state == 1:
+                self.topdate = self.topdate + data
     p = myparser()
     p.feed(page)
     if p.state == 2:
-	return p.topdate
+        return p.topdate
     else:
-	return None
+        return None
 
 # Read config file to get list of users.
 ljusers = []
@@ -61,24 +51,24 @@ f = open(ljdir + "config", "r")
 while 1:
     s = f.readline()
     if s == "":
-	break
+        break
     if s[:1] == "#":
-	continue # skip commented lines
+        continue # skip commented lines
     while s[-1:] == "\r" or s[-1:] == "\n":
-	s = s[:-1]
+        s = s[:-1]
     ss = string.split(s)
     if len(ss) == 0:
-	continue
+        continue
     if s[:1] == "!":
-	# Directive line.
-	if string.lower(ss[0]) == "!urls":
-	    if string.lower(ss[1]) in ["yes", "y", "on", "1"]:
-		urltext = "www.livejournal.com/users/"
-	    else:
-		urltext = ""
-	else:
-	    print "ljscan: config: unrecognised directive \""+ss[0]+"\""
-	continue
+        # Directive line.
+        if string.lower(ss[0]) == "!urls":
+            if string.lower(ss[1]) in ["yes", "y", "on", "1"]:
+                urltext = "www.livejournal.com/users/"
+            else:
+                urltext = ""
+        else:
+            print "ljscan: config: unrecognised directive \""+ss[0]+"\""
+        continue
     ljusers.append((ss[0], s))
 
 # Get command-line options.
@@ -87,24 +77,24 @@ verbose = 0
 args = []
 for i in sys.argv[1:]:
     if i[0] == "-":
-	if i == "-n":
-	    scan = 0
-	elif i == "-v":
-	    verbose = verbose + 1
-	else:
-	    print "ignoring unrecognised command-line argument:", i
+        if i == "-n":
+            scan = 0
+        elif i == "-v":
+            verbose = verbose + 1
+        else:
+            print "ignoring unrecognised command-line argument:", i
     else:
-	args.append(i)
+        args.append(i)
 
 # Filter list of users by command-line arguments.
 if len(args) > 0:
     ljusers2 = []
     for i in ljusers:
-	if i[0] in args:
-	    ljusers2.append(i)
-	    args.remove(i[0])
+        if i[0] in args:
+            ljusers2.append(i)
+            args.remove(i[0])
     for i in args:
-	print "ignoring argument \""+i+"\": not in "+ljdir+"config"
+        print "ignoring argument \""+i+"\": not in "+ljdir+"config"
     ljusers = ljusers2
 
 template = "http://www.livejournal.com/users/%s/data/rss/"
@@ -125,80 +115,73 @@ translator = \
 string.maketrans(string.join(map(chr, range(128,256)), ""), 128 * ".")
 
 # Fetch LJ login details, if available.
-session = os.environ["HOME"] + "/.ljscan/ljsession"
-try:
-    sessf = open(session, "r")
-    cookie = chomp(sessf.readline())
-    sessf.close()
-    index = string.find(cookie, ": ")
-    if index >= 0:
-	urllib._urlopener.addheader(cookie[:index], cookie[index+2:])
-except IOError, e:
-    pass # if we couldn't find it, then fair enough
+session = os.environ["HOME"] + "/.ljscan/ljsesscookies"
+cookurl.loadcookies(session)
 
 for t in ljusers:
     username, description = t
     if scan:
-	url = template % username
-	if verbose > 1:
-	    print "Fetching", url
-	try:
-	    f = urllib._urlopener.open(url)
-	    data = f.read()
-	    f.close()
-	except IOError, e:
-	    print "Fetching", username+":", str(e)
-	    data = "" # this will already be treated as failure to retrieve
-	data = string.translate(data, translator)
-	d = gettopdate(data)
+        url = template % username
+        if verbose > 1:
+            print "Fetching", url
+        try:
+            f = cookurl.urlopen(url)
+            data = f.read()
+            f.close()
+        except IOError, e:
+            print "Fetching", username+":", str(e)
+            data = "" # this will already be treated as failure to retrieve
+        data = string.translate(data, translator)
+        print data
+        d = gettopdate(data)
 
     # So username t has topmost date d. Compare this with the last
     # update and see if it's changed.
     try:
-	f = open(ljdir + "date." + username, "r")
-	olddate = chomp(f.readline())
-	oldtime = chomp(f.readline())
-	f.close()
+        f = open(ljdir + "date." + username, "r")
+        olddate = chomp(f.readline())
+        oldtime = chomp(f.readline())
+        f.close()
     except IOError:
-	olddate = ""
-	oldtime = None
+        olddate = ""
+        oldtime = None
 
     if not scan:
-	writeout = 0
-	if oldtime == None:
-	    newlist.append((None, description))
-	else:
-	    reportlist.append((float(oldtime), description))
+        writeout = 0
+        if oldtime == None:
+            newlist.append((None, description))
+        else:
+            reportlist.append((float(oldtime), description))
     elif d == None:
-	# Basic error handling: in case of failure to retrieve the
-	# page, just add to the `failed retrieval' list.
-	faillist.append((None, description))
-	writeout = 0
+        # Basic error handling: in case of failure to retrieve the
+        # page, just add to the `failed retrieval' list.
+        faillist.append((None, description))
+        writeout = 0
     elif olddate == "":
-	# The entry didn't previously exist. Add to the `new' list.
-	newlist.append((now, description))
-	writeout = 1
+        # The entry didn't previously exist. Add to the `new' list.
+        newlist.append((now, description))
+        writeout = 1
     elif olddate != d:
-	# The entry has been modified. Add to the `changed' list.
-	changelist.append((now, description))
-	writeout = 1
+        # The entry has been modified. Add to the `changed' list.
+        changelist.append((now, description))
+        writeout = 1
     else:
-	# The entry is unchanged. Add to the `unchanged' list.
-	samelist.append((float(oldtime), description))
-	writeout = 0
+        # The entry is unchanged. Add to the `unchanged' list.
+        samelist.append((float(oldtime), description))
+        writeout = 0
 
     if writeout:
-	try:
-	    os.unlink(ljdir + "old." + username)
-	except OSError:
-	    pass
-	try:
-	    os.rename(ljdir + "date." + username, ljdir + "old." + username)
-	except OSError:
-	    pass
-	f = open(ljdir + "date." + username, "w")
-	f.write(d + "\n" + nowstr + "\n")
-	f.close()
+        try:
+            os.unlink(ljdir + "old." + username)
+        except OSError:
+            pass
+        try:
+            os.rename(ljdir + "date." + username, ljdir + "old." + username)
+        except OSError:
+            pass
+        f = open(ljdir + "date." + username, "w")
+        f.write(d + "\n" + nowstr + "\n")
+        f.close()
 
 # Right. Now sort the lists.
 def alphabetical(a,b):
@@ -220,31 +203,31 @@ faillist.sort(alphabetical)
 # And finally output everything.
 def printout(a):
     if a[0] == None:
-	ts = "                "
+        ts = "                "
     else:
-	ts = time.strftime("%Y-%m-%d %H:%M", time.localtime(a[0]))
+        ts = time.strftime("%Y-%m-%d %H:%M", time.localtime(a[0]))
     print ts, urltext + a[1]
 
 if scan:
     if len(newlist):
-	print "Journals not previously known to ljscan:"
-	for i in newlist: printout(i)
+        print "Journals not previously known to ljscan:"
+        for i in newlist: printout(i)
     if len(changelist):
-	print "Journals which have changed since the last scan:"
-	for i in changelist: printout(i)
+        print "Journals which have changed since the last scan:"
+        for i in changelist: printout(i)
     if verbose:
-	if len(samelist):
-	    print "Journals which are unchanged since the last scan:"
-	    for i in samelist: printout(i)
+        if len(samelist):
+            print "Journals which are unchanged since the last scan:"
+            for i in samelist: printout(i)
     elif len(newlist) == 0 and len(changelist) == 0:
-	print "No new or changed journals found in this scan."
+        print "No new or changed journals found in this scan."
     if len(faillist):
-	print "Journals which were not retrievable in this scan:"
-	for i in faillist: printout(i)
+        print "Journals which were not retrievable in this scan:"
+        for i in faillist: printout(i)
 else:
     if len(reportlist):
-	print "Journals which have been scanned before:"
-	for i in reportlist: printout(i)
+        print "Journals which have been scanned before:"
+        for i in reportlist: printout(i)
     if len(newlist):
-	print "Journals which have not been scanned before:"
-	for i in newlist: printout(i)
+        print "Journals which have not been scanned before:"
+        for i in newlist: printout(i)

@@ -4,44 +4,9 @@ import ljproto
 import sys
 import string
 import urllib
+import cookurl
 import os
 import time
-
-class Redirected:
-    def __init__(self,h):
-	self.newurl = h["Location"]
-	self.headers = h
-    pass
-
-class MyURLopener(urllib.FancyURLopener):
-    def http_error_default(self, url, fp, errcode, errmsg, headers):
-        """Default error handler: close the connection and raise IOError."""
-        void = fp.read()
-        fp.close()
-        raise IOError, str(errcode) + " " + errmsg
-    def http_error_302(self, url, fp, errcode, errmsg, headers):
-        """Default error handler: close the connection and raise IOError."""
-        void = fp.read()
-        fp.close()
-        raise Redirected, headers
-urllib._urlopener = MyURLopener()
-
-def getcookies(headers, currheaders="", trim=0):
-    cookies = {}
-    if len(currheaders) > 0:
-	sep = "; "
-    else:
-	sep = "Cookie: "
-    for i in headers.getallmatchingheaders("Set-Cookie"):
-	assert i[:12] == "Set-Cookie: "
-	cookie = i[12:]
-	j = string.find(cookie, ";")
-	if j >= 0:
-	    cookie = cookie[:j]
-	    if cookie[-1:] != "=":
-		currheaders = currheaders + sep + cookie
-		sep = "; "
-    return currheaders
 
 verbose = force = last = 0
 args = sys.argv[1:]
@@ -49,17 +14,17 @@ while len(args) > 0:
     arg = args[0]
     args = args[1:]
     if arg == "-v":
-	verbose = 1
+        verbose = 1
     elif arg == "--force":
-	force = 1
+        force = 1
     elif arg == "--last":
-	last = 1
+        last = 1
     else:
-	sys.stderr.write("ljpoll: unknown option \"" + arg + "\"\n")
+        sys.stderr.write("ljpoll: unknown option \"" + arg + "\"\n")
 
 def chomp(s):
     while s[-1:] == "\n" or s[-1:] == "\r":
-	s = s[:-1]
+        s = s[:-1]
     return s
 
 cfg = os.environ["HOME"] + "/.ljscan/ljpoll"
@@ -70,32 +35,32 @@ then = 0
 try:
     f = open(cfg, "r")
     while 1:
-	s = chomp(f.readline())
-	if s == "": break
-	space = string.find(s, " ")
-	if space < 0: continue
-	if s[:space] == "date-start":
-	    date_start = s[space+1:]
-	elif s[:space] == "date-stop":
-	    date_stop = s[space+1:]
-	elif s[:space] == "checkfriends-last-return":
-	    lastupdate = s[space+1:]
-	elif s[:space] == "last-real-date":
-	    lastrealdate = s[space+1:]
-	elif s[:space] == "last-call":
-	    then = float(s[space+1:])
+        s = chomp(f.readline())
+        if s == "": break
+        space = string.find(s, " ")
+        if space < 0: continue
+        if s[:space] == "date-start":
+            date_start = s[space+1:]
+        elif s[:space] == "date-stop":
+            date_stop = s[space+1:]
+        elif s[:space] == "checkfriends-last-return":
+            lastupdate = s[space+1:]
+        elif s[:space] == "last-real-date":
+            lastrealdate = s[space+1:]
+        elif s[:space] == "last-call":
+            then = float(s[space+1:])
     f.close()
 
     if last:
-	sys.stdout.write("Last date seen was " + lastrealdate + "\n")
-	sys.exit(0)
+        sys.stdout.write("Last date seen was " + lastrealdate + "\n")
+        sys.exit(0)
 
     now = time.time()
     if now < then and not force:
-	sys.stderr.write("LJ polling discouraged for " +
-	"%d seconds (until %s).\n" % \
-	(int(then-now), time.strftime("%H:%M:%S", time.localtime(then))))
-	sys.exit(0)
+        sys.stderr.write("LJ polling discouraged for " +
+        "%d seconds (until %s).\n" % \
+        (int(then-now), time.strftime("%H:%M:%S", time.localtime(then))))
+        sys.exit(0)
 except IOError:
     lastupdate = ""
 
@@ -103,17 +68,17 @@ dict = {"mode":"checkfriends", "lastupdate":lastupdate}
 tries = 0
 while 1:
     if verbose:
-	print "Input:", dict
+        print "Input:", dict
     try:
-	error = None
-	ret = ljproto.ljcall(dict)
-	break
+        error = None
+        ret = ljproto.ljcall(dict)
+        break
     except IOError, e:
-	if verbose or tries > 0:
-	    print "checkfriends:", e
-	if tries > 0:
-	    sys.exit(1)
-	tries = tries + 1
+        if verbose or tries > 0:
+            print "checkfriends:", e
+        if tries > 0:
+            sys.exit(1)
+        tries = tries + 1
 if verbose:
     print "Output:", ret
 
@@ -121,101 +86,78 @@ if ljproto.ljok(ret):
     tryit = 0
     interval = string.atoi(ret.get("interval", 60))
     if ret["lastupdate"] == "":
-	# This appears to indicate that checkfriends is bust, and
-	# so we should retrieve the URL.
-	nonemsg = "no visible change; checkfriends was uninformative"
-	tryit = 1
-	if interval <= 0 or interval > 300:
-	    interval = 300 # in this case, we don't trust the interval either
-	new = 1 # means we don't know if there's new stuff or not
+        # This appears to indicate that checkfriends is bust, and
+        # so we should retrieve the URL.
+        nonemsg = "no visible change; checkfriends was uninformative"
+        tryit = 1
+        if interval <= 0 or interval > 300:
+            interval = 300 # in this case, we don't trust the interval either
+        new = 1 # means we don't know if there's new stuff or not
     if ret["new"] == "1":
-	# The checkfriends protocol tells us there is something
-	# new. If we have date delimiters, we now check the real
-	# friends page to see if it's actually correct or not.
-	nonemsg = "no visible change, although checkfriends reported one"
-	tryit = 1
-	new = 2 # means quite likely to be new stuff, but uncertain
+        # The checkfriends protocol tells us there is something
+        # new. If we have date delimiters, we now check the real
+        # friends page to see if it's actually correct or not.
+        nonemsg = "no visible change, although checkfriends reported one"
+        tryit = 1
+        new = 2 # means quite likely to be new stuff, but uncertain
     if tryit:
-	urlguts = ljproto.ljuserhost() + ".livejournal.com/friends"
-	if date_start != "" and date_stop != "":
-	    url = "http://" + urlguts + "/"
-	    session = os.environ["HOME"] + "/.ljscan/ljsession"
-	    try:
-		sessf = open(session, "r")
-		cookie = chomp(sessf.readline())
-		fcookie = chomp(sessf.readline())
-		ch = cookie
-		sessf.close()
-		index = string.find(ch, ": ")
-		if index >= 0:
-		    urllib._urlopener.addheader(ch[:index], ch[index+2:])
-	    except IOError, e:
-		pass # if we couldn't find it, then fair enough
-	    try:
-		while 1:
-		    for k in range(len(urllib._urlopener.addheaders)):
-			if urllib._urlopener.addheaders[k][0] == "Cookie":
-			    index = string.find(ch, ": ")
-			    if index >= 0:
-				urllib._urlopener.addheaders[k] = (ch[:index], ch[index+2:])
-		    try:
-			# print "trying", urllib._urlopener.addheaders, url
-			f = urllib._urlopener.open(url)
-			headers = f.info()
-			data = f.read()
-			f.close()
-			break
-		    except Redirected, r:
-			if string.find(r.newurl, "//www.livejournal.com"):
-			    ch = fcookie
-			else:
-			    ch = cookie
-			ch = getcookies(r.headers, ch)
-			url = r.newurl
-		date = ""
-		a1 = string.find(data, date_start)
-		if a1 >= 0:
-		    a1 = a1 + len(date_start)
-		    a2 = string.find(data, date_stop, a1)
-		    if a2 > a1:
-			date = data[a1:a2]
-	    except IOError, e:
-		print "friends page:", e
-		sys.exit(1)
-	    if date != "":
-		if date == lastrealdate:
-		    print nonemsg
-		    new = 0
-		else:
-		    new = 3 # a _definite_ change
-		    olddate = lastrealdate
-		    newdate = date
-	    if date != "": lastrealdate = date
-	if new:
-	    explain = None
-	    if new == 1:
-		newstr = "No information available on"
-		explain = "(checkfriends was unhelpful, and retrieval of" + \
-		" friends page itself failed)"
-	    elif new == 2:
-		newstr = "Possibly new"
-		explain = "(checkfriends said so, but retrieval of friends "+ \
-		"page itself failed)"
-	    else:
-		newstr = "New"
-		explain = "([%s] -> [%s])" % (olddate, newdate)
-	    print newstr, "entries at www.livejournal.com/users/" + \
-	    ljproto.ljusername() + "/friends"
-	    if explain != None: print explain
+        urlguts = ljproto.ljuserhost() + ".livejournal.com/friends"
+        if date_start != "" and date_stop != "":
+            url = "http://" + urlguts + "/"
+
+            # Fetch LJ login details, if available.
+            session = os.environ["HOME"] + "/.ljscan/ljsesscookies"
+            cookurl.loadcookies(session)
+
+            try:
+                f = cookurl.urlopen(url)
+                headers = f.info()
+                data = f.read()
+                f.close()
+                date = ""
+                a1 = string.find(data, date_start)
+                if a1 >= 0:
+                    a1 = a1 + len(date_start)
+                    a2 = string.find(data, date_stop, a1)
+                    if a2 > a1:
+                        date = data[a1:a2]
+            except IOError, e:
+                print "friends page:", e
+                sys.exit(1)
+            if date != "":
+                if date == lastrealdate:
+                    print nonemsg
+                    new = 0
+                else:
+                    new = 3 # a _definite_ change
+                    olddate = lastrealdate
+                    newdate = date
+            if date != "": lastrealdate = date
+        if new:
+            explain = None
+            if new == 1:
+                newstr = "No information available on"
+                explain = "(checkfriends was unhelpful, and retrieval of" + \
+                " friends page itself failed)"
+            elif new == 2:
+                newstr = "Possibly new"
+                explain = "(checkfriends said so, but retrieval of friends "+ \
+                "page itself failed)"
+            else:
+                newstr = "New"
+                explain = "([%s] -> [%s])" % (olddate, newdate)
+            print newstr, "entries at www.livejournal.com/users/" + \
+            ljproto.ljusername() + "/friends"
+            if explain != None: print explain
     f = open(cfg, "w")
     if date_start != "\n":
-	f.write("date-start " + date_start + "\n") 
+        f.write("date-start " + date_start + "\n") 
     if date_stop != "\n":
-	f.write("date-stop " + date_stop + "\n")
+        f.write("date-stop " + date_stop + "\n")
     f.write("checkfriends-last-return " + ret["lastupdate"] + "\n")
     f.write("last-call " + str(time.time() + interval) + "\n")
     if lastrealdate != "":
-	f.write("last-real-date " + lastrealdate + "\n")
+        f.write("last-real-date " + lastrealdate + "\n")
     f.close()
 else:
     sys.stderr.write(ljproto.ljerror(ret) + "\n")

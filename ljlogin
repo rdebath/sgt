@@ -1,6 +1,7 @@
 #!/usr/bin/python 
 
 import urllib
+import cookurl
 import string
 import os
 import ljproto
@@ -10,106 +11,54 @@ import formatter
 import md5
 import sys
 
-def getcookies(headers, trim=0):
-    cookies = {}
-    for i in headers.getallmatchingheaders("Set-Cookie"):
-	assert i[:12] == "Set-Cookie: "
-	cookie = i[12:]
-	print ">>", cookie
-	if trim and string.find(cookie, "domain=.livejournal.com") < 0 and string.find(cookie, "domain=livejournal.com") < 0:
-	    continue # ignore cookies that aren't for all of .livejournal.com
-	print ">!", cookie
-	j = string.find(cookie, ";")
-	if j >= 0:
-	    cookie = cookie[:j]
-	    #cookie = string.replace(cookie, " ", "+")
-	    if cookie[-1:] != "=":
-		cookies[cookie] = 1
-    return "Cookie: " + string.join(cookies.keys(), "; ")
-
 def makedict(attrs):
     attrdict = {}
     for attr in attrs:
-	attrdict[string.lower(attr[0])] = attr[1]
+        attrdict[string.lower(attr[0])] = attr[1]
     return attrdict
 class myparser(htmllib.HTMLParser):
     def __init__(self):
-	htmllib.HTMLParser.__init__(self, formatter.NullFormatter())
-	self.urls = []
+        htmllib.HTMLParser.__init__(self, formatter.NullFormatter())
+        self.formdict = {}
+        self.formurl = None
+        self.recording = 0
+    def start_form(self, attrs):
+        a = makedict(attrs)
+        # Amazingly, we can have multiple "class" attributes.
+        if ("class", "lj_login_form") in attrs:
+            self.recording = 1
+            self.formurl = a["action"]
+    def end_form(self):
+        self.recording = 0
     def start_input(self, attrs):
-	a = makedict(attrs)
-	if a.get("id","") == "login_chal":
-	    self.challenge = a.get("value", "")
-def getchallenge(data):
-    p = myparser()
-    p.feed(data)
-    return p.challenge
+        a = makedict(attrs)
+        if self.recording:
+            self.formdict[a.get("name")] = a.get("value", "")
 
-# Get the password challenge.
-f = urllib.urlopen("http://www.livejournal.com/login.bml")
+# Get the login page.
+f = cookurl.urlopen("http://www.livejournal.com/login.bml")
 data = f.read()
 f.close()
-challenge = getchallenge(data)
-print data
 
-def simple_md5(string):
-    m = md5.new()
-    m.update(string)
-    d = m.digest()
-    ret = ""
-    for c in d:
-	ret = ret + "%02x" % ord(c)
-    return ret
-dict = { "mode": "login" }
+# Find the login form and fill it in.
+p = myparser()
+p.feed(data)
+dict = p.formdict
 dict["user"] = user = ljproto.ljusername()
-password = getpass.getpass("Password for LJ account \""+user+"\": ")
-dict["chal"] = challenge
-dict["response"] = simple_md5(challenge + simple_md5(password))
-dict["expire"] = "never"
-dict["bindip"] = "no"
+dict["password"] = getpass.getpass("Password for LJ account \""+user+"\": ")
 
+# Submit the form and retrieve the results.
 postdata = urllib.urlencode(dict)
-f = urllib.urlopen("http://www.livejournal.com/login.bml", postdata)
-headers = f.info()
+f = cookurl.urlopen(p.formurl, postdata)
 data = f.read()
 f.read()
 f.close()
-print headers
-print data
-challenge = getchallenge(data)
-cookiehdr = getcookies(headers, trim=1)
-fcookiehdr = getcookies(headers, trim=0)
-print cookiehdr
 
-if string.find(cookiehdr, "ljsession") < 0:
+if cookurl.cookiedb.has_key(("www.livejournal.com", "ljmastersession")):
+    print "login succeeded"
+else:
     print "login failed"
     sys.exit(1)
-else:
-    print "login succeeded"
 
-#urllib._urlopener.addheader(cookiehdr)
-#dict = {"expire": "never", "bindip": "no", "action:change": "Save"}
-#dict["response"] = ""
-#dict["chal"] = challenge
-#postdata = urllib.urlencode(dict)
-#f = urllib.urlopen("http://www.livejournal.com/login.bml", postdata)
-#headers = f.info()
-#data = f.read()
-#f.close()
-#print headers
-#print data
-#cookiehdr = getcookies(headers, 1)
-#print cookiehdr
-
-#if string.find(cookiehdr, "ljsession") < 0:
-#    print "mode adjust failed"
-#    sys.exit(1)
-#else:
-#    print "mode adjust succeeded"
-
-cfg = os.environ["HOME"] + "/.ljscan/ljsession"
-fd = os.open(cfg, os.O_TRUNC | os.O_CREAT | os.O_WRONLY, 0600)
-file = os.fdopen(fd, "w")
-file.write(cookiehdr + "\n")
-file.write(fcookiehdr + "\n")
-file.close()
+cfg = os.environ["HOME"] + "/.ljscan/ljsesscookies"
+cookurl.savecookies(cfg)
