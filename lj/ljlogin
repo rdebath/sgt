@@ -46,8 +46,19 @@ p.feed(data)
 dict = p.formdict
 dict["user"] = user = ljproto.ljusername()
 dict["password"] = getpass.getpass("Password for LJ account \""+user+"\": ")
+# Replicate the JavaScript challenge-response authentication, for
+# greater security. (Well, perhaps. Actually I'm uncertain of how
+# it protects against even a passive eavesdropper: even if they
+# can't sniff your actual password, they can promptly sniff the
+# login cookies LJ returns once you succeed!)
+if dict.has_key("chal") and dict.has_key("response"):
+    h1 = md5.new(dict["password"]).hexdigest()
+    h2 = md5.new(dict["chal"] + h1).hexdigest()
+    dict["response"] = h2
+    dict["password"] = ""
 
 # Submit the form and retrieve the results.
+print dict
 postdata = urllib.urlencode(dict)
 f = cookurl.urlopen(p.formurl, postdata)
 data = f.read()
