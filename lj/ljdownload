@@ -1,0 +1,125 @@
+#!/usr/bin/python 
+
+# Script to download the entire back archive of a specified LJ.
+
+# Useful options which haven't been implemented:
+#
+#  - supply a style suffix to be added to all entry URLs
+#
+#  - resume an interrupted download, or update an already-
+#    downloaded journal at a later date
+#     * so we don't write out any entry which already exists
+#     * in particular this means we must save files with temporary
+#       names and only rename them into their final location once
+#       complete, to prevent failure to correct a half-written file
+#
+#  - possibly re-scan for more comments?
+#     * this involves parsing the month summaries more vigorously
+#       to get the comment counts out, which introduces style
+#       dependencies
+#     * also we have to save a state file saying what our current
+#       comment count is for each downloaded entry, since
+#       extracting this from the HTML would be a ruddy nightmare
+#     * this wouldn't be 100% reliable, since it wouldn't catch the
+#       case where one comment is deleted and replaced by another
+#     * doing this suggests that the aim is to reliably get _all_
+#       comments, in which case we also need a coping strategy for
+#       the comment-compression behaviour on very popular posts
+#     * overall verdict: this makes the entire program a _lot_ more
+#       difficult and is certainly best not attempted in an initial
+#       version, or possibly at all
+
+import cookurl
+import string
+import htmllib
+import formatter
+import re
+import sys
+import os
+
+def makedict(attrs):
+    attrdict = {}
+    for attr in attrs:
+        attrdict[string.lower(attr[0])] = attr[1]
+    return attrdict                                 
+
+class myparser(htmllib.HTMLParser):
+    def __init__(self):
+        htmllib.HTMLParser.__init__(self, formatter.NullFormatter())
+        self.urls = []
+    def start_a(self, attrs):
+        a = makedict(attrs)
+        target = a.get("href", "")
+        if target != "":
+            self.urls.append(target)
+
+def getdata(url):
+    if verbose:
+        print "retrieving", url
+    f = cookurl.urlopen(url)
+    data = f.read()
+    f.close()
+    return data
+
+def geturls(url):
+    data = getdata(url)
+    p = myparser()
+    p.feed(data)
+    return p.urls
+
+verbose = 1
+
+args = sys.argv[1:]
+if len(args) != 1:
+    print "usage: ljdownload <username>"
+    sys.exit(len(args) > 0)
+username = args[0]
+
+prefix = "http://" + username + ".livejournal.com"
+
+# Fetch LJ login details, if available.
+session = os.environ["HOME"] + "/.ljscan/ljsesscookies"
+cookurl.loadcookies(session)
+
+# Find the full set of years used in the journal. Retriving the
+# year page for any year at all should give URLs for all the years
+# other than that one; therefore, we retrieve two different years
+# and that should give us everything.
+u1 = geturls(prefix + "/2000/")
+u2 = geturls(prefix + "/2001/")
+yeardict = {}
+expr = re.compile(re.escape(prefix) + r'/(\d+)/')
+for url in u1 + u2:
+    m = expr.match(url)
+    if m:
+        yeardict[m.group(1)] = 1
+years = yeardict.keys()
+years.sort()
+
+# Now we have a list of years, we can retrieve each of the month
+# summary pages for the journal and look through them for
+# individual entry URLs.
+expr = re.compile(re.escape(prefix) + r'/(\d+)\.html')
+entrydict = {}
+for year in years:
+    for month in range(1,13):
+        u = geturls(prefix + "/" + year + "/%02d/" % month)
+        for url in u:
+            m = expr.match(url)
+            if m:
+                entryname = m.group(1)
+                entrynum = string.atoi(entryname)
+                entrydict[entrynum] = 1
+entries = entrydict.keys()
+entries.sort()
+print entries
+
+# And finally, we're ready to retrieve and save each actual entry page.
+for entry in entries:
+    fname = "%d.html" % entry
+    d = getdata(prefix + "/" + fname)
+    tmpfname = fname + ".tmp"
+    f = open(tmpfname, "w")
+    f.write(d)
+    f.close()
+    os.rename(tmpfname, fname)
