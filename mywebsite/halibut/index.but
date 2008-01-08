@@ -163,19 +163,19 @@ release documentation online in \W{doc-1.0/}{HTML},
 Alternatively, if you want to keep up to date with the very latest
 development, you can check the development sources out from our
 Subversion repository. The Subversion URL you need for the Halibut
-trunk development is \c{svn://ixion.tartarus.org/main/halibut}. You
+trunk development is \c{svn://svn.tartarus.org/sgt/halibut}. You
 will also need the character-set handling library, which Halibut
 will expect to be checked out alongside the main Halibut source. So
 you could check out all the code necessary for the trunk version of
 Halibut using a pair of commands such as
 
-\c svn co svn://ixion.tartarus.org/main/halibut
-\c svn co svn://ixion.tartarus.org/main/charset
+\c svn co svn://svn.tartarus.org/sgt/halibut
+\c svn co svn://svn.tartarus.org/sgt/charset
 
 To check out branches or release tags of the code, replace
 \c{halibut} with the branch or tag name (such as \c{halibut-1.0}).
 You can see what branches exist using the command \c{svn ls
-svn://ixion.tartarus.org/main}.
+svn://svn.tartarus.org/sgt}.
 
 Alternatively, you can browse the Subversion repository on the WWW,
 \W{http://www.tartarus.org/~simon-anonsvn/viewcvs.cgi/halibut}{here}.
