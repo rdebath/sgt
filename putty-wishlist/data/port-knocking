@@ -71,14 +71,3 @@ almost any application.
 <p>
 If anyone really wants to see this feature in PuTTY, they should
 probably look into one of the above options.
-
-<p>
-SGT, 2004-08-07: We've been informed of
-<a href="http://doorman.sourceforge.net/">doorman.sourceforge.net</a>,
-a port-knocking client and server including a pre-compiled client
-for Windows. I haven't looked at it closely, but it seems that (a)
-it uses a single UDP packet as the knock rather than a sequence of
-failed connections to closed TCP ports, and (b) the knock client
-works by performing the knock and then running another program (such
-as PuTTY), which is a very simple approach that I failed to think of
-when I wrote the above list of possibilities.
