@@ -43,30 +43,34 @@ client-independent manner. For example:
 
 <ul>
 <li>
-On Unix, you could construct a dynamic library which replaced the
-<code>connect</code>(2) system call, and use <code>LD_PRELOAD</code>
-to apply it to almost any application.
-<li>
-Also on Unix, you could write a small command-line application which
-performed the port knock and then made the connection (a
+Write a small command-line application which
+performs the port knock, makes the connection, and then gateways the
+connection to its standard input and output: a
 port-knocking enabled equivalent
-of <a href="http://www.atstake.com/research/tools/network_utilities/"><code>nc</code>(1)</a>),
-and then invoke that using the "Local" proxy setting in PuTTY. At
-some point we would like to implement this proxy setting in Windows
-PuTTY as well (see <a href="proxy-command.html">proxy-command</a>),
-and at that point this solution will be applicable to Windows as well.
+of <a
+href="http://www.atstake.com/research/tools/network_utilities/"><code>nc</code>(1)</a>.
+Then invoke that using the "Local" proxy setting in PuTTY (works on both
+Windows and Unix).
 <li>
-On either (or both) of Windows or Unix, you could write a SOCKS
-server which performed appropriate port knocks before proxying any
-given connection, and point PuTTY at it using the existing SOCKS
-proxy support.
+Write a SOCKS server which understands your port knocking, and
+performs the appropriate knock before proxying any given connection.
+Point PuTTY at it using our existing SOCKS proxy support.
+<li>
+An even simpler approach: write a script which runs the knock
+program, and <em>then</em> launches PuTTY and tells it to connect to
+the appropriate host. The <a
+href="http://doorman.sourceforge.net/">doorman.sourceforge.net</a>
+client, for example, is intended to be used this way.
+<li>
+(Unix only) Construct a dynamic library which replaces the
+<code>connect</code>(2) system call so that it performs the knock
+first. Then you can use <code>LD_PRELOAD</code> to apply it to
+almost any application.
 </ul>
 
 <p>
 If anyone really wants to see this feature in PuTTY, they should
-probably look into one of the above options. The most universally
-applicable solution without needing to change PuTTY at all would be
-the SOCKS server approach.
+probably look into one of the above options.
 
 <p>
 SGT, 2004-08-07: We've been informed of
