@@ -1504,6 +1504,10 @@ define cvssvn_log() {
         strcmp(substr(name, 1, 11), "*svn-diff*:") == 0) {
         name = substr(name, 12, -1);
     }
+    if (strcmp(substr(name, 1, 10), "*cvs-cat*:") == 0 or
+	strcmp(substr(name, 1, 10), "*svn-cat*:") == 0) {
+        name = substr(name, 11, -1);
+    }
     if (strcmp(file, "") == 0) {
         ERROR_BLOCK { error("Unable to determine base file name"); }
         file = get_blocal_var("cvssvn-file");
@@ -1541,7 +1545,9 @@ define cvssvn_diff() {
     variable file, dir, name, bufname, bufnum, which, rev1, rev2, dr1, args;
     (file, dir, name, ) = getbuf_info();
     if (strcmp(substr(name, 1, 10), "*cvs-log*:") == 0 or
-	strcmp(substr(name, 1, 10), "*svn-log*:") == 0) {
+	strcmp(substr(name, 1, 10), "*svn-log*:") == 0 or
+        strcmp(substr(name, 1, 10), "*cvs-cat*:") == 0 or
+	strcmp(substr(name, 1, 10), "*svn-cat*:") == 0) {
         name = substr(name, 11, -1);
     }
     if (strcmp(substr(name, 1, 15), "*cvs-annotate*:") == 0 or
@@ -1621,7 +1627,9 @@ define cvssvn_annotate() {
         return;
     }
     if (strcmp(substr(name, 1, 10), "*cvs-log*:") == 0 or
-	strcmp(substr(name, 1, 10), "*svn-log*:") == 0) {
+	strcmp(substr(name, 1, 10), "*svn-log*:") == 0 or
+        strcmp(substr(name, 1, 10), "*cvs-cat*:") == 0 or
+	strcmp(substr(name, 1, 10), "*svn-cat*:") == 0) {
         name = substr(name, 11, -1);
     }
     if (strcmp(substr(name, 1, 11), "*cvs-diff*:") == 0 or
@@ -1666,20 +1674,94 @@ define cvssvn_annotate() {
     jedrc_create_blocal_var("cvssvn-file", 's');
     set_blocal_var(file, "cvssvn-file");
 }
+define cvssvn_cat() {
+    variable file, dir, name, origname, line, ret, rev, which, args;
+    (file, dir, name, ) = getbuf_info();
+    line = what_line();
+    if (strcmp(substr(name, 1, 15), "*cvs-annotate*:") == 0 or
+	strcmp(substr(name, 1, 15), "*svn-annotate*:") == 0) {
+        name = substr(name, 16, -1);
+        return;
+    }
+    if (strcmp(substr(name, 1, 10), "*cvs-log*:") == 0 or
+	strcmp(substr(name, 1, 10), "*svn-log*:") == 0 or
+        strcmp(substr(name, 1, 10), "*cvs-cat*:") == 0 or
+	strcmp(substr(name, 1, 10), "*svn-cat*:") == 0) {
+        name = substr(name, 11, -1);
+    }
+    if (strcmp(substr(name, 1, 11), "*cvs-diff*:") == 0 or
+        strcmp(substr(name, 1, 11), "*svn-diff*:") == 0) {
+        name = substr(name, 12, -1);
+    }
+    if (strcmp(file, "") == 0) {
+        ERROR_BLOCK { error("Unable to determine base file name"); }
+        file = get_blocal_var("cvssvn-file");
+    }
+    if (blocal_var_exists("cvssvn-which")) {
+	which = get_blocal_var("cvssvn-which");
+    } else {
+	which = cvssvn_which(dir);
+	jedrc_create_blocal_var("cvssvn-which", 's');
+	set_blocal_var(which, "cvssvn-which");
+    }
+    if (which == "") {
+	error("Unable to find an applicable version control tool");
+    }
+    rev = read_mini ("Revision: (default: current)", "", "");
+    origname = name;
+    name = "*" + which + "-cat*:" + name;
+    change_default_dir(dir);
+    sw2buf(name);
+    text_mode();
+    erase_buffer();
+    if (which == "cvs") {
+        args = "";
+        if (rev != "")
+            args = args + " -r" + rev;
+	run_shell_cmd("cvs up -P " + args + " " + file);
+    } else {
+        args = "";
+        if (rev != "")
+            args = args + " -r" + rev;
+	run_shell_cmd("svn cat " + args + " " + file);
+    }
+#ifexists what_syntax_table
+    if (bufferp(origname)) {
+        sw2buf(origname);
+        what_syntax_table();
+        sw2buf(name);
+        if (dup() == NULL)
+	    pop();
+	else if (strcmp(dup(), "DEFAULT") == 0)
+	    pop();
+	else
+            use_syntax_table(());
+    }
+#endif
+    setbuf_info((getbuf_info & ~1) | 8); % clear modified bit, set readonly
+    goto_line(line);
+    recenter(0);
+    jedrc_create_blocal_var("cvssvn-file", 's');
+    set_blocal_var(file, "cvssvn-file");
+}
 
 define cvs_log() { cvssvn_log(); }
+define cvs_cat() { cvssvn_cat(); }
 define cvs_annotate() { cvssvn_annotate(); }
 define cvs_diff() { cvssvn_diff(); }
 define svn_log() { cvssvn_log(); }
+define svn_cat() { cvssvn_cat(); }
 define svn_annotate() { cvssvn_annotate(); }
 define svn_diff() { cvssvn_diff(); }
 define svn_blame() { cvssvn_annotate(); }
 define svn_praise() { cvssvn_annotate(); }
 
 add_completion("cvs_log");
+add_completion("cvs_cat");
 add_completion("cvs_annotate");
 add_completion("cvs_diff");
 add_completion("svn_log");
+add_completion("svn_cat");
 add_completion("svn_blame");
 add_completion("svn_diff");
 
