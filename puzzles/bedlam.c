@@ -18,7 +18,13 @@
  *  - specifying an initial set of used bits, so that it would be
  *    possible to search non-cuboidal spaces. (However, the
  *    bounding cuboid would still be constrained to have area <=
- *    64.)
+ *    64 with current program architecture.)
+ * 
+ *  - generalising the bitmap type to something other than long
+ *    long, probably a struct containing multiple long longs. This
+ *    might permit larger polyomino puzzles to be solved, although
+ *    it's unclear if larger polycubes would be computationally
+ *    feasible.
  * 
  *  - permitting reflections, although I currently don't know of
  *    any puzzle which requires that (2D puzzles such as
@@ -85,9 +91,11 @@ struct piece {
 #ifndef XMAX
 #define XMAX 10
 #endif
-#define YMAX (60 / XMAX)
+#ifndef ZMAX
 #define ZMAX 1
-#define ORIENTMASK ((1<<0) | (1<<9))
+#endif
+#define YMAX (60 / XMAX / ZMAX)
+#define ORIENTMASK 0x10101
 
 /*
  * The piece shapes.
@@ -105,6 +113,105 @@ static const struct piece pieces[] = {
     {'X', 0, (0x02ULL << (XMAX*2)) | (0x07ULL << XMAX) | (0x02ULL)},
     {'Y', 0, (0x00ULL << (XMAX*2)) | (0x02ULL << XMAX) | (0x0FULL)},
     {'Z', 0, (0x01ULL << (XMAX*2)) | (0x07ULL << XMAX) | (0x04ULL)},
+};
+
+#elif defined YELLOW_IMPUZZABLE
+
+#define XMAX 3
+#define YMAX 3
+#define ZMAX 3
+#define ORIENTMASK 1
+#define USE_FOLLOWFLAG 1
+
+/*
+ * The piece shapes.
+ */
+static const struct piece pieces[] = {
+    {'E', 0, 0040063ULL},	       /* E from Bedlam Cube */
+    {'Z', 0, 0010013ULL},	       /* Z from Bedlam Cube */
+    {'z', 0, 0002013ULL},	       /* mirror image of Z */
+    {'L', 0, 0000017ULL},	       /* an L-tetromino */
+    {'l', 1, 0000017ULL},	       /* another L-tetromino */
+    {'T', 0, 0000013ULL},	       /* an L-triomino */
+    {'t', 1, 0000013ULL},	       /* another L-triomino */
+};
+
+#elif defined ORANGE_IMPUZZABLE
+
+#define XMAX 3
+#define YMAX 3
+#define ZMAX 3
+#define ORIENTMASK 1
+#define USE_FOLLOWFLAG 1
+
+/*
+ * The piece shapes.
+ */
+static const struct piece pieces[] = {
+    {'S', 0, 0004074ULL},	       /* mirror image of S from Bedlam Cube */
+    {'s', 1, 0004074ULL},	       /* another copy of S */
+    {'C', 0, 0040074ULL},	       /* C from Bedlam Cube */
+    {'Z', 0, 0010013ULL},	       /* Z from Bedlam Cube */
+    {'L', 0, 0000017ULL},	       /* an L-tetromino */
+    {'l', 1, 0000017ULL},	       /* another L */
+};
+
+#elif defined GREEN_IMPUZZABLE
+
+#define XMAX 3
+#define YMAX 3
+#define ZMAX 3
+#define ORIENTMASK 1
+
+/*
+ * The piece shapes.
+ */
+static const struct piece pieces[] = {
+    {'S', 0, 0001071ULL},	       /* S from Bedlam Cube */
+    {'Q', 0, 0001033ULL},	       /* a square with a hat on top */
+    {'L', 0, 0000017ULL},	       /* an L-tetromino */
+    {'Z', 0, 0010013ULL},	       /* the Z piece from the Bedlam Cube */
+    {'z', 0, 0002013ULL},	       /* a mirror image of Z */
+    {'T', 0, 0060023ULL},	       /* mirror of T from Bedlam Cube */
+};
+
+#elif defined RED_IMPUZZABLE
+
+#define XMAX 3
+#define YMAX 3
+#define ZMAX 3
+#define ORIENTMASK 1
+
+/*
+ * The piece shapes.
+ */
+static const struct piece pieces[] = {
+    {'L', 0, 0004017ULL},	       /* like the L from the Bedlam Cube */
+    {'W', 0, 0000137ULL},	       /* W-pentomino with the corner filled */
+    {'B', 0, 0001117ULL},	       /* branch tetracube with 2 long ends */
+    {'Z', 0, 0002013ULL},	       /* a mirror image of Bedlam Cube Z */
+    {'S', 0, 0030066ULL},	       /* a very strange piece indeed */
+};
+
+#elif defined BLUE_IMPUZZABLE
+
+#define XMAX 3
+#define YMAX 3
+#define ZMAX 3
+#define ORIENTMASK 1
+#define USE_FOLLOWFLAG
+
+/*
+ * The piece shapes.
+ */
+static const struct piece pieces[] = {
+    {'I', 0, 0000007ULL},	       /* straight 1x1x3 cuboid */
+    {'Z', 0, 0010013ULL},	       /* the Z piece from the Bedlam Cube */
+    {'Y', 1, 0010013ULL},	       /* another Z */
+    {'X', 1, 0010013ULL},	       /* a third Z */
+    {'z', 0, 0002013ULL},	       /* a mirror image of Z */
+    {'y', 1, 0002013ULL},	       /* another z */
+    {'x', 1, 0002013ULL},	       /* a third z */
 };
 
 #elif defined WHITE_IMPUZZABLE
@@ -125,6 +232,42 @@ static const struct piece pieces[] = {
     {'L', 0, 0000071ULL},	       /* a simple L-tetromino */
     {'T', 0, 0022130ULL},	       /* the T piece from the Bedlam Cube */
     {'H', 0, 0200740ULL},	       /* the H piece from the Bedlam Cube */
+};
+
+#elif defined SOMA
+
+/*
+ * The Soma cube, surprisingly, is quite difficult to get the
+ * right set of solutions for. It's easy enough to present the
+ * pieces, pick an asymmetric piece like the L-tetromino and
+ * constrain it to a specific orientation, and get 480 solutions;
+ * but there are really only 240 interestingly distinct ones,
+ * because they come in _mirror_ image pairs (since all the pieces
+ * are reflection-symmetric except for Z and z which are images of
+ * each other).
+ * 
+ * So I don't think we can narrow down to only one copy of every
+ * genuinely distinct solution just by constraining a specific
+ * piece in the way we have done for all the other puzzles
+ * supported in this file. Hmmm.
+ */
+
+#define XMAX 3
+#define YMAX 3
+#define ZMAX 3
+#define ORIENTMASK 1
+
+/*
+ * The piece shapes.
+ */
+static const struct piece pieces[] = {
+    {'L', 0, 000071ULL},	       /* an L-tetromino */
+    {'T', 0, 000072ULL},	       /* a T-tetromino */
+    {'S', 0, 000036ULL},	       /* a skew tetromino */
+    {'3', 0, 000031ULL},	       /* an L-triomino */
+    {'B', 0, 010031ULL},	       /* a branch tetromino */
+    {'Z', 0, 010013ULL},	       /* the Z piece from the Bedlam Cube */
+    {'z', 1, 010032ULL},	       /* a mirror image of Z */
 };
 
 #else /* ifdef BEDLAM */
