@@ -792,6 +792,8 @@ class output:
 	if keyword == "pound":
 	    if self.html_ok:
 		self.html = self.html + "&#163;"
+	    elif self.html_title:
+		self.subj = self.subj + "&#163;"
 	    if self.mono_ok:
 		self.mono_add_word("L", self.mono_attr, 0)
 	    if self.news_ok:
@@ -799,6 +801,8 @@ class output:
 	elif keyword == "tm":
 	    if self.html_ok:
 		self.html = self.html + "&#8482;"
+	    elif self.html_title:
+		self.subj = self.subj + "&#8482;"
 	    if self.mono_ok:
 		self.mono_add_word("(TM)", self.mono_attr, 0)
 	    if self.news_ok:
@@ -806,6 +810,8 @@ class output:
 	elif keyword == "x":
 	    if self.html_ok:
 		self.html = self.html + "&#215;"
+	    elif self.html_title:
+		self.subj = self.subj + "&#215;"
 	    if self.mono_ok:
 		self.mono_add_word("x", self.mono_attr, 0)
 	    if self.news_ok:
@@ -813,6 +819,8 @@ class output:
 	elif keyword == "R":
 	    if self.html_ok:
 		self.html = self.html + "&#174;"
+	    elif self.html_title:
+		self.subj = self.subj + "&#174;"
 	    if self.mono_ok:
 		self.mono_add_word("(R)", self.mono_attr, 0)
 	    if self.news_ok:
@@ -820,6 +828,8 @@ class output:
 	elif keyword[:1] == "&":
 	    if self.html_ok:
 		self.html = self.html + keyword
+	    elif self.html_title:
+		self.subj = self.subj + keyword
 	    if self.mono_ok:
 		self.mono_add_word(keyword[1:2], self.mono_attr, 0)
 	    if self.news_ok:
