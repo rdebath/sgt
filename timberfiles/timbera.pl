@@ -112,30 +112,34 @@ while ($gotattach) {
   push @attachments, $attach;
 }
 
-# If there are no attachment headers at all, we should just spew the
-# unchanged message (headers, \n, body) on stdout and leave.
+# Determine the MIME headers which should apply to the main message
+# text, whether it's the whole of the RFC822 message body or one
+# part of a multipart. Timber v0 doesn't support arbitrary
+# character sets on input, so all we do here is choose between
+# iso-8859-1 and ASCII depending on the presence of any
+# high-bit-set characters.
+if (&contains_hibit_chars($body)) {
+  $bodyhdrs = "Content-Type: text/plain; charset=ISO-8859-1\n" .
+              "Content-Transfer-Encoding: 8bit\n";
+} else {
+  $bodyhdrs = "Content-Type: text/plain; charset=US-ASCII\n" .
+              "Content-Transfer-Encoding: 7bit\n";
+}
+
+# If there are no attachment headers at all, we should just spew
+# the almost-unchanged message (headers, \n, body) on stdout and
+# leave.
 if ($#aheaders < 0) {
-  &mail($headers . "\n" . $body);
+  $headers .= "MIME-Version: 1.0\n";
+  &mail($headers . $bodyhdrs . "\n" . $body);
   exit 0;
 }
 
 # Right. Now we are a multipart. First, encode each attachment and
 # compile the MIME headers for each part.
 
-# Part one is the body. This gets special treatment: we don't encode it
-# at all, and our sole concession to MIMEity is to choose charset and
-# transfer encoding to be US-ASCII/7bit or ISO-8859-1/8bit.
-
-$bodyhdrs = "Content-Type: text/plain; charset=CHARSET\n" .
-            "Content-Transfer-Encoding: ENCODING\n" .
-            "Content-Description: message body\n";
-if (&contains_hibit_chars($body)) {
-  $bodyhdrs =~ s/CHARSET/iso-8859-1/;
-  $bodyhdrs =~ s/ENCODING/8bit/;
-} else {
-  $bodyhdrs =~ s/CHARSET/us-ascii/;
-  $bodyhdrs =~ s/ENCODING/7bit/;
-}
+# Part one is the body.
+$bodyhdrs .= "Content-Description: message body\n";
 push @parts, [$bodyhdrs, $body];
 
 # Remaining parts come from the @aheaders array, in order. For those
