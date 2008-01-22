@@ -1261,6 +1261,7 @@ define timber_get_mimepart(use_decoded) {
 	if (timber_ila("Content-Transfer-Encoding: ")) {
 	    go_right(26);
             encoding = strup(timber_getheader(1));
+	    encoding = extract_element(encoding, 0, ' ');
 	} else if (timber_ila("Content-Type: ")) {
 	    go_right(14);
             text = timber_getheader(1);
