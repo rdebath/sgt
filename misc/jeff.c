@@ -9,15 +9,19 @@
  * 
  * Usage:
  * 
- *   jeff [-e | -d] [--mono | --mono-plain | --mbox] [file [file...]]
+ *   jeff [-e | -d] [<type>] [file [file...]]
  * 
  * where:
  * 
  *   -e      transform multiline records into one line (default)
  *   -d      transform one-line-per-record back to multiline
+ * 
+ * and <type> can be one of:
+ * 
  *   --mono  process Mono messages with attributes, as downloaded by golem
  *   --mono-plain  process Mono messages in a text file without attributes
  *   --mbox  process an mbox mail folder
+ *   --svnlog  process the output from `svn log' into individual log entries
  * 
  * note:
  * 
@@ -35,7 +39,7 @@
  *  - I'd quite like to make this a publish-worthy utility in the
  *    `utils' collection. However, the Mono message mode would
  *    require a lot of explanation, and also probably shouldn't be
- *    the default. Would it be worth it just for mbox mode?
+ *    the default. Would it be worth it just for other modes?
  *     + perhaps one possibility would be to make the code modular:
  * 	 have a central jeff.c and a subfile containing each mode,
  * 	 and then I could keep the Mono modes somewhere else in svn
@@ -50,10 +54,6 @@
  * 
  *  - Are there other record types which benefit from a good
  *    jeffing?
- *     + Subversion log messages spring to mind. Note that they
- * 	 have their own internal method of indicating record
- * 	 length, so the current start-line matching architecture
- * 	 would be inadequate.
  * 
  *  - I'm idly wondering about automatic recognition of the file
  *    type. `jeff --mono-plain' is a lot of verbiage; you ideally
@@ -105,6 +105,82 @@ int mbox_start_line(char *line)
 {
     EXPECT("From ");
     return TRUE;
+}
+
+int svnlog_start_line(char *line)
+{
+    /*
+     * Internal state variable:
+     * 
+     *  - 0 means we are ready to interpret a line of dashes as
+     *    beginning a new revision
+     * 
+     *  - -1 means we've seen a line of dashes and are expecting a
+     *    line giving log length
+     * 
+     *  - -1-n (n>0) means we know the log message contains n
+     *    lines, but it hasn't started yet because we haven't seen
+     *    the blank line (perhaps it's `svn log -v' and contains
+     *    the changed-paths section)
+     * 
+     *  - n (n>0) means we are ignoring n lines of log message
+     *    before being ready to see a new revision again
+     */
+    static int state = 0;
+    if (state == 0) {
+        if (!strcmp(line, "----------------------------------------"
+                    "--------------------------------\n")) {
+            state = -1;
+            return TRUE;
+        } else {
+            /*
+             * In this situation we were expecting to see a line of
+             * dashes, but we saw something else instead. This
+             * _shouldn't_ happen. Perhaps there should be a
+             * --strict option which throws errors on violation of
+             * the expected input format? For robustness, though, I
+             * think it might be better just to sit tight and see
+             * if we see our dashes on the next line instead.
+             */
+            return FALSE;
+        }
+    } else if (state == -1) {
+        /*
+         * This is the line after a line of dashes. We expect to
+         * see it ended by '| %d line[s]'.
+         */
+        char *bar = strrchr(line, '|');
+        int nlines;
+        if (bar == NULL ||
+            sscanf(bar, "| %d lines", &nlines) < 1 ||
+            sscanf(bar, "| %d line", &nlines) < 1) {
+            /*
+             * This line wasn't what we expected. Even more tempted
+             * than above to throw an error here.
+             */
+            return FALSE;
+        } else {
+            /*
+             * We have our count of log lines in nlines.
+             */
+            state = -1 - nlines;
+            return FALSE;
+        }
+    } else if (state < -1) {
+        /*
+         * A blank line switches us into log-ignoring mode.
+         */
+        if (line[0] == '\n')
+            state = -1 - state;
+        return FALSE;
+    } else if (state > 0) {
+        /*
+         * Now we're ignoring lines of log message, after which
+         * we'll be ready to see a dashes introducer again.
+         */
+        state--;
+        return FALSE;
+    }
 }
 
 char *fgetline(FILE *fp)
@@ -220,6 +296,8 @@ int main(int argc, char **argv)
 		    start_line = mono_plain_start_line;
 		} else if (!strcmp(p, "mbox")) {
 		    start_line = mbox_start_line;
+		} else if (!strcmp(p, "svnlog")) {
+		    start_line = svnlog_start_line;
 		} else {
 		    fprintf(stderr, "%s: unrecognised option '--%s'\n",
 			    pname, p);
