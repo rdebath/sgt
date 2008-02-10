@@ -90,7 +90,7 @@ sub fix_href {
     foreach my $file (@files) {
       return $_ if s#^\Q$file->[1]\E#$file->[0]#;
     }
-    s#^#http://www.tartarus.org/~simon/putty-snapshots/htmldoc\/#;
+    s#^#http://tartarus.org/~simon/putty-snapshots/htmldoc\/#;
     return $_;
   }
 }
