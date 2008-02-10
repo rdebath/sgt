@@ -44,7 +44,7 @@ Reports:
 behaviour on similar timescales, so it seems PuTTY-specific.
 <br>(I can also trigger partial redraw failures on the configuration
 dialog by the same method! -- the background
-<a href="http://www.tartarus.org/~jacob/junk/20050118/putty-2005-01-13-noredraw-config.png">becomes green</a>,
+<a href="http://tartarus.org/~jacob/junk/20050118/putty-2005-01-13-noredraw-config.png">becomes green</a>,
 bizarrely. Also 0.56.)
 <br>Can also reproduce with WordPad menu bar, so probably not our
 problem.

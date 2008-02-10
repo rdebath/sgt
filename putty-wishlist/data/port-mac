@@ -17,7 +17,7 @@ someone else steps in to do it.
 <p>
 See:
 <ul>
-<li><a href="http://www.tartarus.org/~simon-anonsvn/viewcvs.cgi/putty/mac/README.mac?view=markup">mac/README.mac</a> (classic Mac OS)
-<li><a href="http://www.tartarus.org/~simon-anonsvn/viewcvs.cgi/putty/macosx/README.OSX?view=markup">macosx/README.OSX</a> (Mac OS X native)
+<li><a href="http://svn.tartarus.org/putty/mac/README.mac?view=markup">mac/README.mac</a> (classic Mac OS)
+<li><a href="http://svn.tartarus.org/putty/macosx/README.OSX?view=markup">macosx/README.OSX</a> (Mac OS X native)
 <li>the <a href="../faq.html#faq-mac-port">FAQ entry</a>
 </ul>

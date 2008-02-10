@@ -7,7 +7,7 @@ Content-type: text/x-html-body
 
 <p>
 In 0.58, a new SSH bug-compatibility mode was added to PuTTY:
-<a href="http://www.tartarus.org/~simon/puttydoc/Chapter4.html#config-ssh-bug-rekey">"Handles SSH-2 key re-exchange badly"</a>.
+<a href="http://tartarus.org/~simon/putty-snapshots/htmldoc/Chapter4.html#config-ssh-bug-rekey">"Handles SSH-2 key re-exchange badly"</a>.
 
 <p>
 However, in 0.58, attempts to save any setting other than "Auto" fail

@@ -20,7 +20,7 @@ version, nor with Unix plink.
 <em>Workaround:</em> add the host key to the database first. (Apparently
 this can be done by setting "close window on exit" to "never" in
 the first session, or use
-<tt><a href="http://www.tartarus.org/~simon-anonsvn/viewcvs.cgi/putty/contrib/kh2reg.py">contrib/kh2reg.py</a></tt>
+<tt><a href="http://svn.tartarus.org/putty/contrib/kh2reg.py">contrib/kh2reg.py</a></tt>
 in PuTTY CVS.)
 
 <p>

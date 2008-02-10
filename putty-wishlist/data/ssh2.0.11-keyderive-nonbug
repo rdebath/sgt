@@ -11,7 +11,7 @@ key-derivation bug, 2.0.11 on Solaris/SPARC 2.5.1 doesn't, and this causes
 the expected decryption failures.  The current OpenSSH code suggests that
 the bug is only present in versions <b>before</b> SSH 2.0.11.  It looks
 like the
-<a href="http://www.tartarus.org/~simon-anonsvn/viewcvs.cgi/putty/ssh.c.diff?r1=2341&r2=2342">fix</a>
+<a href="http://svn.tartarus.org/putty/ssh.c.diff?r1=2341&r2=2342">fix</a>
 for
 <a href="ssh2-keyderive-nonbug.html">ssh2-keyderive-nonbug</a>
 had an off-by-one error.

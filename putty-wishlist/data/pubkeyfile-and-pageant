@@ -18,7 +18,7 @@ connection (e.g., if one is trying to use a particular key to run
 a particular forced command).  It can also cause problems if Pageant
 has lots of keys and the server (e.g. OpenSSH) is configured to only
 allow a certain number of authentication attempts.  See the
-<a href="http://www.tartarus.org/~simon/puttydoc/Chapter10.html#errors-toomanyauth">errors chapter</a>
+<a href="http://tartarus.org/~simon/putty-snapshots/htmldoc/Chapter10.html#errors-toomanyauth">errors chapter</a>
 of the PuTTY manual.
 
 <p>

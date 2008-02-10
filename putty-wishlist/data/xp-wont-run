@@ -75,11 +75,11 @@ rename them as indicated, and put them in the same directory as the
 relevant 0.58 executable, they should override the application
 manifests and allow them to run.
 <ul>
-<li><tt><a href="http://www.tartarus.org/~simon-anonsvn/viewcvs.cgi/*checkout*/putty/windows/putty.mft?rev=5604">putty.mft</a></tt>:
+<li><tt><a href="http://svn.tartarus.org/*checkout*/putty/windows/putty.mft?rev=5604">putty.mft</a></tt>:
 rename to <tt>putty.exe.manifest</tt> (or
 <tt>puttytel.exe.manifest</tt>)
-<li><tt><a href="http://www.tartarus.org/~simon-anonsvn/viewcvs.cgi/*checkout*/putty/windows/puttygen.mft?rev=5604">puttygen.mft</a></tt>:
+<li><tt><a href="http://svn.tartarus.org/*checkout*/putty/windows/puttygen.mft?rev=5604">puttygen.mft</a></tt>:
 rename to <tt>puttygen.exe.manifest</tt>
-<li><tt><a href="http://www.tartarus.org/~simon-anonsvn/viewcvs.cgi/*checkout*/putty/windows/pageant.mft?rev=5604">pageant.mft</a></tt>:
+<li><tt><a href="http://svn.tartarus.org/*checkout*/putty/windows/pageant.mft?rev=5604">pageant.mft</a></tt>:
 rename to <tt>pageant.exe.manifest</tt>
 </ul>
