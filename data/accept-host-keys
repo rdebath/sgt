@@ -22,6 +22,6 @@ the work and send us polished production-quality patches.
 
 <p>
 If you have host keys available in the common `known_hosts' format, we
-have <a href="http://www.tartarus.org/~simon-anonsvn/viewcvs.cgi/putty/contrib/kh2reg.py">a script</a>
+have <a href="http://svn.tartarus.org/putty/contrib/kh2reg.py">a script</a>
 to convert them to a Windows .REG file which can be installed ahead of
 time by double-clicking.

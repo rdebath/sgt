@@ -32,7 +32,7 @@ if it causes trouble.
 <p>
 The meaning of the binary version number (e.g., 0.58.6356.0) is
 described in
-<tt><a href="http://tartarus.org/~simon-anonsvn/viewcvs.cgi/putty/windows/version.rc2?view=markup">windows/version.rc2</a></tt>.
+<tt><a href="http://svn.tartarus.org/putty/windows/version.rc2?view=markup">windows/version.rc2</a></tt>.
 
 <p>
 (The PuTTY binaries also contain XML

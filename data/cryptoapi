@@ -7,7 +7,7 @@ Content-type: text/x-html-body
 
 <p>
 We did once have 
-<a href="http://www.tartarus.org/~simon-anonsvn/viewcvs.cgi/putty/mscrypto.c?rev=1308">some
+<a href="http://svn.tartarus.org/putty/mscrypto.c?rev=1308">some
 sort of
 optional support</a> for the Microsoft Crypto API, but it rotted, and
 didn't support all the algorithms we needed (eg Blowfish), so was

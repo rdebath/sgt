@@ -12,7 +12,7 @@ often for good reason. People carrying PuTTY around on a floppy tend
 to want to store their configuration in a disk file on the same
 floppy, so they can take absolutely everything with them from place
 to place. (See
-<a href="http://www.tartarus.org/~simon/putty-snapshots/htmldoc/Chapter4.html#config-file">the docs</a>
+<a href="http://tartarus.org/~simon/putty-snapshots/htmldoc/Chapter4.html#config-file">the docs</a>
 for a current hack to do this, which assumes you have write access to
 your registry.) Sysadmins could very well want to store system-wide
 configuration in HKEY_ALL_USERS or HKEY_LOCAL_MACHINE.

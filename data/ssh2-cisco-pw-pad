@@ -10,7 +10,7 @@ Content-type: text/x-html-body
 <p>
 It appears that the SSH-2 server in some versions of Cisco CatOS (version
 string "SSH-2.0-Cisco-1.25") is unable to cope with the
-<a href="http://www.tartarus.org/~simon-anonsvn/viewcvs.cgi?rev=5122&amp;view=rev">additional padding</a>
+<a href="http://svn.tartarus.org/?view=rev&amp;rev=5122">additional padding</a>
 that PuTTY puts on packets containing passwords in order to mask their length.
 This additional padding is permitted by the SSH-2 specification, which
 merely requires:

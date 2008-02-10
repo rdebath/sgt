@@ -8,7 +8,7 @@ Content-type: text/x-html-body
 PSCP currently has no local way of specifying multiple remote files
 explicitly (rather than with wildcards). (If it's using the SCP
 backend, you may be able to use remote,
-<a href="http://www.tartarus.org/~simon/puttydoc/Chapter5.html#S5.2.1">unsafe</a>,
+<a href="http://tartarus.org/~simon/putty-snapshots/htmldoc/Chapter5.html#pscp-usage-basics">unsafe</a>,
 wildcards or shell constructs.)
 
 <p>

@@ -13,7 +13,7 @@ so we're rather unlikely to add it ourselves.
 
 <p>
 Any proposed solution should take into account our
-<a href="http://www.tartarus.org/~simon/puttydoc/AppendixD.html">design guidelines</a>
+<a href="http://tartarus.org/~simon/putty-snapshots/htmldoc/AppendixD.html">design guidelines</a>
 to be even considered for inclusion. In particular, some submissions
 have not taken into account PuTTY's cross-platform nature.
 

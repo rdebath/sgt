@@ -11,7 +11,7 @@ being used only for port-forwarding (tunnelling).
 
 <p>
 (In SSH-2, we can already run 
-<a href="http://www.tartarus.org/~simon/puttydoc/Chapter4.html#config-ssh-noshell">without requesting a shell</a>,
+<a href="http://tartarus.org/~simon/putty-snapshots/htmldoc/Chapter4.html#config-ssh-noshell">without requesting a shell</a>,
 but we still put up a terminal window (in PuTTY) or keep the console
 open (in Plink).)
 

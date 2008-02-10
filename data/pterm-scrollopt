@@ -5,6 +5,6 @@ Priority: medium
 Content-type: text/x-html-body
 
 <p>
-Richard Boulton has a
-<a href="http://www.tartarus.org/~richard/putty-patches/#patch_pterm_scrollopt">
-patch</a> to add scroll optimisation to pterm.
+Richard Boulton once had a patch to add scroll optimisation to pterm.
+I don't know where it's gone; last seen
+<a href="http://www.tartarus.org/~richard/putty-patches/#patch_pterm_scrollopt">here</a>.
