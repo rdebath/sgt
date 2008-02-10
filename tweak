@@ -1,5 +1,5 @@
 Author: Simon Tatham <anakin@pobox.com>
-SVNURL: svn://ixion.tartarus.org/main/tweak
+SVNURL: svn://svn.tartarus.org/sgt/tweak
 Title: Tweak
 Description: A curses-based Unix hex editor, with a highly efficient and scalable underlying data structure.
 Homepage: http://www.chiark.greenend.org.uk/~sgtatham/tweak/

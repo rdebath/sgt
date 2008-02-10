@@ -1,5 +1,5 @@
 Author: Simon Tatham <anakin@pobox.com>
-SVNURL: svn://ixion.tartarus.org/main/enigma
+SVNURL: svn://svn.tartarus.org/sgt/enigma
 Title: Enigma: a puzzle game
 Description: A puzzle game reminiscent of XOR, Sokoban and Boulderdash, implemented as a curses-based Unix terminal program.
 Homepage: http://www.chiark.greenend.org.uk/~sgtatham/enigma/

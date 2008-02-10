@@ -1,5 +1,5 @@
 Title: Timber
-SVNURL: svn://ixion.tartarus.org/main/timber
+SVNURL: svn://svn.tartarus.org/sgt/timber
 Author: Simon Tatham <anakin@pobox.com>
 Description: Timber is a mail user agent designed for time-efficient mail storage and indexing, multiple user interface layers (including a scriptable command-line interface), category-based mail management, threading, and good character-set support.
 Homepage: http://www.chiark.greenend.org.uk/~sgtatham/timber.html

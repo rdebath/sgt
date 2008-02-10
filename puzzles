@@ -1,4 +1,4 @@
-SVNURL: svn://ixion.tartarus.org/main/puzzles
+SVNURL: svn://svn.tartarus.org/sgt/puzzles
 Author: Simon Tatham <anakin@pobox.com>
 Description: A collection of small GUI puzzle games, portable across Unix and Windows (and designed to make other ports reasonably easy).
 Homepage: http://www.chiark.greenend.org.uk/~sgtatham/puzzles/
