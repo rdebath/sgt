@@ -462,7 +462,7 @@ In fact I don't currently \e{have} any incidents in my version
 control history when a file from outside PuTTY was copied into it,
 but I certainly didn't want to rule out the possibility that I might
 have such an incident in future. So I wrote
-\W{http://www.tartarus.org/~simon-anonsvn/viewcvs.cgi/svn-tools/svndumpfilter2?view=markup}{a
+\W{http://svn.tartarus.org/svn-tools/svndumpfilter2?view=markup}{a
 replacement for \cw{svndumpfilter}} (easy enough when my migration
 script already contained general routines to read and write
 Subversion dump files) which also knew the location of the
@@ -617,7 +617,7 @@ options did. But it's certainly worth knowing!
 Explicitly specifying the set of file names to commit can
 admittedly be fiddly if there are lots of them. In fact I ended up
 writing a Perl script called
-\W{http://www.tartarus.org/~simon-anonsvn/viewcvs.cgi/local/svn-commit?rev=5036&view=markup}\c{svn-commit}
+\W{http://svn.tartarus.org/local/svn-commit?rev=5036&view=markup}\c{svn-commit}
 for use in this sort of situation, which automatically processes the
 output of \c{svn status} to work out the file list and then passes
 that list to \c{svn commit}.
