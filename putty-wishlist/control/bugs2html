@@ -535,7 +535,7 @@ EOH
     }
 
     print HTML <<EOF;
-<p><a href="http://www.tartarus.org/~simon-anonsvn/viewcvs.cgi/putty-wishlist/data/$bugname">
+<p><a href="http://svn.tartarus.org/putty-wishlist/data/$bugname">
 Audit trail</a> for this $class.
 <p><hr>If you want to comment on this web site, see the
 <a href="$baseurl/feedback.html">Feedback page</a>.
