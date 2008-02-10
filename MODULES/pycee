@@ -1,5 +1,5 @@
 Title: Pycee
-SVNURL: svn://ixion.tartarus.org/main/pycee
+SVNURL: svn://svn.tartarus.org/sgt/pycee
 Author: Simon Tatham <anakin@pobox.com>
 Description: Pycee was an attempt to write a simple (non-optimising) ANSI C compiler in Python. Aims included targetting it at a weird bytecode in order to write PC bootloaders, and also adapting it into source analysis tools.
 Status: Abandoned. I was most of the way through the C front end, but ran out of motivation for the job. The advent of GRUB since then largely obviates my need for better PC bootloaders, and in any case the prototype Pycee ran far too slowly to be generally useful.

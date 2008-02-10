@@ -1,4 +1,4 @@
 Title: libcharset
-SVNURL: svn://ixion.tartarus.org/main/charset
+SVNURL: svn://svn.tartarus.org/sgt/charset
 Author: Simon Tatham <anakin@pobox.com>
 Description: Simple library for converting between character sets. Evolved from one written specifically for PuTTY; now also used in other programs by the same author.
