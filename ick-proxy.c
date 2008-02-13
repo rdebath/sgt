@@ -20,26 +20,31 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 
+#include "icklang.h"
+#include "buildpac.h"
+
 #define lenof(x) (sizeof((x)) / sizeof(*(x)))
 
-/* ----------------------------------------------------------------------
- * JavaScript-based URL rewriting mechanism (needs libjs0)
- */
-
-#include <js.h>
-
-JSInterpPtr jsinterpreter = NULL;
+icklib *rewritelib;
+ickscript *rewritescr;
 
 void init_url_rewriter(char *cfgfile)
 {
-    JSInterpOptions options;
+    FILE *fp;
+    char *ickerr;
 
-    js_init_default_options(&options);
-    jsinterpreter = js_create_interp(&options);
-
-    if (!js_eval_file(jsinterpreter, cfgfile)) {
+    fp = fopen(cfgfile, "r");
+    if (!fp) {
 	fprintf(stderr, "ick-proxy: load '%s': %s\n", cfgfile,
-		js_error_message(jsinterpreter));
+		strerror(errno));
+	exit(1);
+    }
+    rewritelib = ick_lib_new(0);
+    rewritescr = ick_compile_fp(&ickerr, "rewrite", "SS", rewritelib, fp);
+    fclose(fp);
+    if (!rewritescr) {
+	fprintf(stderr, "ick-proxy: %s:%s\n", cfgfile, ickerr);
+	free(ickerr);
 	exit(1);
     }
 }
@@ -48,42 +53,92 @@ char url_rewrite_error;		       /* has a magic address */
 
 char *url_rewrite(char *url)
 {
-    JSType input, output;
+    int rte;
     char *ret;
 
-    if (!jsinterpreter)
+    if (!rewritescr)
 	return NULL;
 
-    js_type_make_string(jsinterpreter, &input, url, strlen(url));
-
-    if (!js_apply(jsinterpreter, "RewriteURL", 1, &input))
-	return &url_rewrite_error;
-
-    js_result(jsinterpreter, &output);
-
-    if (output.type != JS_TYPE_STRING)
-	return &url_rewrite_error;
+    rte = ick_exec_limited(&ret, 65536, 4096, 65536, rewritescr, url);
 
     /*
      * Return NULL if the URL hasn't changed
      */
-    if (strlen(url) == output.u.s->len &&
-	!memcmp(url, output.u.s->data, output.u.s->len))
+    if (!strcmp(ret, url)) {
+	free(ret);
 	return NULL;
+    }
 
     /*
      * Otherwise, return the rewritten URL.
      */
-    ret = malloc(1 + output.u.s->len);
-    ret[output.u.s->len] = '\0';
-    memcpy(ret, output.u.s->data, output.u.s->len);
     return ret;
 }
 
-/* 
- * End of JS-based stuff.
- * ----------------------------------------------------------------------
- */
+void write_pac_file(char *pacfile, char *outpacfile, int port)
+{
+    char *inpac, *outpac;
+
+    if (pacfile) {
+	int len, size, ret;
+
+	FILE *fp = fopen(pacfile, "r");
+	if (!fp) {
+	    fprintf(stderr, "ick-proxy: open '%s': %s\n", pacfile,
+		    strerror(errno));
+	    exit(1);
+	}
+	inpac = NULL;
+	len = size = 0;
+	while (1) {
+	    size = len * 3 / 2 + 1024;
+	    inpac = realloc(inpac, size);
+	    ret = fread(inpac + len, 1, size - len, fp);
+	    if (ret < 0) {
+		fprintf(stderr, "ick-proxy: read '%s': %s\n", pacfile,
+			strerror(errno));
+		exit(1);
+	    } else if (ret == 0) {
+		inpac[len] = '\0';
+		break;
+	    } else {
+		len += ret;
+	    }
+	}
+	fclose(fp);
+    } else {
+	inpac = malloc(1024);
+	sprintf(inpac,
+		"function FindProxyForURL(url, host)\n"
+		"{\n"
+		"    return \"DIRECT\";\n"
+		"}\n");
+    }
+
+    outpac = build_pac(inpac, rewritescr, port);
+
+    {
+	FILE *fp = fopen(outpacfile, "w");
+	if (!fp) {
+	    fprintf(stderr, "ick-proxy: open '%s': %s\n", outpacfile,
+		    strerror(errno));
+	    exit(1);
+	}
+	if (fwrite(outpac, strlen(outpac), 1, fp) < 1) {
+	    fprintf(stderr, "ick-proxy: write '%s': %s\n", outpacfile,
+		    strerror(errno));
+	    exit(1);
+	}
+	if (fclose(fp) < 0) {
+	    fprintf(stderr, "ick-proxy: close '%s': %s\n", outpacfile,
+		    strerror(errno));
+	    exit(1);
+	}
+    }
+
+    free(inpac);
+    free(outpac);
+}
 
 #define FD_SET_MAX(fd, set, max) \
         do { FD_SET((fd),(set)); (max) = ((max)<=(fd)?(fd)+1:(max)); } while(0)
@@ -286,7 +341,7 @@ void got_line(struct Connection *c, int fdnum, char *line, int linelen)
     }
 }
 
-void run_daemon(char **daemon_words, int port)
+void run_daemon(char **daemon_words, char *pacfile, char *outpacfile, int port)
 {
     struct sockaddr_in addr;
     int addrlen;
@@ -333,6 +388,9 @@ void run_daemon(char **daemon_words, int port)
      * Now either spawn the command (if we've been given a
      * command), or fork ourself off as a daemon (if we haven't).
      */
+    if (outpacfile)
+	write_pac_file(pacfile, outpacfile, ntohs(addr.sin_port));
+
     if (daemon_words) {
         int pid;
 
@@ -615,6 +673,8 @@ int main(int argc, char **argv)
 {
     char **daemon_words = NULL;
     char *cfgfile = NULL;
+    char *pacfile = NULL;
+    char *outpacfile = NULL;
     char *testurl = NULL;
     int doing_opts = 1;
     int port = 0;
@@ -647,6 +707,18 @@ int main(int argc, char **argv)
                     return 1;
                 }
 		cfgfile = *++argv;
+            } else if (!strcmp(p, "-p")) {
+                if (--argc <= 0) {
+                    fprintf(stderr, "ick-proxy: -p expected a parameter\n");
+                    return 1;
+                }
+		pacfile = *++argv;
+            } else if (!strcmp(p, "-o")) {
+                if (--argc <= 0) {
+                    fprintf(stderr, "ick-proxy: -o expected a parameter\n");
+                    return 1;
+                }
+		outpacfile = *++argv;
             } else if (!strcmp(p, "-t")) {
                 if (--argc <= 0) {
                     fprintf(stderr, "ick-proxy: -t expected a parameter\n");
@@ -691,7 +763,7 @@ int main(int argc, char **argv)
 	else
 	    printf("%s\n", ret);
     } else {
-	run_daemon(daemon_words, port);
+	run_daemon(daemon_words, pacfile, outpacfile, port);
     }
 
     return 0;
