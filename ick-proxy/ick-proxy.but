@@ -154,6 +154,12 @@ to the \cw{RewriteURL} function, output the result on standard
 output, and then terminate. Use this feature for testing your
 configuration before starting up \cw{ick-proxy} for real.
 
+\U BUGS
+
+This man page is hopelessly out of date; ick-proxy is now not
+configured in Javascript, but in a language of my own design which I
+haven't yet got round to documenting. Sorry.
+
 \U LICENCE
 
 \cw{ick-proxy} is free software, distributed under the MIT licence.

@@ -1,12 +1,14 @@
 -include make.vars
 
-LIBJS=-ljs -lm -ldl
+ick-proxy: ick-proxy.o icklang.o buildpac.o
+	$(CC) -o ick-proxy $^ $(LFLAGS)
 
-ick-proxy: ick-proxy.c
-	$(CC) $(CFLAGS) -o ick-proxy ick-proxy.c $(LFLAGS) $(LIBJS)
+%.o: %.c
+	$(CC) $(CFLAGS) -c $<
 
 ick-proxy.1: ick-proxy.but
 	halibut --man=$@ $<
 
 clean:
-	rm -f ick-proxy ick-proxy.1
+	rm -f ick-proxy ick-proxy.1 *.o
+
