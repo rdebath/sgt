@@ -1,0 +1,59 @@
+/* -*- c -*- */
+
+bool strprefix(string str, string pfx)
+{
+    return (len(str) >= len(pfx) &&
+	    substr(str, 0, len(pfx)) == pfx);
+}
+
+string rewrite(string url)
+{
+    bool style;
+
+    style = false;
+
+    if (strprefix(url, "http://www.livejournal.com/users/") ||
+        strprefix(url, "http://www.livejournal.com/~") ||
+        strprefix(url, "http://www.livejournal.com/community/")) {
+	if (!strprefix(url, "http://www.livejournal.com/users/simont/") &&
+            !strprefix(url, "http://www.livejournal.com/community/join.bml") &&
+            !strprefix(url, "http://www.livejournal.com/community/leave.bml")){
+	    style = true;
+        }
+    }
+
+    if (strprefix(url, "http://") && index(url, ".livejournal.com/") > 0) {
+	string middle, list;
+	int mpos;
+	mpos = index(url, ".livejournal.com/");
+	middle = substr(url, 7, mpos);
+        /* list of livejournal.com hostnames that _don't_ need
+	 * the style=mine suffix. Most of these are special things that
+	 * aren't usernames; `simont' is also included here. */
+        list = "/pics/userpic/lists/userpic-origin/files/stat/"
+            "bigip/stat-origin/img/status/mail/post/www/ljdev/"
+            "userpic-voxel/wwwstat/files-origin/simont/";
+	if (index(middle, ".") < 0 && index(list, "/"+middle+"/") < 0)
+	    style = true;
+    }
+
+    if (style && index(url, "?style=") < 0 && index(url, "&style=") < 0) {
+	int hashpos;
+	string extra;
+	hashpos = index(url, "#");
+	if (hashpos < 0)
+	    hashpos = len(url);
+	if (index(url, "?") < 0)
+	    extra = "?style=mine";
+	else
+	    extra = "&style=mine";
+	url = substr(url, 0, hashpos) + extra +
+	    substr(url, hashpos);
+    }
+
+    if (strprefix(url, "http://lists.tartarus.org/")) {
+	url = substr(url, 0, 7) + "tunnel." + substr(url, 7);
+    }
+
+    return url;
+}
