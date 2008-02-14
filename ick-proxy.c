@@ -707,9 +707,9 @@ int main(int argc, char **argv)
                     return 1;
                 }
 		cfgfile = *++argv;
-            } else if (!strcmp(p, "-p")) {
+            } else if (!strcmp(p, "-f")) {
                 if (--argc <= 0) {
-                    fprintf(stderr, "ick-proxy: -p expected a parameter\n");
+                    fprintf(stderr, "ick-proxy: -f expected a parameter\n");
                     return 1;
                 }
 		pacfile = *++argv;
