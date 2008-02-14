@@ -1681,7 +1681,6 @@ define cvssvn_cat() {
     if (strcmp(substr(name, 1, 15), "*cvs-annotate*:") == 0 or
 	strcmp(substr(name, 1, 15), "*svn-annotate*:") == 0) {
         name = substr(name, 16, -1);
-        return;
     }
     if (strcmp(substr(name, 1, 10), "*cvs-log*:") == 0 or
 	strcmp(substr(name, 1, 10), "*svn-log*:") == 0 or
