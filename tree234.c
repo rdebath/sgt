@@ -1178,7 +1178,7 @@ static node234 *split234_internal(tree234 *t, int index) {
     /*
      * Search down the tree to find the split point.
      */
-    lparent = rparent = NULL;
+    lparent = rparent = NULL; pki = -1;
     while (n) {
 	LOG(("  node %p: %p/%d \"%s\" %p/%d \"%s\" %p/%d \"%s\" %p/%d index=%d\n",
 	     n,
