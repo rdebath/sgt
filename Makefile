@@ -1,6 +1,6 @@
 -include make.vars
 
-ick-proxy: ick-proxy.o icklang.o buildpac.o
+ick-proxy: unix.o proxy.o icklang.o buildpac.o malloc.o tree234.o
 	$(CC) -o ick-proxy $^ $(LFLAGS)
 
 %.o: %.c
