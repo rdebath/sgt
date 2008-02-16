@@ -400,6 +400,9 @@ static void ick_error(struct ick_parse_ctx *ctx, struct ick_srcpos srcpos,
 			    out = "";
 			    outlen = 0;
 			}
+		    } else {
+			out = "";
+			outlen = 0;
 		    }
 		    p += 2;
 		}
@@ -679,7 +682,7 @@ static void ick_lex_advance(struct ick_parse_ctx *ctx)
 			{
 			    int c = ctx->lex_last;
 			    ick_lex_read(ctx);
-			    if (ctx->lex_last == ('\r' ^ '\n') ^ c)
+			    if (ctx->lex_last == (('\r' ^ '\n') ^ c))
 				ick_lex_read(ctx);
 			}
 			break;
@@ -1317,9 +1320,11 @@ static struct ick_expr *ick_parse_expr7(struct ick_parse_ctx *ctx)
 	}
 	return a;
     } else if (ctx->tok.type == TOK_LPAREN) {
+	struct ick_expr *a;
+
 	pos = ctx->tok.pos;
 	ick_lex_advance(ctx);
-	struct ick_expr *a = ick_parse_expr(ctx);
+	a = ick_parse_expr(ctx);
 	a->startpos = pos;
 	if (ctx->tok.type != TOK_RPAREN) {
 	    ick_error(ctx, ctx->tok.pos, "expected closing parenthesis in "
@@ -1731,11 +1736,11 @@ static struct ick_block *ick_parse_block(struct ick_parse_ctx *ctx)
 static struct ick_parse_tree *ick_parse_toplevel(struct ick_parse_ctx *ctx)
 {
     struct ick_parse_tree *tree = malloc(sizeof(*tree));
+    struct ick_srcpos pos;
     tree->fns = NULL;
     tree->nfns = tree->fnsize = 0;
     tree->toplevel_vars.decls = NULL;
     tree->toplevel_vars.ndecls = tree->toplevel_vars.declsize = 0;
-    struct ick_srcpos pos;
 
     while (ctx->tok.type != TOK_EOF) {
 	/*
@@ -2681,7 +2686,8 @@ static int ick_string_literal(struct ick_parse_ctx *ctx, const char *str)
 
     if (ctx->nstringlits >= ctx->stringlitsize) {
 	ctx->stringlitsize = ctx->nstringlits * 3 / 2 + 32;
-	ctx->stringlits = realloc(ctx->stringlits, ctx->stringlitsize *
+	ctx->stringlits = realloc((char **)ctx->stringlits,
+				  ctx->stringlitsize *
 				  sizeof(*ctx->stringlits));
     }
 
@@ -2936,7 +2942,7 @@ static void ick_codegen_expr(struct ick_parse_ctx *ctx,
 	      case TOK_GT: opcode = OP_GT0; break;
 	      case TOK_GE: opcode = OP_GE0; break;
 	      case TOK_EQ: opcode = OP_EQ0; break;
-	      case TOK_NE: opcode = OP_NE0; break;
+	      default /*case TOK_NE*/: opcode = OP_NE0; break;
 	    }
 	    ick_emit(ctx, opcode, target, target, 0);
 	}
@@ -2995,7 +3001,7 @@ static void ick_codegen_expr(struct ick_parse_ctx *ctx,
 		  case TOK_PLUS: opcode = OP_ADD; break;
 		  case TOK_MINUS: opcode = OP_SUB; break;
 		  case TOK_MUL: opcode = OP_MUL; break;
-		  case TOK_DIV: opcode = OP_DIV; break;
+		  default /*case TOK_DIV*/: opcode = OP_DIV; break;
 		}
 		ick_emit(ctx, opcode, target, temp, target);
 		ctx->istkup--;
@@ -3802,7 +3808,7 @@ static int ick_libfn_index3(void *result, const char **sparams,
     int start = iparams[0];
     if (start < 0)
 	start = 0;
-    if (start > strlen(sparams[0])) {
+    if (start > (int)strlen(sparams[0])) {
 	*(int *)result = -1;	       /* it can't be there */
     } else {
 	found = strstr(sparams[0] + start, sparams[1]);
@@ -4160,7 +4166,7 @@ int ick_exec_limited_v(void *result, int maxcycles, int maxstk, int maxstr,
     int x1, x2, x3;
     int *iparams;
     int iparamsize;
-    const char **sparams;
+    char **sparams;
     int sparamsize;
 
     /*
@@ -4287,7 +4293,8 @@ int ick_exec_limited_v(void *result, int maxcycles, int maxstk, int maxstr,
 		int iret;
 		int ret;
 		ret = fn->native(fn->rettype == TOK_KW_STRING ? (void *)&sret :
-				 (void *)&iret, sparams, iparams);
+				 (void *)&iret, (const char **)sparams,
+				 iparams);
 		if (ret) {
 		    ick_free_stacks(stacks);
 		    free(iparams);
@@ -4547,7 +4554,7 @@ static const char *ick_js_addid(struct ick_js_ctx *ctx,
     }
     if (ctx->navoidids >= ctx->avoididsize) {
 	ctx->avoididsize = ctx->navoidids * 3 / 2 + 64;
-	ctx->avoidids = realloc(ctx->avoidids, ctx->avoididsize *
+	ctx->avoidids = realloc((char **)ctx->avoidids, ctx->avoididsize *
 				sizeof(ctx->avoidids));
     }
     ctx->avoidids[ctx->navoidids++] = id;
@@ -5212,8 +5219,8 @@ char *ick_to_js(char **mainfunc, ickscript *scr,
      * Clean up.
      */
     ick_js_popids(ctx, 0, 0);
-    free(ctx->avoidids);
-    free(ctx->freeids);
+    free((char **)ctx->avoidids);
+    free((char **)ctx->freeids);
 
     return ctx->out;
 }
@@ -5224,12 +5231,10 @@ char *ick_to_js(char **mainfunc, ickscript *scr,
 
 void ick_free(ickscript *scr)
 {
-    int i;
-
     if (!scr)
 	return;
 
-    free(scr->stringlits);
+    free((char **)scr->stringlits);
     free(scr->insns);
     ick_free_parsetree(scr->tree);
     free(scr);

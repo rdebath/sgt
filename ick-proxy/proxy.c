@@ -4,6 +4,8 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
+#include <assert.h>
 
 #include "icklang.h"
 #include "buildpac.h"
@@ -84,7 +86,6 @@ void configure_master(int port)
 
 char *configure_for_user(char *username)
 {
-    int port;
     char *scriptsrc;
     ickscript *script;
     char *scripterrctx, *scripterr, *pacerr;
@@ -136,7 +137,8 @@ char *configure_for_user(char *username)
 		add234(listenctxes, ctx);
 	    }
 	}
-    }
+    } else
+	ctx = NULL;
 
     /*
      * Load the user's input .pac and construct their output one.
@@ -155,7 +157,7 @@ char *configure_for_user(char *username)
 	sfree(pacerr);
     }
 
-    if (ctx->scr) {
+    if (ctx) {
 	outpac = build_pac(inpac, ctx->scr, ctx->port);
     } else {
 	outpac = dupfmt("/*\n"
@@ -333,6 +335,8 @@ char *got_data(struct connctx *ctx, char *data, int length)
      * So, zero-terminate our line and parse it.
      */
     *q = '\0';
+    z1 = z2 = q;
+    c1 = c2 = *q;
     p = line;
     while (*p && !isspace((unsigned char)*p)) p++;
     if (*p) {
@@ -404,7 +408,7 @@ char *got_data(struct connctx *ctx, char *data, int length)
 			      "causing a cascade of HTTP redirects.",
 			      p, rewritten);
 		sfree(rewritten);
-	    } else if (rte >= REWRITE_ERR_CASCTEST_BASE) {
+	    } else if (assert(rte >= REWRITE_ERR_CASCTEST_BASE), 1) {
 		int realerr = rte - REWRITE_ERR_CASCTEST_BASE;
 		text = dupfmt("The URL \"%s\" was passed to "
 			      "<code>ick-proxy</code> for rewriting; the "
@@ -430,13 +434,6 @@ char *got_data(struct connctx *ctx, char *data, int length)
 			  "the <code>ick-proxy</code> rewrite script "
 			  "returned no run-time error but also no "
 			  "output. This is a bug in ick-proxy!", p);
-	    ret = http_error("500", "Internal Server Error", text);
-	    sfree(text);
-	    return ret;
-	}
-
-	if (!strcmp(rewritten, p)) {
-	    char *ret, *text;
 	    ret = http_error("500", "Internal Server Error", text);
 	    sfree(text);
 	    return ret;
@@ -472,7 +469,7 @@ char *got_data(struct connctx *ctx, char *data, int length)
 	     * messages.
 	     */
 	    ret = http_success("application/x-ns-proxy-autoconfig", 1, pac);
-	    free(pac);
+	    sfree(pac);
 	    return ret;
 	} else {
 	    /*

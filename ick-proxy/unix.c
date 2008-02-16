@@ -112,7 +112,7 @@ int create_new_listener(char **err, int port, struct listenctx *ctx)
     int fd;
     struct fd *f;
     struct sockaddr_in addr;
-    int addrlen;
+    size_t addrlen;
 
     /*
      * Establish the listening socket and retrieve its port
@@ -220,7 +220,7 @@ char *get_script_for_user(char **err, const char *username)
     else
 	fname = get_filename_for_user(err, username, ".ick-proxy/rewrite.ick");
     if (!fname)
-	return;			       /* err has already been filled in */
+	return NULL;		       /* err has already been filled in */
 
     ret = read_whole_file(err, fname);
     sfree(fname);
@@ -236,7 +236,7 @@ char *get_inpac_for_user(char **err, const char *username)
     else
 	fname = get_filename_for_user(err, username, ".ick-proxy/input.pac");
     if (!fname)
-	return;			       /* err has already been filled in */
+	return NULL;		       /* err has already been filled in */
 
     ret = read_whole_file(err, fname);
     sfree(fname);
@@ -602,6 +602,7 @@ int main(int argc, char **argv)
 	 */
 	FD_ZERO(&rfds);
 	FD_ZERO(&wfds);
+	maxfd = 0;
 	for (i = j = 0; j < nfds; j++) {
 
 	    if (fds[j].deleted) {
@@ -680,7 +681,7 @@ int main(int argc, char **argv)
 		     */
 		    struct fd *f;
 		    struct sockaddr_in addr;
-		    int addrlen = sizeof(addr);
+		    size_t addrlen = sizeof(addr);
 		    int newfd = accept(fds[i].fd, (struct sockaddr *)&addr,
 				       &addrlen);
 		    if (newfd < 0)
