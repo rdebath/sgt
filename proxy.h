@@ -71,6 +71,11 @@ void configure_master(int port);
 struct connctx *new_connection(struct listenctx *lctx);
 
 /*
+ * Called by the platform code to free a defunct connctx.
+ */
+void free_connection(struct connctx *cctx);
+
+/*
  * Called by the platform code when data comes in on a connection.
  * 
  * If this function returns NULL, the platform code continues

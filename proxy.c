@@ -181,11 +181,20 @@ struct connctx *new_connection(struct listenctx *lctx)
     cctx->data = NULL;
     cctx->datalen = cctx->datasize = 0;
     return cctx;
+}
 
+void free_connection(struct connctx *cctx)
+{
     /*
-     * FIXME: we're going to need to free these at some point,
-     * unlike listenctxes which just gradually accumulate.
+     * We don't free cctx->script because it was an additional
+     * reference to the one in the corresponding listenctx. (So if
+     * we do ever start freeing listenctxes, we're going to have
+     * to make sure we only do so when all cctxes have
+     * disappeared, or start ref-counting, or something else
+     * horrid.)
      */
+    sfree(cctx->data);
+    sfree(cctx);
 }
 
 static char *http_error(char *code, char *errmsg, char *errtext, ...)
