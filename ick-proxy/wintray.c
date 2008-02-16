@@ -841,24 +841,26 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int show)
 
 	split_into_argv(cmdline, &argc, &argv, NULL);
 
+	argc--;
+	argv--;
 	while (--argc > 0) {
 	    char *p = *++argv;
 	    if (*p == '-') {
 		if (!strcmp(p, "-s")) {
 		    if (--argc <= 0) {
-			fprintf(stderr, "ick-proxy: -s expected a parameter\n");
+			error("ick-proxy: -s expected a parameter\n");
 			return 1;
 		    }
 		    override_script = *++argv;
 		} else if (!strcmp(p, "-i")) {
 		    if (--argc <= 0) {
-			fprintf(stderr, "ick-proxy: -i expected a parameter\n");
+			error("ick-proxy: -i expected a parameter\n");
 			return 1;
 		    }
 		    override_inpac = *++argv;
 		} else if (!strcmp(p, "-o")) {
 		    if (--argc <= 0) {
-			fprintf(stderr, "ick-proxy: -o expected a parameter\n");
+			error("ick-proxy: -o expected a parameter\n");
 			return 1;
 		    }
 		    override_outpac = *++argv;
