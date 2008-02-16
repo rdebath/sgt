@@ -571,7 +571,7 @@ int main(int argc, char **argv)
 	    while (pos < len) {
 		ret = write(fd, outpac_text + pos, len - pos);
 		if (ret < 0) {
-		    fprintf(stderr, "%s: write: %s\n", outpac_text,
+		    fprintf(stderr, "%s: write: %s\n", outpac_file,
 			    strerror(errno));
 		    return 1;
 		} else {
@@ -604,8 +604,12 @@ int main(int argc, char **argv)
 	FD_ZERO(&wfds);
 	for (i = j = 0; j < nfds; j++) {
 
-	    if (fds[j].deleted)
+	    if (fds[j].deleted) {
+		sfree(fds[j].wdata);
+		assert(!fds[j].lctx);  /* we don't free listeners currently */
+		free_connection(fds[j].cctx);
 		continue;
+	    }
 	    fds[i] = fds[j];
 
 	    switch (fds[i].type) {
