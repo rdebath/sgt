@@ -23,6 +23,7 @@
 #include <fcntl.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include <netinet/in.h>
 #include <syslog.h>
 
 #include "misc.h"
@@ -256,10 +257,22 @@ char *name_outpac_for_user(char **err, const char *username)
 
 int is_daemon = 0;
 
-void daemonise(void)
+void daemonise(char *dropprivuser)
 {
     pid_t pid;
     int i, fd;
+    int droppriv_uid = -1;
+
+    if (dropprivuser) {
+	struct passwd *p;
+	p = getpwnam(dropprivuser);
+	if (!p) {
+	    fprintf(stderr, "ick-proxy: getpwnam(\"%s\"): %s\n", dropprivuser,
+		    strerror(errno));
+	    exit(1);
+	}
+	droppriv_uid = p->pw_uid;
+    }
 
     /*
      * Fork.
@@ -312,6 +325,10 @@ void daemonise(void)
     setsid();
     /* Stop holding on to any unnecessary directory handles. */
     chdir("/");
+
+    /* Drop privileges. */
+    if (dropprivuser)
+	setuid(droppriv_uid);
 }
 
 void platform_fatal_error(const char *err)
@@ -367,6 +384,7 @@ const char usagemsg[] =
     "         -t             test-rewrite a single URL and terminate\n"
     "         <subcommand>   write a single PAC and run with lifetime of subcommand\n"
     "options: -p <port>      specify master port for in multi-user mode\n"
+    "         -u <username>  run as unprivileged user in multi-user mode\n"
     "         -s <script>    override default location for rewrite script\n"
     "         -i <inpac>     override default location for input .PAC file\n"
     "         -o <outpac>    override default location for output .PAC file\n"
@@ -415,6 +433,7 @@ int main(int argc, char **argv)
 {
     char **singleusercmd = NULL;
     char *testurl = NULL;
+    char *dropprivuser = NULL;
     char thisuserbuf[1024];
     int doing_opts = 1;
     int port = 880;
@@ -458,6 +477,12 @@ int main(int argc, char **argv)
                     return 1;
                 }
 		testurl = *++argv;
+            } else if (!strcmp(p, "-u")) {
+                if (--argc <= 0) {
+                    fprintf(stderr, "ick-proxy: -u expected a parameter\n");
+                    return 1;
+                }
+		dropprivuser = *++argv;
             } else if (!strcmp(p, "--help") || !strcmp(p, "-help") ||
                        !strcmp(p, "-?") || !strcmp(p, "-h")) {
                 /* Valid help request. */
@@ -515,10 +540,12 @@ int main(int argc, char **argv)
 	/*
 	 * Set up our master listening socket _before_ turning
 	 * into a daemon, so that we'll report on stderr if it
-	 * fails.
+	 * fails, and more importantly so that we can allocate our
+	 * master listening port below 1024 before dropping
+	 * privileges.
 	 */
 	configure_master(port);
-	daemonise();
+	daemonise(dropprivuser);
     } else {
 	char *outpac_text;
 	char *outpac_file;
