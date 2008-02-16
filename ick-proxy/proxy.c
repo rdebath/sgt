@@ -155,7 +155,7 @@ char *configure_for_user(char *username)
 	sfree(pacerr);
     }
 
-    if (ctx) {
+    if (ctx->scr) {
 	outpac = build_pac(inpac, ctx->scr, ctx->port);
     } else {
 	outpac = dupfmt("/*\n"
