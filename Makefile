@@ -13,29 +13,29 @@ IPROG =#   flags for installing programs (default none)
 IDATA = -m 0644  # flags for installing data
 
 all:
-	for i in $(SUBDIRS); do make -C $$i; done
+	for i in $(SUBDIRS); do (cd $$i && make); done
 
 progs:
-	for i in $(SUBDIRS); do make -C $$i progs; done
+	for i in $(SUBDIRS); do (cd $$i && make progs); done
 
 man:
-	for i in $(SUBDIRS); do make -C $$i man; done
+	for i in $(SUBDIRS); do (cd $$i && make man); done
 
 clean:
 	rm -f *.html *.tar.gz
-	for i in $(SUBDIRS); do make -C $$i clean; done
+	for i in $(SUBDIRS); do (cd $$i && make clean); done
 
 html:
-	for i in $(SUBDIRS); do make -C $$i html DESTDIR=../$(DESTDIR); done
+	for i in $(SUBDIRS); do (cd $$i && make html DESTDIR=../$(DESTDIR)); done
 
 release:
-	for i in $(SUBDIRS); do make -C $$i release DESTDIR=../$(DESTDIR); done
+	for i in $(SUBDIRS); do (cd $$i && make release DESTDIR=../$(DESTDIR)); done
 
 install:
-	for i in $(SUBDIRS); do make -C $$i install; done
+	for i in $(SUBDIRS); do (cd $$i && make install); done
 
 install-progs:
-	for i in $(SUBDIRS); do make -C $$i install-progs; done
+	for i in $(SUBDIRS); do (cd $$i && make install-progs); done
 
 install-man:
-	for i in $(SUBDIRS); do make -C $$i install-man; done
+	for i in $(SUBDIRS); do (cd $$i && make install-man); done
