@@ -1,0 +1,83 @@
+\cfg{man-identity}{after}{1}{2008-02-20}{Simon Tatham}{Simon Tatham}
+
+\title Man page for \c{after}
+
+\U NAME
+
+\c{after} - wait until an unrelated process has terminated
+
+\U SYNOPSIS
+
+\c after [ -x | -z ] pid
+\e bbbbb   bb   bb   iii
+
+\U DESCRIPTION
+
+\c{after} lets you specify a process by its numeric PID, and then
+waits until that process has terminated. If possible, it returns the
+process's exit code as well.
+
+You might use \c{after} if you had started a long-running process in
+one window and then realised that you should have told the shell to
+do something else after it finished. For example, after typing
+\cq{make} to begin a long build run, you suddenly realise you should
+have typed \cq{make && ./runtests.sh}, so that you wouldn't have to
+be physically present to kick off the test run after the build
+completed, and so that you could take one long coffee break instead
+of two short ones. In this situation you could use \c{after} to
+solve your problem: use \cw{ps}(\e{1}) to look up the process ID of
+the \cw{make} process, and then type a command such as \cq{after
+34530 && ./runtests.sh} in a second terminal window.
+
+The operation of waiting for an arbitrary process is not an easy one
+on Unix, so the \c{after} command supports multiple methods of
+achieving it and will try them in order until one works. Some
+methods allow the exit code of the process to be retrieved, in which
+case \c{after} will return the same value; others do not.
+
+\U OPTIONS
+
+\dt \cw{-x}
+
+\dd Restricts \c{after} to only attempting methods which retrieve
+the process's exit code. These methods typically require \c{after}
+and the target process to be running under the same user ID. If no
+available method works, \c{after} will fail.
+
+\dt \cw{-z}
+
+\dd Causes \c{after} to always return 0 (success) after detecting
+that the process has terminated, whether or not its exit code was
+available.
+
+\U EXIT STATUS
+
+If it settles on a method which provides the target process's exit
+code, \c{after} will return the same code itself (unless you disable
+this with the \cw{-z} option). Hence, you can use the shell \cw{&&}
+operator to run other commands which are conditional on the target
+process succeeding (as in the example above).
+
+If it has to fall back to a method which does not provide the exit
+code, \c{after} will return 0 (success) when the process terminates.
+
+If something goes so badly wrong that \c{after} was unable to
+reliably wait for the process at all, it will return 127.
+
+\U BUGS
+
+There are not enough methods supported.
+
+The whole concept of \c{after} has an inherent bug in the form of a
+race condition: if you're not careful, the target process could
+terminate in between you looking up its PID and typing the \c{after}
+command. If your process looks as if it might terminate within the
+time it takes to type the command, it's probably better not to try
+using \c{after} at all.
+
+\U LICENCE
+
+\c{after} is free software, distributed under the MIT licence. Type
+\cq{after --licence} to see the full licence text.
+
+\versionid $Id$
