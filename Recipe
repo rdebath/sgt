@@ -1,0 +1,11 @@
+!name ick-proxy
+
+!makefile unix Makefile
+!makefile vc Makefile.vc
+!makefile osx Makefile.osx
+
+PROXY = proxy icklang buildpac malloc tree234
+
+ick-proxy : [W] wintray wintray.res PROXY
+ick-proxy : [U] unix uxcommon PROXY
+ick-mac : [MX] osx osx.icns osx-info.plist uxcommon PROXY
