@@ -124,7 +124,7 @@ char *configure_for_user(char *username)
 	    ctx->scr = script;
 	} else {
 	    ctx = snew(struct listenctx);
-	    ctx->user = dupstr(username);
+	    ctx->user = username ? dupstr(username) : NULL;
 	    ctx->port = create_new_listener(&scripterr, -1, ctx);
 	    ctx->scr = script;
 	    if (ctx->port < 0) {
