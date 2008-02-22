@@ -127,7 +127,8 @@ readinput: while (1) {
     if ($groups{$i}) {
       foreach $j (@{$groups{$i}}) { unshift @objs, $j; }
     } elsif (($i eq "[G]" or $i eq "[C]" or $i eq "[M]" or
-              $i eq "[X]" or $i eq "[U]" or $i eq "[MX]") and defined $prog) {
+              $i eq "[X]" or $i eq "[U]" or $i eq "[MU]" or
+	      $i eq "[MX]") and defined $prog) {
       $type = substr($i,1,(length $i)-2);
     } else {
       if ($i =~ /\?$/) {
@@ -1393,7 +1394,7 @@ if (defined $makefiles{'osx'}) {
       print &splitline("\t\$(CC)" . $mw . " \$(LDFLAGS) -o \$@ " .
                        $objstr . " $libstr", 69), "\n\n";
     }
-    foreach $p (&prognames("U")) {
+    foreach $p (&prognames("MU")) {
       ($prog, $type) = split ",", $p;
       $objstr = &objects($p, "X.o", undef, undef);
       print &splitline($prog . ": " . $objstr), "\n";
@@ -1414,7 +1415,7 @@ if (defined $makefiles{'osx'}) {
       }
     }
     print "\nclean:\n".
-    "\trm -f *.o *.dmg". (join "", map { " $_" } &progrealnames("U")) . "\n".
+    "\trm -f *.o *.dmg". (join "", map { " $_" } &progrealnames("MU")) . "\n".
     "\trm -rf *.app\n";
     select STDOUT; close OUT;
 }
