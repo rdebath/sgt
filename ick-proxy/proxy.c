@@ -192,6 +192,37 @@ char *build_pac(char *userpac, ickscript *scr, int port)
     }
 
     /*
+     * More identifiers to avoid: these are the standard functions
+     * defined as being available to proxy configuration files in
+     * http://wp.netscape.com/eng/mozilla/2.0/relnotes/demo/proxy-live.html
+     */
+    {
+	static const char *const stdfns[] = {
+            "isPlainHostName",
+            "dnsDomainIs",
+            "localHostOrDomainIs",
+            "isResolvable",
+            "isInNet",
+            "dnsResolve",
+            "myIpAddress",
+            "dnsDomainLevels",
+            "shExpMatch",
+            "weekdayRange",
+            "dateRange",
+            "timeRange",
+            "ProxyConfig"
+	};
+	int i;
+
+	if (navoidids + lenof(stdfns) > avoididsize) {
+	    avoididsize = navoidids + lenof(stdfns);
+	    avoidids = sresize(avoidids, avoididsize, char *);
+	}
+	for (i = 0; i < lenof(stdfns); i++)
+	    avoidids[navoidids++] = dupstr(stdfns[i]);
+    }
+
+    /*
      * Now that we know what identifiers we want it to avoid
      * using, we can construct the JS translation of our Ick
      * script.
