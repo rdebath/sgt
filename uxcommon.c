@@ -34,7 +34,7 @@ char *override_inpac = NULL;
 char *override_script = NULL;
 char *override_outpac = NULL;
 
-enum { FD_SIGNAL_PIPE, FD_LISTENER, FD_CONNECTION };
+enum { FD_CLIENT, FD_SIGNAL_PIPE, FD_LISTENER, FD_CONNECTION };
 
 struct fd {
     int fd;
@@ -350,7 +350,8 @@ void run_subprocess(char **cmd)
 }
 
 int uxmain(int multiuser, int port, char *dropprivuser, char **singleusercmd,
-	   char *oscript, char *oinpac, char *ooutpac, int endfd)
+	   char *oscript, char *oinpac, char *ooutpac, int clientfd,
+	   int (*clientfdread)(void))
 {
     override_script = oscript;
     override_inpac = oinpac;
@@ -407,8 +408,8 @@ int uxmain(int multiuser, int port, char *dropprivuser, char **singleusercmd,
 
 	if (singleusercmd) {
 	    run_subprocess(singleusercmd);
-	} else if (endfd >= 0) {
-	    new_fdstruct(endfd, FD_SIGNAL_PIPE);
+	} else if (clientfd >= 0) {
+	    new_fdstruct(clientfd, FD_CLIENT);
 	}
     }
 
@@ -443,6 +444,7 @@ int uxmain(int multiuser, int port, char *dropprivuser, char **singleusercmd,
 
 	    switch (fds[i].type) {
 	      case FD_SIGNAL_PIPE:
+	      case FD_CLIENT:
 	      case FD_LISTENER:
 		FD_SET_MAX(fds[i].fd, &rfds, maxfd);
 		break;
@@ -500,6 +502,16 @@ int uxmain(int multiuser, int port, char *dropprivuser, char **singleusercmd,
 			 */
 			return 0;
 		    }
+		}
+		break;
+	      case FD_CLIENT:
+		if (FD_ISSET(fds[i].fd, &rfds)) {
+		    /*
+		     * Call the clientfdread function, and
+		     * terminate if it returns true.
+		     */
+		    if (clientfdread())
+			return 0;
 		}
 		break;
 	      case FD_LISTENER:

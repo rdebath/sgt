@@ -18,6 +18,11 @@
 #include <netinet/in.h>
 #include <syslog.h>
 
+#ifndef NO_X11
+#include <X11/X.h>
+#include <X11/Xlib.h>
+#endif
+
 #include "misc.h"
 #include "proxy.h"
 #include "tree234.h"
@@ -75,6 +80,16 @@ void licence(void) {
 void version(void) {
     printf("ick-proxy version 2.0\n");
 }
+
+#ifndef NO_X11
+Display *disp;
+int xreadfd(void)
+{
+    XEvent ev;
+    XNextEvent(disp, &ev);
+    return 0;			       /* FIXME? */
+}
+#endif
 
 int main(int argc, char **argv)
 {
@@ -176,15 +191,28 @@ int main(int argc, char **argv)
     }
 
     /*
-     * Otherwise, process some error conditions and hand off to
-     * uxmain.
+     * Otherwise, hand off to uxmain.
      */
-    if (!singleusercmd) {
+    if (!multiuser && !singleusercmd) {
+#ifdef NO_X11
 	fprintf(stderr, "ick-proxy: expected a command in single-user"
 		" mode\n");
 	return 1;
+#else
+	/*
+	 * Open the X display.
+	 */
+	disp = XOpenDisplay(NULL);   /* FIXME: -display option */
+	if (!disp) {
+	    fprintf(stderr, "ick-proxy: unable to open X display\n");
+	    return 1;
+	}
+
+	return uxmain(0, -1, NULL, NULL, oscript, oinpac, ooutpac,
+		      ConnectionNumber(disp), xreadfd);
+#endif
     }
 
     return uxmain(multiuser, port, dropprivuser, singleusercmd,
-		  oscript, oinpac, ooutpac, -1);
+		  oscript, oinpac, ooutpac, -1, NULL);
 }

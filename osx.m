@@ -16,6 +16,8 @@
  * Code for forking off a subthread in which to run the actual proxy.
  */
 
+static int pipefdread(void) { return 1; }
+
 /*
  * NSThread requires an object method as its thread procedure, so
  * here I define a trivial holding class.
@@ -36,7 +38,7 @@
 }
 - (void)runThread:(id)arg
 {
-    uxmain(0, 0, NULL, NULL, NULL, NULL, NULL, pipefd);
+    uxmain(0, 0, NULL, NULL, NULL, NULL, NULL, pipefd, pipefdread);
 }
 @end
 
