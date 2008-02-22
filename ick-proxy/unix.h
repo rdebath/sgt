@@ -6,6 +6,7 @@
 #define ICK_PROXY_UNIX_H
 
 int uxmain(int multiuser, int port, char *dropprivuser, char **singleusercmd,
-	   char *oscript, char *oinpac, char *ooutpac, int endfd);
+	   char *oscript, char *oinpac, char *ooutpac, int clientfd,
+	   int (*clientfdread)(void));
 
 #endif /* ICK_PROXY_UNIX_H */

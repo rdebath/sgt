@@ -7,5 +7,5 @@
 PROXY = proxy icklang buildpac malloc tree234
 
 ick-proxy : [W] wintray wintray.res PROXY
-ick-proxy : [U] unix uxcommon PROXY
+ick-proxy : [U] unix uxcommon PROXY X11.lib
 ick-mac : [MX] osx osx.icns osx-info.plist uxcommon PROXY
