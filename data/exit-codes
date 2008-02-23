@@ -1,0 +1,12 @@
+Summary: Provide more useful exit codes
+Class: bug
+Content-type: text/x-html-body
+
+<p>
+A common complaint is that the exit codes of various PuTTY tools on
+various platforms aren't as useful as they might be.
+
+<p>
+We should review, fix, and document the exit codes of the various
+PuTTY tools (ensuring we disambiguate local status from the exit code
+provided by an SSH server, where applicable).
