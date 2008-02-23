@@ -89,7 +89,7 @@ void *(srealloc)(LOGPARAMS void *p, int size) {
 	q = malloc(size);
 	LOGPRINT((" returns %p\n", q));
     }
-    if (!q) {
+    if (size && !q) {
 	platform_fatal_error("out of memory");
 	exit(1);
     }
