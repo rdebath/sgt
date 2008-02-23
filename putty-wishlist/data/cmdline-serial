@@ -1,0 +1,9 @@
+Summary: Ability to specify a serial connection on the command-line
+Class: wish
+Difficulty: fun
+Content-type: text/x-html-body
+
+<p>
+It's not currently possible to access the
+<a href="serial-backend.html">serial backend</a> from the command-line,
+unlike the other backends.
