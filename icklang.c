@@ -3,9 +3,13 @@
  */
 
 /*
- * TODO:
+ * Potential future work:
  * 
- *  - use snew and friends.
+ *  - track outermost operator priority when generating
+ *    expressions in Javascript, so we can avoid writing out any
+ *    parentheses that aren't actually required. (Not _entirely_
+ *    cosmetic: ngs-js at least has a criminally small tolerance
+ *    for excessive parens.)
  */
 
 #include <stdio.h>
@@ -17,6 +21,7 @@
 #include <ctype.h>
 
 #include "icklang.h"
+#include "misc.h"
 
 #define lenof(x) ( sizeof((x)) / sizeof(*(x)) )
 
@@ -418,9 +423,7 @@ static void ick_error(struct ick_parse_ctx *ctx, struct ick_srcpos srcpos,
 	    va_end(ap);
 
 	    if (pass == 0) {
-		outmsg = malloc(len+1);
-		if (!outmsg)
-		    break;
+		outmsg = snewn(len+1, char);
 	    } else {
 		assert(pos == len);
 		outmsg[pos] = '\0';
@@ -625,8 +628,9 @@ static void ick_lex_advance(struct ick_parse_ctx *ctx)
 		if (len >= ctx->tok.tvalue_allocsize) {
 		    ctx->tok.tvalue_allocsize =
 			(ctx->tok.tvalue_allocsize * 3 / 2) + 64;
-		    ctx->tok.tvalue = realloc(ctx->tok.tvalue,
-					      ctx->tok.tvalue_allocsize);
+		    ctx->tok.tvalue = sresize(ctx->tok.tvalue,
+					      ctx->tok.tvalue_allocsize,
+					      char);
 		}
 
 		if (ctx->lex_last < 0) {
@@ -784,8 +788,9 @@ static void ick_lex_advance(struct ick_parse_ctx *ctx)
 		if (len+1 >= ctx->tok.tvalue_allocsize) {
 		    ctx->tok.tvalue_allocsize =
 			(ctx->tok.tvalue_allocsize * 3 / 2) + 64;
-		    ctx->tok.tvalue = realloc(ctx->tok.tvalue,
-					      ctx->tok.tvalue_allocsize);
+		    ctx->tok.tvalue = sresize(ctx->tok.tvalue,
+					      ctx->tok.tvalue_allocsize,
+					      char);
 		}
 
 		ctx->tok.tvalue[len++] = ctx->lex_last;
@@ -853,7 +858,7 @@ static struct ick_expr *ick_make_exprnode
     (struct ick_srcpos oppos, struct ick_expr *e1,
      struct ick_expr *e2, int op)
 {
-    struct ick_expr *ret = malloc(sizeof(struct ick_expr));
+    struct ick_expr *ret = snew(struct ick_expr);
     ret->e1 = e1;
     ret->e2 = e2;
     ret->e3 = NULL;
@@ -875,7 +880,7 @@ static struct ick_statement *ick_make_statement
      struct ick_expr *e1, struct ick_expr *e2, struct ick_expr *e3,
      struct ick_statement *s1, struct ick_statement *s2)
 {
-    struct ick_statement *ret = malloc(sizeof(struct ick_statement));
+    struct ick_statement *ret = snew(struct ick_statement);
     ret->startpos = startpos;
     ret->type = type;
     ret->e1 = e1;
@@ -898,8 +903,8 @@ static void ick_free_expr(struct ick_expr *expr)
     ick_free_expr(expr->e1);
     ick_free_expr(expr->e2);
     ick_free_expr(expr->e3);
-    free(expr->sval);
-    free(expr);
+    sfree(expr->sval);
+    sfree(expr);
 }
 
 static void ick_free_statement(struct ick_statement *stmt)
@@ -912,7 +917,7 @@ static void ick_free_statement(struct ick_statement *stmt)
     ick_free_statement(stmt->s1);
     ick_free_statement(stmt->s2);
     ick_free_block(stmt->blk);
-    free(stmt);
+    sfree(stmt);
 }
 
 static void ick_free_vardecls(struct ick_vardecls *vars)
@@ -921,10 +926,10 @@ static void ick_free_vardecls(struct ick_vardecls *vars)
 
     for (i = 0; i < vars->ndecls; i++) {
 	struct ick_vardecl *var = &vars->decls[i];
-	free(var->identifier);
+	sfree(var->identifier);
 	ick_free_expr(var->initialiser);
     }
-    free(vars->decls);
+    sfree(vars->decls);
 }
 
 static void ick_free_block(struct ick_block *blk)
@@ -936,8 +941,8 @@ static void ick_free_block(struct ick_block *blk)
     ick_free_vardecls(&blk->vars);
     for (i = 0; i < blk->nstmts; i++)
 	ick_free_statement(blk->stmts[i]);
-    free(blk->stmts);
-    free(blk);
+    sfree(blk->stmts);
+    sfree(blk);
 }
 
 static void ick_free_parsetree(struct ick_parse_tree *tree)
@@ -947,12 +952,12 @@ static void ick_free_parsetree(struct ick_parse_tree *tree)
     ick_free_vardecls(&tree->toplevel_vars);
     for (i = 0; i < tree->nfns; i++) {
 	struct ick_fndecl *fn = &tree->fns[i];
-	free(fn->identifier);
+	sfree(fn->identifier);
 	ick_free_vardecls(&fn->params);
 	ick_free_block(fn->defn);
     }
-    free(tree->fns);
-    free(tree);
+    sfree(tree->fns);
+    sfree(tree);
 }
 
 static struct ick_expr *ick_parse_expr0(struct ick_parse_ctx *ctx);
@@ -1268,7 +1273,7 @@ static struct ick_expr *ick_parse_expr7(struct ick_parse_ctx *ctx)
 		     * string literal.
 		     */
 		    int len2 = strlen(ctx->tok.tvalue);
-		    a->sval = realloc(a->sval, len + len2 + 1);
+		    a->sval = sresize(a->sval, len + len2 + 1, char);
 		    strcpy(a->sval + len, ctx->tok.tvalue);
 		    len += len2;
 		    ick_lex_advance(ctx);
@@ -1589,7 +1594,7 @@ static int ick_parse_vardecl(struct ick_parse_ctx *ctx,
 
     if (type == TOK_KW_VOID) {
 	ick_error(ctx, pos, "unable to declare variable with void type");
-	free(varname);
+	sfree(varname);
 	return 0;
     }
 
@@ -1626,7 +1631,7 @@ static int ick_parse_vardecl(struct ick_parse_ctx *ctx,
 
 	    expr = ick_parse_expr2(ctx);
 	    if (!expr) {
-		free(varname);
+		sfree(varname);
 		return 0;
 	    }
 	} else
@@ -1638,8 +1643,8 @@ static int ick_parse_vardecl(struct ick_parse_ctx *ctx,
 	 */
 	if (vars->ndecls >= vars->declsize) {
 	    vars->declsize = (vars->ndecls * 3 / 2) + 32;
-	    vars->decls = realloc(vars->decls,
-				  vars->declsize * sizeof(*vars->decls));
+	    vars->decls = sresize(vars->decls, vars->declsize,
+				  struct ick_vardecl);
 	}
 	vars->decls[vars->ndecls].identifier = varname;
 	varname = NULL;
@@ -1680,7 +1685,7 @@ static struct ick_block *ick_parse_block(struct ick_parse_ctx *ctx)
     struct ick_block *blk;
     struct ick_srcpos varpos;
 
-    blk = malloc(sizeof(struct ick_block));
+    blk = snew(struct ick_block);
     blk->stmts = NULL;
     blk->nstmts = blk->stmtsize = 0;
     blk->vars.decls = NULL;
@@ -1724,8 +1729,8 @@ static struct ick_block *ick_parse_block(struct ick_parse_ctx *ctx)
 	}
 	if (blk->nstmts >= blk->stmtsize) {
 	    blk->stmtsize = (blk->nstmts * 3 / 2) + 32;
-	    blk->stmts = realloc(blk->stmts,
-				 blk->stmtsize * sizeof(*blk->stmts));
+	    blk->stmts = sresize(blk->stmts, blk->stmtsize,
+				 struct ick_statement *);
 	}
 	blk->stmts[blk->nstmts++] = stmt;
     }
@@ -1735,7 +1740,7 @@ static struct ick_block *ick_parse_block(struct ick_parse_ctx *ctx)
 
 static struct ick_parse_tree *ick_parse_toplevel(struct ick_parse_ctx *ctx)
 {
-    struct ick_parse_tree *tree = malloc(sizeof(*tree));
+    struct ick_parse_tree *tree = snew(struct ick_parse_tree);
     struct ick_srcpos pos;
     tree->fns = NULL;
     tree->nfns = tree->fnsize = 0;
@@ -1782,8 +1787,8 @@ static struct ick_parse_tree *ick_parse_toplevel(struct ick_parse_ctx *ctx)
 	     */
 	    if (tree->nfns >= tree->fnsize) {
 		tree->fnsize = (tree->nfns * 3 / 2) + 32;
-		tree->fns = realloc(tree->fns,
-				    tree->fnsize * sizeof(*tree->fns));
+		tree->fns = sresize(tree->fns, tree->fnsize,
+				    struct ick_fndecl);
 	    }
 	    fn = &tree->fns[tree->nfns++];
 
@@ -1848,9 +1853,9 @@ static struct ick_parse_tree *ick_parse_toplevel(struct ick_parse_ctx *ctx)
 		     */
 		    if (fn->params.ndecls >= fn->params.declsize) {
 			fn->params.declsize = (fn->params.ndecls * 3 / 2) + 32;
-			fn->params.decls = realloc(fn->params.decls,
-						   fn->params.declsize *
-						   sizeof(*fn->params.decls));
+			fn->params.decls = sresize(fn->params.decls,
+						   fn->params.declsize,
+						   struct ick_vardecl);
 		    }
 		    fn->params.decls[fn->params.ndecls].identifier = parname;
 		    fn->params.decls[fn->params.ndecls].type = partype;
@@ -2445,8 +2450,8 @@ static int ick_semantic_vardecls(struct ick_parse_ctx *ctx,
 
     if (ctx->varscopesize < n) {
 	ctx->varscopesize = n * 3 / 2 + 32;
-	ctx->varscope = realloc(ctx->varscope, ctx->varscopesize *
-				sizeof(*ctx->varscope));
+	ctx->varscope = sresize(ctx->varscope, ctx->varscopesize,
+				struct ick_vardecl *);
     }
 
     for (i = 0; i < vars->ndecls; i++) {
@@ -2598,7 +2603,7 @@ static int ick_semantic_analysis(struct ick_parse_ctx *ctx,
 	ctx->nvarscope = saved_nvarscope;
     }
 
-    free(ctx->varscope);
+    sfree(ctx->varscope);
 
     return ret;
 }
@@ -2666,7 +2671,7 @@ static void ick_emit(struct ick_parse_ctx *ctx,
 {
     if (ctx->ninsns >= ctx->insnsize) {
 	ctx->insnsize = ctx->ninsns * 3 / 2 + 128;
-	ctx->insns = realloc(ctx->insns, ctx->insnsize * sizeof(*ctx->insns));
+	ctx->insns = sresize(ctx->insns, ctx->insnsize, struct ick_insn);
     }
 
     ctx->insns[ctx->ninsns].opcode = opcode;
@@ -2686,9 +2691,8 @@ static int ick_string_literal(struct ick_parse_ctx *ctx, const char *str)
 
     if (ctx->nstringlits >= ctx->stringlitsize) {
 	ctx->stringlitsize = ctx->nstringlits * 3 / 2 + 32;
-	ctx->stringlits = realloc((char **)ctx->stringlits,
-				  ctx->stringlitsize *
-				  sizeof(*ctx->stringlits));
+	ctx->stringlits = sresize(ctx->stringlits, ctx->stringlitsize,
+				  const char *);
     }
 
     /*
@@ -3521,7 +3525,7 @@ static struct ickscript *ick_codegen(struct ick_parse_ctx *ctx)
     struct ickscript *scr;
     int i;
 
-    scr = malloc(sizeof(struct ickscript));
+    scr = snew(struct ickscript);
     scr->tree = ctx->tree;
 
     ctx->insns = NULL;
@@ -3623,13 +3627,13 @@ ickscript *ick_compile(char **err,
 
     ctx->tree = ick_parse_toplevel(ctx);
     if (!ctx->tree) {
-	free(ctx->tok.tvalue);
+	sfree(ctx->tok.tvalue);
 	return NULL;
     }
 
     if (!ick_semantic_analysis(ctx, mainfuncname, mainfuncproto)) {
 	ick_free_parsetree(ctx->tree);
-	free(ctx->tok.tvalue);
+	sfree(ctx->tok.tvalue);
 	return NULL;
     }
 
@@ -3640,7 +3644,7 @@ ickscript *ick_compile(char **err,
      */
     ret = ick_codegen(ctx);
 
-    free(ctx->tok.tvalue);
+    sfree(ctx->tok.tvalue);
     return ret;
 }
 
@@ -3678,7 +3682,7 @@ static int ick_libfn_substr3(void *result, const char **sparams,
 	end = 0;
     if (end < start)
 	return ICK_RTE_SUBSTR_BACKWARDS;
-    *(char **)result = malloc(end-start+1);
+    *(char **)result = snewn(end-start+1, char);
     strncpy(*(char **)result, sparams[0] + start, end - start);
     (*(char **)result)[end-start] = '\0';
     return 0;
@@ -3707,7 +3711,7 @@ static int ick_libfn_substr2(void *result, const char **sparams,
     len = inlen - start;
     if (len < 0)
 	len = 0;
-    *(char **)result = malloc(len+1);
+    *(char **)result = snewn(len+1, char);
     strncpy(*(char **)result, sparams[0] + start, len);
     (*(char **)result)[len] = '\0';
     return 0;
@@ -3739,7 +3743,7 @@ static void ick_libjs_atoi(icklib_jswrite_fn_t write, void *ctx,
 static int ick_libfn_itoa(void *result, const char **sparams,
 			  const int *iparams)
 {
-    *(char **)result = malloc(80);
+    *(char **)result = snewn(80, char);
     sprintf(*(char **)result, "%d", iparams[0]);
     return 0;
 }
@@ -3768,7 +3772,7 @@ static void ick_libjs_ord(icklib_jswrite_fn_t write, void *ctx,
 static int ick_libfn_chr(void *result, const char **sparams,
 			 const int *iparams)
 {
-    *(char **)result = malloc(2);
+    *(char **)result = snewn(2, char);
     (*(char **)result)[0] = iparams[0];
     (*(char **)result)[1] = '\0';
     return 0;
@@ -3923,7 +3927,7 @@ static void ick_libjs_max(icklib_jswrite_fn_t write, void *ctx,
 
 icklib *ick_lib_new(int empty)
 {
-    icklib *lib = malloc(sizeof(icklib));
+    icklib *lib = snew(icklib);
     lib->fns = NULL;
     lib->nfns = lib->fnsize = 0;
 
@@ -3959,16 +3963,15 @@ void ick_lib_addfn(icklib *lib, const char *funcname, const char *funcproto,
 
     if (lib->nfns >= lib->fnsize) {
 	lib->fnsize = (lib->nfns * 3 / 2) + 32;
-	lib->fns = realloc(lib->fns,
-			   lib->fnsize * sizeof(*lib->fns));
+	lib->fns = sresize(lib->fns, lib->fnsize, struct ick_fndecl);
     }
     fn = &lib->fns[lib->nfns++];
 
-    fn->identifier = malloc(strlen(funcname)+1);
+    fn->identifier = snewn(strlen(funcname)+1, char);
     strcpy(fn->identifier, funcname);
     fn->rettype = CHAR_TO_TYPE(funcproto[0]);
     fn->params.ndecls = fn->params.declsize = strlen(funcproto)-1;
-    fn->params.decls = malloc(fn->params.ndecls * sizeof(*fn->params.decls));
+    fn->params.decls = snewn(fn->params.ndecls, struct ick_vardecl);
     for (i = 0; i < fn->params.ndecls; i++) {
 	fn->params.decls[i].identifier = NULL;
 	fn->params.decls[i].type = CHAR_TO_TYPE(funcproto[i+1]);
@@ -3988,12 +3991,12 @@ void ick_lib_free(icklib *lib)
 
     for (i = 0; i < lib->nfns; i++) {
 	struct ick_fndecl *fn = &lib->fns[i];
-	free(fn->identifier);
+	sfree(fn->identifier);
 	ick_free_vardecls(&fn->params);
 	ick_free_block(fn->defn);
     }
-    free(lib->fns);
-    free(lib);
+    sfree(lib->fns);
+    sfree(lib);
 }
 
 /* ----------------------------------------------------------------------
@@ -4087,14 +4090,13 @@ static void ick_movesp(struct ick_stacks *stacks, int idelta, int sdelta)
 {
     if (stacks->isp + idelta > stacks->istksize) {
 	stacks->istksize = (stacks->isp + idelta) * 3 / 2 + 64;
-	stacks->istack = realloc(stacks->istack, stacks->istksize *
-				 sizeof(*stacks->istack));
+	stacks->istack = sresize(stacks->istack, stacks->istksize, int);
     }
     stacks->isp += idelta;
     if (stacks->ssp + sdelta > stacks->sstksize) {
 	stacks->sstksize = (stacks->ssp + sdelta) * 3 / 2 + 64;
-	stacks->sstack = realloc(stacks->sstack, stacks->sstksize *
-				 sizeof(*stacks->sstack));
+	stacks->sstack = sresize(stacks->sstack, stacks->sstksize,
+				 struct ick_sstack_entry);
     }
     if (sdelta > 0) {
 	while (sdelta > 0) {
@@ -4109,7 +4111,7 @@ static void ick_movesp(struct ick_stacks *stacks, int idelta, int sdelta)
 	    stacks->ssp--;
 	    sdelta++;
 	    stacks->strtotal -= stacks->sstack[stacks->ssp].len;
-	    free(stacks->sstack[stacks->ssp].str);
+	    sfree(stacks->sstack[stacks->ssp].str);
 	}
     }
 }
@@ -4117,15 +4119,15 @@ static void ick_movesp(struct ick_stacks *stacks, int idelta, int sdelta)
 static void ick_free_stacks(struct ick_stacks *stacks)
 {
     ick_movesp(stacks, -stacks->isp, -stacks->ssp);
-    free(stacks->istack);
-    free(stacks->sstack);
+    sfree(stacks->istack);
+    sfree(stacks->sstack);
 }
 
 static void ick_sstack_ensure(struct ick_sstack_entry *entry, int len)
 {
     if (entry->size < len+1) {
 	entry->size = (len+1) * 3 / 2 + 64;
-	entry->str = realloc(entry->str, entry->size);
+	entry->str = sresize(entry->str, entry->size, char);
     }
 }
 
@@ -4237,8 +4239,8 @@ int ick_exec_limited_v(void *result, int maxcycles, int maxstk, int maxstr,
     while (pc != -1) {
 	if (maxcycles > 0 && --maxcycles <= 0) {
 	    ick_free_stacks(stacks);
-	    free(iparams);
-	    free(sparams);
+	    sfree(iparams);
+	    sfree(sparams);
 	    return ICK_RTE_CYCLE_LIMIT_EXCEEDED;
 	}
 	if (pc < 0) {
@@ -4267,11 +4269,11 @@ int ick_exec_limited_v(void *result, int maxcycles, int maxstk, int maxstr,
 	    }
 	    if (niparams >= iparamsize) {
 		iparamsize = niparams;
-		iparams = realloc(iparams, iparamsize * sizeof(*iparams));
+		iparams = sresize(iparams, iparamsize, int);
 	    }
 	    if (nsparams >= sparamsize) {
 		sparamsize = nsparams;
-		sparams = realloc(sparams, sparamsize * sizeof(*sparams));
+		sparams = sresize(sparams, sparamsize, char *);
 	    }
 	    niparams = nsparams = 0;
 	    for (i = 0; i < fn->params.ndecls; i++) {
@@ -4297,8 +4299,8 @@ int ick_exec_limited_v(void *result, int maxcycles, int maxstk, int maxstr,
 				 iparams);
 		if (ret) {
 		    ick_free_stacks(stacks);
-		    free(iparams);
-		    free(sparams);
+		    sfree(iparams);
+		    sfree(sparams);
 		    return ret;
 		}
 		if (fn->rettype == TOK_KW_STRING) {
@@ -4306,11 +4308,11 @@ int ick_exec_limited_v(void *result, int maxcycles, int maxstk, int maxstr,
 		    SPOS(x1, -1);
 		    if (!ick_sstack_set(stacks, x1, sret)) {
 			ick_free_stacks(stacks);
-			free(iparams);
-			free(sparams);
+			sfree(iparams);
+			sfree(sparams);
 			return ICK_RTE_STRINGS_LIMIT_EXCEEDED;
 		    }
-		    free(sret);
+		    sfree(sret);
 		} else if (fn->rettype != TOK_KW_VOID) {
 		    if (fn->rettype == TOK_KW_BOOL)
 			iret = (iret != 0);   /* normalise boolean values */
@@ -4336,8 +4338,8 @@ int ick_exec_limited_v(void *result, int maxcycles, int maxstk, int maxstr,
 		if (maxstk > 0 &&
 		    stacks->isp + stacks->ssp + insn->p1 + insn->p2 > maxstk) {
 		    ick_free_stacks(stacks);
-		    free(iparams);
-		    free(sparams);
+		    sfree(iparams);
+		    sfree(sparams);
 		    return ICK_RTE_STACK_LIMIT_EXCEEDED;
 		}
 		ick_movesp(stacks, insn->p1, insn->p2);
@@ -4366,8 +4368,8 @@ int ick_exec_limited_v(void *result, int maxcycles, int maxstk, int maxstr,
 		assert(insn->p2 >= 0 && insn->p2 < scr->nstringlits);
 		if (!ick_sstack_set(stacks, x1, scr->stringlits[insn->p2])) {
 		    ick_free_stacks(stacks);
-		    free(iparams);
-		    free(sparams);
+		    sfree(iparams);
+		    sfree(sparams);
 		    return ICK_RTE_STRINGS_LIMIT_EXCEEDED;
 		}
 		break;
@@ -4385,8 +4387,8 @@ int ick_exec_limited_v(void *result, int maxcycles, int maxstk, int maxstr,
 		SPOS(x2, insn->p2);
 		if (!ick_sstack_set(stacks, x1, stacks->sstack[x2].str)) {
 		    ick_free_stacks(stacks);
-		    free(iparams);
-		    free(sparams);
+		    sfree(iparams);
+		    sfree(sparams);
 		    return ICK_RTE_STRINGS_LIMIT_EXCEEDED;
 		}
 		break;
@@ -4414,8 +4416,8 @@ int ick_exec_limited_v(void *result, int maxcycles, int maxstk, int maxstr,
 		IPOS(x3, insn->p3);
 		if (stacks->istack[x3] == 0) {
 		    ick_free_stacks(stacks);
-		    free(iparams);
-		    free(sparams);
+		    sfree(iparams);
+		    sfree(sparams);
 		    return ICK_RTE_DIVBYZERO;
 		}
 		stacks->istack[x1] = stacks->istack[x2] / stacks->istack[x3];
@@ -4514,8 +4516,8 @@ int ick_exec_limited_v(void *result, int maxcycles, int maxstk, int maxstr,
     }
 
     ick_free_stacks(stacks);
-    free(iparams);
-    free(sparams);
+    sfree(iparams);
+    sfree(sparams);
     return ICK_RTE_NO_ERROR;
 }
 
@@ -4547,15 +4549,13 @@ static const char *ick_js_addid(struct ick_js_ctx *ctx,
     if (needsfree) {
 	if (ctx->nfreeids >= ctx->freeidsize) {
 	    ctx->freeidsize = ctx->nfreeids * 3 / 2 + 64;
-	    ctx->freeids = realloc(ctx->freeids, ctx->freeidsize *
-				   sizeof(ctx->freeids));
+	    ctx->freeids = sresize(ctx->freeids, ctx->freeidsize, char *);
 	}
 	ctx->freeids[ctx->nfreeids++] = (char *)id;
     }
     if (ctx->navoidids >= ctx->avoididsize) {
 	ctx->avoididsize = ctx->navoidids * 3 / 2 + 64;
-	ctx->avoidids = realloc((char **)ctx->avoidids, ctx->avoididsize *
-				sizeof(ctx->avoidids));
+	ctx->avoidids = sresize(ctx->avoidids, ctx->avoididsize, const char *);
     }
     ctx->avoidids[ctx->navoidids++] = id;
     return id;
@@ -4568,7 +4568,7 @@ static void ick_js_popids(struct ick_js_ctx *ctx, int navoid, int nfree)
     assert(ctx->nfreeids >= nfree);
     while (ctx->nfreeids > nfree) {
 	ctx->nfreeids--;
-	free(ctx->freeids[ctx->nfreeids]);
+	sfree(ctx->freeids[ctx->nfreeids]);
     }
 }
 
@@ -4590,7 +4590,7 @@ static const char *ick_js_makename(struct ick_js_ctx *ctx, const char *name)
     while (i > 0)
 	i /= 10, ndigits++;
 
-    ret = malloc(namelen + ndigits + 1);
+    ret = snewn(namelen + ndigits + 1, char);
     strcpy(ret, name);
 
     do {
@@ -4611,7 +4611,7 @@ static void ick_js_write(void *vctx, const char *buf)
 
     if (ctx->outlen + buflen + 1 > ctx->outsize) {
 	ctx->outsize = (ctx->outlen + buflen + 1) * 3 / 2 + 1024;
-	ctx->out = realloc(ctx->out, ctx->outsize);
+	ctx->out = sresize(ctx->out, ctx->outsize, char);
     }
     strcpy(ctx->out + ctx->outlen, buf);
     ctx->outlen += buflen;
@@ -4842,7 +4842,7 @@ static void ick_js_expr(struct ick_js_ctx *ctx,
 	    saved_outlen = ctx->outlen;
 	    saved_outsize = ctx->outsize;
 
-	    args = malloc(expr->fn->params.ndecls * sizeof(*args));
+	    args = snewn(expr->fn->params.ndecls, char *);
 	    arg = expr->e2;
 	    for (i = 0; i < expr->fn->params.ndecls; i++) {
 		ctx->out = NULL;
@@ -4863,8 +4863,8 @@ static void ick_js_expr(struct ick_js_ctx *ctx,
 	    ick_js_write(ctx, ")");
 
 	    for (i = 0; i < expr->fn->params.ndecls; i++)
-		free(args[i]);
-	    free(args);
+		sfree(args[i]);
+	    sfree(args);
 	} else {
 	    struct ick_expr *arg;
 
@@ -5159,8 +5159,7 @@ char *ick_to_js(char **mainfunc, ickscript *scr,
 	scr->tree->fns[i].jsname =
 	    ick_js_makename(ctx, identifier);
 	if (i == 0 && !*mainfunc) {
-	    *mainfunc = malloc(1 + strlen(scr->tree->fns[i].jsname));
-	    strcpy(*mainfunc, scr->tree->fns[i].jsname);
+	    *mainfunc = dupstr(scr->tree->fns[i].jsname);
 	}
     }
 
@@ -5219,8 +5218,8 @@ char *ick_to_js(char **mainfunc, ickscript *scr,
      * Clean up.
      */
     ick_js_popids(ctx, 0, 0);
-    free((char **)ctx->avoidids);
-    free((char **)ctx->freeids);
+    sfree((char **)ctx->avoidids);
+    sfree((char **)ctx->freeids);
 
     return ctx->out;
 }
@@ -5234,10 +5233,10 @@ void ick_free(ickscript *scr)
     if (!scr)
 	return;
 
-    free((char **)scr->stringlits);
-    free(scr->insns);
+    sfree((char **)scr->stringlits);
+    sfree(scr->insns);
     ick_free_parsetree(scr->tree);
-    free(scr);
+    sfree(scr);
 }
 
 /*
@@ -5532,7 +5531,7 @@ int main(int argc, char **argv)
 		    char *mainfunc = "mainfunc";
 		    char *js = ick_to_js(&mainfunc, scr, NULL, 0);
 		    fputs(js, stdout);
-		    free(js);
+		    sfree(js);
 		}
 #endif
 #if defined TEST_EXECUTE || defined TEST_ICKLANG
@@ -5544,13 +5543,13 @@ int main(int argc, char **argv)
 			printf("runtime error: %s\n", ick_runtime_errors[rte]);
 		    } else {
 			printf("return value: \"%s\"\n", ret);
-			free(ret);
+			sfree(ret);
 		    }
 		}
 #endif
 	    } else {
 		printf("compile error: %s\n", err);
-		free(err);
+		sfree(err);
 	    }
 	    ick_free(scr);
 	}
@@ -5759,7 +5758,7 @@ int main(int argc, char **argv)
 		    char *mainfunc = "mainfunc";
 		    char *js = ick_to_js(&mainfunc, scr, NULL, 0);
 		    fputs(js, stdout);
-		    free(js);
+		    sfree(js);
 		}
 #endif
 #if defined TEST_EXECUTE || defined TEST_ICKLANG
@@ -5771,13 +5770,13 @@ int main(int argc, char **argv)
 			printf("runtime error: %s\n", ick_runtime_errors[rte]);
 		    } else {
 			printf("return value: \"%s\"\n", ret);
-			free(ret);
+			sfree(ret);
 		    }
 		}
 #endif
 	    } else {
 		printf("compile error: %s\n", err);
-		free(err);
+		sfree(err);
 	    }
 	    ick_free(scr);
 	}
