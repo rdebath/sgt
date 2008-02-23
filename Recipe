@@ -6,7 +6,8 @@
 
 PROXY = proxy icklang malloc tree234
 
-ick-proxy : [W] wintray wintray.res PROXY
+ick-proxy : [G] wintray wintray.res PROXY
+          + user32.lib gdi32.lib wsock32.lib shell32.lib
 ick-proxy : [U] unix uxcommon PROXY X11.lib
 ick-proxy : [MU] unix[NO_X11] uxcommon PROXY
 ick-proxy : [MX] osx osx.icns osx-info.plist uxcommon PROXY
