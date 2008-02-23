@@ -1,0 +1,40 @@
+Summary: Unix listening sockets (e.g., tunnels) are IPv6-only by default
+Class: bug
+Difficulty: fun
+Priority: high
+Present-in: 0.60
+Content-type: text/x-html-body
+
+<p>
+On a Unix system supporting IPv6, PuTTY will by default create
+listening sockets (e.g. for the local end of a local-to-remote tunnel)
+as IPv6-only. Attempts to connect to the port using IPv4 addresses
+(127.0.0.1) will fail, and often the same problem will occur with the
+name "localhost". This occurs for instance on Ubuntu Linux
+(so this is probably what's behind
+<a href="https://bugs.launchpad.net/ubuntu/+source/putty/+bug/67488">LP
+#67488</a>).
+
+<p>
+This contradicts the
+<a href="http://tartarus.org/~simon/putty-snapshots/htmldoc/Chapter4.html#config-ssh-portfwd-address-family">documentation</a>
+of the default "Auto" setting for tunnels, which states that "ticking
+'Auto' should always give you a port which you can connect to using
+either protocol."
+
+<p>
+Unix PuTTY should ensure that listening sockets are valid for at least
+the address families specified in the configuration.
+
+<p>
+Workarounds:
+<ul>
+<li>Explicitly configure PuTTY to use an IPv4 listening socket (change
+'Auto' to 'IPv4'). Of course, you won't then be able to connect to the
+tunnel endpoint with IPv6.
+<li>Leave the PuTTY configuration as it is, but explicitly connect to
+the IPv6 localhost address (<tt>::1</tt>).
+</ul>
+
+<p>
+Patch: 01f201c856d6$b4d335f0$020da8c0@JSD.jemmettsoftware.co.uk
