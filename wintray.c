@@ -841,7 +841,7 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int show)
 
 	split_into_argv(cmdline, &argc, &argv, NULL);
 
-	argc--;
+	argc++;
 	argv--;
 	while (--argc > 0) {
 	    char *p = *++argv;
