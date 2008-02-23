@@ -66,3 +66,7 @@ all instances of the problem. This is why I also added more detailed error
 reporting to that error message, so that if any instances of the problem remain
 we'll have more information with which to investigate them.
 </pre>
+
+<p>
+It turns out there are more instances of this; see
+<a href="win-plink-stdin-handle-invalid.html">win-plink-stdin-handle-invalid</a>.

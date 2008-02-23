@@ -1,0 +1,26 @@
+Summary: Plink: "Unable to read from standard input: The handle is invalid."
+Class: bug
+Absent-in: 0.58
+Present-in: 0.59 0.60 2007-06-29
+Content-type: text/x-html-body
+
+<p>
+The "Unable to read from standard input" message is still with us;
+the reports we're getting from versions including the diagnostics
+added while investigating
+<a href="win-plink-stdin-eof.html">win-plink-stdin-eof</a> say
+"The handle is invalid".
+
+<p>
+All reports so far occur when Plink is run by some other program,
+and cannot be reproduced when the same command is run from the
+Windows command-line or Cygwin.
+
+<p>
+Reports:
+<ul>
+<li>4685675C.7030305@kavemalna.hu (rsync)
+<li>4da424620707191404i2efbff0che659f39e97f8cd84@mail.gmail.com (rsync)
+<li>46AA3477.1030701@bellsouth.net
+<li>66E3124EE70FB04A96C81EF18C6C18B306086FE3@ex1.globus (SQL server)
+</ul>
