@@ -9,7 +9,7 @@ Content-type: text/x-html-body
 <p>
 As reported in <a href="http://www.idefense.com/">iDEFENSE</a>
 Security Advisory
-<a href="http://www.idefense.com/advisory/01.28.03.txt">01.28.03</a>,
+<a href="http://labs.idefense.com/intelligence/vulnerabilities/display.php?id=24">01.28.03</a>,
 PuTTY 0.53b fails to scrub the password from a memory buffer after
 authentication, making it trivially easy for an attacker with access
 to a memory dump to recover the password. (This only applies when

@@ -33,11 +33,11 @@ can exploit this in all invocations of PSFTP and PSCP, unless the
 <p>
 This bug was discovered by a contributor to
 <a href="http://www.idefense.com/">iDEFENSE</a>'s
-<a href="http://www.idefense.com/poi/teams/vcp.jsp">Vulnerability
+<a href="http://labs.idefense.com/vcp/">Vulnerability
 Contributor Program</a>. Along with
 <a href="vuln-sftp-string.html">`vuln-sftp-string'</a>, it is
 documented in iDEFENSE's advisory
-<a href="http://www.idefense.com/application/poi/display?id=201&type=vulnerabilities&flashstatus=false">02.21.05</a>,
+<a href="http://labs.idefense.com/intelligence/vulnerabilities/display.php?id=201">02.21.05</a>,
 mentioned in Secunia's advisory
 <a href="http://secunia.com/advisories/14333/">SA14333</a>,
 and has been assigned CVE ID
