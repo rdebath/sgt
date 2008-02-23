@@ -39,9 +39,9 @@ string length is sanity-checked against the packet length before use.
 <p>
 This bug was discovered by an anonymous contributor to
 <a href="http://www.idefense.com/">iDEFENSE</a>'s
-<a href="http://www.idefense.com/poi/teams/vcp.jsp">Vulnerability
+<a href="http://labs.idefense.com/vcp/">Vulnerability
 Contributor Program</a>. It is documented in iDEFENSE's advisory
-<a href="http://www.idefense.com/application/poi/display?id=155&type=vulnerabilities&flashstatus=false">10.27.04</a>. It is also mentioned in an
+<a href="http://labs.idefense.com/intelligence/vulnerabilities/display.php?id=155">10.27.04</a>. It is also mentioned in an
 advisory by Secunia, numbered
 <a href="http://secunia.com/advisories/12987/">SA12987</a>,
 and has been assigned CVE ID
