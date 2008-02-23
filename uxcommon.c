@@ -10,6 +10,23 @@
  * also bound to a child process whose lifetime we share.
  */
 
+/*
+ * Possible future work:
+ * 
+ *  - if anyone ever uses the systemwide server mode and wants it
+ *    to read config files for a user whose home directory is not
+ *    world-x, it would be feasible in principle to set up a
+ *    method of config file access via userv:
+ *     + spec out a tiny userv service which reads
+ * 	 ~/.ick-proxy/rewrite.ick and ~/.ick-proxy/input.pac
+ *     + provide default implementation for the service, and a
+ * 	 fragment of systemwide userv config that sets it up
+ *     + have the ick-proxy server attempt to use this service as
+ * 	 the first method of getting at config files, and only
+ * 	 fall back to reading the files directly if the userv
+ * 	 service refuses to run.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
