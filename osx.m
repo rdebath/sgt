@@ -4,6 +4,19 @@
  * lifetime to that of the GUI session.
  */
 
+/*
+ * Possible future work:
+ * 
+ *  - it would be nice to have a `Test' dock menu option, which
+ *    brought up a dialog box into which one could type URLs and
+ *    have ick-proxy run its script on them and print the results.
+ *    Apart from the generalised GUI hassle of designing and
+ *    setting up the dialog box, the other problem is that the
+ *    test itself would have to be run inside the proxy thread, so
+ *    we'd need to invent a more complex protocol to run over the
+ *    clientfd.
+ */
+
 #include <ctype.h>
 #include <sys/time.h>
 #include <string.h>
