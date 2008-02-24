@@ -16,7 +16,31 @@
  * Code for forking off a subthread in which to run the actual proxy.
  */
 
-static int pipefdread(void) { return 1; }
+static int pipefdread(int fd) {
+    char buf[1];
+    int ret;
+
+    ret = read(fd, buf, 1);
+    if (ret == 1) {
+	/*
+	 * A byte has come down the pipe. That means we've been
+	 * told to re-read our configuration.
+	 *
+	 * This function is called in the proxy subthread, so we
+	 * can safely call configure_single_user() with no fear of
+	 * race conditions.
+	 */
+	configure_single_user();
+    } else {
+	/*
+	 * The pipe has closed. Return 1, telling the main proxy
+	 * code to shut down.
+	 */
+	return 1;
+    }
+
+    return 0;
+}
 
 /*
  * NSThread requires an object method as its thread procedure, so
@@ -27,11 +51,11 @@ static int pipefdread(void) { return 1; }
 {
     int pipefd;
 }
-- (ProxyThread *)setPipeFd:(int)fd;
+- (ProxyThread *)setPipeFdRead:(int)fd;
 - (void)runThread:(id)arg;
 @end
 @implementation ProxyThread
-- (ProxyThread *)setPipeFd:(int)fd
+- (ProxyThread *)setPipeFdRead:(int)fd
 {
     pipefd = fd;
     return self;
@@ -211,11 +235,19 @@ NSMenuItem *newitem(NSMenu *parent, char *title, char *key,
  */
 @interface AppController : NSObject
 {
+    int pipefd;
 }
 - (void)about:(id)sender;
+- (void)rereadConfig:(id)sender;
+- (void)setPipeFdWrite:(int)fd;
 @end
 
 @implementation AppController
+
+- (void)setPipeFdWrite:(int)fd
+{
+    pipefd = fd;
+}
 
 - (void)about:(id)sender
 {
@@ -225,9 +257,17 @@ NSMenuItem *newitem(NSMenu *parent, char *title, char *key,
     [win makeKeyAndOrderFront:self];
 }
 
+- (void)rereadConfig:(id)sender
+{
+    write(pipefd, "r", 1);
+}
+
 - (NSMenu *)applicationDockMenu:(NSApplication *)sender
 {
     NSMenu *menu = newmenu("Dock Menu");
+    initnewitem([NSMenuItem allocWithZone:[NSMenu menuZone]],
+		menu, "Re-read configuration", "", self,
+		@selector(rereadConfig:));
     return menu;
 }
 
@@ -290,8 +330,9 @@ int main(int argc, char **argv)
     if (pipe(mypipe) < 0) {
 	return 1;		       /* FIXME */
     }
+    [controller setPipeFdWrite:mypipe[1]];
     [NSThread detachNewThreadSelector:@selector(runThread:)
-	toTarget:[[[[ProxyThread alloc] init] retain] setPipeFd:mypipe[0]]
+	toTarget:[[[[ProxyThread alloc] init] retain] setPipeFdRead:mypipe[0]]
         withObject:nil];
 
     [NSApp run];

@@ -83,7 +83,7 @@ void version(void) {
 
 #ifndef NO_X11
 Display *disp;
-int xreadfd(void)
+int xreadfd(int fd)
 {
     XEvent ev;
     XNextEvent(disp, &ev);

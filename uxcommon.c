@@ -140,7 +140,7 @@ static char *get_filename_for_user(char **err, const char *username,
     struct passwd *p;
     const char *dir;
     
-    if (username) {
+    if (*username) {
 	p = getpwnam(username);
 	if (!p) {
 	    *err = dupfmt("getpwnam(\"%s\"): %s", username, strerror(errno));
@@ -336,17 +336,18 @@ static pid_t child_pid = -1;
 
 void sigchld(int sig)
 {
-    write(signalpipe[1], "x", 1);
+    write(signalpipe[1], "c", 1);
+}
+
+void sighup(int sig)
+{
+    write(signalpipe[1], "h", 1);
 }
 
 void run_subprocess(char **cmd)
 {
     int pid;
 
-    if (pipe(signalpipe) < 0) {
-        fprintf(stderr, "ick-proxy: pipe: %s\n", strerror(errno));
-        exit(1);
-    }
     signal(SIGCHLD, sigchld);
 
     pid = fork();
@@ -363,12 +364,46 @@ void run_subprocess(char **cmd)
 
     /* we only reach here if pid > 0, i.e. we are the parent */
     child_pid = pid;
-    new_fdstruct(signalpipe[0], FD_SIGNAL_PIPE);
+}
+
+int configure_single_user(void)
+{
+    char *outpac_text;
+    char *outpac_file;
+    char *err;
+
+    outpac_text = configure_for_user("");
+    assert(outpac_text);
+    outpac_file = name_outpac_for_user(&err, "");
+    if (!outpac_file) {
+	fprintf(stderr, "%s\n", err);
+	return 0;
+    } else {
+	int fd = open(outpac_file, O_WRONLY | O_TRUNC | O_CREAT, 0666);
+	int pos, len, ret;
+
+	pos = 0;
+	len = strlen(outpac_text);
+	while (pos < len) {
+	    ret = write(fd, outpac_text + pos, len - pos);
+	    if (ret < 0) {
+		fprintf(stderr, "%s: write: %s\n", outpac_file,
+			strerror(errno));
+		return 0;
+	    } else {
+		pos += ret;
+	    }
+	}
+
+	close(fd);
+    }
+
+    return 1;
 }
 
 int uxmain(int multiuser, int port, char *dropprivuser, char **singleusercmd,
 	   char *oscript, char *oinpac, char *ooutpac, int clientfd,
-	   int (*clientfdread)(void))
+	   int (*clientfdread)(int fd))
 {
     override_script = oscript;
     override_inpac = oinpac;
@@ -393,35 +428,16 @@ int uxmain(int multiuser, int port, char *dropprivuser, char **singleusercmd,
 	configure_master(port);
 	daemonise(dropprivuser);
     } else {
-	char *outpac_text;
-	char *outpac_file;
-	char *err;
+	signal(SIGHUP, sighup);
 
-	outpac_text = configure_for_user(NULL);
-	assert(outpac_text);
-	outpac_file = name_outpac_for_user(&err, NULL);
-	if (!outpac_file) {
-	    fprintf(stderr, "%s\n", err);
-	    return 1;
-	} else {
-	    int fd = open(outpac_file, O_WRONLY | O_TRUNC | O_CREAT, 0666);
-	    int pos, len, ret;
-
-	    pos = 0;
-	    len = strlen(outpac_text);
-	    while (pos < len) {
-		ret = write(fd, outpac_text + pos, len - pos);
-		if (ret < 0) {
-		    fprintf(stderr, "%s: write: %s\n", outpac_file,
-			    strerror(errno));
-		    return 1;
-		} else {
-		    pos += ret;
-		}
-	    }
-
-	    close(fd);
+	if (pipe(signalpipe) < 0) {
+	    fprintf(stderr, "ick-proxy: pipe: %s\n", strerror(errno));
+	    exit(1);
 	}
+	new_fdstruct(signalpipe[0], FD_SIGNAL_PIPE);
+
+	if (!configure_single_user())
+	    return 1;
 
 	if (singleusercmd) {
 	    run_subprocess(singleusercmd);
@@ -500,24 +516,44 @@ int uxmain(int multiuser, int port, char *dropprivuser, char **singleusercmd,
 		if (FD_ISSET(fds[i].fd, &rfds)) {
 		    pid_t pid;
 		    int status;
-		    int buf[4096];
+		    char buf[4096];
+		    int j, ret, reread, child;
 
 		    /*
-		     * Empty signal pipe, and ignore its contents.
+		     * Read bytes from the signal pipe.
 		     */
-		    read(fds[i].fd, buf, sizeof(buf));
+		    ret = read(fds[i].fd, buf, sizeof(buf));
 
-		    /*
-		     * Our child process may have terminated.
-		     * Check.
-		     */
-		    pid = wait(&status);
-		    if (pid > 0 && pid == child_pid &&
-			(WIFEXITED(status) || WIFSIGNALED(status))) {
+		    reread = child = 0;
+		    for (j = 0; j < ret; j++) {
+			if (buf[j] == 'h') {
+			    reread = 1;
+			} else if (buf[j] == 'c') {
+			    child = 1;
+			}
+		    }
+
+		    if (child) {
 			/*
-			 * It has. Abandon ship!
+			 * Our child process may have terminated.
+			 * Check.
 			 */
-			return 0;
+			pid = wait(&status);
+			if (pid > 0 && pid == child_pid &&
+			    (WIFEXITED(status) || WIFSIGNALED(status))) {
+			    /*
+			     * It has. Abandon ship!
+			     */
+			    return 0;
+			}
+		    }
+
+		    if (reread) {
+			/*
+			 * Re-read our configuration on SIGHUP.
+			 */
+			if (!multiuser)
+			    configure_single_user();
 		    }
 		}
 		break;
@@ -527,7 +563,7 @@ int uxmain(int multiuser, int port, char *dropprivuser, char **singleusercmd,
 		     * Call the clientfdread function, and
 		     * terminate if it returns true.
 		     */
-		    if (clientfdread())
+		    if (clientfdread(fds[i].fd))
 			return 0;
 		}
 		break;
