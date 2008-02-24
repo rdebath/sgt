@@ -208,11 +208,19 @@ int main(int argc, char **argv)
 	    return 1;
 	}
 
+	/*
+	 * When working with an X display, we daemonise, if only
+	 * to avoid zombie processes if we're started from a
+	 * .xsession that isn't wait()ing for us.
+	 */
 	return uxmain(0, -1, NULL, NULL, oscript, oinpac, ooutpac,
-		      ConnectionNumber(disp), xreadfd);
+		      ConnectionNumber(disp), xreadfd, 1);
 #endif
     }
 
+    /*
+     * The `daemon' flag is set iff we are multi-user.
+     */
     return uxmain(multiuser, port, dropprivuser, singleusercmd,
-		  oscript, oinpac, ooutpac, -1, NULL);
+		  oscript, oinpac, ooutpac, -1, NULL, multiuser);
 }

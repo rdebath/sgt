@@ -403,7 +403,7 @@ int configure_single_user(void)
 
 int uxmain(int multiuser, int port, char *dropprivuser, char **singleusercmd,
 	   char *oscript, char *oinpac, char *ooutpac, int clientfd,
-	   int (*clientfdread)(int fd))
+	   int (*clientfdread)(int fd), int daemon)
 {
     override_script = oscript;
     override_inpac = oinpac;
@@ -426,7 +426,6 @@ int uxmain(int multiuser, int port, char *dropprivuser, char **singleusercmd,
 	 * privileges.
 	 */
 	configure_master(port);
-	daemonise(dropprivuser);
     } else {
 	signal(SIGHUP, sighup);
 
@@ -445,6 +444,9 @@ int uxmain(int multiuser, int port, char *dropprivuser, char **singleusercmd,
 	    new_fdstruct(clientfd, FD_CLIENT);
 	}
     }
+
+    if (daemon)
+	daemonise(dropprivuser);
 
     /*
      * Now we're ready to run our main loop. Keep looping round on
