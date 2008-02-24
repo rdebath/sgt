@@ -29,12 +29,14 @@
 #include "unix.h"
 
 const char usagemsg[] =
-    "  usage: ick-proxy [options] <subcommand>\n"
-    "     or: ick-proxy [options] -t <test-url>\n"
+    "  usage: ick-proxy [options]\n"
+    "     or: ick-proxy [options] <subcommand>\n"
     "     or: ick-proxy [options] --multiuser\n"
-    "  where: --multiuser    run as a daemon serving PACs over HTTP\n"
+    "     or: ick-proxy [options] -t <test-url>\n"
+    "  where: <subcommand>   write a single PAC and run with lifetime of subcommand\n"
+    "         --multiuser    run as a daemon serving PACs over HTTP\n"
     "         -t             test-rewrite a single URL and terminate\n"
-    "         <subcommand>   write a single PAC and run with lifetime of subcommand\n"
+    "              otherwise write a single PAC and run with lifetime of X session\n"
     "options: -p <port>      specify master port for in multi-user mode\n"
     "         -u <username>  run as unprivileged user in multi-user mode\n"
     "         -s <script>    override default location for rewrite script\n"

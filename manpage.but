@@ -1,0 +1,209 @@
+\cfg{man-identity}{ick-proxy}{1}{2005-02-18}{Simon Tatham}{Simon Tatham}
+
+\title Man page for \cw{ick-proxy}
+
+\U NAME
+
+\cw{ick-proxy} - custom web proxy for rewriting URLs
+
+\U SYNOPSIS
+
+\c ick-proxy [ options ] [ subcommand | --multiuser ]
+\e bbbbbbbbb   iiiiiii     iiiiiiiiii   bbbbbbbbbbb
+\c ick-proxy -t test-url
+\e bbbbbbbbb bb iiiiiiii
+
+\U DESCRIPTION
+
+\cw{ick-proxy} is a specialist web proxy whose job is to rewrite
+URLs and return 302 (Moved Temporarily) redirections for them.
+
+You might use \cw{ick-proxy} if there was a class of URL which you
+frequently needed to click on links to, but which you preferred to
+have modified before you visited them.
+
+For example, suppose you use a blog site such as LiveJournal, in
+which pages can be viewed in different styles by appending text to
+the URL of the form \cw{?style=xxxx}. You might have a preferred
+style in which to read such pages, and wish to arrange that any page
+you read is shown in your style. \cw{ick-proxy} can solve this for
+you by automatically rewriting all such URLs to append an
+appropriate \cw{?style=xxxx} marker, no matter whether the URL was
+entered manually into the address bar or followed from some other
+unrelated web page.
+
+To configure \cw{ick-proxy}, you provide a script written in the Ick
+language (described below), which implements a function called
+\cw{rewrite} taking one string argument and returning a string
+value. This function should transform any URL you want rewriting
+into the URL it should be rewritten as. URLs that you do not want
+rewriting should be returned unchanged.
+
+(Your script must be idempotent: rewriting a URL twice should give
+the same result as doing so once. In other words, the output from
+your \cw{rewrite} function should always be unchanged if fed back to
+the function as input.)
+
+\cw{ick-proxy} will take this script, and optionally a \c{.pac} file
+describing your conventional web proxy requirements, and will output
+a replacement \c{.pac} file which you should configure your web
+browser to use. This \c{.pac} file will contain a Javascript
+translation of your rewrite script, so that your web browser can
+identify URLs which require rewriting and pass them to
+\cw{ick-proxy}, which will return 302 Moved Temporarily responses
+containing the rewritten URLs. Those URLs in turn, and any URLs
+which did not need rewriting in the first place, will be retrieved
+in the manner specified by your input \c{.pac} file, or by direct
+access if you did not supply an input \c{.pac}.
+
+(\cw{ick-proxy} has no capability to actually fetch web pages; the
+only thing it knows how to do is to return 302s. So if you ask it to
+proxy a URL which does \e{not} require rewriting, it will have no
+option but to return a 501 internal error code. Hence, the
+configuration it supplies to your browser must be careful to send no
+URL to \cw{ick-proxy} which does not need redirection.)
+
+\U INVOCATION
+
+\cw{ick-proxy} can be run in various different modes.
+
+In its default mode, if invoked without arguments and without
+\c{--multiuser}, it will run as an X client. It reads the calling
+user's configuration files, writes out its custom \c{.pac} file,
+attaches to your X server, and forks off into the background. It
+will last as long as your X session does (unless it crashes or is
+killed), and when your X session terminates it will detect this and
+terminate as well.
+
+\c $ ick-proxy
+\e   bbbbbbbbb
+
+Alternatively, you can run it as a wrapper around a subcommand, by
+providing that command as arguments on the command line. In this
+mode \cw{ick-proxy} will continue running until the subcommand
+terminates, and will then shut down. For example, you might run it
+as a wrapper around your web browser itself:
+
+\c $ ick-proxy firefox
+\e   bbbbbbbbbbbbbbbbb
+
+In both of the above modes \c{ick-proxy} will write its output
+\c{.pac} file to the file system, by default as
+\c{~/.ick-proxy/output.pac} (though this location is configurable;
+see the next section). In order to actually enable URL rewriting in
+your browser, you would then configure the browser to read its proxy
+configuration from a URL along the lines of
+\cw{file:///home/}\e{username}\cw{/.ick-proxy/output.pac}. If you
+need \c{ick-proxy} to re-read its configuration files during its
+run, you can send it the \cw{SIGHUP} signal.
+
+\c{ick-proxy} also supports a third rather different operating mode:
+it can run as a system-wide daemon providing its service to all
+users of a system. You invoke this mode using the \c{--multiuser}
+option, typically as root:
+
+\c $ ick-proxy --multiuser
+\e   bbbbbbbbbbbbbbbbbbbbb
+
+In this mode, \c{ick-proxy} will no longer write its output \c{.pac}
+files into the file system. Instead it will allocate a central port
+to listen on (880 by default). On that port it will perform no
+proxying functions; all it will do is to serve its generated
+\c{.pac} files \e{over HTTP}. So a user wanting to use \c{ick-proxy}
+would then configure their web browser to retrieve its proxy
+configuration from a URL of the form
+\cw{http://localhost:880/pac/}\e{username}.
+
+When a multi-user \c{ick-proxy} is asked for a \c{.pac} file for a
+particular user, it will allocate a secondary port on which to
+perform proxying for that user; it will then read that user's
+configuration files out of their home directory, and return an
+output \c{.pac} which cites the secondary port it has allocated.
+Subsequent \c{.pac} requests for the same user will cause
+\c{ick-proxy} to re-read the user's configuration, but to re-use the
+same port number. \c{.pac} requests for other users will result in
+separate port numbers being allocated.
+
+In practice, the author has found that the most convenient mode of
+use seems to be the default one: start \cw{ick-proxy} without
+arguments from within your \c{.xsession} script, and then it will
+write a static \c{.pac} file into your home directory and run for
+the lifetime of your X session. However, Netscape's
+\W{http://wp.netscape.com/eng/mozilla/2.0/relnotes/demo/proxy-live.html}{documentation}
+of the PAC mechanism states that browsers are required to be able to
+retrieve \c{.pac} files over HTTP but not required to be able to
+read them from static files. This suggests that the multi-user mode
+may technically be the most standards-compliant and hence in
+princple the most likely to work on all browsers. Unfortunately, the
+author has found that in practice at least one browser has problems
+retrieving \c{.pac}s over HTTP but copes fine with static files, so
+draw your own conclusions...
+
+\U OPTIONS AND ARGUMENTS
+
+To select different running modes:
+
+\dt \e{subcommand}
+
+\dd Run in single-user mode as a wrapper around a specific process,
+and terminate when that process does.
+
+\dt \cw{--multiuser}
+
+\dd Run in multi-user mode.
+
+\dt \cw{-t} \e{url}
+
+\dd Run in rewriting-test mode: feed the provided URL through the
+rewrite mechanism, report the result on standard output, and
+terminate. Does not set up a web proxy at all.
+
+If none of the above options is given, the default mode is to attach
+to your X session and run in single-user mode.
+
+To configure single-user mode (whether X-attached or wrapping a
+subprogram):
+
+\dt \cw{-s} \e{script-file}
+
+\dd Specify the location of the Ick source file containing the
+\cw{rewrite} function. Default is \cq{~/.ick-proxy/rewrite.ick}.
+
+\dt \cw{-i} \e{input-pac}
+
+\dd Specify the location of the input \c{.pac} file specifying the
+user's conventional web proxy preferences. Default is
+\cq{~/.ick-proxy/input.pac}. It is not an error for this file not to
+exist: if \cw{ick-proxy} cannot read it, it will assume you did not
+wish to use a conventional web proxy at all.
+
+\dt \cw{-o} \e{output-pac}
+
+\dd Specify the location where \cw{ick-proxy} will write the output
+\c{.pac} file which configures the browser to use \cw{ick-proxy} for
+URLs requiring rewriting. Default is \cq{~/.ick-proxy/output.pac}.
+
+To configure the multi-user mode:
+
+\dt \cw{-p} \e{port}
+
+\dd Specify the port on which \cw{ick-proxy} will listen in
+multi-user mode. Default is 880.
+
+\dt \cw{-u} \e{username}
+
+\dd Cause \cw{ick-proxy} in multi-user mode to drop root privileges
+by setting its user ID to that of \e{username}. This will be done
+\e{after} it binds to its primary port (since that port number can
+be less than 1024).
+
+\U BUGS
+
+I haven't documented the Ick language yet.
+
+\U LICENCE
+
+\cw{ick-proxy} is free software, distributed under the MIT licence.
+Type \cw{ick-proxy --licence} to see the full licence text.
+
+\versionid $Id$
