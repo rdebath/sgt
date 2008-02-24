@@ -73,6 +73,8 @@ char *override_inpac = NULL;
 char *override_script = NULL;
 char *override_outpac = NULL;
 
+void configure(void);
+
 static void error(char *s)
 {
     MessageBox(ickproxy_hwnd, s, ickproxy_appname, MB_OK | MB_ICONERROR);
@@ -313,6 +315,7 @@ static void cleanup_sockets(void)
 
 #define IDM_CLOSE    0x0010
 #define IDM_ABOUT    0x0020
+#define IDM_RECONF   0x0030
 
 static HMENU systray_menu;
 
@@ -341,9 +344,12 @@ static int tray_init(void)
         DestroyIcon(hicon); 
 
     systray_menu = CreatePopupMenu();
-    AppendMenu (systray_menu, MF_ENABLED, IDM_ABOUT, "About");
+    AppendMenu (systray_menu, MF_ENABLED, IDM_ABOUT, "&About");
     AppendMenu(systray_menu, MF_SEPARATOR, 0, 0);
-    AppendMenu (systray_menu, MF_ENABLED, IDM_CLOSE, "Close ick-proxy");
+    AppendMenu (systray_menu, MF_ENABLED, IDM_RECONF,
+		"&Re-read configuration");
+    AppendMenu(systray_menu, MF_SEPARATOR, 0, 0);
+    AppendMenu (systray_menu, MF_ENABLED, IDM_CLOSE, "&Close ick-proxy");
 
     return res; 
 }
@@ -602,6 +608,10 @@ static LRESULT CALLBACK WndProc (HWND hwnd, UINT message,
 	    }
 	    return 0;
 	}
+	if ((wParam & ~0xF) == IDM_RECONF) {
+	    configure();
+	    return 0;
+	}
 	break;
     }
 
@@ -823,6 +833,46 @@ void split_into_argv(char *cmdline, int *argc, char ***argv,
     if (argstart) *argstart = outputargstart; else sfree(outputargstart);
 }
 
+/*
+ * Single-user ick-proxy setup.
+ */
+void configure(void)
+{
+    char *outpac_text;
+    char *outpac_file;
+    char *err;
+
+    outpac_text = configure_for_user("singleuser");
+    assert(outpac_text);
+    outpac_file = name_outpac_for_user(&err, "singleuser");
+    if (!outpac_file) {
+	error(err);
+	cleanup_sockets();
+	WSACleanup();
+	exit(1);
+    } else {
+	FILE *fp = fopen(outpac_file, "w");
+	int pos, len, ret;
+
+	pos = 0;
+	len = strlen(outpac_text);
+	while (pos < len) {
+	    ret = fwrite(outpac_text + pos, 1, len - pos, fp);
+	    if (ret < 0) {
+		err = dupfmt("Unable to write to \"%s\"", outpac_file);
+		error(err);
+		cleanup_sockets();
+		WSACleanup();
+		exit(1);
+	    } else {
+		pos += ret;
+	    }
+	}
+
+	fclose(fp);
+    }
+}
+
 int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int show)
 {
     WORD winsock_ver;
@@ -921,42 +971,7 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int show)
     ick_proxy_setup();
     tray_init();
 
-    /*
-     * Single-user ick-proxy setup.
-     */
-    {
-	char *outpac_text;
-	char *outpac_file;
-	char *err;
-
-	outpac_text = configure_for_user("singleuser");
-	assert(outpac_text);
-	outpac_file = name_outpac_for_user(&err, "singleuser");
-	if (!outpac_file) {
-	    error(err);
-	    return 1;
-	} else {
-	    FILE *fp = fopen(outpac_file, "w");
-	    int pos, len, ret;
-
-	    pos = 0;
-	    len = strlen(outpac_text);
-	    while (pos < len) {
-		ret = fwrite(outpac_text + pos, 1, len - pos, fp);
-		if (ret < 0) {
-		    err = dupfmt("Unable to write to \"%s\"", outpac_file);
-		    error(err);
-		    cleanup_sockets();
-		    WSACleanup();
-		    return 1;
-		} else {
-		    pos += ret;
-		}
-	    }
-
-	    fclose(fp);
-	}
-    }
+    configure();
 
     while (GetMessage (&msg, NULL, 0, 0) == 1) {
 	TranslateMessage (&msg);
