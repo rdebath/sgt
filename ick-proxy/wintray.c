@@ -3,6 +3,17 @@
  * System Tray during a specific user's login session.
  */
 
+/*
+ * Possible future work:
+ * 
+ *  - it would be nice to have a `Test' tray menu option, which
+ *    brought up a dialog box into which one could type URLs and
+ *    have ick-proxy run its script on them and print the results.
+ *    Shouldn't be hard at the ick-proxy end; designing and
+ *    setting up the dialog box, as ever, would be the most
+ *    annoying bit.
+ */
+
 #include <windows.h>
 #include <winsock.h>
 
