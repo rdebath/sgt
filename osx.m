@@ -62,7 +62,7 @@ static int pipefdread(int fd) {
 }
 - (void)runThread:(id)arg
 {
-    uxmain(0, 0, NULL, NULL, NULL, NULL, NULL, pipefd, pipefdread);
+    uxmain(0, 0, NULL, NULL, NULL, NULL, NULL, pipefd, pipefdread, 0);
 }
 @end
 
