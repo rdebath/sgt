@@ -1,19 +1,23 @@
-\cfg{man-identity}{ick-proxy}{1}{2005-02-18}{Simon Tatham}{Simon Tatham}
+\cfg{man-identity}{ick-proxy}{1}{2008-02-24}{Simon Tatham}{Simon Tatham}
+\cfg{html-chapter-shownumber}{no}
+\cfg{html-section-shownumber}{1}{no}
+\cfg{html-section-shownumber}{2}{no}
+\cfg{html-section-shownumber}{3}{no}
 
-\title Man page for \cw{ick-proxy}
+\title Man page for Unix version of \cw{ick-proxy}
 
-\U NAME
+\C{man-name} NAME
 
 \cw{ick-proxy} - custom web proxy for rewriting URLs
 
-\U SYNOPSIS
+\C{man-synopsis} SYNOPSIS
 
 \c ick-proxy [ options ] [ subcommand | --multiuser ]
 \e bbbbbbbbb   iiiiiii     iiiiiiiiii   bbbbbbbbbbb
-\c ick-proxy -t test-url
-\e bbbbbbbbb bb iiiiiiii
+\c ick-proxy [ options ] -t test-url
+\e bbbbbbbbb   iiiiiii   bb iiiiiiii
 
-\U DESCRIPTION
+\C{man-description} DESCRIPTION
 
 \cw{ick-proxy} is a specialist web proxy whose job is to rewrite
 URLs and return 302 (Moved Temporarily) redirections for them.
@@ -22,15 +26,22 @@ You might use \cw{ick-proxy} if there was a class of URL which you
 frequently needed to click on links to, but which you preferred to
 have modified before you visited them.
 
-For example, suppose you use a blog site such as LiveJournal, in
-which pages can be viewed in different styles by appending text to
-the URL of the form \cw{?style=xxxx}. You might have a preferred
-style in which to read such pages, and wish to arrange that any page
-you read is shown in your style. \cw{ick-proxy} can solve this for
-you by automatically rewriting all such URLs to append an
-appropriate \cw{?style=xxxx} marker, no matter whether the URL was
+For example, some web sites provide their content in multiple
+formats, distinguished by some aspect of the URL. (E.g.
+\W{http://news.bbc.co.uk/}{BBC News} provides low-graphics and
+high-graphics versions of all its news articles.) You might have a
+preferred style in which to read such pages, and wish to arrange
+that any page you read is shown in your style, even when following a
+link to that page from someone who had cited the other kind of URL.
+\cw{ick-proxy} can solve this for you by automatically rewriting all
+such URLs into the form you wanted, no matter whether the URL was
 entered manually into the address bar or followed from some other
 unrelated web page.
+
+(Of course, some web sites of this type provide their own internal
+cookie mechanism for accommodating your viewing preferences, in
+which case it's almost certainly simpler to use that. But some
+don't, and in that case \cw{ick-proxy} can help.)
 
 To configure \cw{ick-proxy}, you provide a script written in the Ick
 language (described below), which implements a function called
@@ -63,7 +74,7 @@ option but to return a 501 internal error code. Hence, the
 configuration it supplies to your browser must be careful to send no
 URL to \cw{ick-proxy} which does not need redirection.)
 
-\U INVOCATION
+\C{man-invocation} INVOCATION
 
 \cw{ick-proxy} can be run in various different modes.
 
@@ -128,18 +139,18 @@ In practice, the author has found that the most convenient mode of
 use seems to be the default one: start \cw{ick-proxy} without
 arguments from within your \c{.xsession} script, and then it will
 write a static \c{.pac} file into your home directory and run for
-the lifetime of your X session. However, Netscape's
-\W{http://wp.netscape.com/eng/mozilla/2.0/relnotes/demo/proxy-live.html}{documentation}
-of the PAC mechanism states that browsers are required to be able to
-retrieve \c{.pac} files over HTTP but not required to be able to
-read them from static files. This suggests that the multi-user mode
-may technically be the most standards-compliant and hence in
-princple the most likely to work on all browsers. Unfortunately, the
-author has found that in practice at least one browser has problems
-retrieving \c{.pac}s over HTTP but copes fine with static files, so
-draw your own conclusions...
+the lifetime of your X session. However, it is
+\W{http://homepages.tesco.net./~J.deBoynePollard/FGA/web-browser-auto-proxy-configuration.html}{rumoured}
+that browsers are required to be able to retrieve \c{.pac} files
+over HTTP but not required to be able to read them from static
+files. This suggests that the multi-user mode may technically be the
+most standards-compliant and hence in principle the most likely to
+work on all browsers. Unfortunately, the author has found that in
+practice at least one browser has problems retrieving \c{.pac}s over
+HTTP but copes fine with static files, so draw your own
+conclusions...
 
-\U OPTIONS AND ARGUMENTS
+\C{man-options} OPTIONS AND ARGUMENTS
 
 To select different running modes:
 
@@ -203,13 +214,8 @@ by setting its user ID to that of \e{username}. This will be done
 \e{after} it binds to its primary port (since that port number can
 be less than 1024).
 
-\U BUGS
+\C{man-language} LANGUAGE
 
-I haven't documented the Ick language yet.
-
-\U LICENCE
-
-\cw{ick-proxy} is free software, distributed under the MIT licence.
-Type \cw{ick-proxy --licence} to see the full licence text.
+\# now we include icklang.but
 
 \versionid $Id$
