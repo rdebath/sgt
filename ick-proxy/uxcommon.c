@@ -404,13 +404,8 @@ int configure_single_user(void)
 }
 
 int uxmain(int multiuser, int port, char *dropprivuser, char **singleusercmd,
-	   char *oscript, char *oinpac, char *ooutpac, int clientfd,
-	   int (*clientfdread)(int fd), int daemon)
+	   int clientfd, int (*clientfdread)(int fd), int daemon)
 {
-    override_script = oscript;
-    override_inpac = oinpac;
-    override_outpac = ooutpac;
-
     signal(SIGPIPE, SIG_IGN);
     ick_proxy_setup();
 
