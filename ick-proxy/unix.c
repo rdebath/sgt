@@ -99,7 +99,9 @@ int main(int argc, char **argv)
     char **singleusercmd = NULL;
     char *testurl = NULL;
     char *dropprivuser = NULL;
+#ifndef NO_X11
     char *display = NULL; 
+#endif
     int doing_opts = 1;
     int port = 880;
     int multiuser = 0;
