@@ -31,7 +31,8 @@ Workarounds:
 <ul>
 <li>Explicitly configure PuTTY to use an IPv4 listening socket (change
 'Auto' to 'IPv4'). Of course, you won't then be able to connect to the
-tunnel endpoint with IPv6.
+tunnel endpoint with IPv6; if you need to be able to connect with both
+protocols, set up two tunnels with the same destination.
 <li>Leave the PuTTY configuration as it is, but explicitly connect to
 the IPv6 localhost address (<tt>::1</tt>).
 </ul>
