@@ -42,6 +42,7 @@ const char usagemsg[] =
     "         -s <script>    override default location for rewrite script\n"
     "         -i <inpac>     override default location for input .PAC file\n"
     "         -o <outpac>    override default location for output .PAC file\n"
+    "         -display <display>  specify X display to attach to in default mode\n"
     " also:   ick-proxy --version  report version number\n"
     "         ick-proxy --help     display this help text\n"
     "         ick-proxy --licence  display the (MIT) licence text\n"
@@ -101,6 +102,7 @@ int main(int argc, char **argv)
     char *oscript = NULL;
     char *oinpac = NULL;
     char *ooutpac = NULL;
+    char *display = NULL; 
     int doing_opts = 1;
     int port = 880;
     int multiuser = 0;
@@ -113,6 +115,14 @@ int main(int argc, char **argv)
         if (*p == '-' && doing_opts) {
             if (!strcmp(p, "--multiuser")) {
 		multiuser = 1;
+#ifndef NO_X11
+	    } else if (!strcmp(p, "--display") || !strcmp(p, "-display")) {
+                if (--argc <= 0) {
+                    fprintf(stderr, "ick-proxy: %s expected a parameter\n", p);
+                    return 1;
+                }
+                display = *++argv;
+#endif
             } else if (!strcmp(p, "-p")) {
                 if (--argc <= 0) {
                     fprintf(stderr, "ick-proxy: -p expected a parameter\n");
@@ -204,7 +214,7 @@ int main(int argc, char **argv)
 	/*
 	 * Open the X display.
 	 */
-	disp = XOpenDisplay(NULL);   /* FIXME: -display option */
+	disp = XOpenDisplay(display);
 	if (!disp) {
 	    fprintf(stderr, "ick-proxy: unable to open X display\n");
 	    return 1;
