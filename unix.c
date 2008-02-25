@@ -99,9 +99,6 @@ int main(int argc, char **argv)
     char **singleusercmd = NULL;
     char *testurl = NULL;
     char *dropprivuser = NULL;
-    char *oscript = NULL;
-    char *oinpac = NULL;
-    char *ooutpac = NULL;
     char *display = NULL; 
     int doing_opts = 1;
     int port = 880;
@@ -134,19 +131,19 @@ int main(int argc, char **argv)
                     fprintf(stderr, "ick-proxy: -s expected a parameter\n");
                     return 1;
                 }
-		oscript = *++argv;
+		override_script = *++argv;
             } else if (!strcmp(p, "-i")) {
                 if (--argc <= 0) {
                     fprintf(stderr, "ick-proxy: -i expected a parameter\n");
                     return 1;
                 }
-		oinpac = *++argv;
+		override_inpac = *++argv;
             } else if (!strcmp(p, "-o")) {
                 if (--argc <= 0) {
                     fprintf(stderr, "ick-proxy: -o expected a parameter\n");
                     return 1;
                 }
-		ooutpac = *++argv;
+		override_outpac = *++argv;
             } else if (!strcmp(p, "-t")) {
                 if (--argc <= 0) {
                     fprintf(stderr, "ick-proxy: -t expected a parameter\n");
@@ -190,7 +187,9 @@ int main(int argc, char **argv)
     if (testurl) {
 	char *err, *ret;
 
-	ret = rewrite_url(&err, NULL, testurl);
+	ick_proxy_setup();
+
+	ret = rewrite_url(&err, "", testurl);
 	if (!ret) {
 	    fprintf(stderr, "ick-proxy: rewrite error: %s\n", err);
 	    sfree(err);
@@ -225,8 +224,7 @@ int main(int argc, char **argv)
 	 * to avoid zombie processes if we're started from a
 	 * .xsession that isn't wait()ing for us.
 	 */
-	return uxmain(0, -1, NULL, NULL, oscript, oinpac, ooutpac,
-		      ConnectionNumber(disp), xreadfd, 1);
+	return uxmain(0, -1, NULL, NULL, ConnectionNumber(disp), xreadfd, 1);
 #endif
     }
 
@@ -234,5 +232,5 @@ int main(int argc, char **argv)
      * The `daemon' flag is set iff we are multi-user.
      */
     return uxmain(multiuser, port, dropprivuser, singleusercmd,
-		  oscript, oinpac, ooutpac, -1, NULL, multiuser);
+		  -1, NULL, multiuser);
 }
