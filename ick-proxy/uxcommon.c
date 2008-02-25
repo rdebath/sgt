@@ -245,6 +245,19 @@ char *name_outpac_for_user(char **err, const char *username)
     return fname;
 }
 
+static int signalpipe[2];
+static pid_t child_pid = -1;
+
+void sigchld(int sig)
+{
+    write(signalpipe[1], "c", 1);
+}
+
+void sighup(int sig)
+{
+    write(signalpipe[1], "h", 1);
+}
+
 int is_daemon = 0;
 
 void daemonise(char *dropprivuser)
@@ -305,6 +318,8 @@ void daemonise(char *dropprivuser)
     /* Close all other open files except the ones we're actually using. */
     for (i = 3; i < 4096; i++) {
 	int j;
+        if (i == signalpipe[1])
+            continue;
 	for (j = 0; j < nfds; j++)
 	    if (fds[j].fd == i)
 		break;
@@ -329,19 +344,6 @@ void platform_fatal_error(const char *err)
 	fprintf(stderr, "ick-proxy: fatal error: %s\n", err);
     }
     exit(1);
-}
-
-static int signalpipe[2];
-static pid_t child_pid = -1;
-
-void sigchld(int sig)
-{
-    write(signalpipe[1], "c", 1);
-}
-
-void sighup(int sig)
-{
-    write(signalpipe[1], "h", 1);
 }
 
 void run_subprocess(char **cmd)
