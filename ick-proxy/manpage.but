@@ -183,6 +183,12 @@ wish to use a conventional web proxy at all.
 \c{.pac} file which configures the browser to use \cw{ick-proxy} for
 URLs requiring rewriting. Default is \cq{~/.ick-proxy/output.pac}.
 
+To configure the X-client mode:
+
+\dt \cw{-display} \e{display}
+
+\dd Specify an X display to connect to other than \cw{$DISPLAY}.
+
 To configure the multi-user mode:
 
 \dt \cw{-p} \e{port}
