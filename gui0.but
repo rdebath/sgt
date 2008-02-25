@@ -176,6 +176,13 @@ by going to System Preferences > Accounts, selecting your account,
 and then editing the Startup Items list to include the
 \cw{ick-proxy} application.
 
+(If you are using Internet Explorer, you may find that there are
+problems because IE caches the results computed by the PAC file on a
+per-host basis. Microsoft
+\W{http://support.microsoft.com./kb/271361}{KnowledgeBase #271361}
+gives a workaround for this, although the author has not
+successfully managed to get IE to work even with that.
+
 \H{cmdline} Command-line options (Windows only)
 
 On Windows, you can configure \cw{ick-proxy} to store its
