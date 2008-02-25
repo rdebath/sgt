@@ -11,3 +11,14 @@ ick-proxy : [G] wintray wintray.res PROXY
 ick-proxy : [U] unix uxcommon PROXY X11.lib
 ick-proxy : [MU] unix[NO_X11] uxcommon PROXY
 ick-proxy : [MX] osx osx.icns osx-info.plist uxcommon PROXY
+
+# Makefile fragment for the documentation.
+!begin unix
+doc: ick-proxy.1 unixdoc.html guidoc.html
+ick-proxy.1: manpage0.but icklang.but manpage1.but
+	halibut --man=ick-proxy.1 manpage0.but icklang.but manpage1.but
+unixdoc.html: manpage0.but icklang.but manpage1.but
+	halibut --html=unixdoc.html manpage0.but icklang.but manpage1.but
+guidoc.html: gui0.but icklang.but gui1.but
+	halibut --html=guidoc.html gui0.but icklang.but gui1.but
+!end

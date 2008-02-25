@@ -1,0 +1,611 @@
+\# This piece of Halibut is intended to be included within a larger
+\# document. It presents a definition of the Ick language, and is
+\# assumed to be preceded by a chapter-level heading.
+
+This section describes the Ick language, in which rewrite scripts
+are written.
+
+In brief: the Ick language is roughly C-like, but simplified, and in
+particular it has a very simple type system which supports no
+compound types at all but does support arbitrarily sized strings as
+a basic type.
+
+\H{ick-syntax} Syntax
+
+The Ick language has basically C-like syntax.
+
+At the top level, a source file consists of function definitions,
+variable declarations, and nothing else. A function definition is of
+the form
+
+\c return-type function-name ( [ type param [ , type param ... ] ] )
+\e iiiiiiiiiii iiiiiiiiiiiii b   iiii iiiii   b iiii iiiii         b
+\c {
+\e b
+\c     variable-declarations
+\e     iiiiiiiiiiiiiiiiiiiii
+\c     statements
+\e     iiiiiiiiii
+\c }
+\e b
+
+and a variable declaration is of the form
+
+\c type varname [ = expression ] [ , varname [ = expression ] ... ];
+\e iiii iiiiiii   b iiiiiiiiii     b iiiiiii   b iiiiiiiiii        b
+
+The only valid types are \c{string}, \c{int} and \c{bool}. The
+pseudo-type \c{void} may also be used as the return type of a
+function (indicating that the function returns no value at all), but
+not for any variable or function parameter.
+
+(To declare a function with no arguments, the word \c{void} may be
+used between the parentheses in place of the parameter list, as an
+alternative syntax to simply leaving the parentheses empty.)
+
+\cw{ick-proxy} requires that scripts written in this language
+provide a function called \cq{rewrite}, taking one string argument
+and returning a string. So the simplest possible rewrite script,
+which does nothing at all, might look like this:
+
+\c string rewrite(string url)
+\e bbbbbb        bbbbbbb    b
+\c {
+\e b
+\c     return url;
+\e     bbbbbb    b
+\c }
+\e b
+
+Comments in \cw{ick-proxy} are like C and C++: either contained
+between \cq{/*} and \cq{*/} (without nesting), or between \cq{//}
+and the next newline.
+
+\H{statements} Statements
+
+Valid statements are listed below.
+
+\S{stmt-expr} Expression statements
+
+The statement
+
+\c     expression;
+\e     iiiiiiiiiib
+
+has the effect of evaluating the expression, including any side
+effects, and ignoring its result (if any). This type of statement
+can be used to perform assignments, increments and decrements,
+function calls, or a combination of those.
+
+\S{stmt-return} Return statements
+
+The statement
+
+\c     return [ expression ];
+\e     bbbbbb   iiiiiiiiii  b
+
+immediately terminates the current instance of the function in which
+it is invoked. If an expression is supplied, then its value is the
+return value of the function (and the type of the expression must be
+the same as the function's return type, which must not be void). If
+no expression is supplied, then no value is returned (and the
+function's return type \e{must} be void).
+
+\S{stmt-breakcont} Break and continue statements
+
+The statements
+
+\c     break;
+\e     bbbbbb
+\c     continue;
+\e     bbbbbbbbb
+
+must be contained within at least one loop construction (\c{if},
+\c{while}, \c{for} or \c{do}). Both of them immediately terminate
+the current iteration of the innermost loop containing them;
+\c{break} also terminates the entire loop, whereas \c{continue}
+merely causes the next iteration to begin.
+
+\S{stmt-if} If statements
+
+The statement
+
+\c     if (expression) then-statement [ else else-statement ]
+\e     bb biiiiiiiiiib iiiiiiiiiiiiii   bbbb iiiiiiiiiiiiii
+
+evaluates \e{expression} (which must have boolean type). If the
+result is true, it runs \e{then-statement}; otherwise it runs
+\e{else-statement} if provided.
+
+\S{stmt-while} While statements
+
+The statement
+
+\c     while (expression) statement
+\e     bbbbb biiiiiiiiiib iiiiiiiii
+
+evaluates \e{expression} (which must have boolean type). If the
+result is false, it does nothing further. If the result is true, it
+runs \e{statement}, and then starts all over again (evaluating
+\e{expression} again, and potentially continuing to loop).
+
+\S{stmt-do} Do statements
+
+The statement
+
+\c     do statement while (expression);
+\e     bb iiiiiiiii bbbbb biiiiiiiiiibb
+
+first runs \e{statement}. Then it evaluates \e{expression} (which
+must have boolean type). If the result is false, it does nothing
+further; otherwise, it starts all over again (running \e{statement}
+again, and potentially continuing to loop).
+
+\S{stmt-for} For statements
+
+The statement
+
+\c     for ( [ expr1 ] ; [ expr2 ] ; [ expr3 ] ) statement
+\e     bbb b   iiiii   b   iiiii   b   iiiii   b iiiiiiiii
+
+starts by evaluating \e{expr1} and ignoring any result.
+
+Next it evaluates \e{expr2}, which must have boolean type. If the
+result is false, it does nothing further. If the result is true, it
+runs \e{statement}, then evaluates \e{expr3} and ignores any result,
+and then goes back to the evaluation of \e{expr2}, potentially
+continuing to loop.
+
+A \c{continue} statement within \e{statement} does not skip the
+evaluation of \e{expr3}.
+
+\S{stmt-blk} Statement blocks
+
+Anywhere a single statement is syntactically valid, a braced block
+may appear instead:
+
+\c     {
+\e     b
+\c         variable-declarations
+\e         iiiiiiiiiiiiiiiiiiiii
+\c         statements
+\e         iiiiiiiiii
+\c     }
+\e     b
+
+Variables declared within this block are only valid within the
+block. If they include initialisers, they are initialised every time
+execution enters the block.
+
+\H{expressions} Expressions
+
+Expressions use ordinary infix syntax, with a restricted subset of
+the usual C operators. The accepted operators are listed below. Each
+subheading indicates a group of operators with the same precedence,
+and the operators are listed from lowest to highest precedence.
+
+\S{expr-comma} The comma operator
+
+The expression
+
+\c     leftexpr , rightexpr
+\e     iiiiiiii b iiiiiiiii
+
+has the value of \e{rightexpr}, but before it evaluates
+\e{rightexpr} it first evaluates \e{leftexpr} and ignores the
+result.
+
+\e{leftexpr} and \e{rightexpr} need not have the same type, and
+either or both may even be void. The type of the entire comma
+expression is the same as the type of \e{rightexpr}.
+
+\S{expr-assign} Assignment operators
+
+The expression
+
+\c     variable = expression
+\e     iiiiiiii b iiiiiiiiii
+
+has the value of \e{expression}, and the side effect of copying that
+value into \e{variable}. \e{variable} and \e{expression} must have
+the same type, and of course the type of the expression as a whole
+is the same type again.
+
+The compound assignment expressions
+
+\c     variable += expression
+\e     iiiiiiii bb iiiiiiiiii
+\c     variable -= expression
+\e     iiiiiiii bb iiiiiiiiii
+\c     variable *= expression
+\e     iiiiiiii bb iiiiiiiiii
+\c     variable /= expression
+\e     iiiiiiii bb iiiiiiiiii
+\c     variable &&= expression
+\e     iiiiiiii bbb iiiiiiiiii
+\c     variable ||= expression
+\e     iiiiiiii bbb iiiiiiiiii
+
+are equivalent, respectively, to
+
+\c     variable = variable + expression
+\e     iiiiiiii b iiiiiiii b iiiiiiiiii
+\c     variable = variable - expression
+\e     iiiiiiii b iiiiiiii b iiiiiiiiii
+\c     variable = variable * expression
+\e     iiiiiiii b iiiiiiii b iiiiiiiiii
+\c     variable = variable / expression
+\e     iiiiiiii b iiiiiiii b iiiiiiiiii
+\c     variable = variable && expression
+\e     iiiiiiii b iiiiiiii bb iiiiiiiiii
+\c     variable = variable || expression
+\e     iiiiiiii b iiiiiiii bb iiiiiiiiii
+
+\S{expr-cond} The conditional operator
+
+The expression
+
+\c     condexpr ? trueexpr : falseexpr
+\e     iiiiiiii b iiiiiiii b iiiiiiiii
+
+has the value of \e{trueexpr} if \e{condexpr} evaluates to true, or
+of \e{falseexpr} if \e{condexpr} evaluates to false.
+
+\e{condexpr} must have boolean type. Either or both of \e{trueexpr}
+and \e{falseexpr} may have void type, in which case the expression
+as a whole has void type as well; otherwise \e{trueexpr} and
+\e{falseexpr} must have the same type, which is also the type of the
+whole expression.
+
+\S{expr-logical} Logical operators
+
+The expressions
+
+\c     leftexpr && rightexpr
+\e     iiiiiiii bb iiiiiiiii
+\c     leftexpr || rightexpr
+\e     iiiiiiii bb iiiiiiiii
+
+have, respectively, the value of the logical AND and logical OR of
+their operands. Both operands must have boolean type, and the
+expressions as a whole have boolean type too.
+
+These operators are guaranteed to short-circuit: that is, if
+evaluating \e{leftexpr} leaves the value of the entire expression in
+no doubt (i.e. \e{leftexpr} is false in an \c{&&} expression, or
+true in an \c{||} expression) then \e{rightexpr} is not evaluated at
+all (so its side effects, if any, will not occur).
+
+The \c{&&} and \c{||} operators have the same precedence, and
+associate with themselves, but may not associate with one another.
+That is, you can legally write either of
+
+\c     expr1 && expr2 && expr3
+\e     iiiii bb iiiii bb iiiii
+\c     expr1 || expr2 || expr3
+\e     iiiii bb iiiii bb iiiii
+
+but it is an error to write either of
+
+\c     expr1 && expr2 || expr3
+\e     iiiii bb iiiii bb iiiii
+\c     expr1 || expr2 && expr3
+\e     iiiii bb iiiii bb iiiii
+
+and you must instead use parentheses to disambiguate the relative
+priority of the operators.
+
+\S{expr-comparison} Comparison operators
+
+The expressions
+
+\c     leftexpr < rightexpr
+\e     iiiiiiii b iiiiiiiii
+\c     leftexpr <= rightexpr
+\e     iiiiiiii bb iiiiiiiii
+\c     leftexpr > rightexpr
+\e     iiiiiiii b iiiiiiiii
+\c     leftexpr >= rightexpr
+\e     iiiiiiii bb iiiiiiiii
+\c     leftexpr == rightexpr
+\e     iiiiiiii bb iiiiiiiii
+\c     leftexpr != rightexpr
+\e     iiiiiiii bb iiiiiiiii
+
+return true if and only if \e{leftexpr} compares, respectively, less
+than, less than or equal to, greater than, greater than or equal to,
+equal to, or unequal to \e{rightexpr}.
+
+\e{leftexpr} and \e{rightexpr} must both have the same type, which
+must be either string or integer. The expressions as a whole have
+boolean type.
+
+\S{expr-add} Additive operators
+
+The expressions
+
+\c     leftexpr + rightexpr
+\e     iiiiiiii b iiiiiiiii
+\c     leftexpr - rightexpr
+\e     iiiiiiii b iiiiiiiii
+
+return, respectively, the sum and difference of \e{leftexpr} and
+\e{rightexpr}.
+
+\e{leftexpr} and \e{rightexpr} must have the same type, and the
+expressions as a whole have the same type. That type must be integer
+for the \c{-} operator; for the \c{+} operator it may be either
+integer or string. In the latter case, the operation performed is
+string concatenation.
+
+\S{expr-mul} Multiplicative operators
+
+The expressions
+
+\c     leftexpr * rightexpr
+\e     iiiiiiii b iiiiiiiii
+\c     leftexpr / rightexpr
+\e     iiiiiiii b iiiiiiiii
+
+return, respectively, the product and quotient of \e{leftexpr} and
+\e{rightexpr}.
+
+\e{leftexpr} and \e{rightexpr} must both have integer type, and the
+expressions as a whole have the same type.
+
+\S{expr-unary} Unary operators
+
+The expressions
+
+\c     + expression
+\e     b iiiiiiiiii
+\c     - expression
+\e     b iiiiiiiiii
+
+have, respectively, the same value as \e{expression} and the
+arithmetic negative of the value of \e{expression}. \e{expression}
+must have integer type, and the expression as a whole has integer
+type too.
+
+The expression
+
+\c     ! expression
+\e     b iiiiiiiiii
+
+has the value of the boolean negation of the value of
+\e{expression}. \e{expression} must have boolean type, and the
+expression as a whole has boolean type too.
+
+The expressions
+
+\c     ++ variable
+\e     bb iiiiiiii
+\c     -- variable
+\e     bb iiiiiiii
+
+have, respectively, the effect of adding 1 to \e{variable} and
+subtracting 1 from it. Their value is the value of \e{variable}
+\e{after} it is modified. \e{variable} must have integer type, and
+the expression as a whole has integer type too.
+
+The expressions
+
+\c     variable ++
+\e     iiiiiiii bb
+\c     variable --
+\e     iiiiiiii bb
+
+have, respectively, the effect of adding 1 to \e{variable} and
+subtracting 1 from it. Their value is the value of \e{variable}
+\e{before} it is modified. \e{variable} must have integer type, and
+the expression as a whole has integer type too.
+
+\S{expr-core} Core expression components
+
+The expression
+
+\c     ( expression )
+\e     b iiiiiiiiii b
+
+has the same type and value as \e{expression}.
+
+The expression
+
+\c     function-name ( [ argument [ , argument ... ] ] )
+\e     iiiiiiiiiiiii b   iiiiiiii   b iiiiiiii         b
+
+has the effect of calling the named function, with its parameters
+set to the values of the argument expressions in order. The types of
+the argument expressions must match the types of the parameters of
+the function; the type of the expression as a whole is the return
+type of the function, and its value (if any) is equal to the value
+returned by any \c{return} statement within the function body.
+
+Functions are overloaded by their number and type of parameters.
+That is, you can independently define two functions with the same
+name, as long as their lists of parameter types are distinct.
+
+The expression
+
+\c     variable-name
+\e     iiiiiiiiiiiii
+
+has the type and value of the contents of the named variable.
+
+The expressions
+
+\c     true
+\e     bbbb
+\c     false
+\e     bbbbb
+
+have boolean type, and their values are respectively boolean truth
+and boolean falsehood.
+
+Finally, expressions can also be integer literals and string
+literals.
+
+An integer literal consists of either a sequence of decimal digits
+starting with a non-zero one, or a sequence of octal digits starting
+with a zero, or a sequence of hexadecimal digits preceded by
+\cq{0x}.
+
+A string literal consists of a sequence of characters enclosed in
+double quotes. Within those quotes, the backslash character is
+special, and must introduce one of the following sequences:
+
+\dt \c{\\a}
+
+\dd The alert or bell character (ASCII value 7).
+
+\dt \c{\\b}
+
+\dd The backspace character (ASCII value 8).
+
+\dt \c{\\f}
+
+\dd The form feed character (ASCII value 12).
+
+\dt \c{\\n}
+
+\dd The new line or line feed character (ASCII value 10).
+
+\dt \c{\\r}
+
+\dd The carriage return character (ASCII value 13).
+
+\dt \c{\\t}
+
+\dd The horizontal tab character (ASCII value 9).
+
+\dt \c{\\v}
+
+\dd The vertical tab character (ASCII value 11).
+
+\dt \c{\\\\}
+
+\dd A literal backslash.
+
+\dt \c{\\"}
+
+\dd A literal double quote.
+
+\dt \c{\\} followed by a new line in the source
+
+\dd Causes the new line in the source to be ignored, so you can
+break a single string literal across multiple source lines.
+
+\dt \c{\\x} followed by up to two hex digits
+
+\dd Encodes the character with the code given by the hex digits.
+
+\dt \c{\\} followed by up to three octal digits
+
+\dd Encodes the character with the code given by the octal digits.
+
+Multiple string literals may also be specified in immediate
+succession, and will be automatically concatenated.
+
+\H{ick-lib} Standard library
+
+The Ick execution environment pre-defines a number of standard
+functions you can use for string processing. Those functions are
+listed below.
+
+\c int len(string str)
+\e bbb bbbbbbbbbb iiib
+
+Returns the length of \e{str}.
+
+\c string substr(string str, int start, int end)
+\e bbbbbb bbbbbbbbbbbbb iiib bbb iiiiib bbb iiib
+
+Returns the substring of \e{str} starting at character position
+\e{start} (counting the first character in the string as zero), and
+continuing until position \e{end}. The character at position
+\e{start} is included, but the one at position \e{end} is not.
+
+\c string substr(string str, int start)
+\e bbbbbb bbbbbbbbbbbbb iiib bbb iiiiib
+
+Returns the substring of \e{str} starting at character position
+\e{start} (counting the first character in the string as zero), and
+continuing until the end of the string.
+
+\c int atoi(string str)
+\e bbb bbbbbbbbbbb iiib
+
+Interprets \e{str} as a sequence of decimal digits (with optional
+minus sign) encoding an integer, and returns that integer.
+
+\c string itoa(int i)
+\e bbbbbb bbbbbbbb ib
+
+Encodes \e{i} as a string containing a sequence of decimal digits
+(with optional minus sign) encoding an integer, and returns that
+string.
+
+\c int ord(string str)
+\e bbb bbbbbbbbbb iiib
+
+Returns the character code of the first character in \e{str}, or
+zero if \e{str} is empty.
+
+\c string chr(int c)
+\e bbbbbb bbbbbbb ib
+
+Returns a string containing a single character with code \e{c}, or
+the empty string if \e{c} is zero.
+
+\c int index(string haystack, string needle)
+\e bbb bbbbbbbbbbbb iiiiiiiib bbbbbb iiiiiib
+
+Searches for the string \e{needle} occurring anywhere in the string
+\e{haystack}. Returns the first position at which it occurs, or -1
+if it does not occur at all.
+
+\c int index(string haystack, string needle, int start)
+\e bbb bbbbbbbbbbbb iiiiiiiib bbbbbb iiiiiib bbb iiiiib
+
+Same as above, but only counts matches at or after the position
+\e{start}.
+
+\c int rindex(string haystack, string needle)
+\e bbb bbbbbbbbbbbbb iiiiiiiib bbbbbb iiiiiib
+\c int rindex(string haystack, string needle, int start)
+\e bbb bbbbbbbbbbbbb iiiiiiiib bbbbbb iiiiiib bbb iiiiib
+
+Same as \c{index}, but returns the last position at which \e{needle}
+occurs rather than the first. (Still returns -1 if it does not occur
+at all.)
+
+\c int min(int a, int b)
+\e bbb bbbbbbb ib bbb ib
+
+Returns the smaller of the two integers \e{a} and \e{b}.
+
+\c int max(int a, int b)
+\e bbb bbbbbbb ib bbb ib
+
+Returns the larger of the two integers \e{a} and \e{b}.
+
+\H{ick-examples} Example
+
+Here is a simple example of an \cw{ick-proxy} configuration which
+rewrites BBC News article URLs to reference the low-graphics version
+always.
+
+\c bool strprefix(string str, string pfx)
+\c {
+\c     return (len(str) >= len(pfx) &&
+\c 	    substr(str, 0, len(pfx)) == pfx);
+\c }
+\c string rewrite(string url)
+\c {
+\c     if (strprefix(url, "http://news.bbc.co.uk/1/hi/")) {
+\c         url = substr(url, 0, 24) + "low" + substr(url, 26);
+\c     }
+\c     return url;
+\c }
+
+\versionid $Id$

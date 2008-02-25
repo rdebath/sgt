@@ -1,0 +1,11 @@
+\U BUGS
+
+None currently known, other than the fact that the entire concept is
+utterly disgusting (hence the program's name).
+
+\U LICENCE
+
+\cw{ick-proxy} is free software, distributed under the MIT licence.
+Type \cw{ick-proxy --licence} to see the full licence text.
+
+\versionid $Id$

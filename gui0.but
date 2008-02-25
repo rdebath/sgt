@@ -1,0 +1,243 @@
+\title Manual for GUI versions of \cw{ick-proxy}
+
+This manual describes how to use the GUI versions of the
+\cw{ick-proxy} cross-browser URL rewriting utility. It covers the
+Windows and Mac OS X versions.
+
+\C{intro} Introduction
+
+Suppose you regularly visit a website which can present its content
+in multiple formats, depending on the URL. For example,
+\W{http://news.bbc.co.uk/}{BBC News} supplies all of its articles in
+a simple version without too much fancy HTML, and in a highly
+formatted version with additional borders and links round the sides.
+The simple versions of the pages have \cq{/lo/} in the URL, and the
+complicated ones have \cq{/hi/}.
+
+You might have a strong preference for one of these formats over
+another. For example, if you have an old web browser, or a slow
+computer, or a small screen, or a slow network connection, you might
+want to always see the simple version of the page. So if you saw a
+hyperlink elsewhere on the web (e.g. blogs) which linked to the
+complicated version of a page, you would really like your web
+browser to go to the simple version instead when you click on that
+link.
+
+Some websites of this type recognise this desire, and will offer you
+the ability to set cookies in your browser which cause them to
+return pages the way \e{you} want to see them, instead of the way
+the person who linked to them wanted to see them. If the website in
+question is one of these, you're fine: simply go through its
+configuration process, set the cookie, and then you'll always see
+news articles (or whatever) in the format you wanted.
+
+However, some websites do not provide this feature. If you have to
+deal with such a website on a regular basis, it would be convenient
+if you could configure your web browser to do the same job itself:
+whenever you click on a link pointing at (let us say) a BBC News
+article with \cq{/hi/} somewhere in the URL, to modify the URL so
+that \cq{/hi/} is replaced with \cq{/lo/}.
+
+\cw{ick-proxy} can do this for you, in a manner largely independent
+of your web browser. It offers a general mechanism for you to
+specify a set of URLs to be rewritten.
+
+There are other reasons you might want the same capability. Another
+one involves VPNs: in some VPN setups, you might be able to access
+the same web server by two different host names, such that one host
+name causes you to connect across the open Internet and another
+causes you to connect across the secured VPN. If you have to
+exchange any sensitive data with that web server, you might set up
+\cw{ick-proxy} to rewrite URLs using the insecure host name so that
+they use the secure one instead.
+
+Whatever your reason for wanting it, \cw{ick-proxy} supplies general
+URL rewriting across multiple web browsers and operating systems.
+
+The biggest downside to \cw{ick-proxy} is that you need to be able
+to program in order to configure it: the rules about what URLs
+should be rewritten and how are expressed as a program in a small
+custom programming language. If you aren't competent to write small
+programs, you will need to get somebody else to configure
+\cw{ick-proxy} for you, or not use it at all.
+
+\C{mechanism} Mechanism
+
+The mechanism by which \cw{ick-proxy} works is somewhat disgusting
+(hence the first half of its name).
+
+The \cw{ick-proxy} program itself acts as an HTTP web proxy (hence
+the second half of the name!). When the browser asks it to fetch a
+URL which needs rewriting, \cw{ick-proxy} lies to the browser:
+instead of fetching the page it was asked to fetch, it instead
+returns a \q{302 Moved Temporarily} response code which causes the
+browser to believe that the target web site redirected it to a
+different URL. The different URL in question, of course, is the one
+you configured \cw{ick-proxy} to rewrite the original one as; and of
+course the target web site did not \e{actually} return that
+redirection, because \cw{ick-proxy} never actually passed on the
+request to it in the first place.
+
+However, it isn't as simple as just telling your web browser to use
+\cw{ick-proxy} as a web proxy for all connections. If you did that,
+then your browser would also ask \cw{ick-proxy} to retrieve URLs
+that \e{don't} need rewriting. That would mean \cw{ick-proxy} had to
+actually go and connect to the web site in question and fetch real
+web pages, which would require it to do \e{real work} and be much
+more complex and probably less reliable.
+
+So instead of that, you instead configure your web browser in such a
+way that the browser \e{itself} examines every URL to decide whether
+it needs rewriting. If it does, the URL will be fetched via
+\cw{ick-proxy}, which will return a mendacious 302 as described
+above. The browser will then attempt to fetch the rewritten URL, and
+this time its proxy configuration will \e{not} tell it to go via
+\cw{ick-proxy}, and it will instead retrieve the page in the usual
+manner (either by direct connection, or via your normal conventional
+web proxy if you have one set up).
+
+Many different web browsers can be configured to do this, using a
+mechanism called
+\W{http://homepages.tesco.net./~J.deBoynePollard/FGA/web-browser-auto-proxy-configuration.html}{Proxy
+Auto-Configuration}. This lets you load a piece of Javascript into
+your web browser which examines a URL and decides what proxy the
+browser should use, if any, to fetch it. So as well as actually
+acting as a web proxy, \cw{ick-proxy} also does the work of
+constructing this PAC file out of your URL rewriting configuration.
+If you want to use a real web proxy in addition to \cw{ick-proxy},
+you must supply a PAC file as an additional input to this process;
+\cw{ick-proxy} will combine your input PAC (if any) with your
+rewrite script, and produce a (probably) much more complicated
+output PAC which you should then configure your browser to point at.
+
+(If you want to use a real web proxy in addition to \cw{ick-proxy},
+but you had previously set up that web proxy by means of a browser
+GUI rather than having a PAC file to describe it, then you will need
+to write a PAC which implements the same rules. This shouldn't be
+too hard if you have enough programming experience to be configuring
+\cw{ick-proxy} in the first place.)
+
+\C{setting-up} Setting up \cw{ick-proxy}
+
+This section describes how to set up \cw{ick-proxy}.
+
+First, you need to write a program which performs all the URL
+rewriting you want \cw{ick-proxy} to do. This is written in the
+custom \q{Ick} language; see \k{icklang} for a specification.
+
+On Windows, you should install this script file in your user
+profile, e.g. \cq{C:\\Documents and Settings\\Application Data} (or
+wherever user profiles are kept on your local Windows system). Under
+that directory you should create a subdirectory called
+\cq{ick-proxy}, and you should save the script file under the name
+\cq{rewrite.ick} in that subdirectory. So, for example, the full
+pathname might be \cq{C:\\Documents and Settings\\Application
+Data\\ick-proxy\\rewrite.ick}.
+
+On Mac OS X, this file should go in your home directory, in a
+directory called \cq{.ick-proxy}. So the full pathname might be
+\cq{~/.ick-proxy/rewrite.ick}.
+
+If you want to use a conventional web proxy as well as
+\cw{ick-proxy}, you should find or write a \c{.pac} file (Javascript
+proxy configuration) which specifies that proxy or combination of
+proxies, and install that under the name \cq{input.pac} in the same
+subdirectory of your profile. So, for example, the full pathname to
+this file might be \cq{C:\\Documents and Settings\\Application
+Data\\ick-proxy\\input.pac} on Windows, or
+\cq{~/.ick-proxy/input.pac} on a Mac.
+
+Now run the \cw{ick-proxy} application. This will put an icon in the
+System Tray (Windows) or the Dock (Mac OS X), and quietly sit there
+apparently doing nothing.
+
+You should find, however, that on startup \cw{ick-proxy} has read
+the configuration file(s) you set up above, and has written a new
+\c{.pac} file into its configuration directory called
+\cq{output.pac}. So, for example, the full pathname to this file
+might be \cq{C:\\Documents and Settings\\Application
+Data\\ick-proxy\\output.pac} on Windows, or
+\cq{~/.ick-proxy/output.pac} on a Mac.
+
+Your next step is to configure your web browser to use this file as
+its proxy configuration. If you're lucky, your browser preferences
+should include a Browse button which should enable you to browse
+around the file system and point it at this file.
+
+Once you've set that up, you should be ready to go. Try fetching a
+URL that you want to be rewritten, and see what happens!
+
+If that works, you will probably want to perform the final step:
+configure \cw{ick-proxy} to start up again the next time you log in.
+On Windows, you can do this by putting a shortcut to it in the
+\cq{Startup} folder of your Start Menu (having first created that
+folder if it doesn't already exist). On Mac OS X, this is configured
+by going to System Preferences > Accounts, selecting your account,
+and then editing the Startup Items list to include the
+\cw{ick-proxy} application.
+
+\H{cmdline} Command-line options (Windows only)
+
+On Windows, you can configure \cw{ick-proxy} to store its
+configuration files somewhere other than the default location, by
+providing options on its command line. (If you put a shortcut to
+\cw{ick-proxy} in your Startup folder, you should be able to edit
+the command line stored in that shortcut by right-clicking on it and
+selecting \q{Properties}.)
+
+\dt \cw{-s} \e{script-file}
+
+\dd Specify an alternative location for \cw{ick-proxy} to find your
+URL-rewriting script, instead of looking for
+\cw{ick-proxy\\rewrite.ick} in your user profile.
+
+\dt \cw{-i} \e{input-pac-file}
+
+\dd Specify an alternative location for \cw{ick-proxy} to find your
+input PAC file, instead of looking for \cw{ick-proxy\\input.pac}
+in your user profile.
+
+\dt \cw{-o} \e{output-pac-file}
+
+\dd Specify an alternative location for \cw{ick-proxy} to generate
+your output PAC file, instead of storing it as
+\cw{ick-proxy\\output.pac} in your user profile.
+
+On Mac OS X, these options are not available, since OS X
+applications do not conveniently support command-line arguments.
+Instead, you can create symbolic links in your \cw{~/.ick-proxy}
+directory pointing at the real locations of the files.
+
+\C{using} Using \cw{ick-proxy}
+
+While \cw{ick-proxy} is running, right-clicking on its System Tray
+or Dock icon will give you a small menu. This menu will allow you to
+shut the program down, of course.
+
+It also contains an option which causes \cw{ick-proxy} to re-read
+its configuration files and regenerate the output PAC. You might use
+this if you were modifying your rewriting configuration in
+mid-session. Don't forget, however, that after using this option you
+should restart your web browser or otherwise make sure it reloads
+the output PAC; if the web browser's configuration does not match
+that of \cw{ick-proxy} then your browser may fetch URLs directly
+which you wanted rewritten, or (perhaps worse) direct URLs to
+\cw{ick-proxy} which it is no longer prepared to rewrite, resulting
+in HTTP error messages.
+
+If you find that no URL rewriting is happening at all, this may be
+because your rewriting script had an error in it. Load your
+\cw{output.pac} file into a text editor and have a look at it. You
+may find that it contains a comment at the top explaining that
+\cw{ick-proxy} was unable to parse your rewriting script, and giving
+an error message and a location in the source file. In that case,
+edit your rewriting script and fix the error, then ask
+\cw{ick-proxy} to reload its configuration again and see if matters
+have improved.
+
+\C{icklang} Specification of the Ick language
+
+\# now we include icklang.but, and then move to gui1.but for the end
+\# of the manual.
+
+\versionid $Id$
