@@ -17,6 +17,6 @@ with specialist MUD client software (perhaps something like
 which you then use PuTTY to access).
 
 <p>
-Someone has taken bits of PuTTY and bits of other things to create a
-thing called <a href="http://www.elvenrunes.com/powtty/">PowTTY</a>.
-We know nothing about it, but it may be relevant.
+That doesn't stop other people from turning PuTTY into a MUD client,
+of course. Some third-party modifications are listed on our
+<a href="../links.html">Links page</a>.
