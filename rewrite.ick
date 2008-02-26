@@ -1,5 +1,9 @@
 /* -*- c -*- */
 
+/*
+ * My personal URL-rewriting script, for use with ick-proxy.
+ */
+
 bool strprefix(string str, string pfx)
 {
     return (len(str) >= len(pfx) &&
