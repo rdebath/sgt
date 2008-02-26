@@ -2,11 +2,17 @@
 
 # import urlparse
 import string
-import re
-import os
 import sys
 
 url = sys.argv[1]
+
+try:
+    from urlrewritelocal import local_rewrite
+except ImportError:
+    def local_rewrite(url):
+        pass
+
+local_rewrite(url) # will exit on success
 
 if url[-16:] == "@bugs.debian.org":
     # Rewrite <number>@bugs.debian.org into a URL in the Debian BTS.
@@ -18,10 +24,6 @@ if url[-16:] == "@bugs.debian.org":
         number = number[:index] # strip off "-forwarded" or similar
     print "http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=" + number
     sys.exit(0)
-elif re.compile("(http://)?([Dd][Ee]|[Cc][Aa][Ss][Ee]|[Cc][Rr]) *[0-9]+").match(url):
-    if url[:7] == "http://":
-        url = url[7:]
-    os.system("ta url " + url)
 
 # The following rewrite rules are obsolete because ick-proxy does
 # the same job better. The code is preserved in case I need to do
