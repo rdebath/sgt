@@ -1,0 +1,36 @@
+# -*- sh -*-
+# Build script for DoIt.
+
+module listener
+
+# Substitute the right program name in the non-DoIt-specific files.
+in listener do perl -i~ -pe 's/<<PROGRAMNAME>>/DoIt/g' listener.c LICENCE
+
+# Substitute the right revision number in the README.
+in listener do perl -i~ -pe 's/<<REV>>/$(revision)/' README
+
+# Build the Windows binary.
+delegate windows
+  in listener do cmd /c vcvars32 \& nmake
+  return listener/doit.exe
+enddelegate
+
+# Construct a directory of symlinks for making release archives.
+in listener do mkdir doit
+in listener/doit do ln -s ../*.c .
+in listener/doit do ln -s ../*.h .
+in listener/doit do ln -s ../*.txt .
+in listener/doit do ln -s ../*.rc .
+in listener/doit do ln -s ../*.ico .
+in listener/doit do ln -s ../*.exe .
+in listener/doit do ln -s ../Makefile .
+in listener/doit do ln -s ../README .
+in listener/doit do ln -s ../LICENCE .
+
+# Zip and tar up the symlink directory.
+in listener/doit do zip -9 ../doit.zip *
+in listener do tar chzf doit.tar.gz doit
+
+# And deliver those archives.
+deliver listener/doit.zip $@
+deliver listener/doit.tar.gz $@
