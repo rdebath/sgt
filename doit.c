@@ -555,7 +555,7 @@ int listener_newthread(SOCKET sock, int port, SOCKADDR_IN remoteaddr) {
     if (currdir)
         free(currdir);
     if (ctx)
-        /* FIXME: free ctx */;
+	doit_free_ctx(ctx);
     closesocket(sock);
     return 0;
 }

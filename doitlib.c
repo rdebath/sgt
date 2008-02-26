@@ -20,7 +20,7 @@
 
 #include "doit.h"
 
-char doitlib_revision[] = "$Revision: 1.4 $";
+char doitlib_revision[] = "$Revision$";
 
 typedef unsigned int uint32;
 
@@ -1408,6 +1408,22 @@ doit_ctx *doit_init_ctx(void *secret, int secret_len) /*{{{*/
     ctx->padding_pos = SHA_LEN;
     SHA_Init(&ctx->nonceH);
     return ctx;
+}
+/*}}}*/
+
+/*
+ * Free a crypto context.
+ */
+void doit_free_ctx(doit_ctx *ctx) /*{{{*/
+{
+    free(ctx->secret);
+    if (ctx->their_nonce)
+	free(ctx->their_nonce);
+    if (ctx->packet)
+	free(ctx->packet);
+    if (ctx->buffer)
+	free(ctx->buffer);
+    free(ctx);
 }
 /*}}}*/
 

@@ -14,6 +14,11 @@ typedef struct doit_ctx_tag doit_ctx;
 doit_ctx *doit_init_ctx(void *secret, int secret_len);
 
 /*
+ * Free a crypto context.
+ */
+void doit_free_ctx(doit_ctx *ctx);
+
+/*
  * Add perturbation data for nonce generation.
  */
 void doit_perturb_nonce(doit_ctx *ctx, void *data, int len);
