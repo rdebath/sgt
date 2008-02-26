@@ -508,6 +508,8 @@ int listener_newthread(SOCKET sock, int port, SOCKADDR_IN remoteaddr) {
 
 	    proc = start_process(cmdline, wait, output, currdir);
 	    if (proc.error) {
+		if (output)
+		    do_doit_send(sock, ctx, "\0", 1);
 		do_doit_send_str(sock, ctx, proc.error);
 		goto done;
 	    }
@@ -699,7 +701,7 @@ void showversion(int line, char *buffer)
     extern char doitlib_revision[], listener_revision[];
 
     if (line == 0)
-	v = "$Revision: 1.19 $", f = "doit.c";
+	v = "$Revision$", f = "doit.c";
     else if (line == 1)
 	v = doitlib_revision, f = "doitlib.c";
     else if (line == 2)
