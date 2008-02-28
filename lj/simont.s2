@@ -858,6 +858,8 @@ function EntryPage::print_comment (Comment c) {
 
     $lnk = $c->get_link("delete_comment");
     if ($lnk.url != "") { " | <a href='$lnk.url'>Delete</a>"; }
+    $lnk = $c->get_link("edit_comment");
+    if ($lnk.url != "") { " | <a href='$lnk.url'>Edit</a>"; }
     $lnk = $c->get_link("screen_comment");
     if ($lnk.url != "") { " | <a href='$lnk.url'>Screen</a>"; }
     $lnk = $c->get_link("unscreen_comment");
