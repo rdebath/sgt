@@ -466,9 +466,23 @@ function print_entry (Page p, Entry e, Color bgcolor, Color fgcolor, bool hide_t
 <tr bgcolor="$*weak_back"><td align='left' class='comments'>
 <a href="$e.permalink_url">$*text_permalink</a></td>""";
     if ($p.view != "entry" and $p.view != "reply") {
-        "<td align='right' class='comments'>"; $e.comments->print(); "</td>";
+        var Link lnk;
+        "<td align='right' class='comments'>";
+	$e.comments->print();
+	$lnk = $e->get_link("watch_comments");
+	if ($lnk.url != "") { " | <a href='$lnk.url'>Track</a>"; }
+	$lnk = $e->get_link("unwatch_comments");
+	if ($lnk.url != "") { " | <a href='$lnk.url'>Untrack</a>"; }
+	"</td>";
     } elseif ($e.comments.enabled) {
-        "<td align='right' class='comments'>"; $e.comments->print_postlink(); "</td>";
+        var Link lnk;
+        "<td align='right' class='comments'>";
+	$e.comments->print_postlink();
+	$lnk = $e->get_link("watch_comments");
+	if ($lnk.url != "") { " | <a href='$lnk.url'>Track</a>"; }
+	$lnk = $e->get_link("unwatch_comments");
+	if ($lnk.url != "") { " | <a href='$lnk.url'>Untrack</a>"; }
+	"</td>";
     } else {
         "<td></td>";
     }
@@ -553,7 +567,7 @@ function CommentInfo::print ()
     if (not $.enabled) { return; }
     if ($.count > 0 or $.screened) {
         "<b>"; $this->print_readlink(); "</b>";
-        "|";
+        " | ";
     }
     $this->print_postlink();
 }
@@ -864,6 +878,10 @@ function EntryPage::print_comment (Comment c) {
     if ($lnk.url != "") { " | <a href='$lnk.url'>Screen</a>"; }
     $lnk = $c->get_link("unscreen_comment");
     if ($lnk.url != "") { " | <a href='$lnk.url'>Unscreen</a>"; }
+    $lnk = $c->get_link("watch_thread");
+    if ($lnk.url != "") { " | <a href='$lnk.url'>Track</a>"; }
+    $lnk = $c->get_link("unwatch_thread");
+    if ($lnk.url != "") { " | <a href='$lnk.url'>Untrack</a>"; }
     """</tr></table></td></tr></table></td></tr></table></td></tr>""";
 }
 
