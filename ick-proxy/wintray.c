@@ -85,6 +85,7 @@ char *override_script = NULL;
 char *override_outpac = NULL;
 
 void configure(void);
+static void tray_shutdown(void);
 
 static void error(char *s)
 {
@@ -97,6 +98,7 @@ void platform_fatal_error(const char *s)
 {
     MessageBox(ickproxy_hwnd, s, ickproxy_appname, MB_OK | MB_ICONERROR);
     cleanup_sockets();
+    tray_shutdown();
     WSACleanup();
     exit(1);
 }
@@ -859,6 +861,7 @@ void configure(void)
     if (!outpac_file) {
 	error(err);
 	cleanup_sockets();
+	tray_shutdown();
 	WSACleanup();
 	exit(1);
     } else {
@@ -873,6 +876,7 @@ void configure(void)
 		err = dupfmt("Unable to write to \"%s\"", outpac_file);
 		error(err);
 		cleanup_sockets();
+		tray_shutdown();
 		WSACleanup();
 		exit(1);
 	    } else {
@@ -990,6 +994,7 @@ int WINAPI WinMain(HINSTANCE inst, HINSTANCE prev, LPSTR cmdline, int show)
     }
 
     cleanup_sockets();
+    tray_shutdown(); 
     WSACleanup();
     return msg.wParam;
 }
