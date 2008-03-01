@@ -6,6 +6,19 @@
 /*
  * Possible future extensions:
  * 
+ *  - improvements to existing methods
+ *     * the ptrace method on MacOS has the really unpleasant
+ * 	 property that if after is interrupted or killed then the
+ * 	 traced process dies too. We could mitigate that by
+ * 	 trapping some common fatal signals (certainly including
+ * 	 SIGINT and SIGTERM) and have them PT_DETACH before
+ * 	 self-reraising. Alternatively, we could fork off a
+ * 	 subprocess to do the tracing, and a pipe communicating
+ * 	 with the parent; then if the subprocess detected its pipe
+ * 	 end being closed it could PT_DETACH. Then even kill -9
+ * 	 against the primary `after' process would allow the
+ * 	 subprocess to clean up.
+ * 
  *  - alternatives to ptrace on systems supporting different
  *    process-debugging mechanisms
  * 
@@ -48,16 +61,52 @@ char *pname;
 
 #include <sys/ptrace.h>
 
+#if !defined PTRACE_FLAVOUR_LINUX && !defined PTRACE_FLAVOUR_BSD
+/*
+ * Attempt to autodetect ptrace flavour.
+ */
+#if defined PTRACE_ATTACH
+
+/*
+ * Linux flavour.
+ */
+#define ATTACH_TO(pid) ptrace(PTRACE_ATTACH, pid, NULL, 0)
+#define ATTACH_STR "ptrace(PTRACE_ATTACH, %d)"
+#define CONTINUE(pid) ptrace(PTRACE_CONT, pid, NULL, 0)
+#define CONT_STR "ptrace(PTRACE_CONT, %d)"
+
+#elif defined PT_ATTACH
+
+/*
+ * BSD/MacOS flavour.
+ */
+#define ATTACH_TO(pid) ptrace(PT_ATTACH, pid, NULL, 0)
+#define ATTACH_STR "ptrace(PT_ATTACH, %d)"
+#define CONTINUE(pid) ptrace(PT_CONTINUE, pid, (caddr_t)1, 0)
+#define CONT_STR "ptrace(PT_CONTINUE, %d)"
+
+#else
+#error Unable to autodetect ptrace flavour.
+#endif /* ptrace flavour detection */
+
+#endif /* outer ifdef containing flavour detection */
+
 int after_ptrace(int pid)
 {
-    if (ptrace(PTRACE_ATTACH, pid, NULL, 0) < 0) {
+    if (
+#ifdef PTRACE_FLAVOUR_LINUX
+	ptrace(PTRACE_ATTACH, pid, NULL, 0)
+#else
+	ptrace(PT_ATTACH, pid, NULL, 0)
+#endif
+	< 0) {
 	/*
 	 * If we can't attach to the process, that's not a fatal
 	 * error; it just means we fall back to the next available
 	 * method.
 	 */
 	errlen += sprintf(errbuf+errlen,
-			  "%s: ptrace(PTRACE_ATTACH, %d): %.256s\n",
+			  "%s: "ATTACH_STR": %.256s\n",
 			  pname, pid, strerror(errno));
 	return -1;
     }
@@ -76,8 +125,9 @@ int after_ptrace(int pid)
 	} else if (WIFEXITED(wstatus)) {
 	    return WEXITSTATUS(wstatus);
 	} else {
-	    if (ptrace(PTRACE_CONT, pid, NULL, 0) < 0) {
-		perror("ptrace(PTRACE_CONT)");
+	    if (CONTINUE(pid) < 0) {
+		fprintf(stderr, "%s: "CONT_STR": %.256s\n",
+			pname, pid, strerror(errno));
 		return 127;
 	    }
 	}
