@@ -1,0 +1,52 @@
+Summary: Support UTF-16 on Windows
+Class: wish
+Difficulty: tricky
+Priority: low
+Content-type: text/x-html-body
+
+<p>
+Josef Hinteregger reports that the <code>CF_UNICODETEXT</code> data
+stored by Windows in the clipboard is encoded in UTF-16; that is, it
+can contain surrogate pairs representing characters outside the BMP.
+PuTTY does not currently interpret those pairs. Of course, if it
+did, it would also have to be able to write them out again when
+copying to the clipboard itself or talking to the Windows GDI text
+display primitives, etc.
+
+<p>
+I can see two sensible ways to solve this. One is to do translation to
+and from UTF-16 on the platform side of the front end interface, if
+necessary for a given platform. So:
+<ul>
+<li>
+Stop using platform-sized <code>wchar_t</code> anywhere in the front
+end interface: change the prototypes of <code>get_clip()</code>,
+<code>write_clip()</code>, <code>luni_send()</code> and
+<code>do_text()</code> (and any others I've missed) so that they use
+arrays of <code>unsigned int</code> (containing UTF-32) rather than
+<code>wchar_t</code>.
+<li>
+In the implementations of all those functions on the Windows front
+end, implement the appropriate translation between UTF-32 and UTF-16.
+<li>
+Any other platform front ends which use UTF-16 will need to be
+similarly modified.
+</ul>
+
+<p>
+The other option is to do the UTF-32/UTF-16 translation on the
+cross-platform side (<code>terminal.c</code> and
+<code>ldisc.c</code>), and have it enabled or disabled by a
+<code>#define</code> in each platform header file. (The
+<code>#define</code> is certainly necessary: partly because we
+shouldn't accept UTF-16 surrogate pairs coming from front ends which
+are supposed to be speaking UTF-32, on the usual grounds of not
+accepting redundant encodings, but mostly because
+<code>terminal.c</code> will obviously need to know whether to
+<em>send</em> surrogate pairs when sending Unicode data back to the
+front end!)
+
+<p>
+I'm currently inclined to the first option, because UTF-16 is nasty
+and I'd rather it complicated only those front ends that had to deal
+with it than that it complicated the core code.
