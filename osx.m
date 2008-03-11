@@ -286,6 +286,18 @@ NSMenuItem *newitem(NSMenu *parent, char *title, char *key,
 
 @end
 
+/*
+ * setAppleMenu isn't listed in the NSApplication header, but an
+ * NSApp responds to it, so we're adding it here to silence
+ * warnings. (This was removed from the headers in 10.4, so we
+ * only need to include it for 10.4+.)
+ */
+#if MAC_OS_X_VERSION_MAX_ALLOWED >= 1040
+@interface NSApplication(NSAppleMenu)
+- (void)setAppleMenu:(NSMenu *)menu;
+@end
+#endif
+
 /* ----------------------------------------------------------------------
  * Main program. Constructs the menus and runs the application.
  */
