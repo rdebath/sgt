@@ -1,3 +1,5 @@
+# -*- makefile -*-
+
 !name ick-proxy
 
 !makefile unix Makefile
@@ -21,4 +23,21 @@ unixdoc.html: manpage0.but icklang.but manpage1.but
 	halibut --html=unixdoc.html manpage0.but icklang.but manpage1.but
 guidoc.html: gui0.but icklang.but gui1.but
 	halibut --html=guidoc.html gui0.but icklang.but gui1.but
+!end
+
+# Makefile fragment to build the OS X .dmg release archive.
+!begin osx
+release: ick-proxy.dmg
+ick-proxy.dmg: ick-proxy-application
+	rm -f raw.dmg
+	hdiutil create -megabytes 5 -layout NONE raw.dmg
+	hdid -nomount raw.dmg > devicename
+	newfs_hfs -v "ick-proxy distribution image" `cat devicename`
+	hdiutil eject `cat devicename`
+	hdid raw.dmg | cut -f1 -d' ' > devicename
+	cp -R ick-proxy.app /Volumes/"ick-proxy distribution image"
+	hdiutil eject `cat devicename`
+	rm -f ick-proxy.dmg
+	hdiutil convert -format UDCO raw.dmg -o ick-proxy.dmg
+	rm -f raw.dmg devicename
 !end

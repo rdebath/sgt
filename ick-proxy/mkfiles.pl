@@ -1363,7 +1363,8 @@ if (defined $makefiles{'osx'}) {
     &splitline("CFLAGS = -O2 -Wall -Werror -g " .
 	       (join " ", map {"-I$dirpfx$_"} @srcdirs))."\n".
     "LDFLAGS = -framework Cocoa\n".
-    &splitline("all:" . join "", map { " $_" } &progrealnames("MX:U")) .
+    &splitline("all:" . join "", map { " $_-application" } &progrealnames("MX"),
+	map { " $_" } &progrealnames("MU")) .
     "\n" .
     $makefile_extra{'osx'} .
     "\n".
@@ -1388,7 +1389,7 @@ if (defined $makefiles{'osx'}) {
 	$targets .= " ${prog}.app/Contents/Info.plist";
       }
       $targets .= " \$(${prog}_extra)";
-      print &splitline("${prog}: $targets", 69) . "\n\n";
+      print &splitline("${prog}-application: $targets", 69) . "\n\n";
       $libstr = &objects($p, undef, undef, "-lX");
       $archbins = "";
       foreach $arch (@osxarchs) {
