@@ -202,7 +202,21 @@ NSMenuItem *newitem(NSMenu *parent, char *title, char *key,
     [tf setBordered:NO];
     [tf setDrawsBackground:NO];
     [tf setFont:font1];
-    [tf setStringValue:[NSString stringWithCString:"2.0"]];
+    {
+	/*
+	 * This string is edited by the bob build script to show
+	 * the Subversion revision number used in the checkout.
+	 * 
+	 * At least, I hope so.
+	 */
+	char *revision = "Revision ~SVNREVISION~";
+	if (revision[9] == '~') {
+	    /* If not, we fall back to this. */
+	    [tf setStringValue:[NSString stringWithCString:"Unspecified revision"]];
+	} else {
+	    [tf setStringValue:[NSString stringWithCString:revision]];
+	}
+    }
     [tf sizeToFit];
     views[nviews++] = tf;
 

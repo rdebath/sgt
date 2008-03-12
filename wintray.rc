@@ -15,8 +15,6 @@ BEGIN
     DEFPUSHBUTTON "&Close", IDOK, 82, 68, 48, 14
     PUSHBUTTON "View &Licence", 112, 6, 68, 70, 14
     CTEXT "ick-proxy", 110, 10, 6, 120, 8
-    CTEXT "", 100, 10, 16, 120, 16
-    CTEXT "", 101, 10, 24, 120, 16
     CTEXT "", 102, 10, 32, 120, 16
     CTEXT "\251 2004-2008 Simon Tatham. All rights reserved.",
           111, 10, 50, 120, 16
