@@ -4,7 +4,7 @@ import math
 import os
 import sys
 
-limit = 20
+limit = 12
 
 grid = {}
 
@@ -239,6 +239,21 @@ elif arg == "badmega":
     whoosh(0, 2, -1, 0, lambda T: t+T); t = t + 1
     yaxis = xaxis = 1
 
+elif arg == "fwargle":
+    startpos = lambda x,y: 0
+    def recurse(y,t0,t1):
+	if y < -limit:
+	    return
+	bounce(0,y,0,-1,t0+(t1-t0)*0.95)
+	recurse(y-2, t0+(t1-t0)*0.45, t0+(t1-t0)*0.9)
+	recurse(y-1, t0, t0+(t1-t0)*0.45)
+    ymin = -limit
+    ymax = +1
+    xmin = -1
+    xmax = +1
+    recurse(0,0,10)
+    t = 10
+
 # Now check that we have a consistent story for each individual peg
 # position within the region we'll end up displaying. In
 # chronological order, we expect to alternate ONs and OFFs; we
@@ -340,7 +355,7 @@ for i in range(len(images)):
     if len(images) > 1:
         cmdline = cmdline + " -delay %d" % delay
     cmdline = cmdline + " %s" % images[i][1]
-cmdline = cmdline + " gif:- | gifsicle --optimize > %s.gif" % arg
+cmdline = cmdline + " gif:- > %s.gif" % arg
 if debug:
     print cmdline
 os.system(cmdline)
