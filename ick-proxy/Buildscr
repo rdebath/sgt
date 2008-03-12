@@ -9,6 +9,11 @@ in ick-proxy do perl mkfiles.pl
 # Build the documentation.
 in ick-proxy do make doc
 
+# Substitute the SVN revision into the source files which give the
+# version number.
+in ick-proxy do perl -i~ -pe 's/~SVNREVISION~/$(revision)/' *.[cm]
+in ick-proxy do rm -f *~
+
 # Make the Unix source tarball, which should contain everything out
 # of Subversion plus the ready-built makefiles and documentation.
 in . do tar czvf ick-proxy.tar.gz ick-proxy

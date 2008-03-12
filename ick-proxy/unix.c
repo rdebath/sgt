@@ -81,7 +81,19 @@ void licence(void) {
 }
 
 void version(void) {
-    printf("ick-proxy version 2.0\n");
+    /*
+     * This string is edited by the bob build script to show the
+     * Subversion revision number used in the checkout.
+     * 
+     * At least, I hope so.
+     */
+    char *revision = "~SVNREVISION~";
+    if (revision[0] == '~') {
+	/* If not, we fall back to this. */
+	printf("ick-proxy, unspecified revision\n");
+    } else {
+	printf("ick-proxy revision %s\n", revision);
+    }
 }
 
 #ifndef NO_X11

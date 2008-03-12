@@ -387,9 +387,21 @@ static void tray_shutdown(void)
 static int CALLBACK LicenceProc(HWND hwnd, UINT msg,
 				WPARAM wParam, LPARAM lParam);
 
-void showversion(int line, char *buffer)
+void showversion(char *buffer)
 {
-    sprintf(buffer, "%s version 2.0");
+    /*
+     * This string is edited by the bob build script to show the
+     * Subversion revision number used in the checkout.
+     * 
+     * At least, I hope so.
+     */
+    char *revision = "~SVNREVISION~";
+    if (revision[0] == '~') {
+	/* If not, we fall back to this. */
+	sprintf(buffer, "Unspecified revision");
+    } else {
+	sprintf(buffer, "Revision %s", revision);
+    }
 }
 
 static int CALLBACK AboutProc(HWND hwnd, UINT msg,
@@ -398,11 +410,7 @@ static int CALLBACK AboutProc(HWND hwnd, UINT msg,
     char vbuf[160];
     switch (msg) {
       case WM_INITDIALOG:
-	showversion(0, vbuf);
-	SetDlgItemText(hwnd, 100, vbuf);
-	showversion(1, vbuf);
-	SetDlgItemText(hwnd, 101, vbuf);
-	showversion(2, vbuf);
+	showversion(vbuf);
 	SetDlgItemText(hwnd, 102, vbuf);
 	return 1;
       case WM_COMMAND:
