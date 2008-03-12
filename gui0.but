@@ -11,7 +11,7 @@ in multiple formats, depending on the URL. For example,
 \W{http://news.bbc.co.uk/}{BBC News} supplies all of its articles in
 a simple version without too much fancy HTML, and in a highly
 formatted version with additional borders and links round the sides.
-The simple versions of the pages have \cq{/lo/} in the URL, and the
+The simple versions of the pages have \cq{/low/} in the URL, and the
 complicated ones have \cq{/hi/}.
 
 You might have a strong preference for one of these formats over
@@ -36,7 +36,7 @@ deal with such a website on a regular basis, it would be convenient
 if you could configure your web browser to do the same job itself:
 whenever you click on a link pointing at (let us say) a BBC News
 article with \cq{/hi/} somewhere in the URL, to modify the URL so
-that \cq{/hi/} is replaced with \cq{/lo/}.
+that \cq{/hi/} is replaced with \cq{/low/}.
 
 \cw{ick-proxy} can do this for you, in a manner largely independent
 of your web browser. It offers a general mechanism for you to
