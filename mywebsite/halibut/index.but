@@ -178,4 +178,4 @@ You can see what branches exist using the command \c{svn ls
 svn://svn.tartarus.org/sgt}.
 
 Alternatively, you can browse the Subversion repository on the WWW,
-\W{http://www.tartarus.org/~simon-anonsvn/viewcvs.cgi/halibut}{here}.
+\W{http://svn.tartarus.org/halibut}{here}.
