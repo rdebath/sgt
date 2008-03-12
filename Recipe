@@ -41,3 +41,12 @@ ick-proxy.dmg: ick-proxy-application
 	hdiutil convert -format UDCO raw.dmg -o ick-proxy.dmg
 	rm -f raw.dmg devicename
 !end
+
+# Unix `make install' target.
+!begin unix
+install: ick-proxy ick-proxy.1
+	-mkdir -p $(bindir)
+	$(INSTALL_PROGRAM) ick-proxy $(bindir)/ick-proxy
+	-mkdir -p $(man1dir)
+	$(INSTALL_DATA) ick-proxy.1 $(man1dir)/ick-proxy.1
+!end
