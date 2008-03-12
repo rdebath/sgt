@@ -1,0 +1,34 @@
+# -*- sh -*-
+# Build script to build ick-proxy.
+
+module ick-proxy
+
+# Create the makefiles.
+in ick-proxy do perl mkfiles.pl
+
+# Build the documentation.
+in ick-proxy do make doc
+
+# Make the Unix source tarball, which should contain everything out
+# of Subversion plus the ready-built makefiles and documentation.
+in . do tar czvf ick-proxy.tar.gz ick-proxy
+
+# Build an OS X .dmg archive.
+delegate osx
+  in ick-proxy do make -f Makefile.osx clean
+  in ick-proxy do make -f Makefile.osx release
+  return ick-proxy/ick-proxy.dmg
+enddelegate
+
+# Build the Windows binary.
+delegate windows
+  in ick-proxy do cmd /c 'vcvars32 & nmake -f Makefile.vc clean'
+  in ick-proxy do cmd /c 'vcvars32 & nmake -f Makefile.vc'
+  return ick-proxy/ick-proxy.exe
+enddelegate
+
+# Done. Deliver everything.
+deliver ick-proxy/*.html $@
+deliver ick-proxy/ick-proxy.exe $@
+deliver ick-proxy/ick-proxy.dmg $@
+deliver ick-proxy.tar.gz $@ # that file is one level further up
