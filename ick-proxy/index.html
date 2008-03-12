@@ -1,0 +1,167 @@
+<html> <!-- -*- svn -*- -->
+<head>
+<title>ick-proxy: a disgusting cross-browser URL rewriting tool</title>
+</head>
+<link rel="stylesheet" type="text/css" href="../sitestyle.css" name="Simon Tatham's Home Page Style">
+<body>
+<h1 align=center><code>ick-proxy</code></h1>
+
+<p align=center><i>a disgusting cross-browser URL rewriting tool</i>
+
+<h2>Introduction</h2>
+
+<p>
+<code>ick-proxy</code> is a utility which works with your web
+browser to rewrite specified kinds of URL before you visit them. For
+example, you could use it to ensure that whenever you follow a
+link to a
+<a href="http://news.bbc.co.uk/">BBC News</a>
+article, you always see it in the high-graphics version (with
+"<code>/hi/</code>" in the URL) even if the link you followed was
+actually to the low-graphics version (with "<code>/low/</code>"). Or
+vice versa.
+
+<p>
+Other tools exist to do this type of job for particular web
+browsers.
+<code>ick-proxy</code>
+is the only one I know of which is not specific to a single web
+browser.
+
+<p>
+However, the mechanism by which it does so is utterly disgusting
+(hence its name). Briefly, it implements a custom web proxy which
+forges HTTP 302 redirections for any URL that needs rewriting, and
+provides your browser with a
+<a href="http://homepages.tesco.net./~J.deBoynePollard/FGA/web-browser-auto-proxy-configuration.html">Proxy Auto-Configuration</a>
+file which ensures that only URLs requiring rewriting are sent to
+that proxy. It does all this at the direction of a configuration
+script written in a small custom-designed language. For more
+details, see the documentation (links given below).
+
+<p>
+In spite of the sheer unpleasantness of this design, however, it
+seems to be basically robust: I have been running versions of it
+myself since 2004 and it's never caused me any trouble.
+
+<p>
+<code>ick-proxy</code>
+runs on Windows, Mac OS X, and Unix.
+
+<p>Caveats:
+<ul>
+<li>The user configuration for
+<code>ick-proxy</code>
+is written as a program, in a C-like programming language.
+Therefore, in order to use
+<code>ick-proxy</code>
+at all, you need to either be able to program or be able to persuade
+someone else to write your configuration for you.
+<li>I have personally got
+<code>ick-proxy</code>
+to work with
+<a href="http://www.mozilla.com/firefox/">Firefox</a>,
+<a href="http://www.gnome.org/projects/epiphany/">Epiphany</a>
+and
+<a href="http://www.apple.com/safari/">Safari</a>.
+I have not got it to work with
+<a href="http://www.microsoft.com/windows/products/winfamily/ie/default.mspx">Internet Explorer</a>,
+although I don't know for sure that it's impossible. I would welcome
+a more thorough investigation of this.
+</ul>
+
+<h2>Documentation</h2>
+
+<p>
+You can read the documentation for
+<code>ick-proxy</code>
+on the web here:
+
+<blockquote>
+<p>
+<a href="guidoc.html">Manual for the Windows and Mac OS X versions</a>
+<br>
+<a href="unixdoc.html"><code>man</code> page for the Unix version</a>
+</blockquote>
+
+<h2>Download</h2>
+
+<p>
+A Unix source archive of
+<code>ick-proxy</code>
+is available here:
+
+<blockquote>
+<p>
+<a href="ick-proxy.tar.gz"><code>ick-proxy.tar.gz</code></a>
+</blockquote>
+
+<p>
+A Windows binary of
+<code>ick-proxy</code>
+is available here:
+
+<blockquote>
+<p>
+<a href="ick-proxy.exe"><code>ick-proxy.exe</code></a>
+</blockquote>
+
+<p>
+A Mac OS X disk image containing a Mac binary of
+<code>ick-proxy</code>
+is available here:
+
+<blockquote>
+<p>
+<a href="ick-proxy.dmg"><code>ick-proxy.dmg</code></a>
+</blockquote>
+
+<p>
+If you want to see the latest state of development, you can check
+the development sources out from my Subversion repository.
+
+<p>
+The Subversion URL you need is
+<code>svn://svn.tartarus.org/sgt/ick-proxy</code>. So you could use a
+checkout command such as this:
+<pre><code>svn co svn://svn.tartarus.org/sgt/ick-proxy</code></pre>
+
+<p>
+Alternatively, you can browse the Subversion repository on the WWW,
+<a href="http://www.tartarus.org/~simon-anonsvn/viewcvs.cgi/ick-proxy/">here</a>.
+</p>
+
+<h2>Feedback</h2>
+
+<p>
+Please report bugs to
+<a href="mailto:&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;">&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;</a>.
+
+<p>
+You might find it helpful to read
+<a href="../bugs.html">this article</a>
+before reporting a bug.
+
+<p>
+Patches are welcome.
+
+<p>
+Also welcome (as mentioned above) would be any reports on whether or
+not
+<code>ick-proxy</code>
+works with MS Internet Explorer. I didn't manage to get it to work
+myself, but I only tried briefly, and it's entirely possible that
+the problem was me not configuring IE correctly. I would welcome a
+definitive report on whether or not it works, and how to set it up
+if it does.
+
+<hr>
+(comments to <a href="mailto:&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;">&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;</a>)
+<br>
+(thanks to
+<a href="http://www.chiark.greenend.org.uk/">chiark</a>
+for hosting this page)
+<br>
+(last modified on <!--LASTMOD-->[insert date here]<!--END-->)
+</body>
+</html>
