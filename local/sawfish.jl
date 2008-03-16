@@ -131,19 +131,19 @@
 ;; This function contains the knowledge of which window types we do
 ;; not want to unexpectedly take focus away from.
 (define (sgt-keeps-focus-p w)
-  (or (equal (caddr (get-x-property w 'WM_CLASS))
-              "putty\0Putty\0")
-      (equal (caddr (get-x-property w 'WM_CLASS))
-              "pterm\0Pterm\0")
-  )
+  (let ((class (caddr (get-x-property w 'WM_CLASS))))
+    (or (equal class "putty\0Putty\0")
+        (equal class "pterm\0Pterm\0")
+  ))
 )
 
 ;; This function contains knowledge about window types which I
 ;; don't want to focus just because of mouse movements.
 (define (sgt-no-focus-on-mouse-p w)
-  (or (equal (caddr (get-x-property w 'WM_CLASS))
-              "panel_window\0Panel\0")
-  )
+  (let ((class (caddr (get-x-property w 'WM_CLASS))))
+    (or (equal class "panel_window\0Panel\0")
+        (equal class "gnome-panel\0Gnome-panel\0")
+  ))
 )
 
 ;; Hook called when a window is mapped, which stashes the new window
