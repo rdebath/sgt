@@ -3,14 +3,15 @@
 # reservoir -- read stdin until EOF, and _then_ write it all to stdout.
 
 $usage =
-  "usage: reservoir [ -o file ]\n".
-  "where: -o file                open and write to file after end of input\n".
+  "usage: reservoir [ -o file | -O file ]\n".
+  "where: -O file                open and write to file after end of input\n".
+  "       -o file                same, but only if output is non-empty\n".
   " also: reservoir --version    report version number\n" .
   "       reservoir --help       display this help text\n" .
   "       reservoir --licence    display (MIT) licence text\n";
 
 $licence =
-  "reservoir is copyright 2005 Simon Tatham.\n" .
+  "reservoir is copyright 2005,2008 Simon Tatham.\n" .
   "\n" .
   "Permission is hereby granted, free of charge, to any person\n" .
   "obtaining a copy of this software and associated documentation files\n" .
@@ -33,6 +34,7 @@ $licence =
   "SOFTWARE.\n";
 
 $outputfile = undef;
+$allowemptyoutput = 0;
 
 while ($_=shift @ARGV) {
   last if /^--$/;
@@ -51,10 +53,11 @@ while ($_=shift @ARGV) {
   } elsif ($arg eq "-licence" or $arg eq "-license") {
     print $licence;
     exit 0;
-  } elsif ($arg =~ /^o(.*)$/) {
-    $outputfile = $1;
+  } elsif ($arg =~ /^([oO])(.*)$/) {
+    $allowemptyoutput = ($1 eq "O");
+    $outputfile = $2;
     $outputfile = shift @ARGV if $outputfile eq "";
-    die "reservoir: expected file name after '-o'\n" if $outputfile eq "";
+    die "reservoir: expected file name after '-$1'\n" if $outputfile eq "";
   } else {
     die "reservoir: unrecognised option '-$arg'\n";
   }
@@ -67,6 +70,7 @@ $data = '';
 $data .= $_ while <STDIN>;
 
 if (defined $outputfile) {
+    exit unless length($data) or $allowemptyoutput;
     open OUT, ">$outputfile" or die "$outputfile: open: $!\n";
     select OUT;
 }

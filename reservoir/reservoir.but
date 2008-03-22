@@ -1,4 +1,4 @@
-\cfg{man-identity}{reservoir}{1}{2005-05-13}{Simon Tatham}{Simon Tatham}
+\cfg{man-identity}{reservoir}{1}{2008-03-22}{Simon Tatham}{Simon Tatham}
 
 \title Man page for \cw{reservoir}
 
@@ -8,8 +8,8 @@
 
 \U SYNOPSIS
 
-\c reservoir [ -o filename ]
-\e bbbbbbbbb   bb iiiiiiii
+\c reservoir [ -o filename | -O filename ]
+\e bbbbbbbbb   bb iiiiiiii   bb iiiiiiii
 
 \U DESCRIPTION
 
@@ -22,11 +22,19 @@ writes none of its outgoing data until all of its input has arrived.
 
 \U OPTIONS
 
-\dt \cw{-o} \e{filename}
+\dt \cw{-O} \e{filename}
 
 \dd Causes the output to be written to \e{filename} rather than to
 standard output. \e{filename} is not opened until after
 \cw{reservoir} detects end of file on its input.
+
+\dt \cw{-o} \e{filename}
+
+\dd Exactly like \cw{-O}, but with one special case: if there is no
+output at all to be written, \cw{reservoir} will not open the output
+file for writing at all. Hence, if the process which is supposed to
+generate the output completely fails to run, \e{filename} will not
+be overwritten.
 
 \U EXAMPLES
 
@@ -90,9 +98,12 @@ Now \cw{reservoir} will not open \cw{temp.txt} for output until
 
 (This is not a reliable means of editing files in place. If
 something goes wrong half way through writing the output, part of
-your data will be lost. Also, the file is not replaced atomically.
-This method is very convenient in non-critical situations, but is
-not recommended for critical or automated use.)
+your data will be lost, although the default behaviour of \cw{-o}
+will at least avoid overwriting the file if something goes wrong
+\e{before} the output begins to be written. Also, the file is not
+replaced atomically. This method is very convenient in non-critical
+situations, such as when the target file is backed up in source
+control, but is not recommended for critical or automated use.)
 
 Another use for \cw{-o} is for requesting a list of files using
 \c{find}(1) or \c{ls}(1), without the output file appearing in the
