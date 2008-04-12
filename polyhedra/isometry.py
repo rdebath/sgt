@@ -14,6 +14,9 @@
 #
 # so that (A,B,C) is the image vector of (1,0,0), (D,E,F) that of
 # (0,1,0), and (G,H,I) that of (0,0,1).
+#
+# A further three arguments may be given; if present, they are
+# treated as a translation vector.
 
 import sys
 import string
@@ -32,6 +35,11 @@ else:
         s = args[0]
         args = args[1:]
         matrix.append(eval(s))
+    if len(args) >= 3:
+        for i in range(3):
+            s = args[0]
+            args = args[1:]
+            matrix.append(eval(s))
 
 # Check the matrix is orthogonal, or close enough.
 def check(x, y):
@@ -73,21 +81,25 @@ else:
 
 def realprint(a):
     for i in range(len(a)):
-	outfile.write(str(a[i]))
-	if i < len(a)-1:
-	    outfile.write(" ")
-	else:
-	    outfile.write("\n")
+        outfile.write(str(a[i]))
+        if i < len(a)-1:
+            outfile.write(" ")
+        else:
+            outfile.write("\n")
 
 def polyprint(*a):
     realprint(a)
 
-def transform(point, matrix=matrix):
+def transform(point, translate, matrix=matrix):
     x, y, z = point
-    a, b, c, d, e, f, g, h, i = matrix
+    a, b, c, d, e, f, g, h, i = matrix[:9]
     x1 = a*x + d*y + g*z
     y1 = b*x + e*y + h*z
     z1 = c*x + f*y + i*z
+    if translate and len(matrix) > 9:
+        x1 = x1 + matrix[9]
+        y1 = y1 + matrix[10]
+        z1 = z1 + matrix[11]
     return x1, y1, z1
 
 lineno = 0
@@ -103,7 +115,7 @@ while 1:
             outfile.write(facestr)
             facestr = ""
         point = (string.atof(sl[2]), string.atof(sl[3]), string.atof(sl[4]))
-        p2 = transform(point)
+        p2 = transform(point, sl[0]=="point")
         x, y, z = p2
         polyprint(sl[0], sl[1], x, y, z)
     elif sl[0] == "face" and reflection:
