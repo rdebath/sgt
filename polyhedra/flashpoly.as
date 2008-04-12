@@ -248,14 +248,6 @@ class Application {
        lastframetime = newtime;
 
        /*
-	* FIXME: when debugging finished, remove the text field
-	* and move the clear instruction down to the display loop.
-	*/
-       _root.clear();
-       _root.createTextField("hello", 1, 10, 10, 280, 20);
-       _root.hello.text = "";
-
-       /*
 	* Update the angular velocity of the solid if a drag has
 	* taken place. Otherwise, leave the angular velocity the
 	* way it was in the previous frame so that the solid keeps
@@ -367,9 +359,6 @@ class Application {
 
 	   /*
 	    * Perspective transform.
-	    *
-	    * FIXME: we'll need flashpoly.py to scale the whole
-	    * polyhedron to bound its radius by 1.
 	    */
 	   var px = newpt.x / (pdistance + newpt.z);
 	   var py = newpt.y / (pdistance + newpt.z);
@@ -414,6 +403,7 @@ class Application {
        /*
 	* Now we're ready to actually render the faces.
 	*/
+       _root.clear();
        for (var phase = 0; phase < 2; phase++) {
 	   if (phase == 0) {
 	       _root.lineStyle(1, 0x808080, 100, true, "normal", "round", "round");
