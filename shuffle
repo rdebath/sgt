@@ -5,16 +5,26 @@
 
 import random
 import sys
+import errno
 
 lines = []
 while 1:
     s = sys.stdin.readline()
     if s == "":
-	break;
+	break
     if s[-1:] != "\n":
 	s = s + "\n"
     lines.append(s)
 
 random.shuffle(lines)
-for line in lines:
-    sys.stdout.write(line)
+try:
+    for line in lines:
+	sys.stdout.write(line)
+except IOError, e:
+    # This typically means `broken pipe', i.e. we've been piped
+    # into head or some such. Don't panic; just calmly shut down.
+    if e.errno == errno.EPIPE:
+        sys.exit(0)
+    else:
+        raise e
+
