@@ -3,8 +3,6 @@
  * 
  * TODO:
  *
- *  - pause mode.
- *
  *  - make Pentris colours more sensible. With the reflect
  *    operation available, enantiomorphic pairs are functionally
  *    identical, so they should be the same colour. They're still
