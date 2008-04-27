@@ -2,19 +2,36 @@
  * ntris - a Tetris clone.
  * 
  * TODO:
- *  - weird flicker on focus-in; for starters, check all the event
- *    handlers are returning the right boolean. Some aren't
- *    returning anything at all, which may be the problem.
- *  - make up colours for Pentris pieces.
- *  - configurable playing area size.
- *  - skew randomness of Pentris pieces.
- *  - configurable window size to match playing area.
- *  - draw Next Piece in a place that works sensibly with playing area.
- *  - keep score.
- *  - track end-of-game, and enable restarts later.
- *  - timed dropping! Duh!
+ *
  *  - pause mode.
- *  - GTK front end. Menus, config box.
+ *
+ *  - make Pentris colours more sensible. With the reflect
+ *    operation available, enantiomorphic pairs are functionally
+ *    identical, so they should be the same colour. They're still
+ *    allowed to arrive in a random handedness, I think, but they
+ *    shouldn't be coloured as if that makes them distinct piece
+ *    types.
+ *
+ *  - skew randomness of Pentris pieces? On the one hand it hardly
+ *    seems fair to give double priority to chiral pieces, but on
+ *    the other hand "fixing" that would give more priority to the
+ *    X, and nobody wants that. Perhaps skewing in a way related
+ *    to the nastiness of the pieces would be better? (In favour
+ *    of less nastiness, probably, not more.)
+ *
+ *  - acceleration as you get further through the game. (Optional,
+ *    perhaps, since Pentris tends to be hard enough without it.)
+ *
+ *  - In Tetris Worlds fashion, perhaps, more leniency in the
+ *    positioning of a piece after rotate/reflect? It's irritating
+ *    to try to rotate a piece and find you have to move it
+ *    further away from the wall to do so, and irritating to have
+ *    to _remember_ all the pieces' notional centres of gravity in
+ *    order to predict when that'll happen.
+ *
+ *  - scoring system which rewards creative use of out-of-sequence
+ *    line clearing?
+ *
  *  - perhaps bizarre mission-type play?
  *     * Weird playing conditions:
  *        + pre-placed junk at bottom (can be dense or sparse)
