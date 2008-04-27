@@ -19,7 +19,7 @@
 
 static int no_quit_option = 0;
 
-static int puttext(int x, int y, int c, char const *text)
+static void puttext(int x, int y, int c, char const *text)
 {
     int i, ix, iy;
     int ch;
@@ -36,7 +36,7 @@ static int puttext(int x, int y, int c, char const *text)
     }
 }
 
-static int centretext(int y, int c, char const *text)
+static void centretext(int y, int c, char const *text)
 {
     puttext(160-4*(strlen(text)), y, c, text);
 }
@@ -51,7 +51,7 @@ static void lineplotsimple(void *ctx, int x, int y)
     plotc(x, y, colour);
 }
 
-static int drawline(int x1, int y1, int x2, int y2, int c)
+static void drawline(int x1, int y1, int x2, int y2, int c)
 {
     line(x1, y1, x2, y2, lineplotsimple, (void *)c);
 }
