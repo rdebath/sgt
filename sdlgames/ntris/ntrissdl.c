@@ -12,6 +12,13 @@
 
 #include "ntris.h"
 
+#ifndef TRUE
+#define TRUE 1
+#endif
+#ifndef FALSE
+#define FALSE 0
+#endif
+
 #define SQUARE_SIDE 8
 #define HIGHLIGHT 2
 #define PLAY_HEIGHT (SCR_HEIGHT / SQUARE_SIDE - 1)
@@ -208,7 +215,7 @@ enum {
     ACT_LEFT, ACT_FASTLEFT,
     ACT_RIGHT, ACT_FASTRIGHT,
     ACT_SOFTDROP, ACT_REFLECT, ACT_ANTICLOCK, ACT_CLOCKWISE,
-    ACT_HOLD, ACT_HARDDROP
+    ACT_HOLD, ACT_HARDDROP, ACT_PAUSE
 };
 
 #define repeating_action(a) \
@@ -222,7 +229,7 @@ static const int actions[4+10] = {
     /* L1, R1, L2, R2 */
     ACT_HOLD, ACT_HOLD, -1, -1,
     /* select, start */
-    -1, -1
+    -1, ACT_PAUSE
 };
 
 static const struct { int key, action; } keys[] = {
@@ -237,6 +244,7 @@ static const struct { int key, action; } keys[] = {
     {SDLK_LSHIFT, ACT_HOLD},
     {SDLK_TAB, ACT_HOLD},
     {SDLK_SPACE, ACT_HARDDROP},
+    {SDLK_p, ACT_PAUSE},
 };
 
 static void do_score(int y, char *title, int score, int evenifzero)
@@ -267,6 +275,14 @@ static void do_scores(struct ntris_instance *ti)
     do_score(156, "Pentris", ntris_get_score(ti, SCORE_PENTRIS), 0);
 }
 
+static void do_pause_indicator(int paused)
+{
+    if (paused)
+	puttext(10, 172, 255, "PAUSED");
+    else
+	puttext(10, 172, 0, "\377\377\377\377\377\377");
+}
+
 static void play_game(void)
 {
     struct ntris_instance *ti;
@@ -274,6 +290,7 @@ static void play_game(void)
     int prevpressed[4+10], pressed[4+10];
     int dropinterval, untildrop;
     int dropinhibit;
+    int paused = FALSE;
     int i, j;
 
     scr_prep();
@@ -307,7 +324,7 @@ static void play_game(void)
      */
     while (1) {
 	int left, right, anticlock, clockwise, reflect;
-	int dropsoft, drophard, hold;
+	int dropsoft, drophard, hold, pause;
 	int dx, dy;
 	SDL_Event event;
 
@@ -356,7 +373,7 @@ static void play_game(void)
 		pressed[4+i] = 1;
 
 	left = right = anticlock = clockwise = 0;
-	reflect = dropsoft = drophard = hold = 0;
+	reflect = dropsoft = drophard = hold = pause = 0;
 
 	for (i = 0; i < lenof(pressed); i++) {
 	    int tmp = pressed[i];
@@ -382,6 +399,8 @@ static void play_game(void)
 		drophard = 1;
 	    if (pressed[i] && actions[i] == ACT_HOLD)
 		hold = 1;
+	    if (pressed[i] && actions[i] == ACT_PAUSE)
+		pause = 1;
 
 	    for (j = 0; j < lenof(keys); j++) {
 		if (keys[j].key < 0 || keys[j].key > lenof(keystate))
@@ -405,57 +424,68 @@ static void play_game(void)
 		    drophard = 1;
 		if (keys[j].action == ACT_HOLD)
 		    hold = 1;
+		if (keys[j].action == ACT_PAUSE)
+		    pause = 1;
 	    }
 	    memcpy(prevkeystate, keystate, sizeof(prevkeystate));
 	}
 
-	if (dropinhibit) {
-	    if (!dropsoft)
-		dropinhibit = 0;
-	    dropsoft = 0;
+	if (pause) {
+	    paused = !paused;
+	    do_pause_indicator(paused);
 	}
 
-	/*
-	 * Check the drop timer.
-	 */
-	if (--untildrop < 0)
-	    dropsoft = 1;
+	if (!paused) {
 
-	/*
-	 * Now do the various actions.
-	 */
-	scr_prep();
-	if (left)
-	    ntris_try_left(ti);
-	if (right)
-	    ntris_try_right(ti);
-	if (clockwise)
-	    ntris_try_clockwise(ti);
-	if (anticlock)
-	    ntris_try_anticlock(ti);
-	if (reflect)
-	    ntris_try_reflect(ti);
-	if (hold && opts.hold)
-	    ntris_try_hold(ti);
-	if (dropsoft || drophard) {
-	    int ret;
-	    if (drophard) {
-		ret = 1;
-		ntris_harddrop(ti);
-	    } else {
-		ret = ntris_softdrop(ti);
+	    if (dropinhibit) {
+		if (!dropsoft)
+		    dropinhibit = 0;
+		dropsoft = 0;
 	    }
-	    if (ret) {
-		ret = ntris_newshape(ti);
-		if (!ret)
-		    break;
-		do_scores(ti);
 
-		/* FIXME: potentially level up and thus change dropinterval */
-		dropinhibit = 1;
+	    /*
+	     * Check the drop timer.
+	     */
+	    if (--untildrop < 0)
+		dropsoft = 1;
+
+	    /*
+	     * Now do the various actions.
+	     */
+	    scr_prep();
+	    if (left)
+		ntris_try_left(ti);
+	    if (right)
+		ntris_try_right(ti);
+	    if (clockwise)
+		ntris_try_clockwise(ti);
+	    if (anticlock)
+		ntris_try_anticlock(ti);
+	    if (reflect)
+		ntris_try_reflect(ti);
+	    if (hold && opts.hold)
+		ntris_try_hold(ti);
+	    if (dropsoft || drophard) {
+		int ret;
+		if (drophard) {
+		    ret = 1;
+		    ntris_harddrop(ti);
+		} else {
+		    ret = ntris_softdrop(ti);
+		}
+		if (ret) {
+		    ret = ntris_newshape(ti);
+		    if (!ret)
+			break;
+		    do_scores(ti);
+
+		    /* FIXME: potentially level up and thus change dropinterval */
+		    dropinhibit = 1;
+		}
+		untildrop = dropinterval;
 	    }
-	    untildrop = dropinterval;
 	}
+
 	scr_done();
 
 	vsync();

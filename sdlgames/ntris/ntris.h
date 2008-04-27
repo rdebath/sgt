@@ -8,9 +8,6 @@
 struct tetris_instance;
 struct frontend_instance;
 
-extern char *tetris_shapes[7+1];
-extern char *pentris_shapes[18+1];
-
 /*
  * The actual game logic. You call `ntris_init' to set up an
  * instance of an Ntris game (passing NULL as the shapeset if you
