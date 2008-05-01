@@ -1416,7 +1416,8 @@ doit_ctx *doit_init_ctx(void *secret, int secret_len) /*{{{*/
  */
 void doit_free_ctx(doit_ctx *ctx) /*{{{*/
 {
-    free(ctx->secret);
+    if (ctx->secret)
+	free(ctx->secret);
     if (ctx->their_nonce)
 	free(ctx->their_nonce);
     if (ctx->packet)
@@ -1532,8 +1533,10 @@ int doit_incoming_data(doit_ctx *ctx, void *buf, int len) /*{{{*/
 
             memset(ctx->secret, 0, ctx->secret_len);
             free(ctx->secret);
+            ctx->secret = NULL;
             memset(ctx->their_nonce, 0, ctx->their_nonce_len);
             free(ctx->their_nonce);
+            ctx->their_nonce = NULL;
             memset(ctx->our_nonce, 0, ctx->our_nonce_len);
             ctx->incoming_pos = 0;
         }
