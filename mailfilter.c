@@ -763,6 +763,7 @@ const char *process_address(const char *hdr, const char *addr)
 #ifdef DEBUG
     printf("%s: <%s>\n", hdr, addr);
 #endif
+    char *at;
 
     if (!strcasecmp(hdr, "From")) {
 	/*
@@ -788,6 +789,22 @@ const char *process_address(const char *hdr, const char *addr)
 	 */
 	if (!strcasecmp(addr, "greeting@greetings.com"))
 	    return "I'm assuming this to be spam.";
+
+	/*
+	 * eventosrh.com.br, whoever they are.
+	 */
+	at = strchr(addr, '@');
+	if (at && (!strcasecmp(at+1, "eventosrh-info.com.br") ||
+		   !strcasecmp(at+1, "eventosrh.com.br")))
+	    return "You have been persistently spamming me since 2007-02. STOP IT!";
+
+	/*
+	 * info@technologytransfertactics.com has a persistent
+	 * newsletter.
+	 */
+	if (!strcasecmp(addr, "info@technologytransfertactics.com"))
+	    return "This address has persistently sent me newsletters to "
+	    "which I never subscribed. I am therefore considering it a spammer.";
     }
 
     if (!strcasecmp(hdr, "Reply-to")) {
@@ -804,6 +821,14 @@ const char *process_address(const char *hdr, const char *addr)
 	 */
 	if (!strcasecmp(addr, "greeting@greetings.com"))
 	    return "I'm assuming this to be spam.";
+
+	/*
+	 * eventosrh.com.br again.
+	 */
+	at = strchr(addr, '@');
+	if (at && (!strcasecmp(at+1, "eventosrh-info.com.br") ||
+		   !strcasecmp(at+1, "eventosrh.com.br")))
+	    return "You have been persistently spamming me since 2007-02. STOP IT!";
     }
 
     if (!strcasecmp(hdr, "Cc")) {
