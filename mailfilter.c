@@ -698,6 +698,10 @@ static void scanner_cleanup_text(scanner *s, stream *st, void *vctx)
 	if (greetingspam == 3)
 	    specific_msg = "This appears to be a prolific greetings card spam.";
     }
+    str = L"Adobe CS3 Master Collection for PC or MAC includes:\n";
+    if (!wcsncmp(ctx->firstbit, str, wcslen(str))) {
+	specific_msg = "This appears to be a prolific pirated-software spam.";
+    }
 }
 
 static int agif_found = 0;
