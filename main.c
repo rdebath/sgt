@@ -146,6 +146,7 @@ int main(int argc, char **argv) {
 		  case 't':
 		  case 'R':
 		  case 'S':
+		  case 'E':
 		  case 'F':
 		  case 'm':
 		    p++;
@@ -193,6 +194,7 @@ int main(int argc, char **argv) {
 			if (!parse_datetime(p, &e.sd, &e.st))
 			    fatal(err_datetime, p);
 			break;
+		      case 'E':
 		      case 'F':
 			if (!parse_datetime(p, &e.ed, &e.et))
 			    fatal(err_datetime, p);
