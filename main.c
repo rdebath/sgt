@@ -404,7 +404,9 @@ int main(int argc, char **argv)
 	    tv.tv_usec = (int)1000000 * (wait - tv.tv_sec);
 	}
 
-	ret = select(maxfd, &rset, &wset, NULL, ptv);
+	do {
+	    ret = select(maxfd, &rset, &wset, NULL, ptv);
+	} while (ret < 0 && (errno == EINTR || errno == EAGAIN));
 
 	itimeout = otimeout = FALSE;
 	if (ret == 0) {
