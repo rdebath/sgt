@@ -21,6 +21,7 @@ static char *helptext[] = {
     "       -D <dbpath>                   use a db other than ~/.caltrapdb",
     "Options to -a and --edit:",
     "       -t (HOL1|HOL2|HOL3|EVENT)     set type of calendar entry",
+    "           [suggest: HOL1=weekend HOL2=public holiday HOL3=personal leave]",
     "       -R <period>[/<length>]        make this a repeating entry",
     "Options to --edit only:",
     "       -S '<date> <time>'            change start date of entry",
