@@ -2,6 +2,7 @@
  * malloc.c: safe wrappers around malloc, realloc, free, strdup
  */
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
@@ -142,6 +143,11 @@ char *dupfmt(const char *fmt, ...)
 			strftime(datebuf, lenof(datebuf),
 				 "%a, %d %b %Y %H:%M:%S GMT", &tm);
 		    }
+		    data = datebuf;
+		    datalen = strlen(data);
+		} else if (*p == 'd') {
+		    int i = va_arg(ap, int);
+		    sprintf(datebuf, "%d", i);
 		    data = datebuf;
 		    datalen = strlen(data);
 		} else if (*p == 's') {
