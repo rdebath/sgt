@@ -34,7 +34,9 @@ char *build_pac(char *userpac, ickscript *scr, int port)
 {
     char *moduserpac;
     char *jsscript;
-    char fpfu[1024];
+    char *mainfunc;
+    char *fpfu;
+    char *ret;
     char **avoidids;
     int navoidids, avoididsize;
 
@@ -78,6 +80,7 @@ char *build_pac(char *userpac, ickscript *scr, int port)
 	 */
 	modmaxsize = (21 * strlen(userpac) + 15) / 16;   /* round up */
 	moduserpac = snewn(modmaxsize + 1, char); /* allow for trailing NUL */
+memset(moduserpac, 'X', modmaxsize);
 
 	p = userpac;
 	out = moduserpac;
@@ -130,6 +133,7 @@ char *build_pac(char *userpac, ickscript *scr, int port)
 			avoididsize = (navoidids * 3 / 2) + 32;
 			avoidids = sresize(avoidids, avoididsize, char *);
 		    }
+		    *out = '\0';   /* temporarily NUL-terminate for dupstr */
 		    avoidids[navoidids] = dupstr(outtok);
 		    navoidids++;
 		} else {
@@ -227,12 +231,9 @@ char *build_pac(char *userpac, ickscript *scr, int port)
      * using, we can construct the JS translation of our Ick
      * script.
      */
-    {
-	char *mainfunc = "RewriteURL";
-	jsscript = ick_to_js(&mainfunc, scr, (const char **)avoidids,
-			     navoidids);
-	assert(jsscript);
-    }
+    mainfunc = NULL;
+    jsscript = ick_to_js(&mainfunc, scr, (const char **)avoidids, navoidids);
+    assert(jsscript);
 
     /*
      * And free our avoidids list.
@@ -252,23 +253,29 @@ char *build_pac(char *userpac, ickscript *scr, int port)
      * user's renamed FindProxyForURL function. So we parametrise
      * this boilerplate by the port number, but that's all.
      */
-    sprintf(fpfu,
-	    "function FindProxyForURL(url, host)\n"
-	    "{\n"
-	    "    if (RewriteURL(url) != url)\n"
-	    "        return \"PROXY localhost:%d\";\n"
-	    "    return user_FindProxyForURL(url, host);\n"
-	    "}\n", port);
+    fpfu = dupfmt("function FindProxyForURL(url, host)\n"
+		  "{\n"
+		  "    if (%s(url) != url)\n"
+		  "        return \"PROXY localhost:%d\";\n"
+		  "    return user_FindProxyForURL(url, host);\n"
+		  "}\n", mainfunc, port);
 
     /*
      * Now we can simply concatenate our three components, and
      * return the result.
      */
-    return dupfmt("/*\n"
-		  " * PAC proxy configuration generated automatically by ick-proxy.\n"
-		  " * Changes made directly to this file will be lost when it is\n"
-		  " * next regenerated.\n"
-		  " */\n\n%s\n%s\n%s", jsscript, moduserpac, fpfu);
+    ret = dupfmt("/*\n"
+		 " * PAC proxy configuration generated automatically by ick-proxy.\n"
+		 " * Changes made directly to this file will be lost when it is\n"
+		 " * next regenerated.\n"
+		 " */\n\n%s\n%s\n%s", jsscript, moduserpac, fpfu);
+
+    sfree(fpfu);
+    sfree(mainfunc);
+    sfree(jsscript);
+    sfree(moduserpac);
+
+    return ret;
 }
 
 /*
