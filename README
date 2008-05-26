@@ -129,8 +129,9 @@ you should simply be able to copy the "tring" binary and the
 the Chumby, boot up the Chumby, and find it running Tring.
 
 The debugchumby script has a couple of extra features which you
-might need to use. Firstly, it will lock down the Chumby's root
-account by disabling the default passwordless login; so if you want
+might need to use. Firstly, it will run an ssh server on the Chumby,
+but only if you provide it with an SSH public key (since the
+Chumby's normal root account has passwordless login); so if you want
 to log in remotely to the Chumby you should write an additional file
 to the pen drive called "sshkeys" containing an OpenSSH public key
 (or several).
