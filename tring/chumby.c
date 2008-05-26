@@ -2,6 +2,68 @@
  * chumby.c: Driver code for the various Chumby hardware.
  */
 
+/*
+ * Documentation for the interfaces to the Chumby hardware, since
+ * having gone to the effort of working it out I ought to write it
+ * down somewhere and this seems a reasonable place:
+ * 
+ * The frame buffer
+ * ----------------
+ * 
+ * /dev/fb0 contains a 320x240 bitmap in 16-bit little-endian true
+ * colour. That is, it's 153600 bytes of data, consisting of 76800
+ * (= 320*240) little-endian halfwords, each consisting of 16 bits
+ * reading (from MSB to LSB) RRRRRGGGGGGBBBBB. One can read/write/
+ * seek the framebuffer, but it's more sensible to mmap it.
+ *
+ * The touchscreen
+ * ---------------
+ * 
+ * If you open /dev/ts and read from it, you will receive a stream
+ * of 8-byte event records. Each one is a "struct ts_event" as
+ * defined in the kernel's drivers/input/tsdev.c, which means it
+ * consists of four little-endian halfwords which respectively
+ * contain pressure, x, y and a timestamp field:
+ *  - Pressure is zero for a release event, and non-zero for a
+ *    press or drag. In principle you can also use it to
+ *    distinguish a hard press from a soft press, but personally I
+ *    wouldn't base any UI behaviour on that!
+ *  - x and y are not measured in screen coordinates. The Chumby's
+ *    own touchscreen calibration software leaves a text file in
+ *    /psp/ts_settings that stores the mapping between the two.
+ *    That text file consists of one line containing four integers
+ *    P,Q,R,S separated by commas; now the touchscreen
+ *    x-coordinates of the left and right display edges are
+ *    respectively P and P+Q, and the y-coordinates of the top and
+ *    bottom are respectively R and R+S. So you can convert the
+ *    x,y fields of a touchscreen event into pixel coordinates by
+ *    setting X = 320 * (x-P) / Q and Y = 240 * (y-R) / S. Note
+ *    that S will typically be negative, because the framebuffer's
+ *    y coordinates increase downwards whereas the touchscreen's
+ *    increase upwards.
+ *  - The timestamp field is derived by taking the tv_usec field
+ *    of an ordinary gettimeofday and dividing it by 100.
+ *
+ * Dimming the LCD backlight
+ * -------------------------
+ * 
+ * Open /proc/sys/sense1/dimlevel, and write ASCII '0', '1' or '2'
+ * to it. That sets how _dim_ it is, not how bright; i.e. 2 turns
+ * the display completely off, and 0 is full brightness.
+ * 
+ * Sound
+ * -----
+ * 
+ * Just use ALSA. Don't try using the OSS-style /dev/dsp; I tried
+ * it, and you get weird sound distortions. ALSA isn't much fun to
+ * code, but the sound works properly if you use it.
+ *
+ * Squeeze sensor and accelerometer
+ * --------------------------------
+ * 
+ * I've no idea how you program these - I don't use them.
+ */
+
 #include <stdio.h>
 #include <time.h>
 #include <fcntl.h>
@@ -142,15 +204,6 @@ void update_display(int x, int y, int w, int h, pixelfn_t pix, void *ctx)
 
 void dim_display(int dim)
 {
-    /*
-     * Chumby display brightness setting: we open
-     * /proc/sys/sense1/dimlevel and write a decimal integer to
-     * it, which is one of
-     * 
-     *  - 0: undimmed (full brightness)
-     *  - 1: dimmed (low brightness)
-     *  - 2: completely dimmed (display off)
-     */
     char c = (dim ? '1' : '0');
     int fd = open("/proc/sys/sense1/dimlevel", O_WRONLY);
     if (fd >= 0) {
