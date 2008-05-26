@@ -150,7 +150,7 @@ void drivers_init(void)
 
 	fd = open("/psp/ts_settings", O_RDONLY);
 	if (fd >= 0) {
-	    ret = read(fd, buf, sizeof(buf));
+	    ret = read(fd, buf, sizeof(buf)-1);
 	    if (ret >= 0) {
 		buf[ret] = '\0';
 		buf[strcspn(buf, "\r\n")] = '\0';
