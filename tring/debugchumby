@@ -1,0 +1,33 @@
+#!/bin/sh
+
+# Hopefully at some point there will be a firmware update which
+# supports wired Ethernet, and then I can start using this stuff:
+
+#insmod /drivers/usbnet.ko
+#insmod /drivers/pegasus.ko
+#udhcpc -t 5 -n -p /var/run/udhcpc.eth0.pid -i eth0
+#ifconfig rausb0 inet 127.0.0.1
+
+# Enable sshd, but first lock down the passwordless default
+# accounts. For some reason the Chumby sshd doesn't like password
+# authentication at all, so we must also provide some public keys.
+perl -pe 's/^([^:]*)::/$1:*:/' /etc/shadow > /tmp/shadow
+mount --bind /tmp/shadow /etc/shadow
+(umask 077;
+ mkdir /tmp/root.ssh;
+ cat /mnt/usb/sshkeys > /tmp/root.ssh/authorized_keys)
+mount --bind /tmp/root.ssh ~root/.ssh
+/sbin/sshd
+
+# This process seems to spend most of its time repeatedly making
+# the same HTTP request to www.chumby.com . DO NOT WANT.
+killall headphone_mgr
+
+/usr/chumby/scripts/sync_time.sh
+
+set --
+if test -f /mnt/usb/excurl; then
+  set -- -u "`cat /mnt/usb/excurl`"
+fi
+
+/mnt/usb/tring -f /mnt/usb/tringsettings "$@"

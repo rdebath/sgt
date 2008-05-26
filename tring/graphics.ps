@@ -1,0 +1,252 @@
+%!PS-Adobe-1.0
+
+% PostScript code to generate the various graphical elements of the
+% Tring display on successive pages.
+%
+% The Tring makefile will run this in a context that generates
+% appropriate bitmaps, but for immediate testing one can run
+%
+%   gs -g960x720 -r216 -sDEVICE=x11 -q -dBATCH graphics.ps
+
+% Basic coordinate definitions.
+/width 320 def
+/height 240 def
+
+% Font definitions.
+/buttonfont /Helvetica findfont 16 scalefont def
+/messagefont /Helvetica-Bold findfont 24 scalefont def
+/offdayfont /Helvetica findfont 24 scalefont def
+/timefont /Helvetica-Bold findfont def 
+/secratio 0.6 def
+
+% Everything we're about to display is on a black background.
+0 setgray clippath fill
+/showpage { showpage 0 setgray clippath fill } bind def
+
+% Grubby hack to make pathbbox on lots of pieces of text agree on
+% the vertical bounding box.
+/textbbox { % hstring vstring -- l b r t
+  gsave
+  true charpath flattenpath pathbbox
+  4 -1 roll pop exch pop
+  grestore
+  3 -1 roll
+  gsave
+  true charpath flattenpath pathbbox
+  pop exch pop
+  grestore
+  % now we have b t l r
+  3 1 roll % gives b r t l
+  4 1 roll % gives l b r t
+} def
+/capsbbox { (ABCDEFGHIJKLMNOPQRSTUVWXYZ) textbbox } def
+
+% Figure out where we're going to put the main time display.
+timefont setfont
+/digitwidth 0 [(0) (1) (2) (3) (4) (5) (6) (7) (8) (9)] {
+  stringwidth pop dup 2 index gt { exch } if pop
+} forall def
+/timeborder 5 def
+/timewidth digitwidth 4 mul (:) stringwidth pop add
+           digitwidth 2 mul ( ) stringwidth pop add secratio mul add def
+/hmheight width timeborder 2 mul sub timewidth div def
+/sheight hmheight secratio mul def
+/xtime [
+timeborder
+dup digitwidth hmheight mul add
+dup digitwidth hmheight mul add
+dup (:) stringwidth pop hmheight mul add
+dup digitwidth hmheight mul add
+dup digitwidth hmheight mul add
+dup ( ) stringwidth pop sheight mul add
+dup digitwidth sheight mul add
+dup digitwidth sheight mul add
+] def
+timefont hmheight scalefont setfont
+newpath 0 0 moveto (0) (0123456789) textbbox
+2 index sub /timeheight exch def
+height timeheight sub 2 div 2 index sub /ytime exch def 3{pop}repeat
+/timedraw { % index char --
+  /char exch def /indx exch def
+  timefont indx 4 gt { sheight } { hmheight } ifelse scalefont setfont
+  xtime indx get xtime indx 1 add get add 2 div ytime moveto
+  1 0 0 setrgbcolor
+  char stringwidth pop 2 div neg 0 rmoveto char show
+} def
+
+% Compute the locations of the buttons.
+/buttonborderout 5 def
+/buttonborderin 7 def
+/buttonbordertotal buttonborderin buttonborderout add def
+/buttondef { % str xalign yalign font -- [ str l b r t textx texty font ]
+  /font exch def /yalign exch def /xalign exch def /str exch def
+  font setfont
+  newpath 0 0 moveto str capsbbox
+  /tt exch def /tr exch def /tb exch def /tl exch def
+  width tr tl sub buttonbordertotal 2 mul add sub
+    xalign mul buttonborderout add /l exch def
+  height tt tb sub buttonbordertotal 2 mul add sub
+    yalign mul buttonborderout add /b exch def
+  /r l tr tl sub buttonborderin 2 mul add add def
+  /t b tt tb sub buttonborderin 2 mul add add def
+  /textx l buttonborderin add tl sub def
+  /texty b buttonborderin add tb sub def
+  [ str l b r t textx texty font ]
+} def
+/normalbuttondef { buttonfont buttondef } def
+/offdaybuttondef { offdayfont buttondef } def
+/buttons [
+(SNOOZE) 0 1 normalbuttondef
+(SETUP) 0.5 1 normalbuttondef
+(SHUT UP) 1 1 normalbuttondef
+(ALARM ON) 0 0 normalbuttondef
+(CONFIRM) 0.5 0 normalbuttondef
+(ALARM OFF) 1 0 normalbuttondef
+(ALARM TIME) 0 1 normalbuttondef
+(BACK) 0.5 1 normalbuttondef
+(RESET TIME) 1 1 normalbuttondef
+(SNOOZE PERIOD) 0 0 normalbuttondef
+(OFF DAYS) 1 0 normalbuttondef
+(M) 1 14 div 0.5 offdaybuttondef
+(T) 3 14 div 0.5 offdaybuttondef
+(W) 5 14 div 0.5 offdaybuttondef
+(T) 7 14 div 0.5 offdaybuttondef
+(F) 9 14 div 0.5 offdaybuttondef
+(S) 11 14 div 0.5 offdaybuttondef
+(S) 13 14 div 0.5 offdaybuttondef
+] def
+
+% Compute where the adjustment arrows are going to be.
+/uparrowbase ytime timeheight add 15 add def
+/uparrowtip buttons 0 get 2 get 15 sub def
+/dnarrowbase ytime 15 sub def
+/dnarrowtip buttons 3 get 4 get 15 add def
+/halfarrowwidth xtime 7 get xtime 6 get sub 0.4 mul def
+/uparrow {
+  /pressed exch def
+  dup 1 add xtime exch get exch xtime exch get add 2 div
+  newpath
+  dup uparrowtip moveto
+  dup halfarrowwidth sub uparrowbase lineto
+  halfarrowwidth add uparrowbase lineto
+  closepath
+  gsave pressed {1 0 0} {0.5 0 0} ifelse setrgbcolor fill grestore
+  1 0 0 setrgbcolor 1.5 setlinewidth stroke
+} def
+/dnarrow {
+  /pressed exch def
+  dup 1 add xtime exch get exch xtime exch get add 2 div
+  newpath
+  dup dnarrowtip moveto
+  dup halfarrowwidth sub dnarrowbase lineto
+  halfarrowwidth add dnarrowbase lineto
+  closepath
+  gsave pressed {1 0 0} {0.5 0 0} ifelse setrgbcolor fill grestore
+  1 0 0 setrgbcolor 1.5 setlinewidth stroke
+} def
+
+% Draw buttons.
+buttons {
+  aload pop /font exch def /texty exch def /textx exch def /t exch def
+  /r exch def /b exch def /l exch def /str exch def
+  newpath l b moveto l t lineto r t lineto r b lineto closepath
+  gsave 0.5 0 0 setrgbcolor fill grestore
+  1 0 0 setrgbcolor 1.5 setlinewidth stroke
+  textx texty moveto font setfont str 1 setgray show
+  showpage
+} forall
+
+% Draw pressed versions of main buttons.
+buttons 0 11 getinterval {
+  aload pop /font exch def /texty exch def /textx exch def /t exch def
+  /r exch def /b exch def /l exch def /str exch def
+  newpath l b moveto l t lineto r t lineto r b lineto closepath
+  gsave 1 0 0 setrgbcolor fill grestore
+  1 0 0 setrgbcolor 1.5 setlinewidth stroke
+  textx texty moveto font setfont str 1 setgray show
+  showpage
+} forall
+
+% Draw unlit versions of off-day buttons.
+buttons 11 7 getinterval {
+  aload pop /font exch def /texty exch def /textx exch def /t exch def
+  /r exch def /b exch def /l exch def /str exch def
+  newpath l b moveto l t lineto r t lineto r b lineto closepath
+  gsave 0.2 0 0 setrgbcolor fill grestore
+  0.4 0 0 setrgbcolor 1.5 setlinewidth stroke
+  textx texty moveto font setfont str 1 0 0 setrgbcolor show
+  showpage
+} forall
+
+% Draw fixed time detail.
+2 (:) timedraw
+showpage
+
+% Draw main time digits, then seconds digits.
+[(0) (1) (2) (3) (4) (5) (6) (7) (8) (9)] {
+  0 exch timedraw showpage
+} forall
+[(0) (1) (2) (3) (4) (5) (6) (7) (8) (9)] {
+  6 exch timedraw showpage
+} forall
+(const int time_offsets[4] = {0) =only
+[1 3 4] { xtime exch get xtime 0 get sub (, ) =only 0.5 add cvi =only } forall
+(};) =
+(const int sec_offsets[2] = {0) =only
+xtime 7 get xtime 6 get sub (, ) =only 0.5 add cvi =only
+(};) =
+
+% Draw adjustment arrows.
+[ 0 1 3 4 6 7 ] {false uparrow showpage} forall
+[ 0 1 3 4 6 7 ] {false dnarrow showpage} forall
+
+% Draw adjustment arrows in pressed versions.
+[ 0 1 3 4 6 7 ] {true uparrow showpage} forall
+[ 0 1 3 4 6 7 ] {true dnarrow showpage} forall
+
+% Days of the week, displayed above the time.
+[(MONDAY) (TUESDAY) (WEDNESDAY) (THURSDAY) (FRIDAY) (SATURDAY) (SUNDAY)] {
+  messagefont setfont
+  0 0 moveto dup capsbbox % l b r t
+  3 -1 roll % l r t b
+  add 2 div % l r vcentre
+  3 1 roll add 2 div % vcentre hcentre
+  width 2 div uparrowbase uparrowtip add 2 div moveto
+  neg exch neg rmoveto 1 0 0 setrgbcolor show
+  showpage
+} forall
+
+% Current alarm time, displayed below the time.
+messagefont setfont
+/adigitwidth 0 [(0) (1) (2) (3) (4) (5) (6) (7) (8) (9)] {
+  stringwidth pop dup 2 index gt { exch } if pop
+} forall def
+0 0 moveto (ALARM ::) capsbbox exch adigitwidth 6 mul add exch % l b r t
+width 2 div dnarrowbase dnarrowtip add 2 div moveto
+3 -1 roll add 2 div 3 1 roll add 2 div neg exch neg rmoveto % as above
+1 0 0 setrgbcolor (ALARM ) show gsave
+adigitwidth 2 mul 0 rmoveto (:) show
+adigitwidth 2 mul 0 rmoveto (:) show
+showpage
+% And the digits.
+[(0) (1) (2) (3) (4) (5) (6) (7) (8) (9)] {
+  grestore gsave show showpage
+} forall
+grestore
+(const int alarm_digit_offsets[6] = {0) =only 0
+[ adigitwidth adigitwidth (:) stringwidth pop add
+  adigitwidth adigitwidth (:) stringwidth pop add
+  adigitwidth ] { add (, ) =only dup 0.5 add cvi =only } forall
+(};) =
+pop
+
+% CONFIRM ALARM message, displayed in the same place the alarm time would go.
+(CONFIRM ALARM)
+messagefont setfont
+0 0 moveto dup capsbbox % l b r t
+3 -1 roll % l r t b
+add 2 div % l r vcentre
+3 1 roll add 2 div % vcentre hcentre
+width 2 div dnarrowbase dnarrowtip add 2 div moveto
+neg exch neg rmoveto 1 0 0 setrgbcolor show
+showpage
