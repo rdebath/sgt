@@ -1,0 +1,15 @@
+# -*- sh -*-
+# Build script to build a Chumby binary for Tring.
+
+module tring
+
+in tring do mkdir build
+
+delegate chumbydev
+  in tring do make
+  return tring/build/tring
+enddelegate
+
+deliver tring/build/tring $@
+deliver tring/debugchumby $@
+deliver tring/install.sh $@
