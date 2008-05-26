@@ -123,12 +123,11 @@ static void bufchain_prefix(bufchain *ch, void **data, int *len)
 sig_atomic_t exitcode = -1;
 pid_t childpid = -1;
 
+int signalpipe[2];
+
 void sigchld(int sig)
 {
-    int pid, code;
-    pid = wait(&code);		       /* reap the exit code */
-    if (pid == childpid)
-	exitcode = code;
+    write(signalpipe[1], "C", 1);
 }
 
 struct termios oldattrs, newattrs;
@@ -140,6 +139,7 @@ void attrsonexit(void)
 
 struct mainopts {
     int pipe;
+    int quit;
 };
 
 int option(struct mainopts *opts, struct tstate *state,
@@ -152,6 +152,8 @@ int option(struct mainopts *opts, struct tstate *state,
     if (longopt) {
 	if (!strcmp(longopt, "pipe")) {
 	    shortopt = 'p';
+	} if (!strcmp(longopt, "quit")) {
+	    shortopt = 'q';
 	} else
 	    return tstate_option(state, shortopt, longopt, value);
     }
@@ -160,6 +162,10 @@ int option(struct mainopts *opts, struct tstate *state,
 	if (value)
 	    return OPT_SPURIOUSARG;
 	opts->pipe = TRUE;
+    } else if (shortopt == 'q') {
+	if (value)
+	    return OPT_SPURIOUSARG;
+	opts->quit = TRUE;
     } else
 	return tstate_option(state, shortopt, longopt, value);
 
@@ -178,6 +184,7 @@ int main(int argc, char **argv)
     int tochild_active, tostdout_active, fromstdin_active, fromchild_active;
 
     opts.pipe = FALSE;
+    opts.quit = FALSE;
 
     state = tstate_init();
 
@@ -258,6 +265,15 @@ int main(int argc, char **argv)
     }
     if (errors)
 	return 1;
+
+    /*
+     * Allocate the pipe for transmitting signals back to the
+     * top-level select loop.
+     */
+    if (pipe(signalpipe) < 0) {
+	perror("pipe");
+	return 1;
+    }
 
     /*
      * Allocate the pty or pipes.
@@ -361,15 +377,18 @@ int main(int argc, char **argv)
 	fd_set rset, wset;
 	char buf[65536];
 	int maxfd, ret;
-	double wait;
+	double twait;
 	int itimeout, otimeout, used_iwait, used_owait;
 	struct timeval tv, *ptv;
 
 	FD_ZERO(&rset);
 	FD_ZERO(&wset);
 	maxfd = 0;
-	wait = HUGE_VAL;
+	twait = HUGE_VAL;
 	used_iwait = used_owait = FALSE;
+
+	FD_SET(signalpipe[0], &rset);
+	maxfd = max(signalpipe[0]+1, maxfd);
 
 	if (tochild_active && bufchain_size(&tochild)) {
 	    FD_SET(masterw, &wset);
@@ -384,7 +403,7 @@ int main(int argc, char **argv)
 	    maxfd = max(0+1, maxfd);
 	    if (iwait) {
 		used_iwait = TRUE;
-		wait = min(wait, iwait);
+		twait = min(twait, iwait);
 	    }
 	}
 	if (fromchild_active && bufchain_size(&tostdout) < LOCALBUF_LIMIT) {
@@ -392,16 +411,16 @@ int main(int argc, char **argv)
 	    maxfd = max(masterr+1, maxfd);
 	    if (owait) {
 		used_owait = TRUE;
-		wait = min(wait, owait);
+		twait = min(twait, owait);
 	    }
 	}
 
-	if (wait == HUGE_VAL) {
+	if (twait == HUGE_VAL) {
 	    ptv = NULL;
 	} else {
 	    ptv = &tv;
-	    tv.tv_sec = (int)wait;
-	    tv.tv_usec = (int)1000000 * (wait - tv.tv_sec);
+	    tv.tv_sec = (int)twait;
+	    tv.tv_usec = (int)1000000 * (twait - tv.tv_sec);
 	}
 
 	do {
@@ -411,15 +430,15 @@ int main(int argc, char **argv)
 	itimeout = otimeout = FALSE;
 	if (ret == 0) {
 	    double left = (ret == 0 ? 0.0 : tv.tv_sec + tv.tv_usec/1000000.0);
-	    wait -= left;
+	    twait -= left;
 	    if (iwait && used_iwait) {
-		iwait -= wait;
+		iwait -= twait;
 		assert(iwait >= 0);
 		if (!iwait)
 		    itimeout = TRUE;
 	    }
 	    if (owait && used_owait) {
-		owait -= wait;
+		owait -= twait;
 		assert(owait >= 0);
 		if (!owait)
 		    otimeout = TRUE;
@@ -514,6 +533,16 @@ int main(int argc, char **argv)
 	    } else
 		bufchain_consume(&tochild, ret);
 	}
+	if (FD_ISSET(signalpipe[0], &rset)) {
+	    ret = read(signalpipe[0], buf, 1);
+	    if (ret == 1 && buf[0] == 'C') {
+		int pid, code;
+		pid = wait(&code);     /* reap the exit code */
+		if (pid == childpid)
+		    exitcode = code;
+		write(1, "sigchld\n", 8);
+	    }
+	}
 
 	/*
 	 * If there can be no further data from a direction (the
@@ -555,14 +584,20 @@ int main(int argc, char **argv)
 	    else
 		break;		       /* neither is active any more */
 	} else {
-	    if (exitcode < 0)
-		/* process is still active */;
-	    else if (tochild_active && bufchain_size(&tochild))
-		/* data still to be sent to child's children */;
-	    else if (tostdout_active && bufchain_size(&tostdout))
-		/* data still to be sent to stdout */;
-	    else
-		break;		       /* terminate */
+	    if (opts.quit) {
+		if (exitcode >= 0 || !fromchild_active || !fromstdin_active ||
+		    !tochild_active || !tostdout_active)
+		    break;
+	    } else {
+		if (exitcode < 0)
+		    /* process is still active */;
+		else if (tochild_active && bufchain_size(&tochild))
+		    /* data still to be sent to child's children */;
+		else if (tostdout_active && bufchain_size(&tostdout))
+		    /* data still to be sent to stdout */;
+		else
+		    break;		       /* terminate */
+	    }
 	}
     }
 
