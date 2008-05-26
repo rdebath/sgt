@@ -303,6 +303,7 @@ def run_script_line(s, is_config, cfg):
 	    raise misc.builderr("no delegation session open")
 
 	# Close the delegate session
+	delegatefps[0].write("Q")
 	delegatefps[0].close()
 	delegatefps[1].close()
 	delegatefps = None
