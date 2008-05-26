@@ -1,0 +1,276 @@
+Tring, a tri-state alarm clock
+==============================
+
+This is the README for Tring, an alarm clock program written by
+Simon Tatham.
+
+Introduction and motivation
+---------------------------
+
+Tring is a software alarm clock which I designed to have a more
+useful user interface than any commercial alarm clock I had
+previously used.
+
+The key feature of Tring is that it has three primary states. Where
+other alarm clocks have "alarm on" and "alarm off", Tring adds a
+third state called "confirm alarm". In this mode there is a large
+visible indicator pointing out that you haven't yet told the clock
+whether you want an alarm the next morning; you then press either
+the "on" or "off" button to move into one of the normal modes. The
+next day, at noon (or a different time if you reconfigure it), Tring
+goes back into the "confirm" mode for the next night.
+
+The point of this is that it solves the various failure modes of
+conventional two-state alarm clocks:
+
+ - Old-fashioned analogue clocks (which I'll call type A) have a
+   one-off alarm switch: you turn the alarm on each night if you
+   want it to go off the next morning. This has the obvious failure
+   mode that if you forget to turn it on, you oversleep. Tring
+   solves this, because the "confirm" mode reminds you that you
+   haven't turned the alarm on.
+
+ - More modern digital clocks (I'll call these type D) have a
+   persistent alarm switch: you turn it on, and then the alarm goes
+   off every morning until you turn it off again. This has the
+   inverse failure mode: if you forget to turn it _off_, the alarm
+   goes off unwantedly, and wakes you up when you wanted a lie-in -
+   or wakes up and annoys your housemates when you're not there to
+   shut it up. Tring solves this by never remaining in the "alarm
+   on" state: it always resets into "confirm" mode, and in confirm
+   mode the alarm never goes off. So if you're unexpectedly
+   elsewhere, your alarm will be silent.
+
+Tring also has good support for _one-off_ changes to the alarm
+configuration. If you need to get up at a different time on one
+morning, you can set a different alarm time when you press the
+alarm-on button, and Tring will obey that instruction once and then
+revert to the standard time the next day. (Of course, the standard
+alarm time is _also_ configurable.)
+
+Or if you wake up early and feel like getting out of bed and doing
+something useful, you can cancel the impending alarm just this once,
+and Tring will be back to normal the next night without you having
+to remember to turn the alarm back on. (A type A clock also permits
+this, in the sense that you would have had to remember to turn the
+alarm back on the next night _anyway_. A type D clock makes it
+rather more difficult, since you have to remember to re-enable the
+alarm and you're _not_ already used to disciplining yourself to do
+so every day.)
+
+Tring also supports configurable "off days": days of the week on
+which the alarm does not enter confirm mode, but instead remains in
+the "off" state. This means you don't even have to think very much
+when you see the "confirm alarm" indicator: you can just press On
+every time you see it, and still not be woken up accidentally at the
+weekend.
+
+Finally, Tring has network capability: you can tie it into an online
+calendar (provided you have some glue code) and then it can know
+when you book time off work and automatically set up extra off days.
+
+Required hardware
+-----------------
+
+Currently Tring only supports the Chumby (http://www.chumby.com/) as
+its hardware platform.
+
+The code contains a half-hearted attempt at a porting layer to
+facilitate running it on other devices, but as yet I haven't
+actually _tried_ to port it to anything else; it's probable that the
+porting layer will turn out to be inadequate and need some
+additional work.
+
+Building and installation
+-------------------------
+
+I do not currently provide pre-built binaries of Tring. (I could
+easily do so; I just haven't got round to it.) So in order to
+install Tring on a Chumby, you must first compile it from source.
+
+Rather than mess about compiling ARM Linux gcc from scratch, I used
+the pre-built GNU tool chain provided by the Chumby manufacturers:
+download
+
+    http://files.chumby.com/toolchain/arm-linux-v4.1.2b.tar.gz
+
+and unpack it to find a bunch of files which should work if
+installed in /usr.
+
+In addition to that, I also needed to copy over libasound.so and
+libcurl.so from the Chumby itself (because Tring needs to link
+against them). Those live in /lib on the Chumby, and need to end up
+in the /usr/arm-linux/lib directory provided in the above archive.
+Then I needed the header files that go with those libraries, which I
+just copied from my normal Linux system into /usr/arm-linux/include.
+
+(In fact I didn't _really_ install all of this in my /usr; that
+seemed downright messy. Instead I used User-Mode Linux to create a
+virtualised environment, and union-mounted the Chumby tool chain
+over the top of /usr inside that. The Tring makefile takes care to
+only ever attempt to write files in the "build" subdirectory, so you
+can have your UML environment make the rest of the filesystem
+read-only if you don't trust the pre-built compiler binary.)
+
+Other build-time software you will need includes Perl, GhostScript
+and ImageMagick.
+
+Having got all that available, you should be able to type "make" in
+the Tring source directory, and it should think for a while and
+eventually create a "tring" binary in the "build" subdirectory.
+
+In order to actually run Tring on your Chumby, you will need a USB
+pen-drive (or other mass storage device). If you plug a USB disk
+into the back of the Chumby, then at boot time it will automatically
+mount that disk and look for a script called "debugchumby", which it
+will run. That script is provided in the Tring source archive; so
+you should simply be able to copy the "tring" binary and the
+"debugchumby" script on to your pen drive, insert it in the back of
+the Chumby, boot up the Chumby, and find it running Tring.
+
+The debugchumby script has a couple of extra features which you
+might need to use. Firstly, it will lock down the Chumby's root
+account by disabling the default passwordless login; so if you want
+to log in remotely to the Chumby you should write an additional file
+to the pen drive called "sshkeys" containing an OpenSSH public key
+(or several).
+
+Secondly, if you want to use Tring's network calendar integration,
+you should write an additional file to the pen drive called
+"excurl", containing a URL. I discuss below what should be present
+at that URL.
+
+Tring will write one more data file to the USB drive, called
+"tringsettings". This holds its persistent configuration of the
+alarm time and so on.
+
+Using Tring
+-----------
+
+Now you've got Tring running (if you're lucky), here's the user
+documentation for the alarm clock UI itself.
+
+In its normal mode, Tring will display the current time and the day
+of the week in large digits. Below that there is an indication of
+the current alarm mode:
+ - in confirm mode, it will say "CONFIRM ALARM"
+ - in alarm-on mode it will say "ALARM" followed by the time of day
+   that the next alarm will go off
+ - in alarm-off mode, nothing will be displayed.
+
+There are six virtual buttons along the top and bottom of the
+screen. They're not displayed all the time, though, because they
+make the display look messy. Instead, you can touch the screen
+anywhere to cause all six buttons to appear (they go away again
+after five seconds of inactivity). Additionally, subsets of the
+buttons are displayed in particular modes where they're obviously
+useful.
+
+The "ALARM OFF", "CONFIRM" and "ALARM ON" buttons all change the
+alarm mode into one of the three states. When you press "ALARM ON",
+you will be given the opportunity to edit the time you want the
+alarm to go off the next morning; this has a one-off effect, and
+will not change the default alarm time offered the next time you
+press "ALARM ON".
+
+The "SNOOZE" button also enables an alarm, but instead of defaulting
+to a specific time of day, it defaults to nine minutes after the
+time you press the button (or some other period if you reconfigure
+the default snooze interval). If you press "SNOOZE" while the alarm
+is sounding, it will have the additional effect of shutting up the
+alarm; however, you may press "SNOOZE" at any time. (So you can use
+it as a general-purpose countdown timer, for example if you decide
+you want an hour-long nap in the middle of the day.)
+
+The "SHUT UP" button stops the alarm if it's currently sounding. You
+can also press it in alarm-on mode, to cancel the forthcoming alarm
+and reset to one of the other two modes.
+
+(Pressing "ALARM OFF" also has the latter effect, but they're not
+quite the same. "SHUT UP" will sometimes reset to alarm-off mode and
+sometimes to confirm mode, depending on which of those modes it
+would normally expect to be in at that time of day. For example, if
+you use the "SNOOZE" button to set up an hour-long nap and Tring was
+already in confirm mode for that evening when you did so, then
+pressing "SHUT UP" will return to confirm mode so you still remember
+to put the normal alarm on for the next morning, whereas pressing
+"ALARM OFF" will disable your usual evening reminder. Hence, you are
+recommended to get into the habit of using the "SHUT UP" button
+instead of "ALARM OFF" to cancel an impending alarm.)
+
+The "SETUP" button goes into configuration mode. In this mode, a new
+set of buttons will be displayed, to allow you to configure Tring's
+persistent defaults. "ALARM TIME" lets you set the default alarm
+time that is displayed when you press "ALARM ON"; "SNOOZE PERIOD"
+lets you configure the default snooze interval to something other
+than nine minutes; "OFF DAYS" lets you enable and disable the alarm
+independently for each day of the week; and "RESET TIME" lets you
+set the time of day at which the alarm returns to confirm mode after
+being turned off (typically noon).
+
+(Tring's in-built default settings are all one second out from exact
+numbers of hours or minutes. This was done so that I could make sure
+it was storing data properly: if it ever offers me an alarm at
+7:59:59 then I'll know something's gone wrong.)
+
+Tring dims the Chumby's display backlight in alarm-on and alarm-off
+modes (so you can sleep), and brightens it to full brightness in
+confirm mode or when you are actually interacting with it. This
+should help make it obvious when the alarm is in confirm mode, so
+you don't accidentally go to sleep without noticing you haven't set
+the alarm.
+
+Network integration
+-------------------
+
+To integrate Tring with an online calendar, you need to make a text
+file available over the WWW, and provide Tring with its URL. If you
+have installed Tring as recommended above, you do this by writing
+the URL into a file called "excurl" on your USB drive.
+
+At that URL there should be a text file which contains a list of
+dates in ISO 8601 format, followed by a line of text just saying
+"done". For example, the text file might read
+
+    2008-05-26
+    done
+
+Each date mentioned in this file is treated as an additional
+off-day: Tring will not enter confirm mode before alarm time on that
+day.
+
+Tring will retrieve this file from the web every day, half an hour
+before its normal reset time. It will also re-retrieve it
+immediately on restart.
+
+Tring can store a maximum of 32 exception days. You should therefore
+set up some means of keeping the exceptions file current; for
+example, I have a script which runs every day, scans my electronic
+calendar, and writes out an exceptions file containing all the
+exception dates in the forthcoming two weeks.
+
+Tring command line
+------------------
+
+The Tring binary has a few command-line options you can set:
+
+"-f filename"
+
+    Specifies a file name in which to store persistent state. If
+    none is provided, Tring will not store persistent state at all.
+    The provided "debugchumby" script always adds "-f
+    /mnt/usb/tringsettings" to Tring's command line.
+
+"-u url"
+
+    Specifies a URL to retrieve an exceptions list from. If none is
+    provided, Tring will do no network access. The provided
+    "debugchumby" script puts this option on the command line only
+    if you supply an "excurl" file.
+
+"-b"
+
+    Causes the display to remain bright at all times. Helpful if
+    you're sitting in a fully lit room and debugging Tring; not so
+    helpful if you're running it for real and want to go to sleep in
+    the same room!
