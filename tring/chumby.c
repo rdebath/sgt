@@ -189,6 +189,10 @@ void drivers_init(void)
     assert(npollfds_audio > 0);
     npollfds_both = npollfds_nonaudio + npollfds_audio;
     pollfds = malloc(npollfds_both * sizeof(*pollfds));
+    if (!pollfds) {
+	fprintf(stderr, "out of memory\n");
+	exit(1);
+    }
     pollfds[0].fd = touchscreen_fd;
     pollfds[0].events = POLLIN;
 }
