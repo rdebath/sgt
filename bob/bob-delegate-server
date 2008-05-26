@@ -113,6 +113,8 @@ try:
 		sys.stdout.write(struct.pack(">L", len(file)) + file + struct.pack(">L", len(data)) + data)
 	    sys.stdout.write(struct.pack(">L", 0))
 	    sys.stdout.flush()
+	elif cmd == "Q":
+	    sys.exit(0) # clean shutdown
 	else:
 	    sys.exit(1) # unrecognised command letter
 
