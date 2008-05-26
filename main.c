@@ -540,7 +540,6 @@ int main(int argc, char **argv)
 		pid = wait(&code);     /* reap the exit code */
 		if (pid == childpid)
 		    exitcode = code;
-		write(1, "sigchld\n", 8);
 	    }
 	}
 
