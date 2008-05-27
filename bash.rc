@@ -4,7 +4,7 @@
 
 #{{{ I don't like .bash_history files. They wet their nests.
 unset HISTFILE
-rm -f ~/.bash_history
+rm -f ~/.bash_history 2>/dev/null # if the filesystem is RO, don't whine
 #}}}
 #{{{ `realpath', just in case it isn't available as a real command
 
