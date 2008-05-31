@@ -52,6 +52,37 @@ def gcd(a,b):
         a, b = b, a % b
     return a
 
+fibcache = [0,1]
+def fib(n):
+    "Return the nth Fibonacci number"
+    # We use the One True indexing for Fibonacci numbers, which is
+    # to set F_0=0, F_1=1. This indexing is the right one because
+    # it has the property that F_k divides F_{nk} for all n >= 0.
+    # If we instead set F_0=F_1=1, the best we'd be able to get
+    # would be F_k | F_{n(k+1)-1}, which is an expression showing
+    # clear signs of having got the origin in the wrong place.
+    sign = +1
+    if n < 0:
+        # Negative Fibonacci numbers are just the positive sequence
+        # again, with alternating signs.
+        n = -n
+        if n % 2 == 0: sign = -1
+    # We compute Fibonacci numbers by the simple approach of
+    # iterating through the sequence from the start.
+    #
+    # To do it by Binet's formula in floating point would require
+    # fiddly rounding and be unacceptably limited in range. To do
+    # it by Binet's formula working in an exact representation of
+    # Z[sqrt(5)], or the other approach which involves computing a
+    # power by repeated squaring of the matrix ((1 1)(1 0)), would
+    # be workable in principle but not all that efficient in
+    # practice: both of those require a lot of multiplications and
+    # don't helpfully keep all the previous Fibonacci numbers for
+    # future calls.
+    while len(fibcache) <= n:
+        fibcache.append(fibcache[-2] + fibcache[-1])
+    return fibcache[n] * sign
+
 def factorise_main(n, out):
     factor = 2
     while factor * factor <= n:
