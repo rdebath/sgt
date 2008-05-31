@@ -741,7 +741,7 @@ int main(int argc, char **argv)
 	    if (freq[i])
 		printf("%d moves: %d case%s\n", i, freq[i],
 		       freq[i] > 1 ? "s" : "");
-	printf("average %g\n", (double)movetotal/p.comb);
+	printf("average %d/%d = %g\n", movetotal, p.comb, (double)movetotal/p.comb);
     } else {
 	int moves;
 	int ret;
