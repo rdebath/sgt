@@ -1,10 +1,30 @@
 #!/bin/sh
 
-# Report the playback duration of a movie file.
+# Report the playback duration, and optionally time and space
+# resolution, of a movie file.
+
+res=no
 
 for file in "$@"; do
-  LENGTH=`mplayer -vo null -ao null -frames 0 -identify "$file" 2>&1 | \
-          perl -ne '/^ID_LENGTH=(.*)$/ and print "$1\n"'`
-  perl -e 'printf "%s: %g sec (%d:%02d)\n", $ARGV[0], $ARGV[1], ' \
-       -e 'int($ARGV[1])/60, int($ARGV[1])%60' "$file" "$LENGTH"
+  case "$file" in
+    -r) res=yes;;
+    -*) echo "Unrecognised option '$file'" >&2;;
+    *)
+      LENGTH=`mplayer -vo null -ao null -frames 0 -identify "$file" 2>&1 | \
+              perl -ne '/^ID_LENGTH=(.*)$/ and print "$1\n"'`
+      if test $res = yes; then
+        XRES=`mplayer -vo null -ao null -frames 0 -identify "$file" 2>&1 | \
+            perl -ne '/^ID_VIDEO_WIDTH=(.*)$/ and print "$1\n"'`
+        YRES=`mplayer -vo null -ao null -frames 0 -identify "$file" 2>&1 | \
+            perl -ne '/^ID_VIDEO_HEIGHT=(.*)$/ and print "$1\n"'`
+        TRES=`mplayer -vo null -ao null -frames 0 -identify "$file" 2>&1 | \
+            perl -ne '/^ID_VIDEO_FPS=(.*)$/ and print "$1\n"'`
+        perl -e 'printf "%s: %dx%d, %gfps, %g sec (%d:%02d)\n", $ARGV[0], $ARGV[2], $ARGV[3], $ARGV[4], $ARGV[1], ' \
+             -e 'int($ARGV[1])/60, int($ARGV[1])%60' "$file" "$LENGTH" \
+	     "$XRES" "$YRES" "$TRES"
+      else
+        perl -e 'printf "%s: %g sec (%d:%02d)\n", $ARGV[0], $ARGV[1], ' \
+             -e 'int($ARGV[1])/60, int($ARGV[1])%60' "$file" "$LENGTH"
+      fi
+  esac
 done
