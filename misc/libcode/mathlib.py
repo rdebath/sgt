@@ -314,3 +314,35 @@ def cbrt(N):
         as = as - 1
 
     return x
+
+def perms(inlist):
+    # Return a list of the permuted orders of the list.
+    def recurse(inlist, outlist, output):
+        if len(inlist) == 0:
+            output.append(outlist[:])
+            return
+        for i in range(len(inlist)):
+            outlist.append(inlist[i])
+            inlist[i:i+1] = []
+            recurse(inlist, outlist, output)
+            inlist[i:i] = outlist[-1:]
+            del outlist[-1]
+    ret = []
+    outlist = []
+    recurse(inlist, outlist, ret)
+    return ret
+
+def choices(inlist, k):
+    # Return a list of the k-sublists of the list.
+    def recurse(inlist, outlist, minpos, k, output):
+        if len(outlist) == k:
+            output.append(outlist[:])
+            return
+        for i in range(minpos, len(inlist)+len(outlist)-k+1):
+            outlist.append(inlist[i])
+            recurse(inlist, outlist, i+1, k, output)
+            del outlist[-1]
+    ret = []
+    outlist = []
+    recurse(inlist, outlist, 0, k, ret)
+    return ret
