@@ -3,17 +3,17 @@
 mkdir -p $HOME/src
 cd $HOME/src
 
-wget http://subversion.tigris.org/tarballs/subversion-1.1.3.tar.gz || \
+wget http://subversion.tigris.org/tarballs/subversion-1.4.6.tar.gz || \
   { echo "Unable to download Subversion" >&2; exit 1; }
 
 { md5sum -c || { echo "Archive md5sum does not match" >&2; exit 1; }; } << EOF
-a25f8060678b3c75fcf2b3eff50eb870  subversion-1.1.3.tar.gz
+32786fe2f322982c0567346de18f6460  subversion-1.4.6.tar.gz
 EOF
 
-tar xzvf subversion-1.1.3.tar.gz || \
+tar xzvf subversion-1.4.6.tar.gz || \
   { echo "Error unpacking Subversion" >&2; exit 1; }
 
-cd subversion-1.1.3 && ./configure --prefix=$HOME && make && make install
+cd subversion-1.4.6 && ./configure --prefix=$HOME && make && make install
 
 svn help >& /dev/null || { echo "Error test-running Subversion" >&2; exit 1; }
 
