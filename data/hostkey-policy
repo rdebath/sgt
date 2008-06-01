@@ -1,49 +1,34 @@
-Summary: Enhanced flexibility in SSH host key lookup policy
+Summary: Enhanced flexibility in SSH host key selection policy
 Class: wish
 Priority: medium
 Difficulty: tricky
 Content-type: text/x-html-body
 
 <p>
-PuTTY's host key lookup policy is extremely simple at the moment. The
-name under which a host key is filed in the Registry is exactly the
-name you typed into the Hostname box. This avoids ever trusting the
-DNS for anything. The choice of which key to use is also very simple -
-we have a fixed preference order of RSA, DSS (for SSH-2).
+PuTTY's SSH-2 host key selection policy currently involves a fixed
+preference order of RSA then DSA. I occasionally think it would be
+good to add a preference list to tweak the policy, either to put DSA
+first (if you're really mad) or to move DSA to below the "warn below
+this line" line.
 
 <p>
-Recent versions of OpenSSH appear to file keys under IP addresses as
-well, although I've never stopped to work out what the semantics of
-this is. (Is a key considered valid only if it appears from the same
-host name _and_ IP address, or if it appears from either, or what?)
-It might be good to sit down and work out what OpenSSH's policy
-actually is, and wonder whether we want to implement it in PuTTY.
+When there's a choice of host keys available for a host, perhaps
+PuTTY should adjust its stated preferences so that the ones it
+already has cached come first. Need to think about that a bit. At
+the very least, when a new host key prompt is given, PuTTY should
+mention if it already has host keys for a host in other formats -
+particularly important when the <a href="ssh2-default.html">default
+protocol changes to SSH-2</a>, or a server that previously offered
+DSS keys starts supporting RSA too.
 
 <p>
-For the benefit of <em>really</em> weird network setups, it would be
-nice to be able to explicitly <em>specify</em> what name to store a
-host key under. (For example, if you're connecting through an SSH
-port forwarding to the SSH port of another machine, and you've
-previously connected directly to the same machine, then really you
-want to be looking the host key up under the same name as it was
-already stored. You almost certainly <em>don't</em> want to
-permanently associate that host key with the temporary port number
-on your local machine which you've chosen for the forwarding.)
-
-<ul>
-<li>Silly idea: if you select Telnet proxying and a completely empty
-command string, the effect is that PuTTY will connect to the address
-specified in the Proxy panel, but will believe itself to be connecting
-to the address specified in the Session panel. Result: it will cache
-the host key under the latter name.
-</ul>
-
-<p>
-When there's a choice of host keys available for a host, perhaps PuTTY
-should adjust its stated preferences so that the ones it has cached
-come first. Need to think about that a bit. At the very least, when a
-new host key prompt is given, PuTTY should mention if it already has
-host keys for a host in other formats - particularly important when
-the <a href="ssh2-default.html">default protocol changes to SSH-2</a>,
-or a server that previously offered DSS keys starts supporting RSA
-too.
+Finally, there's currently undesirable behaviour in PSFTP if you
+click "accept once" on a host key at startup and then leave the
+connection open for long enough to trigger a rekey timeout: since
+the host key has only been accepted once, PSFTP puts up the
+confirmation message again, in the middle of a command-line session,
+which is pretty nasty. Certainly at the very least we should treat
+"accept once" on a host key to mean accept for the whole of a
+<em>session</em> rather than for a single KEX; additionally, we
+probably ought to think about some sort of sensible behaviour if the
+host key we initially accepted has disappeared by rekey time.
