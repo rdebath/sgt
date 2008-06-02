@@ -1,0 +1,9 @@
+Summary: Changing scrollback size when on alternate screen clears the screen
+Class: bug
+Present-in: 0.56 0.59 0.60 2008-06-02
+Content-type: text/x-html-body
+
+<p>
+Changing the number of lines of scrollback while in the alternate
+screen causes the screen to be cleared and the cursor to be moved to
+the top left. This probably shouldn't happen.
