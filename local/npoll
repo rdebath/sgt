@@ -70,7 +70,13 @@ connect(S,$paddr) or die "connect: $!";
 S->autoflush(1);
 
 &getline;
-$code =~ /^2\d\d/ or die "newschk: no initial greeting from server\n";
+if ($code !~ /^2\d\d/) {
+    if ($line =~ /^\d\d\d/) {
+	die "newschk: server sent error response:\n$line\n";
+    } else {
+	die "newschk: no initial greeting from server\n";
+    }
+}
 
 &docmd("MODE READER");
 foreach $group (grep { $chkgroups{$_} } @gplist) {
