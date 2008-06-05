@@ -788,52 +788,15 @@ class output:
 	if self.news_ok:
 	    self.news_add_word("", 1)
 
-    def special(self, keyword):
-	if keyword == "pound":
-	    if self.html_ok:
-		self.html = self.html + "&#163;"
-	    elif self.html_title:
-		self.subj = self.subj + "&#163;"
-	    if self.mono_ok:
-		self.mono_add_word("L", self.mono_attr, 0)
-	    if self.news_ok:
-		self.news_add_word("L", 0)
-	elif keyword == "tm":
-	    if self.html_ok:
-		self.html = self.html + "&#8482;"
-	    elif self.html_title:
-		self.subj = self.subj + "&#8482;"
-	    if self.mono_ok:
-		self.mono_add_word("(TM)", self.mono_attr, 0)
-	    if self.news_ok:
-		self.news_add_word("(TM)", 0)
-	elif keyword == "x":
-	    if self.html_ok:
-		self.html = self.html + "&#215;"
-	    elif self.html_title:
-		self.subj = self.subj + "&#215;"
-	    if self.mono_ok:
-		self.mono_add_word("x", self.mono_attr, 0)
-	    if self.news_ok:
-		self.news_add_word("x", 0)
-	elif keyword == "R":
-	    if self.html_ok:
-		self.html = self.html + "&#174;"
-	    elif self.html_title:
-		self.subj = self.subj + "&#174;"
-	    if self.mono_ok:
-		self.mono_add_word("(R)", self.mono_attr, 0)
-	    if self.news_ok:
-		self.news_add_word("(R)", 0)
-	elif keyword[:1] == "&":
-	    if self.html_ok:
-		self.html = self.html + keyword
-	    elif self.html_title:
-		self.subj = self.subj + keyword
-	    if self.mono_ok:
-		self.mono_add_word(keyword[1:2], self.mono_attr, 0)
-	    if self.news_ok:
-		self.news_add_word(keyword[1:2], 0)
+    def special(self, html, text):
+	if self.html_ok:
+	    self.html = self.html + html
+	elif self.html_title:
+	    self.subj = self.subj + html
+	if self.mono_ok:
+	    self.mono_add_word(text, self.mono_attr, 0)
+	if self.news_ok:
+	    self.news_add_word(text, 0)
 
     def whitespace(self, text):
 	if self.html_ok:
@@ -1050,6 +1013,12 @@ def rdinput(file):
     "Scaron":1, "scaron":1, "Yuml":1,
     }
 
+    # Diphthong characters which can be easily replaced with their
+    # uncombined forms.
+    diphthongs = {
+    "oe":"oelig", "ae":"aelig", "OE":"OElig", "AE":"AElig"
+    }
+
     while 1:
 	# We begin in start-of-paragraph state, where paragraph-
 	# level directives such as {Q} take effect.
@@ -1152,15 +1121,17 @@ def rdinput(file):
 		if isint(tok[1]):
 		    o.footnote(tok[1])
 		elif tok[1] == "L":
-		    o.special("pound")
+		    o.special("&#163;", "L")
 		elif accented.has_key(tok[1]):
-		    o.special("&" + tok[1] + ";")
+		    o.special("&" + tok[1] + ";", tok[1][:1])
+		elif diphthongs.has_key(tok[1]):
+		    o.special("&" + diphthongs[tok[1]] + ";", tok[1])
 		elif tok[1] == "TM":
-		    o.special("tm")
+		    o.special("&#8482;", "(TM)")
 		elif tok[1] == "x":
-		    o.special("x")
+		    o.special("&#215;", "x")
 		elif tok[1] == "R":
-		    o.special("R")
+		    o.special("&#174;", "(R)")
 		elif tok[1] == "br":
 		    tok2 = t.curr()
 		    # Skip line break just before end of paragraph.
