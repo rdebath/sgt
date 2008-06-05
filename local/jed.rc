@@ -1618,7 +1618,7 @@ define cvssvn_diff() {
     set_blocal_var(file, "cvssvn-file");
 }
 define cvssvn_annotate() {
-    variable file, dir, name, line, ret, which;
+    variable file, dir, name, line, ret, rev, which;
     (file, dir, name, ) = getbuf_info();
     line = what_line();
     if (strcmp(substr(name, 1, 15), "*cvs-annotate*:") == 0 or
@@ -1650,19 +1650,32 @@ define cvssvn_annotate() {
     if (which == "") {
 	error("Unable to find an applicable version control tool");
     }
+    if (blocal_var_exists("cvssvn-rev")) {
+	rev = get_blocal_var("cvssvn-rev");
+    } else {
+        rev = "";
+    }
     name = "*" + which + "-annotate*:" + name;
     change_default_dir(dir);
     sw2buf(name);
     text_mode();
     erase_buffer();
     if (which == "cvs") {
-	ret = run_shell_cmd("cvs-annotate 2>/dev/null " + file);
+        if (rev == "") {
+            ret = run_shell_cmd("cvs-annotate 2>/dev/null " + rev + file);
+        } else {
+            ret = run_shell_cmd("cvs annotate 2>/dev/null -r" + rev + " " + file);
+        }
 	if (ret > 0) {
 	    erase_buffer();
 	    ret = run_shell_cmd("cvs annotate " + file);
 	}
     } else {
-	ret = run_shell_cmd("svn-blame 2>/dev/null " + file);
+        if (rev == "") {
+            ret = run_shell_cmd("svn-blame 2>/dev/null " + rev + file);
+        } else {
+            ret = run_shell_cmd("svn blame 2>/dev/null -r" + rev + " " + file);
+        }
 	if (ret > 0) {
 	    erase_buffer();
 	    ret = run_shell_cmd("svn blame " + file);
@@ -1742,6 +1755,10 @@ define cvssvn_cat() {
     recenter(0);
     jedrc_create_blocal_var("cvssvn-file", 's');
     set_blocal_var(file, "cvssvn-file");
+    if (rev != "") {
+        jedrc_create_blocal_var("cvssvn-rev", 's');
+        set_blocal_var(rev, "cvssvn-rev");
+    }
 }
 
 define cvs_log() { cvssvn_log(); }
