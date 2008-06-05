@@ -9,6 +9,7 @@ cookiedb = {} # maps (domain, cookiename) to value
 
 def do_cookies(headers):
     cookies = {}
+    if headers == None: return
     for i in headers.getallmatchingheaders("Set-Cookie"):
         assert i[:12] == "Set-Cookie: "
         cookie = i[12:]
