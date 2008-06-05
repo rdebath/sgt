@@ -748,10 +748,14 @@ class output:
     def linkstart(self, url):
 	if self.html_ok:
 	    self.html = self.html + "<a href=\"" + url + "\">"
+	elif self.html_title:
+	    self.subj = self.subj + "<a href=\"" + url + "\">"
 
     def linkend(self):
 	if self.html_ok:
 	    self.html = self.html + "</a>"
+	elif self.html_title:
+	    self.subj = self.subj + "</a>"
 
     def posttitlemode(self, on):
         self.html_ok = self.html_title = (on == 0)
