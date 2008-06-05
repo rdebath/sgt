@@ -302,12 +302,14 @@ setkey("indent_trim_goto_next", "^[[17~");
 %{{{ shell grep_goto function: F9
 
 define grep_goto() {
-    variable filename, line;
+    variable dir, filename, line;
     push_spot();
     bol_skip_white();
     push_mark();
     skip_chars("^:\n");
     filename = bufsubstr();
+    (dir,,) = getbuf_info();
+    filename = dircat(dir, filename);
     line = 1;
     if (looking_at(":")) {
         go_right_1();
