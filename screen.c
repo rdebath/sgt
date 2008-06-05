@@ -13,6 +13,7 @@
  */
 
 #include <stdio.h>
+#include <string.h>
 #ifdef CURSES_HDR
 #  include CURSES_HDR
 #else
