@@ -659,10 +659,21 @@ verbose() {
 }
 
 #}}}
-#{{{ $sp for doing `find' in svn source dirs
+#{{{ svndirs and $sp, for handling svn source directories
 
+# For doing `find' in svn source dirs: prune the .svn
+# subdirectories to avoid spurious matches within the pristine
+# source copies.
+#
 # usage: find <paths> $sp <args>
 sp='-name .svn -prune -o'
+
+# For finding the svn directories in the first place: finds every
+# directory below the current one that contains a .svn subdir. Run
+# in ~/src, for instance: svn st -q `svndirs`.
+svndirs() {
+  \find . -mindepth 1 -type d -exec test -d {}/.svn \; -print -prune
+}
 
 #}}}
 #{{{ my Python library code should be available via PYTHONPATH if present
