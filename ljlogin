@@ -58,7 +58,6 @@ if dict.has_key("chal") and dict.has_key("response"):
     dict["password"] = ""
 
 # Submit the form and retrieve the results.
-print dict
 postdata = urllib.urlencode(dict)
 f = cookurl.urlopen(p.formurl, postdata)
 data = f.read()
