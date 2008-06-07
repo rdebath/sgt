@@ -44,10 +44,6 @@
 # filtered output.  This may help work around issues with certain
 # versions of 'svnadmin load'.
 #
-# `-x' REGEX: Exclude paths matching REGEX from the output.  This can be
-# used to filter out specific file extensions, unwanted branches, and
-# so on.
-#
 # For example, this command...
 #
 #     svndumpfilter2 /home/svnadmin/myrepos foo bar baz quu+x
@@ -99,12 +95,10 @@ def catpath(path1, path2, prefix=""):
 
 # Decide whether a pathname is interesting or not.
 class InterestingPaths:
-    def __init__(self, include, exclude):
-	self.include = re.compile("(" + "|".join(include) + ")")
-	if exclude:
-	    self.exclude = re.compile("(" + "|".join(exclude) + ")")
-	else:
-	    self.exclude = None
+    def __init__(self, args):
+	self.res = []
+	for a in args:
+	    self.res.append(re.compile(a))
     def interesting(self, path):
 	path = cleanpath(path)
 	if path == '':
@@ -115,8 +109,8 @@ class InterestingPaths:
 	    # consider those to be always interesting and never
 	    # filter them out.
 	    return 1
-	if self.include.match(path):
-	    if not self.exclude or not self.exclude.search(path):
+	for r in self.res:
+	    if r.match(path):
 		return 1
 	return 0
 
@@ -369,10 +363,6 @@ parser.add_option("--drop-empty-revs", action="store_true",
 parser.add_option("--renumber-revs", action="store_true",
                   dest="renumber_revs", default=False,
                   help="renumber remaining revisions")
-parser.add_option("-x", "--exclude", action="append", dest="exclude",
-                  default=[], metavar="REGEX",
-                  help="exclude paths matching REGEX")
-
 (options, args) = parser.parse_args()
 if len(args) < 2:
     print >>sys.stderr, sys.argv[0] + ": Too few arguments."
@@ -380,7 +370,7 @@ if len(args) < 2:
     sys.exit(2)
 
 repos = args[0]
-paths = InterestingPaths(args[1:], options.exclude)
+paths = InterestingPaths(args[1:])
 
 # We use this table to map input revisions to output revisions.
 revmap = {}
