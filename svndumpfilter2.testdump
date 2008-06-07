@@ -335,7 +335,7 @@ PROPS-END
 Node-path: boring/boring1-from-fun
 Node-kind: file
 Node-action: add
-Node-copyfrom-rev: 5
+Node-copyfrom-rev: 7
 Node-copyfrom-path: fun/boring1
 
 
@@ -403,5 +403,30 @@ Node-kind: file
 Node-action: add
 Node-copyfrom-rev: 9
 Node-copyfrom-path: boring/boring1-from-fun
+
+
+Revision-number: 11
+Prop-content-length: 157
+Content-length: 157
+
+K 7
+svn:log
+V 59
+Copy a file from revision _after_ its last change.  Sneaky!
+K 10
+svn:author
+V 3
+emk
+K 8
+svn:date
+V 27
+2008-02-17T18:13:27.434988Z
+PROPS-END
+
+Node-path: fun/boringsubdir/funfile1
+Node-kind: file
+Node-action: add
+Node-copyfrom-rev: 9
+Node-copyfrom-path: fun/funfile1
 
 

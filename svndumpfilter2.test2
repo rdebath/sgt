@@ -69,14 +69,20 @@ def make_repo(repo, dump, make_path=None):
         raise Exception("Could not load dump %s into repo %s" % (dump, repo))
     return rev_offset
 
-def svndumpfilter2(repo, subdir, in_dump, out_dump):
+def svndumpfilter2(repo, subdir, in_dump, out_dump, drop_empty_revs,
+                   renumber_revs):
     """
     Filter `in_dump' to only contain `subdir', and write the result to
     `out_dump'.  Use `repo' to look up any missing lumps.
     """
+    options = []
+    if drop_empty_revs:
+        options.append("--drop-empty-revs")
+    if renumber_revs:
+        options.append("--renumber-revs")
     in_dump_pipe = open(in_dump)
     out_dump_pipe = open(out_dump, "w")
-    if not runproc(["./svndumpfilter2", repo, subdir],
+    if not runproc(["./svndumpfilter2"] + options + [repo, subdir],
     stdin=in_dump_pipe, stdout=out_dump_pipe):
         raise Exception("Could not filter dump of %s" % repo)
 
@@ -103,22 +109,30 @@ def svn_co(repo, wc):
     rm_rf(wc)
     runproc_must_succeed(["svn", "co", path_to_url(repo), wc])
     
-def compare_repos(original, filtered, base_path, rev_offset):
+def compare_repos(original, filtered, base_path, rev_offset, non_empty_revs):
     """
     Compare `base_path' as it appears at each revision in `original' and
     `filtered', and exit the program with an error if it differs at
-    any point in the history of the two repositories.
+    any point in the history of the two repositories.  If `non_empty_revs'
+    is not `None', then assume that only those revs from the original
+    repository will appear in the filtered repository.
     """
     original_wc = original + ".wc"
     svn_co(original, original_wc)
     filtered_wc = filtered + ".wc"
     svn_co(filtered, filtered_wc)
-    
+
+    if non_empty_revs is None:
+        youngest = youngest_rev(original)
+        non_empty_revs = range(1, youngest+1)
+
     youngest = youngest_rev(original)
-    for rev in range(1, youngest+1):
-        filtered_rev = rev + rev_offset
-        sys.stderr.write("*** Comparing rev %d to rev %d\n"%(rev,filtered_rev))
-        runproc_must_succeed(["svn", "update", "-r", str(rev), original_wc])
+    for i in range(0, len(non_empty_revs)):
+        original_rev = non_empty_revs[i]
+        filtered_rev = i + 1 + rev_offset
+        sys.stderr.write("*** Comparing rev %d to rev %d\n" %
+        (original_rev,filtered_rev))
+        runproc_must_succeed(["svn", "update", "-r", str(original_rev), original_wc])
         runproc_must_succeed(["svn", "update", "-r", str(filtered_rev), filtered_wc])
         if not runproc(["diff", "-qNr", "-x", ".svn",
         original_wc + "/" + base_path,
@@ -126,32 +140,58 @@ def compare_repos(original, filtered, base_path, rev_offset):
             print >>sys.stderr, "Test failed: Repositories differ"
             sys.exit(1)
     
-def test_svndumpfilter2(in_dump, base_path):
+def test_svndumpfilter2(in_dump, base_path, non_empty_revs=None,
+                        renumber_revs=False):
     """
     Filter `in_dump' using `base_path', using both full and delta dumps,
-    and check each dump contains the correct contents.
+    and check each dump contains the correct contents.  If the caller
+    supplies `non_empty_revs', then pass `--drop-empty-revs' to
+    `svndumpfilter2' and adjust the repository comparisons accordingly.
     """
+
+    drop_empty_revs = (non_empty_revs is not None)
+
+    # Make an unfiltered repository from our dump.
     make_repo("test.full", in_dump)
 
     # Filter the dump in full-dump format.
-    svndumpfilter2("test.full", base_path, in_dump, "test.outdump")
+    svndumpfilter2("test.full", base_path, in_dump, "test.outdump",
+                   drop_empty_revs, renumber_revs=renumber_revs)
     rev_offset = make_repo("test.filtered", "test.outdump",
                            os.path.dirname(base_path))
-    compare_repos("test.full", "test.filtered", base_path, rev_offset)
+    compare_repos("test.full", "test.filtered", base_path, rev_offset,
+                  non_empty_revs)
 
     # Filter the dump in delta-dump format.
     dump_deltas("test.full", "test.origdump.deltas")
     svndumpfilter2("test.full", base_path, "test.origdump.deltas",
-                   "test.outdump.deltas")
+                   "test.outdump.deltas", drop_empty_revs,
+                   renumber_revs=renumber_revs)
     rev_offset = make_repo("test.filtered.deltas", "test.outdump.deltas",
                            os.path.dirname(base_path))
-    compare_repos("test.full", "test.filtered.deltas", base_path, rev_offset)
+    compare_repos("test.full", "test.filtered.deltas", base_path, rev_offset,
+                  non_empty_revs)
 
 def run_standard_tests():
     """Run a set of tests designed to exercise as many features as possible."""
     test_svndumpfilter2("svndumpfilter2.testdump", "fun")
     test_svndumpfilter2("svndumpfilter2.testdump", "boring")
     test_svndumpfilter2("svndumpfilter2.testdump", "boring/boringsubdir")
+    
+    # We would generate a Node-copyfrom-rev pointing to a non-existant
+    # version here, except for the fact that the copy originates in
+    # the fun hierarchy, and is therefore eliminated by the filtering.
+    test_svndumpfilter2("svndumpfilter2.testdump", "boring",
+                        non_empty_revs=[1,3,8,9])
+
+    # We generate a Node-copyfrom-rev pointing to a non-existant version.    
+    test_svndumpfilter2("svndumpfilter2.testdump", "fun",
+                        non_empty_revs=[1,2,4,5,6,7,8,10,11])
+
+    # As before, but this time, renumber the revisions in our output.
+    test_svndumpfilter2("svndumpfilter2.testdump", "fun",
+                        non_empty_revs=[1,2,4,5,6,7,8,10,11],
+                        renumber_revs=True)
 
 if __name__ == "__main__":
     # Parse our command-line arguments.

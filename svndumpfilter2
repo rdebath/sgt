@@ -12,7 +12,7 @@
 #
 # Usage:
 #
-#     svndumpfilter source-repository regexp [regexp...]
+#     svndumpfilter [options] source-repository regexp [regexp...]
 #
 # This command expects to receive a Subversion dump file on
 # standard input, which must correspond to the Subversion
@@ -36,6 +36,14 @@
 # include a subset of second-level directories with a common
 # parent.
 #
+# Options include:
+#
+# `--drop-empty-revs': Exclude empty revisions from the output.
+#
+# `--renumber-revs': Generated sequential revision numbers in the
+# filtered output.  This may help work around issues with certain
+# versions of 'svnadmin load'.
+#
 # For example, this command...
 #
 #     svndumpfilter2 /home/svnadmin/myrepos foo bar baz quu+x
@@ -57,6 +65,7 @@ import re
 import string
 import types
 import md5
+from optparse import OptionParser
 
 # Quoting function which should render any string impervious to
 # POSIX shell metacharacter expansion.
@@ -161,7 +170,7 @@ class Lump:
 	if self.props[1].has_key(key):
 	    del self.props[1][key]
 	    self.props[0].remove(key)
-    def correct_headers(self):
+    def correct_headers(self, revmap):
 	# First reconstitute the properties block.
 	self.prop = ""
 	if len(self.props[0]) > 0:
@@ -192,6 +201,12 @@ class Lump:
 	    self.sethdr("Content-length", str(len(self.prop)+len(self.text)))
 	else:
 	    self.delhdr("Content-length")
+	# Adjust the revision numbers as needed.
+	for header in ["Revision-number", "Node-copyfrom-rev"]:
+	    if self.hdrdict.has_key(header):
+		old_val = int(self.hdrdict[header])
+		new_val = revmap[old_val]
+		self.sethdr(header, str(new_val))
 
 def read_rfc822_headers(f):
     ret = Lump()
@@ -226,10 +241,10 @@ def read_lump(f):
 	lump.text = f.read(tcl)
     return lump
 
-def write_lump(f, lump):
+def write_lump(f, lump, revmap):
     if not lump.extant:
 	return
-    lump.correct_headers()
+    lump.correct_headers(revmap)
     for key in lump.hdrlist:
 	val = lump.hdrdict[key]
 	f.write(key + ": " + val + "\n")
@@ -331,19 +346,37 @@ class Filter:
 fr = sys.stdin
 fw = sys.stdout
 
-repos = sys.argv[1]
-paths = InterestingPaths(sys.argv[2:])
+# Parse our command-line arguments.
+parser = OptionParser(usage="Usage: %prog [options] src-repo regexp...")
+parser.add_option("--drop-empty-revs", action="store_true",
+                  dest="drop_empty_revs", default=False,
+                  help="filter empty revisions from the dump")
+parser.add_option("--renumber-revs", action="store_true",
+                  dest="renumber_revs", default=False,
+                  help="renumber remaining revisions")
+(options, args) = parser.parse_args()
+if len(args) < 2:
+    print >>sys.stderr, sys.argv[0] + ": Too few arguments."
+    print >>sys.stderr, parser.usage
+    sys.exit(2)
+
+repos = args[0]
+paths = InterestingPaths(args[1:])
+
+# We use this table to map input revisions to output revisions.
+revmap = {}
 
 # Pass the dump-file header through unchanged.
 lump = read_lump(fr)
 while not lump.hdrdict.has_key("Revision-number"):
-    write_lump(fw, lump)
+    write_lump(fw, lump, revmap)
     lump = read_lump(fr)
 
 revhdr = lump
 
 filt = Filter(paths)
 
+current_output_rev = 0
 while revhdr != None:
     # Read revision header.
     assert revhdr.hdrdict.has_key("Revision-number")
@@ -359,10 +392,27 @@ while revhdr != None:
     # Alter the contents of the revision.
     filt.tweak(revhdr, contents)
 
-    # Write out revision.
-    write_lump(fw, revhdr)
-    for lump in contents:
-	write_lump(fw, lump)
+    # Determine whether we should output this revision.  We only
+    # update the current_output_rev if we're actually going to write
+    # something.
+    should_write = (len(contents) > 0 or not options.drop_empty_revs)
+    if should_write:
+	current_output_rev += 1
+
+    # Update our revmap with information about this revision.  Note that
+    # if this revision won't be written, current_output_rev still points
+    # to the last version we dumped.
+    input_rev = int(revhdr.hdrdict["Revision-number"])
+    if options.renumber_revs:
+	revmap[input_rev] = current_output_rev
+    else:
+	revmap[input_rev] = input_rev        
+
+    # Write out this revision, if that's what we've decided to do.
+    if should_write:
+	write_lump(fw, revhdr, revmap)
+	for lump in contents:
+	    write_lump(fw, lump, revmap)
 
     # And loop round again.
     revhdr = newrevhdr
