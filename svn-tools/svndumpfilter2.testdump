@@ -430,3 +430,95 @@ Node-copyfrom-rev: 9
 Node-copyfrom-path: fun/funfile1
 
 
+Revision-number: 12
+Prop-content-length: 162
+Content-length: 162
+
+K 7
+svn:log
+V 64
+Almost every possible permutation of copying and changing files.
+K 10
+svn:author
+V 3
+emk
+K 8
+svn:date
+V 27
+2008-02-18T00:01:02.651782Z
+PROPS-END
+
+Node-path: boring/copied-and-changed
+Node-kind: dir
+Node-action: add
+Node-copyfrom-rev: 11
+Node-copyfrom-path: fun/boringsubdir
+
+
+Node-path: boring/copied-and-changed/boringsub1
+Node-kind: file
+Node-action: change
+Text-content-length: 118
+Text-content-md5: 8ee1536de35b10cb6d42c4613b9fcef3
+Content-length: 118
+
+Boring file in subdirectory, number 1
+
+(but it's fun really)
+
+...and while we're copying this around, here's an edit.
+
+
+Node-path: boring/copied-and-changed/boringsub2
+Node-kind: file
+Node-action: change
+Prop-content-length: 45
+Content-length: 45
+
+K 13
+svn:mime-type
+V 10
+text/plain
+PROPS-END
+
+
+Node-path: boring/copied-and-changed/new-dir
+Node-kind: dir
+Node-action: add
+Prop-content-length: 10
+Content-length: 10
+
+PROPS-END
+
+
+Node-path: boring/copied-and-changed/new-dir/new-file
+Node-kind: file
+Node-action: add
+Prop-content-length: 10
+Text-content-length: 58
+Text-content-md5: 669c7d955e3ec360d163145f3717eb1f
+Content-length: 68
+
+PROPS-END
+And this is an entirely new file in the copied directory.
+
+
+Node-path: boring/copied-and-changed.txt
+Node-kind: file
+Node-action: add
+Node-copyfrom-rev: 11
+Node-copyfrom-path: fun/funfile1
+Text-content-length: 170
+Text-content-md5: c10e763eb38ca8e5ca826f6829de23a2
+Content-length: 170
+
+This is fun file number 1
+
+I'm going to put a bit of text in here.
+It will have multiple lines
+and some stuff.
+Ooh.
+
+And here's a file copied all by itself, and changed.
+
+

@@ -329,7 +329,16 @@ class Filter:
 				f.close()
 			    contents2.append(newlump)
 			tree.close()
-			need = 0 # we have now done something
+			if len(lump.text) > 0:
+			    # This was a copyfrom _plus_ some sort of
+			    # delta or new contents, which means that
+			    # having done the copy we now also need a
+			    # change record providing the new contents.
+			    lump.sethdr("Node-action", "change")
+			    lump.delhdr("Node-copyfrom-rev")
+			    lump.delhdr("Node-copyfrom-path")
+			else:
+			    need = 0 # we have now done something
 	    if need:
 		contents2.append(lump)
 
