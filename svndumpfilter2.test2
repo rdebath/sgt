@@ -44,13 +44,30 @@ def rm_rf(path):
     # Use the OS rm -rf command because Python's rmdir may get squeamish.
     runproc_must_succeed(["rm", "-rf", path])
 
-def make_repo(path, dump):
-    """Create a repository at `path' and load `dump' into it."""
-    rm_rf(path)
-    runproc_must_succeed(["svnadmin", "create", path])
+def make_repo(repo, dump, make_path=None):
+    """
+    Create a repository at `repo' and load `dump' into it.  If `make_path'
+    is supplied, create that path in the repository before loading the dump,
+    and return the revision offset of the new repository.
+    """
+    # Create the repository.
+    rm_rf(repo)
+    runproc_must_succeed(["svnadmin", "create", repo])
+
+    # Create any nested directories we'll need to load this dump.
+    rev_offset = 0
+    if make_path is not None and make_path != '' and make_path != '.':
+        components = os.path.normpath(make_path).split("/")
+        rev_offset = len(components)
+        for i in range(0, rev_offset):
+            url = path_to_url("/".join([repo] + components[0:i+1]))
+            runproc_must_succeed(["svn", "mkdir", "-m", "Parent dir", url])
+
+    # Load the dump, and return our revision offset (if any).
     dump_pipe = open(dump)
-    if not runproc(["svnadmin", "load", path], stdin=dump_pipe):
-        raise Exception("Could not load dump %s into repo %s" % (dump, path))
+    if not runproc(["svnadmin", "load", repo], stdin=dump_pipe):
+        raise Exception("Could not load dump %s into repo %s" % (dump, repo))
+    return rev_offset
 
 def svndumpfilter2(repo, subdir, in_dump, out_dump):
     """
@@ -86,7 +103,7 @@ def svn_co(repo, wc):
     rm_rf(wc)
     runproc_must_succeed(["svn", "co", path_to_url(repo), wc])
     
-def compare_repos(original, filtered, base_path):
+def compare_repos(original, filtered, base_path, rev_offset):
     """
     Compare `base_path' as it appears at each revision in `original' and
     `filtered', and exit the program with an error if it differs at
@@ -99,8 +116,10 @@ def compare_repos(original, filtered, base_path):
     
     youngest = youngest_rev(original)
     for rev in range(1, youngest+1):
+        filtered_rev = rev + rev_offset
+        sys.stderr.write("*** Comparing rev %d to rev %d\n"%(rev,filtered_rev))
         runproc_must_succeed(["svn", "update", "-r", str(rev), original_wc])
-        runproc_must_succeed(["svn", "update", "-r", str(rev), filtered_wc])
+        runproc_must_succeed(["svn", "update", "-r", str(filtered_rev), filtered_wc])
         if not runproc(["diff", "-qNr", "-x", ".svn",
         original_wc + "/" + base_path,
         filtered_wc + "/" + base_path]):
@@ -116,20 +135,23 @@ def test_svndumpfilter2(in_dump, base_path):
 
     # Filter the dump in full-dump format.
     svndumpfilter2("test.full", base_path, in_dump, "test.outdump")
-    make_repo("test.filtered", "test.outdump")
-    compare_repos("test.full", "test.filtered", base_path)
+    rev_offset = make_repo("test.filtered", "test.outdump",
+                           os.path.dirname(base_path))
+    compare_repos("test.full", "test.filtered", base_path, rev_offset)
 
     # Filter the dump in delta-dump format.
     dump_deltas("test.full", "test.origdump.deltas")
     svndumpfilter2("test.full", base_path, "test.origdump.deltas",
                    "test.outdump.deltas")
-    make_repo("test.filtered.deltas", "test.outdump.deltas")
-    compare_repos("test.full", "test.filtered.deltas", base_path)
+    rev_offset = make_repo("test.filtered.deltas", "test.outdump.deltas",
+                           os.path.dirname(base_path))
+    compare_repos("test.full", "test.filtered.deltas", base_path, rev_offset)
 
 def run_standard_tests():
     """Run a set of tests designed to exercise as many features as possible."""
     test_svndumpfilter2("svndumpfilter2.testdump", "fun")
     test_svndumpfilter2("svndumpfilter2.testdump", "boring")
+    test_svndumpfilter2("svndumpfilter2.testdump", "boring/boringsubdir")
 
 if __name__ == "__main__":
     # Parse our command-line arguments.
