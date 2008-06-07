@@ -1,0 +1,143 @@
+#!/usr/bin/python
+
+# Usage:
+#
+#     svndumpfilter2.test2 [dump-file path-to-save]
+#
+# This script will filter `dump-file', retaining only `path-to-save',
+# and then do the same with a delta-format dump.  It will then verify
+# that the two dumps match the original repository.  For example:
+#
+#     ./svndumpfilter2.test2 svndumpfilter2.testdump fun
+#
+# Alternatively, if you run this script with no arguments, it will
+# run a standard set of tests.
+
+import os
+import os.path
+import sys
+import string
+
+def quoteargs(args):
+    def quote(s):
+        s = string.replace(s, "'", "'\\''")
+        return "'" + s + "'"
+    return " ".join(map(quote,args))
+def runproc(args, stdin=None, stdout=None):
+    s = quoteargs(args)
+    if stdin != None:
+        s = s + "<&%d" % stdin.fileno()
+    if stdout != None:
+        s = s + ">&%d" % stdout.fileno()
+    return os.system(s) == 0
+def runproc_must_succeed(args):
+    ret = runproc(args)
+    assert ret
+
+def raise_if_failed(proc, *args):
+    """If `proc' returned an error code, raise an exception using `args'."""
+    if proc.wait() != 0:
+        raise Exception(" ".join(args))
+
+def rm_rf(path):
+    """Delete the directory at `path' if it exists."""
+    # Use the OS rm -rf command because Python's rmdir may get squeamish.
+    runproc_must_succeed(["rm", "-rf", path])
+
+def make_repo(path, dump):
+    """Create a repository at `path' and load `dump' into it."""
+    rm_rf(path)
+    runproc_must_succeed(["svnadmin", "create", path])
+    dump_pipe = open(dump)
+    if not runproc(["svnadmin", "load", path], stdin=dump_pipe):
+        raise Exception("Could not load dump %s into repo %s" % (dump, path))
+
+def svndumpfilter2(repo, subdir, in_dump, out_dump):
+    """
+    Filter `in_dump' to only contain `subdir', and write the result to
+    `out_dump'.  Use `repo' to look up any missing lumps.
+    """
+    in_dump_pipe = open(in_dump)
+    out_dump_pipe = open(out_dump, "w")
+    if not runproc(["./svndumpfilter2", repo, subdir],
+    stdin=in_dump_pipe, stdout=out_dump_pipe):
+        raise Exception("Could not filter dump of %s" % repo)
+
+def dump_deltas(repo, dump):
+    """Dump `repo' to `dump' in delta format."""
+    dump_pipe = open(dump, "w")
+    if not runproc(["svnadmin", "dump", "--deltas", repo], stdout=dump_pipe):
+        raise Exception("Could not dump %s" % repo)
+
+def youngest_rev(repo):
+    """Return the youngest revision in `repo'."""
+    f = os.popen(quoteargs(["svnlook", "youngest", repo]), "r")
+    out = f.read()
+    if f.close():
+        raise Exception("Could not get youngest revision in %s" % repo)
+    return int(out)
+
+def path_to_url(path):
+    """Convert `path' to a file:// URL for use with 'svn'."""
+    return "file://" + os.path.realpath(path)
+
+def svn_co(repo, wc):
+    """Check out `repo' as `wc'."""
+    rm_rf(wc)
+    runproc_must_succeed(["svn", "co", path_to_url(repo), wc])
+    
+def compare_repos(original, filtered, base_path):
+    """
+    Compare `base_path' as it appears at each revision in `original' and
+    `filtered', and exit the program with an error if it differs at
+    any point in the history of the two repositories.
+    """
+    original_wc = original + ".wc"
+    svn_co(original, original_wc)
+    filtered_wc = filtered + ".wc"
+    svn_co(filtered, filtered_wc)
+    
+    youngest = youngest_rev(original)
+    for rev in range(1, youngest+1):
+        runproc_must_succeed(["svn", "update", "-r", str(rev), original_wc])
+        runproc_must_succeed(["svn", "update", "-r", str(rev), filtered_wc])
+        if not runproc(["diff", "-qNr", "-x", ".svn",
+        original_wc + "/" + base_path,
+        filtered_wc + "/" + base_path]):
+            print >>sys.stderr, "Test failed: Repositories differ"
+            sys.exit(1)
+    
+def test_svndumpfilter2(in_dump, base_path):
+    """
+    Filter `in_dump' using `base_path', using both full and delta dumps,
+    and check each dump contains the correct contents.
+    """
+    make_repo("test.full", in_dump)
+
+    # Filter the dump in full-dump format.
+    svndumpfilter2("test.full", base_path, in_dump, "test.outdump")
+    make_repo("test.filtered", "test.outdump")
+    compare_repos("test.full", "test.filtered", base_path)
+
+    # Filter the dump in delta-dump format.
+    dump_deltas("test.full", "test.origdump.deltas")
+    svndumpfilter2("test.full", base_path, "test.origdump.deltas",
+                   "test.outdump.deltas")
+    make_repo("test.filtered.deltas", "test.outdump.deltas")
+    compare_repos("test.full", "test.filtered.deltas", base_path)
+
+def run_standard_tests():
+    """Run a set of tests designed to exercise as many features as possible."""
+    test_svndumpfilter2("svndumpfilter2.testdump", "fun")
+    test_svndumpfilter2("svndumpfilter2.testdump", "boring")
+
+if __name__ == "__main__":
+    # Parse our command-line arguments.
+    if len(sys.argv) == 3:
+        input_dump, base_path = sys.argv[1:]
+        test_svndumpfilter2(input_dump, base_path)
+    elif len(sys.argv) == 1:
+        run_standard_tests()
+    else:
+        print >>sys.stderr, "Usage:", sys.argv[0], "[dump-file path-to-save]"
+        sys.exit(1)
