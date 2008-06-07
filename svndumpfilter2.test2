@@ -182,7 +182,7 @@ def run_standard_tests():
     # version here, except for the fact that the copy originates in
     # the fun hierarchy, and is therefore eliminated by the filtering.
     test_svndumpfilter2("svndumpfilter2.testdump", "boring",
-                        non_empty_revs=[1,3,8,9])
+                        non_empty_revs=[1,3,8,9,12])
 
     # We generate a Node-copyfrom-rev pointing to a non-existant version.    
     test_svndumpfilter2("svndumpfilter2.testdump", "fun",
