@@ -70,12 +70,14 @@ def make_repo(repo, dump, make_path=None):
     return rev_offset
 
 def svndumpfilter2(repo, subdir, in_dump, out_dump, drop_empty_revs,
-                   renumber_revs):
+                   renumber_revs, exclude):
     """
     Filter `in_dump' to only contain `subdir', and write the result to
     `out_dump'.  Use `repo' to look up any missing lumps.
     """
     options = []
+    for item in exclude:
+        options += ["-x", item]
     if drop_empty_revs:
         options.append("--drop-empty-revs")
     if renumber_revs:
@@ -109,7 +111,8 @@ def svn_co(repo, wc):
     rm_rf(wc)
     runproc_must_succeed(["svn", "co", path_to_url(repo), wc])
     
-def compare_repos(original, filtered, base_path, rev_offset, non_empty_revs):
+def compare_repos(original, filtered, base_path, rev_offset, non_empty_revs,
+                  ignore):
     """
     Compare `base_path' as it appears at each revision in `original' and
     `filtered', and exit the program with an error if it differs at
@@ -121,6 +124,13 @@ def compare_repos(original, filtered, base_path, rev_offset, non_empty_revs):
     svn_co(original, original_wc)
     filtered_wc = filtered + ".wc"
     svn_co(filtered, filtered_wc)
+
+    # We can't exclude files from only one side of the diff, but we can
+    # ignore them on both sides.  This is imperfect, but at least we
+    # can check that the remaining files match.
+    diff_options = []
+    for item in ignore:
+        diff_options += ["-x", "*" + item + "*"]
 
     if non_empty_revs is None:
         youngest = youngest_rev(original)
@@ -134,14 +144,13 @@ def compare_repos(original, filtered, base_path, rev_offset, non_empty_revs):
         (original_rev,filtered_rev))
         runproc_must_succeed(["svn", "update", "-r", str(original_rev), original_wc])
         runproc_must_succeed(["svn", "update", "-r", str(filtered_rev), filtered_wc])
-        if not runproc(["diff", "-qNr", "-x", ".svn",
-        original_wc + "/" + base_path,
-        filtered_wc + "/" + base_path]):
+        if not runproc(["diff", "-qNr", "-x", ".svn"] + diff_options +
+        [original_wc + "/" + base_path, filtered_wc + "/" + base_path]):
             print >>sys.stderr, "Test failed: Repositories differ"
             sys.exit(1)
     
 def test_svndumpfilter2(in_dump, base_path, non_empty_revs=None,
-                        renumber_revs=False):
+                        renumber_revs=False, exclude=[]):
     """
     Filter `in_dump' using `base_path', using both full and delta dumps,
     and check each dump contains the correct contents.  If the caller
@@ -156,21 +165,21 @@ def test_svndumpfilter2(in_dump, base_path, non_empty_revs=None,
 
     # Filter the dump in full-dump format.
     svndumpfilter2("test.full", base_path, in_dump, "test.outdump",
-                   drop_empty_revs, renumber_revs=renumber_revs)
+                   drop_empty_revs, renumber_revs, exclude)
     rev_offset = make_repo("test.filtered", "test.outdump",
                            os.path.dirname(base_path))
     compare_repos("test.full", "test.filtered", base_path, rev_offset,
-                  non_empty_revs)
+                  non_empty_revs, exclude)
 
     # Filter the dump in delta-dump format.
     dump_deltas("test.full", "test.origdump.deltas")
     svndumpfilter2("test.full", base_path, "test.origdump.deltas",
-                   "test.outdump.deltas", drop_empty_revs,
-                   renumber_revs=renumber_revs)
+                   "test.outdump.deltas", drop_empty_revs, renumber_revs,
+                   exclude)
     rev_offset = make_repo("test.filtered.deltas", "test.outdump.deltas",
                            os.path.dirname(base_path))
     compare_repos("test.full", "test.filtered.deltas", base_path, rev_offset,
-                  non_empty_revs)
+                  non_empty_revs, exclude)
 
 def run_standard_tests():
     """Run a set of tests designed to exercise as many features as possible."""
@@ -192,6 +201,11 @@ def run_standard_tests():
     test_svndumpfilter2("svndumpfilter2.testdump", "fun",
                         non_empty_revs=[1,2,4,5,6,7,8,10,11],
                         renumber_revs=True)
+
+    # This is only a partial test - it doesn't verify that we remove the
+    # excluded files correctly, but it does verify that the remaining files
+    # match.
+    test_svndumpfilter2("svndumpfilter2.testdump", "fun", exclude=['boring'])
 
 if __name__ == "__main__":
     # Parse our command-line arguments.
