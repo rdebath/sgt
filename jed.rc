@@ -1480,13 +1480,15 @@ define halibut_mode_hook() {
 }
 
 %}}}
-%{{{ M-x cvs-* and svn-*
+%{{{ M-x cvs-*, svn-*, bzr-*
 
 define cvssvn_which(dir) {
     if (file_status(dir + ".svn") == 2)
 	return "svn";
     if (file_status(dir + "CVS") == 2)
 	return "cvs";
+    if (file_status(dir + ".bzr") == 2)
+	return "bzr";
     return 0;
 }
 
@@ -1494,20 +1496,24 @@ define cvssvn_log() {
     variable file, dir, name, which;
     (file, dir, name, ) = getbuf_info();
     if (strcmp(substr(name, 1, 10), "*cvs-log*:") == 0 or
-	strcmp(substr(name, 1, 10), "*svn-log*:") == 0) {
+	strcmp(substr(name, 1, 10), "*svn-log*:") == 0 or
+	strcmp(substr(name, 1, 10), "*bzr-log*:") == 0) {
         message("This is already a log buffer\n");
         return;
     }
     if (strcmp(substr(name, 1, 15), "*cvs-annotate*:") == 0 or
-        strcmp(substr(name, 1, 15), "*svn-annotate*:") == 0) {
+        strcmp(substr(name, 1, 15), "*svn-annotate*:") == 0 or
+        strcmp(substr(name, 1, 15), "*bzr-annotate*:") == 0) {
         name = substr(name, 16, -1);
     }
     if (strcmp(substr(name, 1, 11), "*cvs-diff*:") == 0 or
-        strcmp(substr(name, 1, 11), "*svn-diff*:") == 0) {
+        strcmp(substr(name, 1, 11), "*svn-diff*:") == 0 or
+        strcmp(substr(name, 1, 11), "*bzr-diff*:") == 0) {
         name = substr(name, 12, -1);
     }
     if (strcmp(substr(name, 1, 10), "*cvs-cat*:") == 0 or
-	strcmp(substr(name, 1, 10), "*svn-cat*:") == 0) {
+	strcmp(substr(name, 1, 10), "*svn-cat*:") == 0 or
+	strcmp(substr(name, 1, 10), "*bzr-cat*:") == 0) {
         name = substr(name, 11, -1);
     }
     if (strcmp(file, "") == 0) {
@@ -1531,8 +1537,10 @@ define cvssvn_log() {
     text_mode();
     if (which == "cvs") {
 	run_shell_cmd("cvs log " + file);
-    } else { % svn
+    } else if (which == "svn") {
 	run_shell_cmd("svnlog " + file + " || svn log -v " + file);
+    } else { % bzr
+	run_shell_cmd("bzr log " + file);
     }
     setbuf_info((getbuf_info & ~1) | 8); % clear modified bit, set readonly
     bob();
@@ -1548,19 +1556,23 @@ define cvssvn_diff() {
     (file, dir, name, ) = getbuf_info();
     if (strcmp(substr(name, 1, 10), "*cvs-log*:") == 0 or
 	strcmp(substr(name, 1, 10), "*svn-log*:") == 0 or
+	strcmp(substr(name, 1, 10), "*bzr-log*:") == 0 or
         strcmp(substr(name, 1, 10), "*cvs-cat*:") == 0 or
-	strcmp(substr(name, 1, 10), "*svn-cat*:") == 0) {
+	strcmp(substr(name, 1, 10), "*svn-cat*:") == 0 or
+	strcmp(substr(name, 1, 10), "*bzr-cat*:") == 0) {
         name = substr(name, 11, -1);
     }
     if (strcmp(substr(name, 1, 15), "*cvs-annotate*:") == 0 or
-        strcmp(substr(name, 1, 15), "*svn-annotate*:") == 0) {
+        strcmp(substr(name, 1, 15), "*svn-annotate*:") == 0 or
+        strcmp(substr(name, 1, 15), "*bzr-annotate*:") == 0) {
         name = substr(name, 16, -1);
     }
     % Unlike log and annotate, it's perfectly meaningful to do a
     % second diff starting from a diff buffer, because diffs are
     % parametrised.
     if (strcmp(substr(name, 1, 11), "*cvs-diff*:") == 0 or
-        strcmp(substr(name, 1, 11), "*svn-diff*:") == 0) {
+        strcmp(substr(name, 1, 11), "*svn-diff*:") == 0 or
+        strcmp(substr(name, 1, 11), "*bzr-diff*:") == 0) {
         name = substr(name, 12, -1);
     }
     if (strcmp(file, "") == 0) {
@@ -1604,7 +1616,7 @@ define cvssvn_diff() {
             args = args + " -r" + rev2;
 	run_shell_cmd("cvs diff" + args + " " + file);
 	message("cvs diff" + args + " " + file);
-    } else { % svn
+    } else if (which == "svn") {
         args = "";
         if (rev1 == "")
             rev1 = "BASE";
@@ -1613,6 +1625,13 @@ define cvssvn_diff() {
         else
             args = args + " -r" + rev1;
 	run_shell_cmd("svn diff" + args + " " + file);
+    } else { % bzr
+        args = "";
+        if (rev1 != "" and rev2 != "")
+            args = args + " -r" + rev1 + ".." + rev2;
+        else if (rev1 != "")
+            args = args + " -r" + rev1;
+	run_shell_cmd("bzr diff" + args + " " + file);
     }
     setbuf_info((getbuf_info & ~1) | 8); % clear modified bit, set readonly
     bob();
@@ -1624,18 +1643,22 @@ define cvssvn_annotate() {
     (file, dir, name, ) = getbuf_info();
     line = what_line();
     if (strcmp(substr(name, 1, 15), "*cvs-annotate*:") == 0 or
-	strcmp(substr(name, 1, 15), "*svn-annotate*:") == 0) {
+	strcmp(substr(name, 1, 15), "*svn-annotate*:") == 0 or
+	strcmp(substr(name, 1, 15), "*bzr-annotate*:") == 0) {
         message("This is already an annotation buffer\n");
         return;
     }
     if (strcmp(substr(name, 1, 10), "*cvs-log*:") == 0 or
 	strcmp(substr(name, 1, 10), "*svn-log*:") == 0 or
+	strcmp(substr(name, 1, 10), "*bzr-log*:") == 0 or
         strcmp(substr(name, 1, 10), "*cvs-cat*:") == 0 or
-	strcmp(substr(name, 1, 10), "*svn-cat*:") == 0) {
+	strcmp(substr(name, 1, 10), "*svn-cat*:") == 0 or
+	strcmp(substr(name, 1, 10), "*bzr-cat*:") == 0) {
         name = substr(name, 11, -1);
     }
     if (strcmp(substr(name, 1, 11), "*cvs-diff*:") == 0 or
-        strcmp(substr(name, 1, 11), "*svn-diff*:") == 0) {
+        strcmp(substr(name, 1, 11), "*svn-diff*:") == 0 or
+        strcmp(substr(name, 1, 11), "*bzr-diff*:") == 0) {
         name = substr(name, 12, -1);
     }
     if (strcmp(file, "") == 0) {
@@ -1664,7 +1687,7 @@ define cvssvn_annotate() {
     erase_buffer();
     if (which == "cvs") {
         if (rev == "") {
-            ret = run_shell_cmd("cvs-annotate 2>/dev/null " + rev + file);
+            ret = run_shell_cmd("cvs-annotate 2>/dev/null " + file);
         } else {
             ret = run_shell_cmd("cvs annotate 2>/dev/null -r" + rev + " " + file);
         }
@@ -1672,15 +1695,25 @@ define cvssvn_annotate() {
 	    erase_buffer();
 	    ret = run_shell_cmd("cvs annotate " + file);
 	}
-    } else {
+    } else if (which == "svn") {
         if (rev == "") {
-            ret = run_shell_cmd("svn-blame 2>/dev/null " + rev + file);
+            ret = run_shell_cmd("svn-blame 2>/dev/null " + file);
         } else {
             ret = run_shell_cmd("svn blame 2>/dev/null -r" + rev + " " + file);
         }
 	if (ret > 0) {
 	    erase_buffer();
 	    ret = run_shell_cmd("svn blame " + file);
+	}
+    } else {
+        if (rev == "") {
+            ret = run_shell_cmd("bzr annotate --all 2>/dev/null " + file);
+        } else {
+            ret = run_shell_cmd("bzr annotate --all 2>/dev/null -r" + rev + " " + file);
+        }
+	if (ret > 0) {
+	    erase_buffer();
+	    ret = run_shell_cmd("bzr annotate --all " + file);
 	}
     }
     setbuf_info((getbuf_info & ~1) | 8); % clear modified bit, set readonly
@@ -1694,17 +1727,21 @@ define cvssvn_cat() {
     (file, dir, name, ) = getbuf_info();
     line = what_line();
     if (strcmp(substr(name, 1, 15), "*cvs-annotate*:") == 0 or
-	strcmp(substr(name, 1, 15), "*svn-annotate*:") == 0) {
+	strcmp(substr(name, 1, 15), "*svn-annotate*:") == 0 or
+	strcmp(substr(name, 1, 15), "*bzr-annotate*:") == 0) {
         name = substr(name, 16, -1);
     }
     if (strcmp(substr(name, 1, 10), "*cvs-log*:") == 0 or
 	strcmp(substr(name, 1, 10), "*svn-log*:") == 0 or
+	strcmp(substr(name, 1, 10), "*bzr-log*:") == 0 or
         strcmp(substr(name, 1, 10), "*cvs-cat*:") == 0 or
-	strcmp(substr(name, 1, 10), "*svn-cat*:") == 0) {
+	strcmp(substr(name, 1, 10), "*svn-cat*:") == 0 or
+	strcmp(substr(name, 1, 10), "*bzr-cat*:") == 0) {
         name = substr(name, 11, -1);
     }
     if (strcmp(substr(name, 1, 11), "*cvs-diff*:") == 0 or
-        strcmp(substr(name, 1, 11), "*svn-diff*:") == 0) {
+        strcmp(substr(name, 1, 11), "*svn-diff*:") == 0 or
+        strcmp(substr(name, 1, 11), "*bzr-diff*:") == 0) {
         name = substr(name, 12, -1);
     }
     if (strcmp(file, "") == 0) {
@@ -1733,11 +1770,16 @@ define cvssvn_cat() {
         if (rev != "")
             args = args + " -r" + rev;
 	run_shell_cmd("cvs up -P " + args + " " + file);
-    } else {
+    } else if (which == "svn") {
         args = "";
         if (rev != "")
             args = args + " -r" + rev;
 	run_shell_cmd("svn cat " + args + " " + file);
+    } else {
+        args = "";
+        if (rev != "")
+            args = args + " -r" + rev;
+	run_shell_cmd("bzr cat " + args + " " + file);
     }
 #ifexists what_syntax_table
     if (bufferp(origname)) {
@@ -1773,6 +1815,12 @@ define svn_annotate() { cvssvn_annotate(); }
 define svn_diff() { cvssvn_diff(); }
 define svn_blame() { cvssvn_annotate(); }
 define svn_praise() { cvssvn_annotate(); }
+define bzr_log() { cvssvn_log(); }
+define bzr_cat() { cvssvn_cat(); }
+define bzr_annotate() { cvssvn_annotate(); }
+define bzr_diff() { cvssvn_diff(); }
+define bzr_blame() { cvssvn_annotate(); }
+define bzr_praise() { cvssvn_annotate(); }
 
 add_completion("cvs_log");
 add_completion("cvs_cat");
@@ -1782,6 +1830,10 @@ add_completion("svn_log");
 add_completion("svn_cat");
 add_completion("svn_blame");
 add_completion("svn_diff");
+add_completion("bzr_log");
+add_completion("bzr_cat");
+add_completion("bzr_blame");
+add_completion("bzr_diff");
 
 %}}}
 %{{{ M-x rot13
