@@ -3,6 +3,7 @@ Class: semi-bug
 Priority: medium
 Present-in: 2006-11-29
 Depends: port-unix-gtk2
+Fixed-in: r8040 2008-06-06
 Content-type: text/plain
 
 PuTTY (development snapshot 2006-11-29) on Linux spins on the CPU after a
