@@ -624,6 +624,24 @@ trouble with the Palm versions specifically, you should probably
 follow the link to James Harvey's page and contact him about them
 first.)
 
+<h2>Development</h2>
+
+<p>
+All of these puzzles are written in C, with a porting interface so
+that the same back-end puzzle code can talk to wildly different
+graphical front ends. The source archive above includes native GUI
+front ends for Windows and Mac OS X, an X front end using the
+<a href="http://www.gtk.org/">GTK+</a>
+library, and a mixed C/Java front end for compiling the puzzles into
+Java applets using
+<a href="http://nestedvm.ibex.org/">NestedVM</a>.
+
+<p>
+There is extensive <a href="devel/">developer documentation</a>
+describing the cross-platform interfaces. If you want to write a new
+puzzle or a new front end (to make all these games run on another
+platform), this is probably the place to start.
+
 <p>
 If you want to see the latest state of development, you can check
 the development sources out from my Subversion repository.
@@ -651,11 +669,7 @@ You might find it helpful to read
 before reporting a bug.
 
 <p>
-Patches are welcome. Especially if they provide a new front end (to
-make all these games run on another platform), or a new game. If you
-are attempting to add a new game or port to a new platform, you
-might find it helpful to read the
-<a href="devel/">developer documentation</a>.
+Patches are welcome.
 
 <hr>
 (comments to <a href="mailto:&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;">&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;</a>)
