@@ -176,7 +176,7 @@ static void control_packet(void *vctx, int type, void *data, size_t len)
 
     switch (type) {
       case CMD_UNION:
-	printf("got CMD_UNION(%.*s)\n", len, (char *)data);
+	printf("got CMD_UNION(%.*s)\n", (int)len, (char *)data);
 	unionmount(ctx, data, len);
 	break;
       case CMD_ROOTRW:
@@ -184,7 +184,7 @@ static void control_packet(void *vctx, int type, void *data, size_t len)
 	ctx->rootrw = 1;
 	break;
       case CMD_ROOT:
-	printf("got CMD_ROOT(%.*s)\n", len, (char *)data);
+	printf("got CMD_ROOT(%.*s)\n", (int)len, (char *)data);
 	sprintf(buf, "/tmp/r");
 	if (mkdir(buf, 0666) < 0) {
 	    char err[512];
@@ -238,7 +238,7 @@ static void control_packet(void *vctx, int type, void *data, size_t len)
 	break;
 
       case CMD_WRITABLE:
-	printf("got CMD_WRITABLE(%.*s)\n", len, (char *)data);
+	printf("got CMD_WRITABLE(%.*s)\n", (int)len, (char *)data);
 	if (!ctx->root) {
 	    char err[512];
 	    int elen = sprintf(err, "CMD_WRITABLE received before CMD_ROOT");
@@ -257,7 +257,7 @@ static void control_packet(void *vctx, int type, void *data, size_t len)
 	p = s + strlen(s);
 	if (p > s && p[-1] == '/')
 	    p--;
-	sprintf(p, "%.*s", len, (char *)data);
+	sprintf(p, "%.*s", (int)len, (char *)data);
 
 	if (mount("none", s, "hostfs", MS_MGC_VAL, p) < 0) {
 	    char err[512];
@@ -270,11 +270,12 @@ static void control_packet(void *vctx, int type, void *data, size_t len)
 	break;
 
       case CMD_HOSTNAME:
-	printf("got CMD_HOSTNAME(%.*s)\n", len, (char *)data);
+	printf("got CMD_HOSTNAME(%.*s)\n", (int)len, (char *)data);
 	if (sethostname(data, len) < 0) {
 	    char err[512];
 	    int elen = sprintf(err, "sethostname(\"%.*s\"): %.220s",
-			       len<220?len:220, (char *)data, strerror(errno));
+			       (int)(len<220?len:220), (char *)data,
+			       strerror(errno));
 	    protowrite(ctx->control_wfd, CMD_FAILURE, err, elen, (void *)NULL);
 	}
 	break;
@@ -282,7 +283,8 @@ static void control_packet(void *vctx, int type, void *data, size_t len)
       case CMD_UID:
 	if (len != 4) {
 	    char err[512];
-	    int elen = sprintf(err, "CMD_UID packet had bad length %d", len);
+	    int elen = sprintf(err, "CMD_UID packet had bad length %d",
+			       (int)len);
 	    protowrite(ctx->control_wfd, CMD_FAILURE, err, elen, (void *)NULL);
 	}
 	id = ((unsigned char *)data)[0];
@@ -296,7 +298,8 @@ static void control_packet(void *vctx, int type, void *data, size_t len)
       case CMD_GID:
 	if (len != 4) {
 	    char err[512];
-	    int elen = sprintf(err, "CMD_GID packet had bad length %d", len);
+	    int elen = sprintf(err, "CMD_GID packet had bad length %d",
+			       (int)len);
 	    protowrite(ctx->control_wfd, CMD_FAILURE, err, elen, (void *)NULL);
 	}
 	id = ((unsigned char *)data)[0];
@@ -311,7 +314,7 @@ static void control_packet(void *vctx, int type, void *data, size_t len)
 	if (len != 4) {
 	    char err[512];
 	    int elen = sprintf(err, "CMD_TTYGID packet had bad length %d",
-			       len);
+			       (int)len);
 	    protowrite(ctx->control_wfd, CMD_FAILURE, err, elen, (void *)NULL);
 	}
 	id = ((unsigned char *)data)[0];
@@ -326,7 +329,7 @@ static void control_packet(void *vctx, int type, void *data, size_t len)
 	if (len % 4 != 0) {
 	    char err[512];
 	    int elen = sprintf(err, "CMD_GROUPS packet had bad length %d",
-			       len);
+			       (int)len);
 	    protowrite(ctx->control_wfd, CMD_FAILURE, err, elen, (void *)NULL);
 	}
 	ctx->ngroups = len / 4;
@@ -344,14 +347,14 @@ static void control_packet(void *vctx, int type, void *data, size_t len)
 	break;
 
       case CMD_CHDIR:
-	printf("got CMD_CHDIR(%.*s)\n", len, (char *)data);
+	printf("got CMD_CHDIR(%.*s)\n", (int)len, (char *)data);
 	ctx->cwd = snewn(len+1, char);
 	memcpy(ctx->cwd, data, len);
 	ctx->cwd[len] = '\0';
 	break;
 
       case CMD_ENVIRON:
-	printf("got CMD_ENVIRON(%.*s)\n", len, (char *)data);
+	printf("got CMD_ENVIRON(%.*s)\n", (int)len, (char *)data);
 	if (ctx->nenvvars >= ctx->envvarsize) {
 	    ctx->envvarsize = ctx->nenvvars * 3 / 2 + 64;
 	    ctx->envvars = sresize(ctx->envvars, ctx->envvarsize, char *);
@@ -363,7 +366,7 @@ static void control_packet(void *vctx, int type, void *data, size_t len)
 	break;
 
       case CMD_COMMAND:
-	printf("got CMD_COMMAND(%.*s)\n", len, (char *)data);
+	printf("got CMD_COMMAND(%.*s)\n", (int)len, (char *)data);
 	if (ctx->ncmdwords >= ctx->cmdwordsize) {
 	    ctx->cmdwordsize = ctx->ncmdwords * 3 / 2 + 64;
 	    ctx->cmdwords = sresize(ctx->cmdwords, ctx->cmdwordsize, char *);
@@ -386,8 +389,8 @@ static void control_packet(void *vctx, int type, void *data, size_t len)
 	    if (len != sizeof(termios) + sizeof(winsize)) {
 		char err[512];
 		int elen = sprintf(err, "CMD_PTY message size was %d,"
-				   " expected %d", len,
-				   sizeof(termios) + sizeof(winsize));
+				   " expected %d", (int)len,
+				   (int)(sizeof(termios) + sizeof(winsize)));
 		protowrite(ctx->control_wfd, CMD_FAILURE, err, elen,
 			   (void *)NULL);
 		break;
@@ -555,7 +558,8 @@ static void control_packet(void *vctx, int type, void *data, size_t len)
 	    if (len != 8) {
 		char err[512];
 		int elen = sprintf(err, "CMD_%cSERIAL packet had bad length"
-				   " %d", (type==CMD_ISERIAL?'I':'O'), len);
+				   " %d", (type==CMD_ISERIAL?'I':'O'),
+				   (int)len);
 		protowrite(ctx->control_wfd, CMD_FAILURE, err, elen,
 			   (void *)NULL);
 		break;
@@ -629,7 +633,8 @@ static void control_packet(void *vctx, int type, void *data, size_t len)
 	    if (len != 8) {
 		char err[512];
 		int elen = sprintf(err, "CMD_%cSERIAL packet had bad length"
-				   " %d", (type==CMD_ISERIAL?'I':'O'), len);
+				   " %d", (type==CMD_ISERIAL?'I':'O'),
+				   (int)len);
 		protowrite(ctx->control_wfd, CMD_FAILURE, err, elen,
 			   (void *)NULL);
 		break;

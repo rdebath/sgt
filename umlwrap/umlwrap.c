@@ -838,7 +838,7 @@ static void control_packet(void *vctx, int type, void *data, size_t len)
 	protowrite(ctx->wfd, CMD_GO, (void *)NULL);
     } else if (type == CMD_FAILURE) {
 	termrestore_at_exit();
-	fprintf(stderr, "umlwrap-init: %.*s\n", len, (char *)data);
+	fprintf(stderr, "umlwrap-init: %.*s\n", (int)len, (char *)data);
 	exit(1);
     } else if (type == CMD_GONE) {
 	if (ctx->optctx->verbose) {
@@ -1010,7 +1010,7 @@ int main(int argc, char **argv)
     if (ctx->rootwrite == 1 && !strcmp(ctx->root, "/") && !ctx->nunions) {
 	fprintf(stderr, "%s: -W with default root directory is risky\n"
 		"%*sspecify -W twice to override this diagnostic\n",
-		PNAME, strlen(PNAME)+2, "");
+		PNAME, (int)(strlen(PNAME)+2), "");
 	return 1;
     }
 
