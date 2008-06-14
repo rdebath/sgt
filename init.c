@@ -289,7 +289,7 @@ static void control_packet(void *vctx, int type, void *data, size_t len)
 	id = (id << 8) | ((unsigned char *)data)[1];
 	id = (id << 8) | ((unsigned char *)data)[2];
 	id = (id << 8) | ((unsigned char *)data)[3];
-	printf("got CMD_UID(%d)\n", id);
+	printf("got CMD_UID(%ld)\n", id);
 	ctx->uid = id;
 	break;
 
@@ -303,7 +303,7 @@ static void control_packet(void *vctx, int type, void *data, size_t len)
 	id = (id << 8) | ((unsigned char *)data)[1];
 	id = (id << 8) | ((unsigned char *)data)[2];
 	id = (id << 8) | ((unsigned char *)data)[3];
-	printf("got CMD_GID(%d)\n", id);
+	printf("got CMD_GID(%ld)\n", id);
 	ctx->gid = id;
 	break;
 
@@ -318,7 +318,7 @@ static void control_packet(void *vctx, int type, void *data, size_t len)
 	id = (id << 8) | ((unsigned char *)data)[1];
 	id = (id << 8) | ((unsigned char *)data)[2];
 	id = (id << 8) | ((unsigned char *)data)[3];
-	printf("got CMD_TTYGID(%d)\n", id);
+	printf("got CMD_TTYGID(%ld)\n", id);
 	ctx->ttygid = id;
 	break;
 
@@ -338,7 +338,7 @@ static void control_packet(void *vctx, int type, void *data, size_t len)
 	    id = (id << 8) | ((unsigned char *)data)[4*i+2];
 	    id = (id << 8) | ((unsigned char *)data)[4*i+3];
 	    ctx->groups[i] = id;
-	    printf("%s%d", i ? "," : "", id);
+	    printf("%s%ld", i ? "," : "", id);
 	}
 	printf(")\n");
 	break;
