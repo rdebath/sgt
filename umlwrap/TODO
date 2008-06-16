@@ -1,0 +1,120 @@
+Things that could usefully still be done to umlwrap
+===================================================
+
+Relatively simple
+-----------------
+
+ - Automatically mount a couple of writable tmpfses over /tmp and
+   /var/tmp. (Might need an option to disable it, although that can
+   come later. We haven't got such an option for /proc, /sys or
+   /dev/pts, after all.)
+
+ - Better support for shifted roots (-R):
+    - do something about /dev. Automatically mount the real /dev on
+      UML's /dev in spite of the shifted root? Or automatically
+      create our own /dev in a tmpfs with lots of devices? (I quite
+      like the latter, actually, because that way the devices can be
+      appropriate to UML in any case.)
+    - think out carefully, and nail down, exactly how -C and -w
+      interact with a shifted root.
+
+More complex
+------------
+
+ - One remaining weakness in the UML isolation model is the
+   unfettered read access to the host filesystem. An example of a
+   credible attack through this would be for the isolated process to
+   read some sensitive dotfiles such as ~/.subversion/auth and
+   incorporate their contents (steganographically if it's feeling
+   particularly flash) into the output files it generates. Assuming
+   the output files are going to get used for _something_, they may
+   well end up published, at which point the person who provided the
+   untrusted binaries I used umlwrap to isolate has pulled off a
+   successful attack.
+    + A simple solution to this is to set the internal uid to nobody
+      rather than to the external uid. This causes UML itself to
+      inhibit read access to anything not world-readable, while the
+      exterior kernel imposes its own constraints as well.
+    + Unfortunately, this rather scuppers -w areas, limiting the
+      usefulness of the technique. What can be done about that?
+       * I have one cunning plan, but it relies on a custom
+	 filesystem running inside UML, which either means custom
+	 kernel hacks in UML, or FUSE. The latter shouldn't be too
+	 infeasible, though: as long as kernel FUSE support is
+	 compiled into the UML, we ought to be able to write a
+	 FUSE-based helper process to go in our init fs.
+       * So what we do is: we invent a FUSE-based filesystem whose
+	 effect is to mirror one area of the VFS in another, and
+	 make the mirror area _look_ as if it's readable and
+	 writable by a specified uid. The FUSE filesystem runs as
+	 root (inside UML), and replicates writes to the mirror area
+	 in the source area _without regard for permissions there_.
+       * Under this model, -w areas would become "full access"
+	 areas: accessed by processes inside UML as if they were
+	 running as UML-root, and hence access would be limited only
+	 by the external kernel's access control constraints.
+       * Alternatively, hmm, a true kernel fs inside UML might
+	 actually not be infeasible if we compile it as a kernel
+	 _module_? Investigate that; it might be preferable to FUSE.
+
+Blue-sky
+--------
+
+ - X forwarding.
+    * It would be relatively straightforward to set up an X server
+      Unix socket inside UML and forward connections to the real X
+      server outside, munging X auth data on the way past.
+       + that's "relatively straightforward" in the sense that
+	 managing a dynamically changing number of data channels in
+	 and out of UML would require multiplexing them over a
+	 single UML serial port in much the same way SSH currently
+	 does, built-in window mechanism and all. So, probably a
+	 fair bit of _work_, but no _conceptual_ problems.
+    * However, that's only for almost-entirely-trusted processes:
+      the side of umlwrap which is only used for munging the VFS.
+      Letting any genuinely untrusted process have an unconstrained
+      connection to my X server is clearly a recipe for DOOM.
+    * So what alternatives are there? One option is to have a try at
+      OpenSSH's restricted X connection idea, but that causes enough
+      problems with existing applications that I think it's unlikely
+      to be useful.
+    * The other idea that springs vaguely to mind is to run an X
+      server of some sort _inside_ UML - Xvfb or some knockoff - and
+      then use a window-by-window display-sharing utility of some
+      sort to mirror the windows in there on to the exterior X
+      display. But that almost certainly is way too much effort.
+
+ - Allowing limited network access?
+    * One obvious approach for this is to give UML a functioning
+      network device which talks to some sort of interface (TUN,
+      SLIP, whatever) on the outside - but actually have that
+      interface go straight to umlwrap. Trouble is, then umlwrap
+      would have to implement an entire TCP stack in order to
+      translate UML's network traffic back into the form of sensible
+      bidirectional data streams that it could pass to the exterior
+      sockets layer. So that's a non-starter.
+       + "slirp" <http://slirp.sourceforge.net/> appears to be a
+	 program that does pretty much this already: it talks SLIP
+	 at one end and sockets API at the other, and a quick peer
+	 at its web-CVS suggests that it does indeed do this by
+	 implementing an entire TCP stack. So that's proof of
+	 concept, but it still doesn't strike me as obviously
+	 non-ghastly...
+    * A slightly simpler idea I had was to implement an intercepting
+      proxy. Set up firewall rules within UML to divert all outgoing
+      TCP connections to a firewall process under umlwrap's control.
+      That process then has to retrieve the original destination of
+      each connection from the kernel (I'm not sure how that's
+      actually done, but I'm fairly sure there is a means of doing
+      it); then it converts them into CMD_DATA/CMD_EOF packets and
+      multiplexes them back up to the umlwrap exterior side in the
+      obvious way. So all the actual TCP encode/decode is done by
+      the kernels involved in the job (why work when someone else is
+      willing to do it for you?), and all we have to do is funnel
+      data in and out of UML and vet it for suitability.
+    * This whole idea also gets into a quagmire of exactly how much
+      vetting you can sensibly do on the outgoing network
+      connections. HTTP would be reasonably feasible to vet by
+      writing a minimal HTTP proxy: you could validate the headers
+      and then say yes or no to the whole connection. Anything else
+      would be looking rather more fiddly.
