@@ -18,6 +18,16 @@ Relatively simple
     - think out carefully, and nail down, exactly how -C and -w
       interact with a shifted root.
 
+ - Arbitrary root setup option.
+    - the most obvious use is to make it easy to have init
+      arbitrarily mount extra weird filesystems before dropping
+      privileges. However, rather than replicate all the command-
+      line features of mount(8) in the umlwrap command-line syntax,
+      it seems much easier to me to simply provide a umlwrap option
+      to which you pass a string which will be system()ed on the
+      inside before CMD_GO. Then you can give real mount commands,
+      or even something else I haven't thought of.
+
 More complex
 ------------
 
