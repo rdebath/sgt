@@ -81,9 +81,11 @@ Blue-sky
 	 does, built-in window mechanism and all. So, probably a
 	 fair bit of _work_, but no _conceptual_ problems.
     * However, that's only for almost-entirely-trusted processes:
-      the side of umlwrap which is only used for munging the VFS.
-      Letting any genuinely untrusted process have an unconstrained
-      connection to my X server is clearly a recipe for DOOM.
+      the sort of application of umlwrap in which the real purpose
+      is to munge the VFS and the isolation features are a hindrance
+      rather than a help. Letting any genuinely untrusted process
+      have an unconstrained connection to my X server is clearly a
+      recipe for DOOM.
     * So what alternatives are there? One option is to have a try at
       OpenSSH's restricted X connection idea, but that causes enough
       problems with existing applications that I think it's unlikely
@@ -114,9 +116,8 @@ Blue-sky
       proxy. Set up firewall rules within UML to divert all outgoing
       TCP connections to a firewall process under umlwrap's control.
       That process then has to retrieve the original destination of
-      each connection from the kernel (I'm not sure how that's
-      actually done, but I'm fairly sure there is a means of doing
-      it); then it converts them into CMD_DATA/CMD_EOF packets and
+      each connection from the kernel (getsockopt SO_ORIGINAL_DST);
+      then it converts them into CMD_DATA/CMD_EOF packets and
       multiplexes them back up to the umlwrap exterior side in the
       obvious way. So all the actual TCP encode/decode is done by
       the kernels involved in the job (why work when someone else is
