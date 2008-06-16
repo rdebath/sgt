@@ -1,0 +1,40 @@
+This directory contains "umlwrap", a User-Mode Linux based process
+isolation utility.
+
+The umlwrap program consists of two parts:
+
+ - umlwrap itself, which should go on your normal PATH
+
+ - a small directory tree which is mounted as the root filesystem by
+   umlwrap's invocation of UML, including in particular a custom
+   "init" program which runs inside the UML and knows how to talk to
+   the outer half of umlwrap running outside it.
+
+Hence, you cannot just type "make" in this directory and expect to
+get a binary you can run: if you haven't run "make install", it will
+fail to find its root file system. So you must have run "make
+install" before anything useful will happen.
+
+Furthermore, the outer umlwrap program requires the pathname of the
+root directory tree hard-coded into it, so when you first run "make"
+you have to have already decided where you're going to install it.
+
+For example, if you start with a clean source directory and run
+
+  make install prefix=$HOME
+
+then you will get umlwrap installed in $HOME/bin, the root file
+system including umlwrap's init installed in $HOME/lib/umlwrap, and
+the man page in $HOME/man/man1. Those subdirectories can be
+individually overridden if you need them to be: look in Makefile to
+find the names of the variables to define on the make command line.
+
+If you expect to be running "make install" repeatedly (e.g. you're
+doing umlwrap development), you can relieve the monotony of
+specifying your preferred prefix setting the whole time by creating
+a small file called "Makefile.local" and adding a line defining your
+preferred prefix, e.g.
+
+  prefix = /home/simon
+
+Then just "make install" will do the right thing.

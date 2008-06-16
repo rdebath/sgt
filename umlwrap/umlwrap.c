@@ -43,7 +43,6 @@
 
 #define PNAME "umlwrap"
 
-typedef enum { TRI_NO, TRI_AUTO, TRI_YES } troolean;
 typedef enum { DIR_R=1, DIR_W=2, DIR_RW = 3 } rwdir;
 
 /*
@@ -130,7 +129,6 @@ struct optctx {
     int nfds, fdsize;
     int memory;			       /* currently in Mb */
     int verbose;
-    troolean terminal;
     int error;
 };
 
@@ -159,20 +157,6 @@ void addfd(struct optctx *ctx, int fd, rwdir rw)
 static int option(void *vctx, char optchr, char *longopt, char *value)
 {
     struct optctx *ctx = (struct optctx *)vctx;
-
-    if (optchr == 't' || (longopt && !strcmp(longopt, "pty"))) {
-	ctx->terminal = TRI_YES;
-	return 1;
-    }
-    if (optchr == 'T' || (longopt && !strcmp(longopt, "no-pty"))) {
-	ctx->terminal = TRI_NO;
-	return 1;
-    }
-    if ((longopt && (!strcmp(longopt, "auto-pty") ||
-		     !strcmp(longopt, "pty-auto")))) {
-	ctx->terminal = TRI_AUTO;
-	return 1;
-    }
 
     if (optchr == 'k' || (longopt && !strcmp(longopt, "kernel"))) {
 	if (!value) return -2;
@@ -529,6 +513,54 @@ static int option(void *vctx, char optchr, char *longopt, char *value)
 	else if ((flags & (O_RDONLY|O_WRONLY|O_RDWR)) == O_RDWR)
 	    addfd(ctx, fd, DIR_RW);
 	return 2;
+    }
+
+    if ((longopt && !strcmp(longopt, "licence")) ||
+	(longopt && !strcmp(longopt, "license"))) {
+	extern const char *const licence[];
+	int i;
+
+	for (i = 0; licence[i]; i++)
+	    fputs(licence[i], stdout);
+
+	exit(0);
+    }
+
+    if ((longopt && !strcmp(longopt, "help"))) {
+	static const char *const help[] = {
+	    "usage: umlwrap [options] [command [args...]]\n",
+	    "where: -k path, --kernel=path   pathname to UML kernel binary\n",
+	    "       -I path, --initfs=path   pathname to UML initial root fs\n",
+	    "       --hostname=name          hostname used in UML system\n",
+	    "       -C dir, --cwd=dir        working directory for command\n",
+	    "       --user=name              set uid,gid,groups for command\n",
+	    "       --uid=name               set uid only for command\n",
+	    "       --gid=name               set gid only for command\n",
+	    "       --groups=name[,name...]  set groups list for command\n",
+	    "       --ttygid=name            set owning gid for tty devices\n",
+	    "       -m megs, --memory=megs   set available memory in Mb\n",
+	    "       -R path, --root=path     use different root directory\n",
+	    "       -u path, --union=path    overlay on root directory\n",
+	    "       -w path, --writable=path make a subdirectory writable\n",
+	    "       -W, --root-writable      make whole VFS writable\n",
+	    "       -e var=val, --env=var=val set an environment variable\n",
+	    "       -E, --clearenv           do not copy calling environment\n",
+	    "       --fd-read=fd             propagate an extra read-only fd\n",
+	    "       --fd-write=fd            propagate an extra write-only fd\n",
+	    "       --fd-rw=fd               propagate an extra read-write fd\n",
+	    "       --fd=fd                  propagate an extra fd (auto-sense rw status)\n",
+	    "       -v, --verbose            print lots of diagnostic messages\n",
+	    "       -q, --quiet              print no diagnostic messages\n",
+	    " also: umlwrap --help           show this text\n",
+	    "       umlwrap --licence        show (MIT) licence text\n",
+	    NULL
+	};
+	int i;
+
+	for (i = 0; help[i]; i++)
+	    fputs(help[i], stdout);
+
+	exit(0);
     }
 
     if (!optchr && !longopt) {
@@ -923,7 +955,6 @@ int main(int argc, char **argv)
     ctx->initfs = UMLROOT;	       /* should be #defined by Makefile */
     ctx->memory = 512;
     ctx->verbose = FALSE;
-    ctx->terminal = TRI_AUTO;
     ctx->uid[2] = getuid();
     ctx->uid_mask = 1 << 2;
     ctx->gid[2] = getgid();
