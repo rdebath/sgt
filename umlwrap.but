@@ -1,0 +1,335 @@
+\cfg{man-identity}{umlwrap}{1}{2008-06-16}{Simon Tatham}{Simon Tatham}
+
+\define{dash} \u2013{-}
+
+\title Man page for \c{umlwrap}
+
+\U NAME
+
+\c{umlwrap} \dash wrap a process in User-Mode Linux for isolation purposes
+
+\U SYNOPSIS
+
+\c umlwrap [ options ] [ command [ argument ... ] ]
+\e bbbbbbb   iiiiiii     iiiiiii   iiiiiiii
+
+\U DESCRIPTION
+
+\cw{umlwrap} boots up a fresh instance of a User-Mode Linux (UML)
+kernel, and runs the specified command inside it so that it is
+largely isolated from the rest of the system.
+
+You might use \cw{umlwrap} if you had a piece of software which you
+didn't fully trust, and you wanted to run it in an environment which
+severely limited its ability to cause damage if it turned out to be
+untrustworthy.
+
+By default, the process being run is given an environment very like
+the one you call \cw{umlwrap} from (same current directory, same
+environment variable, same user and group ids), and has read-only
+access to the whole of the exterior file system, but it cannot write
+to any files or make any network connections. The only thing it can
+do is to write output to its standard output and standard error
+channels.
+
+In addition to this basic functionality, \cw{umlwrap} also provides
+various refinements. You can permit the isolated process to write to
+specific subdirectories in the file system; you can vary the
+parameters under which it runs (uid, gid, current directory,
+environment variables). Also, if your UML kernel has \c{unionfs}
+built in, you can overlay other directory trees on top of the root
+file system as seen by the isolated process. (This is useful if, for
+example, the binary you're trying to run is not only untrusted but
+also expects to have its auxiliary files installed somewhere
+inconvenient such as \c{/usr/lib}.)
+
+\U REQUIREMENTS
+
+In order to run \cw{umlwrap}, you will need a working UML kernel
+binary. By default, \cw{umlwrap} expects this to be called \c{linux}
+and expects to find it on your \cw{PATH}, but you can use the \c{-k}
+option to point it at a kernel somewhere else.
+
+If you want to use the \c{-u} option to overlay extra files on top
+of the normal file system, your kernel will need to have the
+\c{unionfs} file system compiled in. At the time of writing, this
+file system is not in the mainline kernels; it is in the \c{-mm}
+kernel series, or alternatively you can download the patch from
+\W{http://unionfs.filesystems.org/}\c{unionfs.filesystems.org}.
+
+\U OPTIONS
+
+\dt \cw{-k} \e{kernel-path} or \cw{--kernel=}\e{kernel-path}
+
+\dd Specify the pathname of the UML kernel binary that \cw{umlwrap}
+will use as its isolation environment. By default, UML expects to
+find a binary called \c{linux} on your \cw{PATH}.
+
+\dt \cw{-I} \e{initial-file-system} or \cw{--initfs=}\e{initial-file-system}
+
+\dd Specify the pathname of the directory which \cw{umlwrap} will
+use as the initial root file system for the UML kernel. This path
+will normally have been hard-coded into \cw{umlwrap} at compile
+time, and will contain a special-purpose \c{init} program (which is
+really the other half of \cw{umlwrap} itself) and a couple of empty
+directories. You should not need to use this option if \cw{umlwrap}
+has been properly installed.
+
+\lcont{
+
+(This file system is only seen by \cw{umlwrap}'s \c{init} process
+itself: the actual process you asked to run will have been
+\c{chroot}ed into the file system you expect it to see.)
+
+}
+
+\dt \cw{--hostname=}\e{hostname}
+
+\dd Specify the host name which will be given to the virtual UML
+system. (This may show up in shell prompts, for example.) By
+default, \cw{umlwrap} constructs this by appending the suffix
+\cq{-umlwrap} to the host name of the machine on which it is
+running.
+
+\dt \cw{-C} \e{directory} or \cw{--cwd=}\e{directory}
+
+\dd Specify the current working directory for the process you want
+to run. By default, this will be set to the same as your current
+working directory when you run \cw{umlwrap}.
+
+\dt \cw{--user=}\e{username-or-uid}
+
+\dd Specify the user ID under which you want the process to run
+inside \cw{umlwrap}. This option sets not only the UID, but also the
+GID and supplementary groups list (by looking up the user name or
+uid you supply in the exterior password and group files). By default
+the uid, gid and supplementary groups list given to the isolated
+process will be exactly the same as those of the calling process.
+Bear in mind that this option cannot grant any privilege to write to
+files in the exterior file system which the calling user would not
+be able to write (since UML itself runs as a process with the
+calling user's normal privileges).
+
+\lcont{
+
+Note that if you allow the isolated process to have user id zero
+(root), then it is no longer prevented from affecting the outside
+world: a root process running inside UML can create new read-write
+\c{hostfs} mounts of pieces of the file system. It is vital to the
+security of \cw{umlwrap} that the isolated process run under a
+non-root uid.
+
+}
+
+\dt \cw{--uid=}\e{username-or-uid}
+
+\dd Specify the UID of the isolated process. Unlike \cw{--user},
+this does not implicitly set any group IDs. If you specify it in
+addition to \cw{--user}, then the UID given with \cw{--uid} will
+override the one from \cw{--user}, but the group settings implied by
+\cw{--user} will still be used.
+
+\lcont{
+
+As above, note that if you allow the isolated process to have user
+id zero (root), then it is no longer properly isolated.
+
+}
+
+\dt \cw{--gid=}\e{groupname-or-gid}
+
+\dd Specify the primary GID of the isolated process. If you specify
+this in addition to \cw{--user}, then the GID given with \cw{--gid}
+will override the one from \cw{--user}, but the UID and
+supplementary group settings implied by \cw{--user} will still be
+used.
+
+\dt \cw{--groups=}\e{grouplist}
+
+\dd Specify the supplementary group list of the isolated process.
+The argument \e{grouplist} should be a comma-separated list of
+either group names or numeric group IDs (or a mixture of both). If
+you specify this in addition to \cw{--user}, then the group list
+given with \cw{--groups} will override the one from \cw{--user}, but
+the UID and primary GID settings implied by \cw{--user} will still
+be used.
+
+\dt \cw{--ttygid=}\e{groupname-or-gid}
+
+\dd Specify the GID which will be given to terminal devices inside
+the UML environment. By default this GID is obtained by looking up
+the group name \cq{tty} on the outside.
+
+\dt \cw{-m} \e{megabytes} or \cw{--memory=}\e{megabytes}
+
+\dd Specify how much memory should be available to the UML system,
+in megabytes. Default is 512.
+
+\dt \cw{-v} or \cw{--verbose}
+
+\dd Enable verbose output. In this mode \cw{umlwrap} will print all
+the console messages from the UML kernel on standard error, and also
+other diagnostic messages including boot-time diagnostics from the
+custom \cw{init} process.
+
+\dt \cw{-q} or \cw{--quiet}
+
+\dd Disable verbose output. (This is the default.)
+
+\dt \cw{-R} \e{root-directory} or \cw{--root=}\e{root-directory}
+
+\dd Specify the directory which will be seen as the root by the
+isolated process. The default is \c{/}.
+
+\lcont{
+
+This option is unlikely to be very useful in any but the most
+specialist circumstances, since the new root directory will need at
+least a functioning \c{/dev} in order to do anything very useful. It
+would be more useful if \cw{umlwrap} had a general option to mount
+an arbitrary exterior directory on an arbitrary interior path.
+
+If you use this option, be aware that your current directory (either
+inferred or specified using \c{-C}) will be interpreted relative to
+the new root.
+
+}
+
+\dt \cw{-u} \e{union-directory} or \cw{--union}=\e{union-directory}
+
+\dd Specify a directory which you want to be overlaid on top of the
+root directory as seen by the isolated process. For example, if you
+use the option \c{-u ~/opt/dodgyprogram}, then files in 
+\c{~/opt/dodgyprogram/usr/bin} will appear in the virtual
+\c{/usr/bin} beside everything from the real \c{/usr/bin}, and if
+the same file name appears in both then the one in
+\c{~/opt/dodgyprogram/usr/bin} will take priority.
+
+\lcont{
+
+If you specify this option more than once, all the specified
+subtrees will be overlaid on the root. The ones mentioned later will
+take priority, if the same pathnames exist in more than one.
+
+This option will not work if your UML kernel does not have
+\c{unionfs} compiled in.
+
+}
+
+\dt \cw{-w} \e{subdir} or \cw{--writable=}\e{subdir}
+
+\dd Specify a directory subtree which you want the isolated process
+to be able to write to. Everything under this directory will become
+writable by the isolated process (or rather, as writable as it would
+have been by the calling user \dash neither \cw{umlwrap} nor UML
+runs setuid, so they cannot grant additional privilege on the real
+system).
+
+\dt \cw{-W} or \cw{--root-writable}
+
+\dd Cause the isolated process's root file system to be mounted
+read-write, so that the process can write to anything that the
+calling user would be able to write to.
+
+\lcont{
+
+In normal usage, this is a dangerous option: if you do not trust the
+process you are isolating, you almost certainly do not want to
+enable this. In fact, if you specify \c{-W} without also specifying
+one of \c{-R} and \c{-u}, \cw{umlwrap} will assume you did it by
+accident and refuse to run. If you really did mean it, specify
+\c{-W} a second time to override this warning.
+
+However, if you have shifted the root of the file system using
+\c{-R}, then this merely allows the isolated process to write to
+that alternate root; if you have union-mounted one or more other
+directory trees over the main root file system using \c{-u}, then
+this option only allows the isolated process to write to the topmost
+(last-specified) of those trees. In either of those situations this
+might be a safe and useful option to use.
+
+}
+
+\dt \cw{-e} \e{var}\c{=}\e{value} or \cw{--env=}\e{var}\c{=}\e{value}
+
+\dd Set an environment variable in the starting environment of the
+isolated process. (For example, having union-mounted some directory
+full of strange binaries on the process's root directory, you might
+then want to add that directory to the process's \cw{PATH}.)
+
+\dt \cw{-E}
+
+\dt \cw{--clearenv}
+
+\dd Prevent \cw{umlwrap} from copying the calling process's entire
+environment into that of the isolated process. If you use this
+option, the calling process will be started with a completely empty
+environment; that's unlikely to be useful, so you will probably also
+want to use \cw{-e} to set individual environment variables.
+
+\dt \cw{--fd-read=}\e{fd}, \cw{--fd-write=}\e{fd},
+\cw{--fd-rw=}\e{fd}, \cw{--fd=}\e{fd}
+
+\dd Propagate an additional file descriptor through to the isolated
+process. By default, the only file descriptors of the calling
+process which the isolated process is permitted to access are
+standard input, standard output and standard error (and the isolated
+process may only read from standard input and may only write to
+standard output and standard error, even if those file descriptors
+in the calling process are read-write). If you need an additional
+I/O channel for some reason (e.g. the isolated process expects to
+write diagnostic output to fd 3), you can use one of these options
+to cause that fd to be propagated into the UML environment. You can
+specify explicitly that the fd should be propagated in one or both
+directions, or use the unqualified \c{--fd} option to cause
+\cw{umlwrap} to auto-detect the nature of the fd in question.
+
+\U ARGUMENTS
+
+After the command-line options to \cw{umlwrap}, you can specify a
+command to be executed in the isolated environment. If you do not
+specify any command, then the default will be to run a copy of your
+normal shell.
+
+Command-line options which appear after the first non-option
+argument will be assumed to be arguments to the isolated command,
+not to \cw{umlwrap} itself (so, for example, \cq{umlwrap -v cat}
+puts \cw{umlwrap} into verbose mode, whereas \cq{umlwrap cat -v}
+puts the isolated \c{cat} process into verbose mode).
+
+If the name of the command you want to run looks itself like a
+command-line option, you can give the special argument \cq{--} to
+\cw{umlwrap}, which will force it to consider all further
+command-line arguments to be command words rather than its own
+options.
+
+\U EXIT STATUS
+
+If the isolated process terminates normally, \cw{umlwrap} will
+return its exit status. If the process terminates due to a signal,
+\cw{umlwrap}'s exit status will be 128 plus the signal number.
+
+An error during setup or command-line option parsing will lead to an
+exit code of 1; a failure to start UML will lead to an exit code of
+127.
+
+\U BUGS
+
+\c{-R} is almost useless without a general
+mount-this-directory-on-that-one option to sort out \c{/dev}. There
+should be one in any case; it'd be obviously useful.
+
+It should be more carefully thought out, and specified much more
+clearly in this man page, how \c{-C} and \c{-w} interact with
+shifting the root directory using \c{-R}.
+
+In almost all normal situations it would be a lot more useful to
+automatically mount a couple of \cw{tmpfs}es over \cw{/tmp} and
+\cw{/var/tmp}.
+
+\U LICENCE
+
+\cw{umlwrap} is free software, distributed under the MIT licence.
+Type \cw{umlwrap --licence} to see the full licence text.
+
+\versionid $Id$
