@@ -31,6 +31,7 @@
 #include "protocol.h"
 #include "rawmode.h"
 #include "movefds.h"
+#include "fgetline.h"
 
 void fatal(const char *fmt, ...)
 {
@@ -82,6 +83,8 @@ struct init_ctx {
     int ncmdwords, cmdwordsize;
     char **envvars;
     int nenvvars, envvarsize;
+    char **setupcmds;
+    int nsetupcmds, setupcmdsize;
     sel *sel;
     sel_rfd *control_rfd;
     sel_wfd *control_wfd;
@@ -375,6 +378,19 @@ static void control_packet(void *vctx, int type, void *data, size_t len)
 	memcpy(ctx->cmdwords[ctx->ncmdwords], data, len);
 	ctx->cmdwords[ctx->ncmdwords][len] = '\0';
 	ctx->ncmdwords++;
+	break;
+
+      case CMD_SETUPCMD:
+	printf("got CMD_SETUPCMD(%.*s)\n", (int)len, (char *)data);
+	if (ctx->nsetupcmds >= ctx->setupcmdsize) {
+	    ctx->setupcmdsize = ctx->nsetupcmds * 3 / 2 + 64;
+	    ctx->setupcmds = sresize(ctx->setupcmds, ctx->setupcmdsize,
+				     char *);
+	}
+	ctx->setupcmds[ctx->nsetupcmds] = snewn(len+1, char);
+	memcpy(ctx->setupcmds[ctx->nsetupcmds], data, len);
+	ctx->setupcmds[ctx->nsetupcmds][len] = '\0';
+	ctx->nsetupcmds++;
 	break;
 
       case CMD_PTY:
@@ -695,7 +711,7 @@ static void control_packet(void *vctx, int type, void *data, size_t len)
 	 * up crazy root fs structures if they must.
 	 */
 	mount("none", "/tmp/r/proc", "proc", MS_MGC_VAL, NULL);
-	mount("none", "/tmp/r/sys", "sys", MS_MGC_VAL, NULL);
+	mount("none", "/tmp/r/sys", "sysfs", MS_MGC_VAL, NULL);
 	mount("none", "/tmp/r/dev/pts", "devpts", MS_MGC_VAL, NULL);
 
 	/*
@@ -716,14 +732,6 @@ static void control_packet(void *vctx, int type, void *data, size_t len)
 	     * We are the child. Set up the execution environment
 	     * for the wrapped process.
 	     */
-	    if (chroot("/tmp/r") < 0)
-		exit(127);
-	    if (setgroups(ctx->ngroups, ctx->groups) < 0)
-		exit(127);
-	    if (setgid(ctx->gid) < 0)
-		exit(127);
-	    if (setuid(ctx->uid) < 0)
-		exit(127);
 
 	    /* Set our controlling tty */
 	    setsid();
@@ -736,6 +744,7 @@ static void control_packet(void *vctx, int type, void *data, size_t len)
 		close(fd);
 	    }
 
+	    /* Set up the fds */
 	    fdmaplen = 1 + ctx->maxfd;
 	    fdmap = snewn(fdmaplen, int);
 	    for (i = 0; i < fdmaplen; i++)
@@ -747,8 +756,41 @@ static void control_packet(void *vctx, int type, void *data, size_t len)
 	    if (move_fds(0, fdmap, fdmaplen, NULL) < 0)
 		exit(127);
 
+	    if (chroot("/tmp/r") < 0) {
+		fprintf(stderr, "/tmp/r: chroot: %s\n", strerror(errno));
+		exit(127);
+	    }
+
 	    if (chdir(ctx->cwd) < 0) {
 		fprintf(stderr, "%s: chdir: %s\n", ctx->cwd, strerror(errno));
+		exit(127);
+	    }
+
+	    /*
+	     * Run the CMD_SETUPCMD command list after setting up
+	     * everything we can set up without dropping
+	     * privileges, but before actually dropping
+	     * privileges. So these commands will execute in the
+	     * final fs layout, with the final fd and tty setup,
+	     * and in the correct directory. All they lack is the
+	     * uid (because they must be root) and the
+	     * environment.
+	     */
+	    for (i = 0; i < ctx->nsetupcmds; i++)
+		system(ctx->setupcmds[i]);
+
+	    if (setgroups(ctx->ngroups, ctx->groups) < 0) {
+		fprintf(stderr, "setgroups: %s\n", strerror(errno));
+		exit(127);
+	    }
+	    if (setgid(ctx->gid) < 0) {
+		fprintf(stderr, "setgid(%d): %s\n", (int)ctx->gid,
+			strerror(errno));
+		exit(127);
+	    }
+	    if (setuid(ctx->uid) < 0) {
+		fprintf(stderr, "setuid(%d): %s\n", (int)ctx->uid,
+			strerror(errno));
 		exit(127);
 	    }
 
@@ -806,6 +848,44 @@ static void control_readdata(sel_rfd *rfd, void *vdata, size_t len)
     protoread_data(ctx->pr, vdata, len, control_packet, ctx);
 }
 
+/*
+ * String processing function for untangling /proc/mounts.
+ * /proc/mounts consists of a fixed number of space-separated
+ * words, but some of those words represent arbitrary strings such
+ * as VFS pathnames. Hence there's an escaping mechanism to handle
+ * those.
+ * 
+ * This function takes a word starting at p, advances to the next
+ * word, and returns the new pointer; it also modifies the data at
+ * p to unescape the word in question.
+ */
+static char *procmounts_advance(char *p)
+{
+    char *q = p;
+
+    while (*p && *p != ' ') {
+	if (*p == '\\') {
+	    int d, c = 0;
+	    p++;
+	    for (d = 0; d < 3; d++) {
+		if (*p && *p >= '0' && *p <= '7') {
+		    c = 8*c + (*p) - '0';
+		    p++;
+		} else {
+		    break;
+		}
+	    }
+	    *q++ = c;
+	} else {
+	    *q++ = *p++;
+	}
+    }
+    if (*p)
+	p++;
+    *q = '\0';
+    return p;
+}
+
 int main(void)
 {
     sel *sel;
@@ -828,6 +908,7 @@ int main(void)
      */
     if (mount("none", "/tmp", "tmpfs", MS_MGC_VAL, NULL) < 0 ||
 	mount("none", "/dev", "tmpfs", MS_MGC_VAL, NULL) < 0 ||
+	mount("none", "/proc", "proc", MS_MGC_VAL, NULL) < 0 ||
 	mknod("/dev/console", S_IFCHR | 0700, makedev(TTYAUX_MAJOR, 1)) < 0 ||
 	mknod("/dev/ptmx", S_IFCHR | 0700, makedev(TTYAUX_MAJOR, 2)) < 0 ||
 	mkdir("/dev/pts", 0755) < 0 ||
@@ -881,6 +962,8 @@ int main(void)
     ctx->ncmdwords = ctx->cmdwordsize = 0;
     ctx->envvars = NULL;
     ctx->nenvvars = ctx->envvarsize = 0;
+    ctx->setupcmds = NULL;
+    ctx->nsetupcmds = ctx->setupcmdsize = 0;
     ctx->pr = protoread_new();
     ctx->sel = sel;
     ctx->ctty = -1;
@@ -947,6 +1030,68 @@ int main(void)
 		}
 	    }
 	    shut_down = 1;	       /* so we only do this once */
+
+	    /*
+	     * Also, while we're here, we forcibly umount or
+	     * remount as RO any filesystem which is currently
+	     * mounted RW, and then we sync. This means that if
+	     * the setupcmds have mounted strange filesystems,
+	     * they should automatically be properly cleaned up on
+	     * exit.
+	     */
+	    while (1) {
+		FILE *fp;
+		char *line;
+		int done_one = 0;
+
+		fp = fopen("/proc/mounts", "r");
+		while (fp && (line = fgetline(fp)) != NULL) {
+		    char *p, *dev, *dir, *fs, *opts;
+		    p = line;
+		    p[strcspn(p, "\r\n")] = '\0';
+		    dev = p; p = procmounts_advance(p);
+		    dir = p; p = procmounts_advance(p);
+		    fs = p; p = procmounts_advance(p);
+		    opts = p; p = procmounts_advance(p);
+		    if (strcmp(fs, "rootfs") != 0 &&
+			strcmp(fs, "proc") != 0 &&
+			strcmp(fs, "tmpfs") != 0 &&
+			strcmp(fs, "sysfs") != 0 &&
+			strcmp(fs, "devpts") != 0 &&
+			strcmp(fs, "hostfs") != 0 &&
+			strstr(opts, "rw")) {
+			int ret;
+
+			ret = umount(dir);
+			if (ret >= 0) {
+			    printf("umount of %s successful\n", dir);
+			    done_one = 1;
+			} else {
+			    ret = mount(dev, dir, fs, MS_MGC_VAL |
+					MS_REMOUNT | MS_RDONLY, NULL);
+			    if (ret < 0) {
+				printf("read-only remount of %s on %s: %s\n",
+				       dev, dir, strerror(errno));
+			    } else {
+				printf("read-only remount of %s on %s "
+				       "successful\n", dev, dir);
+				done_one = 1;
+			    }
+			}
+		    }
+		    sfree(line);
+		}
+
+		/*
+		 * umounting one directory may free up a
+		 * previously blocked umount, so go round again
+		 * for as long as we're achieving something.
+		 */
+		if (!done_one)
+		    break;
+	    }
+
+	    sync();
 	}
 
     } while (ret == 0);

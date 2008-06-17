@@ -250,6 +250,27 @@ might be a safe and useful option to use.
 
 }
 
+\dt \cw{-S} \e{cmd} or \cw{--setup=}\e{cmd}
+
+\dd Specifies a setup command to be executed with root privilege
+inside the UML before running the isolated process itself. You might
+use this, for example, to mount additional filesystems in ways not
+directly supported by \cw{umlwrap}'s other options.
+
+\lcont{
+
+The setup command will run with the isolated process's working
+directory, filesystem layout and file descriptors. So you can run
+setup commands which require passwords, e.g. setting up an encrypted
+loop mount.
+
+When the isolated process terminates, \cw{umlwrap} will
+automatically attempt to unmount everything that's been mounted
+read-write, and will then \cw{sync} before exiting. This should
+preserve the integrity of loop mounts of this type if you use them.
+
+}
+
 \dt \cw{-e} \e{var}\c{=}\e{value} or \cw{--env=}\e{var}\c{=}\e{value}
 
 \dd Set an environment variable in the starting environment of the
@@ -257,9 +278,7 @@ isolated process. (For example, having union-mounted some directory
 full of strange binaries on the process's root directory, you might
 then want to add that directory to the process's \cw{PATH}.)
 
-\dt \cw{-E}
-
-\dt \cw{--clearenv}
+\dt \cw{-E} or \cw{--clearenv}
 
 \dd Prevent \cw{umlwrap} from copying the calling process's entire
 environment into that of the isolated process. If you use this

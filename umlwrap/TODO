@@ -18,16 +18,6 @@ Relatively simple
     - think out carefully, and nail down, exactly how -C and -w
       interact with a shifted root.
 
- - Arbitrary root setup option.
-    - the most obvious use is to make it easy to have init
-      arbitrarily mount extra weird filesystems before dropping
-      privileges. However, rather than replicate all the command-
-      line features of mount(8) in the umlwrap command-line syntax,
-      it seems much easier to me to simply provide a umlwrap option
-      to which you pass a string which will be system()ed on the
-      inside before CMD_GO. Then you can give real mount commands,
-      or even something else I haven't thought of.
-
 More complex
 ------------
 
@@ -112,17 +102,20 @@ Blue-sky
 	 implementing an entire TCP stack. So that's proof of
 	 concept, but it still doesn't strike me as obviously
 	 non-ghastly...
-    * A slightly simpler idea I had was to implement an intercepting
-      proxy. Set up firewall rules within UML to divert all outgoing
-      TCP connections to a firewall process under umlwrap's control.
-      That process then has to retrieve the original destination of
-      each connection from the kernel (getsockopt SO_ORIGINAL_DST);
-      then it converts them into CMD_DATA/CMD_EOF packets and
-      multiplexes them back up to the umlwrap exterior side in the
-      obvious way. So all the actual TCP encode/decode is done by
-      the kernels involved in the job (why work when someone else is
-      willing to do it for you?), and all we have to do is funnel
-      data in and out of UML and vet it for suitability.
+    * A slightly simpler idea I had was to implement a universal
+      intercepting TCP proxy. Set up firewall rules within UML to
+      divert all outgoing TCP connections to a firewall process
+      under umlwrap's control. That process then has to retrieve the
+      original destination of each connection from the kernel
+      (getsockopt SO_ORIGINAL_DST); then it converts them into
+      CMD_DATA/CMD_EOF packets and multiplexes them back up to the
+      umlwrap exterior side in the obvious way. So all the actual
+      TCP encode/decode is done by the kernels involved in the job
+      (why work when someone else is willing to do it for you?), and
+      all we have to do is funnel data in and out of UML and vet it
+      for suitability.
+       + This doesn't handle UDP or ICMP, but we could implement
+	 those by the simpler SLIP technique if really necessary.
     * This whole idea also gets into a quagmire of exactly how much
       vetting you can sensibly do on the outgoing network
       connections. HTTP would be reasonably feasible to vet by

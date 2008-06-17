@@ -44,6 +44,7 @@ enum {
     CMD_ASSIGNFD,  /* Please assign fd N of the program to the ith pty/pipe */
     CMD_OSERIAL,   /* Please assign outbound side of ttySN to ith pty/pipe */
     CMD_ISERIAL,   /* Please assign inbound side of ttySN to ith pty/pipe */
+    CMD_SETUPCMD,  /* Please system() this as root before dropping privs */
     CMD_COMMAND,   /* Here is a word of the command I want you to exec */
     CMD_GO,        /* Right, you've got everything. Run the command! */
     CMD_WINSIZE,   /* Controlling tty sent SIGWINCH; here's a struct winsize */

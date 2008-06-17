@@ -95,6 +95,8 @@ struct optctx {
     char **cmdwords;
     int nenvvars, envvarsize;
     char **envvars;
+    int nsetupcmds, setupcmdsize;
+    char **setupcmds;
     int clearenv;
     int nunions, unionsize;
     char **unions;
@@ -471,6 +473,18 @@ static int option(void *vctx, char optchr, char *longopt, char *value)
 	return 2;
     }
 
+    if (optchr == 'S' || (longopt && !strcmp(longopt, "setup"))) {
+	if (!value) return -2;
+	if (ctx->nsetupcmds >= ctx->setupcmdsize) {
+	    ctx->setupcmdsize = ctx->nsetupcmds * 3 / 2 + 64;
+	    ctx->setupcmds = sresize(ctx->setupcmds, ctx->setupcmdsize,
+				     char *);
+	}
+	ctx->setupcmds[ctx->nsetupcmds] = value;
+	ctx->nsetupcmds++;
+	return 2;
+    }
+
     if ((longopt && !strcmp(longopt, "fd-read"))) {
 	if (!value) return -2;
 	addfd(ctx, atoi(value), DIR_R);
@@ -549,6 +563,7 @@ static int option(void *vctx, char optchr, char *longopt, char *value)
 	    "       --fd-write=fd            propagate an extra write-only fd\n",
 	    "       --fd-rw=fd               propagate an extra read-write fd\n",
 	    "       --fd=fd                  propagate an extra fd (auto-sense rw status)\n",
+	    "       -S cmd, --setup=cmd      run cmd as root before dropping privileges\n",
 	    "       -v, --verbose            print lots of diagnostic messages\n",
 	    "       -q, --quiet              print no diagnostic messages\n",
 	    " also: umlwrap --help           show this text\n",
@@ -846,6 +861,13 @@ static void control_packet(void *vctx, int type, void *data, size_t len)
 		   strlen(ctx->optctx->cwd), (void *)NULL);
 
 	/*
+	 * Send the root setup commands.
+	 */
+	for (i = 0; i < ctx->optctx->nsetupcmds; i++)
+	    protowrite(ctx->wfd, CMD_SETUPCMD, ctx->optctx->setupcmds[i],
+		       strlen(ctx->optctx->setupcmds[i]), (void *)NULL);
+
+	/*
 	 * Send the environment.
 	 */
 	if (!ctx->optctx->clearenv) {
@@ -944,6 +966,8 @@ int main(int argc, char **argv)
     ctx->cmdwords = NULL;
     ctx->nenvvars = ctx->envvarsize = 0;
     ctx->envvars = NULL;
+    ctx->nsetupcmds = ctx->setupcmdsize = 0;
+    ctx->setupcmds = NULL;
     ctx->clearenv = 0;
     ctx->nunions = ctx->unionsize = 0;
     ctx->unions = NULL;

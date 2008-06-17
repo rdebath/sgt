@@ -17,7 +17,7 @@ UMLWRAP_MODULES := umlwrap options sel malloc protocol isdup rawmode \
                    fgetline licence
 UMLWRAP_OBJS := $(patsubst %,%.o,$(UMLWRAP_MODULES))
 
-INIT_MODULES := init sel malloc protocol rawmode movefds
+INIT_MODULES := init sel malloc protocol rawmode movefds fgetline
 INIT_OBJS := $(patsubst %,%.o,$(INIT_MODULES))
 
 ALLMODULES := $(sort $(UMLWRAP_MODULES) $(INIT_MODULES))
@@ -52,6 +52,7 @@ install: umlwrap init umlwrap.1
 	mkdir -p $(ourlibdir)/tmp
 	mkdir -p $(ourlibdir)/dev
 	mkdir -p $(ourlibdir)/sbin
+	mkdir -p $(ourlibdir)/proc
 	$(INSTALL) -m 0755 init $(ourlibdir)/sbin/init
 	mkdir -p $(bindir)
 	$(INSTALL) -m 0755 umlwrap $(bindir)/umlwrap
