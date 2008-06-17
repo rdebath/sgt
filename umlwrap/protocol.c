@@ -180,10 +180,16 @@ static void protocopy_encode_readerr(sel_rfd *rfd, int error)
 {
     struct protocopy_encode *pe =
 	(struct protocopy_encode *)sel_rfd_get_ctx(rfd);
+    size_t bufsize;
+
     protocopy_close_r(sel_rfd_delete(pe->rfd), pe->flags);
-    protocopy_close_w(sel_wfd_delete(pe->wfd), pe->flags);
-    list_del((listnode *)pe);
-    sfree(pe);
+    pe->rfd = NULL;
+    bufsize = protowrite(pe->wfd, CMD_EOF, (void *)NULL);
+    if (bufsize == 0) {
+	protocopy_close_w(sel_wfd_delete(pe->wfd), pe->flags);
+	list_del((listnode *)pe);
+	sfree(pe);
+    }
 }
 
 protocopy_encode *protocopy_encode_new(sel *sel, int infd, int outfd,
