@@ -94,8 +94,14 @@ size_t protowrite(sel_wfd *wfd, int type, const void *data1, ...);
  */
 typedef struct protocopy_encode protocopy_encode;
 typedef struct protocopy_decode protocopy_decode;
-protocopy_encode *protocopy_encode_new(sel *sel, int infd, int outfd);
-protocopy_decode *protocopy_decode_new(sel *sel, int infd, int outfd);
+protocopy_encode *protocopy_encode_new(sel *sel, int infd, int outfd,
+				       int flags);
+protocopy_decode *protocopy_decode_new(sel *sel, int infd, int outfd,
+				       int flags);
+/* Flags stating what to do with the fds once the protocopy terminates */
+#define PROTOCOPY_CLOSE_RFD 1
+#define PROTOCOPY_CLOSE_WFD 2
+#define PROTOCOPY_SHUTDOWN_WFD 4
 
 /* Close the rfd for a protocopy_encode and send EOF on the wfd as if
  * it had closed naturally. */

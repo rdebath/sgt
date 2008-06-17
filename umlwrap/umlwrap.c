@@ -83,6 +83,7 @@ struct fd {
     dev_t tty_id;
     int first;			       /* first of a set of duplicates */
     int overall_rw;		       /* I/O directions used in this group */
+    int fd_r, fd_w;		       /* individual fds for the directions */
     int sp[2];			       /* socketpair used for this group */
     int serial;			       /* index of UML serial port for group */
     struct termios termios;
@@ -924,13 +925,13 @@ static void control_packet(void *vctx, int type, void *data, size_t len)
 	    if (ctx->optctx->fds[i].overall_rw & DIR_R)
 		list_add(&ctx->protocopies, (listnode *)
 			 protocopy_encode_new(ctx->sel,
-					      ctx->optctx->fds[i].fd,
-					      ctx->optctx->fds[i].sp[1]));
+					      ctx->optctx->fds[i].fd_r,
+					      ctx->optctx->fds[i].sp[1], 0));
 	    if (ctx->optctx->fds[i].overall_rw & DIR_W)
 		list_add(&ctx->protocopies, (listnode *)
 			 protocopy_decode_new(ctx->sel,
 					      ctx->optctx->fds[i].sp[1],
-					      ctx->optctx->fds[i].fd));
+					      ctx->optctx->fds[i].fd_w, 0));
 
 	}
     } else if (type == CMD_EXITCODE) {
@@ -1166,9 +1167,15 @@ int main(int argc, char **argv)
 		    break;
 		}
 	}
-	if (ctx->fds[i].first == i)
+	if (ctx->fds[i].first == i) {
 	    ctx->fds[i].overall_rw = 0;
+	    ctx->fds[i].fd_r = ctx->fds[i].fd_w = -1;
+	}
 	ctx->fds[ctx->fds[i].first].overall_rw |= ctx->fds[i].rw;
+	if ((ctx->fds[i].rw & DIR_R) && ctx->fds[ctx->fds[i].first].fd_r < 0)
+	    ctx->fds[ctx->fds[i].first].fd_r = ctx->fds[i].fd;
+	if ((ctx->fds[i].rw & DIR_W) && ctx->fds[ctx->fds[i].first].fd_w < 0)
+	    ctx->fds[ctx->fds[i].first].fd_w = ctx->fds[i].fd;
     }
 
     /*

@@ -5,8 +5,10 @@
 #include <stddef.h>
 #include <string.h>
 #include <stdarg.h>
+#include <assert.h>
 
 #include <unistd.h>
+#include <sys/socket.h>
 
 #include "protocol.h"
 #include "malloc.h"
@@ -112,7 +114,22 @@ struct protocopy_encode {
     int infd, outfd;
     sel_rfd *rfd;
     sel_wfd *wfd;
+    int flags;
 };
+
+static void protocopy_close_r(int fd, int flags)
+{
+    if (flags & PROTOCOPY_CLOSE_RFD)
+	close(fd);
+}
+
+static void protocopy_close_w(int fd, int flags)
+{
+    if (flags & PROTOCOPY_CLOSE_WFD)
+	close(fd);
+    else if (flags & PROTOCOPY_SHUTDOWN_WFD)
+	shutdown(fd, SHUT_WR);
+}
 
 static void protocopy_encode_written(sel_wfd *wfd, size_t bufsize)
 {
@@ -121,7 +138,7 @@ static void protocopy_encode_written(sel_wfd *wfd, size_t bufsize)
     if (pe->rfd && bufsize < BUFLIMIT)
 	sel_rfd_unfreeze(pe->rfd);
     if (!pe->rfd && bufsize == 0) {
-	close(sel_wfd_delete(pe->wfd));
+	protocopy_close_w(sel_wfd_delete(pe->wfd), pe->flags);
 	list_del((listnode *)pe);
 	sfree(pe);
     }
@@ -131,8 +148,8 @@ static void protocopy_encode_writeerr(sel_wfd *wfd, int error)
 {
     struct protocopy_encode *pe =
 	(struct protocopy_encode *)sel_wfd_get_ctx(wfd);
-    close(sel_rfd_delete(pe->rfd));
-    close(sel_wfd_delete(pe->wfd));
+    protocopy_close_r(sel_rfd_delete(pe->rfd), pe->flags);
+    protocopy_close_w(sel_wfd_delete(pe->wfd), pe->flags);
     list_del((listnode *)pe);
     sfree(pe);
 }
@@ -144,11 +161,11 @@ static void protocopy_encode_readdata(sel_rfd *rfd, void *data, size_t len)
     size_t bufsize;
 
     if (len == 0) {
-	close(sel_rfd_delete(pe->rfd));
+	protocopy_close_r(sel_rfd_delete(pe->rfd), pe->flags);
 	pe->rfd = NULL;
 	bufsize = protowrite(pe->wfd, CMD_EOF, (void *)NULL);
 	if (bufsize == 0) {
-	    close(sel_wfd_delete(pe->wfd));
+	    protocopy_close_w(sel_wfd_delete(pe->wfd), pe->flags);
 	    list_del((listnode *)pe);
 	    sfree(pe);
 	}
@@ -163,15 +180,18 @@ static void protocopy_encode_readerr(sel_rfd *rfd, int error)
 {
     struct protocopy_encode *pe =
 	(struct protocopy_encode *)sel_rfd_get_ctx(rfd);
-    close(sel_rfd_delete(pe->rfd));
-    close(sel_wfd_delete(pe->wfd));
+    protocopy_close_r(sel_rfd_delete(pe->rfd), pe->flags);
+    protocopy_close_w(sel_wfd_delete(pe->wfd), pe->flags);
     list_del((listnode *)pe);
     sfree(pe);
 }
 
-protocopy_encode *protocopy_encode_new(sel *sel, int infd, int outfd)
+protocopy_encode *protocopy_encode_new(sel *sel, int infd, int outfd,
+				       int flags)
 {
     struct protocopy_encode *pe = snew(struct protocopy_encode);
+    assert(infd >= 0);
+    assert(outfd >= 0);
     pe->ln.type = LISTNODE_PROTOCOPY_ENCODE;
     pe->ln.list = NULL;
     pe->infd = infd;
@@ -180,6 +200,7 @@ protocopy_encode *protocopy_encode_new(sel *sel, int infd, int outfd)
 			  protocopy_encode_readerr, pe);
     pe->wfd = sel_wfd_add(sel, pe->outfd, protocopy_encode_written,
 			  protocopy_encode_writeerr, pe);
+    pe->flags = flags;
     return pe;
 }
 
@@ -188,11 +209,11 @@ void protocopy_encode_cutoff(protocopy_encode *pe)
     size_t bufsize;
 
     if (pe->rfd) {
-	close(sel_rfd_delete(pe->rfd));
+	protocopy_close_r(sel_rfd_delete(pe->rfd), pe->flags);
 	pe->rfd = NULL;
 	bufsize = protowrite(pe->wfd, CMD_EOF, (void *)NULL);
 	if (bufsize == 0) {
-	    close(sel_wfd_delete(pe->wfd));
+	    protocopy_close_w(sel_wfd_delete(pe->wfd), pe->flags);
 	    list_del((listnode *)pe);
 	    sfree(pe);
 	}
@@ -205,6 +226,7 @@ struct protocopy_decode {
     sel_rfd *rfd;
     sel_wfd *wfd;
     protoread *pr;
+    int flags;
 };
 
 static void protocopy_decode_written(sel_wfd *wfd, size_t bufsize)
@@ -214,7 +236,7 @@ static void protocopy_decode_written(sel_wfd *wfd, size_t bufsize)
     if (pd->rfd && bufsize < BUFLIMIT)
 	sel_rfd_unfreeze(pd->rfd);
     if (!pd->rfd && bufsize == 0) {
-	close(sel_wfd_delete(pd->wfd));
+	protocopy_close_w(sel_wfd_delete(pd->wfd), pd->flags);
 	list_del((listnode *)pd);
 	sfree(pd);
     }
@@ -224,8 +246,8 @@ static void protocopy_decode_writeerr(sel_wfd *wfd, int error)
 {
     struct protocopy_decode *pd =
 	(struct protocopy_decode *)sel_wfd_get_ctx(wfd);
-    close(sel_rfd_delete(pd->rfd));
-    close(sel_wfd_delete(pd->wfd));
+    protocopy_close_r(sel_rfd_delete(pd->rfd), pd->flags);
+    protocopy_close_w(sel_wfd_delete(pd->wfd), pd->flags);
     list_del((listnode *)pd);
     sfree(pd);
 }
@@ -244,11 +266,11 @@ static void protocopy_decode_packet(void *vctx, int type,
 	    sel_rfd_freeze(pd->rfd);
 	break;
       case CMD_EOF:
-	close(sel_rfd_delete(pd->rfd));
+	protocopy_close_r(sel_rfd_delete(pd->rfd), pd->flags);
 	pd->rfd = NULL;
 	bufsize = sel_write(pd->wfd, NULL, 0);
 	if (bufsize == 0) {
-	    close(sel_wfd_delete(pd->wfd));
+	    protocopy_close_w(sel_wfd_delete(pd->wfd), pd->flags);
 	    list_del((listnode *)pd);
 	    sfree(pd);
 	}
@@ -267,15 +289,18 @@ static void protocopy_decode_readerr(sel_rfd *rfd, int error)
 {
     struct protocopy_decode *pd =
 	(struct protocopy_decode *)sel_rfd_get_ctx(rfd);
-    close(sel_rfd_delete(pd->rfd));
-    close(sel_wfd_delete(pd->wfd));
+    protocopy_close_r(sel_rfd_delete(pd->rfd), pd->flags);
+    protocopy_close_w(sel_wfd_delete(pd->wfd), pd->flags);
     list_del((listnode *)pd);
     sfree(pd);
 }
 
-protocopy_decode *protocopy_decode_new(sel *sel, int infd, int outfd)
+protocopy_decode *protocopy_decode_new(sel *sel, int infd, int outfd,
+				       int flags)
 {
     struct protocopy_decode *pd = snew(struct protocopy_decode);
+    assert(infd >= 0);
+    assert(outfd >= 0);
     pd->ln.type = LISTNODE_PROTOCOPY_DECODE;
     pd->ln.list = NULL;
     pd->infd = infd;
@@ -285,13 +310,14 @@ protocopy_decode *protocopy_decode_new(sel *sel, int infd, int outfd)
     pd->wfd = sel_wfd_add(sel, pd->outfd, protocopy_decode_written,
 			  protocopy_decode_writeerr, pd);
     pd->pr = protoread_new();
+    pd->flags = flags;
     return pd;
 }
 
 void protocopy_decode_destroy(protocopy_decode *pd)
 {
-    close(sel_rfd_delete(pd->rfd));
-    close(sel_wfd_delete(pd->wfd));
+    protocopy_close_r(sel_rfd_delete(pd->rfd), pd->flags);
+    protocopy_close_w(sel_wfd_delete(pd->wfd), pd->flags);
     list_del((listnode *)pd);
     sfree(pd);
 }

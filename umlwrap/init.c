@@ -64,6 +64,7 @@ struct fd_entry {
     char *ptsname;
     int first;			       /* first of an identical group? */
     int innerfd;
+    int wflags, rflags;
 };
 
 struct fd_assign {
@@ -485,16 +486,22 @@ static void control_packet(void *vctx, int type, void *data, size_t len)
 	    ctx->fds[ctx->nfds].direction = DIR_R;
 	    ctx->fds[ctx->nfds].first = 1;
 	    ctx->fds[ctx->nfds].innerfd = open(name, O_RDONLY | O_NOCTTY);
+	    ctx->fds[ctx->nfds].wflags = 0;
+	    ctx->fds[ctx->nfds].rflags = 0;
 	    ctx->fds[ctx->nfds+1].outerfd = fd;
 	    ctx->fds[ctx->nfds+1].ptsname = ctx->fds[ctx->nfds].ptsname;
 	    ctx->fds[ctx->nfds+1].direction = DIR_W;
 	    ctx->fds[ctx->nfds+1].first = 0;
 	    ctx->fds[ctx->nfds+1].innerfd = open(name, O_WRONLY | O_NOCTTY);
+	    ctx->fds[ctx->nfds+1].wflags = 0;
+	    ctx->fds[ctx->nfds+1].rflags = 0;
 	    ctx->fds[ctx->nfds+2].outerfd = fd;
 	    ctx->fds[ctx->nfds+2].ptsname = ctx->fds[ctx->nfds].ptsname;
 	    ctx->fds[ctx->nfds+2].direction = DIR_RW;
 	    ctx->fds[ctx->nfds+2].first = 0;
 	    ctx->fds[ctx->nfds+2].innerfd = open(name, O_RDWR | O_NOCTTY);
+	    ctx->fds[ctx->nfds+2].wflags = 0;
+	    ctx->fds[ctx->nfds+2].rflags = 0;
 	    if (ctx->maxfd < ctx->fds[ctx->nfds].outerfd)
 		ctx->maxfd = ctx->fds[ctx->nfds].outerfd;
 	    if (ctx->maxfd < ctx->fds[ctx->nfds].innerfd)
@@ -556,6 +563,14 @@ static void control_packet(void *vctx, int type, void *data, size_t len)
 	    ctx->fds[ctx->nfds].direction = dir;
 	    ctx->fds[ctx->nfds].first = 1;
 	    ctx->fds[ctx->nfds].innerfd = fds[1-outerindex];
+	    ctx->fds[ctx->nfds].wflags = 0;
+	    ctx->fds[ctx->nfds].rflags = 0;
+	    if (type == CMD_IPIPE)
+		ctx->fds[ctx->nfds].wflags = PROTOCOPY_CLOSE_WFD;
+	    else if (type == CMD_IOPIPE)
+		ctx->fds[ctx->nfds].wflags = PROTOCOPY_SHUTDOWN_WFD;
+	    else if (type == CMD_OPIPE)
+		ctx->fds[ctx->nfds].wflags = PROTOCOPY_CLOSE_RFD;
 	    ctx->nfds++;
 	    if (ctx->maxfd < ctx->fds[ctx->nfds].outerfd)
 		ctx->maxfd = ctx->fds[ctx->nfds].outerfd;
@@ -632,12 +647,14 @@ static void control_packet(void *vctx, int type, void *data, size_t len)
 	    if (type == CMD_ISERIAL) {
 		list_add(&ctx->protocopies, (listnode *)
 			 protocopy_decode_new(ctx->sel, serfd,
-					      ctx->fds[fdindex].outerfd));
+					      ctx->fds[fdindex].outerfd,
+					      ctx->fds[fdindex].wflags));
 	    } else {
 		list_add(&ctx->protocopies, (listnode *)
 			 protocopy_encode_new(ctx->sel,
 					      ctx->fds[fdindex].outerfd,
-					      serfd));
+					      serfd,
+					      ctx->fds[fdindex].rflags));
 	    }
 	}
 	break;
