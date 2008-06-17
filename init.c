@@ -705,14 +705,51 @@ static void control_packet(void *vctx, int type, void *data, size_t len)
 	ctx->cmdwords[ctx->ncmdwords] = NULL;
 
 	/*
-	 * Unilaterally try to mount the dynamic filesystems under
-	 * the new root: /proc, /sys, /dev/pts. We won't worry if
-	 * it doesn't work, though: the user is entitled to make
-	 * up crazy root fs structures if they must.
+	 * Unilaterally try to mount some dynamic filesystems
+	 * under the new root. We won't worry if they don't work,
+	 * though: the user is entitled to make up crazy root fs
+	 * structures if they must.
 	 */
 	mount("none", "/tmp/r/proc", "proc", MS_MGC_VAL, NULL);
 	mount("none", "/tmp/r/sys", "sysfs", MS_MGC_VAL, NULL);
-	mount("none", "/tmp/r/dev/pts", "devpts", MS_MGC_VAL, NULL);
+	mount("none", "/tmp/r/tmp", "tmpfs", MS_MGC_VAL, NULL);
+	mount("none", "/tmp/r/var/tmp", "tmpfs", MS_MGC_VAL, NULL);
+	if (mount("none", "/tmp/r/dev", "tmpfs", MS_MGC_VAL, NULL) >= 0) {
+	    chmod("/tmp/r/dev", 0755);
+	    mode_t oldumask = umask(0);
+	    mknod("/tmp/r/dev/console", S_IFCHR|0700, makedev(TTYAUX_MAJOR,1));
+	    symlink("/proc/kcore", "/tmp/r/dev/core");
+	    symlink("/proc/self/fd", "/tmp/r/dev/fd");
+	    mknod("/tmp/r/dev/full", S_IFCHR|0666, makedev(MEM_MAJOR,7));
+	    mknod("/tmp/r/dev/kmem", S_IFCHR|0600, makedev(MEM_MAJOR,2));
+	    mknod("/tmp/r/dev/kmsg", S_IFCHR|0600, makedev(MEM_MAJOR,11));
+	    for (i = 0; i < 8; i++) {
+		char buf[40];
+		sprintf(buf, "/tmp/r/dev/loop%d", i);
+		mknod(buf, S_IFBLK|0600, makedev(LOOP_MAJOR,i));
+	    }
+	    mknod("/tmp/r/dev/kmem", S_IFCHR|0600, makedev(MEM_MAJOR,1));
+	    mknod("/tmp/r/dev/null", S_IFCHR|0666, makedev(MEM_MAJOR,3));
+	    mknod("/tmp/r/dev/port", S_IFCHR|0600, makedev(MEM_MAJOR,4));
+	    mknod("/tmp/r/dev/ptmx", S_IFCHR|0666, makedev(TTYAUX_MAJOR,2));
+	    if (mkdir("/tmp/r/dev/pts", 0755) >= 0)
+		mount("none", "/tmp/r/dev/pts", "devpts", MS_MGC_VAL, NULL);
+	    for (i = 0; i < 16; i++) {
+		char buf[40];
+		sprintf(buf, "/tmp/r/dev/ram%d", i);
+		mknod(buf, S_IFBLK|0600, makedev(RAMDISK_MAJOR,i));
+	    }
+	    mknod("/tmp/r/dev/random", S_IFCHR|0666, makedev(MEM_MAJOR,8));
+	    if (mkdir("/tmp/r/dev/shm", S_ISVTX|0777) >= 0)
+		mount("none", "/tmp/r/dev/shm", "tmpfs", MS_MGC_VAL, NULL);
+	    symlink("/proc/self/fd/0", "/tmp/r/dev/stdin");
+	    symlink("/proc/self/fd/1", "/tmp/r/dev/stdout");
+	    symlink("/proc/self/fd/2", "/tmp/r/dev/stderr");
+	    mknod("/tmp/r/dev/tty", S_IFCHR|0666, makedev(TTYAUX_MAJOR,0));
+	    mknod("/tmp/r/dev/urandom", S_IFCHR|0666, makedev(MEM_MAJOR,9));
+	    mknod("/tmp/r/dev/zero", S_IFCHR|0666, makedev(MEM_MAJOR,5));
+	    umask(oldumask);
+	}
 
 	/*
 	 * Actually fork and start doing things!

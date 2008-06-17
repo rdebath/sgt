@@ -4,19 +4,8 @@ Things that could usefully still be done to umlwrap
 Relatively simple
 -----------------
 
- - Automatically mount a couple of writable tmpfses over /tmp and
-   /var/tmp. (Might need an option to disable it, although that can
-   come later. We haven't got such an option for /proc, /sys or
-   /dev/pts, after all.)
-
- - Better support for shifted roots (-R):
-    - do something about /dev. Automatically mount the real /dev on
-      UML's /dev in spite of the shifted root? Or automatically
-      create our own /dev in a tmpfs with lots of devices? (I quite
-      like the latter, actually, because that way the devices can be
-      appropriate to UML in any case.)
-    - think out carefully, and nail down, exactly how -C and -w
-      interact with a shifted root.
+ - Better support for shifted roots (-R): think out carefully, and
+   nail down, exactly how -C and -w interact with a shifted root.
 
 More complex
 ------------
