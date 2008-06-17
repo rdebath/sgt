@@ -25,7 +25,16 @@ int raw_mode(int fd, const char **syscall, struct termios *termios)
 
     opts.c_cflag |= CLOCAL | CREAD;
     opts.c_cflag &= ~PARENB;
-    opts.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG
+    opts.c_lflag &= ~(ICANON | ECHO | ECHOE | ECHOK | ECHONL | ISIG
+#ifdef ECHOCTL
+		      | ECHOCTL
+#endif
+#ifdef ECHOPRT
+		      | ECHOPRT
+#endif
+#ifdef ECHOKE
+		      | ECHOKE
+#endif
 #ifdef XCASE
 		      | XCASE
 #endif
