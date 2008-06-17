@@ -127,6 +127,12 @@ showpath() {
 }
 
 #}}}
+#{{{ if I'm running this as root then make sure /{,usr/}sbin are on path
+if test "x`id -u`" = "x0"; then
+  test -d /sbin && addpath /sbin
+  test -d /usr/sbin && addpath /usr/sbin
+fi
+#}}}
 #{{{ ~/bin should be on $PATH if it exists; also run bashrc_dopath
 if test -d ~/bin; then
   addpath ~/bin
