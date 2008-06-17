@@ -148,13 +148,25 @@ void fatal(const char *fmt, ...)
 
 void addfd(struct optctx *ctx, int fd, rwdir rw)
 {
-    if (ctx->nfds >= ctx->fdsize) {
-	ctx->fdsize = ctx->nfds * 3 / 2 + 32;
-	ctx->fds = sresize(ctx->fds, ctx->fdsize, struct fd);
+    /*
+     * Check that the fd isn't already in the list. (If I were
+     * energetic, I'd do this with a log-time data structure, but
+     * I don't anticipate handling more than a handful of fds.)
+     */
+    int index;
+
+    for (index = 0; index < ctx->nfds; index++)
+	if (ctx->fds[index].fd == fd)
+	    break;
+    if (index == ctx->nfds) {
+	if (ctx->nfds >= ctx->fdsize) {
+	    ctx->fdsize = ctx->nfds * 3 / 2 + 32;
+	    ctx->fds = sresize(ctx->fds, ctx->fdsize, struct fd);
+	}
+	ctx->nfds++;
     }
-    ctx->fds[ctx->nfds].fd = fd;
-    ctx->fds[ctx->nfds].rw = rw;
-    ctx->nfds++;
+    ctx->fds[index].fd = fd;
+    ctx->fds[index].rw = rw;
 }
 
 static int option(void *vctx, char optchr, char *longopt, char *value)
