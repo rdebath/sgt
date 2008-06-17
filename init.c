@@ -869,6 +869,14 @@ static void control_packet(void *vctx, int type, void *data, size_t len)
 	    exit(127);
 	}
 
+	/*
+	 * As the parent process, close our ends of all the pipes
+	 * and things we passed to the child process, so that
+	 * we'll notice if the child closes them.
+	 */
+	for (i = 0; i < ctx->nfds; i++)
+	    close(ctx->fds[i].innerfd);
+
 	protowrite(ctx->control_wfd, CMD_GONE, (void *)NULL);
 	break;
 
