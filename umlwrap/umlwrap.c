@@ -86,6 +86,7 @@ struct fd {
     int fd_r, fd_w;		       /* individual fds for the directions */
     int sp[2];			       /* socketpair used for this group */
     int serial;			       /* index of UML serial port for group */
+    int canclose;		       /* can we close this fd's group? */
     struct termios termios;
     struct winsize winsize;
     int baseindex;		       /* base index in inner fd array */
@@ -939,12 +940,34 @@ static void control_packet(void *vctx, int type, void *data, size_t len)
 			 protocopy_encode_new(ctx->sel,
 					      ctx->optctx->fds[i].fd_r,
 					      ctx->optctx->fds[i].sp[1], 0));
-	    if (ctx->optctx->fds[i].overall_rw & DIR_W)
+	    if (ctx->optctx->fds[i].overall_rw & DIR_W) {
+		int flags = 0;
+		/*
+		 * If this fd is used for writing, then we should
+		 * close it when EOF is received at the other end.
+		 * This applies even if it's read/write, because
+		 * the only way we can receive EOF on a read/write
+		 * fd _is_ if it was closed...
+		 * 
+		 * ... _except_ if it's a socket, in which case it
+		 * could have been shutdown(SHUT_WR) instead, so
+		 * we should do that.
+		 */
+		if (ctx->optctx->fds[i].canclose &&
+		    (ctx->optctx->fds[i].overall_rw & DIR_W)) {
+		    struct stat st;
+		    if (fstat(ctx->optctx->fds[i].fd, &st) == 0 &&
+			S_ISSOCK(st.st_mode))
+			flags = PROTOCOPY_SHUTDOWN_WFD;
+		    else
+			flags = PROTOCOPY_CLOSE_WFD;
+		}
 		list_add(&ctx->protocopies, (listnode *)
 			 protocopy_decode_new(ctx->sel,
 					      ctx->optctx->fds[i].sp[1],
-					      ctx->optctx->fds[i].fd_w, 0));
-
+					      ctx->optctx->fds[i].fd_w,
+					      flags));
+	    }
 	}
     } else if (type == CMD_EXITCODE) {
 	ctx->status = ((unsigned char *)data)[0];
@@ -966,7 +989,7 @@ int main(int argc, char **argv)
 {
     struct optctx actx, *ctx = &actx;
     struct control_ctx *ctlctx;
-    int watchdogpipe[2], consolepipe[2], controlsock[2];
+    int watchdogpipe[2], consolesock[2], controlsock[2];
     char **kerncl;
     int nkerncl, kernclsize;
     pid_t pid;
@@ -1188,18 +1211,28 @@ int main(int argc, char **argv)
 	    ctx->fds[ctx->fds[i].first].fd_r = ctx->fds[i].fd;
 	if ((ctx->fds[i].rw & DIR_W) && ctx->fds[ctx->fds[i].first].fd_w < 0)
 	    ctx->fds[ctx->fds[i].first].fd_w = ctx->fds[i].fd;
+
+	/*
+	 * Special case to the fd-closing behaviour: we never
+	 * close fd 2 (or rather, the group containing it),
+	 * because umlwrap itself may need it to print error
+	 * messages on.
+	 */
+	ctx->fds[i].canclose = 1;
+	if (ctx->fds[i].fd == 2)
+	    ctx->fds[ctx->fds[i].first].canclose = 0;
     }
 
     /*
      * Create some pipes and socketpairs which we'll use to talk
      * to various bits of our subprocesses.
      */
-    if (pipe(watchdogpipe) < 0 ||
-	pipe(consolepipe) < 0) {
+    if (pipe(watchdogpipe) < 0) {
 	perror(PNAME ": pipe");
 	return 1;
     }
-    if (socketpair(AF_UNIX, SOCK_STREAM, 0, controlsock) < 0) {
+    if (socketpair(AF_UNIX, SOCK_STREAM, 0, controlsock) < 0 ||
+	socketpair(AF_UNIX, SOCK_STREAM, 0, consolesock) < 0) {
 	perror(PNAME ": socketpair");
 	return 1;
     }
@@ -1278,31 +1311,32 @@ int main(int argc, char **argv)
 	    perror(PNAME " (subprocess): fork");
 	    _exit(127);
 	} else if (pid2 == 0) {
-	    int sillystdinpipe[2];
+	    /*
+	     * Close all the fds we got from umlwrap's calling
+	     * process, so as not to hold open the far end of any
+	     * pipes.
+	     */
+	    for (i = 0; i < ctx->nfds; i++)
+		close(ctx->fds[i].fd);
 
 	    /*
-	     * Dup the write end of our consolepipe on to UML's
-	     * stdout and stderr, and put a pipe on its stdin
-	     * which nothing ever writes to. At all costs we must
-	     * ensure UML doesn't talk directly to the controlling
-	     * terminal from which umlwrap was called, because
-	     * it'll set it into nonblocking mode and irritate the
-	     * user.
+	     * Dup our console socket on to UML's stdin, stdout
+	     * and stderr. At all costs we must ensure UML doesn't
+	     * talk directly to the controlling terminal from
+	     * which umlwrap was called, because it'll set it into
+	     * nonblocking mode and irritate the user.
 	     */
 	    close(watchdogpipe[0]);
-	    close(consolepipe[0]);
-	    dup2(consolepipe[1], 1);
-	    dup2(consolepipe[1], 2);
-	    close(consolepipe[1]);
+	    close(consolesock[0]);
+	    dup2(consolesock[1], 0);
+	    dup2(consolesock[1], 1);
+	    dup2(consolesock[1], 2);
+	    close(consolesock[1]);
 	    close(controlsock[1]);
 	    for (i = 0; i < ctx->nfds; i++) {
 		if (ctx->fds[i].first != i)
 		    continue;
 		close(ctx->fds[i].sp[1]);
-	    }
-	    if (pipe(sillystdinpipe) == 0) {
-		dup2(sillystdinpipe[0], 0);
-		close(sillystdinpipe[0]);
 	    }
 
 	    execvp(ctx->kernel, kerncl);
@@ -1321,11 +1355,12 @@ int main(int argc, char **argv)
 	 * to close, then destroys its entire process group.
 	 */
 	signal(SIGTERM, SIG_IGN);
-	close(consolepipe[0]);
-	close(consolepipe[1]);
+	close(consolesock[0]);
+	close(consolesock[1]);
 	close(controlsock[0]);
 	close(controlsock[1]);
 	for (i = 0; i < ctx->nfds; i++) {
+	    close(ctx->fds[i].fd);
 	    if (ctx->fds[i].first != i)
 		continue;
 	    close(ctx->fds[i].sp[0]);
@@ -1350,12 +1385,30 @@ int main(int argc, char **argv)
     }
 
     close(watchdogpipe[0]);
-    close(consolepipe[1]);
+    close(consolesock[1]);
     close(controlsock[0]);
     for (i = 0; i < ctx->nfds; i++) {
-	if (ctx->fds[i].first != i)
-	    continue;
-	close(ctx->fds[i].sp[0]);
+	if (ctx->fds[i].first != i) {
+	    /*
+	     * Close duplicate non-tty fds, so that we can close
+	     * the last one when its protocopy vanishes and
+	     * thereby transmit EOF.
+	     *
+	     * This only applies to non-tty fds, for two reasons:
+	     * (a) for ttys we lump read-only and write-only fds
+	     * into the same group and hence it isn't safe to
+	     * close all but one, and (b) closing tty fds doesn't
+	     * send EOF in any case so there isn't any need to.
+	     */
+	    if (!ctx->fds[i].is_tty)
+		close(ctx->fds[i].fd);
+	} else {
+	    /*
+	     * Close the far side of each socketpair used to talk
+	     * to UML.
+	     */
+	    close(ctx->fds[i].sp[0]);
+	}
     }
 
     /*
@@ -1368,7 +1421,7 @@ int main(int argc, char **argv)
 	conctx->optctx = ctx;
 	conctx->line = NULL;
 	conctx->linelen = conctx->linesize = 0;
-	sel_rfd_add(sel, consolepipe[0],
+	sel_rfd_add(sel, consolesock[0],
 		    console_readdata, console_readerr, conctx);
     }
 
