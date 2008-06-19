@@ -7,6 +7,14 @@ Relatively simple
  - Better support for shifted roots (-R): think out carefully, and
    nail down, exactly how -C and -w interact with a shifted root.
 
+ - Support for forwarding the controlling tty even if no passed fds
+   are open on it.
+    + The point being that some wrapped programs will deliberately
+      open /dev/tty in order to make beeping noises, display
+      password prompts etc. And the whole point is that these apps
+      should still work even if none of their standard fds were
+      originally pointing at the ctty.
+
 More complex
 ------------
 
