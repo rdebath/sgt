@@ -14,7 +14,7 @@ extern SDL_Surface *screen;
 long long bigclock(void);
 void cleanup(void);
 int setup(void);
-int vsync(void);
+void vsync(void);
 
 #define JOY_THRESHOLD 4096
 
