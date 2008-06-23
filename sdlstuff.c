@@ -5,7 +5,9 @@
 
 #include <stdlib.h>
 #include <fcntl.h>
+#ifdef unix
 #include <sys/time.h>
+#endif
 
 #ifdef PS2
 #include <linux/ps2/dev.h>
@@ -17,17 +19,6 @@
 
 #define min(x,y) ((x)<(y)?(x):(y))
 #define max(x,y) ((x)>(y)?(x):(y))
-
-/*
- * This might be handy for measuring how much CPU time is spare out
- * of each frame of a game.
- */
-long long bigclock(void)
-{
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    return ((long long)tv.tv_sec) * 1000000LL + tv.tv_usec;
-}
 
 #ifdef PS2
 
@@ -185,33 +176,42 @@ int setup(void)
     SDL_ShowCursor(SDL_DISABLE);
 }
 
-int vsync(void)
+void vsync(void)
 {
 #ifdef PS2
     ioctl(evfd, PS2IOC_WAITEVENT, PS2EV_VSYNC);
 #else
     static int last_vsync, last_vsync_used = 0;
     int time_now, next_vsync;
+#ifdef unix
     struct timeval tv;
     gettimeofday(&tv, NULL);
     time_now = 1000000 * tv.tv_sec + tv.tv_usec;
+#else
+    time_now = 1000 * SDL_GetTicks();
+#endif
     if (!last_vsync_used)
 	last_vsync = time_now;
     next_vsync = last_vsync + 20000;
-    if (next_vsync - time_now > 0)
+    if (next_vsync - time_now > 0) {
+#ifdef unix
 	usleep(next_vsync - time_now);
+#else
+	SDL_Delay((next_vsync - time_now) / 1000);
+#endif
+    }
     last_vsync = next_vsync;
     last_vsync_used = 1;
 #endif
 }
 
-int scr_prep(void)
+void scr_prep(void)
 {
     if (SDL_MUSTLOCK(screen))
 	SDL_LockSurface(screen);
 }
 
-int scr_done(void)
+void scr_done(void)
 {
     if (SDL_MUSTLOCK(screen))
 	SDL_UnlockSurface(screen);
@@ -219,6 +219,18 @@ int scr_done(void)
 }
 
 #if 0
+
+/*
+ * This might be handy for measuring how much CPU time is spare out
+ * of each frame of a game.
+ */
+long long bigclock(void)
+{
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    return ((long long)tv.tv_sec) * 1000000LL + tv.tv_usec;
+}
+
 int main(int argc, char **argv)
 {
     SDL_Surface *screen;
