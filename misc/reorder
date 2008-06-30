@@ -1,0 +1,251 @@
+#!/usr/bin/perl 
+
+# Rearrange the files in a directory. By that, I mean that the
+# directory should finish up containing exactly the same files with
+# the same contents, but their order _in the directory_ - i.e. as
+# seen by ls -U - will have changed, at least if the underlying
+# filesystem is capable of storing such an order independently of
+# the file list itself. (A modern fast filesystem may well use a
+# hashing approach or a B-tree approach, which means that a given
+# set of file names have a fixed ls -U order, in which case this
+# program will do nothing, and report failure when it finds that
+# out.)
+#
+# We make some assumptions about the filesystem implementation,
+# which should be satisfied by at least ext2 and msdos/vfat. That's
+# enough for some useful applications: vfat in particular is used
+# on most memory cards, and a memory card used to plug into a cheap
+# MP3 player may well pay attention to the files' natural directory
+# order.
+
+# Usage: reorder [<perl-fragment> [<directory>]]
+#
+# <perl-fragment> is a piece of Perl which will be run once for
+# each filename in the directory. When run, $_ will be the
+# filename, $. will be that file's input position in the directory
+# order, and the current directory will be the one specified (so
+# you can conveniently test "-d" or "-f", for example).
+#
+# The Perl fragment should return a list of strings for each input
+# file. The files will be rearranged into the order given by
+# sorting those lists.
+#
+# At the time the Perl fragment is invoked, all internal variables
+# to this program will begin with two underscores, apart from some
+# convenience functions detailed below. As long as the Perl
+# fragment stays clear of that namespace, it won't tread on this
+# program's internal state.
+#
+# Convenience functions are:
+#  - &i(integer) returns a string with the property that the &i
+#    encodings of two integers sort in those integers' natural
+#    numerical order (this provides a convenient way to do numeric
+#    comparisons when the returned lists are compared as strings).
+#  - &r(string) returns a string with the property that the &r
+#    encodings of any two strings sort in the opposite order to the
+#    strings themselves. (This enables you to conveniently sort
+#    things into the reverse of their alphabetical order, for
+#    instance.)
+
+use POSIX;
+
+while ($ARGV[0] =~ /^-/) {
+    $__arg = shift @ARGV;
+    if ($__arg eq "-n") {
+	$__dryrun = 1;
+    } elsif ($__arg eq "-d") {
+	$__debug = 1;
+    } elsif ($__arg eq "--") {
+	last; # stop processing things that look like options
+    } else {
+	die "unrecognised command-line option '$__arg'\n";
+    }
+}
+
+$__frag = shift @ARGV;
+$__dir = shift @ARGV;
+$__frag = '$_' unless defined $__frag; # by default, sort in ASCII order
+chdir $__dir if defined $__dir;
+
+sub i {
+    # Encode an integer as a string which sorts in that order.
+    #
+    # The strategy is:
+    #  - positive integers are encoded as 2n hex digits (for
+    # 	 minimal n), preceded by n Cs and then a B.
+    #  - negative integers are encoded as 2n inverted hex digits
+    # 	 (again for minimal n), preceded by n As and then a B.
+    # Hence:
+    #  - -257 is AABFEFE
+    #  - -256 is AABFEFF
+    #  - -255 is AB00
+    #  - -1 is ABFF
+    #  - 0 is B
+    #  - 1 is CB01
+    #  - 255 is CBFF
+    #  - 256 is CCB0100
+    #  - 257 is CCB0101
+    my $__prefix = "B";
+    my $__suffix = "";
+    my $__i = shift @_;
+    my $__prefixchar = $__i < 0 ? "A" : "C";
+    my $__xor = $__i < 0 ? 0xFF : 0;
+    $__i = abs $__i;
+    while ($__i != 0) {
+	$__prefix = $__prefixchar . $__prefix;
+	$__suffix = (sprintf "%02X", ($__i & 0xFF) ^ $__xor) . $__suffix;
+	$__i >>= 8;
+    }
+    return $__prefix . $__suffix;
+}
+
+sub r {
+    # Encode a string in such a way that &r of a lot of strings
+    # sort in precisely the reverse order to the original strings.
+    #
+    # The strategy is to replace every character by its inverted
+    # 2-digit hex encoding (so that if two strings differ in some
+    # character their encoded forms will differ the other way in
+    # that pair of hex digits), and then terminate the string with
+    # a ZZ (which sorts after any hex pair, so that if two strings
+    # differ by one being longer than the other then the encoded
+    # form of the shorter will sort second).
+    my $__ret = "";
+    my $__str = shift @_;
+    map { $__ret .= sprintf "%02X", 0xFF ^ $_ } unpack "C*", $__str;
+    return $__ret . "Z";
+}
+
+# Acquire a list of the file names in the directory, in natural
+# order.
+$__dh = POSIX::opendir(".");
+@__files = POSIX::readdir($__dh);
+POSIX::closedir($__dh);
+@__files = grep { $_ ne "." and $_ ne ".." } @__files;
+
+# Now sort them according to the provided fragment.
+for ($__i=0; $__i<=$#__files; $__i++) {
+    $__fn = $__files[$__i];
+    $. = $__i; $_ = $__fn; @__ret = eval $__frag;
+    $__files[$__i] = [$__fn, $__i, [@__ret]];
+}
+
+# Now we've finished executing user Perl, so we can relax the
+# namespace restriction.
+if ($__debug) {
+    print STDERR "--- file list before sorting:\n";
+    map {
+	printf STDERR "%s (%d): %s\n", $_->[0], $_->[1], join ",", @{$_->[2]};
+    } @__files;
+    print STDERR "--- end file list before sorting\n";
+}
+
+@__files = sort {
+    $ret = 0;
+    @a = @{$a->[2]}; @b = @{$b->[2]};
+    for ($i = 0; $i <= $#a || $i <= $#b; $i++) {
+	if (!defined $a[$i]) { $ret = -1; last; }
+	if (!defined $b[$i]) { $ret = +1; last; }
+	if (($ret = $a[$i] cmp $b[$i]) != 0) { last; }
+    }
+    if ($ret == 0) {
+	# Fall back, if all else fails, to original directory
+	# order.
+	$ret = $a->[1] <=> $b->[1];
+    }
+    $ret;
+} @__files;
+
+if ($__debug) {
+    print STDERR "--- file list after sorting:\n";
+    map {
+	printf STDERR "%s (%d): %s\n", $_->[0], $_->[1], join ",", @{$_->[2]};
+    } @__files;
+    print STDERR "--- end file list after sorting\n";
+}
+
+@__files = map { $_->[0] } @__files;
+
+if ($__dryrun) {
+    map { print "$_\n" } @__files;
+    exit 0;
+}
+
+# Now we know what order we want the files to be in. Begin
+# reorganising.
+
+# Create a new subdirectory, and move the files into it.
+$index = 0;
+while (1) {
+    $subdir1 = "reorder-$index";
+    last if mkdir $subdir1, 0700;
+    $index++;
+}
+map { rename $_, "$subdir1/$_" } @__files;
+
+# Now create two subdirectories with names the same length. I
+# therefore believe the second one will definitely not be at the
+# very start of the directory.
+$index = 0;
+while (1) {
+    $subdir2 = "reorderA-$index";
+    $subdir3 = "reorderB-$index";
+    if (mkdir $subdir2, 0700) {
+	last if mkdir $subdir3, 0700;
+	rmdir $subdir2;
+    }
+    $index++;
+}
+
+# Move all the files from subdir1 into subdir3, so we can remove
+# the other two.
+map { rename "$subdir1/$_", "$subdir3/$_" } @__files;
+rmdir $subdir1;
+rmdir $subdir2;
+
+# Now recreate subdir2, and now it should be right at the start of
+# the directory.
+#
+# Here we are unavoidably vulnerable to a race condition involving
+# someone else creating a file of that name between the above rmdir
+# and this mkdir. I can't think of a way round that which also
+# preserves my ordering properties in the absence of meddling.
+#
+# If we die here, we will unfortunately leave everything inside
+# subdir3. Oops.
+die "$subdir2: mkdir: $!\n" .
+  "all your files have been left in $subdir3, sorry about that\n"
+  unless mkdir $subdir2, 0700;
+
+# Now move everything into subdir2 and remove subdir3. This will
+# leave the original directory containing only subdir2, which will
+# be right at the start of the directory.
+map { rename "$subdir3/$_", "$subdir2/$_" } @__files;
+rmdir $subdir3;
+
+# And now it should be safe to move everything back down, in the
+# user's specified order, and they should end up the way the user
+# asked for them.
+map { rename "$subdir2/$_", $_ } @__files;
+rmdir $subdir2;
+
+# Finally, check to see whether we got what we expected.
+$__dh = POSIX::opendir(".");
+@__files2 = POSIX::readdir($__dh);
+POSIX::closedir($__dh);
+@__files2 = grep { $_ ne "." and $_ ne ".." } @__files2;
+
+$list1 = join "\0", @__files;
+$list2 = join "\0", @__files2;
+if ($list1 ne $list2) {
+    if ($__debug) {
+	print STDERR "--- expected file list:\n";
+	map { print STDERR "$_\n" } @__files;
+	print STDERR "--- end expected file list\n";
+	print STDERR "--- actual file list:\n";
+	map { print STDERR "$_\n" } @__files2;
+	print STDERR "--- end actual file list\n";
+    }
+    die "reordering was unsuccessful\n";
+}
+exit 0;
