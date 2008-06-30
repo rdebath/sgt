@@ -18,7 +18,7 @@
 # MP3 player may well pay attention to the files' natural directory
 # order.
 
-# Usage: reorder [<perl-fragment> [<directory>]]
+# Usage: reorder [options] [<perl-fragment> [<directory>]]
 #
 # <perl-fragment> is a piece of Perl which will be run once for
 # each filename in the directory. When run, $_ will be the
@@ -28,13 +28,19 @@
 #
 # The Perl fragment should return a list of strings for each input
 # file. The files will be rearranged into the order given by
-# sorting those lists.
+# sorting those lists. The sort will be stable: that is, if the
+# Perl fragment returns the same value for more than one file, they
+# will remain in their original order.
 #
 # At the time the Perl fragment is invoked, all internal variables
 # to this program will begin with two underscores, apart from some
 # convenience functions detailed below. As long as the Perl
 # fragment stays clear of that namespace, it won't tread on this
 # program's internal state.
+#
+# As the last thing it does, the program will check that its
+# reordering was successful, and print an error message if it was
+# not.
 #
 # Convenience functions are:
 #  - &i(integer) returns a string with the property that the &i
@@ -46,6 +52,47 @@
 #    strings themselves. (This enables you to conveniently sort
 #    things into the reverse of their alphabetical order, for
 #    instance.)
+#
+# Command-line options are:
+#
+#  -n       don't actually do anything, just figure out the target
+#           order and print it (use this to do dry runs until you've
+#           got it right, then take off -n and do it for real)
+#
+#  -d       debug mode: print diagnostic output on standard error at
+#           several stages of the program
+#
+#  --       stop processing options (in case the Perl fragment starts
+#           with a minus sign).
+#
+# Examples
+# --------
+#
+# To make a directory's natural order match its ASCII filename
+# order, just do
+#
+#    reorder '$_'
+#
+# To exactly reverse the existing natural order:
+#
+#    reorder '&i(-$.)'
+#
+# To move all the directories to come after all the files, without
+# otherwise changing the order:
+#
+#    reorder '-d $_ ? "b" : "a"'
+#
+# To do the same, but sort each category into ASCII filename order
+# at the same time:
+#
+#    reorder '(-d $_ ? "b" : "a"), $_'
+#
+# To do the same, but sort directories into _reverse_ ASCII order
+# while sorting files forwards:
+#
+#    reorder -- '-d $_ ? ("b", &r($_)) : ("a", $_)'
+#
+# (note the need for -- in the last example)
 
 use POSIX;
 
