@@ -80,7 +80,11 @@
 # To move all the directories to come after all the files, without
 # otherwise changing the order:
 #
-#    reorder '-d $_ ? "b" : "a"'
+#    reorder -- '-d $_ ? "b" : "a"'
+#
+# (Note that -- is needed to prevent reorder from trying to
+# interpret that Perl fragment as a command-line option because it
+# starts with a minus sign.)
 #
 # To do the same, but sort each category into ASCII filename order
 # at the same time:
@@ -91,8 +95,6 @@
 # while sorting files forwards:
 #
 #    reorder -- '-d $_ ? ("b", &r($_)) : ("a", $_)'
-#
-# (note the need for -- in the last example)
 
 use POSIX;
 
@@ -160,7 +162,7 @@ sub r {
     my $__ret = "";
     my $__str = shift @_;
     map { $__ret .= sprintf "%02X", 0xFF ^ $_ } unpack "C*", $__str;
-    return $__ret . "Z";
+    return $__ret . "ZZ";
 }
 
 # Acquire a list of the file names in the directory, in natural
