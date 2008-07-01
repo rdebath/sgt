@@ -423,38 +423,6 @@ class root_matrix:
 	else:
 	    return (a, 1, 1, 0)
 
-class log_matrix:
-    # We compute logs of integers by summing the series for
-    # log(1+a), with the twist that 1+a is the _reciprocal_ of our
-    # integer (so that the sum always converges), and we want minus
-    # log of it.
-    #
-    #                       a   2 a^2   3 a^3
-    # Now -log(1 + a/b) = - - + ----- - ----- + ...
-    #                       b    b^2     b^3
-    #
-    #                       a        a       2a
-    #                   = - - ( 1 - -- ( 1 - -- ( ... ) ) )
-    #                       b       2b       3b
-    #
-    # so our matrices go
-    #
-    #   ( -a 0 ) ( -a 2b ) ( -2a 3b ) ...
-    #   (  0 b ) (  0 2b ) (   0 3b )
-    #
-    # with a=1-n and b=n.
-    #
-    # Unfortunately, this still converges very slowly for large
-    # integers, but it does converge.
-    def __init__(self, n):
-	self.a = 1-n
-	self.b = n
-    def __call__(self, k):
-	if k == 1:
-	    return (-self.a, 0, 0, self.b)
-	else:
-	    return (-(k-1)*self.a, k*self.b, 0, k*self.b)
-
 class frac_matrix:
     def __init__(self, n, d):
 	self.n = n
@@ -550,6 +518,79 @@ class gosper_matrix:
 	    assert term[1] == 1
 	    return (term[0], 1, 1, 0)
 
+class primitive_log_matrix:
+    # We compute logs by summing the series for log(1+x). x will be
+    # rational, in the general case (say a/b), and we will often
+    # want to multiply our output log by some integer s.
+    #
+    #                           a   2 a^2   3 a^3
+    # So s*log(1 + a/b) = s * ( - - ----- + ----- - ...
+    #                           b    b^2     b^3
+    #
+    #                         a        a       2a
+    #                   = s * - ( 1 - -- ( 1 - -- ( ... ) ) )
+    #                         b       2b       3b
+    #
+    # so our matrices go
+    #
+    #   ( s*a 0 ) ( -a 2b ) ( -2a 3b ) ...
+    #   (   0 b ) (  0 2b ) (   0 3b )
+
+    def __init__(self, s, a, b):
+	self.a = a
+	self.b = b
+	self.s = s
+    def __call__(self, k):
+	if k == 1:
+	    return (self.s * self.a, 0, 0, self.b)
+	else:
+	    return (-(k-1)*self.a, k*self.b, 0, k*self.b)
+def log_spigot(n, d = 1):
+    # This is the real function that computes a log. We begin by
+    # doing argument reduction: scale our input by a power of two
+    # so that it's in the range [1/2,2].
+    #
+    # Unlike any other function in this family, we return a spigot
+    # object rather than a raw matrix, because we need to vary our
+    # interval bounds depending on whether we're doing nontrivial
+    # argument reduction or not.
+    def approxlog2(x):
+	s = hex(x)
+	if s[:2] == "0x": s = s[2:]
+	if s[:1] == "0": s = s[1:]
+	if s[-1:] == "L": s = s[:-1]
+	return 4 * len(s)
+    if n > d:
+	k = approxlog2(n/d)
+	assert n <= d << k
+	while n <= d << k:
+	    k = k - 1
+	d = d << k
+    else:
+	k = approxlog2(d/n)
+	assert d <= n << k
+	while d <= n << k:
+	    k = k - 1
+	n = n << k
+	k = -k
+    # Now the value we want is log(n/d) + k log 2.
+    #
+    # If n/d > 1, flip round to compute -log(d/n), which will
+    # converge a bit faster.
+    if n > d:
+	plm = primitive_log_matrix(-1, d-n, n) # log(1 + (d-n)/n) = log(d/n)
+    else:
+	plm = primitive_log_matrix(1, n-d, d) # log(1 + (n-d)/d) = log(n/d)
+    pls = spigot(0, 2, plm)
+    # And now scale back up, if necessary.
+    if k != 0:
+	scm = primitive_log_matrix(-k, -1, 2) # -k * log(1/2)
+	scs = spigot(0, 2, scm)
+	retm = gosper_matrix((0,1,1,0,0,0,0,1), pls, scs)
+	return spigot(0, None, retm)
+    else:
+	return pls
+
 class recip_matrix:
     def __init__(self, spig):
 	self.spig = spig
@@ -622,7 +663,7 @@ def get_spig(arg, args):
 	    sys.stderr.write("input type 'log' requires an argument\n")
 	    sys.exit(1)
 	logarg = long(logarg)
-	return spigot(0, logarg, log_matrix(logarg))
+	return log_spigot(logarg)
     elif arg == "frac":
 	if len(args) >= 2:
 	    numerator = args[0]
