@@ -423,6 +423,38 @@ class root_matrix:
 	else:
 	    return (a, 1, 1, 0)
 
+class log_matrix:
+    # We compute logs of integers by summing the series for
+    # log(1+a), with the twist that 1+a is the _reciprocal_ of our
+    # integer (so that the sum always converges), and we want minus
+    # log of it.
+    #
+    #                       a   2 a^2   3 a^3
+    # Now -log(1 + a/b) = - - + ----- - ----- + ...
+    #                       b    b^2     b^3
+    #
+    #                       a        a       2a
+    #                   = - - ( 1 - -- ( 1 - -- ( ... ) ) )
+    #                       b       2b       3b
+    #
+    # so our matrices go
+    #
+    #   ( -a 0 ) ( -a 2b ) ( -2a 3b ) ...
+    #   (  0 b ) (  0 2b ) (   0 3b )
+    #
+    # with a=1-n and b=n.
+    #
+    # Unfortunately, this still converges very slowly for large
+    # integers, but it does converge.
+    def __init__(self, n):
+	self.a = 1-n
+	self.b = n
+    def __call__(self, k):
+	if k == 1:
+	    return (-self.a, 0, 0, self.b)
+	else:
+	    return (-(k-1)*self.a, k*self.b, 0, k*self.b)
+
 class frac_matrix:
     def __init__(self, n, d):
 	self.n = n
@@ -582,6 +614,15 @@ def get_spig(arg, args):
 	    sys.exit(1)
 	radicand = long(radicand)
 	return spigot(0, None, root_matrix(radicand))
+    elif arg == "log":
+	if len(args) > 0:
+	    logarg = args[0]
+	    del args[0]
+	else:
+	    sys.stderr.write("input type 'log' requires an argument\n")
+	    sys.exit(1)
+	logarg = long(logarg)
+	return spigot(0, logarg, log_matrix(logarg))
     elif arg == "frac":
 	if len(args) >= 2:
 	    numerator = args[0]
