@@ -3,7 +3,7 @@ Class: bug
 Priority: high
 Absent-in: 0.58 2006-08-13
 Present-in: 2006-08-27 0.59 0.60 2007-09-23
-Fixed-in: r8110 2008-07-07
+Fixed-in: r8117 2008-07-12
 Content-type: text/x-html-body
 
 <p>
