@@ -23,6 +23,7 @@ import errno
 #   spigot.py pi                 # generates pi in base 10
 #   spigot.py -b7 pi             # generates pi in another base, e.g. 7
 #   spigot.py -c pi              # generates continued fraction for pi
+#   spigot.py -C pi              # generates convergents for pi
 #   spigot.py e                  # generates e
 #   spigot.py phi                # generates phi
 #   spigot.py root 3             # generates the square root of 3
@@ -242,12 +243,21 @@ class output_base:
 	print
 
 class output_confrac:
+    def __init__(self, write_convergents = 0):
+	self.write_convergents = write_convergents
+	self.convergent_matrix = [0, 1, 1, 0]
     def consume(self, matrix, digit):
 	# Update a matrix state to reflect the consumption of a
 	# digit.
 	return mmul((0, 1, 1, -digit), matrix)
     def output(self, digit):
-	sys.stdout.write("%d\n" % digit)
+	if self.write_convergents:
+	    a = self.convergent_matrix
+	    a = [a[1], a[1]*digit+a[0], a[3], a[3]*digit+a[2]]
+	    self.convergent_matrix = a
+	    sys.stdout.write("%d/%d\n" % (a[1], a[3]))
+	else:
+	    sys.stdout.write("%d\n" % digit)
 	sys.stdout.flush()
     def run(self, spig, digitlimit, earlyterm):
 	while digitlimit == None or digitlimit > 0:
@@ -751,6 +761,8 @@ while len(args) > 0:
     del args[0]
     if arg == "-c":
 	output = output_confrac()
+    elif arg == "-C":
+	output = output_confrac(1)
     elif arg[0:2] == "-b":
 	val = arg[2:]
 	if val == "":
