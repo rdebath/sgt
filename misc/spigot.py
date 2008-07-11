@@ -2,6 +2,7 @@
 
 import sys
 import errno
+import os
 
 # TODO:
 #  - Rationalise command line syntax?
@@ -267,6 +268,29 @@ class output_confrac:
 		return
 	    else:
 		self.output(digit)
+
+class output_approx:
+    def __init__(self, fd):
+	self.file = os.fdopen(fd, "r")
+	self.state = 0
+    def consume(self, matrix, digit):
+	# We never consume anything.
+	return matrix
+    def output(self, digit):
+	sys.stdout.write("%d\n" % digit)
+	sys.stdout.flush()
+    def run(self, spig, digitlimit, earlyterm):
+	while digitlimit == None or digitlimit > 0:
+	    denominator = self.file.readline()
+	    if denominator == "":
+		return
+	    denominator = long(denominator)
+	    outmatrix = (denominator, 0, 0, 1)
+	    digit = spig.gendigit(self, earlyterm, outmatrix)
+	    assert digit != (-1,) and digit != (-2,)
+	    self.output(digit)
+	    if digitlimit != None:
+		digitlimit = digitlimit - 1
 
 def mtrans(m, x):
     # Interpret a 2x2 matrix as a Mobius transformation.
@@ -627,10 +651,14 @@ class spigot:
 	self.matrix = matrix
 	self.state = (1, 0, 0, 1)
 	self.k = 1
-    def gendigit(self, consume, earlyterm=0):
+    def gendigit(self, consume, earlyterm=0, outmatrix=None):
 	while 1:
-	    digit = mtrans(self.state, self.bot)
-	    dcheck = mtrans(self.state, self.top)
+	    if outmatrix:
+		thisstate = mmul(outmatrix, self.state)
+	    else:
+		thisstate = self.state
+	    digit = mtrans(thisstate, self.bot)
+	    dcheck = mtrans(thisstate, self.top)
 	    if digit == dcheck:
 		if digit == None:
 		    # This case arises when we have been asked to generate the
@@ -791,6 +819,16 @@ while len(args) > 0:
 		sys.stderr.write("option '-d' requires an argument\n")
 		sys.exit(1)
         digitlimit = long(val)
+    elif arg[0:2] == "-a":
+	val = arg[2:]
+	if val == "":
+	    if len(args) > 0:
+		val = args[0]
+		del args[0]
+	    else:
+		sys.stderr.write("option '-d' requires an argument\n")
+		sys.exit(1)
+	output = output_approx(int(val))
     elif arg == "-n":
 	earlyterm = 0
     else:
@@ -805,6 +843,8 @@ if spig == None:
     sys.stderr.write("       -c               output continued fraction terms, one per line\n")
     sys.stderr.write("       -n               continue writing digits even if fraction terminates\n")
     sys.stderr.write("       -d <digits>      terminate after writing that many digits\n")
+    sys.stderr.write("       -a <fd>          read a stream of denominators from <fd>,\n")
+    sys.stderr.write("                          write out numerators of approximations\n")
     sys.stderr.write("and <number> is:\n")
     sys.stderr.write("       pi | e | phi     mathematical constants\n")
     sys.stderr.write("       root <n>         the square root of any positive integer <n>\n")
