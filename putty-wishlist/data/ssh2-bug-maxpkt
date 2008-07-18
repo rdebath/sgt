@@ -38,3 +38,9 @@ PuTTY's change in behaviour is entirely legitimate.
 
 <p>PuTTY now detects this particular server software and limits the
 window size it advertises in order to work around the problem.
+
+<p><em>Update, 2008-07-19:</em> according to
+<a href="http://forum.filezilla-project.org/viewtopic.php?f=1&t=7271&p=25857#p25857">this thread</a>,
+another server with a subtly different version string has the same
+problem. As of today's snapshot PuTTY should automatically detect
+that version as well.
