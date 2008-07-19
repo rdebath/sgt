@@ -86,3 +86,7 @@ they're taken care of I don't see why a DLL providing an API like
 the one above shouldn't be perfectly possible to write just by
 implementing a single front-end module to replace (say)
 <code>plink.c</code>.
+
+<p>
+There's a third-party DLL encapsulation, W-Putty-CD, on our
+<a href="../links.html">Links page</a>.
