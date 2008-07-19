@@ -81,3 +81,5 @@ fonts[FONT_UNDERLINE] = 0;
 Again, don't know why this helps solve the issue, but it does.  This
 isn't the correct "fix" obviously -- I'm just pointing it out to help
 track down the source of the problem (I hope).
+
+Another report: 20080624013622.GC26675@pihost.us
