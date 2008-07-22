@@ -88,5 +88,5 @@ implementing a single front-end module to replace (say)
 <code>plink.c</code>.
 
 <p>
-There's a third-party DLL encapsulation, W-Putty-CD, on our
+There's a third-party DLL encapsulation, W-PuTTY-CD, on our
 <a href="../links.html">Links page</a>.
