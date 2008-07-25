@@ -15,6 +15,10 @@ static void check(int phase, size_t heapoid_size, size_t *mask,
 		  size_t b, size_t c);
 #endif
 
+#ifdef DIAGRAM
+static void write_diagram(void);
+#endif
+
 /*
  * If WITH_CTX is not defined, this file will create a
  * smoothsort() function with a prototype identical to the
@@ -212,6 +216,10 @@ void smoothsort(void *base, size_t nmemb, size_t size, cmpfn compare CTXPARAM)
     b = c = 1;
     heapoid_size = 1;
 
+#ifdef DIAGRAM
+    write_diagram();
+#endif
+
     /*
      * Phase 1: build the heapoid.
      */
@@ -249,6 +257,9 @@ void smoothsort(void *base, size_t nmemb, size_t size, cmpfn compare CTXPARAM)
 #ifdef TESTMODE
 	check(1, heapoid_size, mask, b, c);
 #endif
+#ifdef DIAGRAM
+	write_diagram();
+#endif
     }
 
     /*
@@ -259,6 +270,9 @@ void smoothsort(void *base, size_t nmemb, size_t size, cmpfn compare CTXPARAM)
 
 #ifdef TESTMODE
     check(2, heapoid_size, mask, b, c);
+#endif
+#ifdef DIAGRAM
+    write_diagram();
 #endif
 
     /*
@@ -296,6 +310,9 @@ void smoothsort(void *base, size_t nmemb, size_t size, cmpfn compare CTXPARAM)
 	}
 #ifdef TESTMODE
 	check(2, heapoid_size, mask, b, c);
+#endif
+#ifdef DIAGRAM
+	write_diagram();
 #endif
     }
 }
@@ -397,6 +414,70 @@ int main(void)
     smoothsort(testarray, NTEST, sizeof(*testarray), compare);
     for (i = 0; i < NTEST; i++)
 	printf("a %3d: %3d\n", i, testarray[i]);
+    return 0;
+}
+
+#endif
+
+#ifdef DIAGRAM
+
+/*
+gcc -g -O0 -DDIAGRAM -o smoothsort smoothsort.c && ./smoothsort && \
+    multi convert s/png/gif/ smoothsort0*.png && \
+    gifsicle -d 1 smoothsort0*.gif > smoothsort.gif
+ */
+
+#define NTEST 123
+
+static int testarray[NTEST];
+
+static int compare(const void *av, const void *bv)
+{
+    const int *a = (const int *)av;
+    const int *b = (const int *)bv;
+    return *a < *b ? -1 : *a > *b ? +1 : 0;
+}
+
+static void write_diagram(void)
+{
+    char command[256];
+    static int frame = 0;
+    int yp, y, xp, x;
+    const int grid = 3;
+    FILE *fp;
+
+    sprintf(command, "convert -depth 8 -size %dx%d gray:- smoothsort%04d.png",
+	    NTEST*grid, NTEST*grid, frame++);
+    fp = popen(command, "w");
+    for (yp = 0; yp < NTEST*grid; yp++) {
+	y = NTEST-1 - (yp / grid);
+	for (xp = 0; xp < NTEST*grid; xp++) {
+	    x = xp / grid;
+
+	    if (testarray[x] == y)
+		fputc(0, fp);
+	    else
+		fputc(255, fp);
+	}
+    }
+    pclose(fp);
+}
+
+int main(void)
+{
+    int i;
+
+    srand(1234);
+
+    for (i = 0; i < NTEST; i++)
+	testarray[i] = i;
+    for (i = NTEST; i-- > 1 ;) {
+	int j = rand() % (i+1);
+	int t = testarray[i];
+	testarray[i] = testarray[j];
+	testarray[j] = t;
+    }
+    smoothsort(testarray, NTEST, sizeof(*testarray), compare);
     return 0;
 }
 
