@@ -1,10 +1,5 @@
 /*
  * smoothsort.c: Implementation of Edsger Dijkstra's "smoothsort".
- * 
- * Currently not even slightly working. It runs, and it even
- * terminates, but is the output list remotely sorted? Is it
- * buggery. Some rigorous invariant-testing at every stage of the
- * algorithm required, methinks.
  */
 
 #include <stdio.h>
