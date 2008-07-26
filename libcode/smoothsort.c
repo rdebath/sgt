@@ -188,13 +188,6 @@
 #include <string.h>
 #include <assert.h>
 
-#ifndef TESTMODE
-#define NDEBUG
-#else
-static void check(int phase, size_t heapoid_size, size_t *mask,
-		  size_t b, size_t c);
-#endif
-
 #ifdef DIAGRAM
 static void write_diagram(void);
 #endif
@@ -239,86 +232,102 @@ static void memswap(void *av, void *bv, size_t size)
 }
 
 /*
- * mask[0] and mask[1] represent the bit mask of stretch sizes
- * we're using. It has to be larger than a size_t, because
- * Leonardo numbers grow less fast than powers of two. The obvious
- * thing would be to store it as two words end to end, but this
- * has portability problems (fiddly to reliably determine the
- * maximum number of bits you can fit in a size_t), and actually
- * the alternative is faster anyway: _interleave_ the bits, so
- * that mask[0] contains all the even-numbered bits of the logical
- * mask and mask[1] all the odd-numbered bits. Then a one-bit
- * shift left or right consists of swapping the two words and
- * shifting only one of them, which is much easier than shifting
- * both and fiddling about with the carried-over bit.
+ * Bookkeeping to keep track of the current shape of the heapoid.
+ *
+ * As recommended by Dijkstra, we store a bitmap indicating which
+ * Leonardo numbers are the sizes of stretches currently in the
+ * heapoid. We also store two actual Leonardo numbers b and c. b
+ * is the size corresponding to bit 0 of the bitmap; c is the next
+ * Leonardo number down (which allows us to easily move b up to
+ * the next number or down to the previous one without having to
+ * have an actual array of Leonardo numbers stored anywhere).
+ *
+ * So bit 0 of the bitmap, if set, indicates that the heapoid
+ * includes a stretch of length b; bit 1 indicates a stretch of
+ * length b+c+1; bit 2 indicates one of length b+(b+c+1)+1 and so
+ * on.
+ *
+ * Unfortunately, the bitmap has to be larger than a size_t,
+ * because Leonardo numbers grow less fast than powers of two. The
+ * obvious thing would be to store it as two size_t words end to
+ * end, but this has portability problems (fiddly to reliably
+ * determine the maximum number of bits you can fit in a size_t),
+ * and actually the alternative is faster anyway: _interleave_ the
+ * bits, so that one word contains all the even-numbered bits of
+ * the logical bitmap and the other all the odd-numbered bits.
+ * Then a one-bit shift left or right consists of swapping the two
+ * words and shifting only one of them, which is much easier than
+ * shifting both and fiddling about with the carried-over bit.
+ *
+ * This is the meaning of the bookkeeping structure as actually
+ * shown below. b is a Leonardo number; c is the next Leonardo
+ * number down; the low bit of bitmap[0] indicates a stretch of
+ * size b, the low bit of bitmap[1] a stretch of size b+c+1, the
+ * second lowest bit of bitmap[0] a stretch of size b+(b+c+1)+1,
+ * then the second lowest bit of bitmap[1] and so on.
  */
+struct bookkeeping {
+    size_t bitmap[2];
+    size_t b, c;
+};
 
-static void up(size_t *mask, size_t *b, size_t *c)
+#ifdef TESTMODE
+static void check(int phase, size_t heapoid_size, struct bookkeeping bk);
+#endif
+
+static void up(struct bookkeeping *bk)
 {
     size_t tmp;
 
-    if (mask) {
-	assert(!(mask[0] & 1));
-	tmp = mask[0] >> 1;
-	mask[0] = mask[1];
-	mask[1] = tmp;
-    }
+    tmp = bk->bitmap[0] >> 1;
+    bk->bitmap[0] = bk->bitmap[1];
+    bk->bitmap[1] = tmp;
 
-    tmp = *b;
-    *b += *c + 1;
-    *c = tmp;
+    tmp = bk->b;
+    bk->b += bk->c + 1;
+    bk->c = tmp;
 }
 
-static void down(size_t *mask, size_t *b, size_t *c)
+static void down(struct bookkeeping *bk)
 {
     size_t tmp;
 
-    if (mask) {
-	tmp = mask[1] << 1;
-	mask[1] = mask[0];
-	mask[0] = tmp;
-    }
+    tmp = bk->bitmap[1] << 1;
+    bk->bitmap[1] = bk->bitmap[0];
+    bk->bitmap[0] = tmp;
 
-    tmp = *c;
-    *c = *b - *c - 1;
-    *b = tmp;
+    tmp = bk->c;
+    bk->c = bk->b - bk->c - 1;
+    bk->b = tmp;
 }
 
 static void sift(void *base, size_t size, cmpfn compare CTXPARAM,
-		 size_t root, size_t b, size_t c)
+		 size_t root, struct bookkeeping bk)
 {
-    while (b > 1) {
+    while (bk.b > 1) {
 	/*
 	 * Find the larger child, and see if it needs to be
 	 * exchanged with the root.
 	 */
-	down(NULL, &b, &c);
-	if (COMPARE(root-1, root-c-1) > 0) {
-	    if (COMPARE(root, root-1) >= 0)
+	down(&bk);		       /* now b and c are the child sizes */
+	if (COMPARE(root - 1, root - bk.c - 1) > 0) {
+	    if (COMPARE(root, root - 1) >= 0)
 		return;
 	    SWAP(root, root-1);
-	    down(NULL, &b, &c);
+	    down(&bk);
 	    root--;
 	} else {
-	    if (COMPARE(root, root-c-1) >= 0)
+	    if (COMPARE(root, root - bk.c - 1) >= 0)
 		return;
-	    SWAP(root, root-c-1);
-	    root -= c+1;
+	    SWAP(root, root - bk.c - 1);
+	    root -= bk.c + 1;
 	}
     }
 }
 
 static void trinkle(void *base, size_t size, cmpfn compare CTXPARAM,
-		    size_t root, size_t *inmask, size_t b, size_t c, int full)
+		    size_t root, struct bookkeeping bk, int full)
 {
-    size_t mask[2];
-
-    /*
-     * Take a local copy of the mask, so we can fiddle with it.
-     */
-    mask[0] = inmask[0];
-    mask[1] = inmask[1];
-
     while (1) {
 	size_t biggest = root;
 	int action = 0;
@@ -327,13 +336,13 @@ static void trinkle(void *base, size_t size, cmpfn compare CTXPARAM,
 	 * Compare against the two children of the current
 	 * stretch, if it's got any.
 	 */
-	if (b > 1 && full) {
-	    if (COMPARE(root-1, biggest) > 0) {
-		biggest = root-1;
+	if (bk.b > 1 && full) {
+	    if (COMPARE(root - 1, biggest) > 0) {
+		biggest = root - 1;
 		action = 1;
 	    }
-	    if (COMPARE(root-b+c, biggest) > 0) {
-		biggest = root-b+c;
+	    if (COMPARE(root - bk.b + bk.c, biggest) > 0) {
+		biggest = root - bk.b + bk.c;
 		action = 2;
 	    }
 	}
@@ -342,9 +351,9 @@ static void trinkle(void *base, size_t size, cmpfn compare CTXPARAM,
 	 * Compare against the root of the previous stretch, if
 	 * there is one.
 	 */
-	if (mask[0] > 1 || mask[1] > 0) {
-	    if (COMPARE(root-b, biggest) > 0) {
-		biggest = root-b;
+	if (bk.bitmap[0] > 1 || bk.bitmap[1] > 0) {
+	    if (COMPARE(root - bk.b, biggest) > 0) {
+		biggest = root - bk.b;
 		action = 3;
 	    }
 	}
@@ -356,23 +365,23 @@ static void trinkle(void *base, size_t size, cmpfn compare CTXPARAM,
 	  case 1:		       /* second substretch of this one */
 	    SWAP(root, root-1);
 	    root = root-1;
-	    down(NULL, &b, &c);
-	    down(NULL, &b, &c);
-	    sift(base, size, compare CTXARG, root, b, c);
+	    down(&bk);
+	    down(&bk);
+	    sift(base, size, compare CTXARG, root, bk);
 	    return;
 	  case 2:		       /* first substretch of this one */
-	    SWAP(root, root-b+c);
-	    root = root-b+c;
-	    down(NULL, &b, &c);
-	    sift(base, size, compare CTXARG, root, b, c);
+	    SWAP(root, root - bk.b + bk.c);
+	    root = root - bk.b + bk.c;
+	    down(&bk);
+	    sift(base, size, compare CTXARG, root, bk);
 	    return;
 	  case 3:		       /* previous stretch */
-	    SWAP(root, root-b);
-	    root = root-b;
-	    mask[0] ^= 1;
+	    SWAP(root, root - bk.b);
+	    root = root - bk.b;
+	    bk.bitmap[0] ^= 1;
 	    do {
-		up(mask, &b, &c);
-	    } while (!(mask[0] & 1));
+		up(&bk);
+	    } while (!(bk.bitmap[0] & 1));
 	    full = 1;
 	    continue;
 	  default /* case 0 */:        /* already the biggest, we're done */
@@ -384,16 +393,16 @@ static void trinkle(void *base, size_t size, cmpfn compare CTXPARAM,
 void smoothsort(void *base, size_t nmemb, size_t size, cmpfn compare CTXPARAM)
 {
     int heapoid_size;
-    size_t mask[2], b, c;
+    struct bookkeeping bk;
 
     /*
      * Initialise the heapoid so that it contains a singleton
      * element. (Allowing it ever to be zero-sized would require
      * irritating and unnecessary special-case handling.)
      */
-    mask[0] = 1;
-    mask[1] = 0;
-    b = c = 1;
+    bk.bitmap[0] = 1;
+    bk.bitmap[1] = 0;
+    bk.b = bk.c = 1;
     heapoid_size = 1;
 
 #ifdef DIAGRAM
@@ -404,7 +413,7 @@ void smoothsort(void *base, size_t nmemb, size_t size, cmpfn compare CTXPARAM)
      * Phase 1: build the heapoid.
      */
     while (heapoid_size < nmemb) {
-	int merge = mask[0] & mask[1] & 1;
+	int merge = bk.bitmap[0] & bk.bitmap[1] & 1;
 
 	/*
 	 * Heapoid invariant restoration. If we're merging two
@@ -412,30 +421,29 @@ void smoothsort(void *base, size_t nmemb, size_t size, cmpfn compare CTXPARAM)
 	 * to be part of the heapoid's final configuration, then
 	 * we can merely sift. Otherwise, we must trinkle.
 	 */
-	if (merge || heapoid_size + c + 1 <= nmemb)
-	    sift(base, size, compare CTXARG, heapoid_size - 1, b, c);
+	if (merge || heapoid_size + bk.c + 1 <= nmemb)
+	    sift(base, size, compare CTXARG, heapoid_size - 1, bk);
 	else
-	    trinkle(base, size, compare CTXARG,
-		    heapoid_size - 1, mask, b, c, 1);
+	    trinkle(base, size, compare CTXARG, heapoid_size - 1, bk, 1);
 
 	/*
 	 * Now we can add our new element to the heapoid.
 	 */
 	heapoid_size++;
 	if (merge) {
-	    mask[0] ^= 3;
-	    mask[1] ^= 1;
-	    up(mask, &b, &c);
-	    up(mask, &b, &c);
+	    bk.bitmap[0] ^= 3;
+	    bk.bitmap[1] ^= 1;
+	    up(&bk);
+	    up(&bk);
 	} else {
 	    do {
-		down(mask, &b, &c);
-	    } while (b > 1);
-	    mask[0] ^= 1;
+		down(&bk);
+	    } while (bk.b > 1);
+	    bk.bitmap[0] ^= 1;
 	}
 
 #ifdef TESTMODE
-	check(1, heapoid_size, mask, b, c);
+	check(1, heapoid_size, bk);
 #endif
 #ifdef DIAGRAM
 	write_diagram();
@@ -445,11 +453,10 @@ void smoothsort(void *base, size_t nmemb, size_t size, cmpfn compare CTXPARAM)
     /*
      * Phase 1.5: switch over to the phase-2 invariants.
      */
-    trinkle(base, size, compare CTXARG,
-	    heapoid_size-1, mask, b, c, 1);
+    trinkle(base, size, compare CTXARG, heapoid_size-1, bk, 1);
 
 #ifdef TESTMODE
-    check(2, heapoid_size, mask, b, c);
+    check(2, heapoid_size, bk);
 #endif
 #ifdef DIAGRAM
     write_diagram();
@@ -460,7 +467,7 @@ void smoothsort(void *base, size_t nmemb, size_t size, cmpfn compare CTXPARAM)
      */
     while (heapoid_size > 1) {
 	heapoid_size--;
-	if (b > 1) {
+	if (bk.b > 1) {
 	    /*
 	     * Split up a stretch into two substretches. Heapoid
 	     * invariant restoration: we must (semi)trinkle the
@@ -469,27 +476,25 @@ void smoothsort(void *base, size_t nmemb, size_t size, cmpfn compare CTXPARAM)
 	     * of having mask[] looking sensible for the trinkle
 	     * function) to do as we go along.
 	     */
-	    mask[0] ^= 1;
-	    down(mask, &b, &c);
-	    mask[0] ^= 1;
-	    trinkle(base, size, compare CTXARG,
-		    heapoid_size - c - 1, mask, b, c, 0);
-	    down(mask, &b, &c);
-	    mask[0] ^= 1;
-	    trinkle(base, size, compare CTXARG,
-		    heapoid_size - 1, mask, b, c, 0);
+	    bk.bitmap[0] ^= 1;
+	    down(&bk);
+	    bk.bitmap[0] ^= 1;
+	    trinkle(base, size, compare CTXARG, heapoid_size - bk.c - 1, bk,0);
+	    down(&bk);
+	    bk.bitmap[0] ^= 1;
+	    trinkle(base, size, compare CTXARG, heapoid_size - 1, bk, 0);
 	} else {
 	    /*
 	     * Remove a singleton from the end of the heapoid.
 	     * Invariants are naturally preserved by this.
 	     */
-	    mask[0] ^= 1;
+	    bk.bitmap[0] ^= 1;
 	    do {
-		up(mask, &b, &c);
-	    } while (!(mask[0] & 1));
+		up(&bk);
+	    } while (!(bk.bitmap[0] & 1));
 	}
 #ifdef TESTMODE
-	check(2, heapoid_size, mask, b, c);
+	check(2, heapoid_size, bk);
 #endif
 #ifdef DIAGRAM
 	write_diagram();
@@ -503,7 +508,7 @@ void smoothsort(void *base, size_t nmemb, size_t size, cmpfn compare CTXPARAM)
  * gcc -g -O0 -DTESTMODE -o smoothsort smoothsort.c
  */
 
-#define NTEST 123
+#define NTEST 123456
 
 static int testarray[NTEST];
 
@@ -514,48 +519,43 @@ static int compare(const void *av, const void *bv)
     return *a < *b ? -1 : *a > *b ? +1 : 0;
 }
 
-static void checkstretch(size_t root, size_t b, size_t c, int dubious)
+static void checkstretch(size_t root, struct bookkeeping bk, int dubious)
 {
-    if (b > 1) {
-	size_t aroot = root - b + c, broot = root - 1;
+    if (bk.b > 1) {
+	size_t aroot = root - bk.b + bk.c, broot = root - 1;
 	if (!dubious) {
 	    assert(testarray[root] >= testarray[aroot]);
 	    assert(testarray[root] >= testarray[broot]);
 	}
-	down(NULL, &b, &c);
-	checkstretch(aroot, b, c, 0);
-	down(NULL, &b, &c);
-	checkstretch(broot, b, c, 0);
+	down(&bk);
+	checkstretch(aroot, bk, 0);
+	down(&bk);
+	checkstretch(broot, bk, 0);
     }
 }
 
-static void check(int phase, size_t heapoid_size, size_t *inmask,
-		  size_t b, size_t c)
+static void check(int phase, size_t heapoid_size, struct bookkeeping bk)
 {
-    size_t mask[2];
-    int bs[64], cs[64];
+    size_t bs[64], cs[64], b, c;
     int nsizes = 0;
     int first = 1;
-
-    mask[0] = inmask[0];
-    mask[1] = inmask[1];
 
     /*
      * Check that every stretch is correctly structured
      * internally, and preserve their sizes on a list.
      */
-    while (mask[0] || mask[1]) {
-	assert(heapoid_size >= b);
-	if (mask[0] & 1) {
-	    checkstretch(heapoid_size - 1, b, c, phase==1 && first);
-	    mask[0] ^= 1;
+    while (bk.bitmap[0] || bk.bitmap[1]) {
+	assert(heapoid_size >= bk.b);
+	if (bk.bitmap[0] & 1) {
+	    checkstretch(heapoid_size - 1, bk, phase==1 && first);
+	    bk.bitmap[0] ^= 1;
 	    first = 0;
-	    bs[nsizes] = b;
-	    cs[nsizes] = c;
+	    bs[nsizes] = bk.b;
+	    cs[nsizes] = bk.c;
 	    nsizes++;
-	    heapoid_size -= b;
+	    heapoid_size -= bk.b;
 	}
-	up(mask, &b, &c);
+	up(&bk);
     }
     assert(heapoid_size == 0);
 
