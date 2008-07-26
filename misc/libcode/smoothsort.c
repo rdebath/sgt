@@ -189,7 +189,7 @@
 #include <assert.h>
 
 #ifdef DIAGRAM
-static void write_diagram(void);
+static void write_diagram(size_t heapoid_size, const char *nameprefix);
 #endif
 
 /*
@@ -212,8 +212,14 @@ typedef int (*cmpfn)(const void *a, const void *b CTXPARAM);
 
 #define COMPARE(i, j) compare(((char *)base)+(i)*(size), \
 			      ((char *)base)+(j)*(size) CTXARG)
-#define SWAP(i, j) memswap(((char *)base)+(i)*(size), \
-			   ((char *)base)+(j)*(size), size)
+#define REALSWAP(i, j) memswap(((char *)base)+(i)*(size), \
+			       ((char *)base)+(j)*(size), size)
+#ifdef DIAGRAM
+static void mark(size_t i);
+#define SWAP(i, j) ( mark(i), mark(j), REALSWAP(i, j) )
+#else
+#define SWAP(i, j) ( REALSWAP(i, j) )
+#endif
 
 static void memswap(void *av, void *bv, size_t size)
 {
@@ -395,6 +401,10 @@ void smoothsort(void *base, size_t nmemb, size_t size, cmpfn compare CTXPARAM)
     int heapoid_size;
     struct bookkeeping bk;
 
+#ifdef DIAGRAM
+    write_diagram(0, "before");
+#endif
+
     /*
      * Initialise the heapoid so that it contains a singleton
      * element. (Allowing it ever to be zero-sized would require
@@ -406,7 +416,7 @@ void smoothsort(void *base, size_t nmemb, size_t size, cmpfn compare CTXPARAM)
     heapoid_size = 1;
 
 #ifdef DIAGRAM
-    write_diagram();
+    write_diagram(heapoid_size, "during");
 #endif
 
     /*
@@ -446,7 +456,7 @@ void smoothsort(void *base, size_t nmemb, size_t size, cmpfn compare CTXPARAM)
 	check(1, heapoid_size, bk);
 #endif
 #ifdef DIAGRAM
-	write_diagram();
+	write_diagram(heapoid_size, "during");
 #endif
     }
 
@@ -459,7 +469,7 @@ void smoothsort(void *base, size_t nmemb, size_t size, cmpfn compare CTXPARAM)
     check(2, heapoid_size, bk);
 #endif
 #ifdef DIAGRAM
-    write_diagram();
+    write_diagram(heapoid_size, "during");
 #endif
 
     /*
@@ -497,9 +507,13 @@ void smoothsort(void *base, size_t nmemb, size_t size, cmpfn compare CTXPARAM)
 	check(2, heapoid_size, bk);
 #endif
 #ifdef DIAGRAM
-	write_diagram();
+	write_diagram(heapoid_size, "during");
 #endif
     }
+
+#ifdef DIAGRAM
+    write_diagram(0, "after");
+#endif
 }
 
 #ifdef TESTMODE
@@ -508,7 +522,7 @@ void smoothsort(void *base, size_t nmemb, size_t size, cmpfn compare CTXPARAM)
  * gcc -g -O0 -DTESTMODE -o smoothsort smoothsort.c
  */
 
-#define NTEST 123456
+#define NTEST 123
 
 static int testarray[NTEST];
 
@@ -602,14 +616,22 @@ int main(void)
 #ifdef DIAGRAM
 
 /*
+ * Pre-cooked command line to build the sort diagram on Linux.
+ * Requires gcc (of course), ImageMagick (to construct images in
+ * the first place), gifsicle (to create the animation) and my
+ * "multi" utility (to simplify the command line). multi is
+ * available from http://www.chiark.greenend.org.uk/~sgtatham/utils/
+
 gcc -g -O0 -DDIAGRAM -o smoothsort smoothsort.c && ./smoothsort && \
-    multi convert s/png/gif/ smoothsort0*.png && \
-    gifsicle -d 1 smoothsort0*.gif > smoothsort.gif
+    multi -q convert s/png/gif/ {before,during,after}*.png && \
+    gifsicle --loopcount=forever -d75 before*.gif -d1 during*.gif -d75 after*.gif > smoothsort.gif && \
+    rm -f {before,during,after}*.{gif,png}
  */
 
 #define NTEST 123
 
 static int testarray[NTEST];
+static int highlight[NTEST];
 
 static int compare(const void *av, const void *bv)
 {
@@ -618,7 +640,12 @@ static int compare(const void *av, const void *bv)
     return *a < *b ? -1 : *a > *b ? +1 : 0;
 }
 
-static void write_diagram(void)
+static void mark(size_t i)
+{
+    highlight[i] = 1;
+}
+
+static void write_diagram(size_t heapoid_size, const char *prefix)
 {
     char command[256];
     static int frame = 0;
@@ -626,21 +653,38 @@ static void write_diagram(void)
     const int grid = 3;
     FILE *fp;
 
-    sprintf(command, "convert -depth 8 -size %dx%d gray:- smoothsort%04d.png",
-	    NTEST*grid, NTEST*grid, frame++);
+    sprintf(command, "convert -depth 8 -size %dx%d rgb:- %s%04d.png",
+	    NTEST*grid, NTEST*grid, prefix, frame++);
     fp = popen(command, "w");
     for (yp = 0; yp < NTEST*grid; yp++) {
 	y = NTEST-1 - (yp / grid);
 	for (xp = 0; xp < NTEST*grid; xp++) {
 	    x = xp / grid;
 
-	    if (testarray[x] == y)
+	    if (testarray[x] == y) {
+		if (highlight[x])
+		    fputc(255, fp);
+		else
+		    fputc(0, fp);
 		fputc(0, fp);
-	    else
-		fputc(255, fp);
+		fputc(0, fp);
+	    } else {
+		if (x < heapoid_size) {
+		    fputc(220, fp);
+		    fputc(220, fp);
+		    fputc(220, fp);
+		} else {
+		    fputc(255, fp);
+		    fputc(255, fp);
+		    fputc(255, fp);
+		}
+	    }
 	}
     }
     pclose(fp);
+
+    for (x = 0; x < NTEST; x++)
+	highlight[x] = 0;
 }
 
 int main(void)
@@ -649,8 +693,10 @@ int main(void)
 
     srand(1234);
 
-    for (i = 0; i < NTEST; i++)
+    for (i = 0; i < NTEST; i++) {
 	testarray[i] = i;
+	highlight[i] = 0;
+    }
     for (i = NTEST; i-- > 1 ;) {
 	int j = rand() % (i+1);
 	int t = testarray[i];
