@@ -271,6 +271,10 @@ static void memswap(void *av, void *bv, size_t size)
  * size b, the low bit of bitmap[1] a stretch of size b+c+1, the
  * second lowest bit of bitmap[0] a stretch of size b+(b+c+1)+1,
  * then the second lowest bit of bitmap[1] and so on.
+ *
+ * Except in the middle of an operation, these structures are
+ * invariably kept normalised so that the lowest bit of the bitmap
+ * (i.e. the LSB of bitmap[0]) is set.
  */
 struct bookkeeping {
     size_t bitmap[2];
@@ -281,6 +285,14 @@ struct bookkeeping {
 static void check(int phase, size_t heapoid_size, struct bookkeeping bk);
 #endif
 
+/*
+ * Adjust a bookkeeping structure by shifting the base Leonardo
+ * number. This routine sets b to the next Leonardo number up, and
+ * shifts the bitmap down to compensate. Hence, provided bit 0 of
+ * the bitmap was not set on entry to this function, the changes
+ * made to the structure do not affect the shape of heapoid it
+ * represents.
+ */
 static void up(struct bookkeeping *bk)
 {
     size_t tmp;
@@ -294,6 +306,13 @@ static void up(struct bookkeeping *bk)
     bk->c = tmp;
 }
 
+/*
+ * Counterpart to up(): this routine sets b to the next Leonardo
+ * number _down_, and shifts the bitmap up to compensate. Again,
+ * this does not affect the shape of the represented heapoid (and
+ * this time there isn't even a constraint on previously set bits
+ * of the bitmap).
+ */
 static void down(struct bookkeeping *bk)
 {
     size_t tmp;
@@ -307,6 +326,15 @@ static void down(struct bookkeeping *bk)
     bk->b = tmp;
 }
 
+/*
+ * Perform a sift operation: given a stretch where the root
+ * element potentially violates the heap property, move that
+ * element down until it no longer does.
+ * 
+ * "root" gives the array index of the root (last element) of the
+ * stretch; bk.b gives the total size of the stretch. bk.bitmap is
+ * ignored completely by this function.
+ */
 static void sift(void *base, size_t size, cmpfn compare CTXPARAM,
 		 size_t root, struct bookkeeping bk)
 {
@@ -317,12 +345,14 @@ static void sift(void *base, size_t size, cmpfn compare CTXPARAM,
 	 */
 	down(&bk);		       /* now b and c are the child sizes */
 	if (COMPARE(root - 1, root - bk.c - 1) > 0) {
+	    /* Right child is the larger. Compare it with the root. */
 	    if (COMPARE(root, root - 1) >= 0)
 		return;
 	    SWAP(root, root-1);
-	    down(&bk);
+	    down(&bk);		       /* now b is size of this child */
 	    root--;
 	} else {
+	    /* Left child is the larger. Compare it with the root. */
 	    if (COMPARE(root, root - bk.c - 1) >= 0)
 		return;
 	    SWAP(root, root - bk.c - 1);
@@ -331,6 +361,27 @@ static void sift(void *base, size_t size, cmpfn compare CTXPARAM,
     }
 }
 
+/*
+ * Perform a trinkle operation: given a stretch whose root element
+ * potentially does not satisfy the heap property within it and/or
+ * is misordered compared to the (already ordered) roots of all
+ * the earlier stretches, fix this state of affairs by moving the
+ * offending root element to somewhere more useful.
+ * 
+ * As in sift() above, "root" gives the array index of the root
+ * (last element) of the stretch. "bk" must be a bookkeeping
+ * structure accurately describing the entire heapoid from that
+ * stretch backwards: so in particular (again as in sift()), bk.b
+ * gives the total size of the starting stretch.
+ *
+ * The "full" flag indicates that we perform the full trinkle
+ * procedure as described above. If it's clear, our first
+ * iteration can be optimised by not bothering to compare against
+ * the two real children of the starting root element, on the
+ * grounds that the main algorithm already knows that this stretch
+ * satisfies the heap property and hence the root is certainly
+ * bigger than those two.
+ */
 static void trinkle(void *base, size_t size, cmpfn compare CTXPARAM,
 		    size_t root, struct bookkeeping bk, int full)
 {
@@ -340,7 +391,8 @@ static void trinkle(void *base, size_t size, cmpfn compare CTXPARAM,
 
 	/*
 	 * Compare against the two children of the current
-	 * stretch, if it's got any.
+	 * stretch, if it's got any, and if we don't know we can
+	 * get away without bothering.
 	 */
 	if (bk.b > 1 && full) {
 	    if (COMPARE(root - 1, biggest) > 0) {
@@ -368,30 +420,65 @@ static void trinkle(void *base, size_t size, cmpfn compare CTXPARAM,
 	 * Now choose what to do.
 	 */
 	switch (action) {
-	  case 1:		       /* second substretch of this one */
-	    SWAP(root, root-1);
-	    root = root-1;
-	    down(&bk);
-	    down(&bk);
-	    sift(base, size, compare CTXARG, root, bk);
-	    return;
-	  case 2:		       /* first substretch of this one */
-	    SWAP(root, root - bk.b + bk.c);
-	    root = root - bk.b + bk.c;
-	    down(&bk);
-	    sift(base, size, compare CTXARG, root, bk);
-	    return;
-	  case 3:		       /* previous stretch */
-	    SWAP(root, root - bk.b);
-	    root = root - bk.b;
-	    bk.bitmap[0] ^= 1;
+	  case 1:
+	    /*
+	     * The root needs to be exchanged with the second
+	     * child of its own stretch. After this swap we can
+	     * revert to sifting, because we'll have moved out of
+	     * the chain of sorted stretch roots.
+	     */
+	    SWAP(root, root-1);	       /* do the swap */
+	    root = root-1;	       /* point at root of substretch */
+	    down(&bk);		       /* reduce b twice so that it reflects */
+	    down(&bk);		       /*   the size of the substretch */
+	    sift(base, size, compare CTXARG, root, bk);   /* and sift */
+	    return;		       /* and then we're finished */
+
+	  case 2:
+	    /*
+	     * The root needs to be exchanged with the first child
+	     * of its own stretch. As above, after this swap we
+	     * can revert to sifting.
+	     */
+	    SWAP(root, root - bk.b + bk.c);   /* do the swap */
+	    root = root - bk.b + bk.c; /* point at root of substretch */
+	    down(&bk);		       /* reduce b to substretch size */
+	    sift(base, size, compare CTXARG, root, bk);   /* and sift */
+	    return;		       /* and then we're finished */
+
+	  case 3:
+	    /*
+	     * The root needs to be exchanged with the root of the
+	     * previous stretch, and we must continue to trinkle
+	     * thereafter since we're still on the main sequence.
+	     */
+	    SWAP(root, root - bk.b);   /* do the swap */
+	    root = root - bk.b;	       /* point at root of previous stretch */
+	    /*
+	     * Shift the bitmap right until we bring its next
+	     * lowest set bit into position 0, which will tell us
+	     * the size of the next stretch we're dealing with.
+	     */
 	    do {
 		up(&bk);
 	    } while (!(bk.bitmap[0] & 1));
+	    /*
+	     * Set the "full" flag, just in case it was clear:
+	     * even if we were able to avoid comparing against the
+	     * root's internal children in the first iteration of
+	     * trinkle, we can't avoid it in any subsequent
+	     * iteration.
+	     */
 	    full = 1;
-	    continue;
-	  default /* case 0 */:        /* already the biggest, we're done */
-	    return;
+	    continue;		       /* and go round again */
+
+	  default /* case 0 */:
+	    /*
+	     * The root was already larger than all three of its
+	     * "children", so we not only don't need to swap it
+	     * but we also don't need to iterate any further.
+	     */
+	    return;		       /* done */
 	}
     }
 }
@@ -404,6 +491,13 @@ void smoothsort(void *base, size_t nmemb, size_t size, cmpfn compare CTXPARAM)
 #ifdef DIAGRAM
     write_diagram(0, "before");
 #endif
+
+    /*
+     * Stupid special case: sorting zero elements should return
+     * immediately rather than going mad.
+     */
+    if (!nmemb)
+	return;
 
     /*
      * Initialise the heapoid so that it contains a singleton
@@ -423,13 +517,30 @@ void smoothsort(void *base, size_t nmemb, size_t size, cmpfn compare CTXPARAM)
      * Phase 1: build the heapoid.
      */
     while (heapoid_size < nmemb) {
-	int merge = bk.bitmap[0] & bk.bitmap[1] & 1;
+	/*
+	 * Decide whether we're merging two stretches or adding a
+	 * new singleton. We merge iff the last two stretches are
+	 * of adjacent-Leonardo-number sizes. Since the stretch
+	 * size bitmap is always normalised at this point so that
+	 * its low bit is set, we need only test its next bit up,
+	 * i.e. the LSB of bk.bitmap[1].
+	 */
+	int merge = bk.bitmap[1] & 1;
 
 	/*
 	 * Heapoid invariant restoration. If we're merging two
 	 * stretches, or if the current last stretch is not going
 	 * to be part of the heapoid's final configuration, then
 	 * we can merely sift. Otherwise, we must trinkle.
+	 *
+	 * (Note in particular here that _both_ these conditions
+	 * must be satisfied for a trinkle to be required. The
+	 * fact that a stretch wouldn't have room to become the
+	 * left child of a larger stretch does not _by itself_
+	 * imply that it's definitely part of the final
+	 * configuration, since it might instead become the
+	 * _right_ child of a larger stretch. Testing "merge"
+	 * detects this latter case.)
 	 */
 	if (merge || heapoid_size + bk.c + 1 <= nmemb)
 	    sift(base, size, compare CTXARG, heapoid_size - 1, bk);
@@ -441,14 +552,25 @@ void smoothsort(void *base, size_t nmemb, size_t size, cmpfn compare CTXPARAM)
 	 */
 	heapoid_size++;
 	if (merge) {
-	    bk.bitmap[0] ^= 3;
-	    bk.bitmap[1] ^= 1;
+	    /*
+	     * Shift the bitmap down by two places (which shifts
+	     * the previous two low set bits off the bottom), and
+	     * set the next bit up.
+	     */
 	    up(&bk);
 	    up(&bk);
+	    bk.bitmap[0] ^= 1;
 	} else {
+	    /*
+	     * Shift the bitmap up until b==1 (so that the lowest
+	     * bit represents a singleton stretch). We must shift
+	     * at least once even if b==1 to begin with, since we
+	     * can have two singletons at a time.
+	     */
 	    do {
 		down(&bk);
 	    } while (bk.b > 1);
+	    /* Set the new bit. */
 	    bk.bitmap[0] ^= 1;
 	}
 
@@ -461,7 +583,8 @@ void smoothsort(void *base, size_t nmemb, size_t size, cmpfn compare CTXPARAM)
     }
 
     /*
-     * Phase 1.5: switch over to the phase-2 invariants.
+     * Phase 1.5: switch over to the phase-2 invariants, by
+     * trinkling the final stretch.
      */
     trinkle(base, size, compare CTXARG, heapoid_size-1, bk, 1);
 
@@ -473,7 +596,9 @@ void smoothsort(void *base, size_t nmemb, size_t size, cmpfn compare CTXPARAM)
 #endif
 
     /*
-     * Phase 2: dismantle the heapoid.
+     * Phase 2: dismantle the heapoid. As above, we can stop when
+     * it reaches size 1 rather than handling the special cases to
+     * cope with it being size 0.
      */
     while (heapoid_size > 1) {
 	heapoid_size--;
@@ -483,7 +608,7 @@ void smoothsort(void *base, size_t nmemb, size_t size, cmpfn compare CTXPARAM)
 	     * invariant restoration: we must (semi)trinkle the
 	     * roots of the resulting two substretches back into
 	     * place, which it's easiest (from the point of view
-	     * of having mask[] looking sensible for the trinkle
+	     * of having bk looking sensible for the trinkle
 	     * function) to do as we go along.
 	     */
 	    bk.bitmap[0] ^= 1;
@@ -496,9 +621,12 @@ void smoothsort(void *base, size_t nmemb, size_t size, cmpfn compare CTXPARAM)
 	} else {
 	    /*
 	     * Remove a singleton from the end of the heapoid.
-	     * Invariants are naturally preserved by this.
+	     * Invariants are naturally preserved by this. So all
+	     * we have to do is to shift the bitmap downward so
+	     * the current low 1 bit goes off the bottom, and then
+	     * keep shifting until another 1 bit appears at the
+	     * bottom.
 	     */
-	    bk.bitmap[0] ^= 1;
 	    do {
 		up(&bk);
 	    } while (!(bk.bitmap[0] & 1));
@@ -510,6 +638,10 @@ void smoothsort(void *base, size_t nmemb, size_t size, cmpfn compare CTXPARAM)
 	write_diagram(heapoid_size, "during");
 #endif
     }
+
+    /*
+     * And that's it! The array is sorted.
+     */
 
 #ifdef DIAGRAM
     write_diagram(0, "after");
