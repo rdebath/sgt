@@ -902,7 +902,7 @@ void amergesort(void *base, size_t nmemb, size_t size, cmpfn compare CTXPARAM)
      * theoretical obstacle to O(N log N) complexity overall.
      */
     {
-	size_t sublistlen = 8;	       /* FIXME: tune this */
+	size_t sublistlen = 8;
 	size_t subliststart, thissublistlen, thissublistlen2;
 
 	/* Insertion sort pass. */
