@@ -214,9 +214,9 @@ typedef int (*cmpfn)(const void *a, const void *b CTXPARAM);
 			      ((char *)base)+(j)*(size) CTXARG)
 #define REALSWAP(i, j) memswap(((char *)base)+(i)*(size), \
 			       ((char *)base)+(j)*(size), size)
-#ifdef DIAGRAM
-static void mark(size_t i);
-#define SWAP(i, j) ( mark(i), mark(j), REALSWAP(i, j) )
+#if defined DIAGRAM || defined TESTMODE
+static void swapped(size_t i, size_t j);
+#define SWAP(i, j) ( swapped(i, j), REALSWAP(i, j) )
 #else
 #define SWAP(i, j) ( REALSWAP(i, j) )
 #endif
@@ -654,14 +654,22 @@ void smoothsort(void *base, size_t nmemb, size_t size, cmpfn compare CTXPARAM)
  * gcc -g -O0 -DTESTMODE -o smoothsort smoothsort.c
  */
 
-#define NTEST 123
+#define NTEST 12345
 
 static int testarray[NTEST];
+
+int compares, swaps;
+
+static void swapped(size_t i, size_t j)
+{
+    swaps++;
+}
 
 static int compare(const void *av, const void *bv)
 {
     const int *a = (const int *)av;
     const int *b = (const int *)bv;
+    compares++;
     return *a < *b ? -1 : *a > *b ? +1 : 0;
 }
 
@@ -735,11 +743,16 @@ int main(void)
 	testarray[i] = testarray[j];
 	testarray[j] = t;
     }
-    for (i = 0; i < NTEST; i++)
-	printf("b %3d: %3d\n", i, testarray[i]);
+    compares = swaps = 0;
     smoothsort(testarray, NTEST, sizeof(*testarray), compare);
     for (i = 0; i < NTEST; i++)
-	printf("a %3d: %3d\n", i, testarray[i]);
+	assert(i == testarray[i]);
+    printf("%d compares, %d swaps\n", compares, swaps);
+    compares = swaps = 0;
+    smoothsort(testarray, NTEST, sizeof(*testarray), compare);
+    for (i = 0; i < NTEST; i++)
+	assert(i == testarray[i]);
+    printf("%d compares, %d swaps\n", compares, swaps);
     return 0;
 }
 
@@ -772,9 +785,9 @@ static int compare(const void *av, const void *bv)
     return *a < *b ? -1 : *a > *b ? +1 : 0;
 }
 
-static void mark(size_t i)
+static void swapped(size_t i, size_t j)
 {
-    highlight[i] = 1;
+    highlight[i] = highlight[j] = 1;
 }
 
 static void write_diagram(size_t heapoid_size, const char *prefix)
