@@ -67,12 +67,21 @@
 
 typedef int (*cmpfn)(const void *a, const void *b CTXPARAM);
 
+#ifdef TESTMODE
+static int swaps, compares;
+#endif
+
 #define COMPARE(i, j) compare(((char *)base)+(i)*(size), \
 			      ((char *)base)+(j)*(size) CTXARG)
 #define REALSWAP(i, j, n) memswap(((char *)base)+(i)*(size), \
 			          ((char *)base)+(j)*(size), (n)*(size))
+#ifdef TESTMODE
+#define SWAP(i, j) ( swaps++, REALSWAP(i, j, 1) )
+#define SWAPN(i, j, n) ( swaps += (n), REALSWAP(i, j, n) )
+#else
 #define SWAP(i, j) ( REALSWAP(i, j, 1) )
 #define SWAPN(i, j, n) ( REALSWAP(i, j, n) )
+#endif
 
 #ifdef TESTMODE
 static void subseq_should_be_sorted(size_t start, size_t len);
@@ -999,6 +1008,7 @@ static int compare(const void *av, const void *bv)
     int b = *bp;
     a /= KEYPOS;
     b /= KEYPOS;
+    compares++;
     return a < b ? -1 : a > b ? +1 : 0;
 }
 
@@ -1039,12 +1049,11 @@ int main(void)
 	testarray[i] += i;
     memcpy(original, testarray, sizeof(original));
     qsort(original, NTEST, sizeof(*original), compare);
+    compares = swaps = 0;
     amergesort(testarray, NTEST, sizeof(*testarray), compare);
     for (i = 0; i < NTEST; i++)
-	printf("%5d: %5d [%5d]\n", i, testarray[i], original[i]);
-    for (i = 0; i < NTEST; i++)
 	assert(testarray[i] == original[i]);
-    printf("ok\n");
+    printf("%d compares, %d swaps\n", compares, swaps);
     return 0;
 }
 
