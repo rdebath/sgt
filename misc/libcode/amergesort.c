@@ -4,28 +4,124 @@
  */
 
 /*
- * The approach taken to merging is the "particularly simple"
- * method given in section 6 of Antonios Symvonis's paper "Optimal
- * Stable Merging"; if not enough distinguishable elements are
- * present, we fall back to the method in section 5 of the same
- * paper.
+ * We employ three completely different merging strategies, all of
+ * which work in place and are stable.
+ *
+ * The first and simplest algorithm is taken from this website:
+ *
+ *   http://thomas.baudel.name/Visualisation/VisuTri/inplacestablesort.html
+ *
+ * I don't know where (if anywhere) it's mentioned in the academic
+ * literature. It's a recursive algorithm: given two lists end to
+ * end in an array, we divide the larger one exactly in half, then
+ * binary-search the other one to find the corresponding split
+ * point (paying careful attention to stability, of course). We
+ * then block-exchange the second half of the first list with the
+ * first half of the second, leaving us two smaller lists which we
+ * recurse into in the obvious way. The downside of this is that
+ * it isn't actually a linear-time algorithm: it recurses to depth
+ * O(log N) (even in the worst case of the second split point
+ * being at one extreme end of the list, every recursive step must
+ * reduce the list size to at most 3/4 of its original value) and
+ * all of the processing at any given level takes O(N) time in
+ * total, and thus a single merge is O(N log N) and a sort built
+ * entirely out of them would be O(N log^2 N).
+ *
+ * However, on smallish lists this crude algorithm outperforms the
+ * more complex but asymptotically optimal ones in the academic
+ * literature. Hence, we use the above algorithm on smallish
+ * lists, but once the list size goes past a certain threshold, we
+ * switch over to a pair of genuinely linear-time stable merging
+ * algorithms. This gives the algorithm as a whole O(N log N) time
+ * complexity in the asymptotic limit (and hence theoretically
+ * optimal), while also being as fast as I can make it in
+ * practice.
+ *
+ * Both of these algorithms are taken from Antonios Symvonis's
+ * paper "Optimal Stable Merging":
  *
  *   A. Symvonis. Optimal stable merging. The Computer Journal,
  *   38(8):681-690, 1995.
  *   http://citeseer.ist.psu.edu/78814.html
  *
- * Both of these merging methods require the preliminary
- * extraction of a buffer of O(sqrt(N)) distinct elements to use
- * as temporary space for the rest of the merge, and then that
- * buffer has to be merged back into the rest of the array at the
- * end. This is all very well in theory if you want to do a single
- * merge, but it seems to me that for more practical performance
- * in a full merge _sort_ involving lots and lots of merges of
- * various sizes, what we should clearly do is to extract a buffer
- * once at the very start of the entire procedure rather than
- * faffing about with it in every single merge and sub-merge. This
- * should enable us to do most of the sort in a relatively
- * straightforward manner without causing _too_ much chaos.
+ * They are described in sections 5 and 6 of the paper.
+ *
+ * Both algorithms require a buffer of distinct elements to be
+ * separated from the main array as a preliminary step. This is
+ * used as temporary space in various ways, and is then merged
+ * back into the main array at the end of the procedure. (It's
+ * fairly easy to stably merge two lists in linear time if the
+ * length of one is of the order of the square root of that of the
+ * other; see the "distribute" subroutines below for details.)
+ *
+ * The section 6 approach requires a buffer of about 3*sqrt(N)
+ * distinct keys. We divide the rest of the array into blocks of
+ * size around sqrt(N), taking care to have the boundary between
+ * the two input lists fall exactly on a block boundary. We
+ * reserve a piece of buffer space the size of two blocks (the
+ * merge buffer) plus a piece with one element for every block
+ * (the tracking buffer). We then merge the two input lists in the
+ * obvious way, by iterating along both of them in parallel and
+ * comparing elements as we go. The output of this merging is
+ * written into the merge buffer (by swapping each merged element
+ * into that buffer once we know which it is). Before the merge
+ * buffer becomes completely full, we are guaranteed to have
+ * emptied (i.e. filled with merge-buffer elements) an entire
+ * block from one input list or the other; we then swap that
+ * entire block with the full block from the merge buffer, and
+ * then continue merging, treating the merge buffer as circular.
+ *
+ * When this procedure terminates, we have our merged list
+ * occupying exactly the same space as the original list - except
+ * that its blocks are permuted in some apparently unhelpful
+ * order. This is where the tracking buffer comes in: the first
+ * time we swap a completed block out of the merge buffer, we find
+ * the smallest element in the tracking buffer and swap it into
+ * the location corresponding to where we put the first completed
+ * block. Next time, we find the next smallest element, by
+ * searching only those locations we haven't yet nailed down
+ * (which is easy to track, since the block slots we _have_ used
+ * up are always in two contiguous subsequences starting from the
+ * beginning of each input sublist). So we end up with the
+ * (distinct) elements in the tracking buffer being arranged in
+ * the same order as the blocks of the output list; now we simply
+ * sort the tracking buffer, mirroring every swap as a swap of
+ * blocks of the output list. Done!
+ *
+ * This is beautifully simple, but it only works if we can get a
+ * buffer of 3*sqrt(N) distinct elements out to begin with. If
+ * there aren't enough distinct elements in the array, we fall
+ * back to the approach in section 5.
+ *
+ * The section 5 approach _also_ begins by dividing array into
+ * blocks of equal size with the boundary between the two input
+ * lists falling a block boundary. In this case, however, we make
+ * the blocks as large as necessary to arrange that the total
+ * number of blocks is at most the available size of the buffer.
+ * We then sort those blocks by their first element - but we take
+ * care to do so stably, again by moving the buffer elements about
+ * in a way that mirrors the movement of array blocks, so we can
+ * always remember where every block started out and use that to
+ * break ties in comparison. Having done that, we now only have
+ * local sections of the array that are out of place, so we go
+ * through and find them and use block exchanges to put them
+ * right. This only manages to work in linear time because there
+ * is at most one block exchange per distinct element (see
+ * Symvonis for a more detailed proof), so it relies for its
+ * efficiency on there being fewer than O(sqrt(N)) distinct
+ * elements in the first place. Fortunately, that's precisely the
+ * case in which we _need_ it to be efficient, so that it can take
+ * over where section 6 didn't work!
+ *
+ * Both of these algorithms, when they break up the input list
+ * into blocks, can leave a partial block at the start of the
+ * first list and the end of the second. We then distribute those
+ * stably into the list at the end, which is a linear-time
+ * operation as long as we do it carefully. (The fiddly case is
+ * after a section-5 merge, in which the partial blocks' size need
+ * not be bounded by O(sqrt(N)) and so we can't afford to do a
+ * binary search per element - we must be sure to only do a binary
+ * search per _distinct_ element.)
  *
  * Symvonis's paper, incidentally, also presents a more complex
  * merging algorithm which is "optimal" in the sense that its
@@ -40,7 +136,26 @@
  * sub-merge _will_ be wildly unbalanced, but all the other
  * sub-merges will be balanced so doing that occasional merge
  * better won't affect the complexity of the overall sort. So we
- * stick to the simple approach throughout.
+ * stick to the simpler approaches throughout.
+ *
+ * Finally, I make one improvement of my own to Symvonis's
+ * algorithms. Symvonis was solving the problem of a single merge
+ * operation, so he incorporated the operations of extracting and
+ * remerging his buffer into the linear-time merge operation.
+ * However, a full merge sort consists of _lots_ of merges, and it
+ * would seem silly to go to the effort of individual buffer
+ * extraction for each of them. Instead, therefore, I extract a
+ * single large buffer at the very start of the algorithm, and
+ * remerge it once at the end, having used it for all the merge
+ * passes both small and large. This saves considerable effort,
+ * and brings the performance of the algorithm as a whole to an at
+ * least _reasonably_ practical level: my benchmarks based on
+ * counting comparisons and swaps suggest that it's between 1.5
+ * and 3 times as slow as Heapsort, depending on how many distinct
+ * keys you have and which of comparisons and swaps is more
+ * expensive for you. Given the insanely complex appearance of
+ * most of the algorithms in the literature, I think that's not
+ * bad at all in practical terms as a price for stability!
  */
 
 #include <stdio.h>
@@ -85,6 +200,29 @@ static int swaps, compares;
 
 #ifdef TESTMODE
 static void subseq_should_be_sorted(size_t start, size_t len);
+#endif
+
+/*
+ * Tunable parameters. We do simple insertion sort for very small
+ * sublists before beginning our merge passes, so we need a
+ * threshold size for that; then we have a second threshold
+ * further up where we switch over from crude recursive merging to
+ * Symvonis's optimal algorithms.
+ *
+ * Both of these parameters were determined empirically by setting
+ * them at various levels and then benchmarking the sort.
+ *
+ * The recursion threshold shown strikes a reasonable balance
+ * between good performance with lots of distinct elements and
+ * with few. Setting it higher trades off for fewer comparisons at
+ * the expense of more swaps, at the lots-of-distinct-elements end
+ * of the scale.
+ */
+#ifndef INSERTION_THRESHOLD
+#define INSERTION_THRESHOLD 8
+#endif
+#ifndef RECURSION_THRESHOLD
+#define RECURSION_THRESHOLD 128
 #endif
 
 static void memswap(void *av, void *bv, size_t size)
@@ -307,7 +445,22 @@ static void ldistribute(void *base, size_t size, cmpfn compare CTXPARAM,
 	 */
 	block_exchange(base, size, bufbot, bufsize, top - buftop);
 	buftop = top;
-	bufsize--;
+	bufbot = buftop - bufsize;
+	/*
+	 * While we're decrementing bufsize, we must now skip over
+	 * any further elements which compare equal to the one we
+	 * just put in place. This is vital to preserve linear
+	 * time in the case of few distinct elements: in that
+	 * situation the block we're distributing might be larger
+	 * than O(sqrt(N)), so doing a binary search per element
+	 * of it would bring us to O(N log N) time in total.
+	 * Skipping equal elements at this point brings us back
+	 * down to one binary search - and one block exchange -
+	 * per _distinct_ element, which is acceptable.
+	 */
+	do {
+	    bufsize--;
+	} while (bufsize > 0 && COMPARE(buftop - bufsize, bufbot) == 0);
     }
 }
 
@@ -365,8 +518,67 @@ static void rdistribute(void *base, size_t size, cmpfn compare CTXPARAM,
 	 */
 	block_exchange(base, size, top, bufbot - top, bufsize);
 	bufbot = top;
-	bufsize--;
+	buftop = bufbot + bufsize;
+	/*
+	 * As in ldistribute, we must skip over identical elements
+	 * here, to preserve linear time complexity.
+	 */
+	do {
+	    bufsize--;
+	} while (bufsize > 0 && COMPARE(bufbot + bufsize-1, buftop-1) == 0);
     }
+}
+
+/*
+ * Recursive merge algorithm.
+ */
+static void rmerge(void *base, size_t size, cmpfn compare CTXPARAM,
+		   size_t start, size_t m, size_t n)
+{
+    size_t bot, mid, top;
+    size_t mcut, ncut, nstart, newnstart, end;
+
+    if (m == 0 || n == 0)
+	return;
+    if (m == 1 && n == 1) {
+	if (COMPARE(start, start+1) > 0)
+	    SWAP(start, start+1);
+	return;
+    }
+
+    nstart = start + m;
+    end = nstart + n;
+
+    if (m >= n) {
+	mcut = start + m / 2;
+	bot = nstart - 1;
+	top = end;
+	while (top - bot > 1) {
+	    mid = (bot + top) / 2;
+	    if (COMPARE(mcut, mid) > 0)
+		bot = mid;
+	    else
+		top = mid;
+	}
+	ncut = top;
+    } else {
+	ncut = nstart + n / 2;
+	bot = start - 1;
+	top = nstart;
+	while (top - bot > 1) {
+	    mid = (bot + top) / 2;
+	    if (COMPARE(ncut, mid) >= 0)
+		bot = mid;
+	    else
+		top = mid;
+	}
+	mcut = top;
+    }
+
+    block_exchange(base, size, mcut, nstart-mcut, ncut-nstart);
+    newnstart = mcut + (ncut-nstart);
+    rmerge(base, size, compare CTXARG, start, mcut-start, newnstart-mcut);
+    rmerge(base, size, compare CTXARG, newnstart, ncut-newnstart, end-ncut);
 }
 
 static void merge(void *base, size_t size, cmpfn compare CTXPARAM,
@@ -376,6 +588,11 @@ static void merge(void *base, size_t size, cmpfn compare CTXPARAM,
     size_t s6bufsize = 2*s6blksize + m/s6blksize + n/s6blksize;
     size_t blkstart, blkend, blksize, blocks, mblocks, nblocks, mextra, nextra;
     int method;
+
+    if (m + n <= RECURSION_THRESHOLD) {
+	rmerge(base, size, compare CTXARG, start, m, n);
+	return;
+    }
 
     /*
      * Decide which merge algorithm we're using, and work out the
@@ -767,7 +984,7 @@ static void merge(void *base, size_t size, cmpfn compare CTXPARAM,
 
 void amergesort(void *base, size_t nmemb, size_t size, cmpfn compare CTXPARAM)
 {
-    size_t bufsize;
+    size_t bufsize = 0;
 
     /*
      * Stupid special case: sorting zero elements should just
@@ -792,8 +1009,12 @@ void amergesort(void *base, size_t nmemb, size_t size, cmpfn compare CTXPARAM)
      * we're allowed to do O(N log N) work to get it if we need
      * to. (Good job too, since the fact that the list is unsorted
      * at this stage would make it tricky otherwise.)
+     *
+     * Special case: if the entire list is small enough that we're
+     * never going to need a Symvonis algorithm at all, we needn't
+     * bother and we can just leave bufsize at zero.
      */
-    {
+    if (nmemb > RECURSION_THRESHOLD) {
 	size_t bufsize_preferred = 3 * squareroot(nmemb);
 	size_t buftop = 1, currpos = 1;
 	bufsize = 1;
@@ -895,14 +1116,13 @@ void amergesort(void *base, size_t nmemb, size_t size, cmpfn compare CTXPARAM)
      * sorted array apart from the buffer.)
      *
      * Insertion sorts are O(N^2), but if we cap the size of the
-     * insertion sorts at a constant (determined empirically by
-     * measuring the performance of the resulting sort as a whole)
-     * then the initial set of insertion sorts is merely
-     * O(constant^2 * N/constant) = O(N), so it isn't a
-     * theoretical obstacle to O(N log N) complexity overall.
+     * insertion sorts at a constant, then the initial set of
+     * insertion sorts is merely O(constant^2 * N/constant) =
+     * O(N), so it isn't a theoretical obstacle to O(N log N)
+     * complexity overall.
      */
     {
-	size_t sublistlen = 8;
+	size_t sublistlen = INSERTION_THRESHOLD;
 	size_t subliststart, thissublistlen, thissublistlen2;
 
 	/* Insertion sort pass. */
@@ -975,8 +1195,10 @@ void amergesort(void *base, size_t nmemb, size_t size, cmpfn compare CTXPARAM)
      * _first_ occurrence of every element in it, so we must
      * preserve that when distributing it back into the output.
      */
-    bufsort(base, size, compare CTXARG, 0, bufsize);
-    ldistribute(base, size, compare CTXARG, 0, nmemb, bufsize);
+    if (bufsize) {
+	bufsort(base, size, compare CTXARG, 0, bufsize);
+	ldistribute(base, size, compare CTXARG, 0, nmemb, bufsize);
+    }
 
     /*
      * And that's it! One array, stably sorted in place in O(N log
@@ -1033,27 +1255,29 @@ static void subseq_should_be_sorted(size_t start, size_t len)
 
 int main(void)
 {
-    int i;
+    int i, j;
 
     srand(1234);
 
-    for (i = 0; i < NTEST; i++)
-	testarray[i] = rand() % NKEYS * KEYPOS;
-    for (i = NTEST; i-- > 1 ;) {
-	int j = rand() % (i+1);
-	int t = testarray[i];
-	testarray[i] = testarray[j];
-	testarray[j] = t;
-    }
-    for (i = 0; i < NTEST; i++)
-	testarray[i] += i;
-    memcpy(original, testarray, sizeof(original));
-    qsort(original, NTEST, sizeof(*original), compare);
     compares = swaps = 0;
-    amergesort(testarray, NTEST, sizeof(*testarray), compare);
-    for (i = 0; i < NTEST; i++)
-	assert(testarray[i] == original[i]);
-    printf("%d compares, %d swaps\n", compares, swaps);
+    for (j = 0; j < 100; j++) {
+	for (i = 0; i < NTEST; i++)
+	    testarray[i] = rand() % NKEYS * KEYPOS;
+	for (i = NTEST; i-- > 1 ;) {
+	    int j = rand() % (i+1);
+	    int t = testarray[i];
+	    testarray[i] = testarray[j];
+	    testarray[j] = t;
+	}
+	for (i = 0; i < NTEST; i++)
+	    testarray[i] += i;
+	memcpy(original, testarray, sizeof(original));
+	qsort(original, NTEST, sizeof(*original), compare);
+	amergesort(testarray, NTEST, sizeof(*testarray), compare);
+	for (i = 0; i < NTEST; i++)
+	    assert(testarray[i] == original[i]);
+    }
+    printf("%d compares, %d swaps\n", compares / 100, swaps / 100);
     return 0;
 }
 
