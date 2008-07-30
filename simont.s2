@@ -459,7 +459,7 @@ function print_entry (Page p, Entry e, Color bgcolor, Color fgcolor, bool hide_t
         $metadata = """$metadata</table><p>""";
     }
     if (not $hide_text) {
-	print fix_objects(fix_tables($e.text));
+	print "<p>" + fix_objects(fix_tables($e.text));
 	print $metadata;
     }
 """</td></tr>
@@ -860,7 +860,7 @@ function EntryPage::print_comment (Comment c) {
 <div style="font-family: arial, helvetica, verdana, sans-serif;
             font-size: 11pt">$c.subject_icon <b>$c.subject</b></div>""";
     }
-    print fix_tables($c.text);
+    print "<p>" + fix_objects(fix_tables($c.text));
     """</td></tr>
 <tr bgcolor="$background" color="$color"><td align='left' class='comments'>
 <a href="$c.permalink_url">$*text_permalink</a></td>
