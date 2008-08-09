@@ -521,6 +521,14 @@ static int win_key_press(GtkWidget *widget, GdkEventKey *event, gpointer data)
 	    switch_to_image(w, w->pos);
 	    return TRUE;
 	}
+	if (c == 'r' || c == 'R') {
+	    if (w->il->images[w->pos]) {
+		image_free(w->il->images[w->pos]);
+		w->il->images[w->pos] = NULL;
+	    }
+	    switch_to_image(w, w->pos);
+	    return TRUE;
+	}
     } else {
 	int c = event->keyval;
 
