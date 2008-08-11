@@ -240,10 +240,10 @@ sub multipart {
           $attach .= $pfx . $data[0] . "\n";
           $_ .= $data[0];
         }
-        /name="?([^"]*)/i and $contname = $1;
-        if (/boundary="([^"]*)"/i) {
+        /name\s*=\s*"?([^"]*)/i and $contname = $1;
+        if (/boundary\s*=\s*"([^"]*)"/i) {
           $innersep = "--$1";
-        } elsif (/boundary=([^ \t;]*)/) {
+        } elsif (/boundary\s*=([^ \t;]*)/) {
           $innersep = "--$1";
         } else {
           $innersep = "";
@@ -251,7 +251,7 @@ sub multipart {
         $realconttype = $conttype if $pfx eq "+";
       };
       /^Content-disposition: /i and do {
-        /filename="?([^"]*)/i and $contfname = $1;
+        /filename\s*=\s*"?([^"]*)/i and $contfname = $1;
       };
       /^Content-description: (.*)$/i and $contdesc = $1;
       /^Content-transfer-encoding: (.*)$/i and $contenc = $1;
@@ -259,7 +259,7 @@ sub multipart {
       $_ = $data[0];
     }
     $cooked = $raw = "";
-    while (defined $_ and $_ ne $sep and $_ ne $end) {
+    while (defined $_ and ($sep eq "" or $_ ne $sep) and $_ ne $end) {
       # raw form skips first blank line
       $raw .= $_ . "\n" unless $_ eq "" and $cooked eq "";
       $cooked .= " " . $_ . "\n";
