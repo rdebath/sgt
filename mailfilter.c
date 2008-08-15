@@ -730,6 +730,23 @@ static void scanner_cleanup_text(scanner *s, stream *st, void *vctx)
 	!wcsncmp(ctx->firstbit + i - wcslen(str), str, wcslen(str))) {
 	specific_msg = "This appears to be a prolific pirated-software spam.";
     }
+    {
+	wchar_t compressed[80], *p;
+	const wchar_t *q;
+	wchar_t last = 0;
+	q = ctx->firstbit;
+	p = compressed;
+	while (p - compressed < 79 && *q && *q != '\r' && *q != '\n') {
+	    if (*q != last)
+		*p++ = *q;
+	    last = *q;
+	    q++;
+	}
+	*p = '\0';
+	str = L"Bachelor, MasterMBA, and Doctorate";
+	if (!wcsncmp(compressed, str, wcslen(str)))
+	    specific_msg = "This appears to be a prolific diploma mill spam.";
+    }
 }
 
 static int agif_found = 0;
@@ -837,6 +854,14 @@ const char *process_address(const char *hdr, const char *addr)
 	if (!strcasecmp(addr, "info@technologytransfertactics.com"))
 	    return "This address has persistently sent me newsletters to "
 	    "which I never subscribed. I am therefore considering it a spammer.";
+
+	/*
+	 * anales.gr.
+	 */
+	at = strchr(addr, '@');
+	if (at && (!strcasecmp(at+1, "anales.gr")))
+	    return "I'm currently assuming mail from this domain to be spam.";
+
     }
 
     if (!strcasecmp(hdr, "Reply-to")) {
