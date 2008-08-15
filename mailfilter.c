@@ -12,6 +12,7 @@
 #include <string.h>
 #include <strings.h>
 #include <stdlib.h>
+#include <ctype.h>
 #include <wchar.h>
 #include <limits.h>
 #include <time.h>
@@ -357,6 +358,8 @@ const struct range ranges[] = {
 typedef struct text {
     int charset;
     int html, htmlstate;
+    char htmltag[16];
+    int htmltagpos, htmlstylenest;
     int qp, qpstate;
     charset_state state;
     int freq[ALPH_COUNT];
@@ -371,12 +374,12 @@ static void scanner_init_text(scanner *s, stream *st, void *vctx)
 {
     text *ctx = (text *)vctx;
     struct structural_path_element path[MAXSTREAMS];
-    int pathlen, index, i;
+    int pathlen, index, i, textpart_priority;
     char *cte;
 
     ctx->charset = CS_NONE;
     ctx->qp = ctx->html = 0;
-    ctx->qpstate = ctx->htmlstate = 0;
+    ctx->qpstate = ctx->htmlstate = ctx->htmltagpos = ctx->htmlstylenest = 0;
     ctx->state = charset_init_state;
     ctx->firstbitlen = 0;
     for (i = 0; i < ALPH_COUNT; i++)
@@ -427,12 +430,19 @@ static void scanner_init_text(scanner *s, stream *st, void *vctx)
 	ctx->charset = CS_NONE;
     }
 
+    /*
+     * We generally only look at the first text part of a message.
+     * Exception: a text/html part supersedes a previous
+     * text/plain (because we may be able to do better deductions
+     * with more information).
+     */
+    textpart_priority = (ctx->html ? 2 : 1);
     if (ctx->charset != CS_NONE) {
-	if (scanned_textpart_already) {
+	if (scanned_textpart_already >= textpart_priority) {
 	    ctx->charset = CS_NONE;
 	    return;		       /* we only look at the first part */
 	} else
-	    scanned_textpart_already = 1;
+	    scanned_textpart_already = textpart_priority;
     }
 
 #ifdef DEBUG
@@ -535,7 +545,7 @@ static void scanner_feed_text_postqp(scanner *s, stream *st, text *ctx,
 	int htsize = 0;
 
 	/*
-	 * Decode quoted-printable.
+	 * Decode HTML.
 	 */
 
 	while (len > 0) {
@@ -546,20 +556,36 @@ static void scanner_feed_text_postqp(scanner *s, stream *st, text *ctx,
 
 	    switch (ctx->htmlstate) {
 	      case 0:
-		if (c == '<')
+		if (c == '<') {
 		    ctx->htmlstate = 1;
-		else
+		    ctx->htmltagpos = 0;
+		} else if (ctx->htmlstylenest == 0)
 		    oc = c;
 		break;
 	      case 1:
-		if (c == '>')
+	      case 3:
+		if (c == '>') {
+		    if (ctx->htmltagpos == 5 &&
+			!memcmp(ctx->htmltag, "style", 5))
+			ctx->htmlstylenest++;
+		    else if (ctx->htmltagpos == 6 &&
+			     !memcmp(ctx->htmltag, "/style", 6) &&
+			     ctx->htmlstylenest > 0)
+			ctx->htmlstylenest--;
+
 		    ctx->htmlstate = 0;
-		else if (c == '"')
+		} else if (c == '"')
 		    ctx->htmlstate = 2;
+		else if (c == ' ')
+		    ctx->htmlstate = 3;
+		else if (ctx->htmlstate == 1 &&
+			 ctx->htmltagpos < sizeof(ctx->htmltag))
+		    ctx->htmltag[ctx->htmltagpos++] =
+			tolower((unsigned char)c);
 		break;
 	      case 2:
 		if (c == '"')
-		    ctx->htmlstate = 1;
+		    ctx->htmlstate = 3;
 		break;
 	    }
 
