@@ -3,6 +3,7 @@ Class: bug
 Difficulty: fun
 Priority: high
 Present-in: 0.60
+Fixed-in: r8150 2008-08-21
 Content-type: text/x-html-body
 
 <p>
@@ -36,6 +37,3 @@ protocols, set up two tunnels with the same destination.
 <li>Leave the PuTTY configuration as it is, but explicitly connect to
 the IPv6 localhost address (<tt>::1</tt>).
 </ul>
-
-<p>
-Patch: 01f201c856d6$b4d335f0$020da8c0@JSD.jemmettsoftware.co.uk
