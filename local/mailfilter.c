@@ -318,6 +318,7 @@ static void scanner_feed_agif(scanner *s, stream *st, void *vctx,
     X(LATIN), \
     X(GREEK), \
     X(CYRILLIC), \
+    X(THAI), \
     X(ARABIC), \
     X(HEBREW), \
     X(HANGUL), \
@@ -337,6 +338,7 @@ const struct range ranges[] = {
     {0x400, 0x50F, ALPH_CYRILLIC},
     {0x591, 0x5F4, ALPH_HEBREW},
     {0x60C, 0x6FE, ALPH_ARABIC},
+    {0xE01, 0xE5B, ALPH_THAI},
     {0x1100, 0x11FF, ALPH_HANGUL},
     {0x1F00, 0x1FFF, ALPH_GREEK},
     {0x2E80, 0x2FFF, ALPH_CJK},
