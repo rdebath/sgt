@@ -406,6 +406,7 @@ function print_entry (Page p, Entry e, Color bgcolor, Color fgcolor, bool hide_t
 <td bgcolor="$*outline" align="center">
 <table width="100%" cellpadding="5" cellspacing="0" border="0" summary="">
 <tr bgcolor="$*stronger_back" align='left'>
+<td><table width="100%" cellpadding="0" cellspacing="0" border="0" summary=""><tr>
 <td class="caption">""";
     
     if ($e.security != "") {
@@ -427,9 +428,9 @@ function print_entry (Page p, Entry e, Color bgcolor, Color fgcolor, bool hide_t
 
     """</td>
 <td align="right"><span class="datetime">$datetime</span></td>
-</tr>
+</tr></table</td></tr>
 <tr align='left'>
-<td colspan="2" bgcolor="$*entry_back">
+<td bgcolor="$*entry_back">
 """;
 
     if ($e.subject != "") {
@@ -463,7 +464,9 @@ function print_entry (Page p, Entry e, Color bgcolor, Color fgcolor, bool hide_t
 	print $metadata;
     }
 """</td></tr>
-<tr bgcolor="$*weak_back"><td align='left' class='comments'>
+<tr bgcolor="$*weak_back">
+<td><table width="100%" cellpadding="0" cellspacing="0" border="0" summary=""><tr>
+<td align='left' class='comments'>
 <a href="$e.permalink_url">$*text_permalink</a></td>""";
     if ($p.view != "entry" and $p.view != "reply") {
         var Link lnk;
@@ -486,7 +489,7 @@ function print_entry (Page p, Entry e, Color bgcolor, Color fgcolor, bool hide_t
     } else {
         "<td></td>";
     }
-    """</tr></table></td></tr></table></td></tr>""";
+    """</tr></table></td></tr></table></td></tr></table></td></tr>""";
 
 } # print_entry(Page,Entry,Color,Color,bool)
 
@@ -846,7 +849,8 @@ function EntryPage::print_comment (Comment c) {
 <tr align='left'>
 <td bgcolor="$*outline" align="center">
 <table width="100%" cellpadding="5" cellspacing="0" border="0" summary="">
-<tr bgcolor="$background" color="$color" align='left'>""";
+<tr bgcolor="$background" color="$color" align='left'>
+<td><table width="100%" cellpadding="0" cellspacing="0" border="0" summary=""><tr>""";
 
     print "<td align='left'>$poster";
     if ($c.metadata{"poster_ip"}) { print " (IP Address: " + $c.metadata{"poster_ip"} + ")"; }
@@ -854,7 +858,7 @@ function EntryPage::print_comment (Comment c) {
     print "</td>";
     print "<td align='right'>";
     print $c.time->date_format("%%da%% %%yyyy%%-%%mm%%-%%dd%% %%HH%%:%%min%%");
-    print "</td></tr><tr bgcolor=\"$*entry_back\"><td colspan=\"2\">";
+    print "</td></tr></table></td></tr><tr bgcolor=\"$*entry_back\"><td>";
     if (defined $c.subject_icon or $c.subject != "") {
         """
 <div style="font-family: arial, helvetica, verdana, sans-serif;
@@ -862,7 +866,9 @@ function EntryPage::print_comment (Comment c) {
     }
     print "<p>" + fix_objects(fix_tables($c.text));
     """</td></tr>
-<tr bgcolor="$background" color="$color"><td align='left' class='comments'>
+<tr bgcolor="$background" color="$color">
+<td><table width="100%" cellpadding="0" cellspacing="0" border="0" summary=""><tr>
+<td align='left' class='comments'>
 <a href="$c.permalink_url">$*text_permalink</a></td>
 <td align='right' class='comments'>""";
 
@@ -882,7 +888,7 @@ function EntryPage::print_comment (Comment c) {
     if ($lnk.url != "") { " | <a href='$lnk.url'>Track</a>"; }
     $lnk = $c->get_link("unwatch_thread");
     if ($lnk.url != "") { " | <a href='$lnk.url'>Untrack</a>"; }
-    """</tr></table></td></tr></table></td></tr></table></td></tr>""";
+    """</tr></table></td></tr></table></td></tr></table></td></tr></table></td></tr>""";
 }
 
 function EntryPage::print_comment_partial (Comment c) {
