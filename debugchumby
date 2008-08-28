@@ -1,12 +1,11 @@
 #!/bin/sh
 
-# Hopefully at some point there will be a firmware update which
-# supports wired Ethernet, and then I can start using this stuff:
-
-#insmod /drivers/usbnet.ko
-#insmod /drivers/pegasus.ko
-#udhcpc -t 5 -n -p /var/run/udhcpc.eth0.pid -i eth0
-#ifconfig rausb0 inet 127.0.0.1
+# Switch over to my USB wired ethernet dongle, since I don't want
+# to have to run wi-fi in my home just for the Chumby.
+insmod /drivers/usbnet.ko
+insmod /drivers/pegasus.ko
+udhcpc -t 5 -n -p /var/run/udhcpc.eth0.pid -i eth0
+ifconfig rausb0 down
 
 if test -f /mnt/usb/sshkeys; then
   # Enable sshd, but first lock down the passwordless default
