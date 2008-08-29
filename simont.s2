@@ -211,6 +211,9 @@ function print_stylesheet () {
 font-family: verdana, sans-serif;
 font-size: 10pt;
 }
+html body {
+padding: 0;
+}
 tt, pre {
 font-family: monospace;
 }
