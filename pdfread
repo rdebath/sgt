@@ -272,12 +272,17 @@ args = args[1:]
 
 number = -1 # indicates we're starting from the root object
 gen = -1 # indicates we want the latest generation
-page = None # indicates we're not in page mode, unless we later are
+mode = "obj" # indicates we're in object-fetching mode, unless we later are
+page = None
 
 if len(args) > 0:
     if args[0] == "-p" and len(args) > 1:
         page = string.atoi(args[1])
+	mode = "page" # indicates we're in page-fetching mode
         args = args[2:]
+    elif args[0] == "-pc":
+        mode = "pagecount" # indicates we're in page-counting mode
+        args = args[1:]
     else:
         number = string.atoi(args[0])
         args = args[1:]
@@ -322,7 +327,7 @@ if number < 0:
     fassert(type(trailer[0]) == types.DictType, "expected dictionary in trailer")
     number, gen = trailer[0]["/Root"]
 
-if page != None:
+if mode == "page":
     page = page - 1 # PDF pages are traditionally numbered from one
     # Look down the /Pages tree for a particular page number.
     catalog = fetchobj(f, xrefoff, number, gen)
@@ -347,6 +352,16 @@ if page != None:
             number, gen = i
             break # really got it
         pagekids = pages[3]["/Kids"]
+    mode = "obj" # now we're just fetching an object as before
 
-# We have an xref table offset and an object number. Go for it.
-fetchobj(f, xrefoff, number, gen, 1)
+if mode == "pagecount":
+    # Find the root of the /Pages tree and get its /Count field.
+    catalog = fetchobj(f, xrefoff, number, gen)
+    fassert(type(catalog[3]) == types.DictType, "expected dictionary in Catalog object")
+    pagetop = catalog[3]["/Pages"]
+    pagetopobj = fetchobj(f, xrefoff, pagetop[0], pagetop[1])
+    print pagetopobj[3]["/Count"]
+
+if mode == "obj":
+    # We have an xref table offset and an object number. Go for it.
+    fetchobj(f, xrefoff, number, gen, 1)
