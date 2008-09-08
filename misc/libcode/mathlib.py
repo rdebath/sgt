@@ -137,6 +137,17 @@ def primes(n):
 	    ret.append(k)
     return ret
 
+def mobius(n):
+    "Mobius function of an integer. Returns 0 for 0."
+    if n == 0:
+	return 0
+    n = abs(n)
+    nf = factors(n)
+    for i in range(len(nf)-1):
+	if nf[i] == nf[i+1]:
+	    return 0 # duplicate factor
+    return 1 - 2 * (len(nf) & 1)
+
 def intexp(f):
     "Render a finite float into the form integer * 2^exponent. Return (i,e)."
     m, e = math.frexp(f)
