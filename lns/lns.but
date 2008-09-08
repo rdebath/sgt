@@ -36,6 +36,17 @@ programs}, exactly as you would have done if the command had been
 \cw{cp}; and \cw{lns} will figure out for itself that the literal
 text of the symlink needs to be \c{../hello.c}.
 
+\cw{lns} also has a mode in which it will create a symlink mirror of
+an entire directory tree: that is, instead of creating a single
+symlink to the root of the tree, it will create \e{directories} in
+the same structure as the whole of the original tree, and fill them
+with individual symlinks to the files. This is occasionally handy if
+you want to work with a slightly modified version of a large file
+hierarchy but you don't want to waste the disk space needed to
+create an entirely separate copy: you can symlink-mirror the whole
+tree, and then just replace one or two of the symlinks with modified
+versions of the files they point to.
+
 \U ARGUMENTS
 
 If you provide precisely two arguments to \cw{lns}, and the second
@@ -92,6 +103,23 @@ rather than a destination file, even if \cw{-f} is specified. Use
 second argument as a destination \e{file} name rather than a
 destination directory. This option is useful for overriding an
 existing link to one directory with a link to a different one.
+
+\dt \cw{-r}
+
+\dd Enables recursive link-tree construction. If the source pathname
+exists and is a directory, then instead of creating a symlink to it
+at the target site, \cw{lns} will create a fresh directory, and then
+recursively attempt to link every file inside the source directory
+to the inside of the new target directory.
+
+\lcont{
+
+If a directory already
+exists at the target site, \cw{lns} will recurse into it; so you
+can, for instance, use \cw{lns -r -f} to refresh an existing link
+tree.
+
+}
 
 \dt \cw{-v}
 
@@ -190,6 +218,26 @@ In order to overwrite the directory symlink correctly, you need the
 \cw{subdir3}; and it also implies the \cw{-f} option to force
 overwriting. So now you get what you wanted: the previous symlink
 \cw{subdir3} is replaced with one whose link text reads \cq{subdir}.
+
+Next, a couple of examples with \cw{-r}. Suppose you have your
+subdirectory \cw{subdir}. Then running
+
+\c $ lns -r subdir subdir-mirror
+\e   bbbbbbbbbbbbbbbbbbbbbbbbbbb
+
+will create a new subdirectory called \c{subdir-mirror}, containing
+symlinks to everything in \c{subdir}.
+
+If the directory \c{subdir-mirror} already existed, however,
+\cw{lns}'s command-line processing will notice that it's a
+directory, and will assume things are supposed to be copied \e{into}
+it, so that your mirror of \c{subdir} will end up at
+\c{subdir-mirror/subdir}. To fix this, you can again use \cw{-F}, to
+tell \cw{lns} to literally create its output at the precise location
+you specify rather than inside it:
+
+\c $ lns -rF subdir subdir-mirror
+\e   bbbbbbbbbbbbbbbbbbbbbbbbbbbb
 
 \U LICENCE
 

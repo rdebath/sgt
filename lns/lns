@@ -25,6 +25,7 @@
 #      even if file2 is a link to a directory. This option implies -f.
 
 use Cwd;
+use POSIX; # for opendir and friends
 
 $usage =
   "usage: lns [flags] srcfile destfile\n".
@@ -32,6 +33,8 @@ $usage =
   "where: -a               create symlinks with absolute path names\n".
   "       -f               overwrite existing symlink at target location\n".
   "       -F               like -f, but works even if target is link to dir\n".
+  "       -r               recursively construct a directory tree which\n".
+  "                        mirrors the source, with symlinks to all files\n".
   "       -v               verbosely log activity (repeat for more verbosity)\n".
   "       -q               suppress error messages on failure\n".
   " also: lns --version    report version number\n" .
@@ -61,7 +64,7 @@ $licence =
   "CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\n" .
   "SOFTWARE.\n";
 
-$abs=$force=$quiet=$verbose=$FILE=0;
+$abs=$force=$quiet=$verbose=$recurse=$FILE=0;
 while ($_=shift @ARGV) {
   last if /^--$/;
   unshift (@ARGV, $_), last unless /^-(.*)/;
@@ -83,6 +86,7 @@ while ($_=shift @ARGV) {
 	if ($opt eq "a") { $abs=1; }
 	elsif ($opt eq "f") { $force=1; }
 	elsif ($opt eq "q") { $quiet=1; }
+	elsif ($opt eq "r") { $recurse=1; }
 	elsif ($opt eq "v") { $verbose++; }
 	elsif ($opt eq "F") { $force=$FILE=1; }
 	else { die "lns: unrecognised option '-$1'\n"; }
@@ -130,10 +134,17 @@ sub makelink {
   # name we will reference the source by.
   $sourcename = $abs ? $source : &relname($source, $target);
 
+  my $donothing = 0;
+  my $recursing = $recurse && -d $source;
+  my $ok;
   # If the target exists...
   if (-e $target || readlink $target) {
-    # If it's a symlink and we're in Force mode, remove it and carry on.
-    if ($force && readlink $target) {
+    if ($recursing && -d $target) {
+      # If it's a directory and we're in recursive mode, just do nothing
+      # and work around it.
+      $donothing = 1;
+    } elsif ($force && readlink $target) {
+      # If it's a symlink and we're in Force mode, remove it and carry on.
       unlink $target || die "lns: unable to remove link $target\n";
       # Report that if in Verbose mode.
       warn "lns: removing existing target link $target\n" if $verbose;
@@ -145,9 +156,37 @@ sub makelink {
     }
   }
 
-  # Make the link.
-  warn "lns: linking $source: $target -> $sourcename\n" if $verbose;
-  symlink($sourcename, $target) || die "lns: unable to make link to $target\n";
+  if ($recursing) {
+    # Make the directory.
+    if ($donothing) {
+      warn "lns: directory $target already exists, no need to create it\n"
+          if $verbose;
+      $ok = 1;
+    } else {
+      warn "lns: making directory $target\n"
+          if $verbose;
+      if (mkdir $target) {
+        $ok = 1;
+      } else {
+        warn "lns: unable to make directory '$target': $!\n";
+      }
+    }
+    # Now recurse into it.
+    if ($ok) {
+      my $dh = POSIX::opendir($source);
+      my @files = POSIX::readdir($dh);
+      my $f;
+      POSIX::closedir($dh);
+      foreach $f (@files) {
+        next if $f eq "." or $f eq "..";
+        &makelink("$source/$f", "$target/$f");
+      }
+    }
+  } else {
+    # Make the link.
+    warn "lns: linking $source: $target -> $sourcename\n" if $verbose;
+    symlink($sourcename, $target) || die "lns: unable to make link to $target\n";
+  }
 }
 
 sub normalise {
