@@ -16,18 +16,30 @@ def fmtint(a):
         s = s[:-1]
     return s
 
+def mkratval(x):
+    if isinstance(x, Rational):
+        return x.n, x.d
+    elif type(x) == types.FloatType:
+        x, e = math.frexp(x)
+        x, e = long(2.0**52 * x), e-52
+        if e >= 0:
+            return x * 2L**e, 1
+        else:
+            return x, 2L**-e
+    elif type(x) == types.IntType or type(x) == types.LongType:
+        return x, 1
+    else:
+        raise "bad type in Rational constructor"
+
 class Rational:
     "Holds members n (a long) and d (a long, >= 1)."
 
     def __init__(self, x, y=1):
+        xn, xd = mkratval(x)
+        yn, yd = mkratval(y)
+        x = xn * yd
+        y = xd * yn
         assert y != 0
-        if type(x) == types.FloatType:
-            x, e = math.frexp(x)
-            x, e = long(2.0**52 * x), e-52
-            if e >= 0:
-                x = x * 2L**e
-            else:
-                y = y * 2L**-e
         g = gcd(x, y)
         if (g < 0) != (y < 0):
             g = -g
