@@ -253,8 +253,8 @@ function Page::lay_top_userpic () {
 <table cellpadding="0" bgcolor="$*entry_back" cellspacing="0" border="0" summary="">
 <tr><td bgcolor="$*entry_back" align="center">
 <a href="http://www.livejournal.com/allpics.bml?user=$.journal.username">
-<img border="0" src="$up_img.url" height="$up_img.height" width="$up_img.width" alt=""></td></tr>
-</a></table></td></tr></table></td>
+<img border="0" src="$up_img.url" height="$up_img.height" width="$up_img.width" alt=""></a></td></tr>
+</table></td></tr></table></td>
 """;
     }
 }
@@ -396,8 +396,8 @@ function print_entry (Page p, Entry e, Color bgcolor, Color fgcolor, bool hide_t
 <tr align="right">
 <td bgcolor="$*entry_back">
 <a href="http://www.livejournal.com/allpics.bml?user=$e.poster.username">
-<img border="0" src="$e.userpic.url" width="$e.userpic.width" height="$e.userpic.height" alt="">
-</a></td></tr></table></td></tr></table></td>
+<img border="0" src="$e.userpic.url" width="$e.userpic.width" height="$e.userpic.height" alt=""></a></td></tr>
+</table></td></tr></table></td>
 <td valign="top">""";
     } else {
         """<tr><td></td><td valign="top">""";
@@ -835,8 +835,8 @@ function EntryPage::print_comment (Comment c) {
 <tr align="right">
 <td bgcolor="$*entry_back">
 <a href="http://www.livejournal.com/allpics.bml?user=$c.poster.username">
-<img border="0" src="$c.userpic.url" width="$c.userpic.width" height="$c.userpic.height" alt="">
-</a></td></tr></table></td></tr></table></td>
+<img border="0" src="$c.userpic.url" width="$c.userpic.width" height="$c.userpic.height" alt=""></a>
+</td></tr></table></td></tr></table></td>
 <td valign="top">""";
     } else {
         """<tr><td></td><td valign="top">""";
@@ -996,8 +996,8 @@ function ReplyPage::print_body () {
 <tr align="right">
 <td bgcolor="$*entry_back">
 <a href="http://www.livejournal.com/allpics.bml?user=$.replyto.poster.username">
-<img border="0" src="$.replyto.userpic.url" width="$.replyto.userpic.width" height="$.replyto.userpic.height" alt="">
-</a></td></tr></table></td></tr></table></td>
+<img border="0" src="$.replyto.userpic.url" width="$.replyto.userpic.width" height="$.replyto.userpic.height" alt=""></a>
+</td></tr></table></td></tr></table></td>
 <td valign="top">""";
     } else {
         """<tr><td></td><td valign="top">""";
