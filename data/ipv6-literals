@@ -1,0 +1,20 @@
+Summary: Better handling of literal IPv6 addresses
+Class: bug
+Difficulty: fun
+Priority: medium
+Present-in: 0.60
+Content-type: text/x-html-body
+
+<p>
+While PuTTY has had IPv6 support since 0.58, its handling of IPv6
+literal addresses (e.g., <tt>::1</tt>) still leaves something to be
+desired. In particular, there are various places where hostnames form
+part of a colon-delimited syntax (e.g., port-forwarding
+configuration); this interacts badly with IPv6 addresses containing
+colons.
+
+<p>
+PuTTY should consistently accept IPv6 literals in the square-bracket
+notation defined for URLs
+(in <a href="http://www.ietf.org/rfc/rfc3986.txt">RFC3986</a>)
+wherever it accepts a hostname.
