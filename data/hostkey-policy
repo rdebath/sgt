@@ -20,15 +20,3 @@ mention if it already has host keys for a host in other formats -
 particularly important when the <a href="ssh2-default.html">default
 protocol changes to SSH-2</a>, or a server that previously offered
 DSS keys starts supporting RSA too.
-
-<p>
-Finally, there's currently undesirable behaviour in PSFTP if you
-click "accept once" on a host key at startup and then leave the
-connection open for long enough to trigger a rekey timeout: since
-the host key has only been accepted once, PSFTP puts up the
-confirmation message again, in the middle of a command-line session,
-which is pretty nasty. Certainly at the very least we should treat
-"accept once" on a host key to mean accept for the whole of a
-<em>session</em> rather than for a single KEX; additionally, we
-probably ought to think about some sort of sensible behaviour if the
-host key we initially accepted has disappeared by rekey time.
