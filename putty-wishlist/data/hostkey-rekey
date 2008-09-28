@@ -3,11 +3,16 @@ Class: bug
 Difficulty: fun
 Priority: medium
 Present-in: 0.58
-Content-type: text/plain
+Content-type: text/x-html-body
 
-If the user answers "no" to the "cache host key?" prompt, they get asked
-again at the next rekey.  This is a little silly -- PuTTY should remember
-the host key it didn't save, and only whinge if the key has changed.
-
-What PuTTY should do if a different key for the host has turned up in
-the cache in the meantime is left as an exercise for the reader.
+<p>
+There's currently undesirable behaviour if you answer "accept once"
+for a host key at startup and then leave the connection open for long
+enough to trigger a rekey: since the host key has only been accepted
+once, the confirmation message is put up again, which is pretty nasty
+(especially in the command-line tools). Certainly at the very least we
+should treat "accept once" on a host key to mean accept for the whole
+of a <em>session</em> rather than for a single KEX; additionally, we
+probably ought to think about some sort of sensible behaviour if a
+different host key to that we originally accepted is used at rekey
+time, or if the key in the client's cache has changed.
