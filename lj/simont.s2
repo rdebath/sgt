@@ -431,7 +431,7 @@ function print_entry (Page p, Entry e, Color bgcolor, Color fgcolor, bool hide_t
 
     """</td>
 <td align="right"><span class="datetime">$datetime</span></td>
-</tr></table</td></tr>
+</tr></table></td></tr>
 <tr align='left'>
 <td bgcolor="$*entry_back">
 """;
