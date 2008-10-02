@@ -678,7 +678,8 @@ sp='-name .svn -prune -o'
 # directory below the current one that contains a .svn subdir. Run
 # in ~/src, for instance: svn st -q `svndirs`.
 svndirs() {
-  \find . -mindepth 1 -type d -exec test -d {}/.svn \; -print -prune
+  test $# -eq 0 && set -- .
+  \find "$@" -follow -mindepth 1 -type d -exec test -d {}/.svn \; -print -prune
 }
 
 #}}}
