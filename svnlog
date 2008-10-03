@@ -3,7 +3,7 @@
 # Wrapper on `svn log' that does what I usually want.
 
 case "$1" in
-  -r*) dashr=;;
+  -r*) dashr="$1"; shift;;
   *) dashr=-rHEAD:1;;
 esac
 
