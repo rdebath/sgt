@@ -15,6 +15,10 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
+#include <sys/socket.h>
+#include <sys/stat.h>
+#include <sys/mount.h>
+
 #include "filter.h"
 
 #define min(x,y) ( (x)<(y)?(x):(y) )
@@ -333,11 +337,17 @@ int main(int argc, char **argv)
 	close(1);
 	dup2(slavew, 1);
 	if (!opts.pipe) {
+	    int fd;
 	    close(2);
 	    dup2(slavew, 2);
 	    setsid();
 	    setpgrp();
 	    tcsetpgrp(0, getpgrp());
+	    if ((fd = open("/dev/tty", O_RDWR)) >= 0) {
+		ioctl(fd, TIOCNOTTY);
+		close(fd);
+	    }
+	    ioctl(slavew, TIOCSCTTY);
 	}
 	/* Close everything _else_, for tidiness. */
 	for (i = 3; i < 1024; i++)
