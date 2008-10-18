@@ -4220,7 +4220,7 @@ int ick_exec_limited_v(void *result, int maxcycles, int maxstk, int maxstr,
 		return ICK_RTE_STRINGS_LIMIT_EXCEEDED;
 	    }
 	} else {
-	    stacks->istack[--sargs] = va_arg(ap, int);
+	    stacks->istack[--iargs] = va_arg(ap, int);
 	}
     }
 
