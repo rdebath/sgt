@@ -5318,6 +5318,12 @@ const char *const ick_runtime_errors[] = {
 #if defined TEST_LEX || defined TEST_PARSE || defined TEST_COMPILE || \
     defined TEST_EXECUTE || defined TEST_JS || defined TEST_ICKLANG
 
+void platform_fatal_error(const char *err)
+{
+    fprintf(stderr, "fatal error: %s\n", err);
+    exit(1);
+}
+
 static const char *const tokennames[] = { TOKENTYPES(TOKENNAME) };
 
 static void dump_block(struct ick_block *blk, int level);
