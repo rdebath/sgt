@@ -3,8 +3,8 @@
 #include <winresrc.h>
 #endif
 
-// 200 ICON "ickproxy.ico"
-// 201 ICON "icksmall.ico"
+200 ICON "main.ico"
+201 ICON "small.ico"
 
 /* Accelerators used: cl */
 300 DIALOG DISCARDABLE 140, 40, 136, 86
