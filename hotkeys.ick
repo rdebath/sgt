@@ -1,0 +1,191 @@
+/* -*- c -*- */
+
+/*
+ * My personal cross-platform hot-key configuration.
+ */
+
+string clean_whitespace(string str)
+{
+    str = tr(" \n\t\r\v\f\240", "       ", str);
+
+    while (true) {
+	string tmp = str;
+	str = subst("  ", " ", str);
+	if (tmp == str)
+	    break;
+    }
+
+    if (substr(str, 0, 1) == " ")
+	str = substr(str, 1);
+    if (substr(str, len(str)-1) == " ")
+	str = substr(str, 0, len(str)-1);
+
+    return str;
+}
+
+string hex = "0123456789abcdef";
+string hexquote(string str, string ok)
+{
+    int i, limit;
+    string out;
+
+    out = "";
+    limit = len(str);
+    for (i = 0; i < limit; i++) {
+	string c = substr(str, i, i+1);
+	if (index(ok, c) >= 0) {
+	    out = out + c;
+	} else {
+	    int cval = ord(c);
+	    int dig1 = cval / 16, dig2 = cval - 16 * dig1;
+	    out = out + "%" + substr(hex, dig1, dig1+1) +
+		substr(hex, dig2, dig2+1);
+	}
+    }
+
+    return out;
+}
+
+void cleanclip(void)
+{
+    string str;
+
+    str = read_clipboard();
+    str = clean_whitespace(str);
+    write_clipboard(str);
+}
+
+/*
+ * This is a null local-rewrite function which can be overridden
+ * by a version provided in a previous source file.
+ */
+string local_url_rewrite(string str)
+{
+    return str;
+}
+
+void launch_url(void)
+{
+    string str, tmp;
+
+    str = read_clipboard();
+
+    while (true) {
+	tmp = str;
+	str = subst("\n ", "\n", str);
+	str = subst(" \n", "\n", str);
+	str = subst("\n\240", "\n", str);
+	str = subst("\240\n", "\n", str);
+	if (tmp == str)
+	    break;
+    }
+    str = subst("\n", "", str);
+
+    while (true) {
+	string c = substr(str, 0, 1);
+	if (index(" \r\n\t\f\v\240", c) >= 0)
+	    str = substr(str, 1);
+	else
+	    break;
+    }
+
+    while (true) {
+	string c = substr(str, len(str)-1);
+	if (index(" \r\n\t\f\v\240", c) >= 0)
+	    str = substr(str, 0, len(str)-1);
+	else
+	    break;
+    }
+
+    if ((tmp = local_url_rewrite(str)) != str) {
+
+	str = tmp;
+    
+    } else if (substr(str, len(str)-16) == "@bugs.debian.org") {
+
+	/* Rewrite <number>@bugs.debian.org into a URL in the Debian BTS. */
+	string number = substr(str, 0, len(str)-16);
+	int index = index(number, "-");
+	if (index >= 0)		       /* strip off "-forwarded" or similar */
+	    str = substr(str, 0, index);
+	str = "http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=" + str;
+
+    } else {
+
+	if (index(str, "://") < 0) {
+	    if (substr(str, 0, 2) == "//")
+		str = "http:" + str;
+	    else
+		str = "http://" + str;
+	}
+
+    }
+
+    open_url(str);
+}
+
+void launch_google_url(bool quoted)
+{
+    string str;
+
+    str = read_clipboard();
+    str = clean_whitespace(str);
+
+    if (quoted)
+	str = "\"" + str + "\"";
+
+    str = tr(" ", "+", str);
+    str = hexquote(str, "0123456789abcdefghijklmnopqrstuvwxyz"
+		   "ABCDEFGHIJKLMNOPQRSTUVWXYZ+");
+
+    str = "http://www.google.co.uk/search?q=" + str;
+
+    open_url(str);
+}
+
+void launch_wikipedia_url(void)
+{
+    string str;
+
+    str = read_clipboard();
+    str = clean_whitespace(str);
+
+    str = tr(" ", "_", str);
+    str = hexquote(str, "0123456789abcdefghijklmnopqrstuvwxyz"
+		   "ABCDEFGHIJKLMNOPQRSTUVWXYZ+_'");
+
+    str = "http://en.wikipedia.org/wiki/" + str;
+
+    open_url(str);
+}
+
+int keynum = 0;
+bool keycheck(int arg, string key)
+{
+    bool ret = false;
+
+    if (arg < 0)
+	register_hot_key(keynum, key);
+    else
+	ret = (arg == keynum);
+
+    keynum++;
+
+    return ret;
+}
+
+void main(int arg)
+{
+    if (keycheck(arg, "leftwindows x"))
+	minimise_window();
+    else if (keycheck(arg, "leftwindows c"))
+	cleanclip();
+    else if (keycheck(arg, "leftwindows w"))
+	launch_url();
+    //else if (keycheck(arg, "leftwindows g"))
+    //launch_google_url(false);
+    else if (keycheck(arg, "leftwindows ctrl w"))
+	launch_wikipedia_url();
+    else if (keycheck(arg, "leftwindows ctrl g"))
+	launch_google_url(true);
+}
