@@ -2,18 +2,18 @@
 
 !name ick-keys
 
-# !makefile unix Makefile
+!makefile unix Makefile
 !makefile vc Makefile.vc
 
 CROSSPLATFORM = xplib icklang malloc
 
 ick-keys : [G] wintray wintray.res CROSSPLATFORM
          + user32.lib gdi32.lib shell32.lib
-# ick-keys : [U] unix CROSSPLATFORM X11.lib
+ick-keys : [U] unix CROSSPLATFORM X11.lib
 
 # Unix `make install' target.
-# !begin unix
-# install: ick-keys
-# 	-mkdir -p $(bindir)
-# 	$(INSTALL_PROGRAM) ick-keys $(bindir)/ick-keys
-# !end
+!begin unix
+install: ick-keys
+	-mkdir -p $(bindir)
+	$(INSTALL_PROGRAM) ick-keys $(bindir)/ick-keys
+!end
