@@ -83,7 +83,7 @@ void launch_url(void)
 
     while (true) {
 	string c = substr(str, 0, 1);
-	if (index(" \r\n\t\f\v\240", c) >= 0)
+	if (c != "" && index(" \r\n\t\f\v\240", c) >= 0)
 	    str = substr(str, 1);
 	else
 	    break;
@@ -91,7 +91,7 @@ void launch_url(void)
 
     while (true) {
 	string c = substr(str, len(str)-1);
-	if (index(" \r\n\t\f\v\240", c) >= 0)
+	if (c != "" && index(" \r\n\t\f\v\240", c) >= 0)
 	    str = substr(str, 0, len(str)-1);
 	else
 	    break;
