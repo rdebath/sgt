@@ -237,7 +237,7 @@ void configure(void)
 	int rte;
 	unregister_all_hotkeys();
 	in_init = 1;
-	rte = ick_exec(NULL, scr, -1);
+	rte = ick_exec_limited(NULL, 1000000, 0, 0, scr, -1);
 	if (rte) {
 	    if (rte != ICK_RTE_USER)
 		error("runtime error: %s\n", ick_runtime_errors[rte]);
@@ -256,7 +256,7 @@ void run_hotkey(int index)
 
     assert(scr);		       /* FIXME: can this occur by accident? */
     in_init = 0;
-    rte = ick_exec(NULL, scr, index);
+    rte = ick_exec_limited(NULL, 1000000, 0, 0, scr, index);
     if (rte) {
 	if (rte != ICK_RTE_USER)
 	    error("runtime error: %s\n", ick_runtime_errors[rte]);
