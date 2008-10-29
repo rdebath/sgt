@@ -184,7 +184,10 @@ int register_hotkey(int index, int mod, const char *key,
     if (mod & CTRL)
 	modifiers |= ControlMask;
     XGrabKey(disp, keycode, modifiers, XDefaultRootWindow(disp),
-	     False, GrabModeAsync, GrabModeAsync);
+             False, GrabModeAsync, GrabModeAsync);
+    /* And the same again with Num Lock on */
+    XGrabKey(disp, keycode, modifiers | Mod2Mask, XDefaultRootWindow(disp),
+             False, GrabModeAsync, GrabModeAsync);
 
     if (index >= hotkeysize) {
 	int oldsize = hotkeysize;
@@ -240,7 +243,7 @@ int main(int ac, char **av)
 	    for (i = 0; i < hotkeysize; i++)
 		if (hotkeys[i].exists &&
 		    ev.xkey.keycode == hotkeys[i].keycode &&
-		    ev.xkey.state == hotkeys[i].modifiers) {
+		    (ev.xkey.state & ~Mod2Mask) == hotkeys[i].modifiers) {
 		    run_hotkey(i);
 		    break;
 		}
