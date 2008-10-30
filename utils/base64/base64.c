@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
+#include <stdlib.h>
 
 #define isbase64(c) (    ((c) >= 'A' && (c) <= 'Z') || \
                          ((c) >= 'a' && (c) <= 'z') || \
