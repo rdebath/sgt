@@ -62,6 +62,13 @@ static int kl_open_url(void *result, const char **sparams,
     return 0;
 }
 
+static int kl_debug(void *result, const char **sparams,
+		    const int *iparams)
+{
+    debug_message(sparams[0]);
+    return 0;
+}
+
 static int kl_register_hotkey(void *result, const char **sparams,
 			      const int *iparams)
 {
@@ -162,6 +169,7 @@ static void setup_lib(icklib *lib)
     ick_lib_addfn(lib, "read_clipboard", "S", kl_read_clipboard, NULL);
     ick_lib_addfn(lib, "write_clipboard", "VS", kl_write_clipboard, NULL);
     ick_lib_addfn(lib, "open_url", "VS", kl_open_url, NULL);
+    ick_lib_addfn(lib, "debug", "VS", kl_debug, NULL);
     ick_lib_addfn(lib, "register_hot_key", "VIS", kl_register_hotkey, NULL);
 }
 
