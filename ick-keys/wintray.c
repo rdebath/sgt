@@ -182,6 +182,12 @@ void open_url(const char *url)
     ShellExecute(ickkeys_hwnd, "open", url, NULL, NULL, SW_SHOWNORMAL);
 }
 
+void debug_message(const char *msg)
+{
+    MessageBox(ickkeys_hwnd, msg, "ick-keys debug message",
+	       MB_OK | MB_ICONINFORMATION);
+}
+
 int *hotkeyids = NULL;
 int hotkeyidsize = 0;
 

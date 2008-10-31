@@ -2,6 +2,7 @@ void minimise_window(void);
 char *read_clipboard(void);
 void write_clipboard(const char *);
 void open_url(const char *);
+void debug_message(const char *);
 void unregister_all_hotkeys(void);
 int register_hotkey(int index, int modifiers, const char *key,
 		    const char *keyorig);

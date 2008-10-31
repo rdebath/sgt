@@ -153,6 +153,11 @@ void open_url(const char *url)
     sfree(buf);
 }
 
+void debug_message(const char *msg)
+{
+    printf("ick-keys debug: %s\n", msg);
+}
+
 struct hotkey {
     int exists;
     int keycode;
