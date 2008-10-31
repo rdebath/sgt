@@ -1,0 +1,22 @@
+# -*- sh -*-
+
+# Build script to build the ick-keys Windows binary. I'm not
+# bothering with a Unix archive, because currently I don't need to
+# build Unix ick-keys anywhere I can't download it via svn. This
+# just lets me kick off Windows builds when I'm not actually
+# sitting at a Windows box.
+
+module ick-keys
+
+# Create the makefiles.
+in ick-keys do perl mkfiles.pl
+
+# Build the Windows binary.
+delegate windows
+  in ick-keys do cmd /c 'vcvars32 & nmake -f Makefile.vc clean'
+  in ick-keys do cmd /c 'vcvars32 & nmake -f Makefile.vc'
+  return ick-keys/ick-keys.exe
+enddelegate
+
+# Done. Deliver everything.
+deliver ick-keys/ick-keys.exe $@
