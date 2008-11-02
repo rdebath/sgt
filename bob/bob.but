@@ -818,6 +818,11 @@ options:
 \dd Prevents \Name from deleting the work directory after the build
 has finished.
 
+\dt \cw{-F} or \cw{--force}
+
+\dd Causes \Name to be willing to remove the previous output
+directory if one exists where it wanted to create the new one.
+
 \dt \cw{-v}
 
 \dd Verbose mode: causes \Name to output a copy of its entire build
