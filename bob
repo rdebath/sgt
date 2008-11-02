@@ -13,6 +13,7 @@ if sys.version_info < (2, 2):
     sys.exit(1)
 
 import os
+import errno
 import string
 import time
 import socket
@@ -35,6 +36,7 @@ cfg.workpath = None
 cfg.scriptfile = "Buildscr"
 cfg.logfile = "build.log"
 cfg.remove_workdir = 1
+cfg.remove_previous_outdir = 0
 cfg.accept_complex_rev = 0
 cfg.baserev = ("rev", "HEAD")
 cfg.cfgfile = os.path.join(os.getenv("HOME"), name.conffile)
@@ -109,6 +111,8 @@ for opt, val in cl:
 	cfg.workpath = val
     elif opt == "-k" or opt == "--keep":
 	cfg.remove_workdir = 0
+    elif opt == "-F" or opt == "--force":
+	cfg.remove_previous_outdir = 1
     elif opt == "--complexrev":
 	cfg.accept_complex_rev = 1
     elif opt == "-v":
@@ -205,7 +209,12 @@ try:
     # Create the output build directory.
     log.logmsg("Creating output directory %s" % cfg.outpath)
     step = "creating output directory %s" % cfg.outpath
-    os.mkdir(cfg.outpath)
+    try:
+	os.mkdir(cfg.outpath)
+    except OSError, e:
+	if e.errno == errno.EEXIST and cfg.remove_previous_outdir:
+	    misc.rm_rf(cfg.outpath)
+	    os.mkdir(cfg.outpath)
 
     # And create the work directory.
     log.logmsg("Creating work directory %s" % cfg.workpath)
