@@ -72,6 +72,23 @@ next two directories (<code>bash</code> and <code>glibc</code>)
 contain very little <em>wasted</em> space; the one below that,
 <code>tex</code>, is a stronger tidying-up candidate than either.
 
+<p>
+You can see in the screenshot that all the subdirectory names, and
+some components of the pathname at the top, are hyperlinks. Each one
+goes to a page centred on a different directory, with that
+directory's coloured bar expanded to fill the width of the window
+and all of its subdirectories displayed below it in the same way.
+Using this, I can browse around my entire home directory until I've
+identified where the real wastes of space are.
+
+<p>
+(Of course, I might find a large collection of data which is only
+accessed once a year but I do still need to keep it in order to
+carry on accessing it once a year. <code>agedu</code> can't
+magically find data that's <em>definitely</em> wasted. All it can do
+is tell you where are good places to look; it just does that one
+notch better than <code>du</code>.)
+
 <h2>Details</h2>
 
 <p>
@@ -88,9 +105,10 @@ For complete and excruciating detail, you can read the
 <h2>Status of <code>agedu</code></h2>
 
 <p>
-<code>agedu</code> works for me, but hasn't yet had any testing by
-other people. I'd be interested to hear from anyone using it in a
-more demanding environment than a home Linux box.
+<code>agedu</code> works for me, but (at the time of writing this,
+2008-11-03) hasn't yet had any testing by other people. I'd be
+interested to hear from anyone using it in a more demanding
+environment than a home Linux box.
 
 <h2>Licence</h2>
 
@@ -123,6 +141,16 @@ checkout command such as this:
 Alternatively, you can browse the Subversion repository on the WWW,
 <a href="http://svn.tartarus.org/sgt/agedu/">here</a>.
 </p>
+
+<h2>Is it pronounced &#8216;agadoo&#8217;?</h2>
+
+<p>
+If you insist, I won't stop you, but I pronounce it &#8216;age dee
+you&#8217;.
+
+<p>
+(Somehow, this program managed to acquire a FAQ before it was even
+published.)
 
 <h2>Feedback</h2>
 
