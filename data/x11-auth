@@ -30,3 +30,26 @@ it what authentication cookie to use. So it's still not actually
 supported on Windows (since the Windows version of this function
 does nothing), but the amount of work that would need to be done to
 support it is now minimal.
+
+<p> <b>SGT, 2008-11-04</b>: I've just found <a
+href="https://lliurex.net/projects/valencia/lliurex-pool-ng/browser/ubuntu-mods/trunk/sabayon/lib/protosession.py?rev=5208&format=txt">this
+piece of source code</a> which contains a comment describing the
+format of the <code>.Xauthority</code> file. So as not to lose it,
+I'll reproduce the format here. The <code>.Xauthority</code> file is
+an end-to-end concatenation of records consisting of a 2-byte
+big-endian number followed by four strings. Each string consists of
+a 2-byte big-endian number giving the length, followed by that many
+bytes. The strings are, respectively: network address, display
+number, authorisation method (e.g.
+"<code>MIT-MAGIC-COOKIE-1</code>") and the authorisation data
+itself. The initial bare number specifies the address family, i.e. how
+to interpret the address string. Just to prove it works, the
+following hacky piece of Perl successfully untangles the first
+<code>.Xauthority</code> file I could lay my hands
+on:
+<pre><code>perl -e 'while (1) { read STDIN,$fam,2 or last; $fam = unpack "n", $fam; @strings = (); for $i (0..3) { read STDIN, $len, 2; $len = unpack "n", $len; $str=""; read STDIN, $str, $len; if ($i==1 or $i==2 or ($i==0 and $fam==256)) { $str = "\"" . $str . "\"" } else { $str = join "", "&lt;", (map{sprintf"%02x",$_}unpack"C*",$str), "&gt;"; } push @strings, $str; } printf "%s\n", join " ", $fam, @strings }' &lt; ~/.Xauthority</code></pre>
+and the output of this also suggests that family code 0 means the
+address string is a binary-encoded IPv4 address, code 6 means a
+binary-encoded IPv6 address, and code 256 means
+the address string is a hostname and the access method is a
+Unix-domain socket on that host.
