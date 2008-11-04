@@ -688,3 +688,26 @@ if test -d $HOME/${SRCMISC:-src/misc}/libcode; then
   addpath $HOME/${SRCMISC:-src/misc}/libcode PYTHONPATH
 fi
 #}}}
+#{{{ `pfx' to run text dumping tools over files and prefix the filenames
+
+pfx() {
+  # usage: pfx <separator> <command words> <same separator again> <files>
+  # will run the command once for each file, and put "<file>:<line>:" on
+  # the front of each output line.
+  local cmd
+  local sep
+  local file
+  cmd=()
+  sep="$1"
+  shift
+  while test $# -gt 0 -a "x$1" != "x$sep"; do
+    cmd[${#cmd[@]}]="$1"
+    shift
+  done
+  shift
+  for file in "$@"; do
+    "${cmd[@]}" "$file" | perl -pe 'BEGIN{$a=shift@ARGV;}s/^/$a:$.:/' "$file"
+  done
+}
+
+#}}}
