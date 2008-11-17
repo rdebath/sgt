@@ -178,6 +178,8 @@ void main(int arg)
 {
     if (keycheck(arg, "leftwindows x"))
 	minimise_window();
+    if (keycheck(arg, "leftwindows z"))
+	window_to_back();
     else if (keycheck(arg, "leftwindows c"))
 	cleanclip();
     else if (keycheck(arg, "leftwindows w"))
