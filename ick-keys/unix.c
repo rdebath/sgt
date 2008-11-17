@@ -43,11 +43,26 @@ void platform_fatal_error(const char *s)
 
 void minimise_window(void)
 {
-    /*
-     * Disgusting, but since this is symbiosisware it'll do for
-     * now.
-     */
-    system("sawfish-client -c '(iconify-window-under-pointer)' >& /dev/null");
+    system("sawfish-client -c '"
+	   "(let ((w1 (query-pointer-window))"
+		 "(w2 (input-focus)))"
+	      "(cond ((not (null w1)) (iconify-window w1))"
+	            "((not (null w2)) (iconify-window w2))"
+	      ")"
+	   ")"
+	   "' >& /dev/null");
+}
+
+void window_to_back(void)
+{
+    system("sawfish-client -c '"
+	   "(let ((w1 (query-pointer-window))"
+		 "(w2 (input-focus)))"
+	      "(cond ((not (null w1)) (lower-window w1))"
+	            "((not (null w2)) (lower-window w2))"
+	      ")"
+	   ")"
+	   "' >& /dev/null");
 }
 
 char *read_clipboard(void)

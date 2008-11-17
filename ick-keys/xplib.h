@@ -1,4 +1,5 @@
 void minimise_window(void);
+void window_to_back(void);
 char *read_clipboard(void);
 void write_clipboard(const char *);
 void open_url(const char *);

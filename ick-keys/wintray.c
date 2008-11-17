@@ -123,6 +123,25 @@ void minimise_window(void)
     }
 }
 
+void window_to_back(void)
+{
+    POINT p;
+    HWND w, w2;
+
+    GetCursorPos(&p);
+    if ((w = WindowFromPoint(p)) != NULL) {
+	while ((w2 = GetParent(w)) != NULL)
+	    w = w2;
+    } else {
+	w = GetForegroundWindow();
+    }
+
+    if (w)
+	SetWindowPos(w, HWND_BOTTOM, 0, 0, 0, 0,
+		     SWP_ASYNCWINDOWPOS | SWP_NOACTIVATE |
+		     SWP_NOMOVE | SWP_NOSIZE);
+}
+
 char *read_clipboard(void)
 {
     HGLOBAL clipdata;

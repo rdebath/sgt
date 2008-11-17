@@ -25,6 +25,17 @@ static int kl_minimise_window(void *result, const char **sparams,
     return 0;
 }
 
+static int kl_window_to_back(void *result, const char **sparams,
+			     const int *iparams)
+{
+    if (in_init) {
+	error("attempt to send a window to back during initialisation");
+	return ICK_RTE_USER;
+    }
+    window_to_back();
+    return 0;
+}
+
 static int kl_read_clipboard(void *result, const char **sparams,
 			     const int *iparams)
 {
@@ -166,6 +177,7 @@ static void setup_lib(icklib *lib)
     ick_lib_addfn(lib, "tr", "SSSS", kl_tr, NULL);
     ick_lib_addfn(lib, "subst", "SSSS", kl_subst, NULL);
     ick_lib_addfn(lib, "minimise_window", "V", kl_minimise_window, NULL);
+    ick_lib_addfn(lib, "window_to_back", "V", kl_window_to_back, NULL);
     ick_lib_addfn(lib, "read_clipboard", "S", kl_read_clipboard, NULL);
     ick_lib_addfn(lib, "write_clipboard", "VS", kl_write_clipboard, NULL);
     ick_lib_addfn(lib, "open_url", "VS", kl_open_url, NULL);
