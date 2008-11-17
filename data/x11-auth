@@ -2,6 +2,7 @@ Summary: Authenticate with local X servers
 Class: wish
 Priority: low
 Difficulty: taxing
+Fixed-in: r8305
 Content-type: text/x-html-body
 
 <p>
@@ -53,3 +54,9 @@ address string is a binary-encoded IPv4 address, code 6 means a
 binary-encoded IPv6 address, and code 256 means
 the address string is a hostname and the access method is a
 Unix-domain socket on that host.
+
+<p> <b>SGT, 2008-11-17</b>: should now be done, at least for Windows
+X servers which provide X authority files in the standard format.
+There's a new config option on Windows which allows the user to
+point at the location of their X authority file, and PuTTY has the
+in-built ability to understand files in that format.
