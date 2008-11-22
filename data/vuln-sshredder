@@ -31,9 +31,9 @@ to BugTraq.
 <a href="http://cve.mitre.org/">CVE</a> have assigned the following
 candidate IDs to the vulnerabilities tested for by SSHredder:
 <ul>
-<li><a href="http://cve.mitre.org/cgi-bin/cvename.cgi?name=CAN-2002-1357">CAN-2002-1357</a>
-<li><a href="http://cve.mitre.org/cgi-bin/cvename.cgi?name=CAN-2002-1358">CAN-2002-1358</a>
-<li><a href="http://cve.mitre.org/cgi-bin/cvename.cgi?name=CAN-2002-1359">CAN-2002-1359</a>
-<li><a href="http://cve.mitre.org/cgi-bin/cvename.cgi?name=CAN-2002-1360">CAN-2002-1360</a>
+<li><a href="http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2002-1357">CVE-2002-1357</a>
+<li><a href="http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2002-1358">CVE-2002-1358</a>
+<li><a href="http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2002-1359">CVE-2002-1359</a>
+<li><a href="http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2002-1360">CVE-2002-1360</a>
 </ul>
 (I haven't checked which of these PuTTY was actually vulnerable to).

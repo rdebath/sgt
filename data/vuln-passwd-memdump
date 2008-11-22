@@ -21,6 +21,6 @@ and will be fixed in the next stable release.
 
 <p>
 This vulnerability corresponds to CVE
-<a href="http://cve.mitre.org/cgi-bin/cvename.cgi?name=CAN-2003-0048">
-CAN-2003-0048
+<a href="http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2003-0048">
+CVE-2003-0048
 </a>.
