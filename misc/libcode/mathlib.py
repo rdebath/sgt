@@ -52,6 +52,12 @@ def gcd(a,b):
         a, b = b, a % b
     return a
 
+def powerset(x, append=[]):
+    if len(x) == 0:
+        return [append]
+    else:
+        return powerset(x[:-1], append) + powerset(x[:-1], [x[-1]] + append)
+
 fibcache = [0,1]
 def fib(n):
     "Return the nth Fibonacci number"
