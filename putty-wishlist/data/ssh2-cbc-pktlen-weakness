@@ -1,0 +1,39 @@
+Summary: In CBC modes, decrypting the packet length can leak information
+Class: semi-bug
+Content-type: text/x-html-body
+Difficulty: tricky
+Priority: high
+Present-in: 2008-11-25
+Absent-in: 0.49
+Fixed-in: 2008-11-27 r8334
+
+<p>There is an attack against the CBC-mode ciphers of SSH-2 that can
+allow an attacker to extract small parts of plaintext.  The attack
+works by inserting a bogus block into the ciphertext stream such that
+it gets decrypted into a packet length and then seeing how much data
+the target consumes before reporting a MAC error.
+
+<p>PuTTY is intrinsically slightly more resistant to this attack than
+OpenSSH, as it has tighter restrictions on the packet lengths it will
+accept.  As a result, against PuTTY, the attack has only a 2^-20 or
+2^-21 probability of working.  To put it another way, if the attacker
+can guess a certain 20 or 21 bits of a plaintext block, they can have
+that guess verified and extract a certain other 11 or 12 bits.
+
+<p>SDCTR-mode ciphers are not vulnerable to this attack.  Since <a
+href="ssh2-ctr-modes">implementing them</a>, PuTTY has preferred them
+to CBC, and hence has only used CBC when talking to a server that was
+incapable of SDCTR.
+
+<p>PuTTY now also makes a deliberate effort to counter this problem
+by only trusting the packet length once the MAC on the packet has been
+verified.  This causes extra work (since the MAC has to be checked for every
+possible packet length), and makes detection of genuine MAC errors slower,
+so it's only enabled when using a CBC cipher.  In any case, it only defends
+the data sent by the server to the client.  Client-to-server data need to be
+protected by similar action by the server.
+
+<p>This problem corresponds with
+<a href="http://www.kb.cert.org/vuls/id/958563">US-CERT VU#958563</a>.  It
+is distinct from the previous
+<a href="ssh2-cbc-weakness">ssh2-cbc-weakness</a>.
