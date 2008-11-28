@@ -135,7 +135,10 @@ class Rational:
         return self.n != 0
 
     def __str__(self):
-        return fmtint(self.n) + "/" + fmtint(self.d)
+        if self.d != 1:
+            return fmtint(self.n) + "/" + fmtint(self.d)
+        else:
+            return fmtint(self.n)
 
     def __repr__(self):
         return "Rational(" + repr(self.n) + "," + repr(self.d) + ")"
