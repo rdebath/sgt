@@ -128,6 +128,48 @@ Date parse_date(char *str)
     return ret;
 }
 
+int parse_partial_date(char *str, Date *start, Date *after)
+{
+    Date d1;
+    int y, m;
+
+    d1 = parse_date(str);
+    if (d1 != INVALID_DATE) {
+	if (start)
+	    *start = d1;
+	if (after)
+	    *after = d1 + 1;
+	return 1;
+    }
+
+    if (sscanf(str, "%d-%d", &y, &m) == 2) {
+	if (m < 1 || m > 12 || y < 1900)
+	    return 0;
+
+	if (start)
+	    *start = ymd_to_date(y, m, 1);
+	if (after) {
+	    if (m == 12)
+		*after = ymd_to_date(y + 1, 1, 1);
+	    else
+		*after = ymd_to_date(y, m + 1, 1);
+	}
+	return 1;
+    } else if (sscanf(str, "%d", &y) == 1) {
+	if (y < 1900)
+	    return 0;
+	if (start)
+	    *start = ymd_to_date(y, 1, 1);
+	if (after)
+	    *after = ymd_to_date(y + 1, 1, 1);
+	return 1;
+    } else {
+	return 0;
+    }
+
+    return 0;
+}
+
 Time parse_time(char *str)
 {
     int h, m, s, ret;

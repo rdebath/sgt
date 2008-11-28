@@ -352,16 +352,12 @@ void caltrap_list(int nargs, char **args, int nphysargs, int verbose)
 	sd = today();
 	ed = sd + 14;		       /* two weeks */
     } else if (nargs == 1) {
-	sd = parse_date(args[0]);
-	if (sd == INVALID_DATE)
+	if (!parse_partial_date(args[0], &sd, &ed))
 	    fatal(err_date, args[0]);
-	ed = sd + 1;
     } else if (nargs == 2) {
-	sd = parse_date(args[0]);
-	if (sd == INVALID_DATE)
+	if (!parse_partial_date(args[0], &sd, NULL))
 	    fatal(err_date, args[0]);
-	ed = parse_date(args[1]);
-	if (ed == INVALID_DATE)
+	if (!parse_partial_date(args[1], &ed, NULL))
 	    fatal(err_date, args[1]);
 	if (sd > ed) {
 	    Date tmp = sd; sd = ed; ed = tmp;
