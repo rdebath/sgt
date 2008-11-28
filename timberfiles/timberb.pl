@@ -71,7 +71,7 @@ while (1) {
   $mimesep = "";
   $flagchr = 'n';
   # Get initial date field from Unix From line
-  $datefield = "$2-$1" if /(...) (..) ..:..:.. ....$/;
+  $datefield = sprintf "%02d-%s", $2, $1 if /(...) (..) ..:..:.. ....$/;
 
   # Loop over each message header line, accumulating information
   # for the message summary line. Terminate if we see a blank line
