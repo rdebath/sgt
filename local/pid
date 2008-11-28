@@ -1,0 +1,12 @@
+#!/bin/sh 
+
+# Similar to the "pidof" utility I've got used to from Debian, but
+# only returns process IDs I can strace or kill. I hope. Also, this
+# one is implemented as a wrapper on pgrep, which is available on
+# more systems than the Debian-specific pidof.
+uid=`id -u`
+if test "$uid" = 0; then
+  exec pgrep "$@"
+else
+  exec pgrep -U "$uid" "$@"
+fi
