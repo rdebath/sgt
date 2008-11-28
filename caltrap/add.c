@@ -13,7 +13,7 @@ void caltrap_add(int nargs, char **args, int nphysargs, struct entry *e)
     Date sd, ed;
     Time st, et;
     int i;
-    char msg[512], *p;
+    char msg[512], *msgp, *p;
     struct entry ent;
 
     if (e->length == INVALID_DURATION)
@@ -99,6 +99,8 @@ void caltrap_add(int nargs, char **args, int nphysargs, struct entry *e)
     if (i < nargs)
 	fatal(err_extraarg, args[i]);
 
+    msgp = e->description;
+
     if (isatty(fileno(stdin))) {
 	char *dfmt, *tfmt;
 	dfmt = format_date_full(sd);
@@ -140,23 +142,28 @@ void caltrap_add(int nargs, char **args, int nphysargs, struct entry *e)
 	    sfree(dfmt);
 	    sfree(tfmt);
 	}
-	printf("Existing entries in the week surrounding the start point:\n");
-	list_entries(sd - 3, 0, sd + 4, 0);
-	printf("Now enter message, on a single line,\n"
-	       "or press ^D or ^C to cancel the operation.\n"
-	       "> ");
-	fflush(stdout);
+	if (!msgp) {
+	    printf("Existing entries in the week surrounding the start point:\n");
+	    list_entries(sd - 3, 0, sd + 4, 0);
+	    printf("Now enter message, on a single line,\n"
+		   "or press ^D or ^C to cancel the operation.\n"
+		   "> ");
+	    fflush(stdout);
+	}
     }
 
-    if (!fgets(msg, sizeof(msg), stdin))
-	*msg = '\0';
-    p = msg + strcspn(msg, "\r\n");
-    if (!*p) {
-	printf("\nOperation cancelled.\n");
-	fflush(stdout);
-	return;
+    if (!msgp) {
+	if (!fgets(msg, sizeof(msg), stdin))
+	    *msg = '\0';
+	p = msg + strcspn(msg, "\r\n");
+	if (!*p) {
+	    printf("\nOperation cancelled.\n");
+	    fflush(stdout);
+	    return;
+	}
+	*p = '\0';
+	msgp = msg;
     }
-    *p = '\0';
 
     ent.id = -1;		       /* cause a new id to be allocated */
     ent.sd = sd;
@@ -166,6 +173,6 @@ void caltrap_add(int nargs, char **args, int nphysargs, struct entry *e)
     ent.length = e->length;
     ent.period = e->period;
     ent.type = e->type;
-    ent.description = msg;
+    ent.description = msgp;
     db_add_entry(&ent);
 }
