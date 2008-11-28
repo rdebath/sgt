@@ -84,6 +84,7 @@ enum {
 #define NO_TIME ((Time)-1)
 #define INVALID_DURATION ((Duration)-2)
 Date parse_date(char *str);
+int parse_partial_date(char *str, Date *start, Date *after);
 Time parse_time(char *str);
 int parse_datetime(char *str, Date *d, Time *t);  /* returns zero on failure */
 Duration parse_duration(char *str);
