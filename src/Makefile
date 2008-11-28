@@ -8,7 +8,7 @@ LOGALLOCH = # -include logalloc.h
 LOGALLOCO = # logalloc.c
 
 DEBUG  = -DDIAGNOSTIC
-CFLAGS = -Wall -pedantic -ansi $(DEBUG) #-Wmissing-prototypes
+CFLAGS = -Wall $(DEBUG) #-Wmissing-prototypes
 
 all:	golem connect.telnet
 

@@ -677,11 +677,7 @@ void event (enum EventType type, void *auxdat) {
 				   task == VISIT_FILE ||
 				   task == READ_MSGS ||
 				   task == CHECK_MENU)) {
-	    if (task == READ_MSGS) {
-		fprintf(dfp, "Sending 'a' to get to all messages\n");
-		write(wfd, "a", 1);
-		ti.i = 0;
-	    } else if (ti.keypath[ti.i] != '\033') {
+	    if (ti.keypath[ti.i] != '\033') {
 		fprintf(dfp, "Sending 'g' to get to main menu\n");
 		write(wfd, "g", 1);
 		ti.i = 0;
@@ -705,6 +701,7 @@ void event (enum EventType type, void *auxdat) {
 	} else if (monostate == MENU && (task == READ_FILE ||
 					 task == VISIT_FILE ||
 					 task == ADD_TO_FILE ||
+					 task == READ_MSGS ||
 					 task == EDIT_FILE)) {
 	    fprintf(dfp, "Sending '%c' on keypath <%s>\n", ti.keypath[ti.i],
 		    ti.keypath);
