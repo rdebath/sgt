@@ -37,6 +37,8 @@ import re
 import sys
 import os
 
+cachelist = []
+
 def makedict(attrs):
     attrdict = {}
     for attr in attrs:
@@ -54,15 +56,33 @@ class myparser(htmllib.HTMLParser):
             self.urls.append(target)
 
 def getdata(url):
+    # First try to retrieve the cached file.
+    cachefile = "." + string.join(["%02x" % (0xFF & ord(c)) for c in url], "")
+    cachelist.append(cachefile)
+    try:
+        fp = open(cachefile, "r")
+        data = fp.read()
+        fp.close()
+        print "using cached", url
+        return data
+    except IOError, e:
+        pass # fall back to actually retrieving the URL
     if verbose:
         print "retrieving", url
     f = cookurl.urlopen(url)
     data = f.read()
     f.close()
+    fp = open(cachefile + ".part", "w")
+    fp.write(data)
+    fp.close()
+    os.rename(cachefile + ".part", cachefile)
     return data
 
 def geturls(url):
     data = getdata(url)
+    # For some reason, compact XML tags like "<br/>" seem to
+    # confuse htmllib.
+    data = string.replace(data, "/>", " />")
     p = myparser()
     p.feed(data)
     return p.urls
@@ -70,6 +90,12 @@ def geturls(url):
 verbose = 1
 
 args = sys.argv[1:]
+while 1:
+    if args[0] == "-q":
+        verbose = 0
+    else:
+        break
+    args = args[1:]
 if len(args) != 1:
     print "usage: ljdownload <username>"
     sys.exit(len(args) > 0)
@@ -81,15 +107,13 @@ prefix = "http://" + username + ".livejournal.com"
 session = os.environ["HOME"] + "/.ljscan/ljsesscookies"
 cookurl.loadcookies(session)
 
-# Find the full set of years used in the journal. Retriving the
-# year page for any year at all should give URLs for all the years
-# other than that one; therefore, we retrieve two different years
-# and that should give us everything.
-u1 = geturls(prefix + "/2000/")
-u2 = geturls(prefix + "/2001/")
+# Find the full set of years used in the journal. We start by
+# retrieving the front "calendar" page, and then follow links to
+# any year pages mentioned in that.
+u = geturls(prefix + "/calendar/")
 yeardict = {}
 expr = re.compile(re.escape(prefix) + r'/(\d+)/')
-for url in u1 + u2:
+for url in u:
     m = expr.match(url)
     if m:
         yeardict[m.group(1)] = 1
@@ -103,13 +127,13 @@ expr = re.compile(re.escape(prefix) + r'/(\d+)\.html')
 entrydict = {}
 for year in years:
     for month in range(1,13):
-        u = geturls(prefix + "/" + year + "/%02d/" % month)
-        for url in u:
-            m = expr.match(url)
-            if m:
-                entryname = m.group(1)
-                entrynum = string.atoi(entryname)
-                entrydict[entrynum] = 1
+        u = u + geturls(prefix + "/" + year + "/%02d/" % month)
+for url in u:
+    m = expr.match(url)
+    if m:
+        entryname = m.group(1)
+        entrynum = string.atoi(entryname)
+        entrydict[entrynum] = 1
 entries = entrydict.keys()
 entries.sort()
 print entries
@@ -123,3 +147,13 @@ for entry in entries:
     f.write(d)
     f.close()
     os.rename(tmpfname, fname)
+
+for file in cachelist:
+    try:
+        os.remove(file)
+    except OSError, e:
+        pass
+    try:
+        os.remove(file + ".tmp")
+    except OSError, e:
+        pass
