@@ -39,7 +39,9 @@ commit message:
 to process data, we want to ensure that the window size <em>as seen by the server</em>
 never drops to zero.  Measuring the server's view of the window size is done
 by arranging for it to acknowledge every SSH_MSG_CHANNEL_WINDOW_ADJUST, or 
-rather an SSH_MSG_CHANNEL_REQUEST sent just before it.  That way we can tell
+rather an SSH_MSG_CHANNEL_REQUEST
+[<a href="http://tartarus.org/~simon/putty-snapshots/htmldoc/AppendixF.html#sshnames-channel">winadj@putty.projects.tartarus.org</a>]
+sent just before it.  That way we can tell
 when it its outgoing data stream it recieved the window adjustment, and
 thus how small the server's view of the window got.
 
