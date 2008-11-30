@@ -1,0 +1,54 @@
+Summary: Bombing out with 'Received SSH_MSH_CHANNEL_SUCCESS for "winadj@putty.projects.tartarus.org"'
+Class: semi-bug
+Priority: high
+Absent-in: 0.60
+Present-in: 2008-03-28
+Content-type: text/x-html-body
+
+<p>
+We've had a few reports of SSH connections bombing out with the
+following error message, reportedly under heavy load:
+
+<pre>PuTTY Fatal Error
+
+(X)  Disconnected: Received SSH_MSH_CHANNEL_SUCCESS for
+     "winadj@putty.projects.tartarus.org"
+
+                      [   OK   ]</pre>
+
+<p>
+Reports:
+<ul>
+<li>E2E34FB668D4874FA28658B489F40BB0028F47DA@BP1XEUEX706-C.bp1.ad.bp.com
+  <br>Using "Portable PuTTY from the Xming project" (not our code)
+  <br>Server: SSH-2.0-OpenSSH_4.3
+<li><a href="http://trac.filezilla-project.org/ticket/3452">FileZilla
+ticket #3452</a>
+  <br>(but also reported with PSFTP 2008-03-28:r7934:
+  E00B544DC95563489A6C43CCD571EDD304EF8AFB@somodd.som.umaryland.edu)
+  <br>Reported as failure shortly after 1Gbyte of a file transfer.
+<li>OF31BAE29C.9F8D62FE-ON862574FF.00743D6C-852574FF.007508E8@notes.wachovia.com
+</ul>
+
+<p>
+This message has only existed in PuTTY since the
+<a href="flow-control.html">'flow-control'</a>
+feature was implemented, which was after we released 0.60; so
+<!-- XXX-REVIEW-BEFORE-RELEASE -->at the time of writing, only people
+using development snapshots, or third-party code incorporating
+development code, should be seeing this. We probably want to find out
+what's going on before we make a release with this feature in.
+
+<p>
+On the face of it, it looks like the SSH server is incorrectly
+responding to our unilaterally-defined channel request message with
+SUCCESS, which it should never do since it's something we made up. 
+(<a href="http://tartarus.org/~simon/putty-snapshots/htmldoc/AppendixF.html#sshnames-channel">Our documentation</a>
+mandates a FAILURE response, but that's only a restatement of the
+RFC 4254 requirement for a FAILURE response to requests that
+aren't understood -- we don't expect any server to specifically
+handle this message.)
+
+<p>
+However, perhaps we're getting confused about the mapping of requests
+to responses, or something.
