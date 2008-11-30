@@ -51,6 +51,13 @@ too large, but my experiments suggest that getting this right will be tricky.
 </blockquote>
 
 <p>
+(The new channel requests emitted by PuTTY as part of this change
+can cause a lot of noise in the logs of the OpenSSH server -- 
+"<tt>sshd[6386]: session_input_channel_req: no session 1 req
+winadj@putty.projects.tartarus.org</tt>". This should be mitigated as of
+<a href="https://bugzilla.mindrot.org/show_bug.cgi?id=1395">OpenSSH 5.1</a>.)
+
+<p>
 Another approach: the Pittsburgh Supercomputing Center
 <a href="http://www.psc.edu/networking/hpn-ssh/">suggest</a>
 that basing the SSH window size on the TCP window size from the
