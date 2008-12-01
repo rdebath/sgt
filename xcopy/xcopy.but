@@ -90,6 +90,16 @@ window, you might well want to paste a string full of escape
 sequences and control characters, in which case you may need to use
 \cw{-C} to disable conversion to compound text.
 
+\dt \cw{-b}
+
+\dd Causes \cw{xcopy} to read or write the clipboard instead of the
+selection. (Modern GNOME and KDE-style programs can often interact
+with both. The \e{selection} is the traditional X-style storage
+location which you typically copy things into just by selecting them
+with the mouse, and paste with the middle mouse button. The
+\e{clipboard} is a more Windows-like location which you access using
+explicit Cut, Copy and Paste commands in your application.)
+
 \U BUGS
 
 Occasionally \cw{xcopy -r} completely fails to notice selection data

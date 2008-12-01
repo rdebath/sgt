@@ -29,6 +29,7 @@ void error (char *fmt, ...);
 /* set from command-line parameters */
 char *display = NULL;
 enum { STRING, CTEXT, UTF8 } mode = STRING;
+int use_clipboard = False;
 
 /* selection data */
 char *seltext;
@@ -46,6 +47,7 @@ const char usagemsg[] =
     "       -u     work with UTF8_STRING type selections\n"
     "       -c     work with COMPOUND_TEXT type selections\n"
     "       -C     suppress automatic conversion to COMPOUND_TEXT\n"
+    "       -b     read the CLIPBOARD rather than the PRIMARY selection\n"
     " also: xcopy --version              report version number\n"
     "       xcopy --help                 display this help text\n"
     "       xcopy --licence              display the (MIT) licence text\n"
@@ -124,6 +126,8 @@ int main(int ac, char **av) {
             mode = CTEXT;
         } else if (!strcmp(p, "-C")) {
             convert_to_ctext = False;
+        } else if (!strcmp(p, "-b")) {
+            use_clipboard = True;
         } else if (!strcmp(p, "--help")) {
 	    usage();
 	    return 0;
@@ -217,6 +221,7 @@ Atom compound_text_atom, targets_atom;
 int screen, wwidth, wheight;
 
 Atom strtype = XA_STRING;
+Atom sel_atom = XA_PRIMARY;
 
 /*
  * Returns TRUE if we need to enter an event loop, FALSE otherwise.
@@ -248,6 +253,11 @@ int init_X(void) {
     targets_atom = XInternAtom(disp, "TARGETS", False);
     if (!targets_atom)
         error ("unable to get TARGETS property");
+    if (use_clipboard) {
+        sel_atom = XInternAtom(disp, "CLIPBOARD", False);
+        if (!sel_atom)
+            error ("unable to get CLIPBOARD property");
+    }
 
     /* get the screen and root-window */
     screen = DefaultScreen (disp);
@@ -271,13 +281,13 @@ int init_X(void) {
         /*
          * We are reading the selection, so we must FIXME.
          */
-        if (XGetSelectionOwner(disp, XA_PRIMARY) == None) {
+        if (XGetSelectionOwner(disp, sel_atom) == None) {
             /* No primary selection, so use the cut buffer. */
             do_paste(DefaultRootWindow(disp), XA_CUT_BUFFER0, False);
             return False;
         } else {
             Atom sel_property = XInternAtom(disp, "VT_SELECTION", False);
-            XConvertSelection(disp, XA_PRIMARY, strtype,
+            XConvertSelection(disp, sel_atom, strtype,
                               sel_property, ourwin, CurrentTime);
             return True;
         }
@@ -288,8 +298,8 @@ int init_X(void) {
          * CUT_BUFFER0, if it isn't of an exotic type (cut buffers
          * can only take ordinary string data, it turns out).
          */
-        XSetSelectionOwner (disp, XA_PRIMARY, ourwin, CurrentTime);
-        if (XGetSelectionOwner (disp, XA_PRIMARY) != ourwin)
+        XSetSelectionOwner (disp, sel_atom, ourwin, CurrentTime);
+        if (XGetSelectionOwner (disp, sel_atom) != ourwin)
             error ("unable to obtain primary X selection\n");
         compound_text_atom = XInternAtom(disp, "COMPOUND_TEXT", False);
 	if (strtype == XA_STRING) {
