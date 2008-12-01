@@ -119,17 +119,24 @@ debugging X applications or X selection issues.
 contents corresponding to some particular user-specified target
 type. The target type can be anything listed by \cq{xcopy -r -t}.
 
-\U BUGS
+\dt \cw{-T}
 
-Occasionally \cw{xcopy -r} completely fails to notice selection data
-owned by another process. I have not yet reproduced this reliably;
-if anyone can, some work with \cw{xmon}(1) would be much
-appreciated...
+\dd Causes \cw{xcopy} not to fork, when in write mode. Instead the
+original \cw{xcopy} process will continue to run until the selection
+is taken away from it. Probably only useful when debugging
+\cw{xcopy} itself, although it's just possible that it might turn
+out to be useful for some other special purpose (e.g. having the
+process waiting for it know when the selection owner has changed).
+
+\U BUGS
 
 Automatic conversion between compound text and UTF-8 is not
 currently supported. There are Xlib functions to do it, although
 they don't appear to work very well (missing out many characters
 which they could have converted).
+
+The selection timestamps output by \cw{xcopy} in write mode are
+always zero, which is not ideal.
 
 \U LICENCE
 
