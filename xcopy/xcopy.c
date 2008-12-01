@@ -448,23 +448,26 @@ void do_paste(Window window, Atom property, int Delete) {
                               Delete, AnyPropertyType, &actual_type,
                               &actual_format, &nitems, &bytes_after,
                               (unsigned char **) &data) == Success) {
-	/*
-	 * We expect all returned chunks of data to be multiples of
-	 * 4 bytes (because we can only request the subsequent
-	 * starting offset in 4-byte increments). Of course you can
-	 * store an odd number of bytes in a selection, so this
-	 * can't be the case every time XGetWindowProperty returns;
-	 * but it should be the case every time it returns _and
-	 * there is more data to come_.
-	 * 
-	 * Hence, whenever XGetWindowProperty returns, we verify
-	 * that the size of the data returned _last_ time was
-	 * divisible by 4.
-	 */
-	if (nitems > 0)
-	    assert((nread & 3) == 0);
-
 	if (nitems > 0) {
+	    /*
+	     * We expect all returned chunks of data to be
+	     * multiples of 4 bytes (because we can only request
+	     * the subsequent starting offset in 4-byte
+	     * increments). Of course you can store an odd number
+	     * of bytes in a selection, so this can't be the case
+	     * every time XGetWindowProperty returns; but it
+	     * should be the case every time it returns _and there
+	     * is more data to come_.
+	     *
+	     * Hence, whenever XGetWindowProperty returns, we
+	     * verify that the size of the data returned _last_
+	     * time was divisible by 4.
+	     */
+	    if ((nread & 3) != 0) {
+		error("unexpected data size: %d read (not a multiple"
+		      " of 4), but more to come\n", nread);
+	    }
+
 	    if (expected_type != (Atom)None && actual_type != expected_type) {
 		char *expout = XGetAtomName(disp, expected_type);
 		char *gotout = (actual_type == (Atom)None ? "None" :
