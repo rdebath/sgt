@@ -135,9 +135,6 @@ currently supported. There are Xlib functions to do it, although
 they don't appear to work very well (missing out many characters
 which they could have converted).
 
-The selection timestamps output by \cw{xcopy} in write mode are
-always zero, which is not ideal.
-
 \U LICENCE
 
 \cw{xcopy} is free software, distributed under the MIT licence. Type
