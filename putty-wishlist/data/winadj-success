@@ -2,7 +2,7 @@ Summary: Bombing out with 'Received SSH_MSH_CHANNEL_SUCCESS for "winadj@putty.pr
 Class: semi-bug
 Priority: high
 Absent-in: 0.60
-Present-in: 2008-03-28
+Present-in: 2008-03-28 2008-12-01
 Content-type: text/x-html-body
 
 <p>
@@ -21,7 +21,9 @@ Reports:
 <ul>
 <li>E2E34FB668D4874FA28658B489F40BB0028F47DA@BP1XEUEX706-C.bp1.ad.bp.com
   <br>Using "Portable PuTTY from the Xming project" (not our code)
+  <br>but also seen with 2008-12-01:r8355
   <br>Server: SSH-2.0-OpenSSH_4.3
+  <br>Seems to happen readily -- a few "ls -ltr"s are sufficient to break it
 <li><a href="http://trac.filezilla-project.org/ticket/3452">FileZilla
 ticket #3452</a>
   <br>(but also reported with PSFTP 2008-03-28:r7934:
