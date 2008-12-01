@@ -245,6 +245,7 @@ char *ucasename = "XCopy";
 Display *disp = NULL;
 Window ourwin = None;
 Atom compound_text_atom, targets_atom, timestamp_atom, atom_atom, integer_atom;
+Atom multiple_atom, atom_pair_atom;
 int screen, wwidth, wheight;
 
 Atom strtype = XA_STRING;
@@ -273,6 +274,8 @@ int init_X(void) {
     targets_atom = XInternAtom(disp, "TARGETS", False);
     timestamp_atom = XInternAtom(disp, "TIMESTAMP", False);
     atom_atom = XInternAtom(disp, "ATOM", False);
+    atom_pair_atom = XInternAtom(disp, "ATOM_PAIR", False);
+    multiple_atom = XInternAtom(disp, "MULTIPLE", False);
     integer_atom = XInternAtom(disp, "INTEGER", False);
     if (mode == UTF8) {
 	strtype = XInternAtom(disp, "UTF8_STRING", False);
@@ -370,6 +373,95 @@ int init_X(void) {
     }
 }
 
+Atom convert_sel_inner(Window requestor, Atom target, Atom property) {
+    if (target == strtype) {
+	XChangeProperty (disp, requestor, property, strtype,
+			 8, PropModeReplace, seltext, sellen);
+	return property;
+    } else if (target == compound_text_atom && convert_to_ctext) {
+	XTextProperty tp;
+	XmbTextListToTextProperty (disp, &seltext, 1,
+				   XCompoundTextStyle, &tp);
+	XChangeProperty (disp, requestor, property, target,
+			 tp.format, PropModeReplace,
+			 tp.value, tp.nitems);
+	return property;
+    } else if (target == targets_atom) {
+	Atom targets[16];
+	int len = 0;
+	targets[len++] = timestamp_atom;
+	targets[len++] = targets_atom;
+	targets[len++] = multiple_atom;
+	targets[len++] = strtype;
+	if (strtype != compound_text_atom && convert_to_ctext)
+	    targets[len++] = compound_text_atom;
+	XChangeProperty (disp, requestor, property,
+			 atom_atom, 32, PropModeReplace,
+			 (unsigned char *)targets, len);
+	return property;
+    } else if (target == timestamp_atom) {
+	Time rettime = CurrentTime;
+	XChangeProperty (disp, requestor, property,
+			 integer_atom, 32, PropModeReplace,
+			 (unsigned char *)&rettime, 1);
+	return property;
+    } else {
+	return None;
+    }
+}
+
+Atom convert_sel_outer(Window requestor, Atom target, Atom property) {
+    if (target == multiple_atom) {
+	/*
+	 * Support for the MULTIPLE selection type, since it's
+	 * specified as required in the ICCCM. Completely
+	 * untested, though, because I have no idea of what X
+	 * application might implement it for me to test against.
+	 */
+
+	int size = SELDELTA;
+	Atom actual_type;
+	int actual_format, i;
+	long nitems, bytes_after, nread;
+	unsigned char *data;
+	Atom *adata;
+
+	/*
+	 * Fetch the requestor's window property giving a list of
+	 * selection requests.
+	 */
+	while (XGetWindowProperty(disp, requestor, property, 0, size,
+				  False, AnyPropertyType, &actual_type,
+				  &actual_format, &nitems, &bytes_after,
+				  (unsigned char **) &data) == Success &&
+	       nitems * (actual_format / 8) == size) {
+	    XFree(data);
+	    size *= 3 / 2;
+	}
+
+	if (actual_type != atom_pair_atom || actual_format != 32) {
+	    XFree(data);
+	    return None;
+	}
+
+	adata = (Atom *)data;
+
+	for (i = 0; i+1 < nitems; i += 2) {
+	    adata[i+1] = convert_sel_inner(requestor, adata[i], adata[i+1]);
+	}
+
+	XChangeProperty (disp, requestor, property,
+			 atom_pair_atom, 32, PropModeReplace,
+			 data, nitems);
+
+	XFree(data);
+
+	return property;
+    } else {
+	return convert_sel_inner(requestor, target, property);
+    }
+}
+
 void run_X(void) {
     XEvent ev, e2;
 
@@ -394,46 +486,12 @@ void run_X(void) {
                 e2.xselection.selection = ev.xselectionrequest.selection;
                 e2.xselection.target = ev.xselectionrequest.target;
                 e2.xselection.time = ev.xselectionrequest.time;
-                if (ev.xselectionrequest.target == strtype) {
-                    XChangeProperty (disp, ev.xselectionrequest.requestor,
-                                     ev.xselectionrequest.property, strtype,
-                                     8, PropModeReplace, seltext, sellen);
-                    e2.xselection.property = ev.xselectionrequest.property;
-                } else if (ev.xselectionrequest.target == compound_text_atom &&
-			   convert_to_ctext) {
-                    XTextProperty tp;
-                    XmbTextListToTextProperty (disp, &seltext, 1,
-                                               XCompoundTextStyle, &tp);
-                    XChangeProperty (disp, ev.xselectionrequest.requestor,
-                                     ev.xselectionrequest.property,
-                                     ev.xselectionrequest.target,
-                                     tp.format, PropModeReplace,
-                                     tp.value, tp.nitems);
-                    e2.xselection.property = ev.xselectionrequest.property;
-                } else if (ev.xselectionrequest.target == targets_atom) {
-                    Atom targets[16];
-                    int len = 0;
-		    targets[len++] = timestamp_atom;
-		    targets[len++] = targets_atom;
-                    targets[len++] = strtype;
-                    if (strtype != compound_text_atom && convert_to_ctext)
-                        targets[len++] = compound_text_atom;
-                    XChangeProperty (disp, ev.xselectionrequest.requestor,
-                                     ev.xselectionrequest.property,
-                                     atom_atom, 32, PropModeReplace,
-                                     (unsigned char *)targets, len);
-                    e2.xselection.property = ev.xselectionrequest.property;
-                } else if (ev.xselectionrequest.target == timestamp_atom) {
-                    Time rettime = CurrentTime;
-                    XChangeProperty (disp, ev.xselectionrequest.requestor,
-                                     ev.xselectionrequest.property,
-                                     integer_atom, 32, PropModeReplace,
-                                     (unsigned char *)&rettime, 1);
-                    e2.xselection.property = ev.xselectionrequest.property;
-                } else {
-                    e2.xselection.property = None;
-                }
-                XSendEvent (disp, ev.xselectionrequest.requestor, False, 0, &e2);
+                e2.xselection.property =
+		    convert_sel_outer(ev.xselectionrequest.requestor,
+				      ev.xselectionrequest.target,
+				      ev.xselectionrequest.property);
+                XSendEvent (disp, ev.xselectionrequest.requestor,
+			    False, 0, &e2);
             }
         }
     }
