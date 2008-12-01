@@ -28,8 +28,9 @@ void error (char *fmt, ...);
 
 /* set from command-line parameters */
 char *display = NULL;
-enum { STRING, CTEXT, UTF8 } mode = STRING;
+enum { STRING, CTEXT, UTF8, TARGETS, TIMESTAMP, CUSTOM } mode = STRING;
 int use_clipboard = False;
+char *custom_seltype = NULL;
 
 /* selection data */
 char *seltext;
@@ -42,12 +43,15 @@ int convert_to_ctext = True;	       /* Xmb convert to compound text? */
 
 const char usagemsg[] =
     "usage: xcopy [ -r ] [ -u | -c ] [ -C ]\n"
-    "where: -r     read X selection and print on stdout\n"
-    "       no -r  read stdin and store in X selection\n"
-    "       -u     work with UTF8_STRING type selections\n"
-    "       -c     work with COMPOUND_TEXT type selections\n"
-    "       -C     suppress automatic conversion to COMPOUND_TEXT\n"
-    "       -b     read the CLIPBOARD rather than the PRIMARY selection\n"
+    "where: -r       read X selection and print on stdout\n"
+    "       no -r    read stdin and store in X selection\n"
+    "       -u       work with UTF8_STRING type selections\n"
+    "       -c       work with COMPOUND_TEXT type selections\n"
+    "       -C       suppress automatic conversion to COMPOUND_TEXT\n"
+    "       -b       read the CLIPBOARD rather than the PRIMARY selection\n"
+    "       -t       get the list of targets available to retrieve\n"
+    "       -T       get the time stamp of the selection contents\n"
+    "       -a atom  get an arbitrary form of the selection data\n"
     " also: xcopy --version              report version number\n"
     "       xcopy --help                 display this help text\n"
     "       xcopy --licence              display the (MIT) licence text\n"
@@ -111,7 +115,7 @@ int main(int ac, char **av) {
     pname = *av;
 
     /* parse the command line arguments */
-    while (--ac) {
+    while (--ac > 0) {
 	char *p = *++av;
 
 	if (!strcmp(p, "-display") || !strcmp(p, "-disp")) {
@@ -128,6 +132,16 @@ int main(int ac, char **av) {
             convert_to_ctext = False;
         } else if (!strcmp(p, "-b")) {
             use_clipboard = True;
+        } else if (!strcmp(p, "-t")) {
+            mode = TARGETS;
+        } else if (!strcmp(p, "-T")) {
+            mode = TIMESTAMP;
+        } else if (!strcmp(p, "-a")) {
+	    if (--ac > 0)
+		custom_seltype = *++av;
+	    else
+		error ("expected an argument to `-a'");
+            mode = CUSTOM;
         } else if (!strcmp(p, "--help")) {
 	    usage();
 	    return 0;
@@ -141,6 +155,15 @@ int main(int ac, char **av) {
 	    error ("unrecognised option `%s'", p);
 	} else {
 	    error ("no parameters required");
+	}
+    }
+
+    if (!reading) {
+	if (mode == TARGETS || mode == TIMESTAMP || mode == CUSTOM) {
+	    error ("%s not supported in writing mode; use -r",
+		   (mode == TARGETS ? "-t" :
+		    mode == TIMESTAMP ? "-T" :
+		    /* mode == CUSTOM ? */ "-a"));
 	}
     }
 
@@ -222,6 +245,8 @@ int screen, wwidth, wheight;
 
 Atom strtype = XA_STRING;
 Atom sel_atom = XA_PRIMARY;
+Atom expected_type = (Atom)None;
+int expected_format = 8;
 
 /*
  * Returns TRUE if we need to enter an event loop, FALSE otherwise.
@@ -241,6 +266,9 @@ int init_X(void) {
     if (!disp)
 	error ("unable to open display");
 
+    targets_atom = XInternAtom(disp, "TARGETS", False);
+    if (!targets_atom)
+        error ("unable to get TARGETS property");
     if (mode == UTF8) {
 	strtype = XInternAtom(disp, "UTF8_STRING", False);
 	if (!strtype)
@@ -249,10 +277,17 @@ int init_X(void) {
 	strtype = XInternAtom(disp, "COMPOUND_TEXT", False);
 	if (!strtype)
 	    error ("unable to get COMPOUND_TEXT property");
+    } else if (mode == TARGETS) {
+	strtype = targets_atom;
+	expected_type = XInternAtom(disp, "ATOM", False);
+	expected_format = 32;
+    } else if (mode == TIMESTAMP) {
+	strtype = XInternAtom(disp, "TIMESTAMP", False);
+	expected_format = 32;
+    } else if (mode == CUSTOM) {
+	strtype = XInternAtom(disp, custom_seltype, False);
+	expected_format = 0;
     }
-    targets_atom = XInternAtom(disp, "TARGETS", False);
-    if (!targets_atom)
-        error ("unable to get TARGETS property");
     if (use_clipboard) {
         sel_atom = XInternAtom(disp, "CLIPBOARD", False);
         if (!sel_atom)
@@ -283,7 +318,8 @@ int init_X(void) {
          */
         if (XGetSelectionOwner(disp, sel_atom) == None) {
             /* No primary selection, so use the cut buffer. */
-            do_paste(DefaultRootWindow(disp), XA_CUT_BUFFER0, False);
+            if (strtype == XA_STRING)
+		do_paste(DefaultRootWindow(disp), XA_CUT_BUFFER0, False);
             return False;
         } else {
             Atom sel_property = XInternAtom(disp, "VT_SELECTION", False);
@@ -428,13 +464,39 @@ void do_paste(Window window, Atom property, int Delete) {
 	if (nitems > 0)
 	    assert((nread & 3) == 0);
 
-        if (actual_type == strtype && nitems > 0) {
-            assert(actual_format == 8);
-            fwrite(data, 1, nitems, stdout);
-            nread += nitems;
+	if (nitems > 0) {
+	    if (expected_type != (Atom)None && actual_type != expected_type) {
+		char *expout = XGetAtomName(disp, expected_type);
+		char *gotout = (actual_type == (Atom)None ? "None" :
+				XGetAtomName(disp, actual_type));
+		error("unexpected data type: expected %s, got %s\n",
+		      expout, gotout);
+	    }
+	    if (expected_format && expected_format != actual_format) {
+		error("unexpected data format: expected %d-bit, got %d-bit\n",
+		      expected_format, actual_format);
+	    }
+	}
+
+        if (nitems > 0) {
+	    if (mode == TARGETS) {
+		assert(actual_format == 32);
+		int i;
+		for (i = 0; i < nitems; i++) {
+		    Atom x = ((Atom *)data)[i];
+		    printf("%s\n", XGetAtomName(disp, x));
+		}
+	    } else if (mode == TIMESTAMP) {
+		assert(actual_format == 32);
+		Time x = ((Time *)data)[0];
+		printf("%lu\n", (unsigned long)x);
+	    } else {
+		fwrite(data, actual_format / 8, nitems, stdout);
+		nread += nitems * actual_format / 8;
+	    }
         }
         XFree(data);
-        if (actual_type != strtype || nitems == 0)
+        if (nitems == 0)
             break;
     }
 }

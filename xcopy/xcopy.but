@@ -100,6 +100,25 @@ with the mouse, and paste with the middle mouse button. The
 \e{clipboard} is a more Windows-like location which you access using
 explicit Cut, Copy and Paste commands in your application.)
 
+\dt \cw{-t}
+
+\dd Causes \cw{xcopy}, in read mode only, to return the list of
+possible target types currently stored in the selection. This is
+probably only useful for debugging X applications or X selection
+issues.
+
+\dt \cw{-T}
+
+\dd Causes \cw{xcopy}, in read mode only, to return the time stamp
+for the current selection. This is probably only useful for
+debugging X applications or X selection issues.
+
+\dt \cw{-a} \e{target atom}
+
+\dd Causes \cw{xcopy}, in read mode only, to return the selection
+contents corresponding to some particular user-specified target
+type. The target type can be anything listed by \cq{xcopy -r -t}.
+
 \U BUGS
 
 Occasionally \cw{xcopy -r} completely fails to notice selection data
