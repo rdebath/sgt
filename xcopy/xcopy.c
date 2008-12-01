@@ -31,6 +31,7 @@ char *display = NULL;
 enum { STRING, CTEXT, UTF8, TARGETS, TIMESTAMP, CUSTOM } mode = STRING;
 int use_clipboard = False;
 char *custom_seltype = NULL;
+int fork_when_writing = True;
 
 /* selection data */
 char *seltext;
@@ -52,6 +53,7 @@ const char usagemsg[] =
     "       -t       get the list of targets available to retrieve\n"
     "       -T       get the time stamp of the selection contents\n"
     "       -a atom  get an arbitrary form of the selection data\n"
+    "       -F       do not fork in write mode\n"
     " also: xcopy --version              report version number\n"
     "       xcopy --help                 display this help text\n"
     "       xcopy --licence              display the (MIT) licence text\n"
@@ -142,6 +144,8 @@ int main(int ac, char **av) {
 	    else
 		error ("expected an argument to `-a'");
             mode = CUSTOM;
+	} else if (!strcmp(p, "-F")) {
+	    fork_when_writing = False;
         } else if (!strcmp(p, "--help")) {
 	    usage();
 	    return 0;
@@ -191,7 +195,7 @@ int main(int ac, char **av) {
     }
 
     eventloop = init_X();
-    if (!reading) {
+    if (!reading && fork_when_writing) {
         /*
          * If we are writing the selection, we must go into the
          * background now.
@@ -240,7 +244,7 @@ char *ucasename = "XCopy";
 
 Display *disp = NULL;
 Window ourwin = None;
-Atom compound_text_atom, targets_atom;
+Atom compound_text_atom, targets_atom, timestamp_atom, atom_atom, integer_atom;
 int screen, wwidth, wheight;
 
 Atom strtype = XA_STRING;
@@ -267,31 +271,29 @@ int init_X(void) {
 	error ("unable to open display");
 
     targets_atom = XInternAtom(disp, "TARGETS", False);
-    if (!targets_atom)
-        error ("unable to get TARGETS property");
+    timestamp_atom = XInternAtom(disp, "TIMESTAMP", False);
+    atom_atom = XInternAtom(disp, "ATOM", False);
+    integer_atom = XInternAtom(disp, "INTEGER", False);
     if (mode == UTF8) {
 	strtype = XInternAtom(disp, "UTF8_STRING", False);
-	if (!strtype)
-	    error ("unable to get UTF8_STRING property");
     } else if (mode == CTEXT) {
 	strtype = XInternAtom(disp, "COMPOUND_TEXT", False);
-	if (!strtype)
-	    error ("unable to get COMPOUND_TEXT property");
     } else if (mode == TARGETS) {
 	strtype = targets_atom;
-	expected_type = XInternAtom(disp, "ATOM", False);
+	expected_type = atom_atom;
 	expected_format = 32;
     } else if (mode == TIMESTAMP) {
-	strtype = XInternAtom(disp, "TIMESTAMP", False);
+	strtype = timestamp_atom;
+	expected_type = integer_atom;
 	expected_format = 32;
     } else if (mode == CUSTOM) {
-	strtype = XInternAtom(disp, custom_seltype, False);
+	strtype = XInternAtom(disp, custom_seltype, True);
+	if (!strtype)
+	    error ("atom '%s' does not exist on the server", custom_seltype);
 	expected_format = 0;
     }
     if (use_clipboard) {
         sel_atom = XInternAtom(disp, "CLIPBOARD", False);
-        if (!sel_atom)
-            error ("unable to get CLIPBOARD property");
     }
 
     /* get the screen and root-window */
@@ -409,16 +411,25 @@ void run_X(void) {
                                      tp.value, tp.nitems);
                     e2.xselection.property = ev.xselectionrequest.property;
                 } else if (ev.xselectionrequest.target == targets_atom) {
-                    Atom targets[2];
+                    Atom targets[16];
                     int len = 0;
+		    targets[len++] = timestamp_atom;
+		    targets[len++] = targets_atom;
                     targets[len++] = strtype;
                     if (strtype != compound_text_atom && convert_to_ctext)
                         targets[len++] = compound_text_atom;
                     XChangeProperty (disp, ev.xselectionrequest.requestor,
                                      ev.xselectionrequest.property,
-                                     ev.xselectionrequest.target,
-                                     32, PropModeReplace,
+                                     atom_atom, 32, PropModeReplace,
                                      (unsigned char *)targets, len);
+                    e2.xselection.property = ev.xselectionrequest.property;
+                } else if (ev.xselectionrequest.target == timestamp_atom) {
+                    Time rettime = CurrentTime;
+                    XChangeProperty (disp, ev.xselectionrequest.requestor,
+                                     ev.xselectionrequest.property,
+                                     integer_atom, 32, PropModeReplace,
+                                     (unsigned char *)&rettime, 1);
+                    e2.xselection.property = ev.xselectionrequest.property;
                 } else {
                     e2.xselection.property = None;
                 }
