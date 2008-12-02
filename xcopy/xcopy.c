@@ -426,6 +426,9 @@ Atom convert_sel_outer(Window requestor, Atom target, Atom property) {
 	unsigned char *data;
 	Atom *adata;
 
+        if (property == (Atom)None)
+            return None;               /* ICCCM says this isn't allowed */
+
 	/*
 	 * Fetch the requestor's window property giving a list of
 	 * selection requests.
@@ -447,7 +450,9 @@ Atom convert_sel_outer(Window requestor, Atom target, Atom property) {
 	adata = (Atom *)data;
 
 	for (i = 0; i+1 < nitems; i += 2) {
-	    adata[i+1] = convert_sel_inner(requestor, adata[i], adata[i+1]);
+            if (adata[i+1] != (Atom)None)   /* ICCCM says this isn't allowed */
+                adata[i+1] = convert_sel_inner(requestor, adata[i],
+                                               adata[i+1]);
 	}
 
 	XChangeProperty (disp, requestor, property,
@@ -458,6 +463,8 @@ Atom convert_sel_outer(Window requestor, Atom target, Atom property) {
 
 	return property;
     } else {
+        if (property == (Atom)None)
+            property = target;      /* ICCCM says this is a sensible default */
 	return convert_sel_inner(requestor, target, property);
     }
 }
