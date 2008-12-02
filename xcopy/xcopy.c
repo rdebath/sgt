@@ -64,7 +64,7 @@ void usage(void) {
 }
 
 const char licencemsg[] =
-    "xcopy is copyright 2001-2004 Simon Tatham.\n"
+    "xcopy is copyright 2001-2004,2008 Simon Tatham.\n"
     "\n"
     "Permission is hereby granted, free of charge, to any person\n"
     "obtaining a copy of this software and associated documentation files\n"
@@ -341,7 +341,7 @@ int init_X(void) {
          */
         XSetSelectionOwner (disp, sel_atom, ourwin, CurrentTime);
         if (XGetSelectionOwner (disp, sel_atom) != ourwin)
-            error ("unable to obtain primary X selection\n");
+            error ("unable to obtain primary X selection");
         compound_text_atom = XInternAtom(disp, "COMPOUND_TEXT", False);
 	if (strtype == XA_STRING) {
 	    /*
@@ -534,18 +534,18 @@ void do_paste(Window window, Atom property, int Delete) {
 	     */
 	    if ((nread & 3) != 0) {
 		error("unexpected data size: %d read (not a multiple"
-		      " of 4), but more to come\n", nread);
+		      " of 4), but more to come", nread);
 	    }
 
 	    if (expected_type != (Atom)None && actual_type != expected_type) {
 		char *expout = XGetAtomName(disp, expected_type);
 		char *gotout = (actual_type == (Atom)None ? "None" :
 				XGetAtomName(disp, actual_type));
-		error("unexpected data type: expected %s, got %s\n",
+		error("unexpected data type: expected %s, got %s",
 		      expout, gotout);
 	    }
 	    if (expected_format && expected_format != actual_format) {
-		error("unexpected data format: expected %d-bit, got %d-bit\n",
+		error("unexpected data format: expected %d-bit, got %d-bit",
 		      expected_format, actual_format);
 	    }
 	}
