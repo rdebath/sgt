@@ -122,7 +122,7 @@ class Lump:
 	self.hdrlist = []
 	self.hdrdict = {}
 	self.prop = ""
-	self.text = ""
+	self.text = None
 	self.extant = 1
 	self.props = [[], {}]
     def sethdr(self, key, val):
@@ -189,7 +189,7 @@ class Lump:
 	    self.delhdr("Prop-content-length")
 	# Only fiddle with the md5 if we're not doing a delta.
 	if self.hdrdict.get("Text-delta", "false") != "true":
-	    if len(self.text) > 0:
+	    if self.text != None:
 		self.sethdr("Text-content-length", str(len(self.text)))
 		m = md5.new()
 		m.update(self.text)
@@ -197,8 +197,12 @@ class Lump:
 	    else:
 		self.delhdr("Text-content-length")
 		self.delhdr("Text-content-md5")
-	if len(self.prop) > 0 or len(self.text) > 0:
-	    self.sethdr("Content-length", str(len(self.prop)+len(self.text)))
+	if len(self.prop) > 0 or self.text != None:
+	    if self.text == None:
+		textlen = 0
+	    else:
+		textlen = len(self.text)
+	    self.sethdr("Content-length", str(len(self.prop)+textlen))
 	else:
 	    self.delhdr("Content-length")
 	# Adjust the revision numbers as needed.
@@ -233,11 +237,11 @@ def read_lump(f):
     if lump == None:
 	return None
     pcl = string.atoi(lump.hdrdict.get("Prop-content-length", "0"))
-    tcl = string.atoi(lump.hdrdict.get("Text-content-length", "0"))
     if pcl > 0:
 	lump.prop = f.read(pcl)
 	lump.propparse()
-    if tcl > 0:
+    if lump.hdrdict.has_key("Text-content-length"):
+	tcl = string.atoi(lump.hdrdict["Text-content-length"])
 	lump.text = f.read(tcl)
     return lump
 
@@ -250,7 +254,8 @@ def write_lump(f, lump, revmap):
 	f.write(key + ": " + val + "\n")
     f.write("\n")
     f.write(lump.prop)
-    f.write(lump.text)
+    if lump.text != None:
+	f.write(lump.text)
     if lump.hdrdict.has_key("Prop-content-length") or \
     lump.hdrdict.has_key("Text-content-length") or \
     lump.hdrdict.has_key("Content-length"):
@@ -329,7 +334,7 @@ class Filter:
 				f.close()
 			    contents2.append(newlump)
 			tree.close()
-			if len(lump.text) > 0:
+			if lump.text != None:
 			    # This was a copyfrom _plus_ some sort of
 			    # delta or new contents, which means that
 			    # having done the copy we now also need a
