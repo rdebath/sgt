@@ -522,3 +522,157 @@ Ooh.
 And here's a file copied all by itself, and changed.
 
 
+Revision-number: 13
+Prop-content-length: 215
+Content-length: 215
+
+K 7
+svn:log
+V 114
+Create some files which are going to become empty in a future
+revision, since that's a corner case worth testing.
+
+K 10
+svn:author
+V 5
+simon
+K 8
+svn:date
+V 27
+2008-12-03T19:02:05.763714Z
+PROPS-END
+
+Node-path: fun/shrink1
+Node-kind: file
+Node-action: add
+Prop-content-length: 10
+Text-content-length: 41
+Text-content-md5: 2268eec095bd5b58d54809030245f387
+Content-length: 51
+
+PROPS-END
+File which is going to shrink to nothing
+
+
+Node-path: fun/shrink2
+Node-kind: file
+Node-action: add
+Prop-content-length: 10
+Text-content-length: 48
+Text-content-md5: 22a4c067aa3fb872dc84aac07454101d
+Content-length: 58
+
+PROPS-END
+Second file which is going to shrink to nothing
+
+
+Revision-number: 14
+Prop-content-length: 248
+Content-length: 248
+
+K 7
+svn:log
+V 147
+Shrink some files to nothingness: one in place, one while moving it
+at the same time, and one while moving it in from a filtered-out
+subdirectory.
+
+K 10
+svn:author
+V 5
+simon
+K 8
+svn:date
+V 27
+2008-12-03T19:03:02.481291Z
+PROPS-END
+
+Node-path: fun/shrink1
+Node-kind: file
+Node-action: change
+Text-content-length: 0
+Text-content-md5: d41d8cd98f00b204e9800998ecf8427e
+Content-length: 0
+
+
+
+Node-path: fun/shrink3
+Node-kind: file
+Node-action: add
+Node-copyfrom-rev: 13
+Node-copyfrom-path: fun/shrink2
+Text-content-length: 0
+Text-content-md5: d41d8cd98f00b204e9800998ecf8427e
+Content-length: 0
+
+
+
+Node-path: fun/shrink4
+Node-kind: file
+Node-action: add
+Node-copyfrom-rev: 13
+Node-copyfrom-path: boring/boring1
+Text-content-length: 0
+Text-content-md5: d41d8cd98f00b204e9800998ecf8427e
+Content-length: 0
+
+
+
+Node-path: fun/shrink2
+Node-action: delete
+
+
+Revision-number: 15
+Prop-content-length: 243
+Content-length: 243
+
+K 7
+svn:log
+V 142
+Now move all the files we just shrank, just in case something nasty
+happens there (which is where the problem showed up when I first saw
+it).
+
+K 10
+svn:author
+V 5
+simon
+K 8
+svn:date
+V 27
+2008-12-03T19:03:37.410346Z
+PROPS-END
+
+Node-path: fun/shrink5
+Node-kind: file
+Node-action: add
+Node-copyfrom-rev: 14
+Node-copyfrom-path: fun/shrink1
+
+
+Node-path: fun/shrink6
+Node-kind: file
+Node-action: add
+Node-copyfrom-rev: 14
+Node-copyfrom-path: fun/shrink3
+
+
+Node-path: fun/shrink7
+Node-kind: file
+Node-action: add
+Node-copyfrom-rev: 14
+Node-copyfrom-path: fun/shrink4
+
+
+Node-path: fun/shrink1
+Node-action: delete
+
+
+Node-path: fun/shrink3
+Node-action: delete
+
+
+Node-path: fun/shrink4
+Node-action: delete
+
+
