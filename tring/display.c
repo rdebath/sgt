@@ -785,6 +785,33 @@ int display_update(int timeofday, int dayofweek, int date,
     (TIMEAFTER(ltod,then) > TIMEAFTER(tod,then) + 43200)
 
 /*
+ * Utility function to add one to a date in yyyymmdd format.
+ */
+int increment_date(int date)
+{
+    int y = date / 10000, m = (date / 100) % 100, d = date % 100;
+    int md;
+
+    if (m == 2) {
+	md = (y % 400 == 0 ? 29 : y % 100 == 0 ? 28 : y % 4 == 0 ? 29 : 28);
+    } else {
+	md = (0x55aa & (1 << m)) ? 31 : 30;
+    }
+
+    d++;
+    if (d > md) {
+	d = 1;
+	m++;
+	if (m > 12) {
+	    m = 1;
+	    y++;
+	}
+    }
+
+    return 10000 * y + 100 * m + d;
+}
+
+/*
  * Set up the default amode for a given time of day. That's
  * AMODE_OFF most of the time, except that if we're between the
  * default reset time and the default alarm time and the next
@@ -805,7 +832,7 @@ void default_mode(int timeofday, int dayofweek, int date,
 	 */
 	if (timeofday >= ps->defalarmtime) {
 	    dayofweek = (dayofweek+1) % 7;
-	    date++;
+	    date = increment_date(date);
 	}
 	if ((ps->offdays & (1 << dayofweek)) && !day_excluded(date))
 	    ls->amode = AMODE_CONFIRM;
