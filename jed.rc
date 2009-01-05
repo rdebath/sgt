@@ -352,8 +352,23 @@ define jedrc_set_cmode_vars() %{{{
     C_Colon_Offset  = 2;	       % indent case statements by two  
     C_CONTINUED_OFFSET = 4;	       % indent for unbraced then-clauses  
     C_Preprocess_Indent = 0;	       % indent for nested #if/#endifs  
+#ifexists __get_reference
+    {
+        variable r;
+        r = __get_reference("C_Class_Offset");
+        if (r != NULL)
+            @r = 4;
+        r = __get_reference("C_Namespace_Offset");
+        if (r != NULL)
+            @r = 4;
+    }
+#else
 #ifexists C_Class_Offset
     C_Class_Offset  = 4;	       % still indent by 4 in a C++ class
+#endif
+#ifexists C_Namespace_Offset
+    C_Namespace_Offset  = 4;	       % still indent by 4 in a C++ namespace
+#endif
 #endif
 }
 %}}}

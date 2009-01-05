@@ -711,3 +711,27 @@ pfx() {
 }
 
 #}}}
+#{{{ grep -n is usually what I want, even if I forget to say it
+
+# When I say 'grep' on a shell command line, I usually meant grep
+# -n, and often get annoyed by having to reissue the command with
+# -n when I realise I left it off. I considered aliasing grep to
+# grep -n, but the trouble with that is that if I'm using grep as
+# part of a complicated pipeline, I'm more likely to want the
+# standard grep behaviour.
+#
+# So here's a shell function which adds -n to the grep command line
+# but only if it isn't at either end of a pipeline. I make this a
+# shell function called by an alias, so that I can quickly restore
+# the standard functionality using '\grep', which is quicker to
+# type than 'command grep'.
+grep-n() {
+  if test -t 0 -a -t 1; then
+    command grep -n "$@"
+  else
+    command grep "$@"
+  fi
+}
+alias grep=grep-n
+	      
+#}}}
