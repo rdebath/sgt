@@ -1497,6 +1497,18 @@ define halibut_mode_hook() {
 %}}}
 %{{{ M-x cvs-*, svn-*, bzr-*
 
+% Define these so that they can be redefined in .jedrc2 if necessary
+variable jedrc_svn_log_cmd = "svnlog";
+variable jedrc_svn_blame_cmd = "svn-blame";
+
+% This varies with OS
+variable jedrc_null_device =
+#ifdef MSDOS MSWINDOWS
+    "nul";
+#else
+    "/dev/null";
+#endif
+
 define cvssvn_which(dir) {
     if (file_status(dir + ".svn") == 2)
 	return "svn";
@@ -1553,7 +1565,8 @@ define cvssvn_log() {
     if (which == "cvs") {
 	run_shell_cmd("cvs log " + file);
     } else if (which == "svn") {
-	run_shell_cmd("svnlog " + file + " || svn log -v " + file);
+	run_shell_cmd(jedrc_svn_log_cmd + " " + file +
+                      " || svn log -v " + file);
     } else { % bzr
 	run_shell_cmd("bzr log " + file);
     }
@@ -1702,9 +1715,9 @@ define cvssvn_annotate() {
     erase_buffer();
     if (which == "cvs") {
         if (rev == "") {
-            ret = run_shell_cmd("cvs-annotate 2>/dev/null " + file);
+            ret = run_shell_cmd("cvs-annotate 2>" + jedrc_null_device + " " + file);
         } else {
-            ret = run_shell_cmd("cvs annotate 2>/dev/null -r" + rev + " " + file);
+            ret = run_shell_cmd("cvs annotate 2>" + jedrc_null_device + " -r" + rev + " " + file);
         }
 	if (ret > 0) {
 	    erase_buffer();
@@ -1712,9 +1725,9 @@ define cvssvn_annotate() {
 	}
     } else if (which == "svn") {
         if (rev == "") {
-            ret = run_shell_cmd("svn-blame 2>/dev/null " + file);
+            ret = run_shell_cmd(jedrc_svn_blame_cmd + " 2>" + jedrc_null_device + " " + file);
         } else {
-            ret = run_shell_cmd("svn blame 2>/dev/null -r" + rev + " " + file);
+            ret = run_shell_cmd("svn blame 2>" + jedrc_null_device + " -r" + rev + " " + file);
         }
 	if (ret > 0) {
 	    erase_buffer();
@@ -1722,9 +1735,9 @@ define cvssvn_annotate() {
 	}
     } else {
         if (rev == "") {
-            ret = run_shell_cmd("bzr annotate --all 2>/dev/null " + file);
+            ret = run_shell_cmd("bzr annotate --all 2>" + jedrc_null_device + " " + file);
         } else {
-            ret = run_shell_cmd("bzr annotate --all 2>/dev/null -r" + rev + " " + file);
+            ret = run_shell_cmd("bzr annotate --all 2>" + jedrc_null_device + " -r" + rev + " " + file);
         }
 	if (ret > 0) {
 	    erase_buffer();
