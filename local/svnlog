@@ -7,13 +7,14 @@ case "$1" in
   *) dashr=-rHEAD:1;;
 esac
 
-uuid=`svn info "$1" | grep '^Repository UUID:' | cut -f3- -d' '`
+uuid=`svn info "$1" | tr -d '\r' | grep '^Repository UUID:' | cut -f3- -d' '`
 
 svn log -v $dashr "$@" | \
   perl -e '
 
 $uuid = shift @ARGV;
 while (<>) {
+    y/\r//d;
     print;
     next unless /^r(\d+).*(\d+) lines?$/;
     ($rev,$lines) = ($1,$2);
@@ -26,12 +27,14 @@ while (<>) {
           $rev eq "91768" or $rev eq "91721"))) {
 	print "[svnlog: changed paths section omitted]\n\n";
 	while (<>) {
+            y/\r//d;
             chomp;
 	    last unless length $_ > 0;
 	}
     } else {
         # Print the changed paths section as normal.
 	while (<>) {
+            y/\r//d;
 	    print;
 	    chomp;
 	    last unless length $_ > 0;
@@ -40,7 +43,9 @@ while (<>) {
     # Now we have read and printed the blank line coming before the
     # log message. Now print $lines lines of log.
     while ($lines-- > 0) {
-        print ($_ = <>);
+        $_ = <>;
+        y/\r//d;
+        print;
     }
 }
 
