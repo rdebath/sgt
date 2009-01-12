@@ -1,0 +1,22 @@
+Summary: MSI installer for PuTTY on Windows
+Class: wish
+Priority: low
+Difficulty: tricky
+Content-type: text/x-html-body
+
+<p>
+A few people have expressed a desire for an MSI-based Windows
+installer for PuTTY. Apparently MSI is easier/possible
+to deploy via various software deployment
+mechanisms (Group Policy, SMS, Active Directory), compared to our
+current <a href="http://www.innosetup.com/isinfo.php">Inno Setup</a>
+installer.
+
+<p>
+Apparently <a href="http://wix.sourceforge.net/">WiX</a> is a free
+thing that will create MSI-based installers.
+<a href="http://www.installsite.org/pages/en/msi/authoring.htm">This page</a>
+lists some others.
+
+<p>
+WiX script: <tt>B9638CACBA387E48927BB56B6A1555070DA08E@svr1.irtnog.org</tt>
