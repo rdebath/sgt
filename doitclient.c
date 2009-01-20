@@ -606,6 +606,11 @@ int main(int argc, char **argv)
     /*
      * Read the config file `.doitrc'.
      */
+    if (!getenv("HOME")) {
+	fprintf(stderr, "doit: unable to read $HOME/.doitrc when HOME "
+		"is not defined\n");
+	exit(1);
+    }
     strcpy(fname, getenv("HOME"));
     strcat(fname, "/.doitrc");
     fp = fopen(fname, "r");
