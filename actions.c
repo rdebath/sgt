@@ -462,6 +462,8 @@ static void act_copy (void) {
 static void act_paste (void) {
     fileoffset_t cutsize, new_top;
 
+    if (!cutbuffer)
+	return;
     cutsize = buf_length (cutbuffer);
     if (!insert_mode) {
 	if (cur_pos + cutsize > file_size) {
