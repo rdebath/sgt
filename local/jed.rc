@@ -1315,9 +1315,34 @@ define jedrc_parsep(prefix) {
 }
 
 define jedrc_format_paragraph(prefix) {
-    variable mkbot, mktop, item, i, j, thisprefix, prefixlen, col;
+    variable item, i, j, thisprefix, prefixlen, col;
+    variable tmpbuf, thisbuf, tmpbufnum;
+    variable pline, pcol, oldwrap;
+
+    % First test error conditions which will prevent us doing the
+    % wrap at all.
     if (jedrc_parsep(prefix))
         return;
+
+    % Now we're committed. Create a new text-mode buffer to do the
+    % actual wrapping in (since C mode will refuse to wrap text
+    % that isn't in a /* comment, so wrapping // comments goes
+    % wrong).
+    thisbuf = whatbuf();
+    tmpbuf = "*paragraphwraptmp*";
+    tmpbufnum = 0;
+    while (bufferp(tmpbuf)) {
+	tmpbufnum++;
+	tmpbuf = Sprintf("*paragraphwraptmp%d*", tmpbufnum, 1);
+    }
+    setbuf(tmpbuf);
+    erase_buffer();
+    text_mode();
+    setbuf(thisbuf);
+
+    % Find the bounds of the paragraph, and transfer it into the
+    % temporary buffer. Record the cursor position within the
+    % paragraph, since we want to preserve that through the wrap.
     push_spot();
     while (1) {
         !if (down(1))
@@ -1328,10 +1353,11 @@ define jedrc_format_paragraph(prefix) {
         }
     }
     eol();
-    insert("\n");
-    mkbot = create_user_mark();
+    push_mark();
+    push_mark();
     pop_spot();
-    push_spot();
+    pcol = what_column();
+    pline = 1;
     while (1) {
         if (jedrc_item1st(prefix))
             break;
@@ -1341,14 +1367,22 @@ define jedrc_format_paragraph(prefix) {
             go_down(1);
             break;
         }
+	pline++;
     }
     bol();
-    insert("\n");
-    mktop = create_user_mark();
+    copy_region(tmpbuf);
+    del_region();
+
+    % Now switch into the temporary buffer, and transform it by
+    % removing the prefix and its preceding whitespace from each
+    % line.
+    setbuf(tmpbuf);
+    eob();
+    insert("\n"); % we had copied up to the _end of the last line_ of the para
+    bob();
     item = jedrc_item1st(prefix);
     prefixlen = 0;
     if (prefix != "") {
-	bol();
 	while (not eolp()) {
 	    push_mark();
 	    push_mark();
@@ -1364,8 +1398,15 @@ define jedrc_format_paragraph(prefix) {
 	    eol();
 	    go_right_1();
 	}
-	goto_user_mark(mktop);
+	bob();
     }
+
+    % Special handling for paragraphs which are items in a list
+    % (i.e. those whose first line was identified by jedrc_item1st
+    % on the line itself rather than jedrc_parsep on the previous
+    % line). We separate the item's bullet or number from the text
+    % of the paragraph it marks with a blank line; then we wrap the
+    % resulting normal paragraph and later rejoin the two.
     if (item) {
         skip_white();
         skip_chars("^ \t");
@@ -1384,11 +1425,26 @@ define jedrc_format_paragraph(prefix) {
         what_column();
         insert("\n\n");
         whitespace(());
+	pline = pline + 2;
     }
+
+    % Now do the wrapping. First restore the cursor to the correct
+    % point within the paragraph, so we can find out what that
+    % becomes in the new wrapped version.
+    goto_line(pline);
+    goto_column_best_try(pcol - prefixlen + 1);
+    oldwrap = WRAP;
     WRAP -= prefixlen;
+    if (WRAP < 1)
+        WRAP = 1;
     call("format_paragraph");
-    WRAP += prefixlen;
+    WRAP = oldwrap;
+    pline = what_line();
+    pcol = prefixlen + what_column() - 1;
+
+    % Finish off the special processing of item paragraphs.
     if (item) {
+	pline = pline - 2;
         pop_spot();
 	deln(1);
 	i = what_column();
@@ -1402,9 +1458,10 @@ define jedrc_format_paragraph(prefix) {
         whitespace(j);
 	whitespace(() - i);
     }
+
+    % Now reinstate the prefix on every line.
     if (prefix != "") {
-	goto_user_mark(mktop);
-	bol();
+	bob();
 	while (not eolp()) {
 	    push_mark();
 	    skip_white();
@@ -1416,11 +1473,22 @@ define jedrc_format_paragraph(prefix) {
 	    go_right_1();
 	}
     }
-    goto_user_mark(mkbot);
-    deln(1);
-    goto_user_mark(mktop);
+
+    % Remove the spurious newline we inserted at the end of the
+    % temporary buffer.
+    eob();
     deln(left(1));
-    pop_spot();
+
+    % And finally, insert the rewrapped paragraph back into the
+    % original buffer, delete the temporary buffer, and restore the
+    % cursor.
+    setbuf_info(getbuf_info() &~ 1);
+    setbuf(thisbuf);
+    what_line();
+    insbuf(tmpbuf);
+    delbuf(tmpbuf);
+    goto_line(pline - 1 + ());
+    goto_column_best_try(pcol);
 }
 
 % To allow paragraph formatting in SLang mode to work properly, we
@@ -1439,8 +1507,11 @@ define jedrc_c_get_prefix() {
     EXIT_BLOCK { pop_spot(); }
     bol();
     skip_white();
-    if (looking_at("//")) {
+    if (looking_at("// ")) {
 	return "// ";
+    }
+    if (looking_at("//")) {
+	return "//";
     }
     return "* ";
 }
