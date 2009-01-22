@@ -1389,12 +1389,12 @@ define jedrc_format_paragraph(prefix) {
 	    skip_white();
 	    if (looking_at(prefix))
 		go_right(strlen(prefix));
-	    prefixlen = what_column();
+	    prefixlen = what_column() - 1;
 	    thisprefix = bufsubstr();
 	    skip_white();
 	    col = what_column();
 	    del_region();
-	    whitespace(col - prefixlen);
+	    whitespace(col - 1 - prefixlen);
 	    eol();
 	    go_right_1();
 	}
@@ -1432,7 +1432,7 @@ define jedrc_format_paragraph(prefix) {
     % point within the paragraph, so we can find out what that
     % becomes in the new wrapped version.
     goto_line(pline);
-    goto_column_best_try(pcol - prefixlen + 1);
+    goto_column_best_try(pcol - prefixlen);
     oldwrap = WRAP;
     WRAP -= prefixlen;
     if (WRAP < 1)
@@ -1440,7 +1440,7 @@ define jedrc_format_paragraph(prefix) {
     call("format_paragraph");
     WRAP = oldwrap;
     pline = what_line();
-    pcol = prefixlen + what_column() - 1;
+    pcol = prefixlen + what_column();
 
     % Finish off the special processing of item paragraphs.
     if (item) {
