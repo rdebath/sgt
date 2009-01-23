@@ -1315,7 +1315,7 @@ define jedrc_parsep(prefix) {
 }
 
 define jedrc_format_paragraph(prefix) {
-    variable item, i, j, thisprefix, prefixlen, col;
+    variable item, i, j, thisprefix, prefixlen, col, itemindent;
     variable tmpbuf, thisbuf, tmpbufnum;
     variable pline, pcol, oldwrap;
 
@@ -1410,22 +1410,18 @@ define jedrc_format_paragraph(prefix) {
     if (item) {
         skip_white();
         skip_chars("^ \t");
-        push_spot();
-        i = what_column();
         skip_white();
-        i = what_column() - i - 1;
-        pop_spot();
-        j = i;
-        while (i > 0) {
-            insert(".");
-            i = i - 1;
-        }
-        push_spot();
-        call("trim_whitespace");
-        what_column();
+	itemindent = what_column() - 1;
         insert("\n\n");
-        whitespace(());
 	pline = pline + 2;
+	pcol = pcol - itemindent;
+	while (not eobp()) {
+	    bol();
+	    call("trim_whitespace");
+	    go_down_1();
+	}
+    } else {
+	itemindent = 0;
     }
 
     % Now do the wrapping. First restore the cursor to the correct
@@ -1445,18 +1441,18 @@ define jedrc_format_paragraph(prefix) {
     % Finish off the special processing of item paragraphs.
     if (item) {
 	pline = pline - 2;
-        pop_spot();
-	deln(1);
-	i = what_column();
-	push_mark();
-	go_down_1();
-	bol_skip_white();
-	what_column();
-	trim();
-	del_region();
-        deln(left(j));
-        whitespace(j);
-	whitespace(() - i);
+	pcol = pcol + itemindent;
+	bob();
+	eol();
+	deln(2);
+	while (1) {
+	    eol();
+	    go_right_1();
+	    if (eobp())
+		break;
+	    else
+		whitespace(itemindent);
+	}
     }
 
     % Now reinstate the prefix on every line.
