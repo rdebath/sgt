@@ -1317,7 +1317,7 @@ define jedrc_parsep(prefix) {
 define jedrc_format_paragraph(prefix) {
     variable item, i, j, thisprefix, prefixlen, col, itemindent;
     variable tmpbuf, thisbuf, tmpbufnum;
-    variable pline, pcol, oldwrap;
+    variable pline, pcol, oldwrap, pmark;
 
     % First test error conditions which will prevent us doing the
     % wrap at all.
@@ -1377,6 +1377,9 @@ define jedrc_format_paragraph(prefix) {
     % removing the prefix and its preceding whitespace from each
     % line.
     setbuf(tmpbuf);
+    goto_line(pline);
+    goto_column_best_try(pcol);
+    pmark = create_user_mark();
     eob();
     insert("\n"); % we had copied up to the _end of the last line_ of the para
     bob();
@@ -1408,18 +1411,18 @@ define jedrc_format_paragraph(prefix) {
     % of the paragraph it marks with a blank line; then we wrap the
     % resulting normal paragraph and later rejoin the two.
     if (item) {
+	bob();
         skip_white();
         skip_chars("^ \t");
         skip_white();
 	itemindent = what_column() - 1;
         insert("\n\n");
-	pline = pline + 2;
-	pcol = pcol - itemindent;
 	while (not eobp()) {
 	    bol();
 	    call("trim_whitespace");
 	    go_down_1();
 	}
+	pop_spot();
     } else {
 	itemindent = 0;
     }
@@ -1427,21 +1430,17 @@ define jedrc_format_paragraph(prefix) {
     % Now do the wrapping. First restore the cursor to the correct
     % point within the paragraph, so we can find out what that
     % becomes in the new wrapped version.
-    goto_line(pline);
-    goto_column_best_try(pcol - prefixlen);
+    goto_user_mark(pmark);
     oldwrap = WRAP;
     WRAP -= prefixlen;
     if (WRAP < 1)
         WRAP = 1;
     call("format_paragraph");
     WRAP = oldwrap;
-    pline = what_line();
-    pcol = prefixlen + what_column();
+    move_user_mark(pmark);
 
     % Finish off the special processing of item paragraphs.
     if (item) {
-	pline = pline - 2;
-	pcol = pcol + itemindent;
 	bob();
 	eol();
 	deln(2);
@@ -1474,6 +1473,12 @@ define jedrc_format_paragraph(prefix) {
     % temporary buffer.
     eob();
     deln(left(1));
+
+    % Record the final cursor position for transfer back to the old
+    % buffer.
+    goto_user_mark(pmark);
+    pline = what_line();
+    pcol = what_column();
 
     % And finally, insert the rewrapped paragraph back into the
     % original buffer, delete the temporary buffer, and restore the
