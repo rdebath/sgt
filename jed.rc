@@ -1432,7 +1432,7 @@ define jedrc_format_paragraph(prefix) {
     % becomes in the new wrapped version.
     goto_user_mark(pmark);
     oldwrap = WRAP;
-    WRAP -= prefixlen;
+    WRAP -= prefixlen + itemindent;
     if (WRAP < 1)
         WRAP = 1;
     call("format_paragraph");
