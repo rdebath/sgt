@@ -490,11 +490,6 @@ i() {
   echo Session is `whoami` on `tty | sed s/.dev.//` of `hostname`
 }
 #}}}
-#{{{ the `x' command (hex/decimal printout)
-x() {
-  perl -e 'foreach $x (@ARGV) { printf "%11d = 0x%08x\n", $x, $x }' -- "$@"
-}
-#}}}
 #{{{ experimental hideous alias hackery
 
 # For starters, here's a standard way to override _any_ weirdass
@@ -521,6 +516,24 @@ bashrc_add_prompt_fn bashrc_restore_glob_settings
 alias find='bashrc_a_shopts="$SHELLOPTS"; set -f; find'
 alias findgrep='bashrc_a_shopts="$SHELLOPTS"; set -f; findgrep'
 alias xlsfonts='bashrc_a_shopts="$SHELLOPTS"; set -f; xlsfonts'
+
+#}}}
+#{{{ the `x' command (interface to bash's calculator, with hex+dec printout)
+
+# This also uses the magic alias trick from above, so that '*' can
+# be specified in an argument without having to quote it. You still
+# have to quote, or explicitly $[...], some other characters -
+# notably parentheses and many bitwise operators like &, | and << -
+# but for common operations it makes life just a little easier.
+
+bashrc_x_internal() {
+  local i j
+  for i in "$@"; do
+    eval "j=\$[$i]" && \
+      perl -e 'printf "%11d = 0x%08x\n", $ARGV[0], $ARGV[0]' -- "$j"
+  done
+}
+alias x='bashrc_a_shopts="$SHELLOPTS"; set -f; bashrc_x_internal'
 
 #}}}
 #{{{ `rfc' as a quick shortcut to find RFCs
