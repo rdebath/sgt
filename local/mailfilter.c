@@ -362,6 +362,8 @@ typedef struct text {
     int html, htmlstate;
     char htmltag[16];
     int htmltagpos, htmlstylenest;
+    char htmlattr[16], htmlattrval[1024];
+    int htmlattrpos, htmlattrvalpos;
     int qp, qpstate;
     charset_state state;
     int freq[ALPH_COUNT];
@@ -382,6 +384,7 @@ static void scanner_init_text(scanner *s, stream *st, void *vctx)
     ctx->charset = CS_NONE;
     ctx->qp = ctx->html = 0;
     ctx->qpstate = ctx->htmlstate = ctx->htmltagpos = ctx->htmlstylenest = 0;
+    ctx->htmlattrpos = ctx->htmlattrvalpos = 0;
     ctx->state = charset_init_state;
     ctx->firstbitlen = 0;
     for (i = 0; i < ALPH_COUNT; i++)
@@ -534,6 +537,8 @@ static void scanner_feed_text_posthtml(scanner *s, stream *st, text *ctx,
     }
 }
 
+static const char *specific_msg;
+
 static void scanner_feed_text_postqp(scanner *s, stream *st, text *ctx,
 				     const char *data, int len)
 {
@@ -556,17 +561,65 @@ static void scanner_feed_text_postqp(scanner *s, stream *st, text *ctx,
 
 	    len--;
 
-	    switch (ctx->htmlstate) {
-	      case 0:
+	    if (ctx->htmlstate == 0) {
 		if (c == '<') {
 		    ctx->htmlstate = 1;
 		    ctx->htmltagpos = 0;
-		} else if (ctx->htmlstylenest == 0)
+		} else if (ctx->htmlstylenest == 0) {
+		    /*
+		     * A character outside any HTML tag and not
+		     * enclosed in <style>. Pass it through.
+		     */
 		    oc = c;
-		break;
-	      case 1:
-	      case 3:
-		if (c == '>') {
+		}
+	    } else {
+		/*
+		 * States are:
+		 *  - 1: we are collecting the tag name
+		 *  - 2: we are collecting an attribute name
+		 *  - 3: we are collecting an attribute value
+		 *  - any of those ORed with 16: we are also in quotes
+		 */
+		if (ctx->htmlstate == 3 && (c == '>' || c == ' ')) {
+		    /*
+		     * Characters which terminate collection of an
+		     * attribute value. At this point we have a
+		     * complete HTML attribute, so process that.
+		     */
+#if 0
+		    printf("'%.*s' '%.*s'='%.*s'\n",
+			   ctx->htmltagpos, ctx->htmltag,
+			   ctx->htmlattrpos, ctx->htmlattr,
+			   ctx->htmlattrvalpos, ctx->htmlattrval);
+#endif
+		    if (ctx->htmltagpos == 1 &&
+			!memcmp(ctx->htmltag, "a", 1) &&
+			ctx->htmlattrpos == 4 &&
+			!memcmp(ctx->htmlattr, "href", 4)) {
+			/*
+			 * Analyse hrefs.
+			 */
+			char *p, *q;
+			if (ctx->htmlattrvalpos >= sizeof(ctx->htmlattrval))
+			    ctx->htmlattrvalpos = sizeof(ctx->htmlattrval) - 1;
+			ctx->htmlattrval[ctx->htmlattrvalpos] = '\0';
+			p = strstr(ctx->htmlattrval, "//");
+			if (p && *p) {
+			    p += 2;
+			    q = p + strcspn(p, "/");
+			    if (q - 8 > p &&
+				!strncasecmp(q - 8, ".chat.ru", 8)) {
+				specific_msg = "This appears to be a prolific"
+				    " spam.";
+			    }
+			}
+		    }
+		}
+
+		if (c == '>' && !(ctx->htmlstate & 16)) {
+		    /*
+		     * Tag is closing. Process it.
+		     */
 		    if (ctx->htmltagpos == 5 &&
 			!memcmp(ctx->htmltag, "style", 5))
 			ctx->htmlstylenest++;
@@ -575,20 +628,52 @@ static void scanner_feed_text_postqp(scanner *s, stream *st, text *ctx,
 			     ctx->htmlstylenest > 0)
 			ctx->htmlstylenest--;
 
+		    /*
+		     * And revert to outside-any-tag state.
+		     */
 		    ctx->htmlstate = 0;
-		} else if (c == '"')
+		} else if (c == '"') {
+		    /*
+		     * Started or stopped quoting.
+		     */
+		    ctx->htmlstate ^= 16;
+		} else if (c == ' ' && !(ctx->htmlstate & 16)) {
+		    /*
+		     * Whitespace outside quotes means we go into
+		     * attribute-name mode.
+		     */
 		    ctx->htmlstate = 2;
-		else if (c == ' ')
+		    ctx->htmlattrpos = 0;
+		} else if (c == '=' && ctx->htmlstate == 2) {
+		    /*
+		     * Got our attribute name. Switch to
+		     * collecting the attribute value.
+		     */
 		    ctx->htmlstate = 3;
-		else if (ctx->htmlstate == 1 &&
-			 ctx->htmltagpos < sizeof(ctx->htmltag))
+		    ctx->htmlattrvalpos = 0;
+		} else if ((ctx->htmlstate & ~16) == 1 &&
+			   ctx->htmltagpos < sizeof(ctx->htmltag)) {
+		    /*
+		     * Add this character to the tag name we're
+		     * collecting.
+		     */
 		    ctx->htmltag[ctx->htmltagpos++] =
 			tolower((unsigned char)c);
-		break;
-	      case 2:
-		if (c == '"')
-		    ctx->htmlstate = 3;
-		break;
+		} else if ((ctx->htmlstate & ~16) == 2 &&
+			   ctx->htmlattrpos < sizeof(ctx->htmlattr)) {
+		    /*
+		     * Add this character to the attribute name.
+		     */
+		    ctx->htmlattr[ctx->htmlattrpos++] =
+			tolower((unsigned char)c);
+		} else if ((ctx->htmlstate & ~16) == 3 &&
+			   ctx->htmlattrvalpos < sizeof(ctx->htmlattrval)) {
+		    /*
+		     * Add this character to the attribute value.
+		     */
+		    ctx->htmlattrval[ctx->htmlattrvalpos++] =
+			tolower((unsigned char)c);
+		}
 	    }
 
 	    if (oc >= 0)
@@ -676,8 +761,6 @@ static void scanner_feed_text(scanner *s, stream *st, void *vctx,
     }
 }
 
-static const char *specific_msg;
-
 static void scanner_cleanup_text(scanner *s, stream *st, void *vctx)
 {
     text *ctx = (text *)vctx;
@@ -733,21 +816,45 @@ static void scanner_cleanup_text(scanner *s, stream *st, void *vctx)
 	specific_msg = "This appears to be a prolific pirated-software spam.";
     }
     {
-	wchar_t compressed[80], *p;
+	wchar_t compressed[1024], *p;
 	const wchar_t *q;
 	wchar_t last = 0;
 	q = ctx->firstbit;
+	while (*q == '\r' || *q == '\n') q++;
 	p = compressed;
-	while (p - compressed < 79 && *q && *q != '\r' && *q != '\n') {
-	    if (*q != last)
-		*p++ = *q;
-	    last = *q;
+	last = ' ';
+	while (p - compressed < 256 && *q && *q != '\r' && *q != '\n') {
+	    char c = *q;
+	    if (isspace((unsigned char)c))
+		c = ' ';
+	    if (c != last)
+		*p++ = c;
+	    last = c;
 	    q++;
 	}
+	if (p > compressed && p[-1] == ' ')
+	    p--;
 	*p = '\0';
 	str = L"Bachelor, MasterMBA, and Doctorate";
 	if (!wcsncmp(compressed, str, wcslen(str)))
 	    specific_msg = "This appears to be a prolific diploma mill spam.";
+
+	while (*q == '\r' || *q == '\n' || isspace((unsigned char)*q)) q++;
+	p = compressed;
+	while (p - compressed < 1023 && *q && *q != '\r' && *q != '\n') {
+	    char c = *q;
+	    if (isspace((unsigned char)c))
+		c = ' ';
+	    *p++ = c;
+	    q++;
+	}
+	*p = '\0';
+
+	if (!wcsncmp(compressed, L"http://cid-", 11) &&
+	    !wcsncmp(compressed + 11 +
+		     wcsspn(compressed+11, L"0123456789abcdefABCDEF"),
+		     L".spaces.live.com/blog/", 22))
+	    specific_msg = "This appears to be a prolific pharmaceutical spam.";
     }
 }
 
@@ -850,20 +957,38 @@ const char *process_address(const char *hdr, const char *addr)
 	    return "You have been persistently spamming me since 2007-02. STOP IT!";
 
 	/*
-	 * info@technologytransfertactics.com has a persistent
-	 * newsletter.
+	 * Persistent newsletters.
 	 */
-	if (!strcasecmp(addr, "info@technologytransfertactics.com"))
+	if (!strcasecmp(addr, "info@technologytransfertactics.com") ||
+	    (at && !strcasecmp(at+1, "selfgrowth.com")))
 	    return "This address has persistently sent me newsletters to "
 	    "which I never subscribed. I am therefore considering it a spammer.";
 
 	/*
 	 * anales.gr.
 	 */
-	at = strchr(addr, '@');
 	if (at && (!strcasecmp(at+1, "anales.gr")))
 	    return "I'm currently assuming mail from this domain to be spam.";
 
+	/*
+	 * info@lottery.co.uk.
+	 */
+	if (at && (!strcasecmp(at+1, "lottery.co.uk")))
+	    return "I'm currently assuming mail from this domain to be spam.";
+
+	/*
+	 * 2009-01-28: a lot of identical 'Job offer from
+	 * Coca-Cola' emails which look more like viruses than
+	 * spam, but the executable is replaced by a giant pile of
+	 * zero bytes. Seems easier, for the moment, to block them
+	 * on their from address rather than messing about with
+	 * viruswatch.
+	 */
+	if (!strcasecmp(addr, "hr@coca-cola.com")) {
+	    return "This address is currently under suspicion of being "
+		"a virus vector.";
+	}
+	
     }
 
     if (!strcasecmp(hdr, "Reply-to")) {
