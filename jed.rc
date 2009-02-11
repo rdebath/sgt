@@ -1317,7 +1317,7 @@ define jedrc_parsep(prefix) {
 define jedrc_format_paragraph(prefix) {
     variable item, i, j, thisprefix, prefixlen, col, itemindent;
     variable tmpbuf, thisbuf, tmpbufnum;
-    variable pline, pcol, oldwrap, pmark;
+    variable pline, pcol, oldwrap, pmark, move;
 
     % First test error conditions which will prevent us doing the
     % wrap at all.
@@ -1431,13 +1431,26 @@ define jedrc_format_paragraph(prefix) {
     % point within the paragraph, so we can find out what that
     % becomes in the new wrapped version.
     goto_user_mark(pmark);
+    if (what_line() < 3) {
+	% Special case: if the cursor was at or before the item
+	% prefix when pmark was placed, then going to pmark now will
+	% put us outside the paragraph that actually wants wrapping.
+	% We fix this by clipping the cursor position to the start
+	% of the real paragraph at this point.
+	goto_line(3);
+	goto_column(0);
+	move = 0;
+    } else {
+	move = 1;
+    }
     oldwrap = WRAP;
     WRAP -= prefixlen + itemindent;
     if (WRAP < 1)
         WRAP = 1;
     call("format_paragraph");
     WRAP = oldwrap;
-    move_user_mark(pmark);
+    if (move)
+	move_user_mark(pmark);
 
     % Finish off the special processing of item paragraphs.
     if (item) {
