@@ -1431,7 +1431,7 @@ define jedrc_format_paragraph(prefix) {
     % point within the paragraph, so we can find out what that
     % becomes in the new wrapped version.
     goto_user_mark(pmark);
-    if (what_line() < 3) {
+    if (item and what_line() < 3) {
 	% Special case: if the cursor was at or before the item
 	% prefix when pmark was placed, then going to pmark now will
 	% put us outside the paragraph that actually wants wrapping.
