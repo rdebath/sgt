@@ -507,12 +507,54 @@ define ps_mode_hook() %{{{
 %}}}
 %{{{ redefine bits of Lisp mode
 
+define jedrc_lisp_indent_line()
+{
+    variable close, val, col;
+
+    push_spot();
+    bol_skip_white();
+    close = looking_at(")");
+    val = find_matching_delimiter (')');
+    if (val == 0) {
+	col = 0;
+    } else {
+	col = what_column();
+	!if (close) {
+	    push_spot();
+	    bskip_white();
+	    bolp();
+	    pop_spot();
+	    if (())
+		col += 4;
+	    else
+		col++;
+	}
+    }
+    pop_spot();
+    push_spot();
+    bol_skip_white();
+    if (col != what_column()) {
+	bol_trim();
+	whitespace(col - 1);
+    }
+    pop_spot();
+    push_mark();
+    bskip_white();
+    if (bolp()) {
+	skip_white();
+	pop_mark_0();
+    } else {
+	pop_mark_1();
+    }
+}
+
 define lisp_mode_hook() %{{{
 {
     variable keymap;
     keymap = what_keymap();
     definekey("jedrc_lisp_format_paragraph", "^[Q", keymap);
     definekey("jedrc_lisp_format_paragraph", "^[q", keymap);
+    set_buffer_hook ("indent_hook", "jedrc_lisp_indent_line");
 #ifexists unset_buffer_hook
     unset_buffer_hook("par_sep");
 #endif

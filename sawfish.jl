@@ -20,51 +20,51 @@
 ;;  - Using the middle button has no effect on the window's z-order.
 
 (bind-keys title-keymap
-  "Button1-Move" 'move-window-interactively
-  "Button2-Move" 'move-window-interactively
-  "Button3-Move" 'move-window-interactively
-  "Button1-Click" 'raise-window
-  "Button3-Click" 'lower-window
-  "Button1-Click2" 'resize-window-interactively
-  "Button2-Click2" 'resize-window-interactively
-  "Button3-Click2" 'resize-window-interactively
+    "Button1-Move" 'move-window-interactively
+    "Button2-Move" 'move-window-interactively
+    "Button3-Move" 'move-window-interactively
+    "Button1-Click" 'raise-window
+    "Button3-Click" 'lower-window
+    "Button1-Click2" 'resize-window-interactively
+    "Button2-Click2" 'resize-window-interactively
+    "Button3-Click2" 'resize-window-interactively
 )
 (unbind-keys title-keymap
-  "Button1-Off" "Button2-Off" "Button3-Off"
-  "Button2-Click"
+    "Button1-Off" "Button2-Off" "Button3-Off"
+    "Button2-Click"
 )
 
 (bind-keys border-keymap
-  "Button1-Move" 'resize-window-interactively
-  "Button2-Move" 'resize-window-interactively
-  "Button3-Move" 'resize-window-interactively
-  "Button1-Click" 'raise-window
-  "Button3-Click" 'lower-window
-  "Button1-Click2" 'move-window-interactively
-  "Button2-Click2" 'move-window-interactively
-  "Button3-Click2" 'move-window-interactively
+    "Button1-Move" 'resize-window-interactively
+    "Button2-Move" 'resize-window-interactively
+    "Button3-Move" 'resize-window-interactively
+    "Button1-Click" 'raise-window
+    "Button3-Click" 'lower-window
+    "Button1-Click2" 'move-window-interactively
+    "Button2-Click2" 'move-window-interactively
+    "Button3-Click2" 'move-window-interactively
 )
 (unbind-keys border-keymap
-  "Button1-Off" "Button2-Off" "Button3-Off"
-  "Button2-Click"
+    "Button1-Off" "Button2-Off" "Button3-Off"
+    "Button2-Click"
 )
 
 ;; }}}
 ;; Left-Windows + x to minimise windows {{{
 
 (define (iconify-window-under-pointer)
-   (let ((w1 (query-pointer-window))
-         (w2 (input-focus)))
-      (cond ((not (null w1)) (iconify-window w1))
+    (let ((w1 (query-pointer-window))
+	  (w2 (input-focus)))
+	(cond ((not (null w1)) (iconify-window w1))
             ((not (null w2)) (iconify-window w2))
-      )
-   )
+	)
+    )
 )
 
 (define-command 'iconify-window-under-pointer iconify-window-under-pointer)
 
 (bind-keys window-keymap
-  "H-x" 'iconify-window-under-pointer
+    "H-x" 'iconify-window-under-pointer
 )
 
 ;; }}}
@@ -83,18 +83,18 @@
 ;; On creation of new windows, fiddle with their properties {{{
 
 (define (sgt-add-window w)
-  ;; Some applications have a nasty habit of trying to place all
-  ;; their windows at (0,0). Identify those apps' windows, ignore
-  ;; their specified positions, and let Sawfish DTRT.
-  (let ((class (caddr (get-x-property w 'WM_CLASS))))
-     (when (or
-	      (equal class "Gecko\0Mozilla-bin\0")
-	      (equal class "mozilla-bin\0Mozilla-bin\0")
-	      (equal class "gnotravex\0Gnotravex\0")
-	      (equal class "win\0Xpdf\0"))
-	(window-put w 'ignore-program-position t)
-     )
-  )
+    ;; Some applications have a nasty habit of trying to place all
+    ;; their windows at (0,0). Identify those apps' windows, ignore
+    ;; their specified positions, and let Sawfish DTRT.
+    (let ((class (caddr (get-x-property w 'WM_CLASS))))
+	(when (or
+	       (equal class "Gecko\0Mozilla-bin\0")
+	       (equal class "mozilla-bin\0Mozilla-bin\0")
+	       (equal class "gnotravex\0Gnotravex\0")
+	       (equal class "win\0Xpdf\0"))
+	    (window-put w 'ignore-program-position t)
+	)
+    )
 )
 (add-hook 'add-window-hook sgt-add-window)
 
@@ -131,62 +131,72 @@
 ;; This function contains the knowledge of which window types we do
 ;; not want to unexpectedly take focus away from.
 (define (sgt-keeps-focus-p w)
-  (let ((class (caddr (get-x-property w 'WM_CLASS))))
-    (or (equal class "putty\0Putty\0")
-        (equal class "pterm\0Pterm\0")
-  ))
+    (let ((class (caddr (get-x-property w 'WM_CLASS))))
+	(or (equal class "putty\0Putty\0")
+	    (equal class "pterm\0Pterm\0")
+	)
+    )
 )
 
 ;; This function contains knowledge about window types which I
 ;; don't want to focus just because of mouse movements.
 (define (sgt-no-focus-on-mouse-p w)
-  (let ((class (caddr (get-x-property w 'WM_CLASS))))
-    (or (equal class "panel_window\0Panel\0")
-        (equal class "gnome-panel\0Gnome-panel\0")
-  ))
+    (let ((class (caddr (get-x-property w 'WM_CLASS))))
+	(or (equal class "panel_window\0Panel\0")
+	    (equal class "gnome-panel\0Gnome-panel\0")
+	)
+    )
 )
 
 ;; Hook called when a window is mapped, which stashes the new window
 ;; ID so we can remember to ignore a pointer-in event for it later.
 (setq sgt-enter-notify-ignore nil)
 (define (sgt-map-notify w)
-  ;;(print (list 'map-notify w))
-  (when (and (equal w (query-pointer-window))
-         (not (null (input-focus)))
-         (sgt-keeps-focus-p (input-focus)))
-   ;;(print (list 'prepare-to-ignore w))
-   (setq sgt-enter-notify-ignore w)
-  )
+    ;;(print (list 'map-notify w))
+    (when (and (equal w (query-pointer-window))
+	   (not (null (input-focus)))
+	   (sgt-keeps-focus-p (input-focus)))
+	;;(print (list 'prepare-to-ignore w))
+	(setq sgt-enter-notify-ignore w)
+    )
 )
 (add-hook 'map-notify-hook sgt-map-notify)
 
 ;; The actual focus mode.
 (define-focus-mode 'sgt-enter-only
     (lambda (w action)
-      ;;(print (list 'enter-only w action 'ignoring sgt-enter-notify-ignore))
-      (case action
-        ((pointer-in)
-         (when (and (window-really-wants-input-p w)
-                    (not (sgt-no-focus-on-mouse-p w))
-                    (not (equal sgt-enter-notify-ignore w)))
-           ;;(print (list 'setting-focus-to w))
-           (set-input-focus w))
-           ;;(print 'removing-ignore)
-           (setq sgt-enter-notify-ignore nil))
-        ((focus-in)
-	 (focus-pop-map w))
-	((focus-out add-window)
-	 (unless (or (not (window-really-wants-input-p w))
-		     (eq w (input-focus)))
-	   (focus-push-map w click-to-focus-map)))
-	((before-mode-change)
-	 (focus-pop-map w))
-	((after-mode-change)
-	 (unless (or (not (window-really-wants-input-p w))
-		     (eq w (input-focus)))
-	   (focus-push-map w click-to-focus-map))))))
+	;;(print (list 'enter-only w action 'ignoring sgt-enter-notify-ignore))
+	(case action
+	    ((pointer-in)
+		(when (and (window-really-wants-input-p w)
+		       (not (sgt-no-focus-on-mouse-p w))
+		       (not (equal sgt-enter-notify-ignore w)))
+		    ;;(print (list 'setting-focus-to w))
+		    (set-input-focus w))
+		;;(print 'removing-ignore)
+		(setq sgt-enter-notify-ignore nil))
+	    ((focus-in)
+		(focus-pop-map w))
+	    ((focus-out add-window)
+		(unless (or (not (window-really-wants-input-p w))
+			 (eq w (input-focus)))
+		    (focus-push-map w click-to-focus-map)))
+	    ((before-mode-change)
+		(focus-pop-map w))
+	    ((after-mode-change)
+		(unless (or (not (window-really-wants-input-p w))
+			 (eq w (input-focus)))
+		    (focus-push-map w click-to-focus-map)))
+	)
+    )
+)
 
 ;; Set it as the default.
 (setq focus-mode 'sgt-enter-only)
 
+;; }}}
+;; Key binding for merge-with-next-workspace {{{
+(bind-keys global-keymap
+    "H-M-F1" 'merge-next-workspace
+)
 ;; }}}
