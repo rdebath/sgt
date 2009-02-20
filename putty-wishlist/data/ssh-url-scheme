@@ -21,6 +21,6 @@ Content-type: text/x-html-body
 <a href="http://tools.ietf.org/wg/secsh/draft-ietf-secsh-scp-sftp-ssh-uri/">draft-ietf-secsh-scp-sftp-ssh-uri</a>.
 <p>
 In the meantime, this <a
-href="http://msdn.microsoft.com/workshop/networking/pluggable/overview/appendix_a.asp">workaround</a>
+href="http://msdn.microsoft.com/en-us/library/aa767914(VS.85).aspx">workaround</a>
 from Microsoft's site can be adapted to work with PuTTY.
 
