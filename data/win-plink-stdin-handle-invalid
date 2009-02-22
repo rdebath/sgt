@@ -19,8 +19,17 @@ Windows command-line or Cygwin.
 <p>
 Reports:
 <ul>
-<li>4685675C.7030305@kavemalna.hu (rsync)
-<li>4da424620707191404i2efbff0che659f39e97f8cd84@mail.gmail.com (rsync)
+<li>4685675C.7030305@kavemalna.hu
+(rsync under Cygwin; <em>different</em> error with 0.58, "Unable to write to
+standard output"; works in Cygwin pipe)
+<li>4da424620707191404i2efbff0che659f39e97f8cd84@mail.gmail.com
+(rsync under Cygwin)
 <li>46AA3477.1030701@bellsouth.net
-<li>66E3124EE70FB04A96C81EF18C6C18B306086FE3@ex1.globus (SQL server)
+(BAT file, so not Cygwin? Regression since 0.58)
+<li>66E3124EE70FB04A96C81EF18C6C18B306086FE3@ex1.globus
+(works from Windows command shell, fails from SQL Server script)
 </ul>
+
+<p>
+<a href="http://diario.beerensalat.info/2009/02/13/rsync_does_work_with_plink.html">This blog posting</a>
+suggests an understanding of the problem with Cygwin rsync at least.
