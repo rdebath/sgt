@@ -1,6 +1,6 @@
 Summary: Reports of crashes on unclean close (related to port forwarding?)
 Class: bug
-Present-in: 0.55 0.56 2004-11-29 2005-01-16 2005-01-24
+Present-in: 0.55 0.56 2004-11-29 2005-01-16 2005-01-24 2009-02-10
 Content-type: text/x-html-body
 
 <p>
@@ -56,6 +56,9 @@ Reports:
 
 <li>200411010710.iA17AJAW014641@smtp.hispeed.ch
 <br>0.56; XPSP1; SSH server disconnect ("connection timed out" is fine!)
+
+<li>141902151.20090211120208@kilgus.net
+<br>2009-02-10; <em>evidence of use of freed memory</em>
 
 </ul>
 
