@@ -34,7 +34,13 @@ thought of a plausible mechanism for <tt>screen</tt> or
 <p>
 There seem to be a lot of reports of this error from people using the serial
 backend in 0.59, which suggests that it can be a symptom of
-<a href="win-handle-double-free.html">win-handle-double-free</a>.
+<a href="win-handle-double-free.html">win-handle-double-free</a>
+(fixed in 0.60).
+
+<p>
+In fact, in general, we suspect this is a symptom of some sort of
+memory corruption to which this assertion is particularly sensitive,
+rather than evidence of a direct logical error.
 
 <ul>
 <li><tt>Pine.0410290832480.79579@mozart.musicbox.net</tt>
