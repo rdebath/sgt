@@ -2295,6 +2295,8 @@ const char *const deflate_error_sym[DEFLATE_NUM_ERRORS] = {
 
 #ifdef STANDALONE
 
+enum { DEFLATE_TYPE_AUTO = 3 };
+
 int main(int argc, char **argv)
 {
     unsigned char buf[65536];
@@ -2302,7 +2304,7 @@ int main(int argc, char **argv)
     int ret, err, outlen;
     deflate_decompress_ctx *dhandle;
     deflate_compress_ctx *chandle;
-    int type = DEFLATE_TYPE_ZLIB, opts = TRUE;
+    int type = DEFLATE_TYPE_AUTO, opts = TRUE;
     int compress = FALSE, decompress = FALSE;
     int got_arg = FALSE;
     char *filename = NULL;
@@ -2318,6 +2320,8 @@ int main(int argc, char **argv)
                 type = DEFLATE_TYPE_BARE;
             else if (!strcmp(p, "-g"))
                 type = DEFLATE_TYPE_GZIP;
+            else if (!strcmp(p, "-z"))
+                type = DEFLATE_TYPE_ZLIB;
             else if (!strcmp(p, "-c"))
                 compress = TRUE;
             else if (!strcmp(p, "-d"))
@@ -2339,7 +2343,7 @@ int main(int argc, char **argv)
     }
 
     if (!compress && !decompress) {
-	fprintf(stderr, "usage: deflate [ -c | -d | -a ] [ -b | -g ]"
+	fprintf(stderr, "usage: deflate [ -c | -d | -a ] [ -b | -g | -z ]"
 		" [filename]\n");
 	return (got_arg ? 1 : 0);
     }
@@ -2350,11 +2354,17 @@ int main(int argc, char **argv)
 	return (got_arg ? 1 : 0);
     }
 
+    if (compress && type == DEFLATE_TYPE_AUTO) {
+	fprintf(stderr, "please specify a file format for compression "
+		"(-b, -g, -z)\n");
+	return (got_arg ? 1 : 0);
+    }
+
     if (compress) {
 	chandle = deflate_compress_new(type);
 	dhandle = NULL;
     } else {
-	dhandle = deflate_decompress_new(type);
+	dhandle = NULL;
 	chandle = NULL;
     }
 
@@ -2371,6 +2381,22 @@ int main(int argc, char **argv)
 
     do {
 	ret = fread(buf, 1, sizeof(buf), fp);
+	if (decompress && !dhandle) {
+	    if (type == DEFLATE_TYPE_AUTO) {
+		/*
+		 * Attempt to autodetect the input file type.
+		 */
+		if (ret >= 2 && buf[0] == 0x1F && buf[1] == 0x8B)
+		    type = DEFLATE_TYPE_GZIP;
+		else if (ret >= 2 && buf[0] == 0x78 &&
+			 (buf[1] & 0x20) == 0 &&
+			 (buf[0]*256+buf[1]) % 31 == 0)
+		    type = DEFLATE_TYPE_ZLIB;
+		else
+		    type = DEFLATE_TYPE_BARE;
+	    }
+	    dhandle = deflate_decompress_new(type);
+	}
 	outbuf = NULL;
 	if (dhandle) {
 	    if (ret > 0)
