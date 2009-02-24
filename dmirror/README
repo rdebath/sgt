@@ -1,0 +1,35 @@
+This directory contains tools to handle a variant form of the
+Deflate compression format, in which the order of bits in a byte is
+reversed. This enables the format to be more easily decoded by small
+and simple pieces of code.
+
+Source files provided:
+ - dmdecode.c, a standalone decompressor for mirrored Deflate
+ - dmfdecode.c, a standalone decompressor for a restricted form of
+   mirrored Deflate which uses only fixed Huffman trees (providing
+   less compression, but also far less decompressor complexity)
+ - dmirror.c, a utility to convert ordinary Deflate input into both
+   of the above formats. Inputs permitted are bare Deflate streams,
+   .gz files, or zlib compressed data streams.
+
+Deflate is fundamentally a format which assigns meaning to streams
+of bits. It is therefore necessary to define how that stream of bits
+is represented as a stream of bytes, as it generally needs to be for
+storage. As defined in RFC 1951, Deflate has the slightly
+counterintuitive property that the _least_ significant bit of each
+byte is considered to come first.
+
+This has an unhelpful effect on the Huffman code structure. The
+Huffman codes used in Deflate are derived by doing additive
+arithmetic on the code values, in such a way that the bits at the
+root of the Huffman tree are considered to be more significant, and
+carries propagate up to them from the lower-down bits. Hence, a
+conventional Deflate implementation must do its arithmetic with the
+bits one way round, and then flip them into the other order for
+dealing with actual compressed files.
+
+By reversing this decision, we can construct a compressed data
+format which provides identical compression quality to Deflate, but
+is easier to decode because all the binary numbers represented in
+the file are already the right way round to have arithmetic done on
+them.
