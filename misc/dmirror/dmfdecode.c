@@ -134,7 +134,7 @@ mirrorinflate(void *decompressed, const void *compressed
 		EATBITS(9);
 	    }
 	}
-	assert(ninbits > 0);
+	assert(ninbits >= 0);
 
 	if (sym < 256) {
 	    OUTPUT(sym);

@@ -354,7 +354,7 @@ mirrorinflate(void *decompressed, const void *compressed
 	    while (1) {
 		REFILL;
 		sym = hufdecode(&litlentree, &inbits, &ninbits);
-		assert(ninbits > 0);
+		assert(ninbits >= 0);
 		if (sym < 256) {
 		    OUTPUT(sym);
 		} else if (sym == 256) {
