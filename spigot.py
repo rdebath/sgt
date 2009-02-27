@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
 import sys
+import string
+import re
 import errno
 import os
 
@@ -770,13 +772,101 @@ def get_spig(arg, args):
 	del args[0]
 	spig1 = get_spig(x, args)
 	return spigot(0, None, recip_matrix(spig1))
+    elif arg == "ieee" or arg == "ieeef" or arg == "ieeed":
+        # Interpret the input as an IEEE floating-point bit pattern
+        # expressed in hex.
+	if len(args) < 1:
+	    sys.stderr.write("input type '" + arg + "' requires an operand\n")
+	    sys.exit(1)
+	x = args[0]
+	del args[0]
+        if x[:2] == "0x" or x[:2] == "0X":
+            del x[:2]
+        x = string.replace(x, ":", "")
+        x = string.replace(x, "_", "")
+        x = string.replace(x, ".", "")
+        x = string.replace(x, ",", "")
+        x = string.replace(x, "-", "")
+        if arg == "ieee":
+            if len(x) != 8 and len(x) != 16:
+                sys.stderr.write("input type 'ieee' requires a hex string 8 or 16 digits long\n");
+                sys.exit(1)
+            double = (len(x) == 16)
+        elif arg == "ieeef":
+            x = x + "0"*8
+            x = x[:8]
+            double = 0
+        elif arg == "ieeed":
+            x = x + "0"*16
+            x = x[:16]
+            double = 1
+        value = long(x, 16)
+        if double:
+            sign = 0x8000000000000000L
+            expbias = 0x3FF
+            expshift = 52
+            manttop = 0x0010000000000000L
+        else:
+            sign = 0x80000000L
+            expbias = 0x7F
+            expshift = 23
+            manttop = 0x00800000L
+        sign = sign & value
+        value = value & ~sign
+        exp = value >> expshift
+        mant = value & (manttop - 1)
+        if exp > 0:
+            mant = mant + manttop
+        else:
+            exp = exp + 1
+        exp = exp - expbias - expshift
+        numerator = mant
+        if exp > 0:
+            denominator = 1
+            numerator = numerator * 2L**exp
+        else:
+            denominator = 2L**-exp
+	return spigot(numerator/denominator, \
+	(numerator+denominator-1)/denominator, \
+	frac_matrix(numerator, denominator))
     else:
-	try:
-	    number = long(arg)
-	except ValueError:
+        # Interpret the input as a C-style decimal or hex
+        # floating-point literal.
+        dfloatre = re.compile(r'^(-?)([0-9]*)(?:\.([0-9]*))?(?:[eE]([-\+]?[0-9]+))?$');
+        hfloatre = re.compile(r'^(-?)0[xX]([0-9a-fA-F]*)(?:\.([0-9a-fA-F]*))?(?:[pP]([-\+]?[0-9]+))?$');
+        dm = dfloatre.match(arg)
+        hm = hfloatre.match(arg)
+        if dm == None and hm == None:
 	    sys.stderr.write("unrecognised argument '%s'\n" % arg)
 	    sys.exit(1)
-	return spigot(number, number, frac_matrix(number, 1))
+        if dm != None:
+            integer = dm.group(1) + dm.group(2)
+            exponent = 0
+            if dm.group(3) != None:
+                integer = integer + dm.group(3)
+                exponent = exponent - len(dm.group(3))
+            if dm.group(4) != None:
+                exponent = exponent + int(dm.group(4))
+            numerator = long(integer)
+            base = 10L
+        elif hm != None:
+            integer = hm.group(1) + hm.group(2)
+            exponent = 0
+            if hm.group(3) != None:
+                integer = integer + hm.group(3)
+                exponent = exponent - 4*len(hm.group(3))
+            if hm.group(4) != None:
+                exponent = exponent + int(hm.group(4))
+            numerator = long(integer, 16)
+            base = 2L
+        if exponent > 0:
+            denominator = 1
+            numerator = numerator * base**exponent
+        else:
+            denominator = base**-exponent
+	return spigot(numerator/denominator, \
+	(numerator+denominator-1)/denominator, \
+	frac_matrix(numerator, denominator))
 
 spig = None
 output = output_base(10)
