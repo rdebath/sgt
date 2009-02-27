@@ -22,7 +22,9 @@
 if (scalar @ARGV == 0) {
   print "usage: float [-f | -h] [-s | -d] <number>...\n";
   print "       -f    treat input numbers as decimal floating-point\n";
+  print "       -F    like -f, but _only_ output the hex string translation\n";
   print "       -h    treat input numbers as hex strings\n";
+  print "       -H    like -h, but _only_ output the decimal translation\n";
   print "       -s    work in single precision\n";
   print "       -d    work in double precision\n";
   print "\n";
@@ -35,13 +37,16 @@ if (scalar @ARGV == 0) {
 }
 
 $size = $mode = "x";
+$ohex = $odec = 1;
 
 foreach $arg (@ARGV) {
   if ($arg =~ /^-([^0-9])(.*)/) {
     while ($arg =~ /^-(.)(.*)/) {
       $arg = "-$2";
       if ($1 eq "h") { $mode = "h"; next; }
+      if ($1 eq "H") { $mode = "h"; $ohex = 0; next; }
       if ($1 eq "f") { $mode = "f"; next; }
+      if ($1 eq "F") { $mode = "f"; $odec = 0; next; }
       if ($1 eq "s") { $size = "s"; next; }
       if ($1 eq "d") { $size = "d"; next; }
     }
@@ -114,5 +119,11 @@ sub display {
   @d2 = ();
   foreach $i (@$order) { unshift @d2, $d1[$i]; }
   $hex = unpack "H*", pack "C*", @d2;
-  printf "%-16s %.19g\n", $hex, $flt;
+  if ($ohex && $odec) {
+    printf "%-16s %.19g\n", $hex, $flt;
+  } elsif ($ohex) {
+    printf "%s\n", $hex;
+  } elsif ($odec) {
+    printf "%.19g\n", $flt;
+  }
 }
