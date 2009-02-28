@@ -15,8 +15,8 @@ def internal_log(msg):
     logfp.write(msg + "\n")
     logfp.flush()
     if logcfg.verbose:
-	sys.stdout.write(msg + "\n")
-	sys.stdout.flush()
+        sys.stdout.write(msg + "\n")
+        sys.stdout.flush()
 
 def logmsg(s):
     internal_log("* " + s)
