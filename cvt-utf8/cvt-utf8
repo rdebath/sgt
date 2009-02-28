@@ -56,179 +56,179 @@ class zip_untangler:
 def hexstr(x):
     s = hex(x)
     if s[-1:] == "L" or s[-1:] == "l":
-	s = s[:-1]
+        s = s[:-1]
     if s[:2] == "0x" or s[:2] == "0X":
-	s = s[2:]
+        s = s[2:]
     return s
 
 def charname(x):
     if db is not None:
-	key = hexstr(x)
-	while len(key) < 4: key = "0" + key
-	key = string.upper(key)
-	if han_translations:
-	    try:
-		value = handb[key]
-		return "<han> " + value
-	    except KeyError:
-		pass
-	try:
-	    value = db[key]
-	    return string.split(value, ";")[1]
-	except KeyError:
-	    return "<no name available>"
+        key = hexstr(x)
+        while len(key) < 4: key = "0" + key
+        key = string.upper(key)
+        if han_translations:
+            try:
+                value = handb[key]
+                return "<han> " + value
+            except KeyError:
+                pass
+        try:
+            value = db[key]
+            return string.split(value, ";")[1]
+        except KeyError:
+            return "<no name available>"
     else:
-	return ""
+        return ""
 
 def output(char, bytes, errors):
     if output_analysis:
-	if char == -1:
-	    s = "           "
-	else:
-	    s = "U-%08X " % char
-	for i in bytes:
-	    s = s + " %02X" % i
-	for i in range(6-len(bytes)):
-	    s = s + "   "
+        if char == -1:
+            s = "           "
+        else:
+            s = "U-%08X " % char
+        for i in bytes:
+            s = s + " %02X" % i
+        for i in range(6-len(bytes)):
+            s = s + "   "
 
-	if char == -1:
-	    name = ""
-	else:
-	    name = charname(char)
-	if name != "":
-	    s = s + " " + name
-	s = s + errors
-	print s
+        if char == -1:
+            name = ""
+        else:
+            name = charname(char)
+        if name != "":
+            s = s + " " + name
+        s = s + errors
+        print s
     else:
-	if char == -1 or errors != "":
-	    # problem chars become U+FFFD REPLACEMENT CHARACTER
-	    sys.stdout.write("\xEF\xBF\xBD")
-	else:
-	    for i in bytes:
-		sys.stdout.write(chr(i))
+        if char == -1 or errors != "":
+            # problem chars become U+FFFD REPLACEMENT CHARACTER
+            sys.stdout.write("\xEF\xBF\xBD")
+        else:
+            for i in bytes:
+                sys.stdout.write(chr(i))
 
 def process_ucs(x, bytes=[], errors=""):
     if x < 0x80:
-	utf8 = [x]
-	realbytes = 1
+        utf8 = [x]
+        realbytes = 1
     else:
-	if x < 0x800:
-	    tmp = (0xC0, 1)
-	elif x < 0x10000:
-	    tmp = (0xE0, 2)
-	elif x < 0x200000:
-	    tmp = (0xF0, 3)
-	elif x < 0x4000000:
-	    tmp = (0xF8, 4)
-	else:
-	    assert x < 0x80000000L
-	    tmp = (0xFC, 5)
-	realbytes = tmp[1] + 1
-	utf8 = [tmp[0] + (x >> (6*tmp[1]))]
-	for i in range(tmp[1]-1, -1, -1):
-	    utf8.append(0x80 + (0x3F & (x >> (i*6))))
+        if x < 0x800:
+            tmp = (0xC0, 1)
+        elif x < 0x10000:
+            tmp = (0xE0, 2)
+        elif x < 0x200000:
+            tmp = (0xF0, 3)
+        elif x < 0x4000000:
+            tmp = (0xF8, 4)
+        else:
+            assert x < 0x80000000L
+            tmp = (0xFC, 5)
+        realbytes = tmp[1] + 1
+        utf8 = [tmp[0] + (x >> (6*tmp[1]))]
+        for i in range(tmp[1]-1, -1, -1):
+            utf8.append(0x80 + (0x3F & (x >> (i*6))))
 
     if bytes != [] and len(bytes) > realbytes:
-	errors = errors + " (overlong form of"
-	for i in utf8:
-	    errors = errors + " %02X" % i
-	errors = errors + ")"
-	utf8 = bytes
+        errors = errors + " (overlong form of"
+        for i in utf8:
+            errors = errors + " %02X" % i
+        errors = errors + ")"
+        utf8 = bytes
     if x >= 0xD800 and x <= 0xDFFF:
-	errors = errors + " (surrogate)"
+        errors = errors + " (surrogate)"
     if x >= 0xFFFE and x <= 0xFFFF:
-	errors = errors + " (invalid char)"
+        errors = errors + " (invalid char)"
 
     output(x, utf8, errors)
 
 def process_utf8(next):
     c = next()
     while c != None:
-	char = [c]
-	i = c
-	if i < 0x80:
-	    process_ucs(i) # single-byte char
-	    c = next()
-	elif i == 0xfe or i == 0xff:
-	    output(-1, char, " (invalid UTF-8 byte)")
-	    c = next()
-	elif i >= 0x80 and i <= 0xbf:
-	    output(-1, char, " (unexpected continuation byte)")
-	    c = next()
-	else:
-	    if i >= 0xC0 and i <= 0xDF:
-		acc = i &~ 0xC0
-		cbytes = 1
-	    elif i >= 0xE0 and i <= 0xEF:
-		acc = i &~ 0xE0
-		cbytes = 2
-	    elif i >= 0xF0 and i <= 0xF7:
-		acc = i &~ 0xF0
-		cbytes = 3
-	    elif i >= 0xF8 and i <= 0xFB:
-		acc = i &~ 0xF8
-		cbytes = 4
-	    elif i >= 0xFC and i <= 0xFD:
-		acc = i &~ 0xFC
-		cbytes = 5
-	    gotone = 0
-	    while cbytes > 0:
-		c = next()
-		if c == None or c < 0x80 or c > 0xBF:
-		    gotone = 1
-		    break
-		char.append(c)
-		acc = (acc << 6) + (c & 0x3F)
-		cbytes = cbytes - 1
-	    if not gotone:
-		c = next()
-	    if cbytes > 0:
-		output(-1, char, " (incomplete sequence)")
-	    else:
-		process_ucs(acc, char)
+        char = [c]
+        i = c
+        if i < 0x80:
+            process_ucs(i) # single-byte char
+            c = next()
+        elif i == 0xfe or i == 0xff:
+            output(-1, char, " (invalid UTF-8 byte)")
+            c = next()
+        elif i >= 0x80 and i <= 0xbf:
+            output(-1, char, " (unexpected continuation byte)")
+            c = next()
+        else:
+            if i >= 0xC0 and i <= 0xDF:
+                acc = i &~ 0xC0
+                cbytes = 1
+            elif i >= 0xE0 and i <= 0xEF:
+                acc = i &~ 0xE0
+                cbytes = 2
+            elif i >= 0xF0 and i <= 0xF7:
+                acc = i &~ 0xF0
+                cbytes = 3
+            elif i >= 0xF8 and i <= 0xFB:
+                acc = i &~ 0xF8
+                cbytes = 4
+            elif i >= 0xFC and i <= 0xFD:
+                acc = i &~ 0xFC
+                cbytes = 5
+            gotone = 0
+            while cbytes > 0:
+                c = next()
+                if c == None or c < 0x80 or c > 0xBF:
+                    gotone = 1
+                    break
+                char.append(c)
+                acc = (acc << 6) + (c & 0x3F)
+                cbytes = cbytes - 1
+            if not gotone:
+                c = next()
+            if cbytes > 0:
+                output(-1, char, " (incomplete sequence)")
+            else:
+                process_ucs(acc, char)
 
 def do(args):
     # Class to turn a list into a callable object that returns one
     # element at a time.
     class liststepper:
-	def __init__(self, list):
-	    self.list = list
-	    self.index = 0
-	def __call__(self):
-	    if self.index >= len(self.list):
-		return None
-	    ret = self.list[self.index]
-	    self.index = self.index + 1
-	    return ret
+        def __init__(self, list):
+            self.list = list
+            self.index = 0
+        def __call__(self):
+            if self.index >= len(self.list):
+                return None
+            ret = self.list[self.index]
+            self.index = self.index + 1
+            return ret
 
     list = []
     for arg in args:
-	got = ('none')
-	if string.upper(arg[0]) == "U":
-	    assert arg[1] == "+" or arg[1] == "-"
-	    got = ('ucs', string.atoi(arg[2:], 16))
-	elif arg[:2] == "&#":
-	    # SGML character entity. Either &# followed by a
-	    # number, or &#x followed by a hex number.
-	    s = arg
-	    if s[-1:] == ";": s = s[:-1]
-	    if string.upper(s[:3]) == "&#X":
-		got = ('ucs', string.atoi(s[3:], 16))
-	    else:
-		got = ('ucs', string.atoi(s[2:], 10))
-	else:
-	    got = ('utf8', string.atoi(arg, 16))
+        got = ('none')
+        if string.upper(arg[0]) == "U":
+            assert arg[1] == "+" or arg[1] == "-"
+            got = ('ucs', string.atoi(arg[2:], 16))
+        elif arg[:2] == "&#":
+            # SGML character entity. Either &# followed by a
+            # number, or &#x followed by a hex number.
+            s = arg
+            if s[-1:] == ";": s = s[:-1]
+            if string.upper(s[:3]) == "&#X":
+                got = ('ucs', string.atoi(s[3:], 16))
+            else:
+                got = ('ucs', string.atoi(s[2:], 10))
+        else:
+            got = ('utf8', string.atoi(arg, 16))
 
-	if got[0] == 'utf8':
-	    list.append(got[1])
-	elif got[0] == 'ucs':
-	    if len(list) > 0:
-		process_utf8(liststepper(list))
-		list = []
-	    process_ucs(got[1])
+        if got[0] == 'utf8':
+            list.append(got[1])
+        elif got[0] == 'ucs':
+            if len(list) > 0:
+                process_utf8(liststepper(list))
+                list = []
+            process_ucs(got[1])
 
     if len(list) > 0:
-	process_utf8(liststepper(list))
+        process_utf8(liststepper(list))
 
 def usage(arg):
     print "usage: cvt-utf8 [flags] <hex UTF-8 bytes, U+codepoints, SGML entities>"
@@ -292,9 +292,9 @@ def version():
     rev = string.replace(rev, "$", "")
     revs = string.split(rev, ":")
     if len(revs) > 1:
-	print "cvt-utf8 revision %s" % revs[1]
+        print "cvt-utf8 revision %s" % revs[1]
     else:
-	print "cvt-utf8: unknown version"
+        print "cvt-utf8: unknown version"
 
 args = sys.argv[1:]
 output_analysis = 1
@@ -307,103 +307,103 @@ if args == []:
 
 while len(args) > 0 and args[0][:1] == "-":
     if args[0] == "--help" or args[0] == "--help-admin":
-	usage(args[0])
-	sys.exit(0)
+        usage(args[0])
+        sys.exit(0)
 
     elif args[0] == "--licence" or args[0] == "--license":
-	licence()
-	sys.exit(0)
+        licence()
+        sys.exit(0)
 
     elif args[0] == "--version":
-	version()
-	sys.exit(0)
+        version()
+        sys.exit(0)
 
     elif args[0] == "-o" or args[0] == "--output":
-	output_analysis = 0
-	args = args[1:]
+        output_analysis = 0
+        args = args[1:]
 
     elif args[0] == "-h" or args[0] == "--han":
-	han_translations = 1
-	args = args[1:]
+        han_translations = 1
+        args = args[1:]
 
     elif args[0] == "--build" or args[0] == "--fetch-build":
-	if args[0] == "--build":
-	    if len(args) != 3:
-		print "cvt-utf8: --build expects two filename arguments"
-		sys.exit(1)
-	    infile = open(args[1], "r")
-	    outfile = args[2]
-	else:
-	    if len(args) != 2:
-		print "cvt-utf8: --fetch-build expects one filename argument"
-		sys.exit(1)
-	    import urllib
-	    infile = urllib.urlopen("http://www.unicode.org/Public/UNIDATA/UnicodeData.txt")
-	    outfile = args[1]
-	# Now build the database.
-	if outfile[-3:] == ".db":
-	    print "cvt-utf8: warning: you should not append .db to db name"
+        if args[0] == "--build":
+            if len(args) != 3:
+                print "cvt-utf8: --build expects two filename arguments"
+                sys.exit(1)
+            infile = open(args[1], "r")
+            outfile = args[2]
+        else:
+            if len(args) != 2:
+                print "cvt-utf8: --fetch-build expects one filename argument"
+                sys.exit(1)
+            import urllib
+            infile = urllib.urlopen("http://www.unicode.org/Public/UNIDATA/UnicodeData.txt")
+            outfile = args[1]
+        # Now build the database.
+        if outfile[-3:] == ".db":
+            print "cvt-utf8: warning: you should not append .db to db name"
 
-	db = anydbm.open(outfile, "n")
-	while 1:
-	    s = infile.readline()
-	    if s == "": break
-	    ss = string.split(s, ";")[0]
-	    db[ss] = s
-	db.close()
-	sys.exit(0)
+        db = anydbm.open(outfile, "n")
+        while 1:
+            s = infile.readline()
+            if s == "": break
+            ss = string.split(s, ";")[0]
+            db[ss] = s
+        db.close()
+        sys.exit(0)
 
     elif args[0] == "--build-unihan" or args[0] == "--fetch-build-unihan":
-	if args[0] == "--build-unihan":
-	    if len(args) != 3:
-		print "cvt-utf8: --build expects two filename arguments"
-		sys.exit(1)
-	    infile = open(args[1], "r")
-	    s = infile.read(1)
-	    # Unihan.txt starts with a hash. If this file starts with a
-	    # P, we assume it's a zip file ("PK").
-	    if s == "P":
-		infile = zip_untangler(infile, s)
-		s = ""
-	    outfile = args[2]
-	else:
-	    if len(args) != 2:
-		print "cvt-utf8: --fetch-build-unihan expects one filename argument"
-		sys.exit(1)
-	    import urllib
-	    infile = urllib.urlopen("ftp://ftp.unicode.org/Public/UNIDATA/Unihan.zip")
-	    # We know this one is zipped.
-	    infile = zip_untangler(infile, "")
-	    outfile = args[1]
-	    s = ""
-	# Now build the database.
-	if outfile[-3:] == ".db":
-	    print "cvt-utf8: warning: you should not append .db to db name"
+        if args[0] == "--build-unihan":
+            if len(args) != 3:
+                print "cvt-utf8: --build expects two filename arguments"
+                sys.exit(1)
+            infile = open(args[1], "r")
+            s = infile.read(1)
+            # Unihan.txt starts with a hash. If this file starts with a
+            # P, we assume it's a zip file ("PK").
+            if s == "P":
+                infile = zip_untangler(infile, s)
+                s = ""
+            outfile = args[2]
+        else:
+            if len(args) != 2:
+                print "cvt-utf8: --fetch-build-unihan expects one filename argument"
+                sys.exit(1)
+            import urllib
+            infile = urllib.urlopen("ftp://ftp.unicode.org/Public/UNIDATA/Unihan.zip")
+            # We know this one is zipped.
+            infile = zip_untangler(infile, "")
+            outfile = args[1]
+            s = ""
+        # Now build the database.
+        if outfile[-3:] == ".db":
+            print "cvt-utf8: warning: you should not append .db to db name"
 
-	db = anydbm.open(outfile, "n")
-	while 1:
-	    s = s + infile.readline()
-	    if s == "": break
-	    while s[-1:] == "\r" or s[-1:] == "\n":
-		s = s[:-1]
-	    sa = string.split(s, "\t")
-	    if len(sa) == 3 and sa[1] == "kDefinition" and sa[0][:2] == "U+":
-		db[sa[0][2:]] = sa[2]
-	    s = ""
-	db.close()
-	sys.exit(0)
+        db = anydbm.open(outfile, "n")
+        while 1:
+            s = s + infile.readline()
+            if s == "": break
+            while s[-1:] == "\r" or s[-1:] == "\n":
+                s = s[:-1]
+            sa = string.split(s, "\t")
+            if len(sa) == 3 and sa[1] == "kDefinition" and sa[0][:2] == "U+":
+                db[sa[0][2:]] = sa[2]
+            s = ""
+        db.close()
+        sys.exit(0)
 
     elif args[0] == "--test":
-	mode = "test"
-	args = args[1:]
+        mode = "test"
+        args = args[1:]
 
     elif args[0] == "--input" or args[0] == "-i":
-	mode = "input"
-	args = args[1:]
+        mode = "input"
+        args = args[1:]
 
     else:
-	sys.stderr.write("cvt-utf8: unknown argument '%s'" % args[0])
-	sys.exit(1)
+        sys.stderr.write("cvt-utf8: unknown argument '%s'" % args[0])
+        sys.exit(1)
 
 locations = []
 locations.append("/usr/share/unicode/unicode")
@@ -415,13 +415,13 @@ locations.append(os.environ["HOME"] + "/lib/unicode/unicode")
 
 for loc in locations:
     try:
-	db = anydbm.open(loc, "r")
+        db = anydbm.open(loc, "r")
     except IOError:
-	db = None
+        db = None
     except anydbm.error:
-	db = None
+        db = None
     if db != None:
-	break
+        break
 if han_translations:
     i = string.rfind(loc, "/")
     assert i >= 0
@@ -531,10 +531,10 @@ if mode == "test":
     do(["EF","BF","BF"])
 elif mode == "input":
     def getchar():
-	s = sys.stdin.read(1)
-	if s == "":
-	    return None
-	return ord(s) & 0xFF   # ensure it isn't negative
+        s = sys.stdin.read(1)
+        if s == "":
+            return None
+        return ord(s) & 0xFF   # ensure it isn't negative
     process_utf8(getchar)
 else:
     do(args)
