@@ -12,25 +12,25 @@ import math
 
 class polyhedron:
     def __init__(self):
-	self.vertices = {}
-	self.vlist = []
-	self.faces = {}
-	self.normals = {}
-	self.flist = []
+        self.vertices = {}
+        self.vlist = []
+        self.faces = {}
+        self.normals = {}
+        self.flist = []
 
     def vertex(self, x, y, z):
-	vnum = len(self.vertices)
-	vname = lettername(vnum)
-	x, y, z = float(x), float(y), float(z)
-	self.vertices[vname] = x, y, z
-	self.vlist.append(vname)
-	return vname
+        vnum = len(self.vertices)
+        vname = lettername(vnum)
+        x, y, z = float(x), float(y), float(z)
+        self.vertices[vname] = x, y, z
+        self.vlist.append(vname)
+        return vname
 
     def facelist(self, vlist):
-	# Construct a face, given an ordered list of vertices. We
-	# assume for these polyhedra that all faces point away from the
-	# origin, which means we can auto-compute the surface normal
-	# and automatically arrange for the face list to be the right
+        # Construct a face, given an ordered list of vertices. We
+        # assume for these polyhedra that all faces point away from the
+        # origin, which means we can auto-compute the surface normal
+        # and automatically arrange for the face list to be the right
         # way round.
         vlist = list(tuple(vlist))
         vprod = (0,0,0)
@@ -58,24 +58,24 @@ class polyhedron:
         for s in vlist:
             facename = facename + s
         # Output.
-	self.faces[facename] = vlist
-	self.normals[facename] = vprod
-	self.flist.append(facename)
+        self.faces[facename] = vlist
+        self.normals[facename] = vprod
+        self.flist.append(facename)
         return facename
 
     def face(self, *list):
         return self.facelist(list)
 
     def output(self, file):
-	for v in self.vlist:
-	    x, y, z = self.vertices[v]
-	    file.write("point "+v+" "+repr(x)+" "+repr(y)+" "+repr(z)+"\n")
-	for f in self.flist:
-	    vlist = self.faces[f]
-	    for s in vlist:
-		file.write("face " + f + " " + s + "\n")
-	    x, y, z = self.normals[f]
-	    file.write("normal "+f+" "+repr(x)+" "+repr(y)+" "+repr(z)+"\n")
+        for v in self.vlist:
+            x, y, z = self.vertices[v]
+            file.write("point "+v+" "+repr(x)+" "+repr(y)+" "+repr(z)+"\n")
+        for f in self.flist:
+            vlist = self.faces[f]
+            for s in vlist:
+                file.write("face " + f + " " + s + "\n")
+            x, y, z = self.normals[f]
+            file.write("normal "+f+" "+repr(x)+" "+repr(y)+" "+repr(z)+"\n")
 
 def lettername(n):
     chars = 1
@@ -260,11 +260,11 @@ def edges(p):
     # of a list of 2-tuples containing vertex names.
     elist = []
     for f in p.flist:
-	vl = p.faces[f]
-	for i in range(len(vl)):
-	    v1, v2 = vl[i-1], vl[i]  # i==0 neatly causes wraparound
-	    if v1 < v2: # only add each edge once
-		elist.append((v1,v2))
+        vl = p.faces[f]
+        for i in range(len(vl)):
+            v1, v2 = vl[i-1], vl[i]  # i==0 neatly causes wraparound
+            if v1 < v2: # only add each edge once
+                elist.append((v1,v2))
     return elist
 
 def edgemap(p):
@@ -272,9 +272,9 @@ def edgemap(p):
     # containing that edge.
     emap = {}
     for f in p.flist:
-	vl = p.faces[f]
-	for i in range(len(vl)):
-	    v1, v2 = vl[i-1], vl[i]  # i==0 neatly causes wraparound
+        vl = p.faces[f]
+        for i in range(len(vl)):
+            v1, v2 = vl[i-1], vl[i]  # i==0 neatly causes wraparound
             assert not emap.has_key((v1,v2))
             emap[(v1,v2)] = f
     return emap
@@ -354,74 +354,74 @@ class edgedual:
     # one polyhedron as input (since it could construct the dual
     # adequately as it went).
     def __init__(self, p1, p2):
-	self.p1 = p1
-	self.p2 = p2
+        self.p1 = p1
+        self.p2 = p2
     def __call__(self):
-	p1 = self.p1()
-	p2 = self.p2()
-	pout = polyhedron()
-	# Find the edges of each.
-	e1 = edges(p1)
-	e2 = edges(p2)
-	# For each polyhedron, find the radius vectors from the
-	# origin to the middle of each edge. As a by-produt of this
-	# phase, we also find the scale factor which normalises
-	# each polyhedron to the size where those radii have length
-	# 1.
-	r1 = {}
-	r2 = {}
-	for p, e, r in (p1,e1,r1),(p2,e2,r2):
-	    sl = sn = 0
-	    for v1, v2 in e:
-		x1, y1, z1 = p.vertices[v1]
-		x2, y2, z2 = p.vertices[v2]
-		x, y, z = (x1+x2)/2, (y1+y2)/2, (z1+z2)/2
-		l = math.sqrt(x*x+y*y+z*z)
-		r[(v1,v2)] = x, y, z
-		sl = sl + l
-		sn = sn + 1
-	    r[None] = sn / sl
-	# Now match up the edges between the two polyhedra. As a
-	# test of duality, we deliberately check that the mapping
-	# we end up with is a bijection.
-	emap = {}
-	scale1 = r1[None]
-	scale2 = r2[None]
-	for e in e2:
-	    n = r2[e]
-	    n = (n[0]*scale2, n[1]*scale2, n[2]*scale2)
-	    best = None
-	    bestdist = None
-	    for eprime in e1:
-		nprime = r1[eprime]
-		nprime = (nprime[0]*scale2, nprime[1]*scale2, nprime[2]*scale2)
-		dist = (nprime[0]-n[0])**2 + \
-		(nprime[1]-n[1])**2 + (nprime[2]-n[2])**2
-		if bestdist == None or dist < bestdist:
-		    bestdist = dist
-		    best = eprime
-	    # Ensure the function from e2 to e1 is injective, by
-	    # making sure we never overwrite an entry in emap.
-	    assert(not emap.has_key(best))
-	    emap[best] = e
-	# Ensure the function from e2 to e1 is surjective, by
-	# making sure everything in e1 is covered.
-	assert len(emap) == len(e1)
+        p1 = self.p1()
+        p2 = self.p2()
+        pout = polyhedron()
+        # Find the edges of each.
+        e1 = edges(p1)
+        e2 = edges(p2)
+        # For each polyhedron, find the radius vectors from the
+        # origin to the middle of each edge. As a by-produt of this
+        # phase, we also find the scale factor which normalises
+        # each polyhedron to the size where those radii have length
+        # 1.
+        r1 = {}
+        r2 = {}
+        for p, e, r in (p1,e1,r1),(p2,e2,r2):
+            sl = sn = 0
+            for v1, v2 in e:
+                x1, y1, z1 = p.vertices[v1]
+                x2, y2, z2 = p.vertices[v2]
+                x, y, z = (x1+x2)/2, (y1+y2)/2, (z1+z2)/2
+                l = math.sqrt(x*x+y*y+z*z)
+                r[(v1,v2)] = x, y, z
+                sl = sl + l
+                sn = sn + 1
+            r[None] = sn / sl
+        # Now match up the edges between the two polyhedra. As a
+        # test of duality, we deliberately check that the mapping
+        # we end up with is a bijection.
+        emap = {}
+        scale1 = r1[None]
+        scale2 = r2[None]
+        for e in e2:
+            n = r2[e]
+            n = (n[0]*scale2, n[1]*scale2, n[2]*scale2)
+            best = None
+            bestdist = None
+            for eprime in e1:
+                nprime = r1[eprime]
+                nprime = (nprime[0]*scale2, nprime[1]*scale2, nprime[2]*scale2)
+                dist = (nprime[0]-n[0])**2 + \
+                (nprime[1]-n[1])**2 + (nprime[2]-n[2])**2
+                if bestdist == None or dist < bestdist:
+                    bestdist = dist
+                    best = eprime
+            # Ensure the function from e2 to e1 is injective, by
+            # making sure we never overwrite an entry in emap.
+            assert(not emap.has_key(best))
+            emap[best] = e
+        # Ensure the function from e2 to e1 is surjective, by
+        # making sure everything in e1 is covered.
+        assert len(emap) == len(e1)
 
-	# Output the edge dual's vertices.
-	vmap1 = {}
-	vmap2 = {}
-	for p, r, vmap in (p1,r1,vmap1),(p2,r2,vmap2):
-	    scale = r[None]
-	    for v in p.vlist:
-		x, y, z = p.vertices[v]
-		vmap[v] = pout.vertex(x*scale, y*scale, z*scale)
+        # Output the edge dual's vertices.
+        vmap1 = {}
+        vmap2 = {}
+        for p, r, vmap in (p1,r1,vmap1),(p2,r2,vmap2):
+            scale = r[None]
+            for v in p.vlist:
+                x, y, z = p.vertices[v]
+                vmap[v] = pout.vertex(x*scale, y*scale, z*scale)
 
-	# And output the faces.
-	for e1, e2 in emap.items():
-	    pout.face(vmap1[e1[0]], vmap2[e2[0]], vmap1[e1[1]], vmap2[e2[1]])
+        # And output the faces.
+        for e1, e2 in emap.items():
+            pout.face(vmap1[e1[0]], vmap2[e2[0]], vmap1[e1[1]], vmap2[e2[1]])
 
-	return pout
+        return pout
 
 def edgeratio(x, y):
     # Determine the ratio between the edge lengths of an x-sided
@@ -436,11 +436,11 @@ class truncate:
     # leave. (0 means truncate at the midpoint; 1 means the null
     # truncation right at the end.)
     def __init__(self, p, r):
-	self.p = p
-	self.r = r
+        self.p = p
+        self.r = r
     def __call__(self):
         p = self.p()
-	pout = polyhedron()
+        pout = polyhedron()
         e = edges(p)
         newv = {}
         r1 = (1.0 + self.r) / 2
@@ -711,18 +711,18 @@ class output:
     # object, and implements a callable object which outputs that
     # polyhedron to stdout.
     def __init__(self, fn):
-	self.fn = fn
+        self.fn = fn
     def __call__(self, file=sys.stdout):
-	p = self.fn()
-	p.output(file)
+        p = self.fn()
+        p.output(file)
 
 def all():
     for name, fn in polyhedra.items():
-	if name == "all":
-	    continue
-	file = open(name, "w")
-	fn(file)
-	file.close()
+        if name == "all":
+            continue
+        file = open(name, "w")
+        fn(file)
+        file.close()
 
 polyhedra = {
 "tetrahedron": output(tetrahedron),

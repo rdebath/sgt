@@ -147,35 +147,35 @@ while 1:
     sl = string.split(s)
     lineno = lineno + 1
     if sl[0] == "point" and len(sl) == 5:
-	vertices[sl[1]] = \
-	(string.atof(sl[2]), string.atof(sl[3]), string.atof(sl[4]))
+        vertices[sl[1]] = \
+        (string.atof(sl[2]), string.atof(sl[3]), string.atof(sl[4]))
     elif sl[0] == "face" and len(sl) == 3:
-	if not vertices.has_key(sl[2]):
-	    sys.stderr.write("line %d: vertex %s not defined\n" % \
-	    (lineno, sl[2]))
-	else:
-	    if not faces.has_key(sl[1]):
-		faces[sl[1]] = []
-	    faces[sl[1]].append(sl[2])
+        if not vertices.has_key(sl[2]):
+            sys.stderr.write("line %d: vertex %s not defined\n" % \
+            (lineno, sl[2]))
+        else:
+            if not faces.has_key(sl[1]):
+                faces[sl[1]] = []
+            faces[sl[1]].append(sl[2])
     elif sl[0] == "normal" and len(sl) == 5:
-	if not faces.has_key(sl[1]):
-	    sys.stderr.write("line %d: face %s not defined\n" % \
-	    (lineno, sl[1]))
-	else:
-	    normals[sl[1]] = \
-	    (string.atof(sl[2]), string.atof(sl[3]), string.atof(sl[4]))
+        if not faces.has_key(sl[1]):
+            sys.stderr.write("line %d: face %s not defined\n" % \
+            (lineno, sl[1]))
+        else:
+            normals[sl[1]] = \
+            (string.atof(sl[2]), string.atof(sl[3]), string.atof(sl[4]))
     else:
-	sys.stderr.write("line %d: unrecognised line format\n" % lineno)
-	continue
+        sys.stderr.write("line %d: unrecognised line format\n" % lineno)
+        continue
 infile.close()
 
 def realprint(a):
     for i in range(len(a)):
-	outfile.write(str(a[i]))
-	if i < len(a)-1:
-	    outfile.write(" ")
-	else:
-	    outfile.write("\n")
+        outfile.write(str(a[i]))
+        if i < len(a)-1:
+            outfile.write(" ")
+        else:
+            outfile.write("\n")
 
 def polyprint(*a):
     realprint(a)
@@ -192,9 +192,9 @@ for key in faces.keys():
     nx, ny, nz = nx/nl, ny/nl, nz/nl
     dps = dpn = 0
     for v in faces[key]:
-	x, y, z = vertices[v]
-	dps = dps + x*nx + y*ny + z*nz
-	dpn = dpn + 1
+        x, y, z = vertices[v]
+        dps = dps + x*nx + y*ny + z*nz
+        dpn = dpn + 1
     dist = dpn / dps   # reciprocal of average of dot products
     nx, ny, nz = nx * dist, ny * dist, nz * dist
     polyprint("point", key, nx, ny, nz)
@@ -207,8 +207,8 @@ for key in faces.keys():
 edges = {}
 for key in faces.keys():
     for i in range(len(faces[key])):
-	v1, v2 = faces[key][i-1], faces[key][i] # -1 neatly causes wraparound
-	edges[(v1,v2)] = key
+        v1, v2 = faces[key][i-1], faces[key][i] # -1 neatly causes wraparound
+        edges[(v1,v2)] = key
 
 # Now we can output the faces, one (of course) for each vertex of
 # the old polyhedron.
@@ -218,23 +218,23 @@ for key in vertices.keys():
     # which is on this face.
     fstart = None
     for f in faces.keys():
-	if key in faces[f]:
-	    fstart = f
-	    break
+        if key in faces[f]:
+            fstart = f
+            break
     assert fstart != None
 
     f = fstart
     while 1:
-	polyprint("face", key, f)
-	# Now find the edge of that face which comes _in_ to that
-	# vertex, and then look its reverse up in the edge database.
-	# This gives us the next face going round.
-	fl = faces[f]
-	i = fl.index(key)
-	v1, v2 = fl[i-1], fl[i]
-	f = edges[(v2,v1)]
-	if f == fstart:
-	    break
+        polyprint("face", key, f)
+        # Now find the edge of that face which comes _in_ to that
+        # vertex, and then look its reverse up in the edge database.
+        # This gives us the next face going round.
+        fl = faces[f]
+        i = fl.index(key)
+        v1, v2 = fl[i-1], fl[i]
+        f = edges[(v2,v1)]
+        if f == fstart:
+            break
 
     # Finally, the normal vector to this face must be the position
     # vector of the corresponding original vertex, normalised to

@@ -34,26 +34,26 @@ while 1:
     sl = string.split(s)
     lineno = lineno + 1
     if sl[0] == "point" and len(sl) == 5:
-	vertices[sl[1]] = \
-	(string.atof(sl[2]), string.atof(sl[3]), string.atof(sl[4]))
+        vertices[sl[1]] = \
+        (string.atof(sl[2]), string.atof(sl[3]), string.atof(sl[4]))
     elif sl[0] == "face" and len(sl) == 3:
-	if not vertices.has_key(sl[2]):
-	    sys.stderr.write("line %d: vertex %s not defined\n" % \
-	    (lineno, sl[2]))
-	else:
-	    if not faces.has_key(sl[1]):
-		faces[sl[1]] = []
-	    faces[sl[1]].append(sl[2])
+        if not vertices.has_key(sl[2]):
+            sys.stderr.write("line %d: vertex %s not defined\n" % \
+            (lineno, sl[2]))
+        else:
+            if not faces.has_key(sl[1]):
+                faces[sl[1]] = []
+            faces[sl[1]].append(sl[2])
     elif sl[0] == "normal" and len(sl) == 5:
-	if not faces.has_key(sl[1]):
-	    sys.stderr.write("line %d: face %s not defined\n" % \
-	    (lineno, sl[1]))
-	else:
-	    normals[sl[1]] = \
-	    (string.atof(sl[2]), string.atof(sl[3]), string.atof(sl[4]))
+        if not faces.has_key(sl[1]):
+            sys.stderr.write("line %d: face %s not defined\n" % \
+            (lineno, sl[1]))
+        else:
+            normals[sl[1]] = \
+            (string.atof(sl[2]), string.atof(sl[3]), string.atof(sl[4]))
     else:
-	sys.stderr.write("line %d: unrecognised line format\n" % lineno)
-	continue
+        sys.stderr.write("line %d: unrecognised line format\n" % lineno)
+        continue
 infile.close()
 
 # Collect the edge list.
@@ -61,10 +61,10 @@ edges = []
 for i in faces.keys():
     vs = faces[i]
     for k in range(len(vs)):
-	v1 = vs[k-1]
-	v2 = vs[k]
-	if v1 < v2:
-	    edges.append((v1,v2))
+        v1 = vs[k-1]
+        v2 = vs[k]
+        if v1 < v2:
+            edges.append((v1,v2))
 edges.sort()
 
 # Shuffle the vertices.
@@ -88,17 +88,17 @@ crossing = 0
 noncrosses = []
 for i in xrange(len(edges)-1):
     for j in xrange(i+1, len(edges)):
-	i1, i2 = map(lambda x: vertexnumber[x], edges[i])
-	j1, j2 = map(lambda x: vertexnumber[x], edges[j])
-	if i1 == j1 or i1 == j2 or i2 == j1 or i2 == j2:
-	    continue
-	i2 = (i2 + nv - i1) % nv
-	j1 = (j1 + nv - i1) % nv
-	j2 = (j2 + nv - i1) % nv
-	if (j1 - i2 > 0) != (j2 - i2 > 0):
-	    crossing = 1
-	else:
-	    noncrosses.append((i, j))
+        i1, i2 = map(lambda x: vertexnumber[x], edges[i])
+        j1, j2 = map(lambda x: vertexnumber[x], edges[j])
+        if i1 == j1 or i1 == j2 or i2 == j1 or i2 == j2:
+            continue
+        i2 = (i2 + nv - i1) % nv
+        j1 = (j1 + nv - i1) % nv
+        j2 = (j2 + nv - i1) % nv
+        if (j1 - i2 > 0) != (j2 - i2 > 0):
+            crossing = 1
+        else:
+            noncrosses.append((i, j))
 if not crossing:
     i, j = random.choice(noncrosses)
     iv = random.choice(edges[i])

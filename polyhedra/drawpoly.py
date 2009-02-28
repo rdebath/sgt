@@ -34,35 +34,35 @@ while 1:
     sl = string.split(s)
     lineno = lineno + 1
     if sl[0] == "point" and len(sl) == 5:
-	vertices[sl[1]] = \
-	(string.atof(sl[2]), string.atof(sl[3]), string.atof(sl[4]))
+        vertices[sl[1]] = \
+        (string.atof(sl[2]), string.atof(sl[3]), string.atof(sl[4]))
     elif sl[0] == "face" and len(sl) == 3:
-	if not vertices.has_key(sl[2]):
-	    sys.stderr.write("line %d: vertex %s not defined\n" % \
-	    (lineno, sl[2]))
-	else:
-	    if not faces.has_key(sl[1]):
-		faces[sl[1]] = []
-	    faces[sl[1]].append(sl[2])
+        if not vertices.has_key(sl[2]):
+            sys.stderr.write("line %d: vertex %s not defined\n" % \
+            (lineno, sl[2]))
+        else:
+            if not faces.has_key(sl[1]):
+                faces[sl[1]] = []
+            faces[sl[1]].append(sl[2])
     elif sl[0] == "normal" and len(sl) == 5:
-	if not faces.has_key(sl[1]):
-	    sys.stderr.write("line %d: face %s not defined\n" % \
-	    (lineno, sl[1]))
-	else:
-	    normals[sl[1]] = \
-	    (string.atof(sl[2]), string.atof(sl[3]), string.atof(sl[4]))
+        if not faces.has_key(sl[1]):
+            sys.stderr.write("line %d: face %s not defined\n" % \
+            (lineno, sl[1]))
+        else:
+            normals[sl[1]] = \
+            (string.atof(sl[2]), string.atof(sl[3]), string.atof(sl[4]))
     else:
-	sys.stderr.write("line %d: unrecognised line format\n" % lineno)
-	continue
+        sys.stderr.write("line %d: unrecognised line format\n" % lineno)
+        continue
 infile.close()
 
 def realprint(a):
     for i in range(len(a)):
-	outfile.write(str(a[i]))
-	if i < len(a)-1:
-	    outfile.write(" ")
-	else:
-	    outfile.write("\n")
+        outfile.write(str(a[i]))
+        if i < len(a)-1:
+            outfile.write(" ")
+        else:
+            outfile.write("\n")
 
 def psprint(*a):
     realprint(a)
@@ -104,26 +104,26 @@ forward = {}
 for key, vlist in faces.items():
     xt = yt = zt = 0
     for p in vlist:
-	xt = xt + vertices[p][0]
-	yt = yt + vertices[p][1]
-	zt = zt + vertices[p][2] + 14
+        xt = xt + vertices[p][0]
+        yt = yt + vertices[p][1]
+        zt = zt + vertices[p][2] + 14
     xt = xt / len(vlist)
     yt = yt / len(vlist)
     zt = zt / len(vlist)
     dp = xt * normals[key][0] + yt * normals[key][1] + zt * normals[key][2]
     if dp > 0:
-	forward[key] = 0
+        forward[key] = 0
     else:
-	forward[key] = 1
+        forward[key] = 1
     pass
 
 def drawface(vlist):
     psprint("newpath")
     cmd = "moveto"
     for p in vlist:
-	v = pvertices[p]
-	psprint("   ", v[0], v[1], cmd)
-	cmd = "lineto"
+        v = pvertices[p]
+        psprint("   ", v[0], v[1], cmd)
+        cmd = "lineto"
     psprint("closepath stroke")
 
 # Draw rear-facing faces in a thin line. (Since we haven't rotated
@@ -131,22 +131,22 @@ def drawface(vlist):
 # examining the z component of its surface normal.)
 for key, vlist in faces.items():
     if not forward[key]:
-	psprint("0.001 setlinewidth 0 setgray")
-	drawface(vlist)
+        psprint("0.001 setlinewidth 0 setgray")
+        drawface(vlist)
 
 # Draw forward-facing faces in a very thick _white_ line (so that
 # hidden lines have gaps in to make it clear that the
 # forward-facing lines go in front).
 for key, vlist in faces.items():
     if forward[key]:
-	psprint("0.03 setlinewidth 1 setgray")
-	drawface(vlist)
+        psprint("0.03 setlinewidth 1 setgray")
+        drawface(vlist)
 
 # Draw forward-facing faces again, in a medium-thick black line.
 for key, vlist in faces.items():
     if forward[key]:
-	psprint("0.01 setlinewidth 0 setgray")
-	drawface(vlist)
+        psprint("0.01 setlinewidth 0 setgray")
+        drawface(vlist)
 
 psprint("showpage grestore")
 psprint("%%EOF")

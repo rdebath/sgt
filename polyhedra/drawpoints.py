@@ -32,9 +32,9 @@ while 1:
     sl = string.split(s)
     lineno = lineno + 1
     if len(sl) != 3:
-	sys.stderr.write("line %d: expected three fields per line, got %d\n" \
-	% (lineno, len(sl)))
-	continue
+        sys.stderr.write("line %d: expected three fields per line, got %d\n" \
+        % (lineno, len(sl)))
+        continue
     points.append((string.atof(sl[0]), string.atof(sl[1]), string.atof(sl[2])))
 infile.close()
 
@@ -42,11 +42,11 @@ n = len(points)
 
 def realprint(a):
     for i in range(len(a)):
-	outfile.write(str(a[i]))
-	if i < len(a)-1:
-	    outfile.write(" ")
-	else:
-	    outfile.write("\n")
+        outfile.write(str(a[i]))
+        if i < len(a)-1:
+            outfile.write(" ")
+        else:
+            outfile.write("\n")
 
 def psprint(*a):
     realprint(a)
@@ -62,12 +62,12 @@ psprint("newpath 0 0 1 0 360 arc stroke")
 s = 0.02
 for x, y, z in points:
     if z > 0:
-	# X denotes a point at the back.
-	psprint("newpath", x+s, y+s, "moveto", x-s, y-s, "lineto")
-	psprint(x+s, y-s, "moveto", x-s, y+s, "lineto stroke")
+        # X denotes a point at the back.
+        psprint("newpath", x+s, y+s, "moveto", x-s, y-s, "lineto")
+        psprint(x+s, y-s, "moveto", x-s, y+s, "lineto stroke")
     else:
-	# O denotes a point at the front.
-	psprint("newpath", x, y, s, "0 360 arc stroke")
+        # O denotes a point at the front.
+        psprint("newpath", x, y, s, "0 360 arc stroke")
 
 psprint("showpage grestore")
 psprint("%%EOF")
