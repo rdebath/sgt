@@ -11,15 +11,15 @@ lines = []
 while 1:
     s = sys.stdin.readline()
     if s == "":
-	break
+        break
     if s[-1:] != "\n":
-	s = s + "\n"
+        s = s + "\n"
     lines.append(s)
 
 random.shuffle(lines)
 try:
     for line in lines:
-	sys.stdout.write(line)
+        sys.stdout.write(line)
 except IOError, e:
     # This typically means `broken pipe', i.e. we've been piped
     # into head or some such. Don't panic; just calmly shut down.

@@ -6,85 +6,85 @@ import struct
 def readgif(f, name):
     header = f.read(3)
     if header != "GIF":
-	sys.stderr.write("%s: not a GIF file\n" % name)
-	return
+        sys.stderr.write("%s: not a GIF file\n" % name)
+        return
 
     version = f.read(3)
     if version != "87a" and version != "89a":
-	sys.stderr.write("%s: unrecognised GIF version '%s'\n" % \
-	(name, version))
-	return
+        sys.stderr.write("%s: unrecognised GIF version '%s'\n" % \
+        (name, version))
+        return
 
     header = f.read(7)
     htuple = struct.unpack("<HHBBB", header)
     sys.stdout.write("%s: size is %d x %d\n" % (name, htuple[0], htuple[1]))
 
     if htuple[2] & 0x80:
-	# There's a colour table.
-	ctentries = (1 << (1 + (htuple[2] & 7)))
-	sys.stdout.write("%s: global colour table at %d, %d entries\n" % \
-	(name, f.tell(), ctentries))
-	ctable = f.read(ctentries * 3)
+        # There's a colour table.
+        ctentries = (1 << (1 + (htuple[2] & 7)))
+        sys.stdout.write("%s: global colour table at %d, %d entries\n" % \
+        (name, f.tell(), ctentries))
+        ctable = f.read(ctentries * 3)
 
     # Now the main data stream.
     while 1:
-	fpos = f.tell()
-	intro = f.read(1)
-	if intro == "\x21":
-	    # Extension block.
-	    label = f.read(1)
-	    labelv = ord(label)
+        fpos = f.tell()
+        intro = f.read(1)
+        if intro == "\x21":
+            # Extension block.
+            label = f.read(1)
+            labelv = ord(label)
 
-	    data = []
-	    while 1:
-		blklen = f.read(1)
-		blklenv = ord(blklen)
-		if blklenv > 0:
-		    data.append(f.read(blklenv))
-		else:
-		    break
+            data = []
+            while 1:
+                blklen = f.read(1)
+                blklenv = ord(blklen)
+                if blklenv > 0:
+                    data.append(f.read(blklenv))
+                else:
+                    break
 
-	    if labelv == 0xf9:
-		sys.stdout.write("%s: graphics control extension at %d\n" % \
-		(name, fpos))
-		etuple = struct.unpack("<BHB", data[0])
-		sys.stdout.write("%s: next image has delay %d centiseconds\n"%\
-		(name, etuple[1]))
-	    else:
-		sys.stdout.write("%s: unknown extension block 0x%02x at %d, %d bytes long\n" % \
-		(name, labelv, fpos, f.tell() - fpos))
+            if labelv == 0xf9:
+                sys.stdout.write("%s: graphics control extension at %d\n" % \
+                (name, fpos))
+                etuple = struct.unpack("<BHB", data[0])
+                sys.stdout.write("%s: next image has delay %d centiseconds\n"%\
+                (name, etuple[1]))
+            else:
+                sys.stdout.write("%s: unknown extension block 0x%02x at %d, %d bytes long\n" % \
+                (name, labelv, fpos, f.tell() - fpos))
 
-	elif intro == "\x2C":
-	    # Image descriptor.
-	    header = f.read(9)
-	    htuple = struct.unpack("<HHHHB", header)
-	    sys.stdout.write("%s: image at %d, geometry %dx%d+%d+%d\n" % \
-	    (name, fpos, htuple[2], htuple[3], htuple[0], htuple[1]))
+        elif intro == "\x2C":
+            # Image descriptor.
+            header = f.read(9)
+            htuple = struct.unpack("<HHHHB", header)
+            sys.stdout.write("%s: image at %d, geometry %dx%d+%d+%d\n" % \
+            (name, fpos, htuple[2], htuple[3], htuple[0], htuple[1]))
 
-	    if htuple[4] & 0x80:
-		# There's a colour table.
-		ctentries = (1 << (1 + (htuple[4] & 7)))
-		sys.stdout.write("%s: local colour table at %d, %d entries\n" % \
-		(name, f.tell(), ctentries))
-		ctable = f.read(ctentries * 3)
+            if htuple[4] & 0x80:
+                # There's a colour table.
+                ctentries = (1 << (1 + (htuple[4] & 7)))
+                sys.stdout.write("%s: local colour table at %d, %d entries\n" % \
+                (name, f.tell(), ctentries))
+                ctable = f.read(ctentries * 3)
 
-	    codesize = f.read(1)
+            codesize = f.read(1)
 
-	    while 1:
-		blklen = f.read(1)
-		blklenv = ord(blklen)
-		if blklenv > 0:
-		    f.read(blklenv)
-		else:
-		    break
+            while 1:
+                blklen = f.read(1)
+                blklenv = ord(blklen)
+                if blklenv > 0:
+                    f.read(blklenv)
+                else:
+                    break
 
-	elif intro == "\x3B":
-	    sys.stdout.write("%s: trailer at %d\n" % (name, fpos))
-	    break
+        elif intro == "\x3B":
+            sys.stdout.write("%s: trailer at %d\n" % (name, fpos))
+            break
 
-	else:
-	    sys.stdout.write("%s: unexpected introducer 0x%02x at %d\n" % \
-	    (name, ord(intro), fpos))
+        else:
+            sys.stdout.write("%s: unexpected introducer 0x%02x at %d\n" % \
+            (name, ord(intro), fpos))
 
 args = sys.argv[1:]
 for fn in args:
