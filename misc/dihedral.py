@@ -150,64 +150,64 @@ def display_angles(pointlist, names, filename):
     # If given the `-p' command-line option, we output a polyhedron
     # description instead of this raw display.
     if len(sys.argv) > 1 and sys.argv[1] == "-p":
-	f = open(filename, "w")
+        f = open(filename, "w")
 
-	# First, find a plausible vertical axis for the polyhedron,
-	# by normalising the vectors and averaging the result.
-	vsum = (0,0,0)
-	for v in pointlist:
-	    vsum = add(vsum, normalise(v))
-	vsum = normalise(vsum)
+        # First, find a plausible vertical axis for the polyhedron,
+        # by normalising the vectors and averaging the result.
+        vsum = (0,0,0)
+        for v in pointlist:
+            vsum = add(vsum, normalise(v))
+        vsum = normalise(vsum)
 
-	# Next, transform each edge vector so that its component in
-	# the direction of vsum is the same.
-	newpoints = []
-	for v in pointlist:
-	    component = dot(v, vsum)
-	    v = mult(v, 1.0/component)
-	    newpoints.append(v)
+        # Next, transform each edge vector so that its component in
+        # the direction of vsum is the same.
+        newpoints = []
+        for v in pointlist:
+            component = dot(v, vsum)
+            v = mult(v, 1.0/component)
+            newpoints.append(v)
 
-	# Now find a plausible centre point for the solid, by
-	# adding up all those points and dividing by n+1 (so we
-	# also `average' in the origin).
-	centroid = (0,0,0)
-	for v in newpoints:
-	    centroid = add(v, centroid)
-	centroid = mult(v, 1.0 / (1+len(pointlist)))
+        # Now find a plausible centre point for the solid, by
+        # adding up all those points and dividing by n+1 (so we
+        # also `average' in the origin).
+        centroid = (0,0,0)
+        for v in newpoints:
+            centroid = add(v, centroid)
+        centroid = mult(v, 1.0 / (1+len(pointlist)))
 
-	# Now output the point coordinates.
-	f.write("point apex %f %f %f\n" % mult(centroid,-1))
-	for i in range(len(newpoints)):
-	    v = newpoints[i]
-	    f.write("point base%d %f %f %f\n" % ((i,) + sub(v, centroid)))
+        # Now output the point coordinates.
+        f.write("point apex %f %f %f\n" % mult(centroid,-1))
+        for i in range(len(newpoints)):
+            v = newpoints[i]
+            f.write("point base%d %f %f %f\n" % ((i,) + sub(v, centroid)))
 
-	# Next, write out each face description. First the base.
-	for i in range(len(newpoints)-1,-1,-1):
-	    f.write("face base base%d\n" % i)
-	f.write("normal base %f %f %f\n" % vsum)
+        # Next, write out each face description. First the base.
+        for i in range(len(newpoints)-1,-1,-1):
+            f.write("face base base%d\n" % i)
+        f.write("normal base %f %f %f\n" % vsum)
 
-	for i in range(len(newpoints)):
-	    j = (i+1) % len(newpoints)
-	    facename = "face%dwith%d" % (i,j)
-	    f.write("face "+facename+" apex\n")
-	    f.write("face "+facename+" base%d\n" % i)
-	    f.write("face "+facename+" base%d\n" % j)
-	    # Now compute the face normal by taking the cross
-	    # product of the vectors to those two points.
-	    normal = normalise(cross(pointlist[i], pointlist[j]))
-	    f.write("normal "+facename+" %f %f %f\n" % normal)
+        for i in range(len(newpoints)):
+            j = (i+1) % len(newpoints)
+            facename = "face%dwith%d" % (i,j)
+            f.write("face "+facename+" apex\n")
+            f.write("face "+facename+" base%d\n" % i)
+            f.write("face "+facename+" base%d\n" % j)
+            # Now compute the face normal by taking the cross
+            # product of the vectors to those two points.
+            normal = normalise(cross(pointlist[i], pointlist[j]))
+            f.write("normal "+facename+" %f %f %f\n" % normal)
 
     else:
-	for i in range(len(names)):
-	    print names[i], "=", "%f %f %f" % pointlist[i]
-	for i in range(len(names)):
-	    name1, name2 = names[i-1], names[i]
-	    print "Face angle " + name1 + "O" + name2 + " =", faceangles[i]
-	print "Cut edge angle =", cutangle
-	for i in range(len(names)):
-	    name1, name2, name3 = names[i-2], names[i-1], names[i]
-	    print "Dihedral angle of O" + name1 + name2 + \
-	    " with O" + name2 + name3 + " =", dihedrals[i]
+        for i in range(len(names)):
+            print names[i], "=", "%f %f %f" % pointlist[i]
+        for i in range(len(names)):
+            name1, name2 = names[i-1], names[i]
+            print "Face angle " + name1 + "O" + name2 + " =", faceangles[i]
+        print "Cut edge angle =", cutangle
+        for i in range(len(names)):
+            name1, name2, name3 = names[i-2], names[i-1], names[i]
+            print "Dihedral angle of O" + name1 + name2 + \
+            " with O" + name2 + name3 + " =", dihedrals[i]
 
 # One vertex of a regular icosahedron, and the five vertices
 # surrounding it.
