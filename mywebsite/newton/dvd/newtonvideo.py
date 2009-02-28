@@ -22,9 +22,9 @@ import polyfac
 def atotime(s):
     i = string.find(s, ":")
     if i >= 0:
-	return string.atof(s[:i]) * 60 + string.atof(s[i+1:])
+        return string.atof(s[:i]) * 60 + string.atof(s[i+1:])
     else:
-	return string.atof(s)
+        return string.atof(s)
 
 fps = 25
 width = 720
@@ -40,35 +40,35 @@ frameoffset = 0
 
 for arg in sys.argv[1:]:
     if arg == "-p":
-	preview = 1
+        preview = 1
     elif arg[:2] == "-o":
-	frameoffset = atotime(arg[2:])
+        frameoffset = atotime(arg[2:])
     elif arg[:2] == "-O":
-	frameoffset = float(string.atoi(arg[2:])) / fps
+        frameoffset = float(string.atoi(arg[2:])) / fps
     elif arg[:2] == "-l":
-	maxframes = int(atotime(arg[2:]) * fps)
+        maxframes = int(atotime(arg[2:]) * fps)
     elif arg[:2] == "-L":
-	maxframes = string.atoi(arg[2:])
+        maxframes = string.atoi(arg[2:])
     elif arg[:2] == "-v":
-	verbose = 1
+        verbose = 1
     elif arg[:2] == "-n":
-	dryrun = 1
+        dryrun = 1
     elif arg == "--ntsc":
-	fps = 30
-	height = 480
+        fps = 30
+        height = 480
     elif arg == "--widescreen":
-	aspect = 16.0/9.0
+        aspect = 16.0/9.0
     elif arg[:2] == "-s":
-	width = width / 2
-	height = height / 2
+        width = width / 2
+        height = height / 2
     elif arg == "--chapters":
-	mode = "chapters"
+        mode = "chapters"
     elif arg == "--chaptermenu":
-	mode = "chaptermenu"
+        mode = "chaptermenu"
     elif arg == "--total":
-	mode = "total"
+        mode = "total"
     elif arg == "--totalframes":
-	mode = "totalframes"
+        mode = "totalframes"
 
 # Root colours.
 RED = (1, 0, 0)
@@ -103,7 +103,7 @@ def addinterval(point, t0, t1, torig, coordfunc):
 
 def preparedata():
     for v in intervals.values():
-	v.sort()
+        v.sort()
 
 def pointcoords(point, t):
     list = intervals[point]
@@ -112,26 +112,26 @@ def pointcoords(point, t):
     bottom = -1
     top = len(list)
     while top - bottom > 1:
-	mid = int((bottom + top) / 2)
-	if list[mid][0] <= t:
-	    bottom = mid
-	else:
-	    top = mid
+        mid = int((bottom + top) / 2)
+        if list[mid][0] <= t:
+            bottom = mid
+        else:
+            top = mid
     # Now we expect between 0 and 2 intervals containing the point.
     i1 = i2 = None
     if bottom >= 0 and list[bottom][0] <= t and t < list[bottom][1]:
-	i1 = list[bottom]
-	if bottom >= 1 and list[bottom-1][0] <= t and t < list[bottom-1][1]:
-	    i2 = i1
-	    i1 = list[bottom-1]
+        i1 = list[bottom]
+        if bottom >= 1 and list[bottom-1][0] <= t and t < list[bottom-1][1]:
+            i2 = i1
+            i1 = list[bottom-1]
     # If we have no intervals, return no coordinate.
     if i1 == None:
-	return None
+        return None
     # If we have one interval, return the coordinates given by that
     # one.
     c1 = i1[3](t - i1[2])
     if i2 == None:
-	return c1
+        return c1
     # Otherwise, compute the coordinates given by both intervals,
     # and blend.
     c2 = i2[3](t - i2[2])
@@ -145,7 +145,7 @@ def blendcoords(c1, c2, w1, w2):
     assert len(c1) == len(c2)
     ret = ()
     for i in range(len(c1)):
-	ret = ret + (c1[i] * p1 + c2[i] * p2,)
+        ret = ret + (c1[i] * p1 + c2[i] * p2,)
     return ret
 
 # To make it easier to bring points in from near infinity, we apply
@@ -154,13 +154,13 @@ def blendcoords(c1, c2, w1, w2):
 def project(c):
     norm = sqrt(sum([x*x for x in c]))
     if norm == 0:
-	scale = 1
+        scale = 1
     else:
-	nn = norm * pi / 10
-	scale = tan(nn) / nn
+        nn = norm * pi / 10
+        scale = tan(nn) / nn
     ret = ()
     for i in range(len(c)):
-	ret = ret + (c[i] * scale,)
+        ret = ret + (c[i] * scale,)
     return ret
 
 # Sequences requiring very precise point positioning - Orbits and
@@ -170,13 +170,13 @@ def project(c):
 def antiproject(c):
     norm = sqrt(sum([x*x for x in c]))
     if norm == 0:
-	scale = 1
+        scale = 1
     else:
-	nn = norm * pi / 10
-	scale = atan(nn) / nn
+        nn = norm * pi / 10
+        scale = atan(nn) / nn
     ret = ()
     for i in range(len(c)):
-	ret = ret + (c[i] * scale,)
+        ret = ret + (c[i] * scale,)
     return ret
 
 def findpoints(t):
@@ -186,24 +186,24 @@ def findpoints(t):
     power = 1.0
     title = credits = None
     for point in intervals.keys():
-	c = pointcoords(point, t)
-	if c != None:
-	    # See if this is a normal point or a special one.
-	    if point[0] != None:
-		# Normal point. Project it and add it to the list.
-		coords.append((point, project(c)))
-	    elif point[1] == 1:
-		# FADE.
-		fadelevel = c[0]
-	    elif point[1] == 2:
-		# POWER.
-		power = c[0]
-	    elif point[1] == 3:
-		# TITLE.
-		title = c[0]
-	    elif point[1] == 4:
-		# CREDITS.
-		credits = c[0]
+        c = pointcoords(point, t)
+        if c != None:
+            # See if this is a normal point or a special one.
+            if point[0] != None:
+                # Normal point. Project it and add it to the list.
+                coords.append((point, project(c)))
+            elif point[1] == 1:
+                # FADE.
+                fadelevel = c[0]
+            elif point[1] == 2:
+                # POWER.
+                power = c[0]
+            elif point[1] == 3:
+                # TITLE.
+                title = c[0]
+            elif point[1] == 4:
+                # CREDITS.
+                credits = c[0]
     # Now adjust the colours by the fade level, and return.
     return power, title, credits, [((r*fadelevel, g*fadelevel, b*fadelevel), x, y) for ((r,g,b),(x,y)) in coords]
 
@@ -296,9 +296,9 @@ chaptermark(T+2, "Square Dance II", 10)
 U = T + 180
 def sqd2(f, x, s):
     if f(x) * s < 0:
-	return f(x)
+        return f(x)
     else:
-	return sqd_K * (f(x) - f(x)**3*0.75)
+        return sqd_K * (f(x) - f(x)**3*0.75)
 addinterval(GREEN, T-2, U+2, T-1.25, lambda t: (-sqd2(sin,2*pi*t/10,+1), -sqd2(cos,2*pi*t/10,-1)))
 addinterval(BLUE, T-2, U+2, T-1.25, lambda t: (-sqd2(sin,2*pi*t/10,-1), sqd2(cos,2*pi*t/10,+1)))
 addinterval(RED, T-2, U+1, T-1.25, lambda t: (sqd2(sin,2*pi*t/10,-1), -sqd2(cos,2*pi*t/10,+1)))
@@ -312,12 +312,12 @@ def sqd3(f, x, threshold):
     k = f(x)
     sign = 1
     if k > threshold:
-	k = k - threshold
+        k = k - threshold
     elif k < -threshold:
-	k = k + threshold
-	sign = -1
+        k = k + threshold
+        sign = -1
     else:
-	k = 0
+        k = 0
     return sign * abs(k) * abs(k)
 addinterval(YELLOW, T-2, U+3.25, T-1.25, lambda t: (1.5*sin(2*pi*t/10)-10*sqd3(cos,2*pi*t/10,0.9), 1.5*sin(2*pi*t/10)+10*sqd3(cos,2*pi*t/10,0.9)))
 addinterval(RED, T-3, U+3.25, T-1.25, lambda t: (-1.5*sin(2*pi*t/10)+10*sqd3(cos,2*pi*t/10,0.9), -1.5*sin(2*pi*t/10)-10*sqd3(cos,2*pi*t/10,0.9)))
@@ -469,9 +469,9 @@ T = U
 # the Square Dances.
 def pmsqrt(x):
     if x < 0:
-	return -sqrt(-x)
+        return -sqrt(-x)
     else:
-	return sqrt(x)
+        return sqrt(x)
 def wibble(x, n):
     return x - sin(x*n)/n
 def gc_r(theta):
@@ -503,63 +503,63 @@ twirlpos = {}
 def doubletwirl(colour, t):
     global twirlpos
     if not twirlpos.has_key(t):
-	# Compute the point positions for t, and store them in the
-	# twirlpos cache.
+        # Compute the point positions for t, and store them in the
+        # twirlpos cache.
 
-	# First decide the location of the root we can choose.
-	rootpos = 1.6 * sin(t) * cmath.exp(cos(t)*1j)
+        # First decide the location of the root we can choose.
+        rootpos = 1.6 * sin(t) * cmath.exp(cos(t)*1j)
 
-	# Then add a constant term to the polynomial to make it
-	# zero at that position.
-	poly = [0, -35, 0, 35, 0, -21, 0, 5]
-	pval = 0
-	for j in range(len(poly)-1, -1, -1):
-	    pval = rootpos * pval + poly[j]
-	poly[0] = -pval
+        # Then add a constant term to the polynomial to make it
+        # zero at that position.
+        poly = [0, -35, 0, 35, 0, -21, 0, 5]
+        pval = 0
+        for j in range(len(poly)-1, -1, -1):
+            pval = rootpos * pval + poly[j]
+        poly[0] = -pval
 
-	# Now we know our polynomial, factorise it.
-	roots = polyfac.factorise(poly)
+        # Now we know our polynomial, factorise it.
+        roots = polyfac.factorise(poly)
 
-	# Now identify the roots reliably by colour.
-	posns = {}
+        # Now identify the roots reliably by colour.
+        posns = {}
 
-	# First pick out the closest one to rootpos; that's our
-	# moving root.
-	moving = 0
-	bestdist = abs(roots[0] - rootpos)
-	for i in range(1,len(roots)):
-	    dist = abs(roots[i] - rootpos)
-	    if dist < bestdist:
-		bestdist = dist
-		moving = i
-	posns[GREEN] = antiproject((roots[moving].real, roots[moving].imag))
+        # First pick out the closest one to rootpos; that's our
+        # moving root.
+        moving = 0
+        bestdist = abs(roots[0] - rootpos)
+        for i in range(1,len(roots)):
+            dist = abs(roots[i] - rootpos)
+            if dist < bestdist:
+                bestdist = dist
+                moving = i
+        posns[GREEN] = antiproject((roots[moving].real, roots[moving].imag))
 
-	# Now our strategy for identifying the remaining roots is
-	# to separately deal with the left and right half-planes.
-	# In each half-plane, we compute the bearing of all the
-	# points in that half-plane from the multiple point (+1 or
-	# -1) relative to the bearing of the moving root, and then
-	# assign colours round in order. This strategy is derived
-	# from having actually watched the behaviour of the roots
-	# in practice.
-	dividingline = -0.4*roots[moving].real
-	for sign, colours in [(-1, (RED, ORANGE, YELLOW)), (+1, (VIOLET, INDIGO, BLUE))]:
-	    subroots = []
-	    for i in range(len(roots)):
-		sr = sign * roots[i]
-		if i != moving and sr.real > sign*dividingline:
-		    indicator = (sr - 1) / (sign*roots[moving] - 1)
-		    iarg = atan2(indicator.imag, indicator.real)
-		    while iarg < 0:
-			iarg = iarg + 2*pi
-		    subroots.append((iarg, i, roots[i].real, roots[i].imag))
-	    assert len(subroots) == len(colours)
-	    subroots.sort()
-	    for i in range(len(subroots)):
-		posns[colours[i]] = antiproject(subroots[i][2:4])
+        # Now our strategy for identifying the remaining roots is
+        # to separately deal with the left and right half-planes.
+        # In each half-plane, we compute the bearing of all the
+        # points in that half-plane from the multiple point (+1 or
+        # -1) relative to the bearing of the moving root, and then
+        # assign colours round in order. This strategy is derived
+        # from having actually watched the behaviour of the roots
+        # in practice.
+        dividingline = -0.4*roots[moving].real
+        for sign, colours in [(-1, (RED, ORANGE, YELLOW)), (+1, (VIOLET, INDIGO, BLUE))]:
+            subroots = []
+            for i in range(len(roots)):
+                sr = sign * roots[i]
+                if i != moving and sr.real > sign*dividingline:
+                    indicator = (sr - 1) / (sign*roots[moving] - 1)
+                    iarg = atan2(indicator.imag, indicator.real)
+                    while iarg < 0:
+                        iarg = iarg + 2*pi
+                    subroots.append((iarg, i, roots[i].real, roots[i].imag))
+            assert len(subroots) == len(colours)
+            subroots.sort()
+            for i in range(len(subroots)):
+                posns[colours[i]] = antiproject(subroots[i][2:4])
 
-	# Done.
-	twirlpos[t] = posns
+        # Done.
+        twirlpos[t] = posns
 
     return twirlpos[t][colour]
 
@@ -680,8 +680,8 @@ def checkstr(s, allowed_chars):
     # Return true iff the string s is composed entirely of
     # characters in the string `allowed_chars'.
     for c in s:
-	if not (c in allowed_chars):
-	    return 0
+        if not (c in allowed_chars):
+            return 0
     return 1
 def shellquote(list):
     # Take a list of words, and produce a single string which
@@ -690,67 +690,67 @@ def shellquote(list):
     ret = ""
     sep = ""
     for word in list:
-	if len(word) == 0 or not checkstr(word, shelllist):
-	    word = "'" + string.replace(word, "'", "'\\''") + "'"
-	ret = ret + sep + word
-	sep = " "
+        if len(word) == 0 or not checkstr(word, shelllist):
+            word = "'" + string.replace(word, "'", "'\\''") + "'"
+        ret = ret + sep + word
+        sep = " "
     return ret
 
 def cmdline(t):
     power, title, credits, points = findpoints(frameoffset + float(t) / fps)
     cmdline2 = cmdline3 = None
     if title != None:
-	if preview:
-	    titlename = "ptitle.png"
-	else:
-	    titlename = "title.png"
-	border = int(max(round(width * (1.0 - (4.0/3.0) / aspect)) / 2.0, 0))
-	if border > 0:
-	    # What we really want here is to say `--border 90x0',
-	    # but ImageMagick appears to go screwy if we do that
-	    # and just writes out a totally blank image. So we'll
-	    # use 90x1, and then crop off the top and bottom rows
-	    # of pixels. Bah.
-	    cmdline = ["convert", "-negate", "-modulate", "%f" % (100.0*title),
-	    "-scale", "%dx%d!" % (width - 2*border, height),
-	    "-bordercolor", "black", "-border", "%dx1" % border,
-	    titlename, "ppm:-"]
-	    cmdline2 = ["convert", "-crop", "%dx%d+0+1" % (width, height),
-	    "ppm:-", "ppm:-"]
-	else:
-	    cmdline = ["convert", "-negate", "-modulate", "%f" % (100.0*title),
-	    "-scale", "%dx%d!" % (width, height), titlename, "ppm:-"]
-	cmdline3 = ["./vblur.pl"]
+        if preview:
+            titlename = "ptitle.png"
+        else:
+            titlename = "title.png"
+        border = int(max(round(width * (1.0 - (4.0/3.0) / aspect)) / 2.0, 0))
+        if border > 0:
+            # What we really want here is to say `--border 90x0',
+            # but ImageMagick appears to go screwy if we do that
+            # and just writes out a totally blank image. So we'll
+            # use 90x1, and then crop off the top and bottom rows
+            # of pixels. Bah.
+            cmdline = ["convert", "-negate", "-modulate", "%f" % (100.0*title),
+            "-scale", "%dx%d!" % (width - 2*border, height),
+            "-bordercolor", "black", "-border", "%dx1" % border,
+            titlename, "ppm:-"]
+            cmdline2 = ["convert", "-crop", "%dx%d+0+1" % (width, height),
+            "ppm:-", "ppm:-"]
+        else:
+            cmdline = ["convert", "-negate", "-modulate", "%f" % (100.0*title),
+            "-scale", "%dx%d!" % (width, height), titlename, "ppm:-"]
+        cmdline3 = ["./vblur.pl"]
     elif credits != None:
-	cmdline = ["convert", "-negate", "-crop",
-	"%dx%d+0+%d" % (cwidth, pheight, credits),
-	"credits.png", "ppm:-"]
-	cmdline2 = ["convert", "-scale", "%dx%d!" % (width, height),
-	"ppm:-", "ppm:-"]
-	cmdline3 = ["./vblur.pl"]
+        cmdline = ["convert", "-negate", "-crop",
+        "%dx%d+0+%d" % (cwidth, pheight, credits),
+        "credits.png", "ppm:-"]
+        cmdline2 = ["convert", "-scale", "%dx%d!" % (width, height),
+        "ppm:-", "ppm:-"]
+        cmdline3 = ["./vblur.pl"]
     else:
-	cmdline = ["./newton"]
-	if preview:
-	    cmdline.append("--preview")
-	if power < 1.0:
-	    cmdline.append("-p")
-	    cmdline.append("%.3f" % power)
-	# Total _area_ covered by screen is 20. Use this to
-	# determine the x- and y-extents. The deal is that xext *
-	# yext * 4 = area, and since xext = aspect * yext, this
-	# gives us yext = sqrt(area / (aspect * 4)).
-	yext = sqrt(20.0 / (aspect * 4))
-	xext = aspect * yext
-	cmdline.extend(["--ppm", "-o", "-", "-s", "%dx%d" % (width,height),
-	"-C", "no", "-B", "yes", "-X", "0.00001", "-Y", "0.00001",
-	"-y", str(yext), "-x", str(xext), "-f", "10", "-n", "1,1,1", "-c",
-	":".join(["%g,%g,%g" % (r,g,b) for ((r,g,b),x,y) in points]),
-	"--"] + ["%+g%+gi" % (x,y) for ((r,g,b),x,y) in points])
+        cmdline = ["./newton"]
+        if preview:
+            cmdline.append("--preview")
+        if power < 1.0:
+            cmdline.append("-p")
+            cmdline.append("%.3f" % power)
+        # Total _area_ covered by screen is 20. Use this to
+        # determine the x- and y-extents. The deal is that xext *
+        # yext * 4 = area, and since xext = aspect * yext, this
+        # gives us yext = sqrt(area / (aspect * 4)).
+        yext = sqrt(20.0 / (aspect * 4))
+        xext = aspect * yext
+        cmdline.extend(["--ppm", "-o", "-", "-s", "%dx%d" % (width,height),
+        "-C", "no", "-B", "yes", "-X", "0.00001", "-Y", "0.00001",
+        "-y", str(yext), "-x", str(xext), "-f", "10", "-n", "1,1,1", "-c",
+        ":".join(["%g,%g,%g" % (r,g,b) for ((r,g,b),x,y) in points]),
+        "--"] + ["%+g%+gi" % (x,y) for ((r,g,b),x,y) in points])
     ret = shellquote(cmdline)
     if cmdline2 != None:
-	ret = ret + " | " + shellquote(cmdline2)
+        ret = ret + " | " + shellquote(cmdline2)
     if cmdline3 != None:
-	ret = ret + " | " + shellquote(cmdline3)
+        ret = ret + " | " + shellquote(cmdline3)
     return ret
 
 def startjobs():
@@ -761,68 +761,68 @@ def startjobs():
     # jobs go out `maxbacklog' distance in front of the hindmost
     # running job.
     while tail < maxframes and len(queue) < maxjobs and tail - head < maxbacklog:
-	# Start a new job.
-	cmd = cmdline(tail)
-	if dryrun:
-	    sys.stdout.write("%d / %.2f : %s\n" % (tail, frameoffset + float(tail)/fps, cmd))
-	else:
-	    got = 0
-	    for cachecmd, cachedata in cache:
-		if cachecmd == cmd:
-		    if verbose:
-			sys.stderr.write("cached %d: %s\n" % (tail, cmd))
-		    queue[tail] = [None, cachedata, cmd]
-		    got = 1
-		    break
-	    if not got:
-		if verbose:
-		    sys.stderr.write("starting %d: %s\n" % (tail,cmd))
-		p = os.popen(cmd, "r")
-		flags = fcntl.fcntl(p.fileno(), fcntl.F_GETFL)
-		fcntl.fcntl(p.fileno(), fcntl.F_SETFL, flags | os.O_NONBLOCK)
-		queue[tail] = [p, "", cmd]
-		rqueue[p.fileno()] = tail
-	tail = tail + 1
+        # Start a new job.
+        cmd = cmdline(tail)
+        if dryrun:
+            sys.stdout.write("%d / %.2f : %s\n" % (tail, frameoffset + float(tail)/fps, cmd))
+        else:
+            got = 0
+            for cachecmd, cachedata in cache:
+                if cachecmd == cmd:
+                    if verbose:
+                        sys.stderr.write("cached %d: %s\n" % (tail, cmd))
+                    queue[tail] = [None, cachedata, cmd]
+                    got = 1
+                    break
+            if not got:
+                if verbose:
+                    sys.stderr.write("starting %d: %s\n" % (tail,cmd))
+                p = os.popen(cmd, "r")
+                flags = fcntl.fcntl(p.fileno(), fcntl.F_GETFL)
+                fcntl.fcntl(p.fileno(), fcntl.F_SETFL, flags | os.O_NONBLOCK)
+                queue[tail] = [p, "", cmd]
+                rqueue[p.fileno()] = tail
+        tail = tail + 1
 
 def checkjobs():
     global head, tail, queue, cache
 
     if dryrun:
-	head = tail
-	return
+        head = tail
+        return
 
     if len(rqueue.keys()) > 0:
-	r, w, x = select.select(rqueue.keys(), [], [])
-	for fd in r:
-	    n = rqueue[fd]
-	    data = queue[n][0].read()
-	    queue[n][1] = queue[n][1] + data
-	    if data == "":
-		# Job has finished.
-		queue[n][0].close()
-		queue[n][0] = None
-		if verbose:
-		    sys.stderr.write("reaping %d\n" % n)
-		del rqueue[fd]
+        r, w, x = select.select(rqueue.keys(), [], [])
+        for fd in r:
+            n = rqueue[fd]
+            data = queue[n][0].read()
+            queue[n][1] = queue[n][1] + data
+            if data == "":
+                # Job has finished.
+                queue[n][0].close()
+                queue[n][0] = None
+                if verbose:
+                    sys.stderr.write("reaping %d\n" % n)
+                del rqueue[fd]
 
     # See how many jobs we can reap from the start of the queue.
     while head < tail and queue[head][0] == None:
-	sys.stdout.write(queue[head][1])
-	if verbose:
-	    sys.stderr.write("clearing %d\n" % head)
-	cache = cache[-cachesize:] + [(queue[head][2], queue[head][1])]
-	del queue[head]
-	head = head + 1
+        sys.stdout.write(queue[head][1])
+        if verbose:
+            sys.stderr.write("clearing %d\n" % head)
+        cache = cache[-cachesize:] + [(queue[head][2], queue[head][1])]
+        del queue[head]
+        head = head + 1
 
 if mode == "chapters":
     # Just write the chapter points to standard output.
     for time, name, period in chapters:
-	print fmttime(time), name
+        print fmttime(time), name
     sys.exit(0)
 if mode == "chaptermenu":
     # Write the chapter start and period, in frames, to standard output.
     for time, name, period in chapters:
-	print int(round(time*fps)), int(round(period*fps))
+        print int(round(time*fps)), int(round(period*fps))
     sys.exit(0)
 elif mode == "total":
     # Write the total time to standard output.
