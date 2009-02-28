@@ -242,11 +242,11 @@ elif arg == "badmega":
 elif arg == "fwargle":
     startpos = lambda x,y: 0
     def recurse(y,t0,t1):
-	if y < -limit:
-	    return
-	bounce(0,y,0,-1,t0+(t1-t0)*0.95)
-	recurse(y-2, t0+(t1-t0)*0.45, t0+(t1-t0)*0.9)
-	recurse(y-1, t0, t0+(t1-t0)*0.45)
+        if y < -limit:
+            return
+        bounce(0,y,0,-1,t0+(t1-t0)*0.95)
+        recurse(y-2, t0+(t1-t0)*0.45, t0+(t1-t0)*0.9)
+        recurse(y-1, t0, t0+(t1-t0)*0.45)
     ymin = -limit
     ymax = +1
     xmin = -1
