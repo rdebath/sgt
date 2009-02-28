@@ -56,8 +56,8 @@ def P(n):
     dmax = min(n/2, Y)
     total = 0
     for d in range(dmin, dmax+1):
-	k = cache[(n,d)] = p(n,d)
-	total = total + k
+        k = cache[(n,d)] = p(n,d)
+        total = total + k
     return total
 
 if len(sys.argv) > 1:
@@ -76,17 +76,17 @@ for n in range(1,Y*2+2):
     # Probability, in scientific notation, of there _not_ being a
     # triple birthday.
     if N == 0:
-	npexpt = npmant = 0
+        npexpt = npmant = 0
     else:
-	npexpt = len("%d" % N) - len("%d" % D) # rough logs to base 10
-	# Round to nearest this time.
-	npmant = ((N * (10**(25-npexpt))) * 2 + D) / (2*D)
-	if npmant < 10**25:
-	    # Try again.
-	    npexpt = npexpt - 1
-	    npmant = ((N * (10**(25-npexpt))) * 2 + D) / (2*D)
+        npexpt = len("%d" % N) - len("%d" % D) # rough logs to base 10
+        # Round to nearest this time.
+        npmant = ((N * (10**(25-npexpt))) * 2 + D) / (2*D)
+        if npmant < 10**25:
+            # Try again.
+            npexpt = npexpt - 1
+            npmant = ((N * (10**(25-npexpt))) * 2 + D) / (2*D)
     npstr = "%d.%025d" % (npmant / 10**25, npmant % 10**25)
     if npexpt != 0:
-	npstr = npstr + "e%+02d" % npexpt
+        npstr = npstr + "e%+02d" % npexpt
     print nfmt % n, "%d.%025d" % (prob / 10**25, prob % 10**25), npstr
     #print n, N, D

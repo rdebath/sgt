@@ -85,69 +85,69 @@ def search(moves):
     head = 0
 
     while head < len(list):
-	# Pick a game state off the to-do list and process it.
-	state = list[head]
-	head = head+1
+        # Pick a game state off the to-do list and process it.
+        state = list[head]
+        head = head+1
 
-	# Loop over all possible moves.
-	for move in moves:
-	    # Go through the possible table states in `state', and
-	    # build up the output state by making this move for
-	    # each.
-	    newstate = state & 0x10000 # preserve bit 16
-	    for i in range(16):
-		if not (state & (1 << i)):
-		    continue
-		t = i
-		# The first bottle we grip is bit 0.
-		b1 = t & 1
-		# The second is either 1 or 2, depending on whether
-		# we gripped adjacent or opposite bottles, which is
-		# determined by bit 8 of the move.
-		if move & 0x100:
-		    b2 = (t >> 2) & 1 # opposite
-		else:
-		    b2 = (t >> 1) & 1 # adjacent
-		# Combine these two bottle states into a 2-bit
-		# number.
-		bb = b1 * 2 + b2
-		# Look up the output bottle state in the move number.
-		newbb = (move >> (2*bb)) & 3
-		# Convert this back into two individual bottle states.
-		newb1 = (newbb >> 1) & 1
-		newb2 = newbb & 1
-		# And put those back into t.
-		t = (t &~ 1) | newb1
-		if move & 0x100:
-		    t = (t &~ 4) | (newb2 << 2) # opposite
-		else:
-		    t = (t &~ 2) | (newb2 << 1) # adjacent
-		# Now we know the output table state given by
-		# applying this move to the input state. Next we
-		# simulate the referee's actions. Firstly, he
-		# checks the win condition.
-		if t == 0 or t == 15:
-		    outmask = 0x10000 # game over!
-		else:
-		    # If the game isn't won, the referee rotates
-		    # the table into one of the four possible
-		    # states. So we must take t and rotate it four
-		    # times.
-		    outmask = 0
-		    for j in range(4):
-			outmask = outmask | (1 << t)
-			t = ((t << 1) | (t >> 3)) & 15
-		# Now we have the complete set of output table
-		# states which result from applying this move to
-		# this input table state.
-		newstate = newstate | outmask
+        # Loop over all possible moves.
+        for move in moves:
+            # Go through the possible table states in `state', and
+            # build up the output state by making this move for
+            # each.
+            newstate = state & 0x10000 # preserve bit 16
+            for i in range(16):
+                if not (state & (1 << i)):
+                    continue
+                t = i
+                # The first bottle we grip is bit 0.
+                b1 = t & 1
+                # The second is either 1 or 2, depending on whether
+                # we gripped adjacent or opposite bottles, which is
+                # determined by bit 8 of the move.
+                if move & 0x100:
+                    b2 = (t >> 2) & 1 # opposite
+                else:
+                    b2 = (t >> 1) & 1 # adjacent
+                # Combine these two bottle states into a 2-bit
+                # number.
+                bb = b1 * 2 + b2
+                # Look up the output bottle state in the move number.
+                newbb = (move >> (2*bb)) & 3
+                # Convert this back into two individual bottle states.
+                newb1 = (newbb >> 1) & 1
+                newb2 = newbb & 1
+                # And put those back into t.
+                t = (t &~ 1) | newb1
+                if move & 0x100:
+                    t = (t &~ 4) | (newb2 << 2) # opposite
+                else:
+                    t = (t &~ 2) | (newb2 << 1) # adjacent
+                # Now we know the output table state given by
+                # applying this move to the input state. Next we
+                # simulate the referee's actions. Firstly, he
+                # checks the win condition.
+                if t == 0 or t == 15:
+                    outmask = 0x10000 # game over!
+                else:
+                    # If the game isn't won, the referee rotates
+                    # the table into one of the four possible
+                    # states. So we must take t and rotate it four
+                    # times.
+                    outmask = 0
+                    for j in range(4):
+                        outmask = outmask | (1 << t)
+                        t = ((t << 1) | (t >> 3)) & 15
+                # Now we have the complete set of output table
+                # states which result from applying this move to
+                # this input table state.
+                newstate = newstate | outmask
 
-	    # After looping over all possible table states, we have
-	    # determined the full game state which results from
-	    # applying this move to this input state.
-	    if not movelist.has_key(newstate):
-		movelist[newstate] = movelist[state] + (move,)
-		list.append(newstate)
+            # After looping over all possible table states, we have
+            # determined the full game state which results from
+            # applying this move to this input state.
+            if not movelist.has_key(newstate):
+                movelist[newstate] = movelist[state] + (move,)
+                list.append(newstate)
 
     # Our search is done. Print the number of moves it took to get
     # to state 0x10000 (game guaranteeably won).

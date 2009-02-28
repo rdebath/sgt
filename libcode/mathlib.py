@@ -92,22 +92,22 @@ def fib(n):
 def factorise_main(n, out):
     factor = 2
     while factor * factor <= n:
-	while n % factor == 0:
-	    out(factor)
-	    n = n / factor
-	factor = factor + 1
+        while n % factor == 0:
+            out(factor)
+            n = n / factor
+        factor = factor + 1
     if n > 1:
-	out(n)
+        out(n)
 
 def factorise(n):
     def prt(x):
-	print x
+        print x
     factorise_main(n, prt)
 
 def factors(n):
     list = []
     def out(x, list=list):
-	list.append(x)
+        list.append(x)
     factorise_main(n, out)
     return list
 
@@ -115,12 +115,12 @@ def allfactors(n):
     pfact = factors(n)
     pcount = {}
     for f in pfact:
-	pcount[f] = pcount.get(f, 0) + 1
+        pcount[f] = pcount.get(f, 0) + 1
     ret = [1]
     for f, c in pcount.items():
-	n = len(ret)
-	for i in xrange(n*c):
-	    ret.append(ret[-n] * f)
+        n = len(ret)
+        for i in xrange(n*c):
+            ret.append(ret[-n] * f)
     ret.sort()
     return ret
 
@@ -133,25 +133,25 @@ def primes(n):
     s = [1] * n
     cut = int(math.floor(math.sqrt(n)))+1
     for k in range(2, cut):
-	if not s[k]:
-	    continue
-	ret.append(k)
-	for j in range(k, n, k):
-	    s[j] = 0
+        if not s[k]:
+            continue
+        ret.append(k)
+        for j in range(k, n, k):
+            s[j] = 0
     for k in range(cut, n):
-	if s[k]:
-	    ret.append(k)
+        if s[k]:
+            ret.append(k)
     return ret
 
 def mobius(n):
     "Mobius function of an integer. Returns 0 for 0."
     if n == 0:
-	return 0
+        return 0
     n = abs(n)
     nf = factors(n)
     for i in range(len(nf)-1):
-	if nf[i] == nf[i+1]:
-	    return 0 # duplicate factor
+        if nf[i] == nf[i+1]:
+            return 0 # duplicate factor
     return 1 - 2 * (len(nf) & 1)
 
 def intexp(f):
@@ -307,7 +307,7 @@ def sqrt(n):
             d = d - di
             a = a + b
         b = b >> 2
-	if b == 0: break
+        if b == 0: break
     return a
 
 # and integer cube roots, while I'm here
@@ -318,8 +318,8 @@ def cbrt(N):
     R = long(N)
 
     while as >= 0:
-	T = T0 + T1 + T2
-	if R >= T:
+        T = T0 + T1 + T2
+        if R >= T:
             R = R - T
             x = x + (1L << as)
             T2 = T2 + T1

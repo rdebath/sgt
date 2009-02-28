@@ -54,13 +54,13 @@ def bres(r):
     x = 0
     D = 0
     while y >= x:
-	plot(x,y)
-	D = D + (2*x + 1)
-	D2 = D - (2*y - 1)
-	if abs(D2) < abs(D):
-	    D = D2
-	    y = y - 1
-	x = x + 1
+        plot(x,y)
+        D = D + (2*x + 1)
+        D2 = D - (2*y - 1)
+        if abs(D2) < abs(D):
+            D = D2
+            y = y - 1
+        x = x + 1
 
 def circle(r):
     global array, xoff, yoff
@@ -68,6 +68,6 @@ def circle(r):
     xoff = yoff = r
     bres(r)
     for s in array:
-	print s
+        print s
 
 circle(35)

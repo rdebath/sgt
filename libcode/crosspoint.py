@@ -21,21 +21,21 @@ def crosspoint(xa1,ya1,xa2,ya2,xb1,yb1,xb2,yb2):
     dyb = yb2-yb1
     # Special case: if gradients are equal, die.
     if dya * dxb == dxa * dyb:
-	return None
+        return None
     # Second special case: if either gradient is horizontal or
     # vertical.
     if dxa == 0:
-	# Because we've already dealt with the parallel case, dxb
-	# is now known to be nonzero. So we can simply extrapolate
-	# along the b line until it hits the common value xa1==xa2.
-	return (xa1, (xa1 - xb1) * dyb / dxb + yb1)
+        # Because we've already dealt with the parallel case, dxb
+        # is now known to be nonzero. So we can simply extrapolate
+        # along the b line until it hits the common value xa1==xa2.
+        return (xa1, (xa1 - xb1) * dyb / dxb + yb1)
     # Similar cases for dya == 0, dxb == 0 and dyb == 0.
     if dxb == 0:
-	return (xb1, (xb1 - xa1) * dya / dxa + ya1)
+        return (xb1, (xb1 - xa1) * dya / dxa + ya1)
     if dya == 0:
-	return ((ya1 - yb1) * dxb / dyb + xb1, ya1)
+        return ((ya1 - yb1) * dxb / dyb + xb1, ya1)
     if dyb == 0:
-	return ((yb1 - ya1) * dxa / dya + xa1, yb1)
+        return ((yb1 - ya1) * dxa / dya + xa1, yb1)
 
     # General case: all four gradient components are nonzero. In
     # this case, we have

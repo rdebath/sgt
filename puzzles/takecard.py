@@ -39,30 +39,30 @@ for n in range(1,1001):
     smallesttakek = None
 
     for k in range(n-1,-1,-1):
-	# k is the index of the card turned up, counting from 0 at
-	# the top. In other words, if we take this card, there will
-	# be k remaining cards we can take. Therefore, our expected
-	# gain by taking this card will be 1 + fn[k].
-	takegain = fact + fn[k] * mult
-	mult = mult * k
+        # k is the index of the card turned up, counting from 0 at
+        # the top. In other words, if we take this card, there will
+        # be k remaining cards we can take. Therefore, our expected
+        # gain by taking this card will be 1 + fn[k].
+        takegain = fact + fn[k] * mult
+        mult = mult * k
 
-	# If we _don't_ take this card, then there will be n-1
-	# cards we can take, for which our expected gain is fn[n-1].
-	dropgain = fn[n-1]
+        # If we _don't_ take this card, then there will be n-1
+        # cards we can take, for which our expected gain is fn[n-1].
+        dropgain = fn[n-1]
 
-	#print "!", n, k, takegain, dropgain
+        #print "!", n, k, takegain, dropgain
 
-	# Whichever of those gives us the bigger expected gain, we
-	# do.
-	if takegain > dropgain:
-	    expgain = takegain
-	    take[(n,k)] = 1
-	    smallesttakek = k
-	else:
-	    expgain = dropgain
-	    take[(n,k)] = 0
+        # Whichever of those gives us the bigger expected gain, we
+        # do.
+        if takegain > dropgain:
+            expgain = takegain
+            take[(n,k)] = 1
+            smallesttakek = k
+        else:
+            expgain = dropgain
+            take[(n,k)] = 0
 
-	expsum = expsum + expgain
+        expsum = expsum + expgain
 
     fact = fact * n
 

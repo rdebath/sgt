@@ -48,31 +48,31 @@ h = [[0] * (nmax+1) for i in range(kmax+1)]
 for n in range(1,nmax+1):
     outputline = "%3d: " % n
     for k in range(1,kmax+1):
-	# Boundary cases.
-	if n == 1:
-	    fval = 0
-	    hval = None
-	elif k == 1:
-	    fval = n - 1
-	    hval = 1
-	else:
-	    # General case.
-	    fbest = None
-	    hbest = None
-	    for hthis in range(1,n):
-		fthis = 1 + max(f[k-1][hthis], f[k][n - hthis])
-		if fbest == None or fbest > fthis:
-		    fbest = fthis
-		    hbest = hthis
-	    assert fbest != None
-	    fval = fbest
-	    hval = hbest
-	f[k][n] = fval
-	h[k][n] = hval
+        # Boundary cases.
+        if n == 1:
+            fval = 0
+            hval = None
+        elif k == 1:
+            fval = n - 1
+            hval = 1
+        else:
+            # General case.
+            fbest = None
+            hbest = None
+            for hthis in range(1,n):
+                fthis = 1 + max(f[k-1][hthis], f[k][n - hthis])
+                if fbest == None or fbest > fthis:
+                    fbest = fthis
+                    hbest = hthis
+            assert fbest != None
+            fval = fbest
+            hval = hbest
+        f[k][n] = fval
+        h[k][n] = hval
 
-	if hval != None:
-	    outputline = outputline + "%4d(%3d)" % (fval, hval)
-	else:
-	    outputline = outputline + "%4d     " % fval
+        if hval != None:
+            outputline = outputline + "%4d(%3d)" % (fval, hval)
+        else:
+            outputline = outputline + "%4d     " % fval
 
     print outputline
