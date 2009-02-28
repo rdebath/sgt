@@ -21,17 +21,17 @@ def writebox(x):
     ret = ""
     comma = ""
     for i in x:
-	ret = ret + comma + hexbyte(i[0]) + ":" + hexbyte(i[1]) + ":" + \
-	hexbyte(i[2]) + ":" + hexbyte(i[3])
-	comma = ", "
+        ret = ret + comma + hexbyte(i[0]) + ":" + hexbyte(i[1]) + ":" + \
+        hexbyte(i[2]) + ":" + hexbyte(i[3])
+        comma = ", "
     return ret
 
 def writestr(x):
     ret = ""
     colon = ""
     for i in x:
-	ret = ret + colon + hexbyte(i)
-	colon = ":"
+        ret = ret + colon + hexbyte(i)
+        colon = ":"
     return ret
 
 # ----------------------------------------------------------------------
@@ -45,12 +45,12 @@ def pmul(x,y):
     r = 0
     # Keep doubling x and adding it into r according to y.
     while y > 0:
-	if y & 1:
-	    r = r ^ x
-	y = y >> 1
-	x = x << 1
-	if x & 0x100:
-	    x = x ^ 0x11B
+        if y & 1:
+            r = r ^ x
+        y = y >> 1
+        x = x << 1
+        if x & 0x100:
+            x = x ^ 0x11B
     return r
 
 # Examples of GF(2^8) multiplication given in the spec.
@@ -61,9 +61,9 @@ assert pmul(0x57, 0x13) == 0xFE
 inverses = range(256)
 for i in range(1,256):
     for j in range(1,256):
-	if pmul(i, j) == 1:
-	    inverses[i] = j
-	    inverses[j] = i
+        if pmul(i, j) == 1:
+            inverses[i] = j
+            inverses[j] = i
 
 def pinv(x):
     return inverses[x]
@@ -76,14 +76,14 @@ def setup_state(bytes):
     State = []
     bytes = tuple(bytes)
     for i in range(Nb):
-	column = list(bytes[0:4])
-	bytes = bytes[4:]
-	State.append(column)
+        column = list(bytes[0:4])
+        bytes = bytes[4:]
+        State.append(column)
 
 def extract_output():
     bytes = []
     for i in State:
-	bytes.extend(i)
+        bytes.extend(i)
     return tuple(bytes)
 
 def Sbox(a):
@@ -102,13 +102,13 @@ def Sboxinv(x):
 
 def bytesub():
     for i in State:
-	for j in range(4):
-	    i[j] = Sbox(i[j])
+        for j in range(4):
+            i[j] = Sbox(i[j])
 
 def subbyte(x):
     i = list(tuple(x))
     for j in range(4):
-	i[j] = Sbox(i[j])
+        i[j] = Sbox(i[j])
     return i
 
 def shiftrow():
@@ -118,19 +118,19 @@ def shiftrow():
     if Nb == 7: Cj = 0, 1, 2, 4
     if Nb == 8: Cj = 0, 1, 3, 4
     for j in range(4):
-	foo = []
-	for i in range(Nb):
-	    foo.append(State[i][j])
-	C = Cj[j]
-	foo = foo[C:] + foo[:C]
-	for i in range(Nb):
-	    State[i][j] = foo[i]
+        foo = []
+        for i in range(Nb):
+            foo.append(State[i][j])
+        C = Cj[j]
+        foo = foo[C:] + foo[:C]
+        for i in range(Nb):
+            State[i][j] = foo[i]
 
 def mixonecolumn(inv, a0, a1, a2, a3):
     if inv:
-	p3, p2, p1, p0 = 0x0B, 0x0D, 0x09, 0x0E
+        p3, p2, p1, p0 = 0x0B, 0x0D, 0x09, 0x0E
     else:
-	p3, p2, p1, p0 = 3, 1, 1, 2
+        p3, p2, p1, p0 = 3, 1, 1, 2
     b0 = pmul(a0,p0) ^ pmul(a1,p3) ^ pmul(a2,p2) ^ pmul(a3,p1)
     b1 = pmul(a0,p1) ^ pmul(a1,p0) ^ pmul(a2,p3) ^ pmul(a3,p2)
     b2 = pmul(a0,p2) ^ pmul(a1,p1) ^ pmul(a2,p0) ^ pmul(a3,p3)
@@ -139,14 +139,14 @@ def mixonecolumn(inv, a0, a1, a2, a3):
 
 def mixcolumn(inv):
     for i in range(Nb):
-	a0, a1, a2, a3 = State[i]
-	State[i] = mixonecolumn(inv, a0, a1, a2, a3)
+        a0, a1, a2, a3 = State[i]
+        State[i] = mixonecolumn(inv, a0, a1, a2, a3)
 
 def addroundkey(roundkey):
     #print "rk: " + writebox(roundkey)
     for i in range(Nb):
-	for j in range(4):
-	    State[i][j] = State[i][j] ^ roundkey[i][j]
+        for j in range(4):
+            State[i][j] = State[i][j] ^ roundkey[i][j]
 
 # ----------------------------------------------------------------------
 # Key schedule. Takes a 4*Nk byte key, and produces Nr+1 round keys of
@@ -155,29 +155,29 @@ def addroundkey(roundkey):
 def keyschedule(key):
     W = []
     for i in range(Nk):
-	W.append(key[0:4])
-	key = key[4:]
+        W.append(key[0:4])
+        key = key[4:]
     rcon = 1
     for i in range(Nk, Nb * (Nr+1)):
-	temp = list(tuple(W[i-1]))
-	if i % Nk == 0:
-	    temp = temp[1:] + temp[:1]
-	    temp = subbyte(temp)
-	    temp[0] = temp[0] ^ rcon
-	    rcon = pmul(rcon, 2)
-	elif i % Nk == 4 and Nk > 6:
-	    temp = subbyte(temp)
-	temp2 = W[i-Nk]
-	for i in range(4):
-	    temp[i] = temp[i] ^ temp2[i]
-	W.append(temp)
+        temp = list(tuple(W[i-1]))
+        if i % Nk == 0:
+            temp = temp[1:] + temp[:1]
+            temp = subbyte(temp)
+            temp[0] = temp[0] ^ rcon
+            rcon = pmul(rcon, 2)
+        elif i % Nk == 4 and Nk > 6:
+            temp = subbyte(temp)
+        temp2 = W[i-Nk]
+        for i in range(4):
+            temp[i] = temp[i] ^ temp2[i]
+        W.append(temp)
 
     # That's expanded the key into Nb * (Nr+1) vectors. Now separate into
     # round keys.
     roundkeys = []
     for i in range(Nr+1):
-	roundkeys.append(W[0:Nb])
-	W = W[Nb:]
+        roundkeys.append(W[0:Nb])
+        W = W[Nb:]
 
     # Done.
     return roundkeys
@@ -191,8 +191,8 @@ def one_round(roundkey, is_final):
     shiftrow()
     #print "st: " + writebox(State)
     if not is_final:
-	mixcolumn(0)
-	#print "st: " + writebox(State)
+        mixcolumn(0)
+        #print "st: " + writebox(State)
     addroundkey(roundkey)
     #print "st: " + writebox(State)
 
@@ -202,7 +202,7 @@ def rijndael(bytes, roundkeys):
     addroundkey(roundkeys[0])
     #print "st: " + writebox(State)
     for i in range(1, Nr):
-	one_round(roundkeys[i], 0)
+        one_round(roundkeys[i], 0)
     one_round(roundkeys[Nr], 1)
     return extract_output()
 
@@ -212,21 +212,21 @@ def rijndael(bytes, roundkeys):
 def sboxtables():
     print "SBOX:"
     for i in range(256):
-	print "0x" + hexbyte(Sbox(i)) + ","
+        print "0x" + hexbyte(Sbox(i)) + ","
     print "SBOXINV:"
     for i in range(256):
-	print "0x" + hexbyte(Sboxinv(i)) + ","
+        print "0x" + hexbyte(Sboxinv(i)) + ","
 
 def maintable(inv, n):
     line = [0, 0, 0, 0]
     for i in range(256):
-	if inv:
-	    line[n] = Sboxinv(i)
-	else:
-	    line[n] = Sbox(i)
-	column = mixonecolumn(inv, line[0], line[1], line[2], line[3])
-	print "0x" + hexbyte(column[0]) + hexbyte(column[1]) + \
-	hexbyte(column[2]) + hexbyte(column[3]) + ","
+        if inv:
+            line[n] = Sboxinv(i)
+        else:
+            line[n] = Sbox(i)
+        column = mixonecolumn(inv, line[0], line[1], line[2], line[3])
+        print "0x" + hexbyte(column[0]) + hexbyte(column[1]) + \
+        hexbyte(column[2]) + hexbyte(column[3]) + ","
 
 def maintables():
     print "E0:"; maintable(0, 0)
@@ -244,11 +244,11 @@ def maintables():
 
 for Nb in range(4,9):
     for Nk in range(4,9):
-	Nr = max(Nb,Nk) + 6
-	sched = keyschedule((0,0,0,0) * Nk)
-	pt = (0,0,0,0) * Nb
-	ct = rijndael(pt, sched)
-	print writestr(ct)
+        Nr = max(Nb,Nk) + 6
+        sched = keyschedule((0,0,0,0) * Nk)
+        pt = (0,0,0,0) * Nb
+        ct = rijndael(pt, sched)
+        print writestr(ct)
 
 # Write out the tables required for a C implementation.
 #sboxtables()
