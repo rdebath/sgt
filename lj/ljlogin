@@ -25,9 +25,11 @@ class myparser(htmllib.HTMLParser):
     def start_form(self, attrs):
         a = makedict(attrs)
         # Amazingly, we can have multiple "class" attributes.
-        if ("class", "lj_login_form") in attrs:
-            self.recording = 1
-            self.formurl = a["action"]
+        for k, v in attrs:
+            if k == "class" and v[:13] == "lj_login_form":
+                self.recording = 1
+                self.formurl = a["action"]
+                break
     def end_form(self):
         self.recording = 0
     def start_input(self, attrs):
