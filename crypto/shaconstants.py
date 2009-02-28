@@ -6,16 +6,16 @@ def squareroot(N):
     a = 0L
     b = 1L
     while b < N:
-	b = b << 2
+        b = b << 2
     while 1:
-	a = a >> 1
-	di = 2 * a + b
-	if di <= d:
-	    d = d - di
-	    a = a + b
-	b = b >> 2
-	if b == 0:
-	    break
+        a = a >> 1
+        di = 2 * a + b
+        if di <= d:
+            d = d - di
+            a = a + b
+        b = b >> 2
+        if b == 0:
+            break
     return a
 
 def cuberoot(N):
@@ -23,22 +23,22 @@ def cuberoot(N):
     as = 0L
     T0 = 1L
     while T0 < N:
-	T0 = T0 * 8
-	as = as + 1
+        T0 = T0 * 8
+        as = as + 1
     R = N
 
     while as >= 0:
         T = T0 + T1 + T2
-	if R >= T:
+        if R >= T:
             R = R - T
-	    x = x + (1L<<as)
-	    T2 = T2 + T1
-	    T1 = T1 + 3*T0
-	    T2 = T2 + T1
-	T0 = T0 >> 3
-	T1 = T1 >> 2
-	T2 = T2 >> 1
-	as = as - 1
+            x = x + (1L<<as)
+            T2 = T2 + T1
+            T1 = T1 + 3*T0
+            T2 = T2 + T1
+        T0 = T0 >> 3
+        T1 = T1 >> 2
+        T2 = T2 >> 1
+        as = as - 1
 
     return x
 
@@ -55,9 +55,9 @@ def sieve(n):
 def hexstr(n):
     s = hex(n)
     if s[-1] == "L":
-	s = s[:-1]
+        s = s[:-1]
     if s[0:2] != "0x":
-	s = "0x" + s
+        s = "0x" + s
     return s
 
 primes = sieve(512)
