@@ -278,7 +278,7 @@ page = None
 if len(args) > 0:
     if args[0] == "-p" and len(args) > 1:
         page = string.atoi(args[1])
-	mode = "page" # indicates we're in page-fetching mode
+        mode = "page" # indicates we're in page-fetching mode
         args = args[2:]
     elif args[0] == "-pc":
         mode = "pagecount" # indicates we're in page-counting mode
