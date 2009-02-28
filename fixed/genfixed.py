@@ -81,65 +81,65 @@ def readbdf(f):
     ret.chars = {}
 
     while 1:
-	s = f.readline()
-	if s == "":
-	    break;
-	if s[-1:] == "\n":
-	    s = s[:-1]
+        s = f.readline()
+        if s == "":
+            break;
+        if s[-1:] == "\n":
+            s = s[:-1]
 
-	if s[:10] == "COPYRIGHT ":
-	    ret.copyright = s[10:]
-	    if ret.copyright[:1] == "\"" and ret.copyright[-1:] == "\"":
-		ret.copyright = ret.copyright[1:-1]
+        if s[:10] == "COPYRIGHT ":
+            ret.copyright = s[10:]
+            if ret.copyright[:1] == "\"" and ret.copyright[-1:] == "\"":
+                ret.copyright = ret.copyright[1:-1]
 
-	sl = string.split(s)
-	if len(sl) < 1:
-	    break
+        sl = string.split(s)
+        if len(sl) < 1:
+            break
 
-	if sl[0] == "PIXEL_SIZE" and len(sl) == 2:
-	    ret.height = string.atoi(sl[1])
+        if sl[0] == "PIXEL_SIZE" and len(sl) == 2:
+            ret.height = string.atoi(sl[1])
 
-	if sl[0] == "POINT_SIZE" and len(sl) == 2:
-	    ret.pointsize = string.atoi(sl[1])
+        if sl[0] == "POINT_SIZE" and len(sl) == 2:
+            ret.pointsize = string.atoi(sl[1])
 
-	if sl[0] == "FONT_ASCENT" and len(sl) == 2:
-	    ret.ascent = string.atoi(sl[1])
+        if sl[0] == "FONT_ASCENT" and len(sl) == 2:
+            ret.ascent = string.atoi(sl[1])
 
-	if sl[0] == "AVERAGE_WIDTH" and len(sl) == 2:
-	    ret.width = string.atoi(sl[1]) / 10
+        if sl[0] == "AVERAGE_WIDTH" and len(sl) == 2:
+            ret.width = string.atoi(sl[1]) / 10
 
-	if sl[0] == "ENCODING" and len(sl) == 2:
-	    enc = string.atoi(sl[1])
-	    bits = []
-	    width = 0
+        if sl[0] == "ENCODING" and len(sl) == 2:
+            enc = string.atoi(sl[1])
+            bits = []
+            width = 0
 
-	if sl[0] == "DWIDTH" and len(sl) == 3:
-	    width = string.atoi(sl[1])
+        if sl[0] == "DWIDTH" and len(sl) == 3:
+            width = string.atoi(sl[1])
 
-	if sl[0] == "BBX" and len(sl) == 5:
-	    # FIXME: Right now I can't be bothered to deal properly
-	    # with the possibility of the bbx being smaller than
-	    # the character's full width and height, because I
-	    # happen to know the BDF I'm initially working with is
-	    # well-behaved in this respect.
-	    assert width == string.atoi(sl[1])
+        if sl[0] == "BBX" and len(sl) == 5:
+            # FIXME: Right now I can't be bothered to deal properly
+            # with the possibility of the bbx being smaller than
+            # the character's full width and height, because I
+            # happen to know the BDF I'm initially working with is
+            # well-behaved in this respect.
+            assert width == string.atoi(sl[1])
 
-	if len(sl) == 1:
-	    try:
-		bits_int = string.atol(sl[0], 16)
-	    except ValueError, e:
-		continue # it wasn't a hex number
-	    shift = 4 * len(sl[0])
-	    bits_str = ""
-	    for i in range(width):
-		shift = shift - 1
-		if bits_int & (1L << shift):
-		    bits_str = bits_str + "1"
-		else:
-		    bits_str = bits_str + "0"
-	    bits.append(bits_str)
-	    if len(bits) >= ret.height:
-		ret.chars[enc] = bits
+        if len(sl) == 1:
+            try:
+                bits_int = string.atol(sl[0], 16)
+            except ValueError, e:
+                continue # it wasn't a hex number
+            shift = 4 * len(sl[0])
+            bits_str = ""
+            for i in range(width):
+                shift = shift - 1
+                if bits_int & (1L << shift):
+                    bits_str = bits_str + "1"
+                else:
+                    bits_str = bits_str + "0"
+            bits.append(bits_str)
+            if len(bits) >= ret.height:
+                ret.chars[enc] = bits
 
     return ret
 
@@ -151,18 +151,18 @@ def writefd(bdf, encoding, f, facename, charset=0):
     f.write("charset %d\n\n" % charset)
 
     for i in range(len(encoding)):
-	j = encoding[i]
-	if j < 0 or not bdf.chars.has_key(j):
-	    char = ["0" * bdf.width] * bdf.height
-	else:
-	    char = bdf.chars[j]
+        j = encoding[i]
+        if j < 0 or not bdf.chars.has_key(j):
+            char = ["0" * bdf.width] * bdf.height
+        else:
+            char = bdf.chars[j]
 
-	f.write("char %d\nwidth %d\n" % (i, len(char[0])))
+        f.write("char %d\nwidth %d\n" % (i, len(char[0])))
 
-	for k in char:
-	    f.write(k + "\n")
+        for k in char:
+            f.write(k + "\n")
 
-	f.write("\n")
+        f.write("\n")
 
 f = open("6x13.bdf", "r")
 bdf = readbdf(f)
