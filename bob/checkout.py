@@ -22,9 +22,9 @@ def itostr(index):
     # Convert a tuple used as an index into lastchange[] into a
     # descriptive string for logging.
     if index[0] == None:
-	return "working dir " + index[1]
+        return "working dir " + index[1]
     else:
-	return "revision %s of %s" % index
+        return "revision %s of %s" % index
 
 def checkout(cfg, module, path, is_main):
     log.logmsg("Checking out module %s into path %s" % (module, path))
@@ -36,80 +36,80 @@ def checkout(cfg, module, path, is_main):
     set_headrev = 0
 
     if details[2] != None:
-	# If we've been given an actual working directory, we just
-	# do an export of that.
-	svnparams = [details[2]]
+        # If we've been given an actual working directory, we just
+        # do an export of that.
+        svnparams = [details[2]]
 
-	# Also, determine the revision number of the working
-	# directory using svnversion.
-	svnvcmd = misc.shellquote(["svnversion", details[2]])
-	f = os.popen(svnvcmd + " 2>&1", "r")
-	newrev = f.read()
-	f.close()
-	while newrev[-1:] == "\r" or newrev[-1:] == "\n":
-	    newrev = newrev[:-1]
+        # Also, determine the revision number of the working
+        # directory using svnversion.
+        svnvcmd = misc.shellquote(["svnversion", details[2]])
+        f = os.popen(svnvcmd + " 2>&1", "r")
+        newrev = f.read()
+        f.close()
+        while newrev[-1:] == "\r" or newrev[-1:] == "\n":
+            newrev = newrev[:-1]
 
-	# If there's more than one revision represented here, raise
-	# an error unless we've been told to accept that.
-	if not cfg.accept_complex_rev and not misc.checkstr(newrev, "0123456789M"):
-	    raise misc.builderr("working directory `%s' has complex revision `%s'; use `--complexrev' to proceed regardless" % (details[2], newrev))
+        # If there's more than one revision represented here, raise
+        # an error unless we've been told to accept that.
+        if not cfg.accept_complex_rev and not misc.checkstr(newrev, "0123456789M"):
+            raise misc.builderr("working directory `%s' has complex revision `%s'; use `--complexrev' to proceed regardless" % (details[2], newrev))
 
-	lcrevindex = (None, details[2])
+        lcrevindex = (None, details[2])
     else:
-	# Otherwise, we must read the config file to determine the
-	# right svn repository location.
-	save = lexer.save_vars()
-	lexer.set_multicharvar("module", module)
-	script.process_script(cfg.cfgfile, 1, cfg)
-	svnrepos = lexer.get_multicharvar("svnrepos")
-	lexer.restore_vars(save)
-	if svnrepos == None:
-	    raise misc.builderr("Configuration file did not specify `svnrepos' for module `%s'" % module)
-	log.logmsg("  Using SVN repository %s" % svnrepos)
+        # Otherwise, we must read the config file to determine the
+        # right svn repository location.
+        save = lexer.save_vars()
+        lexer.set_multicharvar("module", module)
+        script.process_script(cfg.cfgfile, 1, cfg)
+        svnrepos = lexer.get_multicharvar("svnrepos")
+        lexer.restore_vars(save)
+        if svnrepos == None:
+            raise misc.builderr("Configuration file did not specify `svnrepos' for module `%s'" % module)
+        log.logmsg("  Using SVN repository %s" % svnrepos)
 
-	newrev = None
+        newrev = None
 
-	if details[0][0] == "rev":
-	    rev = details[0][1]
+        if details[0][0] == "rev":
+            rev = details[0][1]
 
-	    # If this is a simple revision number, use it as newrev
-	    # unless told otherwise later.
-	    if misc.numeric(rev):
-		newrev = rev
+            # If this is a simple revision number, use it as newrev
+            # unless told otherwise later.
+            if misc.numeric(rev):
+                newrev = rev
 
-	    # If this is the special revision number HEAD, we try
-	    # to find out the real revision number after doing the
-	    # export, and we save that in the `headrevs' hash in
-	    # this module. Further head checkouts from this
-	    # repository are done with that explicit revision
-	    # number, so that if we're checking out multiple
-	    # modules we get an effectively atomic checkout over
-	    # all of them.
-	    if rev == "HEAD":
-		if headrevs.has_key(svnrepos):
-		    rev = headrevs[svnrepos]
-		else:
-		    set_headrev = 1
+            # If this is the special revision number HEAD, we try
+            # to find out the real revision number after doing the
+            # export, and we save that in the `headrevs' hash in
+            # this module. Further head checkouts from this
+            # repository are done with that explicit revision
+            # number, so that if we're checking out multiple
+            # modules we get an effectively atomic checkout over
+            # all of them.
+            if rev == "HEAD":
+                if headrevs.has_key(svnrepos):
+                    rev = headrevs[svnrepos]
+                else:
+                    set_headrev = 1
 
-	    # If this revision is actually a date tag, set the
-	    # special date variable.
-	    if rev[:1] == "{" and rev[-1:] == "}":
-		date = rev[1:-1]
-		if is_main:
-		    lexer.set_multicharvar("date", date)
-		lexer.set_multicharvar("date_" + module, date)
+            # If this revision is actually a date tag, set the
+            # special date variable.
+            if rev[:1] == "{" and rev[-1:] == "}":
+                date = rev[1:-1]
+                if is_main:
+                    lexer.set_multicharvar("date", date)
+                lexer.set_multicharvar("date_" + module, date)
 
-	    svnparams = ["-r"+rev]
-	else:
-	    svnparams = ["-r{"+details[0][1]+"}"]
-	    # Explicitly provided date tag. Set the date variables.
-	    if is_main:
-		lexer.set_multicharvar("date", details[0][1])
-	    lexer.set_multicharvar("date_" + module, details[0][1])
+            svnparams = ["-r"+rev]
+        else:
+            svnparams = ["-r{"+details[0][1]+"}"]
+            # Explicitly provided date tag. Set the date variables.
+            if is_main:
+                lexer.set_multicharvar("date", details[0][1])
+            lexer.set_multicharvar("date_" + module, details[0][1])
 
-	svnparams.append(svnrepos + "/" + details[1])
+        svnparams.append(svnrepos + "/" + details[1])
 
-	lcrevindex = (-1, svnrepos)
+        lcrevindex = (-1, svnrepos)
 
     # Now we can construct the exact svn export command we want to run.
     svncmdlist = ["svn", "export"] + svnparams + [path]
@@ -121,22 +121,22 @@ def checkout(cfg, module, path, is_main):
     # revision number.
     f = os.popen(svncmdstr + " 2>&1", "r")
     while 1:
-	line = f.readline()
-	if line == "": break
-	while line[-1:] == "\r" or line[-1:] == "\n":
-	    line = line[:-1]
-	log.logoutput(line)
-	if line[:18] == "Exported revision " and line[-1:] == ".":
-	    newrev = line[18:-1]
+        line = f.readline()
+        if line == "": break
+        while line[-1:] == "\r" or line[-1:] == "\n":
+            line = line[:-1]
+        log.logoutput(line)
+        if line[:18] == "Exported revision " and line[-1:] == ".":
+            newrev = line[18:-1]
     ret = f.close()
     if ret > 0:
-	raise misc.builderr("svn export command terminated with status %d" % ret)
+        raise misc.builderr("svn export command terminated with status %d" % ret)
 
     if newrev == "":
-	raise misc.builderr("Unable to determine revision number for checked-out module `%s'" % module)
+        raise misc.builderr("Unable to determine revision number for checked-out module `%s'" % module)
     log.logmsg("  Revision number for this module is %s" % newrev)
     if lcrevindex[0] == -1:
-	lcrevindex = (newrev,) + lcrevindex[1:]
+        lcrevindex = (newrev,) + lcrevindex[1:]
 
     # We'll also run `svn info' to get the last-changed revision.
     svnicmd = misc.shellquote(["svn", "info"] + svnparams)
@@ -145,29 +145,29 @@ def checkout(cfg, module, path, is_main):
     lcrev = None
     lcout = ""
     while 1:
-	line = f.readline()
-	if line == "": break
-	while line[-1:] == "\r" or line[-1:] == "\n":
-	    line = line[:-1]
-	log.logoutput(line)
-	if line[:18] == "Last Changed Rev: ":
-	    lcrev = string.atoi(line[18:])
+        line = f.readline()
+        if line == "": break
+        while line[-1:] == "\r" or line[-1:] == "\n":
+            line = line[:-1]
+        log.logoutput(line)
+        if line[:18] == "Last Changed Rev: ":
+            lcrev = string.atoi(line[18:])
     ret = f.close()
     if ret > 0:
-	raise misc.builderr("svn info command terminated with status %d" % ret)
+        raise misc.builderr("svn info command terminated with status %d" % ret)
 
     if lcrev == None:
-	raise misc.builderr("Unable to determine last-changed revision number for checked-out module `%s'" % module)
+        raise misc.builderr("Unable to determine last-changed revision number for checked-out module `%s'" % module)
     log.logmsg("  Last-changed revision number for this checkout is %d" % lcrev)
     lastchange[lcrevindex] = max(lastchange.get(lcrevindex, 0), lcrev)
     log.logmsg("  Last-changed revision number for %s is %d" % (itostr(lcrevindex), lastchange[lcrevindex]))
 
     if set_headrev:
-	headrevs[svnrepos] = newrev
-	log.logmsg("  Using r%s for further head checkouts from %s" % (newrev, svnrepos))
+        headrevs[svnrepos] = newrev
+        log.logmsg("  Using r%s for further head checkouts from %s" % (newrev, svnrepos))
 
     if is_main:
-	lexer.set_multicharvar("crevision", newrev)
-	lexer.set_multicharvar("revision", (get_lcrev, lcrevindex))
+        lexer.set_multicharvar("crevision", newrev)
+        lexer.set_multicharvar("revision", (get_lcrev, lcrevindex))
     lexer.set_multicharvar("crevision_" + module, newrev)
     lexer.set_multicharvar("revision_" + module, (get_lcrev, lcrevindex))
