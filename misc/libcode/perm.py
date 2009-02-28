@@ -15,17 +15,17 @@ def cycles(f, l):
     l = list(l)
 
     while len(l) > 0:
-	x = l[0]
-	del l[0]
-	this = [x]
-	y = x
-	while 1:
-	    y = f(y)
-	    if y == x:
-		break
-	    assert y in l
-	    l.remove(y)
-	    this.append(y)
-	ret.append(this)
+        x = l[0]
+        del l[0]
+        this = [x]
+        y = x
+        while 1:
+            y = f(y)
+            if y == x:
+                break
+            assert y in l
+            l.remove(y)
+            this.append(y)
+        ret.append(this)
 
     return ret

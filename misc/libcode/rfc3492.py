@@ -68,15 +68,15 @@ def bootstring_decode(params, s):
     j = 0
     s = ""
     for c in deltas:
-	s = s + c
+        s = s + c
         d = params.decode(c)
         assert d >= 0
         N = N + d * w
         t = bootstring_threshold(params, j, bias)
         if d < t:
             # We have decoded an integer.
-	    if verbose:
-		print "String '%s' encodes delta %d" % (s, N)
+            if verbose:
+                print "String '%s' encodes delta %d" % (s, N)
             deltav.append(N)
 
             # Compute the new bias.
@@ -87,7 +87,7 @@ def bootstring_decode(params, s):
             N = 0
             w = 1
             j = 0
-	    s = ""
+            s = ""
         else:
             w = w * (params.base - t)
             j = j + 1
@@ -238,48 +238,48 @@ if len(args) == 0:
     # Ordinary self-test.
     fails = passes = 0
     for u, p in tests:
-	decoded = bootstring_decode(rfc3492, p)
-	if decoded != u:
-	    print "FAIL:", u, p, decoded
-	    fails = fails + 1
-	else:
-	    passes = passes + 1
+        decoded = bootstring_decode(rfc3492, p)
+        if decoded != u:
+            print "FAIL:", u, p, decoded
+            fails = fails + 1
+        else:
+            passes = passes + 1
     print "Decoding: passed", passes, "failed", fails
 
     fails = passes = 0
     for u, p in tests:
-	encoded = bootstring_encode(rfc3492, u)
-	if encoded != p:
-	    print "FAIL:", u, p, encoded
-	    fails = fails + 1
-	else:
-	    passes = passes + 1
+        encoded = bootstring_encode(rfc3492, u)
+        if encoded != p:
+            print "FAIL:", u, p, encoded
+            fails = fails + 1
+        else:
+            passes = passes + 1
     print "Encoding: passed", passes, "failed", fails
 else:
     inval = []
     instr = None
     doneopts = 0
     for a in args:
-	if a[:1] == "-" and not doneopts:
-	    if a == "-v":
-		verbose = 1
-	    elif a == "--":
-		doneopts = 1
-	    else:
-		print "Unrecognised command-line option '%s'" % a
-	elif string.lower(a[:2]) == "u+":
-	    inval.append(string.atoi(a[2:], 16))
-	else:
-	    instr = a
+        if a[:1] == "-" and not doneopts:
+            if a == "-v":
+                verbose = 1
+            elif a == "--":
+                doneopts = 1
+            else:
+                print "Unrecognised command-line option '%s'" % a
+        elif string.lower(a[:2]) == "u+":
+            inval.append(string.atoi(a[2:], 16))
+        else:
+            instr = a
     if len(inval) > 0 and instr != None:
-	print "Please supply either Unicode or Punycode, not both"
+        print "Please supply either Unicode or Punycode, not both"
     elif len(inval) > 0:
-	print bootstring_encode(rfc3492, inval)
+        print bootstring_encode(rfc3492, inval)
     elif instr != None:
-	s = ""
-	for v in bootstring_decode(rfc3492, instr):
-	    sys.stdout.write("%sU+%04x" % (s, v))
-	    s = " "
-	print
+        s = ""
+        for v in bootstring_decode(rfc3492, instr):
+            sys.stdout.write("%sU+%04x" % (s, v))
+            s = " "
+        print
     else:
-	print "Please supply either Unicode (U+xxxx U+xxxx) or Punycode"
+        print "Please supply either Unicode (U+xxxx U+xxxx) or Punycode"

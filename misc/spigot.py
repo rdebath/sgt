@@ -99,8 +99,8 @@ import os
 #   (1, 0, 0, 1).
 #
 #   For ever:
-# 	If the integer parts of (3p+q)/(3r+s) and (4p+q)/(4r+s) are
-# 	equal, then they are both equal to the next digit of pi.
+#       If the integer parts of (3p+q)/(3r+s) and (4p+q)/(4r+s) are
+#       equal, then they are both equal to the next digit of pi.
 #           So output that digit d, and pre-multiply our matrix by
 #           (10,-10*d,0,1).
 #       Otherwise, we don't currently have enough precision to know the
@@ -183,131 +183,131 @@ import os
 
 class output_base:
     def __init__(self, base):
-	self.base = base
-	self.state = 0
+        self.base = base
+        self.state = 0
     def consume(self, matrix, digit):
-	# Update a matrix state to reflect the consumption of a
-	# digit.
-	if digit < 0:
-	    # Special case that can occur on the very first call if
-	    # our number is negative. In this situation we don't
-	    # want to map x |-> base * (x - digit) as usual,
-	    # because that would lead to us producing a fraction
-	    # going _upwards_ from the number instead of downwards
-	    # (think of it as (-1).12345 instead of -0.87655). So
-	    # instead we map x |-> base * (digit+1 - x).
-	    return mmul((-self.base, self.base*(digit+1), 0, 1), matrix)
-	else:
-	    return mmul((self.base, -self.base*digit, 0, 1), matrix)
+        # Update a matrix state to reflect the consumption of a
+        # digit.
+        if digit < 0:
+            # Special case that can occur on the very first call if
+            # our number is negative. In this situation we don't
+            # want to map x |-> base * (x - digit) as usual,
+            # because that would lead to us producing a fraction
+            # going _upwards_ from the number instead of downwards
+            # (think of it as (-1).12345 instead of -0.87655). So
+            # instead we map x |-> base * (digit+1 - x).
+            return mmul((-self.base, self.base*(digit+1), 0, 1), matrix)
+        else:
+            return mmul((self.base, -self.base*digit, 0, 1), matrix)
     def output(self, digit):
-	if self.state == 0:
-	    # Special case: the first digit generated is the
-	    # integer part of the target number. Therefore, we want
-	    # to write a decimal point after it, and also we need
-	    # special handling if `base' is too small.
-	    #
-	    # Also, this digit may be negative, in which case we
-	    # print a minus sign and _subtract 1_ from it.
-	    if digit < 0:
-		digit = -1 - digit
-		sys.stdout.write("-")
-	    b = 1
-	    x = digit
-	    while digit >= b*self.base:
-		b = b * self.base
-	    while b > 0:
-		d = x / b
-		x = x % b
-		sys.stdout.write("%c" % (48 + d + 39*(d>9)))
-		b = b / self.base
-	    self.state = 1
-	else:
-	    if self.state == 1:
-		# Write the decimal point, once we know there's a digit
-		# following it.
-		sys.stdout.write(".")
-		self.state = 2
-	    # Once we're going, we just write out each digit in the
-	    # requested base.
-	    sys.stdout.write("%c" % (48 + digit + 39*(digit>9)))
-	sys.stdout.flush()
+        if self.state == 0:
+            # Special case: the first digit generated is the
+            # integer part of the target number. Therefore, we want
+            # to write a decimal point after it, and also we need
+            # special handling if `base' is too small.
+            #
+            # Also, this digit may be negative, in which case we
+            # print a minus sign and _subtract 1_ from it.
+            if digit < 0:
+                digit = -1 - digit
+                sys.stdout.write("-")
+            b = 1
+            x = digit
+            while digit >= b*self.base:
+                b = b * self.base
+            while b > 0:
+                d = x / b
+                x = x % b
+                sys.stdout.write("%c" % (48 + d + 39*(d>9)))
+                b = b / self.base
+            self.state = 1
+        else:
+            if self.state == 1:
+                # Write the decimal point, once we know there's a digit
+                # following it.
+                sys.stdout.write(".")
+                self.state = 2
+            # Once we're going, we just write out each digit in the
+            # requested base.
+            sys.stdout.write("%c" % (48 + digit + 39*(digit>9)))
+        sys.stdout.flush()
     def run(self, spig, digitlimit, earlyterm):
-	while digitlimit == None or digitlimit > 0:
-	    digit = spig.gendigit(self, earlyterm)
-	    assert digit != (-1,)
-	    if digit == (-2,):
-		print # a trailing newline is generally considered polite
-		return
-	    else:
-		self.output(digit)
-		if digitlimit != None:
-		    digitlimit = digitlimit - 1
-	# If we hit our digit limit, output a trailing newline.
-	print
+        while digitlimit == None or digitlimit > 0:
+            digit = spig.gendigit(self, earlyterm)
+            assert digit != (-1,)
+            if digit == (-2,):
+                print # a trailing newline is generally considered polite
+                return
+            else:
+                self.output(digit)
+                if digitlimit != None:
+                    digitlimit = digitlimit - 1
+        # If we hit our digit limit, output a trailing newline.
+        print
 
 class output_confrac:
     def __init__(self, write_convergents = 0):
-	self.write_convergents = write_convergents
-	self.convergent_matrix = [0, 1, 1, 0]
+        self.write_convergents = write_convergents
+        self.convergent_matrix = [0, 1, 1, 0]
     def consume(self, matrix, digit):
-	# Update a matrix state to reflect the consumption of a
-	# digit.
-	return mmul((0, 1, 1, -digit), matrix)
+        # Update a matrix state to reflect the consumption of a
+        # digit.
+        return mmul((0, 1, 1, -digit), matrix)
     def output(self, digit):
-	if self.write_convergents:
-	    a = self.convergent_matrix
-	    a = [a[1], a[1]*digit+a[0], a[3], a[3]*digit+a[2]]
-	    self.convergent_matrix = a
-	    sys.stdout.write("%d/%d\n" % (a[1], a[3]))
-	else:
-	    sys.stdout.write("%d\n" % digit)
-	sys.stdout.flush()
+        if self.write_convergents:
+            a = self.convergent_matrix
+            a = [a[1], a[1]*digit+a[0], a[3], a[3]*digit+a[2]]
+            self.convergent_matrix = a
+            sys.stdout.write("%d/%d\n" % (a[1], a[3]))
+        else:
+            sys.stdout.write("%d\n" % digit)
+        sys.stdout.flush()
     def run(self, spig, digitlimit, earlyterm):
-	while digitlimit == None or digitlimit > 0:
-	    digit = spig.gendigit(self, earlyterm)
-	    assert digit != (-2,)
-	    if digit == (-1,):
-		return
-	    else:
-		self.output(digit)
+        while digitlimit == None or digitlimit > 0:
+            digit = spig.gendigit(self, earlyterm)
+            assert digit != (-2,)
+            if digit == (-1,):
+                return
+            else:
+                self.output(digit)
 
 class output_approx:
     def __init__(self, fd):
-	self.file = os.fdopen(fd, "r")
-	self.state = 0
+        self.file = os.fdopen(fd, "r")
+        self.state = 0
     def consume(self, matrix, digit):
-	# We never consume anything.
-	return matrix
+        # We never consume anything.
+        return matrix
     def output(self, digit):
-	sys.stdout.write("%d\n" % digit)
-	sys.stdout.flush()
+        sys.stdout.write("%d\n" % digit)
+        sys.stdout.flush()
     def run(self, spig, digitlimit, earlyterm):
-	while digitlimit == None or digitlimit > 0:
-	    denominator = self.file.readline()
-	    if denominator == "":
-		return
-	    denominator = long(denominator)
-	    outmatrix = (denominator, 0, 0, 1)
-	    digit = spig.gendigit(self, earlyterm, outmatrix)
-	    assert digit != (-1,) and digit != (-2,)
-	    self.output(digit)
-	    if digitlimit != None:
-		digitlimit = digitlimit - 1
+        while digitlimit == None or digitlimit > 0:
+            denominator = self.file.readline()
+            if denominator == "":
+                return
+            denominator = long(denominator)
+            outmatrix = (denominator, 0, 0, 1)
+            digit = spig.gendigit(self, earlyterm, outmatrix)
+            assert digit != (-1,) and digit != (-2,)
+            self.output(digit)
+            if digitlimit != None:
+                digitlimit = digitlimit - 1
 
 def mtrans(m, x):
     # Interpret a 2x2 matrix as a Mobius transformation.
     try:
-	if x == None:
-	    if m[0]:
-		return m[0] / m[2]
-	    elif m[2]:
-		return 0
-	    else:
-		return m[1] / m[3]
-	else:
-	    return (m[0]*x+m[1]) / (m[2]*x+m[3])
+        if x == None:
+            if m[0]:
+                return m[0] / m[2]
+            elif m[2]:
+                return 0
+            else:
+                return m[1] / m[3]
+        else:
+            return (m[0]*x+m[1]) / (m[2]*x+m[3])
     except ZeroDivisionError, e:
-	return None
+        return None
 
 def mmul(m1, m2):
     # 2x2 matrix multiplication.
@@ -326,49 +326,49 @@ def phi_matrix(k):
 def cfrac_matrix(k):
     s = sys.stdin.readline()
     if s == "":
-	# The continued fraction terminated. We therefore return
-	# the matrix that always returns infinity, so that the last
-	# term (k+1/x) becomes (k+1/infinity) == k.
-	return (0, 1, 0, 0)
+        # The continued fraction terminated. We therefore return
+        # the matrix that always returns infinity, so that the last
+        # term (k+1/x) becomes (k+1/infinity) == k.
+        return (0, 1, 0, 0)
     i = long(s)
     return (i, 1, 1, 0)
 
 class base_matrix:
     def __init__(self, base):
-	self.base = base
-	self.start = 1
+        self.base = base
+        self.start = 1
     def val(self, c):
-	if c >= '0' and c <= '9':
-	    return ord(c) - ord('0')
-	elif c >= 'A' and c <= 'Z':
-	    return ord(c) - ord('A') + 10
-	elif c >= 'a' and c <= 'z':
-	    return ord(c) - ord('a') + 10
-	else:
-	    return None
+        if c >= '0' and c <= '9':
+            return ord(c) - ord('0')
+        elif c >= 'A' and c <= 'Z':
+            return ord(c) - ord('A') + 10
+        elif c >= 'a' and c <= 'z':
+            return ord(c) - ord('a') + 10
+        else:
+            return None
     def __call__(self, k):
-	if self.start:
-	    self.start = 0
-	    i = 0
-	    while 1:
-		c = sys.stdin.read(1)
-		if c == "" or c == ".":
-		    break
-		else:
-		    v = self.val(c)
-		    if v != None:
-			i = i * self.base + self.val(c)
-	else:
-	    while 1:
-		c = sys.stdin.read(1)
-		if c == "":
-		    # The expansion terminated, so return a matrix
-		    # which gives a constant.
-		    return (0, 0, 0, 1)
-		i = self.val(c)
-		if i != None:
-		    break
-	return (1, i*self.base, 0, self.base)
+        if self.start:
+            self.start = 0
+            i = 0
+            while 1:
+                c = sys.stdin.read(1)
+                if c == "" or c == ".":
+                    break
+                else:
+                    v = self.val(c)
+                    if v != None:
+                        i = i * self.base + self.val(c)
+        else:
+            while 1:
+                c = sys.stdin.read(1)
+                if c == "":
+                    # The expansion terminated, so return a matrix
+                    # which gives a constant.
+                    return (0, 0, 0, 1)
+                i = self.val(c)
+                if i != None:
+                    break
+        return (1, i*self.base, 0, self.base)
 
 def isqrt(n):
     d = long(n)
@@ -383,7 +383,7 @@ def isqrt(n):
             d = d - di
             a = a + b
         b = b >> 2
-	if b == 0: break
+        if b == 0: break
     return a
 
 class root_matrix:
@@ -402,96 +402,96 @@ class root_matrix:
     #  - Repeatedly:
     #     + output a as a continued fraction term.
     #     + let m <- d*a-m.
-    # 	  + let d <- (n-m^2)/d. (This division always yields an
-    # 	    exact integer; see below.)
-    # 	  + let a <- floor((sqrt(n)-m)/d). (We can safely replace
-    # 	    sqrt(n) with floor(sqrt(n)) here without affecting the
-    # 	    result.)
-    # 	  + check if (m,d,a) repeats a set of values which it
-    # 	    previously had at this point. If so, we need not
-    # 	    continue calculating.
+    #     + let d <- (n-m^2)/d. (This division always yields an
+    #       exact integer; see below.)
+    #     + let a <- floor((sqrt(n)-m)/d). (We can safely replace
+    #       sqrt(n) with floor(sqrt(n)) here without affecting the
+    #       result.)
+    #     + check if (m,d,a) repeats a set of values which it
+    #       previously had at this point. If so, we need not
+    #       continue calculating.
     #
     # Proof by induction that every value of d is an integer:
     #  - Base case: d_0 is an integer, because it's defined to be
-    # 	 1.
+    #    1.
     #  - Suppose d_i and all previous d_j are integers.
-    # 	  + d_i was computed as (n-m_i^2)/d_{i-1}, and hence if
-    # 	    it's an integer then d_{i-1} is a factor of (n-m_i^2),
-    # 	    and so d_i is _also_ a factor of that.
-    # 	  + Now m_{i+1} = d_i a_i - m_i. So n - m_{i+1}^2 is equal
-    # 	    to n - (m_i - d_i a_i)^2 = n - m_i^2 + 2 d_i a_i m_i - d_i^2 a_i^2.
-    # 	  + And d_i divides n - m_i^2 (by construction), and
-    # 	    divides any multiple of d_i (obviously), so it divides
-    # 	    that. Hence d_{i+1} will be an integer too. []
+    #     + d_i was computed as (n-m_i^2)/d_{i-1}, and hence if
+    #       it's an integer then d_{i-1} is a factor of (n-m_i^2),
+    #       and so d_i is _also_ a factor of that.
+    #     + Now m_{i+1} = d_i a_i - m_i. So n - m_{i+1}^2 is equal
+    #       to n - (m_i - d_i a_i)^2 = n - m_i^2 + 2 d_i a_i m_i - d_i^2 a_i^2.
+    #     + And d_i divides n - m_i^2 (by construction), and
+    #       divides any multiple of d_i (obviously), so it divides
+    #       that. Hence d_{i+1} will be an integer too. []
 
     def __init__(self, radicand):
-	self.radicand = radicand
-	self.a0 = isqrt(radicand)
-	self.list = [(0, 1, self.a0)]
-	self.resume = None
-	self.listpos = 0
+        self.radicand = radicand
+        self.a0 = isqrt(radicand)
+        self.list = [(0, 1, self.a0)]
+        self.resume = None
+        self.listpos = 0
 
-	# Special case of an actually square number.
-	if self.a0 * self.a0 == radicand:
-	    self.list.append((None, None, None))
-	    self.resume = 1
+        # Special case of an actually square number.
+        if self.a0 * self.a0 == radicand:
+            self.list.append((None, None, None))
+            self.resume = 1
     def __call__(self, k):
-	if self.listpos >= len(self.list) and self.resume == None:
-	    # Compute the next triple.
-	    m, d, a = self.list[-1]
-	    m = d * a - m
-	    d = (self.radicand - m*m) / d
-	    a = (self.a0 + m) / d
-	    t = (m, d, a)
-	    try:
-		self.resume = self.list.index(t)
-	    except ValueError, e:
-		self.resume = None
-		self.list.append(t)
-	if self.listpos >= len(self.list):
-	    assert self.resume != None
-	    self.listpos = self.resume
-	assert self.listpos < len(self.list)
-	a = self.list[self.listpos][2]
-	self.listpos = self.listpos + 1
-	if a == None:
-	    return (0, 1, 0, 0) # fraction terminated
-	else:
-	    return (a, 1, 1, 0)
+        if self.listpos >= len(self.list) and self.resume == None:
+            # Compute the next triple.
+            m, d, a = self.list[-1]
+            m = d * a - m
+            d = (self.radicand - m*m) / d
+            a = (self.a0 + m) / d
+            t = (m, d, a)
+            try:
+                self.resume = self.list.index(t)
+            except ValueError, e:
+                self.resume = None
+                self.list.append(t)
+        if self.listpos >= len(self.list):
+            assert self.resume != None
+            self.listpos = self.resume
+        assert self.listpos < len(self.list)
+        a = self.list[self.listpos][2]
+        self.listpos = self.listpos + 1
+        if a == None:
+            return (0, 1, 0, 0) # fraction terminated
+        else:
+            return (a, 1, 1, 0)
 
 class frac_matrix:
     def __init__(self, n, d):
-	self.n = n
-	self.d = d
+        self.n = n
+        self.d = d
     def __call__(self, k):
-	return (0, self.n, 0, self.d)
+        return (0, self.n, 0, self.d)
 
 class gosper_matrix:
     def __init__(self, numbers, spig1, spig2):
         self.numbers = numbers
         self.x = spig1
         self.y = spig2
-	self.xdone = self.ydone = 0
+        self.xdone = self.ydone = 0
     def consume(self, matrix, digit):
-	# Update a matrix state to reflect the consumption of a
-	# digit.
-	return mmul((0, 1, 1, -digit), matrix)
+        # Update a matrix state to reflect the consumption of a
+        # digit.
+        return mmul((0, 1, 1, -digit), matrix)
     def getx(self):
         a, b, c, d, e, f, g, h = self.numbers
-	p = self.x.gendigit(self, 0)
-	q = 1
+        p = self.x.gendigit(self, 0)
+        q = 1
         if p == (-1,):
             self.numbers = (0, 0, a, b, 0, 0, e, f)
-	    self.xdone = 1
+            self.xdone = 1
         else:
             self.numbers = (p*a+c, p*b+d, q*a, q*b, p*e+g, p*f+h, q*e, q*f)
     def gety(self):
         a, b, c, d, e, f, g, h = self.numbers
-	r = self.y.gendigit(self, 0)
-	s = 1
+        r = self.y.gendigit(self, 0)
+        s = 1
         if r == (-1,):
             self.numbers = (0, a, 0, c, 0, e, 0, g)
-	    self.ydone = 1
+            self.ydone = 1
         else:
             self.numbers = (r*a+b, s*a, r*c+d, s*c, r*e+f, s*e, r*g+h, s*g)
     def output_term(self, t, u):
@@ -499,41 +499,41 @@ class gosper_matrix:
         self.numbers = (u*e, u*f, u*g, u*h, a-t*e, b-t*f, c-t*g, d-t*h)
     def dostep(self):
         a, b, c, d, e, f, g, h = self.numbers
-	# Termination check: if we have no remaining dependency on
-	# x and y, and the remaining ratio d/h has become infinite,
-	# then our output continued fraction has terminated.
-	if a==0 and b==0 and c==0 and e==0 and f==0 and g==0 and h==0:
-	    return -1, -1
+        # Termination check: if we have no remaining dependency on
+        # x and y, and the remaining ratio d/h has become infinite,
+        # then our output continued fraction has terminated.
+        if a==0 and b==0 and c==0 and e==0 and f==0 and g==0 and h==0:
+            return -1, -1
         # The four extreme positions of z, as x and y vary between
         # 0 and infinity, are a/e, b/f, c/g and d/h. First we must
         # check whether the denominator changes sign or is zero.
         if (not self.xdone and not self.ydone and e<=0) or \
-	(not self.xdone and f<=0) or (not self.ydone and g<=0) or h<=0:
+        (not self.xdone and f<=0) or (not self.ydone and g<=0) or h<=0:
             # I couldn't immediately work out the rule for which
             # fraction we should fetch a term from in this
             # situation, so I gave up and just did both :-)
             if not self.xdone: self.getx()
-	    if not self.ydone: self.gety()
+            if not self.ydone: self.gety()
             return None
         # Now find the integer parts of the four ratios, and see
         # which ones aren't equal to decide whether to get another
         # term.
-	term = None
-	if not self.xdone and not self.ydone:
-	    ra, rb, rc, rd = a/e, b/f, c/g, d/h
-	    if ra == rb and rb == rc and rc == rd:
-		term = ra
-	elif not self.xdone:
-	    rb, rd = b/f, d/h
-	    if rb == rd:
-		term = rb
-	elif not self.ydone:
-	    rc, rd = c/g, d/h
-	    if rc == rd:
-		term = rc
-	else:
-	    term = rd = d/h
-	if term != None:
+        term = None
+        if not self.xdone and not self.ydone:
+            ra, rb, rc, rd = a/e, b/f, c/g, d/h
+            if ra == rb and rb == rc and rc == rd:
+                term = ra
+        elif not self.xdone:
+            rb, rd = b/f, d/h
+            if rb == rd:
+                term = rb
+        elif not self.ydone:
+            rc, rd = c/g, d/h
+            if rc == rd:
+                term = rc
+        else:
+            term = rd = d/h
+        if term != None:
             # Output a term.
             self.output_term(term, 1)
             return term, 1
@@ -548,11 +548,11 @@ class gosper_matrix:
             term = self.dostep()
             if term != None:
                 break
-	if term == (-1, -1):
-	    return (0, 1, 0, 0) # fraction terminated
-	else:
-	    assert term[1] == 1
-	    return (term[0], 1, 1, 0)
+        if term == (-1, -1):
+            return (0, 1, 0, 0) # fraction terminated
+        else:
+            assert term[1] == 1
+            return (term[0], 1, 1, 0)
 
 class primitive_log_matrix:
     # We compute logs by summing the series for log(1+x). x will be
@@ -573,14 +573,14 @@ class primitive_log_matrix:
     #   (   0 b ) (  0 2b ) (   0 3b )
 
     def __init__(self, s, a, b):
-	self.a = a
-	self.b = b
-	self.s = s
+        self.a = a
+        self.b = b
+        self.s = s
     def __call__(self, k):
-	if k == 1:
-	    return (self.s * self.a, 0, 0, self.b)
-	else:
-	    return (-(k-1)*self.a, k*self.b, 0, k*self.b)
+        if k == 1:
+            return (self.s * self.a, 0, 0, self.b)
+        else:
+            return (-(k-1)*self.a, k*self.b, 0, k*self.b)
 def log_spigot(n, d = 1):
     # This is the real function that computes a log. We begin by
     # doing argument reduction: scale our input by a power of two
@@ -591,195 +591,195 @@ def log_spigot(n, d = 1):
     # interval bounds depending on whether we're doing nontrivial
     # argument reduction or not.
     def approxlog2(x):
-	s = hex(x)
-	if s[:2] == "0x": s = s[2:]
-	if s[:1] == "0": s = s[1:]
-	if s[-1:] == "L": s = s[:-1]
-	return 4 * len(s)
+        s = hex(x)
+        if s[:2] == "0x": s = s[2:]
+        if s[:1] == "0": s = s[1:]
+        if s[-1:] == "L": s = s[:-1]
+        return 4 * len(s)
     if n > d:
-	k = approxlog2(n/d)
-	assert n <= d << k
-	while n <= d << k:
-	    k = k - 1
-	d = d << k
+        k = approxlog2(n/d)
+        assert n <= d << k
+        while n <= d << k:
+            k = k - 1
+        d = d << k
     else:
-	k = approxlog2(d/n)
-	assert d <= n << k
-	while d <= n << k:
-	    k = k - 1
-	n = n << k
-	k = -k
+        k = approxlog2(d/n)
+        assert d <= n << k
+        while d <= n << k:
+            k = k - 1
+        n = n << k
+        k = -k
     # Now the value we want is log(n/d) + k log 2.
     #
     # If n/d > 1, flip round to compute -log(d/n), which will
     # converge a bit faster.
     if n > d:
-	plm = primitive_log_matrix(-1, d-n, n) # log(1 + (d-n)/n) = log(d/n)
+        plm = primitive_log_matrix(-1, d-n, n) # log(1 + (d-n)/n) = log(d/n)
     else:
-	plm = primitive_log_matrix(1, n-d, d) # log(1 + (n-d)/d) = log(n/d)
+        plm = primitive_log_matrix(1, n-d, d) # log(1 + (n-d)/d) = log(n/d)
     pls = spigot(0, 2, plm)
     # And now scale back up, if necessary.
     if k != 0:
-	scm = primitive_log_matrix(-k, -1, 2) # -k * log(1/2)
-	scs = spigot(0, 2, scm)
-	retm = gosper_matrix((0,1,1,0,0,0,0,1), pls, scs)
-	return spigot(0, None, retm)
+        scm = primitive_log_matrix(-k, -1, 2) # -k * log(1/2)
+        scs = spigot(0, 2, scm)
+        retm = gosper_matrix((0,1,1,0,0,0,0,1), pls, scs)
+        return spigot(0, None, retm)
     else:
-	return pls
+        return pls
 
 class recip_matrix:
     def __init__(self, spig):
-	self.spig = spig
-	self.state = 0
+        self.spig = spig
+        self.state = 0
     def consume(self, matrix, digit):
-	# Update a matrix state to reflect the consumption of a
-	# digit.
-	return mmul((0, 1, 1, -digit), matrix)
+        # Update a matrix state to reflect the consumption of a
+        # digit.
+        return mmul((0, 1, 1, -digit), matrix)
     def __call__(self, k):
-	if self.state == 0:
-	    self.state = 1
-	    return (0, 1, 1, 0)
-	else:
-	    d1 = self.spig.gendigit(self, 0)
-	    if d1 == (-1,):
-		return (0, 1, 0, 0) # fraction terminated
-	    else:
-		return (d1, 1, 1, 0)
+        if self.state == 0:
+            self.state = 1
+            return (0, 1, 1, 0)
+        else:
+            d1 = self.spig.gendigit(self, 0)
+            if d1 == (-1,):
+                return (0, 1, 0, 0) # fraction terminated
+            else:
+                return (d1, 1, 1, 0)
 
 class spigot:
     def __init__(self, bot, top, matrix):
-	self.bot = bot
-	self.top = top
-	self.matrix = matrix
-	self.state = (1, 0, 0, 1)
-	self.k = 1
+        self.bot = bot
+        self.top = top
+        self.matrix = matrix
+        self.state = (1, 0, 0, 1)
+        self.k = 1
     def gendigit(self, consume, earlyterm=0, outmatrix=None):
-	while 1:
-	    if outmatrix:
-		thisstate = mmul(outmatrix, self.state)
-	    else:
-		thisstate = self.state
-	    digit = mtrans(thisstate, self.bot)
-	    dcheck = mtrans(thisstate, self.top)
-	    if digit == dcheck:
-		if digit == None:
-		    # This case arises when we have been asked to generate the
-		    # continued fraction for a rational.
-		    return (-1,)
-		if earlyterm and self.state[0] == 0 \
-		and self.state[1] == 0 and self.state[2] == 0:
-		    # This case arises when we have been asked to generate
-		    # a base-n fraction which terminates.
-		    return (-2,)
-		# Otherwise, generate a digit.
-		self.state = consume.consume(self.state, digit)
-		return digit
-	    else:
-		# Fold in another matrix.
-		self.state = mmul(self.state, self.matrix(self.k))
-		self.k = self.k + 1
+        while 1:
+            if outmatrix:
+                thisstate = mmul(outmatrix, self.state)
+            else:
+                thisstate = self.state
+            digit = mtrans(thisstate, self.bot)
+            dcheck = mtrans(thisstate, self.top)
+            if digit == dcheck:
+                if digit == None:
+                    # This case arises when we have been asked to generate the
+                    # continued fraction for a rational.
+                    return (-1,)
+                if earlyterm and self.state[0] == 0 \
+                and self.state[1] == 0 and self.state[2] == 0:
+                    # This case arises when we have been asked to generate
+                    # a base-n fraction which terminates.
+                    return (-2,)
+                # Otherwise, generate a digit.
+                self.state = consume.consume(self.state, digit)
+                return digit
+            else:
+                # Fold in another matrix.
+                self.state = mmul(self.state, self.matrix(self.k))
+                self.k = self.k + 1
 
 def get_spig(arg, args):
     if arg == "pi":
-	return spigot(3, 4, pi_matrix)
+        return spigot(3, 4, pi_matrix)
     elif arg == "e":
-	return spigot(0, 2, e_matrix)
+        return spigot(0, 2, e_matrix)
     elif arg == "phi":
-	return spigot(1, 2, phi_matrix)
+        return spigot(1, 2, phi_matrix)
     elif arg == "root":
-	if len(args) > 0:
-	    radicand = args[0]
-	    del args[0]
-	else:
-	    sys.stderr.write("input type 'root' requires an argument\n")
-	    sys.exit(1)
-	radicand = long(radicand)
-	return spigot(0, None, root_matrix(radicand))
+        if len(args) > 0:
+            radicand = args[0]
+            del args[0]
+        else:
+            sys.stderr.write("input type 'root' requires an argument\n")
+            sys.exit(1)
+        radicand = long(radicand)
+        return spigot(0, None, root_matrix(radicand))
     elif arg == "log":
-	if len(args) > 0:
-	    logarg = args[0]
-	    del args[0]
-	else:
-	    sys.stderr.write("input type 'log' requires an argument\n")
-	    sys.exit(1)
-	logarg = long(logarg)
-	return log_spigot(logarg)
+        if len(args) > 0:
+            logarg = args[0]
+            del args[0]
+        else:
+            sys.stderr.write("input type 'log' requires an argument\n")
+            sys.exit(1)
+        logarg = long(logarg)
+        return log_spigot(logarg)
     elif arg == "frac":
-	if len(args) >= 2:
-	    numerator = args[0]
-	    denominator = args[1]
-	    del args[0:2]
-	else:
-	    sys.stderr.write("input type 'frac' requires two arguments\n")
-	    sys.exit(1)
-	numerator = long(numerator)
-	denominator = long(denominator)
-	return spigot(numerator/denominator, \
-	(numerator+denominator-1)/denominator, \
-	frac_matrix(numerator, denominator))
+        if len(args) >= 2:
+            numerator = args[0]
+            denominator = args[1]
+            del args[0:2]
+        else:
+            sys.stderr.write("input type 'frac' requires two arguments\n")
+            sys.exit(1)
+        numerator = long(numerator)
+        denominator = long(denominator)
+        return spigot(numerator/denominator, \
+        (numerator+denominator-1)/denominator, \
+        frac_matrix(numerator, denominator))
     elif arg == "cfrac":
-	# Read a list of continued fraction terms on standard
-	# input, and spigot them into some ordinary number base on
-	# output.
-	
-	# `None' here represents infinity; the general continued
-	# fraction transformation x -> k+1/x always maps
-	# [0,infinity] to a subinterval of itself.
-	return spigot(0, None, cfrac_matrix)
+        # Read a list of continued fraction terms on standard
+        # input, and spigot them into some ordinary number base on
+        # output.
+        
+        # `None' here represents infinity; the general continued
+        # fraction transformation x -> k+1/x always maps
+        # [0,infinity] to a subinterval of itself.
+        return spigot(0, None, cfrac_matrix)
     elif arg == "base":
-	# Read a number in a specified integer base on standard
-	# input, and spigot it into a different base or a continued
-	# fraction.
-	if len(args) > 0:
-	    ibase = args[0]
-	    del args[0]
-	else:
-	    sys.stderr.write("input type 'base' requires an argument\n")
-	    sys.exit(1)
-	ibase = long(ibase)
-	return spigot(0, ibase, base_matrix(ibase))
+        # Read a number in a specified integer base on standard
+        # input, and spigot it into a different base or a continued
+        # fraction.
+        if len(args) > 0:
+            ibase = args[0]
+            del args[0]
+        else:
+            sys.stderr.write("input type 'base' requires an argument\n")
+            sys.exit(1)
+        ibase = long(ibase)
+        return spigot(0, ibase, base_matrix(ibase))
     elif arg == "add" or arg == "sub" or arg == "mul" or arg == "div":
-	# Read two other spigot definitions, and produce a spigot
-	# giving their sum.
-	if len(args) < 1:
-	    sys.stderr.write("input type 'add' requires operands\n")
-	    sys.exit(1)
-	x = args[0]
-	del args[0]
-	spig1 = get_spig(x, args)
-	if len(args) < 1:
-	    sys.stderr.write("input type 'add' requires two operands\n")
-	    sys.exit(1)
-	x = args[0]
-	del args[0]
-	spig2 = get_spig(x, args)
-	if arg == "add":
-	    numbers = (0,1,1,0,0,0,0,1)
-	elif arg == "sub":
-	    numbers = (0,1,-1,0,0,0,0,1)
-	elif arg == "mul":
-	    numbers = (1,0,0,0,0,0,0,1)
-	elif arg == "div":
-	    numbers = (0,1,0,0,0,0,1,0)
-	return spigot(0, None, gosper_matrix(numbers, spig1, spig2))
+        # Read two other spigot definitions, and produce a spigot
+        # giving their sum.
+        if len(args) < 1:
+            sys.stderr.write("input type 'add' requires operands\n")
+            sys.exit(1)
+        x = args[0]
+        del args[0]
+        spig1 = get_spig(x, args)
+        if len(args) < 1:
+            sys.stderr.write("input type 'add' requires two operands\n")
+            sys.exit(1)
+        x = args[0]
+        del args[0]
+        spig2 = get_spig(x, args)
+        if arg == "add":
+            numbers = (0,1,1,0,0,0,0,1)
+        elif arg == "sub":
+            numbers = (0,1,-1,0,0,0,0,1)
+        elif arg == "mul":
+            numbers = (1,0,0,0,0,0,0,1)
+        elif arg == "div":
+            numbers = (0,1,0,0,0,0,1,0)
+        return spigot(0, None, gosper_matrix(numbers, spig1, spig2))
     elif arg == "reciprocal":
-	# Read another spigot definition, and produce a spigot
-	# giving its reciprocal.
-	if len(args) < 1:
-	    sys.stderr.write("input type 'reciprocal' requires operands\n")
-	    sys.exit(1)
-	x = args[0]
-	del args[0]
-	spig1 = get_spig(x, args)
-	return spigot(0, None, recip_matrix(spig1))
+        # Read another spigot definition, and produce a spigot
+        # giving its reciprocal.
+        if len(args) < 1:
+            sys.stderr.write("input type 'reciprocal' requires operands\n")
+            sys.exit(1)
+        x = args[0]
+        del args[0]
+        spig1 = get_spig(x, args)
+        return spigot(0, None, recip_matrix(spig1))
     elif arg == "ieee" or arg == "ieeef" or arg == "ieeed":
         # Interpret the input as an IEEE floating-point bit pattern
         # expressed in hex.
-	if len(args) < 1:
-	    sys.stderr.write("input type '" + arg + "' requires an operand\n")
-	    sys.exit(1)
-	x = args[0]
-	del args[0]
+        if len(args) < 1:
+            sys.stderr.write("input type '" + arg + "' requires an operand\n")
+            sys.exit(1)
+        x = args[0]
+        del args[0]
         if x[:2] == "0x" or x[:2] == "0X":
             del x[:2]
         x = string.replace(x, ":", "")
@@ -826,9 +826,9 @@ def get_spig(arg, args):
             numerator = numerator * 2L**exp
         else:
             denominator = 2L**-exp
-	return spigot(numerator/denominator, \
-	(numerator+denominator-1)/denominator, \
-	frac_matrix(numerator, denominator))
+        return spigot(numerator/denominator, \
+        (numerator+denominator-1)/denominator, \
+        frac_matrix(numerator, denominator))
     else:
         # Interpret the input as a C-style decimal or hex
         # floating-point literal.
@@ -837,8 +837,8 @@ def get_spig(arg, args):
         dm = dfloatre.match(arg)
         hm = hfloatre.match(arg)
         if dm == None and hm == None:
-	    sys.stderr.write("unrecognised argument '%s'\n" % arg)
-	    sys.exit(1)
+            sys.stderr.write("unrecognised argument '%s'\n" % arg)
+            sys.exit(1)
         if dm != None:
             integer = dm.group(1) + dm.group(2)
             exponent = 0
@@ -864,9 +864,9 @@ def get_spig(arg, args):
             numerator = numerator * base**exponent
         else:
             denominator = base**-exponent
-	return spigot(numerator/denominator, \
-	(numerator+denominator-1)/denominator, \
-	frac_matrix(numerator, denominator))
+        return spigot(numerator/denominator, \
+        (numerator+denominator-1)/denominator, \
+        frac_matrix(numerator, denominator))
 
 spig = None
 output = output_base(10)
@@ -878,54 +878,54 @@ while len(args) > 0:
     arg = args[0]
     del args[0]
     if arg == "-c":
-	output = output_confrac()
+        output = output_confrac()
     elif arg == "-C":
-	output = output_confrac(1)
+        output = output_confrac(1)
     elif arg[0:2] == "-b":
-	val = arg[2:]
-	if val == "":
-	    if len(args) > 0:
-		val = args[0]
-		del args[0]
-	    else:
-		sys.stderr.write("option '-b' requires an argument\n")
-		sys.exit(1)
-	try:
-	    base = long(val)
-	except ValueError, e:
-	    base = 0
-	if base < 2:
-	    sys.stderr.write("base '%s' is not an integer greater than 1\n" \
-	    % val)
-	    sys.exit(1)
-	output = output_base(base)
+        val = arg[2:]
+        if val == "":
+            if len(args) > 0:
+                val = args[0]
+                del args[0]
+            else:
+                sys.stderr.write("option '-b' requires an argument\n")
+                sys.exit(1)
+        try:
+            base = long(val)
+        except ValueError, e:
+            base = 0
+        if base < 2:
+            sys.stderr.write("base '%s' is not an integer greater than 1\n" \
+            % val)
+            sys.exit(1)
+        output = output_base(base)
     elif arg[0:2] == "-d":
-	val = arg[2:]
-	if val == "":
-	    if len(args) > 0:
-		val = args[0]
-		del args[0]
-	    else:
-		sys.stderr.write("option '-d' requires an argument\n")
-		sys.exit(1)
+        val = arg[2:]
+        if val == "":
+            if len(args) > 0:
+                val = args[0]
+                del args[0]
+            else:
+                sys.stderr.write("option '-d' requires an argument\n")
+                sys.exit(1)
         digitlimit = long(val)
     elif arg[0:2] == "-a":
-	val = arg[2:]
-	if val == "":
-	    if len(args) > 0:
-		val = args[0]
-		del args[0]
-	    else:
-		sys.stderr.write("option '-d' requires an argument\n")
-		sys.exit(1)
-	output = output_approx(int(val))
+        val = arg[2:]
+        if val == "":
+            if len(args) > 0:
+                val = args[0]
+                del args[0]
+            else:
+                sys.stderr.write("option '-d' requires an argument\n")
+                sys.exit(1)
+        output = output_approx(int(val))
     elif arg == "-n":
-	earlyterm = 0
+        earlyterm = 0
     else:
-	spig = get_spig(arg, args)
-	if spig == None:
-	    sys.stderr.write("unrecognised argument '%s'\n" % arg)
-	    sys.exit(1)
+        spig = get_spig(arg, args)
+        if spig == None:
+            sys.stderr.write("unrecognised argument '%s'\n" % arg)
+            sys.exit(1)
 
 if spig == None:
     sys.stderr.write("usage: %s [ -c | -b <base> ] [ -n ] [ -d <digits> ] <number>\n" % sys.argv[0])
@@ -948,8 +948,8 @@ except IOError, e:
     # This typically means `broken pipe', i.e. we've been piped
     # into head or some such. Don't panic; just calmly shut down.
     if e.errno == errno.EPIPE:
-	sys.exit(0)
+        sys.exit(0)
     else:
-	raise e
+        raise e
 except KeyboardInterrupt, e:
     sys.exit(0)

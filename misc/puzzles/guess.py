@@ -53,32 +53,32 @@ englishtens = [None, "ten", "twenty", "thirty", "forty", "fifty", "sixty",
 englishthousands = ["", " thousand", " million", " billion", " trillion"]
 def english(n):
     def englishthreedigits(n):
-	assert n >= 1 and n < 1000
-	s = sep = ""
-	if n >= 100:
-	    s = englishdigits[n/100] + " hundred"
-	    sep = " and "
-	    n = n % 100
-	if n >= 20:
-	    s = s + sep + englishtens[n/10]
-	    sep = "-"
-	    n = n % 10
-	if n >= 10:
-	    s = s + sep + englishteens[n-10]
-	elif n >= 1:
-	    s = s + sep + englishdigits[n]
-	return s
+        assert n >= 1 and n < 1000
+        s = sep = ""
+        if n >= 100:
+            s = englishdigits[n/100] + " hundred"
+            sep = " and "
+            n = n % 100
+        if n >= 20:
+            s = s + sep + englishtens[n/10]
+            sep = "-"
+            n = n % 10
+        if n >= 10:
+            s = s + sep + englishteens[n-10]
+        elif n >= 1:
+            s = s + sep + englishdigits[n]
+        return s
     assert n >= 1 and n < 1000000000000000L
     s = sep = ""
     for th in englishthousands:
-	npart = n % 1000
-	n = n / 1000
-	if npart != 0:
-	    s = englishthreedigits(npart) + th + sep + s
-	    if th == "" and npart < 100:
-		sep = " and "
-	    else:
-		sep = ", "
+        npart = n % 1000
+        n = n / 1000
+        if npart != 0:
+            s = englishthreedigits(npart) + th + sep + s
+            if th == "" and npart < 100:
+                sep = " and "
+            else:
+                sep = ", "
     return s
 
 def first(s):
@@ -90,8 +90,8 @@ def last(s):
 def known(set, ofunc, value):
     n = 0
     for i in set:
-	if ofunc(i) == value:
-	    n = n + 1
+        if ofunc(i) == value:
+            n = n + 1
     assert n > 0
     return n == 1
 
@@ -102,18 +102,18 @@ def narrow(set, ofunc, known):
     nonunique = []
     values = {}
     for i in set:
-	value = ofunc(i)
-	values[value] = values.get(value, 0) + 1
+        value = ofunc(i)
+        values[value] = values.get(value, 0) + 1
     for i in set:
-	value = ofunc(i)
-	if values[value] == 1:
-	    unique.append(i)
-	else:
-	    nonunique.append(i)
+        value = ofunc(i)
+        if values[value] == 1:
+            unique.append(i)
+        else:
+            nonunique.append(i)
     if known:
-	set = unique
+        set = unique
     else:
-	set = nonunique
+        set = nonunique
 
     assert len(set) > 0
     return set, len(set) != origsize
@@ -125,21 +125,21 @@ def guess(numbers, number):
     k1 = k2 = 0
 
     while not (k1 and k2):
-	changed = 0
+        changed = 0
 
-	k1 = known(set, first, first(number))
-	statements.append(k1)
-	set, c1 = narrow(set, first, k1)
+        k1 = known(set, first, first(number))
+        statements.append(k1)
+        set, c1 = narrow(set, first, k1)
 
-	if k1 and k2:
-	    break
+        if k1 and k2:
+            break
 
-	k2 = known(set, last, last(number))
-	statements.append(k2)
-	set, c2 = narrow(set, last, k2)
+        k2 = known(set, last, last(number))
+        statements.append(k2)
+        set, c2 = narrow(set, last, k2)
 
-	if not (c1 or c2):
-	    break
+        if not (c1 or c2):
+            break
 
     print number + ":", statements, set
 

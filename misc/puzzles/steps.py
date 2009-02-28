@@ -29,7 +29,7 @@ while pos < len(list):
     n, last = list[pos]
     cmoves = moves[(n, last)]
     if n > 0 and not numbers.has_key(n):
-	numbers[n] = cmoves
+        numbers[n] = cmoves
 
     # Output. We output the results for numbers in increasing
     # order. Anything with an entry in numbers[] has its shortest
@@ -45,24 +45,24 @@ while pos < len(list):
     # length of `cmoves': if it exceeds 2o-1 and numbers[o] doesn't
     # exist, then it's never going to exist.
     while numbers.has_key(o) or len(cmoves) > 2*o-1:
-	if numbers.has_key(o):
-	    movelist = numbers[o]
-	    s = "%d: %d [" % (o, len(movelist))
-	    sp = ""
-	    for m in movelist:
-		s = s + sp + "%d" % m
-		sp = " "
-	    s = s + "]"
-	else:
-	    s = "%d: unreachable" % o
-	print s
-	o = o+1
+        if numbers.has_key(o):
+            movelist = numbers[o]
+            s = "%d: %d [" % (o, len(movelist))
+            sp = ""
+            for m in movelist:
+                s = s + sp + "%d" % m
+                sp = " "
+            s = s + "]"
+        else:
+            s = "%d: unreachable" % o
+        print s
+        o = o+1
 
     pos = pos + 1
     for move in (last+1, last-1):
-	if move < 0:
-	    continue
-	dest = (n+move, move)
-	if not moves.has_key(dest):
-	    moves[dest] = cmoves + (move,)
-	    list.append(dest)
+        if move < 0:
+            continue
+        dest = (n+move, move)
+        if not moves.has_key(dest):
+            moves[dest] = cmoves + (move,)
+            list.append(dest)

@@ -144,32 +144,32 @@ class Rational:
         return "Rational(" + repr(self.n) + "," + repr(self.d) + ")"
 
     def decrep(self, ndigits = 40):
-	"Return a string showing the number as a decimal, to arbitrary " + \
-	"precision. Rounds to nearest/even."
-	digits = self.n * (10L**ndigits) / self.d
+        "Return a string showing the number as a decimal, to arbitrary " + \
+        "precision. Rounds to nearest/even."
+        digits = self.n * (10L**ndigits) / self.d
 
-	# round appropriately
-	remainder = self.n * (10L**ndigits) % self.d
-	if remainder > self.d / 2:
-	    digits = digits + 1
-	elif remainder == self.d / 2:
-	    # round to even
-	    digits = digits + (digits & 1)
+        # round appropriately
+        remainder = self.n * (10L**ndigits) % self.d
+        if remainder > self.d / 2:
+            digits = digits + 1
+        elif remainder == self.d / 2:
+            # round to even
+            digits = digits + (digits & 1)
 
-	string = fmtint(digits)
-	if string[:1] == "-":
-	    sign = "-"
-	    string = string[1:]
-	else:
-	    sign = ""
+        string = fmtint(digits)
+        if string[:1] == "-":
+            sign = "-"
+            string = string[1:]
+        else:
+            sign = ""
 
-	if ndigits > 0:
-	    if len(string) > ndigits:
-		string = string[:-ndigits] + "." + string[-ndigits:]
-	    else:
-		string = "0." + ("0"*ndigits+string)[-ndigits:]
+        if ndigits > 0:
+            if len(string) > ndigits:
+                string = string[:-ndigits] + "." + string[-ndigits:]
+            else:
+                string = "0." + ("0"*ndigits+string)[-ndigits:]
 
-	return sign + string
+        return sign + string
 
     def fltrep(self, ndigits = 40):
         "Return a string showing the number in scientific notation, to " + \
