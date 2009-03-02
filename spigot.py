@@ -646,6 +646,28 @@ class recip_matrix:
             else:
                 return (d1, 1, 1, 0)
 
+class mod1_matrix:
+    def __init__(self, spig):
+        self.spig = spig
+        self.state = 0
+    def consume(self, matrix, digit):
+        # Update a matrix state to reflect the consumption of a
+        # digit.
+        return mmul((0, 1, 1, -digit), matrix)
+    def __call__(self, k):
+        if self.state == 0:
+            self.state = 1
+            return (1, 0, 0, 1)
+        else:
+            d1 = self.spig.gendigit(self, 0)
+            if self.state == 1:
+                d1 = 0
+                self.state = 2
+            if d1 == (-1,):
+                return (0, 1, 0, 0) # fraction terminated
+            else:
+                return (d1, 1, 1, 0)
+
 class spigot:
     def __init__(self, bot, top, matrix):
         self.bot = bot
@@ -772,6 +794,17 @@ def get_spig(arg, args):
         del args[0]
         spig1 = get_spig(x, args)
         return spigot(0, None, recip_matrix(spig1))
+    elif arg == "mod1":
+        # Read another spigot definition, and produce a spigot which
+        # produces the output value "mod 1", i.e. minus its integer
+        # part.
+        if len(args) < 1:
+            sys.stderr.write("input type 'mod1' requires operands\n")
+            sys.exit(1)
+        x = args[0]
+        del args[0]
+        spig1 = get_spig(x, args)
+        return spigot(0, None, mod1_matrix(spig1))
     elif arg == "ieee" or arg == "ieeef" or arg == "ieeed":
         # Interpret the input as an IEEE floating-point bit pattern
         # expressed in hex.
