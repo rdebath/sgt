@@ -148,25 +148,30 @@ void hufsetup(struct huf *huf, unsigned short *syms, int nsyms)
 
 unsigned hufdecode(const struct huf *huf, unsigned long *inbits, int *ninbits)
 {
-    int bot, top, mid;
+    int i;
     unsigned short inword = *inbits >> 16;
 
-    bot = 0;
-    top = huf->nlengths;
-    while (top - bot > 1) {
-	mid = (top + bot) / 2;
-	if (huf->lengths[mid].code <= inword)
-	    bot = mid;
-	else
-	    top = mid;
-    }
+    /*
+     * We search the lengths array linearly from the start. This is
+     * more efficient than it sounds, because the fact that this
+     * array represents a _Huffman_ code means that the shorter
+     * lengths - and therefore the early entries in the array - will
+     * appear much more often than the longer ones. The alternative
+     * strategy of binary search is actually less efficient in this
+     * case, since it lets the existence of the rare longer codes
+     * influence the running time of even the common case.
+     */
+    for (i = 0; i+1 < huf->nlengths; i++)
+	if (inword < huf->lengths[i+1].code)
+	    break;
 
-    *inbits <<= huf->lengths[bot].len;
-    *ninbits -= huf->lengths[bot].len;
+    *inbits <<= huf->lengths[i].len;
+    *ninbits -= huf->lengths[i].len;
 
-    inword -= huf->lengths[bot].code;
-    inword >>= 16 - huf->lengths[bot].len;
-    inword += huf->lengths[bot].index;
+    inword -= huf->lengths[i].code;
+    inword >>= 16 - huf->lengths[i].len;
+    inword += huf->lengths[i].index;
+
     return huf->syms[inword];
 }
 
