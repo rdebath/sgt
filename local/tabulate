@@ -1,0 +1,28 @@
+#!/usr/bin/perl 
+
+# Read in a text file with tab-separated fields in each line, and
+# output it again with the tabs replaced by sensible numbers of
+# spaces so that each column lines up neatly.
+#
+# Expanded into legibility from a line-noise three-liner I posted in
+# Monochrome's Unix tips and tricks file (<TDOUUT>) on 2007-03-02.
+#
+# (Handy in particular as a post-filter on the Unix 'paste' command,
+# which lines up two or more files side by side - separated by
+# single tab characters no matter how long the input lines are.)
+
+while (<>) {
+    chomp;
+    split /\t/;
+    for $i (0..$#_) {
+	$max[$i] = length$_[$i] if $max[$i] < length$_[$i];
+    }
+    push @lines,[@_];
+}
+
+for $line (@lines) {
+    for $i (0..$#$line) {
+	printf "%-*s", $max[$i]+2, $line->[$i];
+    }
+    print "\n";
+}
