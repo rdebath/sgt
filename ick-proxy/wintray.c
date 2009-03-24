@@ -14,8 +14,9 @@
  *    annoying bit.
  */
 
+#include <winsock2.h>
 #include <windows.h>
-#include <winsock.h>
+#include <ws2tcpip.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -261,11 +262,11 @@ struct socket *new_sockstruct(SOCKET s, int type)
 
 int create_new_listener(char **err, int port, struct listenctx *ctx)
 {
-    SOCKADDR_IN addr;
+    SOCKADDR_IN6 addr;
     int addrlen;
     SOCKET s;
 
-    s = socket(AF_INET, SOCK_STREAM, 0);
+    s = socket(AF_INET6, SOCK_STREAM, 0);
     if (s == INVALID_SOCKET)
 	switch (WSAGetLastError()) {
 	  case WSAENETDOWN:
@@ -275,11 +276,12 @@ int create_new_listener(char **err, int port, struct listenctx *ctx)
 	  default: *err = dupstr("socket(): unknown error"); return -1;
 	}
 
-    addr.sin_family = AF_INET;
-    addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    memset(&addr, 0, sizeof(addr));
+    addr.sin6_family = AF_INET6;
+    /* address set to IN6ADDR_ANY analogue by memset */
     if (port < 0)
 	port = 0;
-    addr.sin_port = htons((short)port);
+    addr.sin6_port = htons((short)port);
     if (bind (s, (SOCKADDR *)&addr, sizeof(addr)) == SOCKET_ERROR)
 	switch (WSAGetLastError()) {
 	  case WSAENETDOWN: *err = dupstr("Network is down"); return -1;
@@ -304,7 +306,7 @@ int create_new_listener(char **err, int port, struct listenctx *ctx)
 	  case WSAENETDOWN: *err = dupstr("Network is down"); return -1;
 	  default: *err = dupstr("WSAAsyncSelect(): unknown error"); return -1;
 	}
-    port = ntohs(addr.sin_port);
+    port = ntohs(addr.sin6_port);
 
     {
 	struct socket *ret = new_sockstruct(s, SOCK_LISTENER);
@@ -474,7 +476,7 @@ static LRESULT CALLBACK WndProc (HWND hwnd, UINT message,
         {
             SOCKET s = (SOCKET) wParam;
             SOCKET newsock;
-            SOCKADDR_IN addr;
+            SOCKADDR_IN6 addr;
             int addrlen;
 	    struct socket *ss, *ss2;
 
