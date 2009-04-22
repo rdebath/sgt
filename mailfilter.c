@@ -8,6 +8,8 @@
  * gcc -Wall -O0 -g -I../viruswatch -I../charset -o mailfilter mailfilter.c ../viruswatch/userfilter.c ../viruswatch/scanner.c ../viruswatch/inflate.c ../charset/libcharset.a
  */
 
+#define _GNU_SOURCE
+
 #include <stdio.h>
 #include <string.h>
 #include <strings.h>
@@ -27,6 +29,24 @@
 #include "charset.h"
 
 #define lenof(x) ( sizeof((x)) / sizeof(*(x)) )
+
+/*
+ * Return true iff the string a starts with the string b.
+ */
+int strprefix(const char *a, const char *b)
+{
+    return !strncmp(a, b, strlen(b));
+}
+
+/*
+ * Return true iff the string b appears in memory within string a,
+ * ending at point e.
+ */
+int strsuffix(const char *a, const char *e, const char *b)
+{
+    int blen = strlen(b);
+    return e - a >= blen && !strncmp(e - blen, b, blen);
+}
 
 /* ----------------------------------------------------------------------
  * Utility functions.
@@ -402,8 +422,8 @@ static void scanner_init_text(scanner *s, stream *st, void *vctx)
 
     ctx->charset =
 	charset_from_mimeenc(path[index].extra->rfc822.charset);
-    if (ctx->charset == CS_NONE)
-	return;			       /* not in a charset we know about */
+    if (ctx->charset == CS_NONE)       /* not in a charset we know about, so */
+	ctx->charset = CS_ASCII;       /*   fall back to treating as ASCII */
 
     /*
      * See if the content type is text/html, in which case we will
@@ -613,10 +633,27 @@ static void scanner_feed_text_postqp(scanner *s, stream *st, text *ctx,
 				    " spam.";
 			    }
 			}
+			if (!strncmp(ctx->htmlattrval, "http://cid-", 11) &&
+			    !strncmp(ctx->htmlattrval + 11 +
+				     strspn(ctx->htmlattrval+11,
+					    "0123456789abcdefABCDEF"),
+				     ".spaces.live.com/blog/", 22)) {
+			    specific_msg = "This appears to be a prolific"
+				" pharmaceutical spam.";
+			}
+			if (!strncmp(ctx->htmlattrval, "http://", 7) &&
+			    strsuffix(ctx->htmlattrval + 7,
+				      ctx->htmlattrval + 7 +
+				      strspn(ctx->htmlattrval+7,
+					     "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ."),
+				      ".interia.pl")) {
+			    specific_msg =
+				"This appears to be a prolific spam.";
+			}
 		    }
 		}
 
-		if (c == '>' && !(ctx->htmlstate & 16)) {
+		if (c == '>' /* && !(ctx->htmlstate & 16) */) {
 		    /*
 		     * Tag is closing. Process it.
 		     */
@@ -835,9 +872,19 @@ static void scanner_cleanup_text(scanner *s, stream *st, void *vctx)
 	if (p > compressed && p[-1] == ' ')
 	    p--;
 	*p = '\0';
+
 	str = L"Bachelor, MasterMBA, and Doctorate";
 	if (!wcsncmp(compressed, str, wcslen(str)))
 	    specific_msg = "This appears to be a prolific diploma mill spam.";
+	str = L"WHAT A GREAT IDEA!&nbsp;We";
+	if (!wcsncmp(compressed, str, wcslen(str)))
+	    specific_msg = "This appears to be a prolific diploma mill spam.";
+	str = L"hey i found your contact info online.";
+	if (!wcsncasecmp(compressed, str, wcslen(str)))
+	    specific_msg = "This appears to be spam.";
+	str = L"hey i found ur contact info online.";
+	if (!wcsncasecmp(compressed, str, wcslen(str)))
+	    specific_msg = "This appears to be spam.";
 
 	while (*q == '\r' || *q == '\n' || isspace((unsigned char)*q)) q++;
 	p = compressed;
@@ -1110,10 +1157,52 @@ void process_subjword(const char *word)
     return;
 }
 
-void process_subject(const char *subject)
+const char *process_subject(const char *subject)
 {
     if (!strncmp(subject, "You've received a", 17))
 	greetingspam |= 1;
+
+    {
+	const char *p = subject;
+
+	if (strprefix(p, "aid ") ||
+	    strprefix(p, "lift ") ||
+	    strprefix(p, "hoist ") ||
+	    strprefix(p, "heave ") ||
+	    strprefix(p, "boost ") ||
+	    strprefix(p, "raise ") ||
+	    strprefix(p, "uplift ") ||
+	    strprefix(p, "ascent ") ||
+	    strprefix(p, "empower ") ||
+	    strprefix(p, "support ")) {
+	    p += strcspn(p, " ") + 1;
+	    if (strprefix(p, "your ")) {
+		p += 5;
+		if (strprefix(p, "belove ") ||
+		    strprefix(p, "lover ") ||
+		    strprefix(p, "darling ") ||
+		    strprefix(p, "sweet ")) {
+		    p += strcspn(p, " ") + 1;
+		}
+		if (strprefix(p, "sexual ") ||
+		    strprefix(p, "couch ") ||
+		    strprefix(p, "bed ") ||
+		    strprefix(p, "night ")) {
+		    p += strcspn(p, " ") + 1;
+		    if (strprefix(p, "adventure") ||
+			strprefix(p, "experience") ||
+			strprefix(p, "event") ||
+			strprefix(p, "times")) {
+			return "This looks like a prolific drugs spam.";
+		    }
+		} else if (strprefix(p, "sexuality")) {
+		    return "This looks like a prolific drugs spam.";
+		}
+	    }
+	}
+    }
+
+    return NULL;
 }
 
 /*
@@ -1390,7 +1479,8 @@ const char *header_filter(int len, const char *data)
 
 		assert(wholesubjlen>=0 && wholesubjlen<lenof(wholesubjbuf));
 		wholesubjbuf[wholesubjlen] = '\0';
-		process_subject(wholesubjbuf);
+		if ((msg = process_subject(wholesubjbuf)) != NULL)
+		    return msg;
 
 		if (c == '\n')
 		    state = -1;
