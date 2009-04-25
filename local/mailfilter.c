@@ -1193,8 +1193,12 @@ void process_subjword(const char *word)
 
 const char *process_subject(const char *subject)
 {
-    if (!strncmp(subject, "You've received a", 17))
+    if (strprefix(subject, "You've received a"))
 	greetingspam |= 1;
+
+    if (strprefix(subject, "Link Exchange"))
+	return "Mails with subject lines beginning 'Link Exchange' are"
+	" presumed to be persistent and prolific spam.";
 
     {
 	const char *p = subject;
