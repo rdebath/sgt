@@ -37,6 +37,10 @@ int strprefix(const char *a, const char *b)
 {
     return !strncmp(a, b, strlen(b));
 }
+int strcaseprefix(const char *a, const char *b)
+{
+    return !strncasecmp(a, b, strlen(b));
+}
 
 /*
  * Return true iff the string b appears in memory within string a,
@@ -46,6 +50,11 @@ int strsuffix(const char *a, const char *e, const char *b)
 {
     int blen = strlen(b);
     return e - a >= blen && !strncmp(e - blen, b, blen);
+}
+int strcasesuffix(const char *a, const char *e, const char *b)
+{
+    int blen = strlen(b);
+    return e - a >= blen && !strncasecmp(e - blen, b, blen);
 }
 
 /* ----------------------------------------------------------------------
@@ -906,6 +915,25 @@ static void scanner_cleanup_text(scanner *s, stream *st, void *vctx)
 }
 
 static int agif_found = 0;
+static int dslpng_found = 0;
+
+static void scanner_init_filename(scanner *s, stream *st, void *vctx)
+{
+    struct structural_path_element path[MAXSTREAMS];
+    int npath = scanner_trace_ancestry(s, st, path);
+    int i;
+
+    for (i = 0; i < npath; i++) {
+	if (path[i].type == ST_RFC822 &&
+	    strcaseprefix(path[i].extra->rfc822.filename, "DSL") &&
+	    !strcasecmp(path[i].extra->rfc822.filename + 3 +
+			strspn(path[i].extra->rfc822.filename+3, "0123456789"),
+			".png"))
+	    dslpng_found = 1;
+    }
+}
+static void scanner_feed_null(scanner *s, stream *st, void *vctx,
+			      const char *data, int len) {}
 
 void report(void *ctx, int condition,
 	    struct structural_path_element *path, int pathlen)
@@ -936,6 +964,8 @@ const char *scanner_filter(int len, const char *data)
 			 NULL, sizeof(agif));
 	scanner_register(darkly, scanner_init_text, scanner_feed_text,
 			 scanner_cleanup_text, sizeof(text));
+	scanner_register(darkly, scanner_init_filename, scanner_feed_null,
+			 NULL, 0);
     }
 
     if (len == 0) {
@@ -953,6 +983,9 @@ const char *scanner_filter(int len, const char *data)
 
     if (foreign_language)
 	return "Regrettably I only speak English.";
+
+    if (dslpng_found)
+	return "This looks like a drugs spam I've been seeing a lot of.";
 
     return NULL;
 }
