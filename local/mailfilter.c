@@ -976,7 +976,8 @@ const char *process_address(const char *hdr, const char *addr)
 	 */
 	if (!strcmp(addr, "newsletter@hotscripts.com") ||
 	    !strcmp(addr, "newsletter@inetinteractive.com") ||
-	    !strcmp(addr, "hotscripts@newsletter.inetinteractive.com"))
+	    !strcmp(addr, "hotscripts@newsletter.inetinteractive.com") ||
+	    !strcmp(addr, "hotscripts@newsletter.myinet.com"))
 	    return "I have never subscribed to this newsletter, so "
 	    "I am forced to consider it as spam.";
 
