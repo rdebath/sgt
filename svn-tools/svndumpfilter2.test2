@@ -44,6 +44,14 @@ def rm_rf(path):
     # Use the OS rm -rf command because Python's rmdir may get squeamish.
     runproc_must_succeed(["rm", "-rf", path])
 
+def load_repo(repo, dump):
+    """
+    Load 'dump' into the pre-existing repository at `repo'.
+    """
+    dump_pipe = open(dump)
+    if not runproc(["svnadmin", "load", repo], stdin=dump_pipe):
+        raise Exception("Could not load dump %s into repo %s" % (dump, repo))
+
 def make_repo(repo, dump, make_path=None):
     """
     Create a repository at `repo' and load `dump' into it.  If `make_path'
@@ -64,9 +72,7 @@ def make_repo(repo, dump, make_path=None):
             runproc_must_succeed(["svn", "mkdir", "-m", "Parent dir", url])
 
     # Load the dump, and return our revision offset (if any).
-    dump_pipe = open(dump)
-    if not runproc(["svnadmin", "load", repo], stdin=dump_pipe):
-        raise Exception("Could not load dump %s into repo %s" % (dump, repo))
+    load_repo(repo, dump)
     return rev_offset
 
 def svndumpfilter2(repo, subdir, in_dump, out_dump, drop_empty_revs,
@@ -90,6 +96,15 @@ def dump_deltas(repo, dump):
     """Dump `repo' to `dump' in delta format."""
     dump_pipe = open(dump, "w")
     if not runproc(["svnadmin", "dump", "--deltas", repo], stdout=dump_pipe):
+        raise Exception("Could not dump %s" % repo)
+
+def dump_incremental(repo, dump, firstrev, lastrev):
+    """Do an incremental dump of part of `repo' to `dump'."""
+    if type(firstrev) == type(1): firstrev = "%d" % firstrev
+    if type(lastrev) == type(1): lastrev = "%d" % lastrev
+    dump_pipe = open(dump, "w")
+    if not runproc(["svnadmin", "dump", "--incremental", "-r",
+                   "%s:%s" % (firstrev, lastrev), repo], stdout=dump_pipe):
         raise Exception("Could not dump %s" % repo)
 
 def youngest_rev(repo):
@@ -141,7 +156,7 @@ def compare_repos(original, filtered, base_path, rev_offset, non_empty_revs):
             sys.exit(1)
     
 def test_svndumpfilter2(in_dump, base_path, non_empty_revs=None,
-                        renumber_revs=False):
+                        renumber_revs=False, split_rev=None):
     """
     Filter `in_dump' using `base_path', using both full and delta dumps,
     and check each dump contains the correct contents.  If the caller
@@ -172,8 +187,25 @@ def test_svndumpfilter2(in_dump, base_path, non_empty_revs=None,
     compare_repos("test.full", "test.filtered.deltas", base_path, rev_offset,
                   non_empty_revs)
 
+    if split_rev is not None:
+        # Chop the dump file into two parts and make sure it's OK
+        # for the second part to copy from revisions in the first.
+
+        assert not renumber_revs and not drop_empty_revs
+
+        dump_incremental("test.full", "test.origdump.part1", 1, split_rev-1)
+        dump_incremental("test.full", "test.origdump.part2", split_rev, "HEAD")
+        svndumpfilter2("test.full", base_path, "test.origdump.part1",
+                       "test.outdump.part1", False, False)
+        make_repo("test.filtered.partial", "test.outdump.part1")
+        svndumpfilter2("test.full", base_path, "test.origdump.part2",
+                       "test.outdump.part2", False, False)
+        load_repo("test.filtered.partial", "test.outdump.part2")
+        compare_repos("test.full", "test.filtered.deltas", base_path, 0, None)
+
 def run_standard_tests():
     """Run a set of tests designed to exercise as many features as possible."""
+
     test_svndumpfilter2("svndumpfilter2.testdump", "fun")
     test_svndumpfilter2("svndumpfilter2.testdump", "boring")
     test_svndumpfilter2("svndumpfilter2.testdump", "boring/boringsubdir")
@@ -192,6 +224,10 @@ def run_standard_tests():
     test_svndumpfilter2("svndumpfilter2.testdump", "fun",
                         non_empty_revs=[1,2,4,5,6,7,8,10,11],
                         renumber_revs=True)
+
+    # Check that we can deal with partial dumps which copy from before
+    # the partial dump started.
+    test_svndumpfilter2("svndumpfilter2.testdump", "fun", split_rev=14)
 
 if __name__ == "__main__":
     # Parse our command-line arguments.
