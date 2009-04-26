@@ -209,7 +209,10 @@ class Lump:
 	for header in ["Revision-number", "Node-copyfrom-rev"]:
 	    if self.hdrdict.has_key(header):
 		old_val = int(self.hdrdict[header])
-		new_val = revmap[old_val]
+                if revmap != None:
+                    new_val = revmap[old_val]
+                else:
+                    new_val = old_val
 		self.sethdr(header, str(new_val))
 
 def read_rfc822_headers(f):
@@ -378,7 +381,10 @@ repos = args[0]
 paths = InterestingPaths(args[1:])
 
 # We use this table to map input revisions to output revisions.
-revmap = {}
+if options.renumber_revs:
+    revmap = {}
+else:
+    revmap = None
 
 # Pass the dump-file header through unchanged.
 lump = read_lump(fr)
@@ -417,10 +423,8 @@ while revhdr != None:
     # if this revision won't be written, current_output_rev still points
     # to the last version we dumped.
     input_rev = int(revhdr.hdrdict["Revision-number"])
-    if options.renumber_revs:
+    if revmap != None:
 	revmap[input_rev] = current_output_rev
-    else:
-	revmap[input_rev] = input_rev        
 
     # Write out this revision, if that's what we've decided to do.
     if should_write:
