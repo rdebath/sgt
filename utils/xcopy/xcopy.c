@@ -41,6 +41,7 @@ int sellen, selsize;
 /* functional parameters */
 int reading;                           /* read instead of writing? */
 int convert_to_ctext = True;	       /* Xmb convert to compound text? */
+int verbose;
 
 const char usagemsg[] =
     "usage: xcopy [ -r ] [ -u | -c ] [ -C ]\n"
@@ -54,6 +55,7 @@ const char usagemsg[] =
     "       -T       get the time stamp of the selection contents\n"
     "       -a atom  get an arbitrary form of the selection data\n"
     "       -F       do not fork in write mode\n"
+    "       -v       proceed verbosely when reading selection\n"
     " also: xcopy --version              report version number\n"
     "       xcopy --help                 display this help text\n"
     "       xcopy --licence              display the (MIT) licence text\n"
@@ -146,6 +148,8 @@ int main(int ac, char **av) {
             mode = CUSTOM;
 	} else if (!strcmp(p, "-F")) {
 	    fork_when_writing = False;
+	} else if (!strcmp(p, "-v")) {
+	    verbose = True;
         } else if (!strcmp(p, "--help")) {
 	    usage();
 	    return 0;
@@ -253,6 +257,14 @@ Atom sel_atom = XA_PRIMARY;
 Atom expected_type = (Atom)None;
 int expected_format = 8;
 
+static const char *translate_atom(Display *disp, Atom atom)
+{
+    if (atom == None)
+	return "None";
+    else
+	return XGetAtomName(disp, atom);
+}
+
 /*
  * Returns TRUE if we need to enter an event loop, FALSE otherwise.
  */
@@ -323,11 +335,20 @@ int init_X(void) {
          */
         if (XGetSelectionOwner(disp, sel_atom) == None) {
             /* No primary selection, so use the cut buffer. */
+	    if (verbose)
+		fprintf(stderr, "no selection owner: trying cut buffer\n");
             if (strtype == XA_STRING)
 		do_paste(DefaultRootWindow(disp), XA_CUT_BUFFER0, False);
             return False;
         } else {
             Atom sel_property = XInternAtom(disp, "VT_SELECTION", False);
+	    if (verbose)
+		fprintf(stderr, "calling XConvertSelection: selection=%s"
+			" target=%s property=%s requestor=%08lx\n",
+			translate_atom(disp, sel_atom),
+			translate_atom(disp, strtype),
+			translate_atom(disp, sel_property),
+			ourwin);
             XConvertSelection(disp, sel_atom, strtype,
                               sel_property, ourwin, CurrentTime);
             return True;
@@ -477,6 +498,14 @@ void run_X(void) {
         if (reading) {
             switch (ev.type) {
               case SelectionNotify:
+		if (verbose)
+		    fprintf(stderr, "got SelectionNotify: requestor=%08lx "
+			    "selection=%s target=%s property=%s\n",
+			    ev.xselection.requestor,
+			    translate_atom(disp, ev.xselection.selection),
+			    translate_atom(disp, ev.xselection.target),
+			    translate_atom(disp, ev.xselection.property));
+
                 if (ev.xselection.property != None)
                     do_paste(ev.xselection.requestor,
                              ev.xselection.property, True);
@@ -524,6 +553,11 @@ void do_paste(Window window, Atom property, int Delete) {
                               Delete, AnyPropertyType, &actual_type,
                               &actual_format, &nitems, &bytes_after,
                               (unsigned char **) &data) == Success) {
+	if (verbose)
+	    fprintf(stderr, "got %ld items of %d-byte data, type=%s;"
+		    " %ld to go\n", nitems, actual_format,
+		    translate_atom(disp, actual_type), bytes_after);
+
 	if (nitems > 0) {
 	    /*
 	     * We expect all returned chunks of data to be
@@ -545,9 +579,8 @@ void do_paste(Window window, Atom property, int Delete) {
 	    }
 
 	    if (expected_type != (Atom)None && actual_type != expected_type) {
-		char *expout = XGetAtomName(disp, expected_type);
-		char *gotout = (actual_type == (Atom)None ? "None" :
-				XGetAtomName(disp, actual_type));
+		const char *expout = translate_atom(disp, expected_type);
+		const char *gotout = translate_atom(disp, actual_type);
 		error("unexpected data type: expected %s, got %s",
 		      expout, gotout);
 	    }
@@ -563,7 +596,7 @@ void do_paste(Window window, Atom property, int Delete) {
 		int i;
 		for (i = 0; i < nitems; i++) {
 		    Atom x = ((Atom *)data)[i];
-		    printf("%s\n", XGetAtomName(disp, x));
+		    printf("%s\n", translate_atom(disp, x));
 		}
 	    } else if (mode == TIMESTAMP) {
 		assert(actual_format == 32);
