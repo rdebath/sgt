@@ -119,6 +119,12 @@ debugging X applications or X selection issues.
 contents corresponding to some particular user-specified target
 type. The target type can be anything listed by \cq{xcopy -r -t}.
 
+\dt \cw{-v}
+
+\dd Causes \cw{xcopy}, in read mode only, to produce a verbose
+commentary on the progress of reading the X selection. Can be useful
+for debugging interactions with other programs.
+
 \dt \cw{-T}
 
 \dd Causes \cw{xcopy} not to fork, when in write mode. Instead the
