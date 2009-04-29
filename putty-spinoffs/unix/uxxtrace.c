@@ -30,10 +30,6 @@
  *  - Command-line-configurable filtering based on request and event
  *    types.
  *
- *  - Command-line-configurable suppression of really gigantic
- *    streams of data in protocol packets. (Probably a configurable
- *    limit, like strace -s.)
- *
  *  - Logging of at least some of the data from the server's welcome
  *    packet. Might be scope for making some of it optional, but
  *    certainly things like the root window ids would be useful for
@@ -185,15 +181,14 @@
 
 Config cfg;
 #define BUFLIMIT 16384
-enum { LOG_NONE, LOG_DIALOGUE, LOG_FILES };
-int logmode = LOG_NONE;
-int cindex = 0;
 const char *const appname = "xtrace";
 
 /* ----------------------------------------------------------------------
  * Code to parse and log the data flowing (in both directions)
  * within an X connection.
  */
+
+int sizelimit = 256;
 
 /*
  * Parametric macro defining each known extension as an internal
@@ -561,7 +556,7 @@ enum {
 void xlog_param(struct xlog *xl, const char *paramname, int type, ...)
 {
     va_list ap;
-    const char *sval, *sep;
+    const char *sval, *sep, *trail;
     int ival, ival2;
 
     if (xl->reqlogstate == 0) {
@@ -583,19 +578,56 @@ void xlog_param(struct xlog *xl, const char *paramname, int type, ...)
 	  case STRING:
 	    ival = va_arg(ap, int);
 	    sval = va_arg(ap, const char *);
+
+	    trail = "";
+	    if (sizelimit > 0 && xl->textbuflen + ival > sizelimit) {
+		int limitlen = sizelimit - xl->textbuflen;
+		if (limitlen < 20)
+		    limitlen = 20;
+		if (ival > limitlen) {
+		    ival = limitlen;
+		    trail = "...";
+		}
+	    }
+
 	    xlog_text(xl, "\"");
 	    print_c_string(xl, sval, ival);
-	    xlog_text(xl, "\"");
+	    xlog_printf(xl, "\"%s", trail);
 	    break;
 	  case HEXSTRING:
 	    ival = va_arg(ap, int);
 	    sval = va_arg(ap, const char *);
+
+	    trail = "";
+	    if (sizelimit > 0 && xl->textbuflen + 2*ival > sizelimit) {
+		int limitlen = sizelimit - xl->textbuflen;
+		if (limitlen < 8)
+		    limitlen = 8;
+		if (ival > limitlen) {
+		    ival = limitlen;
+		    trail = "...";
+		}
+	    }
+
 	    while (ival-- > 0)
 		xlog_printf(xl, "%02X", (unsigned char)(*sval++));
+	    xlog_text(xl, trail);
 	    break;
 	  case HEXSTRING2:
 	    ival = va_arg(ap, int);
 	    sval = va_arg(ap, const char *);
+
+	    trail = "";
+	    if (sizelimit > 0 && xl->textbuflen + 5*ival-1 > sizelimit) {
+		int limitlen = sizelimit - xl->textbuflen;
+		if (limitlen < 4)
+		    limitlen = 4;
+		if (ival > limitlen) {
+		    ival = limitlen;
+		    trail = "...";
+		}
+	    }
+
 	    sep = "";
 	    while (ival-- > 0) {
 		unsigned val = READ16(sval);
@@ -603,6 +635,8 @@ void xlog_param(struct xlog *xl, const char *paramname, int type, ...)
 		sval += 2;
 		sep = ":";
 	    }
+	    if (*trail)
+		xlog_printf(xl, "%s%s", sep, trail);
 	    break;
 	  case HEXSTRING2B:
 	    /* Fixed big-endian variant of HEXSTRING2, used for CHAR2B
@@ -610,6 +644,18 @@ void xlog_param(struct xlog *xl, const char *paramname, int type, ...)
 	     * 16-bit integers. */
 	    ival = va_arg(ap, int);
 	    sval = va_arg(ap, const char *);
+
+	    trail = "";
+	    if (sizelimit > 0 && xl->textbuflen + 5*ival-1 > sizelimit) {
+		int limitlen = sizelimit - xl->textbuflen;
+		if (limitlen < 4)
+		    limitlen = 4;
+		if (ival > limitlen) {
+		    ival = limitlen;
+		    trail = "...";
+		}
+	    }
+
 	    sep = "";
 	    while (ival-- > 0) {
 		unsigned val = GET_16BIT_MSB_FIRST(sval);
@@ -617,10 +663,24 @@ void xlog_param(struct xlog *xl, const char *paramname, int type, ...)
 		sval += 2;
 		sep = ":";
 	    }
+	    if (*trail)
+		xlog_printf(xl, "%s%s", sep, trail);
 	    break;
 	  case HEXSTRING4:
 	    ival = va_arg(ap, int);
 	    sval = va_arg(ap, const char *);
+
+	    trail = "";
+	    if (sizelimit > 0 && xl->textbuflen + 9*ival-1 > sizelimit) {
+		int limitlen = sizelimit - xl->textbuflen;
+		if (limitlen < 2)
+		    limitlen = 2;
+		if (ival > limitlen) {
+		    ival = limitlen;
+		    trail = "...";
+		}
+	    }
+
 	    sep = "";
 	    while (ival-- > 0) {
 		unsigned val = READ32(sval);
@@ -628,6 +688,8 @@ void xlog_param(struct xlog *xl, const char *paramname, int type, ...)
 		sval += 4;
 		sep = ":";
 	    }
+	    if (*trail)
+		xlog_printf(xl, "%s%s", sep, trail);
 	    break;
 	  case SETBEGIN:
 	    /*
@@ -835,6 +897,16 @@ void xlog_param(struct xlog *xl, const char *paramname, int type, ...)
 	}
 	va_end(ap);
     }
+}
+
+int xlog_check_list_length(struct xlog *xl)
+{
+    if (sizelimit > 0 && xl->textbuflen > sizelimit) {
+	xlog_param(xl, "...", NOTHING);
+	return TRUE;
+    }
+
+    return FALSE;
 }
 
 void xlog_set_end(struct xlog *xl)
@@ -1156,6 +1228,8 @@ void xlog_event(struct xlog *xl, const unsigned char *data, int len, int pos)
 		sprintf(buf, "keys[%d]", i);
 		xlog_param(xl, buf, HEX8, FETCH8(data, ppos));
 		ppos++;
+		if (xlog_check_list_length(xl))
+		    break;
 	    }
 	}
 	xlog_printf(xl, ")");
@@ -2032,6 +2106,8 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 		slen = FETCH8(data, pos);
 		xlog_param(xl, buf, STRING, slen, STRING(data, pos+1, slen));
 		pos += slen + 1;
+		if (xlog_check_list_length(xl))
+		    break;
 	    }
 	}
 	break;
@@ -2247,6 +2323,8 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 		char buf[64];
 		sprintf(buf, "dashes[%d]", i);
 		xlog_param(xl, buf, DECU, FETCH8(data, 12+i));
+		if (xlog_check_list_length(xl))
+		    break;
 	    }
 	}
 	break;
@@ -2864,6 +2942,8 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 		i++;
 		keycode++;
 		keycode_count--;
+		if (xlog_check_list_length(xl))
+		    break;
 	    }
 	}
 	break;
@@ -3000,6 +3080,8 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 		sprintf(buf, "properties[%d]", i);
 		xlog_param(xl, buf, ATOM, FETCH32(data, pos));
 		pos += 4;
+		if (xlog_check_list_length(xl))
+		    break;
 	    }
 	}
 	break;
@@ -3019,6 +3101,8 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 		sprintf(buf, "map[%d]", i);
 		xlog_param(xl, buf, DECU, FETCH8(data, pos));
 		pos++;
+		if (xlog_check_list_length(xl))
+		    break;
 	    }
 	}
 	req->replies = 1;
@@ -3044,6 +3128,8 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 		    pos++;
 		}
 		xlog_set_end(xl);
+		if (xlog_check_list_length(xl))
+		    break;
 	    }
 	}
 	req->replies = 1;
@@ -3254,6 +3340,8 @@ void xlog_do_reply(struct xlog *xl, struct request *req,
 		sprintf(buf, "children[%d]", i);
 		xlog_param(xl, buf, WINDOW, FETCH32(data, pos));
 		pos += 4;
+		if (xlog_check_list_length(xl))
+		    break;
 	    }
 	}
 	break;
@@ -3309,6 +3397,8 @@ void xlog_do_reply(struct xlog *xl, struct request *req,
 		sprintf(buf, "atoms[%d]", i);
 		xlog_param(xl, buf, ATOM, FETCH32(data, pos));
 		pos += 4;
+		if (xlog_check_list_length(xl))
+		    break;
 	    }
 	}
 	break;
@@ -3354,6 +3444,8 @@ void xlog_do_reply(struct xlog *xl, struct request *req,
 		xlog_timecoord(xl, data, len, pos);
 		xlog_set_end(xl);
 		pos += 8;
+		if (xlog_check_list_length(xl))
+		    break;
 	    }
 	}
 	break;
@@ -3383,6 +3475,8 @@ void xlog_do_reply(struct xlog *xl, struct request *req,
 		sprintf(buf, "keys[%d]", i);
 		xlog_param(xl, buf, DECU, FETCH8(data, pos));
 		pos++;
+		if (xlog_check_list_length(xl))
+		    break;
 	    }
 	}
 	break;
@@ -3417,6 +3511,8 @@ void xlog_do_reply(struct xlog *xl, struct request *req,
 		xlog_fontprop(xl, data, len, pos);
 		xlog_set_end(xl);
 		pos += 8;
+		if (xlog_check_list_length(xl))
+		    break;
 	    }
 	    n = FETCH32(data, 56);
 	    for (i = 0; i < n; i++) {
@@ -3425,6 +3521,8 @@ void xlog_do_reply(struct xlog *xl, struct request *req,
 		xlog_charinfo(xl, data, len, pos);
 		xlog_set_end(xl);
 		pos += 12;
+		if (xlog_check_list_length(xl))
+		    break;
 	    }
 	}
 	break;
@@ -3454,6 +3552,8 @@ void xlog_do_reply(struct xlog *xl, struct request *req,
 		slen = FETCH8(data, pos);
 		xlog_param(xl, buf, STRING, slen, STRING(data, pos+1, slen));
 		pos += slen + 1;
+		if (xlog_check_list_length(xl))
+		    break;
 	    }
 	}
 	break;
@@ -3494,6 +3594,8 @@ void xlog_do_reply(struct xlog *xl, struct request *req,
 		xlog_fontprop(xl, data, len, pos);
 		xlog_set_end(xl);
 		pos += 8;
+		if (xlog_check_list_length(xl))
+		    break;
 	    }
 	}
 	xlog_param(xl, "replies-hint", DEC16, FETCH32(data, 56));
@@ -3512,6 +3614,8 @@ void xlog_do_reply(struct xlog *xl, struct request *req,
 		slen = FETCH8(data, pos);
 		xlog_param(xl, buf, STRING, slen, STRING(data, pos+1, slen));
 		pos += slen + 1;
+		if (xlog_check_list_length(xl))
+		    break;
 	    }
 	}
 	break;
@@ -3534,6 +3638,8 @@ void xlog_do_reply(struct xlog *xl, struct request *req,
 		sprintf(buf, "cmaps[%d]", i);
 		xlog_param(xl, buf, COLORMAP, FETCH32(data, pos));
 		pos += 4;
+		if (xlog_check_list_length(xl))
+		    break;
 	    }
 	}
 	break;
@@ -3566,6 +3672,8 @@ void xlog_do_reply(struct xlog *xl, struct request *req,
 		sprintf(buf, "pixels[%d]", i);
 		xlog_param(xl, buf, HEX32, FETCH32(data, pos));
 		pos += 4;
+		if (xlog_check_list_length(xl))
+		    break;
 	    }
 	    n = FETCH16(data, 10);
 	    for (i = 0; i < n; i++) {
@@ -3573,6 +3681,8 @@ void xlog_do_reply(struct xlog *xl, struct request *req,
 		sprintf(buf, "masks[%d]", i);
 		xlog_param(xl, buf, HEX32, FETCH32(data, pos));
 		pos += 4;
+		if (xlog_check_list_length(xl))
+		    break;
 	    }
 	}
 	break;
@@ -3588,6 +3698,8 @@ void xlog_do_reply(struct xlog *xl, struct request *req,
 		sprintf(buf, "pixels[%d]", i);
 		xlog_param(xl, buf, HEX32, FETCH32(data, pos));
 		pos += 4;
+		if (xlog_check_list_length(xl))
+		    break;
 	    }
 	}
 	xlog_param(xl, "red-mask", HEX32, FETCH32(data, 12));
@@ -3610,6 +3722,8 @@ void xlog_do_reply(struct xlog *xl, struct request *req,
 		xlog_param(xl, "blue", HEX16, FETCH16(data, pos+4));
 		xlog_set_end(xl);
 		pos += 4;
+		if (xlog_check_list_length(xl))
+		    break;
 	    }
 	}
 	break;
@@ -3674,6 +3788,8 @@ void xlog_do_reply(struct xlog *xl, struct request *req,
 		slen = FETCH8(data, pos);
 		xlog_param(xl, buf, STRING, slen, STRING(data, pos+1, slen));
 		pos += slen + 1;
+		if (xlog_check_list_length(xl))
+		    break;
 	    }
 	}
 	break;
@@ -3699,6 +3815,8 @@ void xlog_do_reply(struct xlog *xl, struct request *req,
 		i++;
 		keycode++;
 		keycode_count--;
+		if (xlog_check_list_length(xl))
+		    break;
 	    }
 	}
 	break;
@@ -3721,6 +3839,8 @@ void xlog_do_reply(struct xlog *xl, struct request *req,
 		sprintf(buf, "auto-repeats[%d]", i);
 		xlog_param(xl, buf, HEX8, FETCH8(data, pos));
 		pos++;
+		if (xlog_check_list_length(xl))
+		    break;
 	    }
 	}
 	break;
@@ -3759,6 +3879,8 @@ void xlog_do_reply(struct xlog *xl, struct request *req,
 			   STRING(data, pos+4, FETCH16(data, pos+2)));
 		xlog_set_end(xl);
 		pos += 4 + ((FETCH16(data, pos+2) + 3) &~ 3);
+		if (xlog_check_list_length(xl))
+		    break;
 	    }
 	}
 	break;
@@ -3778,6 +3900,8 @@ void xlog_do_reply(struct xlog *xl, struct request *req,
 		sprintf(buf, "map[%d]", i);
 		xlog_param(xl, buf, DECU, FETCH8(data, pos));
 		pos++;
+		if (xlog_check_list_length(xl))
+		    break;
 	    }
 	}
 	break;
@@ -3803,6 +3927,8 @@ void xlog_do_reply(struct xlog *xl, struct request *req,
 		    pos++;
 		}
 		xlog_set_end(xl);
+		if (xlog_check_list_length(xl))
+		    break;
 	    }
 	}
 	break;
@@ -5085,6 +5211,7 @@ int main(int argc, char **argv)
 		char *val;
 
 		switch (c) {
+		  case 's':
 		  case 'o':
 		  case 'p':
 		    /* options requiring an argument */
@@ -5098,6 +5225,17 @@ int main(int argc, char **argv)
 			return 1;
 		    }
 		    switch (c) {
+		      case 's':
+			if (!strcasecmp(val, "infinite") ||
+			    !strcasecmp(val, "infinity") ||
+			    !strcasecmp(val, "inf") ||
+			    !strcasecmp(val, "unlimited") ||
+			    !strcasecmp(val, "none") ||
+			    !strcasecmp(val, "nolimit"))
+			    sizelimit = 0;
+			else
+			    sizelimit = atoi(val);
+			break;
 		      case 'o':
 			logfile = val;
 			break;
