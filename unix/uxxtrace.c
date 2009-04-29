@@ -27,17 +27,27 @@
 /*
  * Definitely TODO:
  *
- *  - Command-line-configurable filtering based on request and event
- *    types.
- *
  *  - Logging of at least some of the data from the server's welcome
  *    packet. Might be scope for making some of it optional, but
  *    certainly things like the root window ids would be useful for
  *    making sense of the subsequent proceedings.
  *
- *  - Figure out how to log the image data in PutImage requests and
- *    GetImage replies (the protocol spec isn't entirely clear how
- *    it should be interpreted).
+ *  - Decide how to log the image data in PutImage requests and
+ *    GetImage replies. I've found the specification of the family
+ *    of data formats used (perversely, it's under 'Server
+ *    Information' at the very start of the X spec), but now the
+ *    question becomes how much translation we should do before
+ *    printing it. I'm inclined to think the answer is to divide
+ *    each scan line into the smallest sensible unit
+ *    (bitmap-scanline-unit for XY format, max(bits-per-pixel,8) for
+ *    Z), discard any at the end of the scan line that have no data
+ *    at all (via [bitmap-]scanline-pad), and just print the rest as
+ *    HEXSTRING{1,2,4} leaving the user to sort out the
+ *    bit-endianness and potential pixel divisions within units.
+ *    (Incidentally, I think we want HEXSTRING1 with colons between
+ *    bytes as opposed to the current unseparated HEXSTRING, and in
+ *    fact I think all existing HEXSTRINGs should be changed to that
+ *    format.)
  *
  *  - Deal with interleaving log data from multiple clients:
  *     * identify clients by some sort of numeric id (resource-base
@@ -144,7 +154,8 @@
  *
  *  - Other strace-like output options, such as prefixed timestamps
  *    (-t, -tt, -ttt), alignment (-a), and more filtering options
- *    (-e).
+ *    under -e (e.g. filter on particular resource ids? Though that
+ *    doesn't sound _obviously_ useful...).
  *
  *  - More xprop/xkill-like command line syntax for choosing a
  *    client to trace via X RECORD? -id 0xXXX as a synonym for -p
@@ -189,6 +200,27 @@ const char *const appname = "xtrace";
  */
 
 int sizelimit = 256;
+
+struct set {
+    tree234 *strings; /* sorted list of dynamically allocated "char *"s */
+    int include; /* whether the tree is things to include or exclude */
+} requests_to_log, events_to_log;
+
+int stringcmp(void *av, void *bv)
+{
+    const char *a = (const char *)av;
+    const char *b = (const char *)bv;
+    return strcmp(a, b);
+}
+
+int in_set(struct set *s, const char *string)
+{
+    int found = (find234(s->strings, (void *)string, NULL) != NULL);
+    if (s->include)
+	return found;
+    else
+	return !found;
+}
 
 /*
  * Parametric macro defining each known extension as an internal
@@ -253,6 +285,8 @@ struct request {
      */
     char *extname;
     int extid;
+
+    int printed;		       /* do we print this request at all? */
 };
 
 /*
@@ -502,9 +536,11 @@ static void writemask(struct xlog *xl, int ival, ...)
     va_end(ap);
 }
 
-void xlog_request_name(struct xlog *xl, const char *buf)
+void xlog_request_name(struct xlog *xl, struct request *req, const char *buf,
+		       int known)
 {
-    /* FIXME: filter logging of requests based on this name */
+    if (!in_set(&requests_to_log, known ? buf : "UnknownRequest"))
+	req->printed = FALSE;
     xlog_printf(xl, "%s", buf);
     xl->reqlogstate = 0;
 }
@@ -935,6 +971,7 @@ void xlog_new_line(void)
     if (currreq) {
 	/* FIXME: in some modes we might wish to print the sequence number
 	 * here, which would be easy of course */
+	assert(currreq->printed);
 	fprintf(xlogfp, " = <unfinished>\n");
 	fflush(xlogfp);
 	currreq = NULL;
@@ -957,38 +994,43 @@ void xlog_request_done(struct xlog *xl, struct request *req)
     xl->nextseq = (xl->nextseq+1) & 0xFFFF;
     req->text = dupstr(xl->textbuf);
 
-    xlog_new_line();
-    if (req->replies) {
-	fprintf(xlogfp, "%s", req->text);
-	currreq = req;
-    } else {
-	fprintf(xlogfp, "%s\n", req->text);
+    if (req->printed) {
+	xlog_new_line();
+	if (req->replies) {
+	    fprintf(xlogfp, "%s", req->text);
+	    currreq = req;
+	} else {
+	    fprintf(xlogfp, "%s\n", req->text);
+	}
+	fflush(xlogfp);
     }
-    fflush(xlogfp);
 }
 
 /* Indicate that we're about to print a response to a particular request */
 void xlog_respond_to(struct request *req)
 {
+    if (!req->printed)
+	return;
+
     if (req != NULL && currreq == req) {
 	fprintf(xlogfp, " = ");
     } else {
-	if (currreq) {
-	    xlog_new_line();
-	    currreq = NULL;
-	}
+	xlog_new_line();
 	if (req)
 	    fprintf(xlogfp, " ... %s = ", req->text);
 	else
 	    fprintf(xlogfp, "--- error received for unknown request: ");
     }
+    currreq = req;
 }
 
-void xlog_response_done(const char *text)
+void xlog_response_done(struct request *req, const char *text)
 {
-    fprintf(xlogfp, "%s\n", text);
+    if (!req || req->printed) {
+	fprintf(xlogfp, "%s\n", text);
+	fflush(xlogfp);
+    }
     currreq = NULL;
-    fflush(xlogfp);
 }
 
 void xlog_rectangle(struct xlog *xl, const unsigned char *data,
@@ -1142,7 +1184,8 @@ const char *xlog_translate_event(int eventtype)
     }
 }
 
-void xlog_event(struct xlog *xl, const unsigned char *data, int len, int pos)
+void xlog_event(struct xlog *xl, const unsigned char *data, int len, int pos,
+		int *filter)
 {
     int event;
     const char *name;
@@ -1159,9 +1202,13 @@ void xlog_event(struct xlog *xl, const unsigned char *data, int len, int pos)
 	event = xl->extidevents[event];
     name = xlog_translate_event(event);
     if (name) {
+	if (filter)
+	    *filter = in_set(&events_to_log, name);
 	xlog_printf(xl, "%s", name);
     } else {
 	int i;
+	if (filter)
+	    *filter = in_set(&events_to_log, "UnknownEvent");
 	for (i = 0; event-i >= 0; i++)
 	    if (xl->extevents[event-i]) {
 		xlog_printf(xl, "%s:UnknownEvent%d",
@@ -1522,6 +1569,7 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
     req->replies = 0;
     req->extname = NULL;
     req->extid = 0;
+    req->printed = TRUE;
 
     /*
      * Translate requests belonging to known extensions so we can
@@ -1538,7 +1586,7 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 
 	    switch (data[0]) {
 	      case 1:
-		xlog_request_name(xl, "CreateWindow");
+		xlog_request_name(xl, req, "CreateWindow", TRUE);
 		xlog_param(xl, "wid", WINDOW, FETCH32(data, 4));
 		xlog_param(xl, "parent", WINDOW, FETCH32(data, 8));
 		xlog_param(xl, "class", ENUM | SPECVAL, FETCH16(data, 22),
@@ -1555,7 +1603,7 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 		i = 32;
 		break;
 	      default /* case 2 */:
-		xlog_request_name(xl, "ChangeWindowAttributes");
+		xlog_request_name(xl, req, "ChangeWindowAttributes", TRUE);
 		xlog_param(xl, "window", WINDOW, FETCH32(data, 4));
 		i = 12;
 	    }
@@ -1671,49 +1719,49 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 	}
 	break;
       case 3:
-	xlog_request_name(xl, "GetWindowAttributes");
+	xlog_request_name(xl, req, "GetWindowAttributes", TRUE);
 	xlog_param(xl, "window", WINDOW, FETCH32(data, 4));
 	req->replies = 1;
 	break;
       case 4:
-	xlog_request_name(xl, "DestroyWindow");
+	xlog_request_name(xl, req, "DestroyWindow", TRUE);
 	xlog_param(xl, "window", WINDOW, FETCH32(data, 4));
 	break;
       case 5:
-	xlog_request_name(xl, "DestroySubwindows");
+	xlog_request_name(xl, req, "DestroySubwindows", TRUE);
 	xlog_param(xl, "window", WINDOW, FETCH32(data, 4));
 	break;
       case 6:
-	xlog_request_name(xl, "ChangeSaveSet");
+	xlog_request_name(xl, req, "ChangeSaveSet", TRUE);
 	xlog_param(xl, "window", WINDOW, FETCH32(data, 4));
 	xlog_param(xl, "mode", ENUM | SPECVAL, FETCH8(data, 1),
 		   "Insert", 0, "Delete", 1, (char *)NULL);
 	break;
       case 7:
-	xlog_request_name(xl, "ReparentWindow");
+	xlog_request_name(xl, req, "ReparentWindow", TRUE);
 	xlog_param(xl, "window", WINDOW, FETCH32(data, 4));
 	xlog_param(xl, "parent", WINDOW, FETCH32(data, 8));
 	xlog_param(xl, "x", DEC16, FETCH16(data, 12));
 	xlog_param(xl, "y", DEC16, FETCH16(data, 14));
 	break;
       case 8:
-	xlog_request_name(xl, "MapWindow");
+	xlog_request_name(xl, req, "MapWindow", TRUE);
 	xlog_param(xl, "window", WINDOW, FETCH32(data, 4));
 	break;
       case 9:
-	xlog_request_name(xl, "MapSubwindows");
+	xlog_request_name(xl, req, "MapSubwindows", TRUE);
 	xlog_param(xl, "window", WINDOW, FETCH32(data, 4));
 	break;
       case 10:
-	xlog_request_name(xl, "UnmapWindow");
+	xlog_request_name(xl, req, "UnmapWindow", TRUE);
 	xlog_param(xl, "window", WINDOW, FETCH32(data, 4));
 	break;
       case 11:
-	xlog_request_name(xl, "UnmapSubwindows");
+	xlog_request_name(xl, req, "UnmapSubwindows", TRUE);
 	xlog_param(xl, "window", WINDOW, FETCH32(data, 4));
 	break;
       case 12:
-	xlog_request_name(xl, "ConfigureWindow");
+	xlog_request_name(xl, req, "ConfigureWindow", TRUE);
 	xlog_param(xl, "window", WINDOW, FETCH32(data, 4));
 	{
 	    unsigned i = 12;
@@ -1753,23 +1801,23 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 	}
 	break;
       case 13:
-	xlog_request_name(xl, "CirculateWindow");
+	xlog_request_name(xl, req, "CirculateWindow", TRUE);
 	xlog_param(xl, "window", WINDOW, FETCH32(data, 4));
 	xlog_param(xl, "direction", ENUM | SPECVAL, FETCH8(data, 1),
 		   "RaiseLowest", 0, "LowerHighest", 1, (char *)NULL);
 	break;
       case 14:
-	xlog_request_name(xl, "GetGeometry");
+	xlog_request_name(xl, req, "GetGeometry", TRUE);
 	xlog_param(xl, "drawable", DRAWABLE, FETCH32(data, 4));
 	req->replies = 1;
 	break;
       case 15:
-	xlog_request_name(xl, "QueryTree");
+	xlog_request_name(xl, req, "QueryTree", TRUE);
 	xlog_param(xl, "window", WINDOW, FETCH32(data, 4));
 	req->replies = 1;
 	break;
       case 16:
-	xlog_request_name(xl, "InternAtom");
+	xlog_request_name(xl, req, "InternAtom", TRUE);
 	xlog_param(xl, "name", STRING,
 		   FETCH16(data, 4),
 		   STRING(data, 8, FETCH16(data, 4)));
@@ -1777,12 +1825,12 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 	req->replies = 1;
 	break;
       case 17:
-	xlog_request_name(xl, "GetAtomName");
+	xlog_request_name(xl, req, "GetAtomName", TRUE);
 	xlog_param(xl, "atom", ATOM, FETCH32(data, 4));
 	req->replies = 1;
 	break;
       case 18:
-	xlog_request_name(xl, "ChangeProperty");
+	xlog_request_name(xl, req, "ChangeProperty", TRUE);
 	xlog_param(xl, "window", WINDOW, FETCH32(data, 4));
 	xlog_param(xl, "property", ATOM, FETCH32(data, 8));
 	xlog_param(xl, "type", ATOM, FETCH32(data, 12));
@@ -1809,12 +1857,12 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 	}
 	break;
       case 19:
-	xlog_request_name(xl, "DeleteProperty");
+	xlog_request_name(xl, req, "DeleteProperty", TRUE);
 	xlog_param(xl, "window", WINDOW, FETCH32(data, 4));
 	xlog_param(xl, "property", ATOM, FETCH32(data, 8));
 	break;
       case 20:
-	xlog_request_name(xl, "GetProperty");
+	xlog_request_name(xl, req, "GetProperty", TRUE);
 	xlog_param(xl, "window", WINDOW, FETCH32(data, 4));
 	xlog_param(xl, "property", ATOM, FETCH32(data, 8));
 	xlog_param(xl, "type", ATOM | SPECVAL, FETCH32(data, 12),
@@ -1825,24 +1873,24 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 	req->replies = 1;
 	break;
       case 21:
-	xlog_request_name(xl, "ListProperties");
+	xlog_request_name(xl, req, "ListProperties", TRUE);
 	xlog_param(xl, "window", WINDOW, FETCH32(data, 4));
 	req->replies = 1;
 	break;
       case 22:
-	xlog_request_name(xl, "SetSelectionOwner");
+	xlog_request_name(xl, req, "SetSelectionOwner", TRUE);
 	xlog_param(xl, "selection", ATOM, FETCH32(data, 8));
 	xlog_param(xl, "owner", WINDOW, FETCH32(data, 4));
 	xlog_param(xl, "time", HEX32 | SPECVAL, FETCH32(data, 12),
 		   "CurrentTime", 0, (char *)NULL);
 	break;
       case 23:
-	xlog_request_name(xl, "GetSelectionOwner");
+	xlog_request_name(xl, req, "GetSelectionOwner", TRUE);
 	xlog_param(xl, "selection", ATOM, FETCH32(data, 4));
 	req->replies = 1;
 	break;
       case 24:
-	xlog_request_name(xl, "ConvertSelection");
+	xlog_request_name(xl, req, "ConvertSelection", TRUE);
 	xlog_param(xl, "selection", ATOM, FETCH32(data, 8));
 	xlog_param(xl, "target", ATOM, FETCH32(data, 12));
 	xlog_param(xl, "property", ATOM, FETCH32(data, 16));
@@ -1851,17 +1899,17 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 		   "CurrentTime", 0, (char *)NULL);
 	break;
       case 25:
-	xlog_request_name(xl, "SendEvent");
+	xlog_request_name(xl, req, "SendEvent", TRUE);
 	xlog_param(xl, "destination", WINDOW | SPECVAL,
 		   FETCH32(data, 4),
 		   "PointerWindow", 0, "InputFocus", 1, (char *)NULL);
 	xlog_param(xl, "propagate", BOOLEAN, FETCH8(data, 1));
 	xlog_param(xl, "event-mask", EVENTMASK, FETCH32(data, 8));
 	xlog_param(xl, "event", NOTHING);
-	xlog_event(xl, data, len,  12);
+	xlog_event(xl, data, len,  12, NULL);
 	break;
       case 26:
-	xlog_request_name(xl, "GrabPointer");
+	xlog_request_name(xl, req, "GrabPointer", TRUE);
 	xlog_param(xl, "grab-window", WINDOW | SPECVAL,
 		   FETCH32(data, 4),
 		   "PointerWindow", 0, "InputFocus", 1, (char *)NULL);
@@ -1882,12 +1930,12 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 	req->replies = 1;
 	break;
       case 27:
-	xlog_request_name(xl, "UngrabPointer");
+	xlog_request_name(xl, req, "UngrabPointer", TRUE);
 	xlog_param(xl, "time", HEX32 | SPECVAL, FETCH32(data, 4),
 		   "CurrentTime", 0, (char *)NULL);
 	break;
       case 28:
-	xlog_request_name(xl, "GrabButton");
+	xlog_request_name(xl, req, "GrabButton", TRUE);
 	xlog_param(xl, "modifiers", KEYMASK | SPECVAL,
 		   FETCH16(data, 22),
 		   "AnyModifier", 0x8000, (char *)NULL);
@@ -1910,7 +1958,7 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 		   "None", 0, (char *)NULL);
 	break;
       case 29:
-	xlog_request_name(xl, "UngrabButton");
+	xlog_request_name(xl, req, "UngrabButton", TRUE);
 	xlog_param(xl, "modifiers", KEYMASK | SPECVAL,
 		   FETCH16(data, 8),
 		   "AnyModifier", 0x8000, (char *)NULL);
@@ -1921,7 +1969,7 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 		   "PointerWindow", 0, "InputFocus", 1, (char *)NULL);
 	break;
       case 30:
-	xlog_request_name(xl, "ChangeActivePointerGrab");
+	xlog_request_name(xl, req, "ChangeActivePointerGrab", TRUE);
 	xlog_param(xl, "event-mask", EVENTMASK, FETCH16(data, 12));
 	xlog_param(xl, "cursor", CURSOR | SPECVAL, FETCH32(data, 4),
 		   "None", 0, (char *)NULL);
@@ -1929,7 +1977,7 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 		   "CurrentTime", 0, (char *)NULL);
 	break;
       case 31:
-	xlog_request_name(xl, "GrabKeyboard");
+	xlog_request_name(xl, req, "GrabKeyboard", TRUE);
 	xlog_param(xl, "grab-window", WINDOW | SPECVAL,
 		   FETCH32(data, 4),
 		   "PointerWindow", 0, "InputFocus", 1, (char *)NULL);
@@ -1945,12 +1993,12 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 	req->replies = 1;
 	break;
       case 32:
-	xlog_request_name(xl, "UngrabKeyboard");
+	xlog_request_name(xl, req, "UngrabKeyboard", TRUE);
 	xlog_param(xl, "time", HEX32 | SPECVAL, FETCH32(data, 4),
 		   "CurrentTime", 0, (char *)NULL);
 	break;
       case 33:
-	xlog_request_name(xl, "GrabKey");
+	xlog_request_name(xl, req, "GrabKey", TRUE);
 	xlog_param(xl, "key", DECU | SPECVAL, FETCH8(data, 10),
 		   "AnyKey", 0, (char *)NULL);
 	xlog_param(xl, "modifiers", KEYMASK | SPECVAL,
@@ -1968,7 +2016,7 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 		   "Synchronous", 0, "Asynchronous", 1, (char *)NULL);
 	break;
       case 34:
-	xlog_request_name(xl, "UngrabKey");
+	xlog_request_name(xl, req, "UngrabKey", TRUE);
 	xlog_param(xl, "key", DECU | SPECVAL, FETCH8(data, 1),
 		   "AnyKey", 0, (char *)NULL);
 	xlog_param(xl, "modifiers", KEYMASK | SPECVAL,
@@ -1979,7 +2027,7 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 		   "PointerWindow", 0, "InputFocus", 1, (char *)NULL);
 	break;
       case 35:
-	xlog_request_name(xl, "AllowEvents");
+	xlog_request_name(xl, req, "AllowEvents", TRUE);
 	xlog_param(xl, "mode", ENUM | SPECVAL, FETCH8(data, 1),
 		   "AsyncPointer", 0, "SyncPointer", 1,
 		   "ReplayPointe", 2, "AsyncKeyboard", 3,
@@ -1989,20 +2037,20 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 		   "CurrentTime", 0, (char *)NULL);
 	break;
       case 36:
-	xlog_request_name(xl, "GrabServer");
+	xlog_request_name(xl, req, "GrabServer", TRUE);
 	/* no arguments */
 	break;
       case 37:
-	xlog_request_name(xl, "UngrabServer");
+	xlog_request_name(xl, req, "UngrabServer", TRUE);
 	/* no arguments */
 	break;
       case 38:
-	xlog_request_name(xl, "QueryPointer");
+	xlog_request_name(xl, req, "QueryPointer", TRUE);
 	xlog_param(xl, "window", WINDOW, FETCH32(data, 4));
 	req->replies = 1;
 	break;
       case 39:
-	xlog_request_name(xl, "GetMotionEvents");
+	xlog_request_name(xl, req, "GetMotionEvents", TRUE);
 	xlog_param(xl, "start", HEX32 | SPECVAL, FETCH32(data, 8),
 		   "CurrentTime", 0, (char *)NULL);
 	xlog_param(xl, "stop", HEX32 | SPECVAL, FETCH32(data, 12),
@@ -2011,7 +2059,7 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 	req->replies = 1;
 	break;
       case 40:
-	xlog_request_name(xl, "TranslateCoordinates");
+	xlog_request_name(xl, req, "TranslateCoordinates", TRUE);
 	xlog_param(xl, "src-window", WINDOW, FETCH32(data, 4));
 	xlog_param(xl, "dst-window", WINDOW, FETCH32(data, 8));
 	xlog_param(xl, "src-x", DEC16, FETCH16(data, 12));
@@ -2019,7 +2067,7 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 	req->replies = 1;
 	break;
       case 41:
-	xlog_request_name(xl, "WarpPointer");
+	xlog_request_name(xl, req, "WarpPointer", TRUE);
 	xlog_param(xl, "src-window", WINDOW | SPECVAL,
 		   FETCH32(data, 4), "None", 0, (char *)NULL);
 	xlog_param(xl, "dst-window", WINDOW | SPECVAL,
@@ -2032,7 +2080,7 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 	xlog_param(xl, "dst-y", DEC16, FETCH16(data, 22));
 	break;
       case 42:
-	xlog_request_name(xl, "SetInputFocus");
+	xlog_request_name(xl, req, "SetInputFocus", TRUE);
 	xlog_param(xl, "focus", WINDOW, FETCH32(data, 4));
 	xlog_param(xl, "revert-to", ENUM | SPECVAL, FETCH8(data, 1),
 		   "None", 0, "PointerRoot", 1, "Parent", 2,
@@ -2041,31 +2089,31 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 		   "CurrentTime", 0, (char *)NULL);
 	break;
       case 43:
-	xlog_request_name(xl, "GetInputFocus");
+	xlog_request_name(xl, req, "GetInputFocus", TRUE);
 	req->replies = 1;
 	break;
       case 44:
-	xlog_request_name(xl, "QueryKeymap");
+	xlog_request_name(xl, req, "QueryKeymap", TRUE);
 	req->replies = 1;
 	break;
       case 45:
-	xlog_request_name(xl, "OpenFont");
+	xlog_request_name(xl, req, "OpenFont", TRUE);
 	xlog_param(xl, "fid", FONT, FETCH32(data, 4));
 	xlog_param(xl, "name", STRING,
 		   FETCH16(data, 8),
 		   STRING(data, 12, FETCH16(data, 8)));
 	break;
       case 46:
-	xlog_request_name(xl, "CloseFont");
+	xlog_request_name(xl, req, "CloseFont", TRUE);
 	xlog_param(xl, "font", FONT, FETCH32(data, 4));
 	break;
       case 47:
-	xlog_request_name(xl, "QueryFont");
+	xlog_request_name(xl, req, "QueryFont", TRUE);
 	xlog_param(xl, "font", FONTABLE, FETCH32(data, 4));
 	req->replies = 1;
 	break;
       case 48:
-	xlog_request_name(xl, "QueryTextExtents");
+	xlog_request_name(xl, req, "QueryTextExtents", TRUE);
 	xlog_param(xl, "font", FONTABLE, FETCH32(data, 4));
 	{
 	    int stringlen = len - 8;
@@ -2080,7 +2128,7 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 	req->replies = 1;
 	break;
       case 49:
-	xlog_request_name(xl, "ListFonts");
+	xlog_request_name(xl, req, "ListFonts", TRUE);
 	xlog_param(xl, "pattern", STRING,
 		   FETCH16(data, 6),
 		   STRING(data, 8, FETCH16(data, 6)));
@@ -2088,7 +2136,7 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 	req->replies = 1;
 	break;
       case 50:
-	xlog_request_name(xl, "ListFontsWithInfo");
+	xlog_request_name(xl, req, "ListFontsWithInfo", TRUE);
 	xlog_param(xl, "pattern", STRING,
 		   FETCH16(data, 6),
 		   STRING(data, 8, FETCH16(data, 6)));
@@ -2096,7 +2144,7 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 	req->replies = 2;		   /* this request expects multiple replies */
 	break;
       case 51:
-	xlog_request_name(xl, "SetFontPath");
+	xlog_request_name(xl, req, "SetFontPath", TRUE);
 	{
 	    int i, n;
 	    int pos = 8;
@@ -2115,11 +2163,11 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 	}
 	break;
       case 52:
-	xlog_request_name(xl, "GetFontPath");
+	xlog_request_name(xl, req, "GetFontPath", TRUE);
 	req->replies = 1;
 	break;
       case 53:
-	xlog_request_name(xl, "CreatePixmap");
+	xlog_request_name(xl, req, "CreatePixmap", TRUE);
 	xlog_param(xl, "pid", PIXMAP, FETCH32(data, 4));
 	xlog_param(xl, "drawable", DRAWABLE, FETCH32(data, 8));
 	xlog_param(xl, "depth", DECU, FETCH8(data, 1));
@@ -2127,7 +2175,7 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 	xlog_param(xl, "height", DECU, FETCH16(data, 12));
 	break;
       case 54:
-	xlog_request_name(xl, "FreePixmap");
+	xlog_request_name(xl, req, "FreePixmap", TRUE);
 	xlog_param(xl, "pixmap", PIXMAP, FETCH32(data, 4));
 	break;
       case 55:
@@ -2137,13 +2185,13 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 
 	    switch (data[0]) {
 	      case 55:
-		xlog_request_name(xl, "CreateGC");
+		xlog_request_name(xl, req, "CreateGC", TRUE);
 		xlog_param(xl, "cid", GCONTEXT, FETCH32(data, 4));
 		xlog_param(xl, "drawable", DRAWABLE, FETCH32(data, 8));
 		i = 16;
 		break;
 	      default /* case 56 */:
-		xlog_request_name(xl, "ChangeGC");
+		xlog_request_name(xl, req, "ChangeGC", TRUE);
 		xlog_param(xl, "gc", GCONTEXT, FETCH32(data, 4));
 		i = 12;
 		break;
@@ -2286,7 +2334,7 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 	}
 	break;
       case 57:
-	xlog_request_name(xl, "CopyGC");
+	xlog_request_name(xl, req, "CopyGC", TRUE);
 	xlog_param(xl, "src-gc", GCONTEXT, FETCH32(data, 4));
 	xlog_param(xl, "dst-gc", GCONTEXT, FETCH32(data, 8));
 	xlog_param(xl, "value-mask", GENMASK, FETCH32(data, 12),
@@ -2316,7 +2364,7 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 		   (char *)NULL);
 	break;
       case 58:
-	xlog_request_name(xl, "SetDashes");
+	xlog_request_name(xl, req, "SetDashes", TRUE);
 	xlog_param(xl, "gc", GCONTEXT, FETCH32(data, 4));
 	xlog_param(xl, "dash-offset", DECU, FETCH16(data, 8));
 	{
@@ -2332,7 +2380,7 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 	}
 	break;
       case 59:
-	xlog_request_name(xl, "SetClipRectangles");
+	xlog_request_name(xl, req, "SetClipRectangles", TRUE);
 	xlog_param(xl, "gc", GCONTEXT, FETCH32(data, 4));
 	xlog_param(xl, "clip-x-origin", DEC16, FETCH16(data, 8));
 	xlog_param(xl, "clip-y-origin", DEC16, FETCH16(data, 10));
@@ -2353,11 +2401,11 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 		   "YXBanded", 3, (char *)NULL);
 	break;
       case 60:
-	xlog_request_name(xl, "FreeGC");
+	xlog_request_name(xl, req, "FreeGC", TRUE);
 	xlog_param(xl, "gc", GCONTEXT, FETCH32(data, 4));
 	break;
       case 61:
-	xlog_request_name(xl, "ClearArea");
+	xlog_request_name(xl, req, "ClearArea", TRUE);
 	xlog_param(xl, "window", WINDOW, FETCH32(data, 4));
 	xlog_param(xl, "x", DEC16, FETCH16(data, 8));
 	xlog_param(xl, "y", DEC16, FETCH16(data, 10));
@@ -2366,7 +2414,7 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 	xlog_param(xl, "exposures", BOOLEAN, FETCH8(data, 1));
 	break;
       case 62:
-	xlog_request_name(xl, "CopyArea");
+	xlog_request_name(xl, req, "CopyArea", TRUE);
 	xlog_param(xl, "src-drawable", DRAWABLE, FETCH32(data, 4));
 	xlog_param(xl, "dst-drawable", DRAWABLE, FETCH32(data, 8));
 	xlog_param(xl, "gc", GCONTEXT, FETCH32(data, 12));
@@ -2378,7 +2426,7 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 	xlog_param(xl, "dst-y", DEC16, FETCH16(data, 22));
 	break;
       case 63:
-	xlog_request_name(xl, "CopyPlane");
+	xlog_request_name(xl, req, "CopyPlane", TRUE);
 	xlog_param(xl, "src-drawable", DRAWABLE, FETCH32(data, 4));
 	xlog_param(xl, "dst-drawable", DRAWABLE, FETCH32(data, 8));
 	xlog_param(xl, "gc", GCONTEXT, FETCH32(data, 12));
@@ -2391,7 +2439,7 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 	xlog_param(xl, "bit-plane", DECU, FETCH32(data, 28));
 	break;
       case 64:
-	xlog_request_name(xl, "PolyPoint");
+	xlog_request_name(xl, req, "PolyPoint", TRUE);
 	xlog_param(xl, "drawable", DRAWABLE, FETCH32(data, 4));
 	xlog_param(xl, "gc", GCONTEXT, FETCH32(data, 8));
 	xlog_param(xl, "coordinate-mode", ENUM | SPECVAL,
@@ -2412,7 +2460,7 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 	}
 	break;
       case 65:
-	xlog_request_name(xl, "PolyLine");
+	xlog_request_name(xl, req, "PolyLine", TRUE);
 	xlog_param(xl, "drawable", DRAWABLE, FETCH32(data, 4));
 	xlog_param(xl, "gc", GCONTEXT, FETCH32(data, 8));
 	xlog_param(xl, "coordinate-mode", ENUM | SPECVAL,
@@ -2433,7 +2481,7 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 	}
 	break;
       case 66:
-	xlog_request_name(xl, "PolySegment");
+	xlog_request_name(xl, req, "PolySegment", TRUE);
 	xlog_param(xl, "drawable", DRAWABLE, FETCH32(data, 4));
 	xlog_param(xl, "gc", GCONTEXT, FETCH32(data, 8));
 	{
@@ -2451,7 +2499,7 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 	}
 	break;
       case 67:
-	xlog_request_name(xl, "PolyRectangle");
+	xlog_request_name(xl, req, "PolyRectangle", TRUE);
 	xlog_param(xl, "drawable", DRAWABLE, FETCH32(data, 4));
 	xlog_param(xl, "gc", GCONTEXT, FETCH32(data, 8));
 	{
@@ -2469,7 +2517,7 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 	}
 	break;
       case 68:
-	xlog_request_name(xl, "PolyArc");
+	xlog_request_name(xl, req, "PolyArc", TRUE);
 	xlog_param(xl, "drawable", DRAWABLE, FETCH32(data, 4));
 	xlog_param(xl, "gc", GCONTEXT, FETCH32(data, 8));
 	{
@@ -2487,7 +2535,7 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 	}
 	break;
       case 69:
-	xlog_request_name(xl, "FillPoly");
+	xlog_request_name(xl, req, "FillPoly", TRUE);
 	xlog_param(xl, "drawable", DRAWABLE, FETCH32(data, 4));
 	xlog_param(xl, "gc", GCONTEXT, FETCH32(data, 8));
 	xlog_param(xl, "shape", ENUM | SPECVAL, FETCH8(data, 12),
@@ -2511,7 +2559,7 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 	}
 	break;
       case 70:
-	xlog_request_name(xl, "PolyFillRectangle");
+	xlog_request_name(xl, req, "PolyFillRectangle", TRUE);
 	xlog_param(xl, "drawable", DRAWABLE, FETCH32(data, 4));
 	xlog_param(xl, "gc", GCONTEXT, FETCH32(data, 8));
 	{
@@ -2529,7 +2577,7 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 	}
 	break;
       case 71:
-	xlog_request_name(xl, "PolyFillArc");
+	xlog_request_name(xl, req, "PolyFillArc", TRUE);
 	xlog_param(xl, "drawable", DRAWABLE, FETCH32(data, 4));
 	xlog_param(xl, "gc", GCONTEXT, FETCH32(data, 8));
 	{
@@ -2547,7 +2595,7 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 	}
 	break;
       case 72:
-	xlog_request_name(xl, "PutImage");
+	xlog_request_name(xl, req, "PutImage", TRUE);
 	xlog_param(xl, "drawable", DRAWABLE, FETCH32(data, 4));
 	xlog_param(xl, "gc", GCONTEXT, FETCH32(data, 8));
 	xlog_param(xl, "depth", DECU, FETCH8(data, 21));
@@ -2562,7 +2610,7 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 	/* FIXME: the actual image data is not currently logged */
 	break;
       case 73:
-	xlog_request_name(xl, "GetImage");
+	xlog_request_name(xl, req, "GetImage", TRUE);
 	xlog_param(xl, "drawable", DRAWABLE, FETCH32(data, 4));
 	xlog_param(xl, "x", DEC16, FETCH16(data, 8));
 	xlog_param(xl, "y", DEC16, FETCH16(data, 10));
@@ -2575,7 +2623,7 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 	req->replies = 1;
 	break;
       case 74:
-	xlog_request_name(xl, "PolyText8");
+	xlog_request_name(xl, req, "PolyText8", TRUE);
 	xlog_param(xl, "drawable", DRAWABLE, FETCH32(data, 4));
 	xlog_param(xl, "gc", GCONTEXT, FETCH32(data, 8));
 	xlog_param(xl, "x", DEC16, FETCH16(data, 12));
@@ -2644,7 +2692,7 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 	}
 	break;
       case 75:
-	xlog_request_name(xl, "PolyText16");
+	xlog_request_name(xl, req, "PolyText16", TRUE);
 	xlog_param(xl, "drawable", DRAWABLE, FETCH32(data, 4));
 	xlog_param(xl, "gc", GCONTEXT, FETCH32(data, 8));
 	xlog_param(xl, "x", DEC16, FETCH16(data, 12));
@@ -2700,7 +2748,7 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 	}
 	break;
       case 76:
-	xlog_request_name(xl, "ImageText8");
+	xlog_request_name(xl, req, "ImageText8", TRUE);
 	xlog_param(xl, "drawable", DRAWABLE, FETCH32(data, 4));
 	xlog_param(xl, "gc", GCONTEXT, FETCH32(data, 8));
 	xlog_param(xl, "x", DEC16, FETCH16(data, 12));
@@ -2709,7 +2757,7 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 		   STRING(data, 16, FETCH8(data, 1)));
 	break;
       case 77:
-	xlog_request_name(xl, "ImageText16");
+	xlog_request_name(xl, req, "ImageText16", TRUE);
 	xlog_param(xl, "drawable", DRAWABLE, FETCH32(data, 4));
 	xlog_param(xl, "gc", GCONTEXT, FETCH32(data, 8));
 	xlog_param(xl, "x", DEC16, FETCH16(data, 12));
@@ -2718,7 +2766,7 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 		   STRING(data, 16, 2*FETCH8(data, 1)));
 	break;
       case 78:
-	xlog_request_name(xl, "CreateColormap");
+	xlog_request_name(xl, req, "CreateColormap", TRUE);
 	xlog_param(xl, "mid", COLORMAP, FETCH32(data, 4));
 	xlog_param(xl, "visual", VISUALID, FETCH32(data, 12));
 	xlog_param(xl, "window", WINDOW, FETCH32(data, 8));
@@ -2726,29 +2774,29 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 		   "None", 0, "All", 1, (char *)NULL);
 	break;
       case 79:
-	xlog_request_name(xl, "FreeColormap");
+	xlog_request_name(xl, req, "FreeColormap", TRUE);
 	xlog_param(xl, "cmap", COLORMAP, FETCH32(data, 4));
 	break;
       case 80:
-	xlog_request_name(xl, "CopyColormapAndFree");
+	xlog_request_name(xl, req, "CopyColormapAndFree", TRUE);
 	xlog_param(xl, "mid", COLORMAP, FETCH32(data, 4));
 	xlog_param(xl, "src-cmap", COLORMAP, FETCH32(data, 8));
 	break;
       case 81:
-	xlog_request_name(xl, "InstallColormap");
+	xlog_request_name(xl, req, "InstallColormap", TRUE);
 	xlog_param(xl, "cmap", COLORMAP, FETCH32(data, 4));
 	break;
       case 82:
-	xlog_request_name(xl, "UninstallColormap");
+	xlog_request_name(xl, req, "UninstallColormap", TRUE);
 	xlog_param(xl, "cmap", COLORMAP, FETCH32(data, 4));
 	break;
       case 83:
-	xlog_request_name(xl, "ListInstalledColormaps");
+	xlog_request_name(xl, req, "ListInstalledColormaps", TRUE);
 	xlog_param(xl, "window", WINDOW, FETCH32(data, 4));
 	req->replies = 1;
 	break;
       case 84:
-	xlog_request_name(xl, "AllocColor");
+	xlog_request_name(xl, req, "AllocColor", TRUE);
 	xlog_param(xl, "cmap", COLORMAP, FETCH32(data, 4));
 	xlog_param(xl, "red", HEX16, FETCH16(data, 8));
 	xlog_param(xl, "green", HEX16, FETCH16(data, 10));
@@ -2756,14 +2804,14 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 	req->replies = 1;
 	break;
       case 85:
-	xlog_request_name(xl, "AllocNamedColor");
+	xlog_request_name(xl, req, "AllocNamedColor", TRUE);
 	xlog_param(xl, "cmap", COLORMAP, FETCH32(data, 4));
 	xlog_param(xl, "name", STRING, FETCH16(data, 8),
 		   STRING(data, 12, FETCH16(data, 8)));
 	req->replies = 1;
 	break;
       case 86:
-	xlog_request_name(xl, "AllocColorCells");
+	xlog_request_name(xl, req, "AllocColorCells", TRUE);
 	xlog_param(xl, "cmap", COLORMAP, FETCH32(data, 4));
 	xlog_param(xl, "colors", DECU, FETCH16(data, 8));
 	xlog_param(xl, "planes", DECU, FETCH16(data, 10));
@@ -2771,7 +2819,7 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 	req->replies = 1;
 	break;
       case 87:
-	xlog_request_name(xl, "AllocColorPlanes");
+	xlog_request_name(xl, req, "AllocColorPlanes", TRUE);
 	xlog_param(xl, "cmap", COLORMAP, FETCH32(data, 4));
 	xlog_param(xl, "colors", DECU, FETCH16(data, 8));
 	xlog_param(xl, "reds", DECU, FETCH16(data, 10));
@@ -2781,7 +2829,7 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 	req->replies = 1;
 	break;
       case 88:
-	xlog_request_name(xl, "FreeColors");
+	xlog_request_name(xl, req, "FreeColors", TRUE);
 	xlog_param(xl, "cmap", COLORMAP, FETCH32(data, 4));
 	{
 	    int pos = 12;
@@ -2797,7 +2845,7 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 	xlog_param(xl, "plane-mask", HEX32, FETCH32(data, 8));
 	break;
       case 89:
-	xlog_request_name(xl, "StoreColors");
+	xlog_request_name(xl, req, "StoreColors", TRUE);
 	xlog_param(xl, "cmap", COLORMAP, FETCH32(data, 4));
 	{
 	    int pos = 8;
@@ -2814,7 +2862,7 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 	}
 	break;
       case 90:
-	xlog_request_name(xl, "StoreNamedColor");
+	xlog_request_name(xl, req, "StoreNamedColor", TRUE);
 	xlog_param(xl, "cmap", COLORMAP, FETCH32(data, 4));
 	xlog_param(xl, "pixel", COLORMAP, FETCH32(data, 8));
 	xlog_param(xl, "name", STRING, FETCH16(data, 12),
@@ -2826,7 +2874,7 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 		   (FETCH8(data, 1) >> 2) & 1);
 	break;
       case 91:
-	xlog_request_name(xl, "QueryColors");
+	xlog_request_name(xl, req, "QueryColors", TRUE);
 	xlog_param(xl, "cmap", COLORMAP, FETCH32(data, 4));
 	{
 	    int pos = 8;
@@ -2842,14 +2890,14 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 	req->replies = 1;
 	break;
       case 92:
-	xlog_request_name(xl, "LookupColor");
+	xlog_request_name(xl, req, "LookupColor", TRUE);
 	xlog_param(xl, "cmap", COLORMAP, FETCH32(data, 4));
 	xlog_param(xl, "name", STRING, FETCH16(data, 8),
 		   STRING(data, 12, FETCH16(data, 8)));
 	req->replies = 1;
 	break;
       case 93:
-	xlog_request_name(xl, "CreateCursor");
+	xlog_request_name(xl, req, "CreateCursor", TRUE);
 	xlog_param(xl, "cid", CURSOR, FETCH32(data, 4));
 	xlog_param(xl, "source", PIXMAP, FETCH32(data, 8));
 	xlog_param(xl, "mask", PIXMAP | SPECVAL, FETCH32(data, 12),
@@ -2864,7 +2912,7 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 	xlog_param(xl, "y", DECU, FETCH16(data, 30));
 	break;
       case 94:
-	xlog_request_name(xl, "CreateGlyphCursor");
+	xlog_request_name(xl, req, "CreateGlyphCursor", TRUE);
 	xlog_param(xl, "cid", CURSOR, FETCH32(data, 4));
 	xlog_param(xl, "source-font", FONT, FETCH32(data, 8));
 	xlog_param(xl, "mask-font", FONT | SPECVAL, FETCH32(data, 12),
@@ -2879,11 +2927,11 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 	xlog_param(xl, "back-blue", HEX16, FETCH16(data, 30));
 	break;
       case 95:
-	xlog_request_name(xl, "FreeCursor");
+	xlog_request_name(xl, req, "FreeCursor", TRUE);
 	xlog_param(xl, "cursor", CURSOR, FETCH32(data, 4));
 	break;
       case 96:
-	xlog_request_name(xl, "RecolorCursor");
+	xlog_request_name(xl, req, "RecolorCursor", TRUE);
 	xlog_param(xl, "cursor", CURSOR, FETCH32(data, 4));
 	xlog_param(xl, "fore-red", HEX16, FETCH16(data, 8));
 	xlog_param(xl, "fore-green", HEX16, FETCH16(data, 10));
@@ -2893,7 +2941,7 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 	xlog_param(xl, "back-blue", HEX16, FETCH16(data, 18));
 	break;
       case 97:
-	xlog_request_name(xl, "QueryBestSize");
+	xlog_request_name(xl, req, "QueryBestSize", TRUE);
 	xlog_param(xl, "class", ENUM | SPECVAL, FETCH8(data, 1),
 		   "Cursor", 0, "Tile", 1, "Stipple", 2, (char *)NULL);
 	xlog_param(xl, "drawable", DRAWABLE, FETCH32(data, 4));
@@ -2902,7 +2950,7 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 	req->replies = 1;
 	break;
       case 98:
-	xlog_request_name(xl, "QueryExtension");
+	xlog_request_name(xl, req, "QueryExtension", TRUE);
 	xlog_param(xl, "name", STRING,
 		   FETCH16(data, 4),
 		   STRING(data, 8, FETCH16(data, 4)));
@@ -2920,11 +2968,11 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 	req->replies = 1;
 	break;
       case 99:
-	xlog_request_name(xl, "ListExtensions");
+	xlog_request_name(xl, req, "ListExtensions", TRUE);
 	req->replies = 1;
 	break;
       case 100:
-	xlog_request_name(xl, "ChangeKeyboardMapping");
+	xlog_request_name(xl, req, "ChangeKeyboardMapping", TRUE);
 	{
 	    int keycode = FETCH8(data, 4);
 	    int keycode_count = FETCH8(data, 1);
@@ -2951,7 +2999,7 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 	}
 	break;
       case 101:
-	xlog_request_name(xl, "GetKeyboardMapping");
+	xlog_request_name(xl, req, "GetKeyboardMapping", TRUE);
 	req->first_keycode = FETCH8(data, 4);
 	req->keycode_count = FETCH8(data, 5);
 	xlog_param(xl, "first-keycode", DECU, req->first_keycode);
@@ -2959,7 +3007,7 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 	req->replies = 1;
 	break;
       case 102:
-	xlog_request_name(xl, "ChangeKeyboardControl");
+	xlog_request_name(xl, req, "ChangeKeyboardControl", TRUE);
 	{
 	    unsigned i = 8;
 	    unsigned bitmask = FETCH32(data, i-4);
@@ -3007,15 +3055,15 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 	}
 	break;
       case 103:
-	xlog_request_name(xl, "GetKeyboardControl");
+	xlog_request_name(xl, req, "GetKeyboardControl", TRUE);
 	req->replies = 1;
 	break;
       case 104:
-	xlog_request_name(xl, "Bell");
+	xlog_request_name(xl, req, "Bell", TRUE);
 	xlog_param(xl, "percent", DEC8, FETCH8(data, 1));
 	break;
       case 105:
-	xlog_request_name(xl, "ChangePointerControl");
+	xlog_request_name(xl, req, "ChangePointerControl", TRUE);
 	if (FETCH8(data, 10))
 	    xlog_param(xl, "acceleration", RATIONAL16, FETCH16(data, 4),
 		       FETCH16(data, 6));
@@ -3023,11 +3071,11 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 	    xlog_param(xl, "threshold", DEC16, FETCH16(data, 8));
 	break;
       case 106:
-	xlog_request_name(xl, "GetPointerControl");
+	xlog_request_name(xl, req, "GetPointerControl", TRUE);
 	req->replies = 1;
 	break;
       case 107:
-	xlog_request_name(xl, "SetScreenSaver");
+	xlog_request_name(xl, req, "SetScreenSaver", TRUE);
 	xlog_param(xl, "timeout", DEC16, FETCH16(data, 4));
 	xlog_param(xl, "interval", DEC16, FETCH16(data, 6));
 	xlog_param(xl, "prefer-blanking", ENUM | SPECVAL,
@@ -3038,11 +3086,11 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 		   (char *)NULL);
 	break;
       case 108:
-	xlog_request_name(xl, "GetScreenSaver");
+	xlog_request_name(xl, req, "GetScreenSaver", TRUE);
 	req->replies = 1;
 	break;
       case 109:
-	xlog_request_name(xl, "ChangeHosts");
+	xlog_request_name(xl, req, "ChangeHosts", TRUE);
 	xlog_param(xl, "mode", ENUM | SPECVAL, FETCH8(data, 1),
 		   "Insert", 0, "Delete", 1, (char *)NULL);
 	xlog_param(xl, "family", ENUM | SPECVAL, FETCH8(data, 4),
@@ -3052,26 +3100,26 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 		   STRING(data, 8, FETCH16(data, 6)));
 	break;
       case 110:
-	xlog_request_name(xl, "ListHosts");
+	xlog_request_name(xl, req, "ListHosts", TRUE);
 	req->replies = 1;
 	break;
       case 111:
-	xlog_request_name(xl, "SetAccessControl");
+	xlog_request_name(xl, req, "SetAccessControl", TRUE);
 	xlog_param(xl, "mode", ENUM | SPECVAL, FETCH8(data, 1),
 		   "Disable", 0, "Enable", 1, (char *)NULL);
 	break;
       case 112:
-	xlog_request_name(xl, "SetCloseDownMode");
+	xlog_request_name(xl, req, "SetCloseDownMode", TRUE);
 	xlog_param(xl, "mode", ENUM | SPECVAL, FETCH8(data, 1),
 		   "Destroy", 0, "RetainPermanent", 1,
 		   "RetainTemporary", 2, (char *)NULL);
 	break;
       case 113:
-	xlog_request_name(xl, "KillClient");
+	xlog_request_name(xl, req, "KillClient", TRUE);
 	xlog_param(xl, "resource", HEX32, FETCH32(data, 4));
 	break;
       case 114:
-	xlog_request_name(xl, "RotateProperties");
+	xlog_request_name(xl, req, "RotateProperties", TRUE);
 	xlog_param(xl, "window", WINDOW, FETCH32(data, 4));
 	xlog_param(xl, "delta", DEC16, FETCH16(data, 10));
 	{
@@ -3089,12 +3137,12 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 	}
 	break;
       case 115:
-	xlog_request_name(xl, "ForceScreenSaver");
+	xlog_request_name(xl, req, "ForceScreenSaver", TRUE);
 	xlog_param(xl, "mode", ENUM | SPECVAL, FETCH8(data, 1),
 		   "Reset", 0, "Activate", 1, (char *)NULL);
 	break;
       case 116:
-	xlog_request_name(xl, "SetPointerMapping");
+	xlog_request_name(xl, req, "SetPointerMapping", TRUE);
 	{
 	    int pos = 4;
 	    int i = 0;
@@ -3111,11 +3159,11 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 	req->replies = 1;
 	break;
       case 117:
-	xlog_request_name(xl, "GetPointerMapping");
+	xlog_request_name(xl, req, "GetPointerMapping", TRUE);
 	req->replies = 1;
 	break;
       case 118:
-	xlog_request_name(xl, "SetModifierMapping");
+	xlog_request_name(xl, req, "SetModifierMapping", TRUE);
 	{
 	    int keycodes_per_modifier = FETCH8(data, 1);
 	    int pos = 4;
@@ -3138,34 +3186,34 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 	req->replies = 1;
 	break;
       case 119:
-	xlog_request_name(xl, "GetModifierMapping");
+	xlog_request_name(xl, req, "GetModifierMapping", TRUE);
 	req->replies = 1;
 	break;
       case 127:
-	xlog_request_name(xl, "NoOperation");
+	xlog_request_name(xl, req, "NoOperation", TRUE);
 	break;
 
       case EXT_BIGREQUESTS | 0:
-	xlog_request_name(xl, "BigReqEnable");
+	xlog_request_name(xl, req, "BigReqEnable", TRUE);
 	req->replies = 1;
 	break;
 
       case EXT_MITSHM | 0:
-	xlog_request_name(xl, "ShmQueryVersion");
+	xlog_request_name(xl, req, "ShmQueryVersion", TRUE);
 	req->replies = 1;
 	break;
       case EXT_MITSHM | 1:
-	xlog_request_name(xl, "ShmAttach");
+	xlog_request_name(xl, req, "ShmAttach", TRUE);
 	xlog_param(xl, "shmseg", HEX32, FETCH32(data, 4));
 	xlog_param(xl, "shmid", HEX32, FETCH32(data, 8));
 	xlog_param(xl, "read-only", BOOLEAN, FETCH8(data, 12));
 	break;
       case EXT_MITSHM | 2:
-	xlog_request_name(xl, "ShmDetach");
+	xlog_request_name(xl, req, "ShmDetach", TRUE);
 	xlog_param(xl, "shmseg", HEX32, FETCH32(data, 4));
 	break;
       case EXT_MITSHM | 3:
-	xlog_request_name(xl, "ShmPutImage");
+	xlog_request_name(xl, req, "ShmPutImage", TRUE);
 	xlog_param(xl, "drawable", DRAWABLE, FETCH32(data, 4));
 	xlog_param(xl, "gc", GCONTEXT, FETCH32(data, 8));
 	xlog_param(xl, "total-width", DECU, FETCH16(data, 12));
@@ -3184,7 +3232,7 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 	xlog_param(xl, "offset", HEX32, FETCH32(data, 36));
 	break;
       case EXT_MITSHM | 4:
-	xlog_request_name(xl, "ShmGetImage");
+	xlog_request_name(xl, req, "ShmGetImage", TRUE);
 	xlog_param(xl, "drawable", DRAWABLE, FETCH32(data, 4));
 	xlog_param(xl, "x", DEC16, FETCH16(data, 8));
 	xlog_param(xl, "y", DEC16, FETCH16(data, 10));
@@ -3198,7 +3246,7 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 	req->replies = 1;
 	break;
       case EXT_MITSHM | 5:
-	xlog_request_name(xl, "ShmCreatePixmap");
+	xlog_request_name(xl, req, "ShmCreatePixmap", TRUE);
 	xlog_param(xl, "pid", PIXMAP, FETCH32(data, 4));
 	xlog_param(xl, "drawable", DRAWABLE, FETCH32(data, 8));
 	xlog_param(xl, "width", DECU, FETCH16(data, 12));
@@ -3222,12 +3270,12 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 		sprintf(buf, "%d:UnknownExtensionRequest%d",
 			data[0], data[1]);
 	    }
-	    xlog_request_name(xl, buf);
+	    xlog_request_name(xl, req, buf, FALSE);
 	    xlog_param(xl, "bytes", DECU, len);
 	} else {
 	    char buf[64];
 	    sprintf(buf, "UnknownRequest%d", data[0]);
-	    xlog_request_name(xl, buf);
+	    xlog_request_name(xl, req, buf, FALSE);
 	    xlog_param(xl, "bytes", DECU, len);
 	}
 	break;
@@ -3965,7 +4013,7 @@ void xlog_do_reply(struct xlog *xl, struct request *req,
 
     if (xl->textbuflen) {
 	xlog_reply_end(xl);
-	xlog_response_done(xl->textbuf);
+	xlog_response_done(req, xl->textbuf);
     }
 
     if (req->replies == 1) {
@@ -4151,7 +4199,7 @@ void xlog_do_error(struct xlog *xl, struct request *req,
 	break;
     }
 
-    xlog_response_done(xl->textbuf);
+    xlog_response_done(req, xl->textbuf);
 
     /*
      * Dequeue this request, now we've seen an error response to it.
@@ -4170,15 +4218,18 @@ void xlog_do_error(struct xlog *xl, struct request *req,
 void xlog_do_event(struct xlog *xl, const void *vdata, int len)
 {
     const unsigned char *data = (const unsigned char *)vdata;
+    int filter;
 
     xl->textbuflen = 0;
     xl->overflow = FALSE;
 
-    xlog_event(xl, data, len, 0);
+    xlog_event(xl, data, len, 0, &filter);
 
-    xlog_new_line();
-    fprintf(xlogfp, "--- %s\n", xl->textbuf);
-    fflush(xlogfp);
+    if (filter) {
+	xlog_new_line();
+	fprintf(xlogfp, "--- %s\n", xl->textbuf);
+	fflush(xlogfp);
+    }
 }
 
 void xlog_c2s(struct xlog *xl, const void *vdata, int len)
@@ -5173,6 +5224,23 @@ char *platform_get_x_display(void) {
     return dupstr(getenv("DISPLAY"));
 }
 
+/*
+ * Variant form of strcmp, in which the first argument is
+ * NUL-terminated as usual but the second argument has an explicitly
+ * specified length.
+ */
+static int strzlencmp(const char *az, const char *bl, int blen)
+{
+    while (*az && blen>0) {
+	if (*az != *bl)
+	    return *az < *bl ? -1 : +1;
+	az++, bl++, blen--;
+    }
+    if (!*az && blen==0)
+	return 0;
+    return *az ? +1 : -1;
+}
+
 int main(int argc, char **argv)
 {
     int *fdlist;
@@ -5192,6 +5260,11 @@ int main(int argc, char **argv)
     fdcount = fdsize = 0;
     xrecord = FALSE;
     selectclient = FALSE;
+
+    requests_to_log.include = FALSE;
+    requests_to_log.strings = newtree234(stringcmp);
+    events_to_log.include = FALSE;
+    events_to_log.strings = newtree234(stringcmp);
 
     cfg.x11_display[0] = '\0';
 
@@ -5217,6 +5290,7 @@ int main(int argc, char **argv)
 		  case 's':
 		  case 'o':
 		  case 'p':
+		  case 'e':
 		    /* options requiring an argument */
 		    if (*p)
 			val = p;
@@ -5253,6 +5327,101 @@ int main(int argc, char **argv)
 				!sscanf(val, "0X%x", &clientid)) {
 				fprintf(stderr, "xtrace: option '-p' expects"
 					" either a hex resource id or '-'\n");
+				return 1;
+			    }
+			}
+			break;
+		      case 'e':
+			{
+			    char *p;
+			    struct set *set;
+
+			    /*
+			     * Mimic the strace -e format: a list of
+			     * comma-separated strings, optionally
+			     * preceded by ! to indicate that those
+			     * are things _not_ to print, optionally
+			     * preceded further by a string followed
+			     * by '=' indicating that we're setting
+			     * something other than the default set
+			     * of requests to be logged.
+			     *
+			     * (Currently the only configurable set
+			     * _is_ that of requests to be logged,
+			     * but I put the machinery in place now
+			     * for there to be others since I
+			     * anticipate that there might very well
+			     * be.)
+			     */
+
+			    p = strchr(val, '=');
+			    if (p) {
+				if (!strzlencmp("requests", val, p-val) ||
+				    !strzlencmp("request", val, p-val) ||
+				    !strzlencmp("reqs", val, p-val) ||
+				    !strzlencmp("req", val, p-val))
+				    set = &requests_to_log;
+				else if (!strzlencmp("events", val, p-val) ||
+					 !strzlencmp("event", val, p-val))
+				    set = &events_to_log;
+				else {
+				    fprintf(stderr, "xtrace: unknown keyword"
+					    " for '-e': '%.*s'\n", p-val, val);
+				    return 1;
+				}
+				p++;   /* skip '=' */
+			    } else {
+				/* In the absence of a foo= prefix, default
+				 * is to configure the set of X requests which
+				 * are printed or not printed. */
+				set = &requests_to_log;
+				p = val;
+			    }
+
+			    if (*p == '!') {
+				set->include = FALSE;
+				p++;
+			    } else {
+				set->include = TRUE;
+			    }
+
+			    /* Empty the previous contents of the set if any */
+			    while (1) {
+				char *q = delpos234(set->strings, 0);
+				if (!q)
+				    break;
+				sfree(q);
+			    }
+
+			    while (p && *p) {
+				char *q = strchr(p, ',');
+				if (q)
+				    *q++ = '\0';
+
+				if (!strcmp(p, "none")) {
+				    /* just a placeholder */
+				} else if (!strcmp(p, "all")) {
+				    /*
+				     * Special case: everything is
+				     * included in this set, so we
+				     * have to flip the 'include'
+				     * parameter and empty the tree.
+				     */
+				    while (1) {
+					char *r = delpos234(set->strings, 0);
+					if (!r)
+					    break;
+					sfree(r);
+				    }
+				    set->include = !set->include;
+				    /* And nothing else will change this. */
+				    break;
+				} else {
+				    /* Just add to the set normally */
+				    add234(set->strings, dupstr(p));
+				}
+
+				p = q;
 			    }
 			}
 			break;
