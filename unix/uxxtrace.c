@@ -27,11 +27,6 @@
 /*
  * Definitely TODO:
  *
- *  - Logging of at least some of the data from the server's welcome
- *    packet. Might be scope for making some of it optional, but
- *    certainly things like the root window ids would be useful for
- *    making sense of the subsequent proceedings.
- *
  *  - Decide how to log the image data in PutImage requests and
  *    GetImage replies. I've found the specification of the family
  *    of data formats used (perversely, it's under 'Server
@@ -4380,12 +4375,148 @@ void xlog_s2c(struct xlog *xl, const void *vdata, int len)
 
 	    /*
 	     * Now we're sitting on a successful authorisation
-	     * packet. FIXME: we might usefully log some of its
-	     * contents, though probably optionally. Even if we
-	     * don't, we could at least save some resource ids -
-	     * windows, colormaps, visuals and so on - to lend
-	     * context to logging of later requests which cite them.
+	     * packet. Log it.
 	     */
+	    {
+		/* variables on which the FETCH macros depend */
+		const unsigned char *data = xl->s2cbuf;
+		int len = xl->s2clen;
+
+		xl->textbuflen = 0;
+		xlog_printf(xl, "--- server init message: ");
+		xl->reqlogstate = 3;
+
+		xlog_param(xl, "protocol-major-version", DECU,
+			   FETCH16(data, 2));
+		xlog_param(xl, "protocol-major-version", DECU,
+			   FETCH16(data, 4));
+		xlog_param(xl, "release-number", DECU, FETCH32(data, 8));
+		xlog_param(xl, "resource-id-base", HEX32, FETCH32(data, 12));
+		xlog_param(xl, "resource-id-mask", HEX32, FETCH32(data, 16));
+		xlog_param(xl, "motion-buffer-size", DECU, FETCH32(data, 20));
+		xlog_param(xl, "maximum-request-length", DECU,
+			   FETCH16(data, 26));
+		xlog_param(xl, "image-byte-order", ENUM | SPECVAL,
+			   FETCH8(data, 30), "LSBFirst", 0,
+			   "MSBFirst", 1, (char *)NULL);
+		xlog_param(xl, "bitmap-format-bit-order", ENUM | SPECVAL,
+			   FETCH8(data, 31), "LeastSignificant", 0,
+			   "MostSignificant", 1, (char *)NULL);
+		xlog_param(xl, "bitmap-format-scanline-unit", DECU,
+			   FETCH8(data, 32));
+		xlog_param(xl, "bitmap-format-scanline-pad", DECU,
+			   FETCH8(data, 33));
+		xlog_param(xl, "min-keycode", DECU,
+			   FETCH8(data, 34));
+		xlog_param(xl, "max-keycode", DECU,
+			   FETCH8(data, 35));
+		xlog_param(xl, "vendor", STRING, FETCH16(data, 24),
+			   STRING(data, 40, FETCH16(data, 24)));
+
+		{
+		    int i, n;
+		    int pos = 40 + FETCH16(data, 24);
+		    pos = (pos + 3) &~ 3;
+
+		    n = FETCH8(data, 29);
+		    for (i = 0; i < n; i++) {
+			char buf[64];
+			sprintf(buf, "pixmap-formats[%d]", i);
+			xlog_param(xl, buf, SETBEGIN);
+			xlog_param(xl, "depth", DECU, FETCH8(data, pos));
+			xlog_param(xl, "bits-per-pixel", DECU,
+				   FETCH8(data, pos+1));
+			xlog_param(xl, "scanline-pad", DECU,
+				   FETCH8(data, pos+2));
+			xlog_set_end(xl);
+			pos += 8;
+			if (xlog_check_list_length(xl))
+			    break;
+		    }
+
+		    n = FETCH8(data, 28);
+		    for (i = 0; i < n; i++) {
+			char buf[64];
+			int j, m;
+			sprintf(buf, "roots[%d]", i);
+			xlog_param(xl, buf, SETBEGIN);
+			xlog_param(xl, "root", WINDOW, FETCH32(data, pos));
+			xlog_param(xl, "default-colormap", COLORMAP,
+				   FETCH32(data, pos+4));
+			xlog_param(xl, "white-pixel", HEX32,
+				   FETCH32(data, pos+8));
+			xlog_param(xl, "black-pixel", HEX32,
+				   FETCH32(data, pos+12));
+			xlog_param(xl, "current-input-masks", EVENTMASK,
+				   FETCH32(data, pos+16));
+			xlog_param(xl, "width-in-pixels", DECU,
+				   FETCH16(data, pos+20));
+			xlog_param(xl, "height-in-pixels", DECU,
+				   FETCH16(data, pos+22));
+			xlog_param(xl, "width-in-mm", DECU,
+				   FETCH16(data, pos+24));
+			xlog_param(xl, "height-in-mm", DECU,
+				   FETCH16(data, pos+26));
+			xlog_param(xl, "min-installed-maps", DECU,
+				   FETCH16(data, pos+28));
+			xlog_param(xl, "max-installed-maps", DECU,
+				   FETCH16(data, pos+30));
+			xlog_param(xl, "root-visual", VISUALID,
+				   FETCH32(data, pos+32));
+			xlog_param(xl, "backing-stores", ENUM | SPECVAL,
+				   FETCH8(data, pos+36), "Never", 0,
+				   "WhenMapped", 1, "Always", 2, (char *)NULL);
+			xlog_param(xl, "save-unders", BOOLEAN,
+				   FETCH8(data, pos+37));
+			xlog_param(xl, "root-depth", DECU,
+				   FETCH8(data, pos+38));
+			m = FETCH8(data, pos+39);
+			pos += 40;
+			for (j = 0; j < m; j++) {
+			    char buf[64];
+			    int k, l;
+			    sprintf(buf, "allowed-depths[%d]", j);
+			    xlog_param(xl, buf, SETBEGIN);
+			    xlog_param(xl, "depth", DECU,
+				       FETCH8(data, pos));
+			    l = FETCH16(data, pos+2);
+			    pos += 8;
+			    for (k = 0; k < l; k++) {
+				char buf[64];
+				sprintf(buf, "visuals[%d]", k);
+				xlog_param(xl, buf, SETBEGIN);
+				xlog_param(xl, "visual-id", VISUALID,
+					   FETCH32(data, pos));
+				xlog_param(xl, "class", ENUM | SPECVAL,
+					   FETCH8(data, pos + 4),
+					   "StaticGray", 0, "GrayScale", 1,
+					   "StaticColor", 2, "PseudoColor", 3,
+					   "TrueColor", 4, "DirectColor", 5,
+					   (char *)NULL);
+				xlog_param(xl, "bits-per-rgb-value", DECU,
+					   FETCH8(data, pos + 5));
+				xlog_param(xl, "colormap-entries", DECU,
+					   FETCH16(data, pos + 6));
+				xlog_param(xl, "red-mask", HEX32,
+					   FETCH32(data, pos + 8));
+				xlog_param(xl, "green-mask", HEX32,
+					   FETCH32(data, pos + 12));
+				xlog_param(xl, "blue-mask", HEX32,
+					   FETCH32(data, pos + 16));
+				xlog_set_end(xl);
+				pos += 24;
+			    }
+			    xlog_set_end(xl);
+			}
+			xlog_set_end(xl);
+			pos += 8;
+			if (xlog_check_list_length(xl))
+			    break;
+		    }
+		}
+
+		fprintf(xlogfp, "%s\n", xl->textbuf);
+	    }
 	    break;
 	}
     }
