@@ -550,6 +550,7 @@ enum {
     HEXSTRING4,
     SETBEGIN,
     NOTHING,
+    NOTEVENEQUALSIGN,
     SPECVAL = 0x8000
 };
 
@@ -572,7 +573,9 @@ void xlog_param(struct xlog *xl, const char *paramname, int type, ...)
 	xl->reqlogstate = 2;
     } else {
 	/* FIXME: perhaps optionally omit parameter names? */
-	xlog_printf(xl, "%s=", paramname);
+	xlog_text(xl, paramname);
+	if ((type &~ SPECVAL) != NOTEVENEQUALSIGN)
+	    xlog_text(xl, "=");
 	va_start(ap, type);
 	switch (type &~ SPECVAL) {
 	  case STRING:
@@ -902,7 +905,7 @@ void xlog_param(struct xlog *xl, const char *paramname, int type, ...)
 int xlog_check_list_length(struct xlog *xl)
 {
     if (sizelimit > 0 && xl->textbuflen > sizelimit) {
-	xlog_param(xl, "...", NOTHING);
+	xlog_param(xl, "...", NOTEVENEQUALSIGN);
 	return TRUE;
     }
 
