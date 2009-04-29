@@ -27,23 +27,6 @@
 /*
  * Definitely TODO:
  *
- *  - Decide how to log the image data in PutImage requests and
- *    GetImage replies. I've found the specification of the family
- *    of data formats used (perversely, it's under 'Server
- *    Information' at the very start of the X spec), but now the
- *    question becomes how much translation we should do before
- *    printing it. I'm inclined to think the answer is to divide
- *    each scan line into the smallest sensible unit
- *    (bitmap-scanline-unit for XY format, max(bits-per-pixel,8) for
- *    Z), discard any at the end of the scan line that have no data
- *    at all (via [bitmap-]scanline-pad), and just print the rest as
- *    HEXSTRING{1,2,4} leaving the user to sort out the
- *    bit-endianness and potential pixel divisions within units.
- *    (Incidentally, I think we want HEXSTRING1 with colons between
- *    bytes as opposed to the current unseparated HEXSTRING, and in
- *    fact I think all existing HEXSTRINGs should be changed to that
- *    format.)
- *
  *  - Deal with interleaving log data from multiple clients:
  *     * identify clients by some sort of numeric id (resource-base
  * 	 is currently favourite, particularly since it's also the id
@@ -219,6 +202,28 @@ int in_set(struct set *s, const char *string)
 }
 
 /*
+ * Unusual 24-bit data marshalling macros, used for 24-bit bitmaps.
+ */
+#define GET_24BIT_LSB_FIRST(cp) \
+  (((unsigned long)(unsigned char)(cp)[0]) | \
+  ((unsigned long)(unsigned char)(cp)[1] << 8) | \
+  ((unsigned long)(unsigned char)(cp)[2] << 16))
+#define GET_24BIT_MSB_FIRST(cp) \
+  (((unsigned long)(unsigned char)(cp)[2]) | \
+  ((unsigned long)(unsigned char)(cp)[1] << 8) | \
+  ((unsigned long)(unsigned char)(cp)[0] << 16))
+
+/*
+ * Translate a bits-per-image-element count into an appropriate
+ * HEXSTRING* display data type.
+ */
+#define STRING_TYPE(byteorder, bits) ( \
+    (bits) == 32 ? (byteorder ? HEXSTRING4B : HEXSTRING4L) : \
+    (bits) == 24 ? (byteorder ? HEXSTRING3B : HEXSTRING3L) : \
+    (bits) == 16 ? (byteorder ? HEXSTRING2B : HEXSTRING2L) : \
+    HEXSTRING1)
+
+/*
  * Parametric macro defining each known extension as an internal
  * identifier, its protocol-level string id, and the number of
  * errors and events it defines.
@@ -282,6 +287,13 @@ struct request {
     char *extname;
     int extid;
 
+    /*
+     * Machine-readable representation of the pixmap parameters in a
+     * GetImage, so we can log the image data correctly when it
+     * comes back.
+     */
+    int pixmapformat, pixmapwidth, pixmapheight;
+
     int printed;		       /* do we print this request at all? */
 };
 
@@ -303,6 +315,10 @@ static struct request *currreq = NULL;
  */
 static FILE *xlogfp;
 
+struct pixmapformat {
+    int depth, bits_per_pixel, scanline_pad;
+};
+
 struct xlog {
     int c2sstate, s2cstate;
     char *textbuf;
@@ -323,6 +339,9 @@ struct xlog {
     int nextseq;
     int type;
     struct request *rhead, *rtail;
+    int bitmap_scanline_unit, bitmap_scanline_pad, image_byte_order;
+    struct pixmapformat *pixmapformats;
+    int npixmapformats;
 };
 
 struct xlog *xlog_new(int type)
@@ -348,6 +367,7 @@ struct xlog *xlog_new(int type)
 	xl->extevents[i] = NULL, xl->extidevents[i] = 0;
     for (i = 0; i < 256; i++)
 	xl->exterrors[i] = NULL, xl->extidevents[i] = 0;
+    xl->pixmapformats = NULL;
     return xl;
 }
 
@@ -372,6 +392,7 @@ void xlog_free(struct xlog *xl)
 	sfree(xl->extevents[i]);
     for (i = 0; i < 256; i++)
 	sfree(xl->exterrors[i]);
+    sfree(xl->pixmapformats);
     sfree(xl->c2sbuf);
     sfree(xl->s2cbuf);
     sfree(xl->textbuf);
@@ -576,10 +597,16 @@ enum {
     GENMASK,
     ENUM,
     STRING,
-    HEXSTRING,
+    HEXSTRING1,
     HEXSTRING2,
+    HEXSTRING2L,
     HEXSTRING2B,
+    HEXSTRING3,
+    HEXSTRING3B,
+    HEXSTRING3L,
     HEXSTRING4,
+    HEXSTRING4B,
+    HEXSTRING4L,
     SETBEGIN,
     NOTHING,
     NOTEVENEQUALSIGN,
@@ -629,13 +656,13 @@ void xlog_param(struct xlog *xl, const char *paramname, int type, ...)
 	    print_c_string(xl, sval, ival);
 	    xlog_printf(xl, "\"%s", trail);
 	    break;
-	  case HEXSTRING:
+	  case HEXSTRING1:
 	    ival = va_arg(ap, int);
 	    sval = va_arg(ap, const char *);
 
 	    trail = "";
-	    if (sizelimit > 0 && xl->textbuflen + 2*ival > sizelimit) {
-		int limitlen = sizelimit - xl->textbuflen;
+	    if (sizelimit > 0 && xl->textbuflen + 3*ival-1 > sizelimit) {
+		int limitlen = (sizelimit - xl->textbuflen + 1) / 3;
 		if (limitlen < 8)
 		    limitlen = 8;
 		if (ival > limitlen) {
@@ -644,45 +671,28 @@ void xlog_param(struct xlog *xl, const char *paramname, int type, ...)
 		}
 	    }
 
-	    while (ival-- > 0)
-		xlog_printf(xl, "%02X", (unsigned char)(*sval++));
-	    xlog_text(xl, trail);
+	    sep = "";
+	    while (ival-- > 0) {
+		unsigned val = *sval;
+		xlog_printf(xl, "%s%02X", sep, val);
+		sval++;
+		sep = ":";
+	    }
+	    if (*trail)
+		xlog_printf(xl, "%s%s", sep, trail);
 	    break;
 	  case HEXSTRING2:
-	    ival = va_arg(ap, int);
-	    sval = va_arg(ap, const char *);
-
-	    trail = "";
-	    if (sizelimit > 0 && xl->textbuflen + 5*ival-1 > sizelimit) {
-		int limitlen = sizelimit - xl->textbuflen;
-		if (limitlen < 4)
-		    limitlen = 4;
-		if (ival > limitlen) {
-		    ival = limitlen;
-		    trail = "...";
-		}
-	    }
-
-	    sep = "";
-	    while (ival-- > 0) {
-		unsigned val = READ16(sval);
-		xlog_printf(xl, "%s%04X", sep, val);
-		sval += 2;
-		sep = ":";
-	    }
-	    if (*trail)
-		xlog_printf(xl, "%s%s", sep, trail);
-	    break;
 	  case HEXSTRING2B:
-	    /* Fixed big-endian variant of HEXSTRING2, used for CHAR2B
-	     * strings which are nominally pairs of bytes rather than
-	     * 16-bit integers. */
+	  case HEXSTRING2L:
+	    if (type == HEXSTRING2)
+		type = (xl->endianness == 'l' ? HEXSTRING2L : HEXSTRING2B);
+
 	    ival = va_arg(ap, int);
 	    sval = va_arg(ap, const char *);
 
 	    trail = "";
 	    if (sizelimit > 0 && xl->textbuflen + 5*ival-1 > sizelimit) {
-		int limitlen = sizelimit - xl->textbuflen;
+		int limitlen = (sizelimit - xl->textbuflen + 1) / 5;
 		if (limitlen < 4)
 		    limitlen = 4;
 		if (ival > limitlen) {
@@ -693,7 +703,11 @@ void xlog_param(struct xlog *xl, const char *paramname, int type, ...)
 
 	    sep = "";
 	    while (ival-- > 0) {
-		unsigned val = GET_16BIT_MSB_FIRST(sval);
+		unsigned val;
+		if (type == HEXSTRING2L)
+		    val = GET_16BIT_LSB_FIRST(sval);
+		else
+		    val = GET_16BIT_MSB_FIRST(sval);
 		xlog_printf(xl, "%s%04X", sep, val);
 		sval += 2;
 		sep = ":";
@@ -701,13 +715,18 @@ void xlog_param(struct xlog *xl, const char *paramname, int type, ...)
 	    if (*trail)
 		xlog_printf(xl, "%s%s", sep, trail);
 	    break;
-	  case HEXSTRING4:
+	  case HEXSTRING3:
+	  case HEXSTRING3B:
+	  case HEXSTRING3L:
+	    if (type == HEXSTRING3)
+		type = (xl->endianness == 'l' ? HEXSTRING3L : HEXSTRING3B);
+
 	    ival = va_arg(ap, int);
 	    sval = va_arg(ap, const char *);
 
 	    trail = "";
-	    if (sizelimit > 0 && xl->textbuflen + 9*ival-1 > sizelimit) {
-		int limitlen = sizelimit - xl->textbuflen;
+	    if (sizelimit > 0 && xl->textbuflen + 7*ival-1 > sizelimit) {
+		int limitlen = (sizelimit - xl->textbuflen + 1) / 7;
 		if (limitlen < 2)
 		    limitlen = 2;
 		if (ival > limitlen) {
@@ -718,7 +737,45 @@ void xlog_param(struct xlog *xl, const char *paramname, int type, ...)
 
 	    sep = "";
 	    while (ival-- > 0) {
-		unsigned val = READ32(sval);
+		unsigned val;
+		if (type == HEXSTRING3L)
+		    val = GET_24BIT_LSB_FIRST(sval);
+		else
+		    val = GET_24BIT_MSB_FIRST(sval);
+		xlog_printf(xl, "%s%06X", sep, val);
+		sval += 3;
+		sep = ":";
+	    }
+	    if (*trail)
+		xlog_printf(xl, "%s%s", sep, trail);
+	    break;
+	  case HEXSTRING4:
+	  case HEXSTRING4B:
+	  case HEXSTRING4L:
+	    if (type == HEXSTRING4)
+		type = (xl->endianness == 'l' ? HEXSTRING4L : HEXSTRING4B);
+
+	    ival = va_arg(ap, int);
+	    sval = va_arg(ap, const char *);
+
+	    trail = "";
+	    if (sizelimit > 0 && xl->textbuflen + 9*ival-1 > sizelimit) {
+		int limitlen = (sizelimit - xl->textbuflen + 1) / 9;
+		if (limitlen < 2)
+		    limitlen = 2;
+		if (ival > limitlen) {
+		    ival = limitlen;
+		    trail = "...";
+		}
+	    }
+
+	    sep = "";
+	    while (ival-- > 0) {
+		unsigned val;
+		if (type == HEXSTRING4L)
+		    val = GET_32BIT_LSB_FIRST(sval);
+		else
+		    val = GET_32BIT_MSB_FIRST(sval);
 		xlog_printf(xl, "%s%08X", sep, val);
 		sval += 4;
 		sep = ":";
@@ -1522,7 +1579,7 @@ void xlog_event(struct xlog *xl, const unsigned char *data, int len, int pos,
 	xlog_param(xl, "window", WINDOW, FETCH32(data, pos+4));
 	xlog_param(xl, "type", ATOM, FETCH32(data, pos+8));
 	xlog_param(xl, "format", DECU, FETCH8(data, pos+1));
-	xlog_param(xl, "data", HEXSTRING, 20, STRING(data, pos+12, 20));
+	xlog_param(xl, "data", HEXSTRING1, 20, STRING(data, pos+12, 20));
 	xlog_printf(xl, ")");
 	break;
       case 34:
@@ -1549,6 +1606,58 @@ void xlog_event(struct xlog *xl, const unsigned char *data, int len, int pos,
     }
 
     xl->reqlogstate = 1;
+}
+
+void xlog_image_data(struct xlog *xl, const char *paramname,
+		     const unsigned char *data, int len, int startoffset,
+		     int format, int width, int height, int depth)
+{
+    int bpp = -1, pad = -1, nbitmaps = 1;
+
+    /*
+     * Figure out the size and format of the image data, and
+     * log it as a hex string.
+     */
+    if (format == 2) {
+	/*
+	 * Z pixmap.
+	 */
+	int i;
+
+	for (i = 0; i < xl->npixmapformats; i++) {
+	    if (xl->pixmapformats[i].depth == depth) {
+		bpp = xl->pixmapformats[i].bits_per_pixel;
+		pad = xl->pixmapformats[i].scanline_pad;
+		break;
+	    }
+	}
+    } else {
+	bpp = xl->bitmap_scanline_unit;
+	pad = xl->bitmap_scanline_pad;
+	nbitmaps = depth;
+    }
+
+    if (bpp < 0) {
+	xlog_param(xl, "<unrecognised image depth>",
+		   NOTEVENEQUALSIGN);
+    } else {
+	int scanlinewidth, unitsize, stringtype, nunits;
+
+	scanlinewidth = width;
+	scanlinewidth *= bpp;
+	scanlinewidth += pad - 1;
+	scanlinewidth &= ~(pad - 1);
+	scanlinewidth /= 8;
+
+	unitsize = (bpp + 7) / 8;
+	stringtype = STRING_TYPE(xl->image_byte_order, bpp);
+
+	nunits = (scanlinewidth / unitsize) * /* units/scanline */
+	    height * nbitmaps;  /* number of scanlines */
+
+	xlog_param(xl, "image-data", stringtype, nunits,
+		   STRING(data, startoffset, nunits * unitsize));
+    }
 }
 
 void xlog_do_request(struct xlog *xl, const void *vdata, int len)
@@ -2603,7 +2712,9 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 	xlog_param(xl, "format", ENUM | SPECVAL,
 		   FETCH8(data, 1), "Bitmap", 0, "XYPixmap", 1,
 		   "ZPixmap", 2, (char *)NULL);
-	/* FIXME: the actual image data is not currently logged */
+	xlog_image_data(xl, "image-data", data, len, 24, FETCH8(data, 1),
+			FETCH16(data, 12) + FETCH8(data, 20),
+			FETCH16(data, 14), FETCH8(data, 21));
 	break;
       case 73:
 	xlog_request_name(xl, req, "GetImage", TRUE);
@@ -2617,6 +2728,9 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 		   FETCH8(data, 1), "XYPixmap", 1,
 		   "ZPixmap", 2, (char *)NULL);
 	req->replies = 1;
+	req->pixmapformat = FETCH8(data, 1);
+	req->pixmapwidth = FETCH16(data, 12);
+	req->pixmapheight = FETCH16(data, 14);
 	break;
       case 74:
 	xlog_request_name(xl, req, "PolyText8", TRUE);
@@ -3092,7 +3206,7 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 	xlog_param(xl, "family", ENUM | SPECVAL, FETCH8(data, 4),
 		   "Internet", 0, "DECnet", 1, "Chaos", 2,
 		   (char *)NULL);
-	xlog_param(xl, "address", HEXSTRING, FETCH16(data, 6),
+	xlog_param(xl, "address", HEXSTRING1, FETCH16(data, 6),
 		   STRING(data, 8, FETCH16(data, 6)));
 	break;
       case 110:
@@ -3675,7 +3789,8 @@ void xlog_do_reply(struct xlog *xl, struct request *req,
 	xlog_param(xl, "depth", DECU, FETCH8(data, 1));
 	xlog_param(xl, "visual", VISUALID | SPECVAL, FETCH32(data, 8),
 		   "None", 0, (char *)NULL);
-	/* FIXME: the actual image data is not currently logged */
+	xlog_image_data(xl, "image-data", data, len, 32, req->pixmapformat,
+			req->pixmapwidth, req->pixmapheight, FETCH8(data, 1));
 	break;
       case 83:
 	/* ListInstalledColormaps */
@@ -3930,7 +4045,7 @@ void xlog_do_reply(struct xlog *xl, struct request *req,
 		xlog_param(xl, "family", ENUM | SPECVAL, FETCH8(data, pos),
 			   "Internet", 0, "DECnet", 1, "Chaos", 2,
 			   (char *)NULL);
-		xlog_param(xl, "address", HEXSTRING, FETCH16(data, pos+2),
+		xlog_param(xl, "address", HEXSTRING1, FETCH16(data, pos+2),
 			   STRING(data, pos+4, FETCH16(data, pos+2)));
 		xlog_set_end(xl);
 		pos += 4 + ((FETCH16(data, pos+2) + 3) &~ 3);
@@ -4408,12 +4523,12 @@ void xlog_s2c(struct xlog *xl, const void *vdata, int len)
 		xlog_param(xl, "image-byte-order", ENUM | SPECVAL,
 			   FETCH8(data, 30), "LSBFirst", 0,
 			   "MSBFirst", 1, (char *)NULL);
-		xlog_param(xl, "bitmap-format-bit-order", ENUM | SPECVAL,
+		xlog_param(xl, "bitmap-bit-order", ENUM | SPECVAL,
 			   FETCH8(data, 31), "LeastSignificant", 0,
 			   "MostSignificant", 1, (char *)NULL);
-		xlog_param(xl, "bitmap-format-scanline-unit", DECU,
+		xlog_param(xl, "bitmap-scanline-unit", DECU,
 			   FETCH8(data, 32));
-		xlog_param(xl, "bitmap-format-scanline-pad", DECU,
+		xlog_param(xl, "bitmap-scanline-pad", DECU,
 			   FETCH8(data, 33));
 		xlog_param(xl, "min-keycode", DECU,
 			   FETCH8(data, 34));
@@ -4532,6 +4647,38 @@ void xlog_s2c(struct xlog *xl, const void *vdata, int len)
 		}
 
 		fprintf(xlogfp, "%s\n", xl->textbuf);
+	    }
+
+	    /*
+	     * Find all the pixmap format information we might need
+	     * to decode PutImage and GetImage requests during the
+	     * protocol.
+	     */
+	    {
+		/* variables on which the FETCH macros depend */
+		const unsigned char *data = xl->s2cbuf;
+		int len = xl->s2clen;
+
+		xl->bitmap_scanline_unit = FETCH8(data, 32);
+		xl->bitmap_scanline_pad = FETCH8(data, 33);
+		xl->image_byte_order = FETCH8(data, 30);
+		xl->npixmapformats = FETCH8(data, 29);
+		xl->pixmapformats = snewn(xl->npixmapformats,
+					  struct pixmapformat);
+		{
+		    int pos = 40 + FETCH16(data, 24);
+		    pos = (pos + 3) &~ 3;
+
+		    for (i = 0; i < xl->npixmapformats; i++) {
+			xl->pixmapformats[i].depth =
+			    FETCH8(data, pos);
+			xl->pixmapformats[i].bits_per_pixel =
+			    FETCH8(data, pos+1);
+			xl->pixmapformats[i].scanline_pad =
+			    FETCH8(data, pos+2);
+			pos += 8;
+		    }
+		}
 	    }
 	    break;
 	}
