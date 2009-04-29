@@ -195,6 +195,7 @@ const char *const appname = "xtrace";
  */
 
 int sizelimit = 256;
+int print_server_startup = FALSE;
 
 struct set {
     tree234 *strings; /* sorted list of dynamically allocated "char *"s */
@@ -4383,9 +4384,9 @@ void xlog_s2c(struct xlog *xl, const void *vdata, int len)
 
 	    /*
 	     * Now we're sitting on a successful authorisation
-	     * packet. Log it.
+	     * packet. Optionally log it.
 	     */
-	    {
+	    if (print_server_startup) {
 		/* variables on which the FETCH macros depend */
 		const unsigned char *data = xl->s2cbuf;
 		int len = xl->s2clen;
@@ -5574,6 +5575,9 @@ int main(int argc, char **argv)
 		    }
 		    break;
 		    /* now options not requiring an argument */
+		  case 'I':
+		    print_server_startup = TRUE;
+		    break;
 		}
 	    }
 	    /* No command-line options yet supported */
