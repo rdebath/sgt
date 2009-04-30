@@ -159,7 +159,8 @@ version.obj: FORCE
 # version number selection in release source archives.
 !begin gtk
 version.o: FORCE
-	if test -z "$(VER)" && (cd ..; md5sum -c manifest); then \
+	if test -z "$(VER)" && (cd ..; test -f manifest && \
+	                        md5sum -c manifest 2>/dev/null); then \
 		$(CC) $(COMPAT) $(XFLAGS) $(CFLAGS) `cat ../version.def` -c ../version.c; \
 	else \
 		$(CC) $(COMPAT) $(XFLAGS) $(CFLAGS) $(VER) -c ../version.c; \
