@@ -48,10 +48,13 @@
  *    have that called as appropriate from all of xlog_do_reply,
  *    xlog_do_event and xlog_do_error.
  *
- *  - Stop defaulting to :0 in the absence of $DISPLAY!
+ *  - Option to log a hex dump of the raw data in the protocol. This
+ *    sounds like a WIBNI feature, but it is before-initial-release
+ *    critical: if anyone at any point complains about anything
+ *    going subtly wrong, this feature will be 100% vital for remote
+ *    debugging.
  *
  *  - Pre-publication polishing:
- *     * -display option.
  *     * --help, --version, --licence. (Sort out the licence,
  * 	 actually. Probably not _everybody_ in the PuTTY LICENCE
  * 	 document holds copyright in the pieces I've reused here.
@@ -5515,7 +5518,13 @@ void write_random_seed(void *data, int len) {}
 const char platform_x11_best_transport[] = "unix";
 
 char *platform_get_x_display(void) {
-    return dupstr(getenv("DISPLAY"));
+    char *disp = getenv("DISPLAY");
+    if (!disp || !*disp) {
+	fprintf(stderr, "xtrace: no X display specified (use -display or"
+		" set DISPLAY\n");
+	exit(1);
+    }
+    return dupstr(disp);
 }
 
 /*
@@ -5566,6 +5575,24 @@ int main(int argc, char **argv)
 	char *p = *++argv;
 
 	if (doing_opts && *p == '-') {
+	    if (!strcmp(p, "-display")) {
+		char *val;
+
+		if (--argc > 0)
+		    val = *++argv;
+		else {
+		    fprintf(stderr, "xtrace: option \"%s\" expects an"
+			    " argument\n", p);
+		    return 1;
+		}
+
+		if (!strcmp(p, "-display")) {
+		    strncpy(cfg.x11_display, val, lenof(cfg.x11_display)-1);
+		    cfg.x11_display[lenof(cfg.x11_display)-1] = '\0';
+		}
+
+		continue;
+	    }
 	    if (p[1] == '-') {
 		if (!p[2])	       /* "--" terminates option parsing */
 		    doing_opts = FALSE;
@@ -5574,6 +5601,8 @@ int main(int argc, char **argv)
 		    fprintf(stderr, "xtrace: unknown option '%s'\n", p);
 		    return 1;
 		}
+
+		continue;
 	    }
 	    p++;
 	    while (*p) {
