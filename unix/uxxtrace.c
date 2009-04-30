@@ -5049,7 +5049,7 @@ void xrecord_gotdata(struct ssh_channel *c, const void *vdata, int len)
 	int n = c->xrecordbuf[1];
 	if (n > c->xrecordlen - 8)
 	    n = c->xrecordlen - 8;
-	fprintf(stderr, "xtrace: X server denied authentication (\"%.*s\")\n",
+	fprintf(stderr, "xtrace: X server denied authorisation (\"%.*s\")\n",
 		n, c->xrecordbuf + 8);
 	exit(1);
     }
@@ -5433,10 +5433,7 @@ void xrecord_gotdata(struct ssh_channel *c, const void *vdata, int len)
 		readfrom(c, xrecord,
 			 32+4*GET_32BIT_MSB_FIRST(c->xrecordbuf + 4), 32);
 	} while (c->xrecordbuf[0] > 1);/* ignore events */
-	if (c->xrecordbuf[0] != 1) {
-	    fprintf(stderr, "FIXME: proper error [expected recorded data]\n");
-	    exit(1);
-	}
+	EXPECT_REPLY("RecordEnableContext");
 	switch (c->xrecordbuf[1]) {
 	  case 4:
 	    /*
