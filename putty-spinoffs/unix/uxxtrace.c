@@ -48,12 +48,6 @@
  *    have that called as appropriate from all of xlog_do_reply,
  *    xlog_do_event and xlog_do_error.
  *
- *  - Option to log a hex dump of the raw data in the protocol. This
- *    sounds like a WIBNI feature, but it is before-initial-release
- *    critical: if anyone at any point complains about anything
- *    going subtly wrong, this feature will be 100% vital for remote
- *    debugging.
- *
  *  - Pre-publication polishing:
  *     * --help, --version, --licence. (Sort out the licence,
  * 	 actually. Probably not _everybody_ in the PuTTY LICENCE
@@ -182,6 +176,7 @@ const char *const appname = "xtrace";
 
 int sizelimit = 256;
 int print_server_startup = FALSE;
+int raw_hex_dump = FALSE;
 
 struct set {
     tree234 *strings; /* sorted list of dynamically allocated "char *"s */
@@ -329,6 +324,7 @@ struct xlog {
     unsigned char *c2sbuf, *s2cbuf;
     int c2slen, c2slimit, c2ssize;
     int s2clen, s2climit, s2csize;
+    unsigned c2soff, s2coff;
     char *extreqs[128];      /* extension name for each >=128 request opcode */
     char *extevents[128];    /* name of extension based at a given event */
     char *exterrors[256];    /* name of extension based at a given error */
@@ -358,6 +354,7 @@ struct xlog *xlog_new(int type)
     xl->s2cbuf = NULL;
     xl->s2cstate = 0;
     xl->s2csize = 0;
+    xl->c2soff = xl->s2coff = 0;
     xl->error = FALSE;
     xl->textbuf = NULL;
     xl->textbuflen = xl->textbufsize = 0;
@@ -4354,6 +4351,37 @@ void xlog_do_event(struct xlog *xl, const void *vdata, int len)
     }
 }
 
+void hexdump(FILE *fp, const void *vdata, int len, unsigned startoffset,
+	     const char *prefix)
+{
+    const unsigned char *data = (const unsigned char *)vdata;
+    unsigned lineoffset = startoffset &~ 15;
+    char dumpbuf[128], tmpbuf[16];
+    int n, i;
+    unsigned char c;
+
+    for (n = -(int)(startoffset & 15); n < len; n += 16) {
+	memset(dumpbuf, ' ', 8+2+16*3+1+16);
+	dumpbuf[8+2+16*3+1+16] = '\n';
+	dumpbuf[8+2+16*3+1+16+1] = '\0';
+	memcpy(dumpbuf, tmpbuf, sprintf(tmpbuf, "%08X", lineoffset));
+	for (i = 0; i < 16; i++) {
+	    if (i + n < 0)
+		continue;
+	    if (i + n >= len)
+		break;
+	    c = data[i + n];
+	    memcpy(dumpbuf+8+2+3*i, tmpbuf, sprintf(tmpbuf, "%02X", c));
+	    dumpbuf[8+2+16*3+1+i] = (isprint(c) ? c : '.');
+	}
+	dumpbuf[8+2+16*3+1+i] = '\n';
+	dumpbuf[8+2+16*3+1+i+1] = '\0';
+	fputs(prefix, fp);
+	fputs(dumpbuf, fp);
+	lineoffset += 16;
+    }
+}
+
 void xlog_c2s(struct xlog *xl, const void *vdata, int len)
 {
     const unsigned char *data = (const unsigned char *)vdata;
@@ -4363,6 +4391,12 @@ void xlog_c2s(struct xlog *xl, const void *vdata, int len)
      * ignore().
      */
     int i;
+
+    if (raw_hex_dump) {
+	xlog_new_line();
+	hexdump(xlogfp, vdata, len, xl->c2soff, ">>> ");
+	xl->c2soff += len;
+    }
 
     if (xl->error)
 	return;
@@ -4448,6 +4482,12 @@ void xlog_s2c(struct xlog *xl, const void *vdata, int len)
      * ignore().
      */
     int i;
+
+    if (raw_hex_dump) {
+	xlog_new_line();
+	hexdump(xlogfp, vdata, len, xl->s2coff, "<<< ");
+	xl->s2coff += len;
+    }
 
     if (xl->error)
 	return;
@@ -5397,27 +5437,6 @@ void xrecord_gotdata(struct ssh_channel *c, const void *vdata, int len)
 	    fprintf(stderr, "FIXME: proper error [expected recorded data]\n");
 	    exit(1);
 	}
-#if 0
-/* Hex dump of the received data, kept in case it comes in handy again. */
-{
- int n,k,i;
- char dumpbuf[128], tmpbuf[16];
- fprintf(stderr, "RECORD output type %d:\n", c->xrecordbuf[1]);
- for (n = 32; n < c->xrecordlen; n += 16) {
-  k = c->xrecordlen - n;
-  if (k > 16) k = 16;
-  memset(dumpbuf, ' ', 8+2+16*3+1+k);
-  dumpbuf[8+2+16*3+1+k] = '\n';
-  dumpbuf[8+2+16*3+1+k+1] = '\0';
-  memcpy(dumpbuf, tmpbuf, sprintf(tmpbuf, "%08X", n-32));
-  for (i=0;i<k;i++) {
-   memcpy(dumpbuf+8+2+3*i, tmpbuf, sprintf(tmpbuf, "%02X", c->xrecordbuf[n+i]));
-   dumpbuf[8+2+16*3+1+i] = (isprint(c->xrecordbuf[n+i]) ? c->xrecordbuf[n+i] : '.');
-  }
-  fputs(dumpbuf, stderr);
- }
-}
-#endif
 	switch (c->xrecordbuf[1]) {
 	  case 4:
 	    /*
@@ -5753,6 +5772,9 @@ int main(int argc, char **argv)
 		    /* now options not requiring an argument */
 		  case 'I':
 		    print_server_startup = TRUE;
+		    break;
+		  case 'R':
+		    raw_hex_dump = TRUE;
 		    break;
 		}
 	    }
