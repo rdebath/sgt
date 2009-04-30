@@ -5098,10 +5098,10 @@ void xrecord_gotdata(struct ssh_channel *c, const void *vdata, int len)
 	const char *err = xlog_translate_error(c->xrecordbuf[1]); \
 	if (err) \
 	    fprintf(stderr, "xtrace: X server returned %s error to" \
-		    " RecordQueryVersion\n", err); \
+		    " %s\n", err, name); \
 	else \
 	    fprintf(stderr, "xtrace: X server returned unknown error %d to" \
-		    " RecordQueryVersion\n", c->xrecordbuf[1]); \
+		    " %s\n", c->xrecordbuf[1], name); \
 	exit(1); \
     } else if (c->xrecordbuf[0] != 1) { \
 	const char *ev = xlog_translate_event(c->xrecordbuf[0]); \
