@@ -28,12 +28,6 @@
  * Definitely TODO:
  *
  *  - Pre-publication polishing:
- *     * --help, --version, --licence. (Sort out the licence,
- * 	 actually. Probably not _everybody_ in the PuTTY LICENCE
- * 	 document holds copyright in the pieces I've reused here.
- * 	 Also, possibly the authors of the X protocol hold some
- * 	 copyright, since a lot of this code is transcribed straight
- * 	 out of their definitions?)
  *     * man page.
  *     * figure out how to turn this sprawling directory full of
  * 	 unused pieces of PuTTY into something that can convincingly
@@ -5594,6 +5588,83 @@ static int strzlencmp(const char *az, const char *bl, int blen)
     return *az ? +1 : -1;
 }
 
+const char usagemsg[] =
+"  usage: xtrace [options] command [command arguments]       trace a new program\n"
+"     or: xtrace [options] -p <resource id>     trace an X client by resource id\n"
+"     or: xtrace [options] -p -         trace an X client selected interactively\n"
+"options: -s <length>             set approximate limit on line length\n"
+"         -o <file>               send log output to a file (default=stderr)\n"
+"         -e <class>=[!]<item>[,<item>...]  filter the packets output, where:\n"
+"                <class> is 'requests' or 'events'\n"
+"                <item> is a request or event name, or 'all' or 'none'\n"
+"         -I                      log X server initialisation message\n"
+"         -R                      also give raw hex dump of session traffic\n"
+"         -C                      unconditionally prefix client id to every line\n"
+"         -display <display>      specify X display (overrides $DISPLAY)\n"
+"   also: xtrace --version        report version number\n"
+"         xtrace --help           display this help text\n"
+"         xtrace --licence        display the (MIT) licence text\n"
+;
+
+void usage(FILE *fp) {
+    fputs(usagemsg, fp);
+}
+
+const char licencemsg[] =
+"xtrace is copyright 1997-2009 Simon Tatham.\n"
+"\n"
+"Portions copyright Robert de Bath, Andreas Schultz, Jeroen Massar,\n"
+"Nicolas Barry, Justin Bradford, Ben Harris, Malcolm Smith, Ahmad\n"
+"Khalifa, Colin Watson, and the X Consortium.\n"
+"\n"
+"Permission is hereby granted, free of charge, to any person\n"
+"obtaining a copy of this software and associated documentation files\n"
+"(the \"Software\"), to deal in the Software without restriction,\n"
+"including without limitation the rights to use, copy, modify, merge,\n"
+"publish, distribute, sublicense, and/or sell copies of the Software,\n"
+"and to permit persons to whom the Software is furnished to do so,\n"
+"subject to the following conditions:\n"
+"\n"
+"The above copyright notice and this permission notice shall be\n"
+"included in all copies or substantial portions of the Software.\n"
+"\n"
+"THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND,\n"
+"EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF\n"
+"MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND\n"
+"NONINFRINGEMENT.  IN NO EVENT SHALL THE COPYRIGHT HOLDERS BE LIABLE\n"
+"FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF\n"
+"CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION\n"
+"WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.\n"
+"\n"
+"Except as contained in this notice, the name of the X Consortium\n"
+"shall not be used in advertising or otherwise to promote the sale,\n"
+"use or other dealings in this Software without prior written\n"
+"authorization from the X Consortium.\n"
+;
+
+void licence(void) {
+    fputs(licencemsg, stdout);
+}
+
+void version(void) {
+#define SVN_REV "$Revision$"
+    char rev[sizeof(SVN_REV)];
+    char *p, *q;
+
+    strcpy(rev, SVN_REV);
+
+    for (p = rev; *p && *p != ':'; p++);
+    if (*p) {
+        p++;
+        while (*p && isspace(*p)) p++;
+        for (q = p; *q && *q != '$'; q++);
+        if (*q) *q = '\0';
+        printf("xtrace revision %s\n", p);
+    } else {
+        printf("xtrace: unknown version\n");
+    }
+}
+
 int main(int argc, char **argv)
 {
     int *fdlist;
@@ -5625,6 +5696,19 @@ int main(int argc, char **argv)
 	char *p = *++argv;
 
 	if (doing_opts && *p == '-') {
+	    if (!strcmp(p, "--help") || !strcmp(p, "-help")) {
+		usage(stdout);
+		return 0;
+	    }
+	    if (!strcmp(p, "--version") || !strcmp(p, "-version")) {
+		version();
+		return 0;
+	    }
+	    if (!strcmp(p, "--licence") || !strcmp(p, "-licence") ||
+		!strcmp(p, "--license") || !strcmp(p, "-license")) {
+		licence();
+		return 0;
+	    }
 	    if (!strcmp(p, "-display")) {
 		char *val;
 
@@ -5826,7 +5910,8 @@ int main(int argc, char **argv)
     }
 
     if (!xrecord && !cmd) {
-	fprintf(stderr, "xtrace: must specify a command to run\n");
+	fprintf(stderr, "xtrace: must specify a command to run, or -p\n");
+	usage(stderr);
 	return 1;
     }
 
