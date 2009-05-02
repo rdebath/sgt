@@ -28,7 +28,6 @@
  * Definitely TODO:
  *
  *  - Pre-publication polishing:
- *     * man page.
  *     * figure out how to turn this sprawling directory full of
  * 	 unused pieces of PuTTY into something that can convincingly
  * 	 pretend to be a tarball of just xtrace...
@@ -127,6 +126,15 @@
  *  - Find some way of independently testing the correctness of the
  *    vast amount of this program that I translated straight out of
  *    the X protocol specs...
+ *
+ *  - Ability to run as an explicit proxy, as other X tracing
+ *    utilities do. Run in this mode, xtrace should print the
+ *    appropriate DISPLAY and XAUTHORITY environment variables to
+ *    standard output in a form easily pasted into another shell
+ *    prompt, and then sit there waiting for connections.
+ *
+ *  - Find some way of more reliably cleaning up the X authority
+ *    files in /tmp.
  */
 
 #include <stdio.h>
