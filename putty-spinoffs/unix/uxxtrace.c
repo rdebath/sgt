@@ -4765,7 +4765,8 @@ void xlog_s2c(struct xlog *xl, const void *vdata, int len)
 	 * recognise as potential exceptions.
 	 */
 	if ((xl->s2cbuf[0] & 0x7f) != 11 &&
-	    (xl->extidevents[xl->s2cbuf[0] & 0x7f] ||
+	    (xl->s2cbuf[0] < 2 ||
+	     xl->extidevents[xl->s2cbuf[0] & 0x7f] ||
 	     xlog_translate_event(xl->s2cbuf[0] & 0x7f))) {
 	    i = READ16(xl->s2cbuf + 2);
 	    while (xl->rhead && (xl->rhead->seqnum & 0xFFFF) != i) {
