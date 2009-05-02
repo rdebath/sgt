@@ -27,19 +27,6 @@
 /*
  * Definitely TODO:
  *
- *  - Deal with interleaving log data from multiple clients:
- *     * identify clients by some sort of numeric id (resource-base
- * 	 is currently favourite, particularly since it's also the id
- * 	 used by X RECORD so there's precedent)
- *     * when multiple clients appear, start prefixing every log
- * 	 line with the client id
- *     * log connects and disconnects
- *     * command-line option to request prefixing right from the
- * 	 start
- *     * perhaps a command-line option to request tracing of only
- * 	 the first incoming connection and just proxy the rest
- * 	 untraced?
- *
  *  - Rethink the centralised handling of sequence numbers in the
  *    s2c stream parser. Since KeymapNotify hasn't got one,
  *    extension-generated events we don't understand might not have
@@ -59,10 +46,22 @@
  *     * figure out how to turn this sprawling directory full of
  * 	 unused pieces of PuTTY into something that can convincingly
  * 	 pretend to be a tarball of just xtrace...
+ *     * find a new name, bah, since 'xtrace' turns out to be
+ * 	 already taken by something that lacks half my useful
+ * 	 features.
  *
  * Possibly TODO:
  *
+ *  - Arrange to let the network abstraction keep the peer address
+ *    of incoming connections, so that we can provide
+ *    XDM-AUTHORIZATION-1 on the proxy side at user request.
+ *
  *  - Decode more extensions.
+ *
+ *  - Log connection and disconnection of clients?
+ *
+ *  - Perhaps a command-line option to request tracing of only the
+ *    first incoming connection and just proxy the rest untraced?
  *
  *  - Work out what to do about extension tracking in -p mode.
  *     * The only thing I can think of at the moment is for our
@@ -177,6 +176,8 @@ const char *const appname = "xtrace";
 int sizelimit = 256;
 int print_server_startup = FALSE;
 int raw_hex_dump = FALSE;
+int print_client_ids = FALSE;
+int num_clients_seen = 0;
 
 struct set {
     tree234 *strings; /* sorted list of dynamically allocated "char *"s */
@@ -337,6 +338,7 @@ struct xlog {
     int overflow;
     int nextseq;
     int type;
+    unsigned clientid;
     struct request *rhead, *rtail;
     int bitmap_scanline_unit, bitmap_scanline_pad, image_byte_order;
     struct pixmapformat *pixmapformats;
@@ -361,6 +363,7 @@ struct xlog *xlog_new(int type)
     xl->rhead = xl->rtail = NULL;
     xl->nextseq = 1;
     xl->type = type;
+    xl->clientid = 0xFFFFFFFFU;	       /* means 'unknown yet' */
     for (i = 0; i < 128; i++)
 	xl->extreqs[i] = NULL, xl->extidreqs[i] = 0;
     for (i = 0; i < 128; i++)
@@ -455,9 +458,28 @@ void xlog_free(struct xlog *xl)
 #define READ32(p) (xl->endianness == 'l' ? \
 		   GET_32BIT_LSB_FIRST(p) : GET_32BIT_MSB_FIRST(p))
 
+void xlog_new_line(struct xlog *xl)
+{
+    if (currreq) {
+	/* FIXME: in some modes we might wish to print the sequence number
+	 * here, which would be easy of course */
+	assert(currreq->printed);
+	fprintf(xlogfp, " = <unfinished>\n");
+	fflush(xlogfp);
+	currreq = NULL;
+    }
+    if (print_client_ids) {
+	if (xl->clientid == 0xFFFFFFFFU)
+	    fprintf(xlogfp, "new-conn: ");
+	else
+	    fprintf(xlogfp, "%08x: ", xl->clientid);
+    }
+}
+
 void xlog_error(struct xlog *xl, const char *fmt, ...)
 {
     va_list ap;
+    xlog_new_line(xl);
     fprintf(xlogfp, "protocol error: ");
     va_start(ap, fmt);
     vfprintf(xlogfp, fmt, ap);
@@ -1019,18 +1041,6 @@ void xlog_reply_end(struct xlog *xl)
     xlog_text(xl, "}");
 }
 
-void xlog_new_line(void)
-{
-    if (currreq) {
-	/* FIXME: in some modes we might wish to print the sequence number
-	 * here, which would be easy of course */
-	assert(currreq->printed);
-	fprintf(xlogfp, " = <unfinished>\n");
-	fflush(xlogfp);
-	currreq = NULL;
-    }
-}
-
 void xlog_request_done(struct xlog *xl, struct request *req)
 {
     if (xl->reqlogstate)
@@ -1048,7 +1058,7 @@ void xlog_request_done(struct xlog *xl, struct request *req)
     req->text = dupstr(xl->textbuf);
 
     if (req->printed) {
-	xlog_new_line();
+	xlog_new_line(xl);
 	if (req->replies) {
 	    fprintf(xlogfp, "%s", req->text);
 	    currreq = req;
@@ -1060,7 +1070,7 @@ void xlog_request_done(struct xlog *xl, struct request *req)
 }
 
 /* Indicate that we're about to print a response to a particular request */
-void xlog_respond_to(struct request *req)
+void xlog_respond_to(struct xlog *xl, struct request *req)
 {
     if (!req->printed)
 	return;
@@ -1068,7 +1078,7 @@ void xlog_respond_to(struct request *req)
     if (req != NULL && currreq == req) {
 	fprintf(xlogfp, " = ");
     } else {
-	xlog_new_line();
+	xlog_new_line(xl);
 	if (req)
 	    fprintf(xlogfp, " ... %s = ", req->text);
 	else
@@ -3399,7 +3409,7 @@ void xlog_do_reply(struct xlog *xl, struct request *req,
     const unsigned char *data = (const unsigned char *)vdata;
 
     if (data && !req) {
-	xlog_new_line();
+	xlog_new_line(xl);
 	fprintf(xlogfp, "--- reply received for unknown request sequence"
 		" number %lu\n", (unsigned long)FETCH16(data, 2));
 	fflush(xlogfp);
@@ -3409,7 +3419,7 @@ void xlog_do_reply(struct xlog *xl, struct request *req,
     xl->textbuflen = 0;
     xl->overflow = FALSE;
 
-    xlog_respond_to(req);
+    xlog_respond_to(xl, req);
 
     if (req->replies == 2)
 	req->replies = 3;	       /* we've now seen a reply */
@@ -4200,7 +4210,7 @@ void xlog_do_error(struct xlog *xl, struct request *req,
     xl->textbuflen = 0;
     xl->overflow = FALSE;
 
-    xlog_respond_to(req);
+    xlog_respond_to(xl, req);
 
     xl->reqlogstate = 3;	       /* for things with parameters */
 
@@ -4345,14 +4355,14 @@ void xlog_do_event(struct xlog *xl, const void *vdata, int len)
     xlog_event(xl, data, len, 0, &filter);
 
     if (filter) {
-	xlog_new_line();
+	xlog_new_line(xl);
 	fprintf(xlogfp, "--- %s\n", xl->textbuf);
 	fflush(xlogfp);
     }
 }
 
-void hexdump(FILE *fp, const void *vdata, int len, unsigned startoffset,
-	     const char *prefix)
+void hexdump(struct xlog *xl, const void *vdata, int len,
+	     unsigned startoffset, const char *prefix)
 {
     const unsigned char *data = (const unsigned char *)vdata;
     unsigned lineoffset = startoffset &~ 15;
@@ -4376,8 +4386,9 @@ void hexdump(FILE *fp, const void *vdata, int len, unsigned startoffset,
 	}
 	dumpbuf[8+2+16*3+1+i] = '\n';
 	dumpbuf[8+2+16*3+1+i+1] = '\0';
-	fputs(prefix, fp);
-	fputs(dumpbuf, fp);
+	xlog_new_line(xl);
+	fputs(prefix, xlogfp);
+	fputs(dumpbuf, xlogfp);
 	lineoffset += 16;
     }
 }
@@ -4393,8 +4404,7 @@ void xlog_c2s(struct xlog *xl, const void *vdata, int len)
     int i;
 
     if (raw_hex_dump) {
-	xlog_new_line();
-	hexdump(xlogfp, vdata, len, xl->c2soff, ">>> ");
+	hexdump(xl, vdata, len, xl->c2soff, ">>> ");
 	xl->c2soff += len;
     }
 
@@ -4484,8 +4494,7 @@ void xlog_s2c(struct xlog *xl, const void *vdata, int len)
     int i;
 
     if (raw_hex_dump) {
-	xlog_new_line();
-	hexdump(xlogfp, vdata, len, xl->s2coff, "<<< ");
+	hexdump(xl, vdata, len, xl->s2coff, "<<< ");
 	xl->s2coff += len;
     }
 
@@ -4544,6 +4553,13 @@ void xlog_s2c(struct xlog *xl, const void *vdata, int len)
 	     * Now we're sitting on a successful authorisation
 	     * packet. Optionally log it.
 	     */
+	    if (xl->s2clen < 16) {
+		err((xl, "server's init message was far too short\n"));
+	    }
+	    xl->clientid = READ32(xl->s2cbuf + 12);
+	    if (++num_clients_seen > 1)
+		print_client_ids = TRUE;
+
 	    if (print_server_startup) {
 		/* variables on which the FETCH macros depend */
 		const unsigned char *data = xl->s2cbuf;
@@ -4689,6 +4705,7 @@ void xlog_s2c(struct xlog *xl, const void *vdata, int len)
 		    }
 		}
 
+		xlog_new_line(xl);
 		fprintf(xlogfp, "%s\n", xl->textbuf);
 	    }
 
@@ -5417,6 +5434,30 @@ void xrecord_gotdata(struct ssh_channel *c, const void *vdata, int len)
     buf[47] = 1;		       /* but do want client-died */
     x11_send(c->xs, buf, 48);
 
+    if (print_client_ids) {
+	/*
+	 * If we're unconditionally printing client ids, we should
+	 * call RecordGetContext to find out the official id for the
+	 * client we've just attached to. (If we identified it by an
+	 * actual resource rather than by its resource base, the
+	 * value we already know will have extra bits set.)
+	 */
+	buf[0] = c->xrecordopcode; buf[1] = 4;/* RecordGetContext */
+	PUT_16BIT_MSB_FIRST(buf+2, 2);     /* request length */
+	PUT_32BIT_MSB_FIRST(buf+4, RCID);  /* context id */
+	x11_send(c->xs, buf, 8);
+	do {
+	    read(c, xrecord, 32);
+	    if (c->xrecordbuf[0] == 1)
+		readfrom(c, xrecord,
+			 32+4*GET_32BIT_MSB_FIRST(c->xrecordbuf + 4), 32);
+	} while (c->xrecordbuf[0] > 1);/* ignore events */
+	EXPECT_REPLY("RecordGetContext");
+	if (c->xrecordlen >= 36) {
+	    c->xl->clientid = GET_32BIT_MSB_FIRST(c->xrecordbuf + 32);
+	}
+    }
+
     buf[0] = c->xrecordopcode; buf[1] = 5;/* RecordEnableContext */
     PUT_16BIT_MSB_FIRST(buf+2, 2);     /* request length */
     PUT_32BIT_MSB_FIRST(buf+4, RCID);  /* context id */
@@ -5772,6 +5813,9 @@ int main(int argc, char **argv)
 		    break;
 		  case 'R':
 		    raw_hex_dump = TRUE;
+		    break;
+		  case 'C':
+		    print_client_ids = TRUE;
 		    break;
 		}
 	    }
