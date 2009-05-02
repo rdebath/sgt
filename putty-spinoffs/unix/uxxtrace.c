@@ -27,14 +27,6 @@
 /*
  * Definitely TODO:
  *
- *  - Rethink the centralised handling of sequence numbers in the
- *    s2c stream parser. Since KeymapNotify hasn't got one,
- *    extension-generated events we don't understand might not have
- *    one either, so perhaps it would be better to move that code
- *    out into a subfunction find_request_for_sequence_number() and
- *    have that called as appropriate from all of xlog_do_reply,
- *    xlog_do_event and xlog_do_error.
- *
  *  - Pre-publication polishing:
  *     * --help, --version, --licence. (Sort out the licence,
  * 	 actually. Probably not _everybody_ in the PuTTY LICENCE
@@ -4774,12 +4766,13 @@ void xlog_s2c(struct xlog *xl, const void *vdata, int len)
 	 * is to discard outstanding requests from our stored list
 	 * until we reach the one to which this packet refers.
 	 *
-	 * The sole known exception to this is the KeymapNotify
-	 * event. FIXME: should we revise this so it's not
-	 * centralised after all, in case extension-defined events
-	 * break this invariant further?
+	 * The sole _known_ exception to this is the KeymapNotify
+	 * event, but we also treat extension events we don't
+	 * recognise as potential exceptions.
 	 */
-	if (xl->s2cbuf[0] != 11) {
+	if ((xl->s2cbuf[0] & 0x7f) != 11 &&
+	    (xl->extidevents[xl->s2cbuf[0] & 0x7f] ||
+	     xlog_translate_event(xl->s2cbuf[0] & 0x7f))) {
 	    i = READ16(xl->s2cbuf + 2);
 	    while (xl->rhead && (xl->rhead->seqnum & 0xFFFF) != i) {
 		struct request *nexthead = xl->rhead->next;
