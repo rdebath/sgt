@@ -4527,7 +4527,7 @@ void xlog_s2c(struct xlog *xl, const void *vdata, int len)
 	     */
 	    if (xl->s2cbuf[0] == 0)
 		err((xl, "server refused authorisation, reason \"%.*s\"",
-		     xl->s2cbuf + 8, min(xl->s2clen-8, xl->s2cbuf[1])));
+		     min(xl->s2clen-8, xl->s2cbuf[1]), xl->s2cbuf + 8));
 	    else if (xl->s2cbuf[0] == 2)
 		err((xl, "server sent incomplete-authorisation packet, which"
 		     " is unsupported by xtrace"));
