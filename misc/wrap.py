@@ -45,13 +45,19 @@ def wrap_optimal(list):
         wid = -1
         best = None
         bestcost = None
+        if i == 0:
+            wmax = width - max(indent, 0)
+            wopt = opt_width - max(indent, 0)
+        else:
+            wmax = width - max(-indent, 0)
+            wopt = opt_width - max(-indent, 0)
         z = [holder()] + z
         for j in range(1, n-i+1):
             wid = wid + 1 + len(list[i+j-1])
-            if wid > width:
+            if wid > wmax:
                 break
             if j >= len(z):
-                if wid <= opt_width:
+                if wid <= wopt:
                     # We allow the last line to be short without
                     # penalty, although we still penalise it for being
                     # longer than opt_width.
@@ -59,11 +65,11 @@ def wrap_optimal(list):
                     if verbose:
                         print j, "words: end of line, cost", cost
                 else:
-                    cost = (opt_width-wid) ** 2
+                    cost = (wopt-wid) ** 2
                     if verbose:
                         print j, "words: end of line but long, cost", cost
             else:
-                thiscost = (opt_width-wid) ** 2
+                thiscost = (wopt-wid) ** 2
                 cost = thiscost + z[j].cost
                 if verbose:
                     print j, "words: cost", thiscost, "+", z[j].cost, "=", cost
@@ -81,7 +87,12 @@ def wrap_optimal(list):
     i = 0
     while i < len(list):
         n = z[i].n
-        sys.stdout.write(string.join(list[i:i+n], " ") + "\n")
+        if i == 0:
+            thisindent = max(indent, 0)
+        else:
+            thisindent = max(-indent, 0)
+        sys.stdout.write(" " * thisindent +
+                         string.join(list[i:i+n], " ") + "\n")
         i = i + n
 
 def dofile(f):
@@ -97,12 +108,17 @@ def dofile(f):
             para = []
             sys.stdout.write(s)
         else:
-            para = para + k
+            if single_lines:
+                wrapfn(k)
+            else:
+                para = para + k
     if len(para) > 0:
         wrapfn(para)
 
 width = 72
 owidth = None
+indent = 0
+single_lines = 0
 verbose = 0
 wrapfn = wrap_optimal
 
@@ -113,6 +129,10 @@ for arg in sys.argv[1:]:
             width = string.atoi(arg[2:])
         elif arg[:2] == "-o":
             owidth = string.atoi(arg[2:])
+        elif arg[:2] == "-i":
+            indent = string.atoi(arg[2:])
+        elif arg[:2] == "-s":
+            single_lines = 1
         elif arg[:2] == "-v":
             verbose = 1
         elif arg[:2] == "-g":
