@@ -5595,7 +5595,7 @@ const char usagemsg[] =
 "     or: xtrace [options] -p -         trace an X client selected interactively\n"
 "options: -s <length>             set approximate limit on line length\n"
 "         -o <file>               send log output to a file (default=stderr)\n"
-"         -e <class>=[!]<item>[,<item>...]  filter the packets output, where:\n"
+"         -e [<class>=][!]<item>[,<item>...]  filter the packets output, where:\n"
 "                <class> is 'requests' or 'events'\n"
 "                <item> is a request or event name, or 'all' or 'none'\n"
 "         -I                      log X server initialisation message\n"
