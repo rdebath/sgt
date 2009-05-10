@@ -20,7 +20,7 @@
  *
  * This is a spinoff project from the PuTTY code base: the X proxy
  * code reuses the X forwarding framework from PuTTY, because that
- * provided for free all the code that invents of new authorisation
+ * provided for free all the code that invents new authorisation
  * data and checks and replaces it in the proxied connections.
  */
 
@@ -223,7 +223,8 @@ int in_set(struct set *s, const char *string)
  */
 #define KNOWNEXTENSIONS(X) \
     X(EXT_BIGREQUESTS, "BIG-REQUESTS", 0, 0) \
-    X(EXT_MITSHM, "MIT-SHM", 1, 1)
+    X(EXT_MITSHM, "MIT-SHM", 1, 1) \
+    X(EXT_RENDER, "RENDER", 5, 0)
 
 /*
  * Define the EXT_* ids as a series of values with the low 8 bits
@@ -312,6 +313,33 @@ struct pixmapformat {
     int depth, bits_per_pixel, scanline_pad;
 };
 
+struct resdepth {
+    unsigned long resource;
+    int depth;
+};
+static int resdepthcmp(void *av, void *bv)
+{
+    const struct resdepth *a = (const struct resdepth *)av;
+    const struct resdepth *b = (const struct resdepth *)bv;
+    if (a->resource < b->resource)
+	return -1;
+    else if (a->resource > b->resource)
+	return +1;
+    else
+	return 0;
+}
+static int resdepthfind(void *av, void *bv)
+{
+    const unsigned long *a = (const unsigned long *)av;
+    const struct resdepth *b = (const struct resdepth *)bv;
+    if (*a < b->resource)
+	return -1;
+    else if (*a > b->resource)
+	return +1;
+    else
+	return 0;
+}
+
 struct xlog {
     int c2sstate, s2cstate;
     char *textbuf;
@@ -337,6 +365,16 @@ struct xlog {
     int bitmap_scanline_unit, bitmap_scanline_pad, image_byte_order;
     struct pixmapformat *pixmapformats;
     int npixmapformats;
+
+    /*
+     * Tree storing a mapping from X resource ids to image depths.
+     * This information has to be retained in order to correctly
+     * decode the RENDER extension request RenderAddGlyphs: we must
+     * remember the depth of every PICTFORMAT from the reply to
+     * RenderQueryPictFormats, and then remember the depth assigned
+     * to every GLYPHSET created.
+     */
+    tree234 *resdepths;
 };
 
 struct xlog *xlog_new(int type)
@@ -365,6 +403,7 @@ struct xlog *xlog_new(int type)
     for (i = 0; i < 256; i++)
 	xl->exterrors[i] = NULL, xl->extidevents[i] = 0;
     xl->pixmapformats = NULL;
+    xl->resdepths = newtree234(resdepthcmp);
     return xl;
 }
 
@@ -378,6 +417,10 @@ void free_request(struct request *req)
 void xlog_free(struct xlog *xl)
 {
     int i;
+    struct resdepth *gsd;
+    while ((gsd = delpos234(xl->resdepths, 0)) != NULL)
+	sfree(gsd);
+    freetree234(xl->resdepths);
     while (xl->rhead) {
 	struct request *nexthead = xl->rhead->next;
 	free_request(xl->rhead);
@@ -626,6 +669,11 @@ enum {
     SETBEGIN,
     NOTHING,
     NOTEVENEQUALSIGN,
+    PICTURE,			       /* RENDER extension */
+    PICTFORMAT,			       /* RENDER extension */
+    GLYPHSET,			       /* RENDER extension */
+    GLYPHABLE,			       /* RENDER extension */
+    FIXED,			       /* RENDER extension */
     SPECVAL = 0x8000
 };
 
@@ -689,7 +737,7 @@ void xlog_param(struct xlog *xl, const char *paramname, int type, ...)
 
 	    sep = "";
 	    while (ival-- > 0) {
-		unsigned val = *sval;
+		unsigned val = 0xFF & *sval;
 		xlog_printf(xl, "%s%02X", sep, val);
 		sval++;
 		sep = ":";
@@ -880,6 +928,14 @@ void xlog_param(struct xlog *xl, const char *paramname, int type, ...)
 	      case HEX32:
 		xlog_printf(xl, "0x%08X", ival);
 		break;
+	      case FIXED:
+#if UINT_MAX > 0xFFFFFFFF
+		ival &= 0xFFFFFFFF;
+		if (ival & 0x80000000)
+		    ival -= 0x100000000;
+#endif
+		xlog_printf(xl, "%.5f", ival / 65536.0);
+		break;
 	      case ENUM:
 		/* This type is used for values which are expected to
 		 * _always_ take one of their special values, so we
@@ -910,6 +966,15 @@ void xlog_param(struct xlog *xl, const char *paramname, int type, ...)
 	      case VISUALID:
 		xlog_printf(xl, "v#%08X", ival);
 		break;
+	      case PICTURE:
+		xlog_printf(xl, "pc#%08X", ival);
+		break;
+	      case PICTFORMAT:
+		xlog_printf(xl, "pf#%08X", ival);
+		break;
+	      case GLYPHSET:
+		xlog_printf(xl, "gs#%08X", ival);
+		break;
 	      case CURSOR:
 		/* Extra characters in the prefix distinguish from COLORMAP */
 		xlog_printf(xl, "cur#%08X", ival);
@@ -937,6 +1002,12 @@ void xlog_param(struct xlog *xl, const char *paramname, int type, ...)
 		 * _appropriate_ type prefix.
 		 */
 		xlog_printf(xl, "fg#%08X", ival);
+		break;
+	      case GLYPHABLE:
+		/*
+		 * GLYPHABLE can be FONTABLE or GLYPHSET. Sigh.
+		 */
+		xlog_printf(xl, "gsfg#%08X", ival);
 		break;
 	      case EVENTMASK:
 		writemask(xl, ival,
@@ -1612,9 +1683,9 @@ void xlog_event(struct xlog *xl, const unsigned char *data, int len, int pos,
     xl->reqlogstate = 1;
 }
 
-void xlog_image_data(struct xlog *xl, const char *paramname,
-		     const unsigned char *data, int len, int startoffset,
-		     int format, int width, int height, int depth)
+int xlog_image_data(struct xlog *xl, const char *paramname,
+		    const unsigned char *data, int len, int startoffset,
+		    int format, int width, int height, int depth)
 {
     int bpp = -1, pad = -1, nbitmaps = 1;
 
@@ -1644,6 +1715,7 @@ void xlog_image_data(struct xlog *xl, const char *paramname,
     if (bpp < 0) {
 	xlog_param(xl, "<unrecognised image depth>",
 		   NOTEVENEQUALSIGN);
+	return -1;
     } else {
 	int scanlinewidth, unitsize, stringtype, nunits;
 
@@ -1659,8 +1731,9 @@ void xlog_image_data(struct xlog *xl, const char *paramname,
 	nunits = (scanlinewidth / unitsize) * /* units/scanline */
 	    height * nbitmaps;  /* number of scanlines */
 
-	xlog_param(xl, "image-data", stringtype, nunits,
+	xlog_param(xl, paramname, stringtype, nunits,
 		   STRING(data, startoffset, nunits * unitsize));
+	return nunits * unitsize;
     }
 }
 
@@ -2503,6 +2576,8 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 		xlog_rectangle(xl, data, len, pos);
 		xlog_set_end(xl);
 		pos += 8;
+		if (pos < len && xlog_check_list_length(xl))
+		    break;
 	    }
 	}
 	xlog_param(xl, "ordering", ENUM | SPECVAL, FETCH8(data, 1),
@@ -2565,6 +2640,8 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 		xlog_set_end(xl);
 		pos += 4;
 		i++;
+		if (pos < len && xlog_check_list_length(xl))
+		    break;
 	    }
 	}
 	break;
@@ -2586,6 +2663,8 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 		xlog_set_end(xl);
 		pos += 4;
 		i++;
+		if (pos < len && xlog_check_list_length(xl))
+		    break;
 	    }
 	}
 	break;
@@ -2604,6 +2683,8 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 		xlog_set_end(xl);
 		pos += 8;
 		i++;
+		if (pos < len && xlog_check_list_length(xl))
+		    break;
 	    }
 	}
 	break;
@@ -2622,6 +2703,8 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 		xlog_set_end(xl);
 		pos += 8;
 		i++;
+		if (pos < len && xlog_check_list_length(xl))
+		    break;
 	    }
 	}
 	break;
@@ -2640,6 +2723,8 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 		xlog_set_end(xl);
 		pos += 12;
 		i++;
+		if (pos < len && xlog_check_list_length(xl))
+		    break;
 	    }
 	}
 	break;
@@ -2664,6 +2749,8 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 		xlog_set_end(xl);
 		pos += 4;
 		i++;
+		if (pos < len && xlog_check_list_length(xl))
+		    break;
 	    }
 	}
 	break;
@@ -2682,6 +2769,8 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 		xlog_set_end(xl);
 		pos += 8;
 		i++;
+		if (pos < len && xlog_check_list_length(xl))
+		    break;
 	    }
 	}
 	break;
@@ -2700,6 +2789,8 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 		xlog_set_end(xl);
 		pos += 12;
 		i++;
+		if (pos < len && xlog_check_list_length(xl))
+		    break;
 	    }
 	}
 	break;
@@ -2802,6 +2893,8 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 
 		xlog_set_end(xl);
 		i++;
+		if (pos < len && xlog_check_list_length(xl))
+		    break;
 	    }
 	}
 	break;
@@ -2858,6 +2951,8 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 
 		xlog_set_end(xl);
 		i++;
+		if (pos < len && xlog_check_list_length(xl))
+		    break;
 	    }
 	}
 	break;
@@ -2954,6 +3049,8 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 		xlog_param(xl, buf, HEX32, FETCH32(data, pos));
 		pos += 4;
 		i++;
+		if (pos < len && xlog_check_list_length(xl))
+		    break;
 	    }
 	}
 	xlog_param(xl, "plane-mask", HEX32, FETCH32(data, 8));
@@ -2972,6 +3069,8 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 		xlog_set_end(xl);
 		pos += 12;
 		i++;
+		if (pos < len && xlog_check_list_length(xl))
+		    break;
 	    }
 	}
 	break;
@@ -2999,6 +3098,8 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 		xlog_param(xl, buf, HEX32, FETCH32(data, pos));
 		pos += 4;
 		i++;
+		if (pos < len && xlog_check_list_length(xl))
+		    break;
 	    }
 	}
 	req->replies = 1;
@@ -3368,6 +3469,935 @@ void xlog_do_request(struct xlog *xl, const void *vdata, int len)
 	xlog_param(xl, "depth", DECU, FETCH8(data, 16));
 	xlog_param(xl, "shmseg", HEX32, FETCH32(data, 20));
 	xlog_param(xl, "offset", HEX32, FETCH32(data, 24));
+	break;
+
+      case EXT_RENDER | 0:
+	xlog_request_name(xl, req, "RenderQueryVersion", TRUE);
+	xlog_param(xl, "client-major-version", DECU, FETCH32(data, 4));
+	xlog_param(xl, "client-minor-version", DECU, FETCH32(data, 8));
+	req->replies = 1;
+	break;
+      case EXT_RENDER | 1:
+	xlog_request_name(xl, req, "RenderQueryPictFormats", TRUE);
+	req->replies = 1;
+	break;
+      case EXT_RENDER | 2:
+	xlog_request_name(xl, req, "RenderQueryPictIndexValues", TRUE);
+	xlog_param(xl, "format", PICTFORMAT, FETCH32(data, 4));
+	req->replies = 1;
+	break;
+      case EXT_RENDER | 3:
+	xlog_request_name(xl, req, "RenderQueryDithers", TRUE);
+	/*
+	 * This request is not supported by X.Org or Xlib at the
+	 * time of writing, so I can't be certain of its contents
+	 * format.
+	 */
+	xlog_param(xl, "<unknown request format>", NOTEVENEQUALSIGN);
+	req->replies = 1;
+	break;
+      case EXT_RENDER | 4:
+      case EXT_RENDER | 5:
+	{
+	    unsigned i, bitmask;
+	    switch (req->opcode) {
+	      case EXT_RENDER | 4:
+		xlog_request_name(xl, req, "RenderCreatePicture", TRUE);
+		xlog_param(xl, "pid", PICTURE, FETCH32(data, 4));
+		xlog_param(xl, "drawable", DRAWABLE, FETCH32(data, 8));
+		xlog_param(xl, "format", PICTFORMAT, FETCH32(data, 12));
+		i = 20;
+		break;
+	      default /* case EXT_RENDER | 5 */ :
+		xlog_request_name(xl, req, "RenderChangePicture", TRUE);
+		xlog_param(xl, "picture", PICTURE, FETCH32(data, 4));
+		i = 12;
+		break;
+	    }
+
+	    bitmask = FETCH32(data, i-4);
+	    if (bitmask & 0x00000001) {
+		xlog_param(xl, "repeat", ENUM | SPECVAL, FETCH32(data, i),
+			   "None", 0, "Normal", 1, "Pad", 2, "Reflect", 3,
+			   (char *)NULL);
+		i += 4;
+	    }
+	    if (bitmask & 0x00000002) {
+		xlog_param(xl, "alpha-map", PICTURE | SPECVAL,
+			   FETCH32(data, i), "None", 0, (char *)NULL);
+		i += 4;
+	    }
+	    if (bitmask & 0x00000004) {
+		xlog_param(xl, "alpha-x-origin", DEC16, FETCH32(data, i));
+		i += 4;
+	    }
+	    if (bitmask & 0x00000008) {
+		xlog_param(xl, "alpha-y-origin", DEC16, FETCH32(data, i));
+		i += 4;
+	    }
+	    if (bitmask & 0x00000010) {
+		xlog_param(xl, "clip-x-origin", DEC16, FETCH32(data, i));
+		i += 4;
+	    }
+	    if (bitmask & 0x00000020) {
+		xlog_param(xl, "clip-y-origin", DEC16, FETCH32(data, i));
+		i += 4;
+	    }
+	    if (bitmask & 0x00000040) {
+		xlog_param(xl, "clip-mask", PIXMAP | SPECVAL,
+			   FETCH32(data, i), "None", 0, (char *)NULL);
+		i += 4;
+	    }
+	    if (bitmask & 0x00000080) {
+		xlog_param(xl, "graphics-exposures", BOOLEAN,
+			   FETCH32(data, i));
+		i += 4;
+	    }
+	    if (bitmask & 0x00000100) {
+		xlog_param(xl, "subwindow-mode", ENUM | SPECVAL,
+			   FETCH32(data, i), "ClipByChildren", 0,
+			   "IncludeInferiors", 1, (char *)NULL);
+		i += 4;
+	    }
+	    if (bitmask & 0x00000200) {
+		xlog_param(xl, "poly-edge", ENUM | SPECVAL,
+			   FETCH32(data, i), "Sharp", 0, "Smooth", 1,
+			   (char *)NULL);
+		i += 4;
+	    }
+	    if (bitmask & 0x00000400) {
+		xlog_param(xl, "poly-mode", ENUM | SPECVAL,
+			   FETCH32(data, i), "Precise", 0, "Imprecise", 1,
+			   (char *)NULL);
+		i += 4;
+	    }
+	    if (bitmask & 0x00000800) {
+		xlog_param(xl, "dither", ATOM | SPECVAL, FETCH32(data, i),
+			   "None", 0, (char *)NULL);
+		i += 4;
+	    }
+	    if (bitmask & 0x00001000) {
+		xlog_param(xl, "component-alpha", BOOLEAN, FETCH32(data, i));
+		i += 4;
+	    }
+	}
+	break;
+      case EXT_RENDER | 6:
+	xlog_request_name(xl, req, "RenderSetPictureClipRectangles", TRUE);
+	xlog_param(xl, "picture", PICTURE, FETCH32(data, 4));
+	xlog_param(xl, "clip-x-origin", DEC16, FETCH16(data, 8));
+	xlog_param(xl, "clip-y-origin", DEC16, FETCH16(data, 10));
+	{
+	    int pos = 12;
+	    int i = 0;
+	    char buf[64];
+	    while (pos + 8 <= len) {
+		sprintf(buf, "rectangles[%d]", i);
+		xlog_param(xl, buf, SETBEGIN);
+		xlog_rectangle(xl, data, len, pos);
+		xlog_set_end(xl);
+		pos += 8;
+		if (pos < len && xlog_check_list_length(xl))
+		    break;
+	    }
+	}
+	break;
+      case EXT_RENDER | 7:
+	xlog_request_name(xl, req, "RenderFreePicture", TRUE);
+	xlog_param(xl, "picture", PICTURE, FETCH32(data, 4));
+	break;
+      case EXT_RENDER | 8:
+	xlog_request_name(xl, req, "RenderComposite", TRUE);
+	xlog_param(xl, "op", ENUM | SPECVAL, FETCH8(data, 4),
+		   "Clear", 0,
+		   "Src", 1,
+		   "Dst", 2,
+		   "Over", 3,
+		   "OverReverse", 4,
+		   "In", 5,
+		   "InReverse", 6,
+		   "Out", 7,
+		   "OutReverse", 8,
+		   "Atop", 9,
+		   "AtopReverse", 10,
+		   "Xor", 11,
+		   "Add", 12,
+		   "Saturate", 13,
+		   "DisjointClear", 0x10,
+		   "DisjointSrc", 0x11,
+		   "DisjointDst", 0x12,
+		   "DisjointOver", 0x13,
+		   "DisjointOverReverse", 0x14,
+		   "DisjointIn", 0x15,
+		   "DisjointInReverse", 0x16,
+		   "DisjointOut", 0x17,
+		   "DisjointOutReverse", 0x18,
+		   "DisjointAtop", 0x19,
+		   "DisjointAtopReverse", 0x1a,
+		   "DisjointXor", 0x1b,
+		   "ConjointClear", 0x20,
+		   "ConjointSrc", 0x21,
+		   "ConjointDst", 0x22,
+		   "ConjointOver", 0x23,
+		   "ConjointOverReverse", 0x24,
+		   "ConjointIn", 0x25,
+		   "ConjointInReverse", 0x26,
+		   "ConjointOut", 0x27,
+		   "ConjointOutReverse", 0x28,
+		   "ConjointAtop", 0x29,
+		   "ConjointAtopReverse", 0x2a,
+		   "ConjointXor", 0x2b);
+	xlog_param(xl, "src", PICTURE, FETCH32(data, 8));
+	xlog_param(xl, "mask", PICTURE | SPECVAL, FETCH32(data, 12),
+		   "None", 0, (char *)NULL);
+	xlog_param(xl, "dst", PICTURE, FETCH32(data, 16));
+	xlog_param(xl, "src-x", DEC16, FETCH16(data, 20));
+	xlog_param(xl, "src-y", DEC16, FETCH16(data, 22));
+	xlog_param(xl, "mask-x", DEC16, FETCH16(data, 24));
+	xlog_param(xl, "mask-y", DEC16, FETCH16(data, 26));
+	xlog_param(xl, "dst-x", DEC16, FETCH16(data, 28));
+	xlog_param(xl, "dst-y", DEC16, FETCH16(data, 30));
+	xlog_param(xl, "width", DECU, FETCH16(data, 32));
+	xlog_param(xl, "height", DECU, FETCH16(data, 34));
+	break;
+      case EXT_RENDER | 9:
+	xlog_request_name(xl, req, "RenderScale", TRUE);
+	xlog_param(xl, "src", PICTURE, FETCH32(data, 4));
+	xlog_param(xl, "dst", PICTURE, FETCH32(data, 8));
+	xlog_param(xl, "color-scale", HEX32, FETCH32(data, 12));
+	xlog_param(xl, "alpha-scale", HEX32, FETCH32(data, 16));
+	xlog_param(xl, "src-x", DEC16, FETCH16(data, 20));
+	xlog_param(xl, "src-y", DEC16, FETCH16(data, 22));
+	xlog_param(xl, "dst-x", DEC16, FETCH16(data, 24));
+	xlog_param(xl, "dst-y", DEC16, FETCH16(data, 26));
+	xlog_param(xl, "width", DECU, FETCH16(data, 28));
+	xlog_param(xl, "height", DECU, FETCH16(data, 30));
+	break;
+      case EXT_RENDER | 10:
+	xlog_request_name(xl, req, "RenderTrapezoids", TRUE);
+	xlog_param(xl, "op", ENUM | SPECVAL, FETCH8(data, 4),
+		   "Clear", 0,
+		   "Src", 1,
+		   "Dst", 2,
+		   "Over", 3,
+		   "OverReverse", 4,
+		   "In", 5,
+		   "InReverse", 6,
+		   "Out", 7,
+		   "OutReverse", 8,
+		   "Atop", 9,
+		   "AtopReverse", 10,
+		   "Xor", 11,
+		   "Add", 12,
+		   "Saturate", 13,
+		   "DisjointClear", 0x10,
+		   "DisjointSrc", 0x11,
+		   "DisjointDst", 0x12,
+		   "DisjointOver", 0x13,
+		   "DisjointOverReverse", 0x14,
+		   "DisjointIn", 0x15,
+		   "DisjointInReverse", 0x16,
+		   "DisjointOut", 0x17,
+		   "DisjointOutReverse", 0x18,
+		   "DisjointAtop", 0x19,
+		   "DisjointAtopReverse", 0x1a,
+		   "DisjointXor", 0x1b,
+		   "ConjointClear", 0x20,
+		   "ConjointSrc", 0x21,
+		   "ConjointDst", 0x22,
+		   "ConjointOver", 0x23,
+		   "ConjointOverReverse", 0x24,
+		   "ConjointIn", 0x25,
+		   "ConjointInReverse", 0x26,
+		   "ConjointOut", 0x27,
+		   "ConjointOutReverse", 0x28,
+		   "ConjointAtop", 0x29,
+		   "ConjointAtopReverse", 0x2a,
+		   "ConjointXor", 0x2b);
+	xlog_param(xl, "src", PICTURE, FETCH32(data, 8));
+	xlog_param(xl, "src-x", DEC16, FETCH16(data, 20));
+	xlog_param(xl, "src-y", DEC16, FETCH16(data, 22));
+	xlog_param(xl, "dst", PICTURE, FETCH32(data, 12));
+	xlog_param(xl, "mask-format", PICTFORMAT | SPECVAL, FETCH32(data, 16),
+		   "None", 0, (char *)NULL);
+	{
+	    int pos = 24;
+	    int i = 0;
+	    char buf[64];
+	    while (pos + 40 <= len) {
+		sprintf(buf, "trapezoids[%d]", i);
+		xlog_param(xl, buf, SETBEGIN);
+		xlog_param(xl, "top", FIXED, FETCH32(data, pos));
+		xlog_param(xl, "bottom", FIXED, FETCH32(data, pos+4));
+		xlog_param(xl, "left.p1.x", FIXED, FETCH32(data, pos+8));
+		xlog_param(xl, "left.p1.y", FIXED, FETCH32(data, pos+12));
+		xlog_param(xl, "left.p2.x", FIXED, FETCH32(data, pos+16));
+		xlog_param(xl, "left.p2.y", FIXED, FETCH32(data, pos+20));
+		xlog_param(xl, "right.p1.x", FIXED, FETCH32(data, pos+24));
+		xlog_param(xl, "right.p1.y", FIXED, FETCH32(data, pos+28));
+		xlog_param(xl, "right.p2.x", FIXED, FETCH32(data, pos+32));
+		xlog_param(xl, "right.p2.y", FIXED, FETCH32(data, pos+36));
+		xlog_set_end(xl);
+		pos += 40;
+		i++;
+		if (pos < len && xlog_check_list_length(xl))
+		    break;
+	    }
+	}
+	break;
+      case EXT_RENDER | 11:
+	xlog_request_name(xl, req, "RenderTriangles", TRUE);
+	xlog_param(xl, "op", ENUM | SPECVAL, FETCH8(data, 4),
+		   "Clear", 0,
+		   "Src", 1,
+		   "Dst", 2,
+		   "Over", 3,
+		   "OverReverse", 4,
+		   "In", 5,
+		   "InReverse", 6,
+		   "Out", 7,
+		   "OutReverse", 8,
+		   "Atop", 9,
+		   "AtopReverse", 10,
+		   "Xor", 11,
+		   "Add", 12,
+		   "Saturate", 13,
+		   "DisjointClear", 0x10,
+		   "DisjointSrc", 0x11,
+		   "DisjointDst", 0x12,
+		   "DisjointOver", 0x13,
+		   "DisjointOverReverse", 0x14,
+		   "DisjointIn", 0x15,
+		   "DisjointInReverse", 0x16,
+		   "DisjointOut", 0x17,
+		   "DisjointOutReverse", 0x18,
+		   "DisjointAtop", 0x19,
+		   "DisjointAtopReverse", 0x1a,
+		   "DisjointXor", 0x1b,
+		   "ConjointClear", 0x20,
+		   "ConjointSrc", 0x21,
+		   "ConjointDst", 0x22,
+		   "ConjointOver", 0x23,
+		   "ConjointOverReverse", 0x24,
+		   "ConjointIn", 0x25,
+		   "ConjointInReverse", 0x26,
+		   "ConjointOut", 0x27,
+		   "ConjointOutReverse", 0x28,
+		   "ConjointAtop", 0x29,
+		   "ConjointAtopReverse", 0x2a,
+		   "ConjointXor", 0x2b);
+	xlog_param(xl, "src", PICTURE, FETCH32(data, 8));
+	xlog_param(xl, "src-x", DEC16, FETCH16(data, 20));
+	xlog_param(xl, "src-y", DEC16, FETCH16(data, 22));
+	xlog_param(xl, "dst", PICTURE, FETCH32(data, 12));
+	xlog_param(xl, "mask-format", PICTFORMAT | SPECVAL, FETCH32(data, 16),
+		   "None", 0, (char *)NULL);
+	{
+	    int pos = 24;
+	    int i = 0;
+	    char buf[64];
+	    while (pos + 24 <= len) {
+		sprintf(buf, "triangles[%d]", i);
+		xlog_param(xl, buf, SETBEGIN);
+		xlog_param(xl, "p1.x", FIXED, FETCH32(data, pos));
+		xlog_param(xl, "p1.y", FIXED, FETCH32(data, pos+4));
+		xlog_param(xl, "p2.x", FIXED, FETCH32(data, pos+8));
+		xlog_param(xl, "p2.y", FIXED, FETCH32(data, pos+12));
+		xlog_param(xl, "p3.x", FIXED, FETCH32(data, pos+16));
+		xlog_param(xl, "p3.y", FIXED, FETCH32(data, pos+20));
+		xlog_set_end(xl);
+		pos += 24;
+		i++;
+		if (pos < len && xlog_check_list_length(xl))
+		    break;
+	    }
+	}
+	break;
+      case EXT_RENDER | 12:
+      case EXT_RENDER | 13:
+	switch (req->opcode) {
+	  case EXT_RENDER | 12:
+	    xlog_request_name(xl, req, "RenderTriStrip", TRUE);
+	    break;
+	  case EXT_RENDER | 13:
+	    xlog_request_name(xl, req, "RenderTriFan", TRUE);
+	    break;
+	}
+	xlog_param(xl, "op", ENUM | SPECVAL, FETCH8(data, 4),
+		   "Clear", 0,
+		   "Src", 1,
+		   "Dst", 2,
+		   "Over", 3,
+		   "OverReverse", 4,
+		   "In", 5,
+		   "InReverse", 6,
+		   "Out", 7,
+		   "OutReverse", 8,
+		   "Atop", 9,
+		   "AtopReverse", 10,
+		   "Xor", 11,
+		   "Add", 12,
+		   "Saturate", 13,
+		   "DisjointClear", 0x10,
+		   "DisjointSrc", 0x11,
+		   "DisjointDst", 0x12,
+		   "DisjointOver", 0x13,
+		   "DisjointOverReverse", 0x14,
+		   "DisjointIn", 0x15,
+		   "DisjointInReverse", 0x16,
+		   "DisjointOut", 0x17,
+		   "DisjointOutReverse", 0x18,
+		   "DisjointAtop", 0x19,
+		   "DisjointAtopReverse", 0x1a,
+		   "DisjointXor", 0x1b,
+		   "ConjointClear", 0x20,
+		   "ConjointSrc", 0x21,
+		   "ConjointDst", 0x22,
+		   "ConjointOver", 0x23,
+		   "ConjointOverReverse", 0x24,
+		   "ConjointIn", 0x25,
+		   "ConjointInReverse", 0x26,
+		   "ConjointOut", 0x27,
+		   "ConjointOutReverse", 0x28,
+		   "ConjointAtop", 0x29,
+		   "ConjointAtopReverse", 0x2a,
+		   "ConjointXor", 0x2b);
+	xlog_param(xl, "src", PICTURE, FETCH32(data, 8));
+	xlog_param(xl, "src-x", DEC16, FETCH16(data, 20));
+	xlog_param(xl, "src-y", DEC16, FETCH16(data, 22));
+	xlog_param(xl, "dst", PICTURE, FETCH32(data, 12));
+	xlog_param(xl, "mask-format", PICTFORMAT | SPECVAL, FETCH32(data, 16),
+		   "None", 0, (char *)NULL);
+	{
+	    int pos = 24;
+	    int i = 0;
+	    char buf[64];
+	    while (pos + 8 <= len) {
+		sprintf(buf, "points[%d]", i);
+		xlog_param(xl, buf, SETBEGIN);
+		xlog_param(xl, "x", FIXED, FETCH32(data, pos));
+		xlog_param(xl, "y", FIXED, FETCH32(data, pos+4));
+		xlog_set_end(xl);
+		pos += 8;
+		i++;
+		if (pos < len && xlog_check_list_length(xl))
+		    break;
+	    }
+	}
+	break;
+      case EXT_RENDER | 14:
+	xlog_request_name(xl, req, "RenderColorTrapezoids", TRUE);
+	/*
+	 * This request is not supported by X.Org or Xlib at the
+	 * time of writing, so I can't be certain of its contents
+	 * format.
+	 */
+	xlog_param(xl, "<unknown request format>", NOTEVENEQUALSIGN);
+	break;
+      case EXT_RENDER | 15:
+	xlog_request_name(xl, req, "RenderColorTriangles", TRUE);
+	/*
+	 * This request is not supported by X.Org or Xlib at the
+	 * time of writing, so I can't be certain of its contents
+	 * format.
+	 */
+	xlog_param(xl, "<unknown request format>", NOTEVENEQUALSIGN);
+	break;
+      case EXT_RENDER | 16:
+	xlog_request_name(xl, req, "RenderTransform", TRUE);
+	/*
+	 * This request is not supported by X.Org or Xlib at the
+	 * time of writing, so I can't be certain of its contents
+	 * format.
+	 */
+	xlog_param(xl, "<unknown request format>", NOTEVENEQUALSIGN);
+	break;
+      case EXT_RENDER | 17:
+      case EXT_RENDER | 18:
+	switch (req->opcode) {
+	  case EXT_RENDER | 17:
+	    xlog_request_name(xl, req, "RenderCreateGlyphSet", TRUE);
+	    xlog_param(xl, "gsid", GLYPHSET, FETCH32(data, 4));
+	    xlog_param(xl, "format", PICTFORMAT, FETCH32(data, 8));
+	    break;
+	  case EXT_RENDER | 18:
+	    xlog_request_name(xl, req, "RenderReferenceGlyphSet", TRUE);
+	    xlog_param(xl, "gsid", GLYPHSET, FETCH32(data, 4));
+	    xlog_param(xl, "existing", GLYPHSET, FETCH32(data, 8));
+	}
+	/*
+	 * Now remember the depth for this glyphset, by reading it
+	 * out of either the PICTFORMAT or the GLYPHSET.
+	 */
+	{
+	    struct resdepth *existing;
+	    struct resdepth *gsd;
+	    struct resdepth *old;
+	    unsigned long oldid = FETCH32(data, 8);
+
+	    existing = find234(xl->resdepths, &oldid, resdepthfind);
+
+	    if (existing) {
+		gsd = snew(struct resdepth);
+		gsd->resource = FETCH32(data, 4);
+		gsd->depth = existing->depth;
+		/*
+		 * Find any previous entry for this glyphset id, and
+		 * override it.
+		 */
+		old = del234(xl->resdepths, gsd);
+		sfree(old);
+		/*
+		 * Now add the new one.
+		 */
+		add234(xl->resdepths, gsd);
+	    }
+	}
+	break;
+      case EXT_RENDER | 19:
+	xlog_request_name(xl, req, "RenderFreeGlyphSet", TRUE);
+	xlog_param(xl, "glyphset", GLYPHSET, FETCH32(data, 4));
+	break;
+      case EXT_RENDER | 20:
+	xlog_request_name(xl, req, "RenderAddGlyphs", TRUE);
+	xlog_param(xl, "glyphset", GLYPHSET, FETCH32(data, 4));
+	{
+	    int pos = 12, whpos;
+	    int i = 0;
+	    char buf[64];
+	    int n = FETCH32(data, pos-4);
+	    int depth;
+
+	    for (i = 0; i < n; i++) {
+		sprintf(buf, "glyphids[%d]", i);
+		xlog_param(xl, buf, HEX32, FETCH32(data, pos));
+		pos += 4;
+		if (i+1 < n && xlog_check_list_length(xl))
+		    break;
+	    }
+
+	    whpos = pos;
+	    for (i = 0; i < n; i++) {
+		sprintf(buf, "glyphs[%d]", i);
+		xlog_param(xl, buf, SETBEGIN);
+		xlog_param(xl, "width", DECU, FETCH16(data, pos));
+		xlog_param(xl, "height", DECU, FETCH16(data, pos+2));
+		xlog_param(xl, "x", DEC16, FETCH16(data, pos+4));
+		xlog_param(xl, "y", DEC16, FETCH16(data, pos+6));
+		xlog_param(xl, "off-x", DEC16, FETCH16(data, pos+8));
+		xlog_param(xl, "off-y", DEC16, FETCH16(data, pos+10));
+		xlog_set_end(xl);
+		pos += 12;
+		if (i+1 < n && xlog_check_list_length(xl))
+		    break;
+	    }
+
+	    {
+		unsigned long oldid = FETCH32(data, 4);
+		struct resdepth *rd;
+		rd = find234(xl->resdepths, &oldid, resdepthfind);
+		if (rd)
+		    depth = rd->depth;
+		else
+		    depth = 0;
+	    }
+	    for (i = 0; i < n; i++) {
+		int ret;
+		sprintf(buf, "glyphimages[%d]", i);
+		ret = xlog_image_data(xl, buf, data, len, pos, 2,
+				      FETCH16(data, whpos+12*i),
+				      FETCH16(data, whpos+12*i+2), depth);
+		if (ret < 0)
+		    break; /* don't know how to advance to next image */
+		pos += (ret + 3) &~ 3;
+		if (i+1 < n && xlog_check_list_length(xl))
+		    break;
+	    }
+	}
+	break;
+      case EXT_RENDER | 21:
+	xlog_request_name(xl, req, "RenderAddGlyphsFromPicture", TRUE);
+	/*
+	 * This request is not supported by X.Org or Xlib at the
+	 * time of writing, so I can't be certain of its contents
+	 * format.
+	 */
+	xlog_param(xl, "<unknown request format>", NOTEVENEQUALSIGN);
+	break;
+      case EXT_RENDER | 22:
+	xlog_request_name(xl, req, "RenderFreeGlyphs", TRUE);
+	xlog_param(xl, "glyphset", GLYPHSET, FETCH32(data, 4));
+	{
+	    int pos = 12;
+	    int i = 0;
+	    char buf[64];
+	    int n = FETCH32(data, pos-4);
+
+	    for (i = 0; i < n; i++) {
+		sprintf(buf, "glyphs[%d]", i);
+		xlog_param(xl, buf, HEX32, FETCH32(data, pos));
+		pos += 4;
+		if (i+1 < n && xlog_check_list_length(xl))
+		    break;
+	    }
+	}
+	break;
+      case EXT_RENDER | 23:
+      case EXT_RENDER | 24:
+      case EXT_RENDER | 25:
+	switch (req->opcode) {
+	  case EXT_RENDER | 23:
+	    xlog_request_name(xl, req, "RenderCompositeGlyphs8", TRUE);
+	    break;
+	  case EXT_RENDER | 24:
+	    xlog_request_name(xl, req, "RenderCompositeGlyphs16", TRUE);
+	    break;
+	  case EXT_RENDER | 25:
+	    xlog_request_name(xl, req, "RenderCompositeGlyphs32", TRUE);
+	    break;
+	}
+	xlog_param(xl, "op", ENUM | SPECVAL, FETCH8(data, 4),
+		   "Clear", 0,
+		   "Src", 1,
+		   "Dst", 2,
+		   "Over", 3,
+		   "OverReverse", 4,
+		   "In", 5,
+		   "InReverse", 6,
+		   "Out", 7,
+		   "OutReverse", 8,
+		   "Atop", 9,
+		   "AtopReverse", 10,
+		   "Xor", 11,
+		   "Add", 12,
+		   "Saturate", 13,
+		   "DisjointClear", 0x10,
+		   "DisjointSrc", 0x11,
+		   "DisjointDst", 0x12,
+		   "DisjointOver", 0x13,
+		   "DisjointOverReverse", 0x14,
+		   "DisjointIn", 0x15,
+		   "DisjointInReverse", 0x16,
+		   "DisjointOut", 0x17,
+		   "DisjointOutReverse", 0x18,
+		   "DisjointAtop", 0x19,
+		   "DisjointAtopReverse", 0x1a,
+		   "DisjointXor", 0x1b,
+		   "ConjointClear", 0x20,
+		   "ConjointSrc", 0x21,
+		   "ConjointDst", 0x22,
+		   "ConjointOver", 0x23,
+		   "ConjointOverReverse", 0x24,
+		   "ConjointIn", 0x25,
+		   "ConjointInReverse", 0x26,
+		   "ConjointOut", 0x27,
+		   "ConjointOutReverse", 0x28,
+		   "ConjointAtop", 0x29,
+		   "ConjointAtopReverse", 0x2a,
+		   "ConjointXor", 0x2b);
+	xlog_param(xl, "src", PICTURE, FETCH32(data, 8));
+	xlog_param(xl, "dst", PICTURE, FETCH32(data, 12));
+	xlog_param(xl, "mask-format", PICTFORMAT | SPECVAL, FETCH32(data, 16),
+		   "None", 0, (char *)NULL);
+	xlog_param(xl, "glyphset", GLYPHABLE, FETCH32(data, 20));
+	xlog_param(xl, "src-x", DEC16, FETCH16(data, 24));
+	xlog_param(xl, "src-y", DEC16, FETCH32(data, 26));
+	{
+	    int pos = 28;
+	    int i = 0;
+
+	    
+	    /*
+	     * We now expect a series of GLYPHITEMs of the
+	     * appropriate size packed tightly together. Each of
+	     * these starts with an 8-byte header consisting of a
+	     * length byte, three padding bytes, and 16-bit delta x
+	     * and y values. If L==255, this is followed by a
+	     * four-byte GLYPHSET identifier; otherwise it's
+	     * followed by L glyph ids of the appropriate size.
+	     */
+	    while (pos < len) {
+		char buf[64];
+		int tilen = FETCH8(data, pos);
+
+		sprintf(buf, "items[%d]", i);
+		xlog_param(xl, buf, SETBEGIN);
+
+		if (tilen == 255) {
+		    xlog_param(xl, "glyphset", GLYPHSET, FETCH8(data, pos+8));
+		    pos += 12;
+		} else {
+		    xlog_param(xl, "delta-x", DEC16, FETCH16(data, pos+4));
+		    xlog_param(xl, "delta-y", DEC16, FETCH16(data, pos+6));
+		    pos += 8;
+		    switch (req->opcode) {
+		      case EXT_RENDER | 23:
+			xlog_param(xl, "string", HEXSTRING1, tilen,
+				   STRING(data, pos, tilen));
+			pos += tilen;
+			break;
+		      case EXT_RENDER | 24:
+			xlog_param(xl, "string", HEXSTRING2, tilen,
+				   STRING(data, pos, tilen*2));
+			pos += tilen*2;
+			break;
+		      case EXT_RENDER | 25:
+			xlog_param(xl, "string", HEXSTRING4, tilen,
+				   STRING(data, pos, tilen*4));
+			pos += tilen*4;
+			break;
+		    }
+		    pos = (pos + 3) & ~3;
+		}
+
+		xlog_set_end(xl);
+		i++;
+		if (pos < len && xlog_check_list_length(xl))
+		    break;
+	    }
+	}
+	break;
+      case EXT_RENDER | 26:
+	xlog_request_name(xl, req, "RenderFillRectangles", TRUE);
+	xlog_param(xl, "op", ENUM | SPECVAL, FETCH8(data, 4),
+		   "Clear", 0,
+		   "Src", 1,
+		   "Dst", 2,
+		   "Over", 3,
+		   "OverReverse", 4,
+		   "In", 5,
+		   "InReverse", 6,
+		   "Out", 7,
+		   "OutReverse", 8,
+		   "Atop", 9,
+		   "AtopReverse", 10,
+		   "Xor", 11,
+		   "Add", 12,
+		   "Saturate", 13,
+		   "DisjointClear", 0x10,
+		   "DisjointSrc", 0x11,
+		   "DisjointDst", 0x12,
+		   "DisjointOver", 0x13,
+		   "DisjointOverReverse", 0x14,
+		   "DisjointIn", 0x15,
+		   "DisjointInReverse", 0x16,
+		   "DisjointOut", 0x17,
+		   "DisjointOutReverse", 0x18,
+		   "DisjointAtop", 0x19,
+		   "DisjointAtopReverse", 0x1a,
+		   "DisjointXor", 0x1b,
+		   "ConjointClear", 0x20,
+		   "ConjointSrc", 0x21,
+		   "ConjointDst", 0x22,
+		   "ConjointOver", 0x23,
+		   "ConjointOverReverse", 0x24,
+		   "ConjointIn", 0x25,
+		   "ConjointInReverse", 0x26,
+		   "ConjointOut", 0x27,
+		   "ConjointOutReverse", 0x28,
+		   "ConjointAtop", 0x29,
+		   "ConjointAtopReverse", 0x2a,
+		   "ConjointXor", 0x2b);
+	xlog_param(xl, "dst", PICTURE, FETCH32(data, 8));
+	xlog_param(xl, "color", SETBEGIN);
+	xlog_param(xl, "red", HEX16, FETCH16(data, 12));
+	xlog_param(xl, "green", HEX16, FETCH16(data, 14));
+	xlog_param(xl, "blue", HEX16, FETCH16(data, 16));
+	xlog_param(xl, "alpha", HEX16, FETCH16(data, 18));
+	xlog_set_end(xl);
+	{
+	    int pos = 20;
+	    int i = 0;
+	    char buf[64];
+	    while (pos + 8 <= len) {
+		sprintf(buf, "rectangles[%d]", i);
+		xlog_param(xl, buf, SETBEGIN);
+		xlog_rectangle(xl, data, len, pos);
+		xlog_set_end(xl);
+		pos += 8;
+		i++;
+		if (pos < len && xlog_check_list_length(xl))
+		    break;
+	    }
+	}
+	break;
+      case EXT_RENDER | 27:
+	xlog_request_name(xl, req, "RenderCreateCursor", TRUE);
+	xlog_param(xl, "cid", CURSOR, FETCH32(data, 4));
+	xlog_param(xl, "src", PICTURE, FETCH32(data, 8));
+	xlog_param(xl, "x", DECU, FETCH16(data, 12));
+	xlog_param(xl, "y", DECU, FETCH16(data, 14));
+	break;
+      case EXT_RENDER | 28:
+	xlog_request_name(xl, req, "RenderSetPictureTransform", TRUE);
+	xlog_param(xl, "picture", PICTURE, FETCH32(data, 4));
+	xlog_param(xl, "transform", SETBEGIN);
+	xlog_param(xl, "p11", FIXED, FETCH32(data, 8));
+	xlog_param(xl, "p12", FIXED, FETCH32(data, 12));
+	xlog_param(xl, "p13", FIXED, FETCH32(data, 16));
+	xlog_param(xl, "p21", FIXED, FETCH32(data, 20));
+	xlog_param(xl, "p22", FIXED, FETCH32(data, 24));
+	xlog_param(xl, "p23", FIXED, FETCH32(data, 28));
+	xlog_param(xl, "p31", FIXED, FETCH32(data, 32));
+	xlog_param(xl, "p32", FIXED, FETCH32(data, 36));
+	xlog_param(xl, "p33", FIXED, FETCH32(data, 40));
+	xlog_set_end(xl);
+	break;
+      case EXT_RENDER | 29:
+	xlog_request_name(xl, req, "RenderQueryFilters", TRUE);
+	xlog_param(xl, "drawable", DRAWABLE, FETCH32(data, 4));
+	break;
+      case EXT_RENDER | 30:
+	xlog_request_name(xl, req, "RenderSetPictureFilter", TRUE);
+	xlog_param(xl, "picture", PICTURE, FETCH32(data, 4));
+	xlog_param(xl, "name", STRING, FETCH16(data, 8),
+		   STRING(data, 12, FETCH16(data, 8)));
+	{
+	    int pos = (12 + FETCH16(data, 8) + 3) & ~3;
+	    int i = 0;
+	    char buf[64];
+	    while (pos + 4 <= len) {
+		sprintf(buf, "values[%d]", i);
+		xlog_param(xl, buf, FIXED, FETCH32(data, pos));
+		pos += 4;
+		i++;
+		if (pos < len && xlog_check_list_length(xl))
+		    break;
+	    }
+	}
+	break;
+      case EXT_RENDER | 31:
+	xlog_request_name(xl, req, "RenderCreateAnimCursor", TRUE);
+	xlog_param(xl, "cid", CURSOR, FETCH32(data, 4));
+	{
+	    int pos = 8;
+	    int i = 0;
+	    char buf[64];
+	    while (pos + 8 <= len) {
+		sprintf(buf, "cursors[%d]", i);
+		xlog_param(xl, buf, SETBEGIN);
+		xlog_param(xl, "cursor", CURSOR, FETCH32(data, pos));
+		xlog_param(xl, "delay", DECU, FETCH32(data, pos+4));
+		xlog_set_end(xl);
+		pos += 8;
+		i++;
+		if (pos < len && xlog_check_list_length(xl))
+		    break;
+	    }
+	}
+	break;
+      case EXT_RENDER | 32:
+	xlog_request_name(xl, req, "RenderAddTraps", TRUE);
+	xlog_param(xl, "picture", PICTURE, FETCH32(data, 4));
+	xlog_param(xl, "off-x", DEC16, FETCH16(data, 8));
+	xlog_param(xl, "off-y", DEC16, FETCH16(data, 10));
+	{
+	    int pos = 12;
+	    int i = 0;
+	    char buf[64];
+	    while (pos + 24 <= len) {
+		sprintf(buf, "trapezoids[%d]", i);
+		xlog_param(xl, buf, SETBEGIN);
+		xlog_param(xl, "top", SETBEGIN);
+		xlog_param(xl, "l", FIXED, FETCH32(data, pos));
+		xlog_param(xl, "r", FIXED, FETCH32(data, pos+4));
+		xlog_param(xl, "y", FIXED, FETCH32(data, pos+8));
+		xlog_set_end(xl);
+		pos += 12;
+		xlog_param(xl, "bot", SETBEGIN);
+		xlog_param(xl, "l", FIXED, FETCH32(data, pos));
+		xlog_param(xl, "r", FIXED, FETCH32(data, pos+4));
+		xlog_param(xl, "y", FIXED, FETCH32(data, pos+8));
+		xlog_set_end(xl);
+		pos += 12;
+		xlog_set_end(xl);
+		i++;
+		if (pos < len && xlog_check_list_length(xl))
+		    break;
+	    }
+	}
+	break;
+      case EXT_RENDER | 33:
+	xlog_request_name(xl, req, "RenderCreateSolidFill", TRUE);
+	xlog_param(xl, "pid", PICTURE, FETCH32(data, 4));
+	xlog_param(xl, "color", SETBEGIN);
+	xlog_param(xl, "red", HEX16, FETCH16(data, 8));
+	xlog_param(xl, "green", HEX16, FETCH16(data, 10));
+	xlog_param(xl, "blue", HEX16, FETCH16(data, 12));
+	xlog_param(xl, "alpha", HEX16, FETCH16(data, 14));
+	xlog_set_end(xl);
+	break;
+      case EXT_RENDER | 34:
+      case EXT_RENDER | 35:
+      case EXT_RENDER | 36:
+	{
+	    int pos, n, i;
+	    char buf[64];
+
+	    switch (req->opcode) {
+	      case EXT_RENDER | 34:
+		xlog_request_name(xl, req, "RenderCreateLinearGradient", TRUE);
+		xlog_param(xl, "pid", PICTURE, FETCH32(data, 4));
+		xlog_param(xl, "p1", SETBEGIN);
+		xlog_param(xl, "x", FIXED, FETCH32(data, 8));
+		xlog_param(xl, "y", FIXED, FETCH32(data, 12));
+		xlog_set_end(xl);
+		xlog_param(xl, "p2", SETBEGIN);
+		xlog_param(xl, "x", FIXED, FETCH32(data, 16));
+		xlog_param(xl, "y", FIXED, FETCH32(data, 20));
+		xlog_set_end(xl);
+		pos = 28;
+		break;
+	      case EXT_RENDER | 35:
+		xlog_request_name(xl, req, "RenderCreateRadialGradient", TRUE);
+		xlog_param(xl, "pid", PICTURE, FETCH32(data, 4));
+		xlog_param(xl, "inner_center", SETBEGIN);
+		xlog_param(xl, "x", FIXED, FETCH32(data, 8));
+		xlog_param(xl, "y", FIXED, FETCH32(data, 12));
+		xlog_set_end(xl);
+		xlog_param(xl, "outer_center", SETBEGIN);
+		xlog_param(xl, "x", FIXED, FETCH32(data, 16));
+		xlog_param(xl, "y", FIXED, FETCH32(data, 20));
+		xlog_set_end(xl);
+		xlog_param(xl, "inner_radius", FIXED, FETCH32(data, 24));
+		xlog_param(xl, "outer_radius", FIXED, FETCH32(data, 28));
+		pos = 36;
+		break;
+	      default /* case EXT_RENDER | 36 */:
+		xlog_request_name(xl, req, "RenderCreateConicalGradient", TRUE);
+		xlog_param(xl, "pid", PICTURE, FETCH32(data, 4));
+		xlog_param(xl, "center", SETBEGIN);
+		xlog_param(xl, "x", FIXED, FETCH32(data, 8));
+		xlog_param(xl, "y", FIXED, FETCH32(data, 12));
+		xlog_set_end(xl);
+		xlog_param(xl, "angle", FIXED, FETCH32(data, 16));
+		pos = 24;
+		break;
+	    }
+
+	    n = FETCH32(data, pos-4);
+	    
+	    for (i = 0; i < n; i++) {
+		sprintf(buf, "stops[%d]", i);
+		xlog_param(xl, buf, FIXED, FETCH32(data, pos));
+		pos += 4;
+		if (i+1 < n && xlog_check_list_length(xl))
+		    break;
+	    }
+
+	    for (i = 0; i < n; i++) {
+		sprintf(buf, "stop_colors[%d]", i);
+		xlog_param(xl, buf, SETBEGIN);
+		xlog_param(xl, "red", HEX16, FETCH16(data, pos));
+		xlog_param(xl, "green", HEX16, FETCH16(data, pos+2));
+		xlog_param(xl, "blue", HEX16, FETCH16(data, pos+4));
+		xlog_param(xl, "alpha", HEX16, FETCH16(data, pos+6));
+		xlog_set_end(xl);
+		pos += 8;
+		if (i+1 < n && xlog_check_list_length(xl))
+		    break;
+	    }
+	}
 	break;
 
       default:
@@ -4129,6 +5159,193 @@ void xlog_do_reply(struct xlog *xl, struct request *req,
 	xlog_param(xl, "size", DECU, FETCH32(data, 12));
 	break;
 
+      case EXT_RENDER | 0:
+	/* RenderQueryVersion */
+	xlog_param(xl, "major-version", DECU, FETCH32(data, 8));
+	xlog_param(xl, "minor-version", DECU, FETCH32(data, 12));
+	break;
+      case EXT_RENDER | 1:
+	/* RenderQueryPictFormats */
+	{
+	    int i, n;
+	    int pos;
+
+	    /*
+	     * Go through the list of picture formats and save the
+	     * depth of each one.
+	     */
+	    n = FETCH32(data, 8);
+	    pos = 32;
+	    for (i = 0; i < n; i++) {
+		struct resdepth *gsd;
+		struct resdepth *old;
+
+		gsd = snew(struct resdepth);
+		gsd->resource = FETCH32(data, pos);
+		gsd->depth = FETCH8(data, pos+5);
+		/*
+		 * Find any previous entry for this resource id, and
+		 * override it.
+		 */
+		old = del234(xl->resdepths, gsd);
+		sfree(old);
+		/*
+		 * Now add the new one.
+		 */
+		add234(xl->resdepths, gsd);
+
+		pos += 28;
+	    }
+
+	    /*
+	     * Now reset pos, and log stuff as usual.
+	     */
+
+	    n = FETCH32(data, 8);
+	    pos = 32;
+	    for (i = 0; i < n; i++) {
+		char buf[64];
+		sprintf(buf, "formats[%d]", i);
+		xlog_param(xl, buf, SETBEGIN);
+		xlog_param(xl, "id", PICTFORMAT, FETCH32(data, pos));
+		xlog_param(xl, "type", ENUM | SPECVAL, FETCH8(data, pos+4),
+			   "Indexed", 0, "Direct", 1, (char *)NULL);
+		xlog_param(xl, "depth", DECU, FETCH8(data, pos+5));
+		xlog_param(xl, "direct", SETBEGIN);
+		xlog_param(xl, "red-shift", DECU, FETCH16(data, pos+8));
+		xlog_param(xl, "red-mask", HEX16, FETCH16(data, pos+10));
+		xlog_param(xl, "green-shift", DECU, FETCH16(data, pos+12));
+		xlog_param(xl, "green-mask", HEX16, FETCH16(data, pos+14));
+		xlog_param(xl, "blue-shift", DECU, FETCH16(data, pos+16));
+		xlog_param(xl, "blue-mask", HEX16, FETCH16(data, pos+18));
+		xlog_param(xl, "alpha-shift", DECU, FETCH16(data, pos+20));
+		xlog_param(xl, "alpha-mask", HEX16, FETCH16(data, pos+22));
+		xlog_set_end(xl);
+		xlog_param(xl, "colormap", COLORMAP | SPECVAL,
+			   FETCH32(data, pos+24), "None", 0, (char *)NULL);
+		xlog_set_end(xl);
+		pos += 28;
+		if (i+1 < n && xlog_check_list_length(xl))
+		    break;
+	    }
+
+	    n = FETCH32(data, 12);
+	    for (i = 0; i < n; i++) {
+		char buf[64];
+		int m, j, opos = pos;
+		sprintf(buf, "screens[%d]", i);
+		xlog_param(xl, buf, SETBEGIN);
+		m = FETCH32(data, pos);
+		pos += 8;
+		for (j = 0; j < m; j++) {
+		    int l, k;
+		    sprintf(buf, "depths[%d]", j);
+		    xlog_param(xl, buf, SETBEGIN);
+		    xlog_param(xl, "depth", DECU, FETCH8(data, pos));
+		    l = FETCH16(data, pos+2);
+		    pos += 8;
+		    for (k = 0; k < l; k++) {
+			sprintf(buf, "visuals[%d]", k);
+			xlog_param(xl, buf, SETBEGIN);
+			xlog_param(xl, "visual", VISUALID | SPECVAL,
+				   FETCH32(data, pos), "None",0, (char *)NULL);
+			xlog_param(xl, "format", PICTFORMAT,
+				   FETCH32(data, pos+4));
+			xlog_set_end(xl);
+			pos += 8;
+			if (k+1 < l && xlog_check_list_length(xl))
+			    break;
+		    }
+		    xlog_set_end(xl);
+		    if (j+1 < m && xlog_check_list_length(xl))
+			break;
+		}
+		xlog_param(xl, "fallback", PICTFORMAT, FETCH32(data, opos+4));
+		xlog_set_end(xl);
+		if (i+1 < n && xlog_check_list_length(xl))
+		    break;
+	    }
+
+	    /*
+	     * FIXME: we ought to check the version from
+	     * RenderQueryVersion and use it to make this piece
+	     * conditional.
+	     */
+	    n = FETCH32(data, 24);
+	    for (i = 0; i < n; i++) {
+		char buf[64];
+		sprintf(buf, "subpixels[%d]", i);
+		xlog_param(xl, buf, ENUM | SPECVAL, FETCH8(data, pos),
+			   "Unknown",0, "HorizontalRGB",1, "HorizontalBGR",2,
+			   "VerticalRGB",3, "VerticalBGR",4, "None",5,
+			   (char *)NULL);
+		pos++;
+		if (i+1 < n && xlog_check_list_length(xl))
+		    break;
+	    }
+	}
+
+	break;
+      case EXT_RENDER | 2:
+	/* RenderQueryPictIndexValues */
+	{
+	    int i, n;
+	    int pos = 32;
+
+	    n = FETCH32(data, 8);
+	    for (i = 0; i < n; i++) {
+		char buf[64];
+		sprintf(buf, "values[%d]", i);
+		xlog_param(xl, buf, SETBEGIN);
+		xlog_param(xl, "pixel", HEX32, FETCH32(data, pos));
+		xlog_param(xl, "red", HEX16, FETCH16(data, pos+4));
+		xlog_param(xl, "green", HEX16, FETCH16(data, pos+6));
+		xlog_param(xl, "blue", HEX16, FETCH16(data, pos+8));
+		xlog_param(xl, "alpha", HEX16, FETCH16(data, pos+10));
+		xlog_set_end(xl);
+		pos += 12;
+		if (i+1 < n && xlog_check_list_length(xl))
+		    break;
+	    }
+	}
+	break;
+      case EXT_RENDER | 3:
+	/* RenderQueryDithers */
+	/*
+	 * This request is listed in renderproto/render.h but does
+	 * not include any description, so we'll just have to log it
+	 * as 'unable to decode reply data'.
+	 */
+	break;
+      case EXT_RENDER | 29:
+	/* RenderQueryFilters */
+	{
+	    int i, n;
+	    int pos = 32;
+
+	    n = FETCH32(data, 8);
+	    for (i = 0; i < n; i++) {
+		char buf[64];
+		sprintf(buf, "aliases[%d]", i);
+		xlog_param(xl, buf, DECU, FETCH16(data, pos));
+		pos += 2;
+		if (i+1 < n && xlog_check_list_length(xl))
+		    break;
+	    }
+
+	    n = FETCH32(data, 12);
+	    for (i = 0; i < n; i++) {
+		char buf[64];
+		sprintf(buf, "filters[%d]", i);
+		xlog_param(xl, buf, STRING, FETCH8(data, pos),
+			   STRING(data, pos+1, FETCH8(data, pos)));
+		pos += 1 + FETCH8(data, pos);
+		if (i+1 < n && xlog_check_list_length(xl))
+		    break;
+	    }
+	}
+	break;
+
       default:
 	xlog_printf(xl, "<unable to decode reply data>");
 	break;
@@ -4189,6 +5406,16 @@ const char *xlog_translate_error(int errcode)
 	return "BadImplementation";
       case EXT_MITSHM | 0:
 	return "BadShmSeg";
+      case EXT_RENDER | 0:
+	return "BadPictFormat";
+      case EXT_RENDER | 1:
+	return "BadPicture";
+      case EXT_RENDER | 2:
+	return "BadPictOp";
+      case EXT_RENDER | 3:
+	return "BadGlyphSet";
+      case EXT_RENDER | 4:
+	return "BadGlyph";
       default:
 	return NULL;
     }
