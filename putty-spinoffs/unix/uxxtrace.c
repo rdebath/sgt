@@ -6985,11 +6985,12 @@ int main(int argc, char **argv)
 		  case 'p':
 		  case 'e':
 		    /* options requiring an argument */
-		    if (*p)
+		    if (*p) {
 			val = p;
-		    else if (--argc > 0)
+			p += strlen(p);
+		    } else if (--argc > 0) {
 			val = *++argv;
-		    else {
+		    } else {
 			fprintf(stderr, "xtrace: option '-%c' expects an"
 				" argument\n", c);
 			return 1;
