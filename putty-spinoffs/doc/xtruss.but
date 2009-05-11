@@ -1,38 +1,38 @@
-\cfg{man-identity}{xtrace}{1}{2009-05-02}{PuTTY spinoffs}{PuTTY spinoffs}
+\cfg{man-identity}{xtruss}{1}{2009-05-02}{PuTTY spinoffs}{PuTTY spinoffs}
 
 \define{dash} \u2013{-}
 
-\H{xtrace-manpage} Man page for xtrace
+\H{xtruss-manpage} Man page for xtruss
 
-\S{xtrace-manpage-name} NAME
+\S{xtruss-manpage-name} NAME
 
-\cw{xtrace} \dash trace X protocol exchanges, in the manner of \cw{strace}
+\cw{xtruss} \dash trace X protocol exchanges, in the manner of \cw{strace}
 
-\S{xtrace-manpage-synopsis} SYNOPSIS
+\S{xtruss-manpage-synopsis} SYNOPSIS
 
-\c xtrace [ options ] command [ command-arguments ]
+\c xtruss [ options ] command [ command-arguments ]
 \e bbbbbb   iiiiiii   iiiiiii   iiiiiiiiiiiiiiiii
-\c xtrace [ options ] -p X-resource-ID
+\c xtruss [ options ] -p X-resource-ID
 \e bbbbbb   iiiiiii   bb iiiiiiiiiiiii
-\c xtrace [ options ] -p -
+\c xtruss [ options ] -p -
 \e bbbbbb   iiiiiii   bb b
 
-\S{xtrace-manpage-description} DESCRIPTION
+\S{xtruss-manpage-description} DESCRIPTION
 
-\cw{xtrace} is a utility which logs everything that passes between
+\cw{xtruss} is a utility which logs everything that passes between
 the X server and one or more X client programs. In this it is
 similar to \cw{xmon}(1), but intended to combine \cw{xmon}'s basic
 functionality with an interface much more similar to \cw{strace}(1).
 
 Unlike \cw{xmon}, you don't have to start the trace utility in one
 terminal and manually attach processes to it from another. The
-principal mode of use is just to type \cw{xtrace} followed by the
-command line of your X program; \cw{xtrace} will take care itself of
+principal mode of use is just to type \cw{xtruss} followed by the
+command line of your X program; \cw{xtruss} will take care itself of
 setting up an X proxy and adjusting the new program's environment to
 point at it, and (also unlike \cw{xmon}) it will also take care of
 setting up X authorisation automatically.
 
-As an alternative mode of use, you can also attach \cw{xtrace} to an
+As an alternative mode of use, you can also attach \cw{xtruss} to an
 already-running X application, if you didn't realise you were going
 to want to trace it until it had already been started. This mode
 requires cooperation from the X server \dash specifically, it can't
@@ -40,7 +40,7 @@ work unless the server supports the \cw{RECORD} protocol extension
 \dash but since modern X.Org servers do provide that, it's often
 useful.
 
-The logging format of \cw{xtrace} is much more compact than that of
+The logging format of \cw{xtruss} is much more compact than that of
 \cw{xmon}, and resembles \cw{strace} in that it's written to look
 like a series of function calls some of which return values. For
 instance, where \cw{xmon} would print
@@ -64,7 +64,7 @@ instance, where \cw{xmon} would print
 \c                                         reply length: 00000000
 \c                                                 atom: ATM 000002bf
 
-\cw{xtrace} will instead print
+\cw{xtruss} will instead print
 
 \c GetSelectionOwner(selection=a#1) = {owner=w#02C0002B}
 \c InternAtom(name="VT_SELECTION", only-if-exists=False) = {atom=a#703}
@@ -77,7 +77,7 @@ been printed on the \e{same} line.
 That last is not always possible, of course: sometimes an
 application will queue multiple requests before receiving the reply
 to the first one (in fact, this is generally good behaviour since it
-minimises network round-trip delays), in which case \cw{xtrace}'s
+minimises network round-trip delays), in which case \cw{xtruss}'s
 output will look \dash again mimicking \cw{strace} \dash something
 like this:
 
@@ -86,9 +86,9 @@ like this:
 \c  ... InternAtom(name="TARGETS", only-if-exists=False) = {atom=a#378}
 \c  ... InternAtom(name="TIMESTAMP", only-if-exists=False) = {atom=a#379}
 
-\S{xtrace-manpage-options} OPTIONS
+\S{xtruss-manpage-options} OPTIONS
 
-If you want to attach \cw{xtrace} to an already-running X client,
+If you want to attach \cw{xtruss} to an already-running X client,
 then instead of specifying a command to run you should give the
 following option:
 
@@ -101,7 +101,7 @@ preceded with \cq{0x}. It typically names an X window, but can name
 another type of resource instead (e.g. a pixmap or cursor) or just
 specify the resource base of the client connection. If you don't
 know any of those things, you can give the resource ID as just
-\cq{-}, in which case \cw{xtrace} will allow you to interactively
+\cq{-}, in which case \cw{xtruss} will allow you to interactively
 select a window by clicking with the mouse (similarly to
 \cw{xkill}(1), \cw{xwininfo}(1) and \cw{xprop}(1)) and will trace
 the client that owns the window you select.
@@ -111,12 +111,12 @@ The following options apply to both modes of operation:
 \dt \cw{-s} \e{length}
 
 \dd Limit the length of output lines by eliding most of the contents
-of long arrays, strings and blocks of data. \cw{xtrace} will begin
+of long arrays, strings and blocks of data. \cw{xtruss} will begin
 to shorten lines at the specified length (any line shorter than that
 should not be interfered with), but lines cannot always be chopped
 to the exact length and continue to make sense, so the line length
 is approximate only. Specifying zero or \cq{unlimited} will remove
-all restriction, so that \cw{xtrace} will display the full contents
+all restriction, so that \cw{xtruss} will display the full contents
 of every request it understands, no matter how big. Default is 256.
 
 \dt \cw{-o} \e{filename}
@@ -139,10 +139,10 @@ are logged if and only if the request they respond to was logged.
 \lcont{
 
 For example, to log only \cw{ImageText8} and \cw{ImageText16}
-requests, you might say \q{\cw{xtrace -e
-requests=ImageText8,ImageText16} \e{command}} or just \q{\cw{xtrace
+requests, you might say \q{\cw{xtruss -e
+requests=ImageText8,ImageText16} \e{command}} or just \q{\cw{xtruss
 -e ImageText8,ImageText16} \e{command}}. To inhibit the display of
-\cw{FocusIn} and \cw{FocusOut} events, you might say \q{\cw{xtrace
+\cw{FocusIn} and \cw{FocusOut} events, you might say \q{\cw{xtruss
 -e events=!FocusIn,FocusOut} \e{command}}.
 
 (Note that the \cw{!} character might be treated specially by your
@@ -160,17 +160,17 @@ particularly long and ugly.
 
 \dd As well as translating the X protocol, also give a raw hex dump
 of all the data transferred over the connection. (Probably most
-useful to include in a bug report about \cw{xtrace} itself!)
+useful to include in a bug report about \cw{xtruss} itself!)
 
 \dt \cw{-C}
 
 \dd Prefix every output line with the X client id (resource base) of
-the client connection it came from. By default \cw{xtrace} only
+the client connection it came from. By default \cw{xtruss} only
 starts to do this if it's tracing more than one X client; before
 then, lines are unprefixed. This option makes prefixing
 unconditional from the start of the run.
 
-\S{xtrace-manpage-bugs} BUGS
+\S{xtruss-manpage-bugs} BUGS
 
 Many commonly used X protocol extensions are not currently decoded.
 
@@ -179,7 +179,7 @@ A lot of this program has been only minimally tested.
 This man page doesn't really go into enough detail about how the
 proxying works.
 
-\S{xtrace-manpage-licence} LICENCE
+\S{xtruss-manpage-licence} LICENCE
 
-\cw{xtrace} is free software, distributed under the MIT/X11 licence.
-Type \cw{xtrace --licence} to see the full licence text.
+\cw{xtruss} is free software, distributed under the MIT/X11 licence.
+Type \cw{xtruss --licence} to see the full licence text.
