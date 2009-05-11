@@ -1,0 +1,154 @@
+<html> <!-- -*- html -*- -->
+<head>
+<title>xtruss: an easy-to-use X protocol tracing program</title>
+</head>
+<link rel="stylesheet" type="text/css" href="../sitestyle.css" name="Simon Tatham's Home Page Style">
+<body>
+<h1 align=center><code>xtruss</code></h1>
+
+<p align=center><i>an easy-to-use X protocol tracing program</i>
+
+<h2>Introduction</h2>
+
+<p>
+Any programmer accustomed to writing programs on Linux or System
+V-type Unixes will have encountered the program variously known as
+<code>strace</code> or <code>truss</code>, which monitors another
+program and produces a detailed log of every system call the program
+makes &#8211; in other words, all the program's interactions with
+the OS kernel. This is often an invaluable debugging tool, and
+almost as good an educational one.
+
+<p>
+When it's a GUI program (or rather, the GUI-related behaviour of a
+program) that you want to understand or debug, though, the level of
+interaction with the OS kernel is rarely the most useful one. More
+helpfully, one would like to log all the program's
+interactions with the <em>X server</em> in the same way.
+
+<p>
+Programs already exist that will do this. I'm aware of
+<a href="http://linux.maruhn.com/sec/xmon.html">Xmon</a>
+and
+<a href="http://xtrace.alioth.debian.org/">Xtrace</a>.
+But they tend to require a lot of effort to set up: you have to run
+the program to establish a listening server, then manually arrange
+for the target program to contact that instead of the real server
+&#8211; including some fiddly work with <code>xauth</code>. Ideally,
+you'd like tracing a program's X operations to be just as easy as
+tracing its kernel system calls: you'd like to type a command as
+simple as <code>strace program-name arguments</code>, and have
+everything automatically handled for you.
+
+<p>
+Also, the output of those programs is less easy to read than I'd
+have liked &#8211; by which I largely mean it's less like
+<code>strace</code> than I'd like it to be. <code>strace</code> has
+the nice property of putting each system call and its return value
+on the same line of output, so that you can see at a glance what
+each response was a response to. X protocol monitors, however, tend
+to follow the structure of the X protocol faithfully, meaning that
+each request and response is printed with a sequence number, and you
+have to match the two up by eye.
+
+<p>
+So this page presents <code>xtruss</code>, my own contribution to
+the field of X protocol loggers. It has a command-line syntax
+similar to <code>strace</code> &#8211; in its default mode, you just
+prefix "<code>xtruss</code>" to the same command line you would have
+run anyway &#8211; and its output format is also more like
+<code>strace</code>, putting requests and responses on the same line
+of output where reasonably possible.
+
+<p>
+<code>strace</code> also supports the feature of attaching to an
+already-running process and tracing it from the middle of its run
+&#8211; handy when something goes wrong with a long-running process
+that you didn't know in advance you were going to need to
+trace. <code>xtruss</code> supports this same feature, by means of
+the X RECORD extension (provided your X server supports it, which
+modern X.Org ones do); so in that mode, you can identify a window
+with the mouse (similarly to standard programs like
+<code>xwininfo</code> and <code>xkill</code>), and
+<code>xtruss</code> will attach to the X client program that
+owns the window you specified, and begin tracing it.
+
+<p>
+For some more detail, you can read <code>xtruss</code>'s
+<a href="manpage.html">man page</a> online.
+
+<h2>Status of <code>xtruss</code></h2>
+
+<p>
+As of 2009-05-11, <code>xtruss</code> is considered to be barely
+tested alpha. It works well enough that I've successfully debugged
+two real problems with it, but I'm not yet aware of anyone else
+having tried to use it. Testing would be appreciated. Bugs in the
+protocol decoder are probably numerous (unfortunately); reports of
+those would be best accompanied by a log file produced with the
+<code>-R</code> option, so that I can see both the original session
+data and its mistranslation.
+
+<h2>Licence</h2>
+
+<p>
+<code>xtruss</code> is distributed under the MIT/X11 licence, so it
+is free to copy, redistribute, use and reuse. For more details, see
+the file called <code>LICENCE</code> in the distribution archive.
+
+<h2>Download</h2>
+
+<p>
+A Unix source archive of <code>xtruss</code> is available here:
+
+<blockquote>
+<p>
+<a href="ARCHIVE-NAME"><code>ARCHIVE-NAME</code></a>
+</blockquote>
+
+<p>
+If you want to see the latest state of development, you can check
+the development sources out from my Subversion repository.
+
+<p>
+The Subversion URL you need is
+<code>svn://svn.tartarus.org/sgt/xtruss</code>. So you could use a
+checkout command such as this:
+<pre><code>svn co svn://svn.tartarus.org/sgt/xtruss</code></pre>
+
+<p>
+Alternatively, you can browse the Subversion repository on the WWW,
+<a href="http://svn.tartarus.org/sgt/xtruss/">here</a>.
+</p>
+
+<p>
+(The source directory might look a little confusing. In order to put
+together an X11 proxy quickly, I reused a lot of code from
+<a href="../putty/">PuTTY</a>,
+so a lot of the source files will contain code that's irrelevant to
+their purpose here.)
+
+<h2>Feedback</h2>
+
+<p>
+Please report bugs to
+<a href="mailto:&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;">&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;</a>.
+
+<p>
+You might find it helpful to read
+<a href="../bugs.html">this article</a>
+before reporting a bug.
+
+<p>
+Patches are welcome.
+
+<hr>
+(comments to <a href="mailto:&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;">&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;</a>)
+<br>
+(thanks to
+<a href="http://www.chiark.greenend.org.uk/">chiark</a>
+for hosting this page)
+<br>
+(last modified on <!--LASTMOD-->[insert date here]<!--END-->)
+</body>
+</html>
