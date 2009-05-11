@@ -346,5 +346,5 @@ U_BE_NOSSH = be_nos_s uxser nocproxy
 
 psocks   : [U] uxsocks portfwd timing misc version tree234 proxy uxsel uxnet
          + uxmisc pproxy nocproxy time
-xtrace   : [U] uxxtrace x11fwd ux_x11 timing misc version tree234 proxy uxsel
+xtruss   : [U] uxxtruss x11fwd ux_x11 timing misc version tree234 proxy uxsel
          + uxnet uxmisc pproxy nocproxy time sshdes sshrand sshsha uxnoise

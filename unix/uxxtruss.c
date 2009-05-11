@@ -1,13 +1,13 @@
 /*
- * xtrace: looks like strace, quacks like xmon.
+ * xtruss: looks like strace, quacks like xmon.
  *
- * xtrace monitors the data sent and received between an X client
+ * xtruss monitors the data sent and received between an X client
  * and the X server, and logs it in a format reminiscent of Linux's
  * strace(1). Its command-line syntax is also similar to strace: in
  * the simplest invocation, you just run the target X program
- * exactly as you normally would but prefix it with 'xtrace', e.g.
- * 'xtrace xterm -fn 9x15'. If your X server supports the X RECORD
- * extension, you can also attach xtrace to a client which is
+ * exactly as you normally would but prefix it with 'xtruss', e.g.
+ * 'xtruss xterm -fn 9x15'. If your X server supports the X RECORD
+ * extension, you can also attach xtruss to a client which is
  * already running, by specifying an X resource id (similarly to
  * xkill(1)) or by selecting a window interactively with the mouse.
  *
@@ -30,10 +30,7 @@
  *  - Pre-publication polishing:
  *     * figure out how to turn this sprawling directory full of
  * 	 unused pieces of PuTTY into something that can convincingly
- * 	 pretend to be a tarball of just xtrace...
- *     * find a new name, bah, since 'xtrace' turns out to be
- * 	 already taken by something that lacks half my useful
- * 	 features.
+ * 	 pretend to be a tarball of just xtruss...
  *
  * Possibly TODO:
  *
@@ -120,7 +117,7 @@
  *    client to trace via X RECORD? -id 0xXXX as a synonym for -p
  *    XXX, for instance. Perhaps -name (for which we can reuse the
  *    existing bfs loop to look for a window with the given WM_NAME
- *    property). And should just 'xtrace' with no arguments work
+ *    property). And should just 'xtruss' with no arguments work
  *    like just 'xprop'?
  *
  *  - Find some way of independently testing the correctness of the
@@ -128,7 +125,7 @@
  *    the X protocol specs...
  *
  *  - Ability to run as an explicit proxy, as other X tracing
- *    utilities do. Run in this mode, xtrace should print the
+ *    utilities do. Run in this mode, xtruss should print the
  *    appropriate DISPLAY and XAUTHORITY environment variables to
  *    standard output in a form easily pasted into another shell
  *    prompt, and then sit there waiting for connections.
@@ -160,7 +157,7 @@
 
 Config cfg;
 #define BUFLIMIT 16384
-const char *const appname = "xtrace";
+const char *const appname = "xtruss";
 
 /* ----------------------------------------------------------------------
  * Code to parse and log the data flowing (in both directions)
@@ -5765,7 +5762,7 @@ void xlog_s2c(struct xlog *xl, const void *vdata, int len)
 		     min(xl->s2clen-8, xl->s2cbuf[1]), xl->s2cbuf + 8));
 	    else if (xl->s2cbuf[0] == 2)
 		err((xl, "server sent incomplete-authorisation packet, which"
-		     " is unsupported by xtrace"));
+		     " is unsupported by xtruss"));
 	    else if (xl->s2cbuf[0] != 1)
 		err((xl, "server sent unrecognised authorisation-time opcode %d",
 		     xl->s2cbuf[0]));
@@ -6289,7 +6286,7 @@ void xrecord_gotdata(struct ssh_channel *c, const void *vdata, int len)
 	int n = c->xrecordbuf[1];
 	if (n > c->xrecordlen - 8)
 	    n = c->xrecordlen - 8;
-	fprintf(stderr, "xtrace: X server denied authorisation (\"%.*s\")\n",
+	fprintf(stderr, "xtruss: X server denied authorisation (\"%.*s\")\n",
 		n, c->xrecordbuf + 8);
 	exit(1);
     }
@@ -6337,18 +6334,18 @@ void xrecord_gotdata(struct ssh_channel *c, const void *vdata, int len)
     if (c->xrecordbuf[0] == 0) { \
 	const char *err = xlog_translate_error(c->xrecordbuf[1]); \
 	if (err) \
-	    fprintf(stderr, "xtrace: X server returned %s error to" \
+	    fprintf(stderr, "xtruss: X server returned %s error to" \
 		    " %s\n", err, name); \
 	else \
-	    fprintf(stderr, "xtrace: X server returned unknown error %d to" \
+	    fprintf(stderr, "xtruss: X server returned unknown error %d to" \
 		    " %s\n", c->xrecordbuf[1], name); \
 	exit(1); \
     } else if (c->xrecordbuf[0] != 1) { \
 	const char *ev = xlog_translate_event(c->xrecordbuf[0]); \
 	if (ev) \
-	    fprintf(stderr, "xtrace: unexpected event received (%s)\n", ev); \
+	    fprintf(stderr, "xtruss: unexpected event received (%s)\n", ev); \
 	else \
-	    fprintf(stderr, "xtrace: unexpected event received (%d)\n", \
+	    fprintf(stderr, "xtruss: unexpected event received (%d)\n", \
 		    c->xrecordbuf[0]); \
 	exit(1); \
     } \
@@ -6356,7 +6353,7 @@ void xrecord_gotdata(struct ssh_channel *c, const void *vdata, int len)
 
     EXPECT_REPLY("QueryExtension");
     if (c->xrecordbuf[8] != 1) {
-	fprintf(stderr, "xtrace: cannot use -p: X server does not support"
+	fprintf(stderr, "xtruss: cannot use -p: X server does not support"
 		" the X RECORD extension\n");
 	exit(1);
     }
@@ -6381,7 +6378,7 @@ void xrecord_gotdata(struct ssh_channel *c, const void *vdata, int len)
     EXPECT_REPLY("RecordQueryVersion");
 
     if (c->select) {
-	fprintf(stderr, "xtrace: click mouse in a window belonging to the "
+	fprintf(stderr, "xtruss: click mouse in a window belonging to the "
 		"client you want to trace\n");
 
 	/*
@@ -6451,7 +6448,7 @@ void xrecord_gotdata(struct ssh_channel *c, const void *vdata, int len)
 	      default: sprintf(reason, "unknown error code %d",
 			       c->xrecordbuf[1]); break;
 	    }
-	    fprintf(stderr, "xtrace: could not grab mouse pointer for window"
+	    fprintf(stderr, "xtruss: could not grab mouse pointer for window"
 		    " selection: %s\n", reason);
 	    exit(1);
 	}
@@ -6467,20 +6464,20 @@ void xrecord_gotdata(struct ssh_channel *c, const void *vdata, int len)
     if (c->xrecordbuf[0] == 0) { \
 	const char *err = xlog_translate_error(c->xrecordbuf[1]); \
 	if (err) \
-	    fprintf(stderr, "xtrace: X server returned unexpected %s " \
+	    fprintf(stderr, "xtruss: X server returned unexpected %s " \
 		    "error\n", err); \
 	else \
-	    fprintf(stderr, "xtrace: X server returned unexpected and " \
+	    fprintf(stderr, "xtruss: X server returned unexpected and " \
 		    "unknown error %d\n", c->xrecordbuf[1]); \
 	exit(1); \
     } else if (c->xrecordbuf[0] == 1) { \
-	fprintf(stderr, "xtrace: unexpected reply received\n"); \
+	fprintf(stderr, "xtruss: unexpected reply received\n"); \
     } else if ((c->xrecordbuf[0] & 0x7F) != num) { \
 	const char *ev = xlog_translate_event(c->xrecordbuf[0]); \
 	if (ev) \
-	    fprintf(stderr, "xtrace: unexpected event received (%s)\n", ev); \
+	    fprintf(stderr, "xtruss: unexpected event received (%s)\n", ev); \
 	else \
-	    fprintf(stderr, "xtrace: unexpected event received (%d)\n", \
+	    fprintf(stderr, "xtruss: unexpected event received (%d)\n", \
 		    c->xrecordbuf[0]); \
 	exit(1); \
     } \
@@ -6729,7 +6726,7 @@ void xrecord_gotdata(struct ssh_channel *c, const void *vdata, int len)
 	     */
 	    exit(0);
 	  default:
-	    fprintf(stderr, "xtrace: unexpected data record type received "
+	    fprintf(stderr, "xtruss: unexpected data record type received "
 		    "(%d)\n", c->xrecordbuf[1]);
 	    break;
 	}
@@ -6800,7 +6797,7 @@ const char platform_x11_best_transport[] = "unix";
 char *platform_get_x_display(void) {
     char *disp = getenv("DISPLAY");
     if (!disp || !*disp) {
-	fprintf(stderr, "xtrace: no X display specified (use -display or"
+	fprintf(stderr, "xtruss: no X display specified (use -display or"
 		" set DISPLAY\n");
 	exit(1);
     }
@@ -6825,9 +6822,9 @@ static int strzlencmp(const char *az, const char *bl, int blen)
 }
 
 const char usagemsg[] =
-"  usage: xtrace [options] command [command arguments]       trace a new program\n"
-"     or: xtrace [options] -p <resource id>     trace an X client by resource id\n"
-"     or: xtrace [options] -p -         trace an X client selected interactively\n"
+"  usage: xtruss [options] command [command arguments]       trace a new program\n"
+"     or: xtruss [options] -p <resource id>     trace an X client by resource id\n"
+"     or: xtruss [options] -p -         trace an X client selected interactively\n"
 "options: -s <length>             set approximate limit on line length\n"
 "         -o <file>               send log output to a file (default=stderr)\n"
 "         -e [<class>=][!]<item>[,<item>...]  filter the packets output, where:\n"
@@ -6837,9 +6834,9 @@ const char usagemsg[] =
 "         -R                      also give raw hex dump of session traffic\n"
 "         -C                      unconditionally prefix client id to every line\n"
 "         -display <display>      specify X display (overrides $DISPLAY)\n"
-"   also: xtrace --version        report version number\n"
-"         xtrace --help           display this help text\n"
-"         xtrace --licence        display the (MIT) licence text\n"
+"   also: xtruss --version        report version number\n"
+"         xtruss --help           display this help text\n"
+"         xtruss --licence        display the (MIT) licence text\n"
 ;
 
 void usage(FILE *fp) {
@@ -6847,7 +6844,7 @@ void usage(FILE *fp) {
 }
 
 const char licencemsg[] =
-"xtrace is copyright 1997-2009 Simon Tatham.\n"
+"xtruss is copyright 1997-2009 Simon Tatham.\n"
 "\n"
 "Portions copyright Robert de Bath, Andreas Schultz, Jeroen Massar,\n"
 "Nicolas Barry, Justin Bradford, Ben Harris, Malcolm Smith, Ahmad\n"
@@ -6895,9 +6892,9 @@ void version(void) {
         while (*p && isspace(*p)) p++;
         for (q = p; *q && *q != '$'; q++);
         if (*q) *q = '\0';
-        printf("xtrace revision %s\n", p);
+        printf("xtruss revision %s\n", p);
     } else {
-        printf("xtrace: unknown version\n");
+        printf("xtruss: unknown version\n");
     }
 }
 
@@ -6951,7 +6948,7 @@ int main(int argc, char **argv)
 		if (--argc > 0)
 		    val = *++argv;
 		else {
-		    fprintf(stderr, "xtrace: option \"%s\" expects an"
+		    fprintf(stderr, "xtruss: option \"%s\" expects an"
 			    " argument\n", p);
 		    return 1;
 		}
@@ -6968,7 +6965,7 @@ int main(int argc, char **argv)
 		    doing_opts = FALSE;
 		else {
 		    /* no GNU-style long options currently supported */
-		    fprintf(stderr, "xtrace: unknown option '%s'\n", p);
+		    fprintf(stderr, "xtruss: unknown option '%s'\n", p);
 		    return 1;
 		}
 
@@ -6991,7 +6988,7 @@ int main(int argc, char **argv)
 		    } else if (--argc > 0) {
 			val = *++argv;
 		    } else {
-			fprintf(stderr, "xtrace: option '-%c' expects an"
+			fprintf(stderr, "xtruss: option '-%c' expects an"
 				" argument\n", c);
 			return 1;
 		    }
@@ -7019,7 +7016,7 @@ int main(int argc, char **argv)
 			    if (!sscanf(val, "%x", &clientid) &&
 				!sscanf(val, "0x%x", &clientid) &&
 				!sscanf(val, "0X%x", &clientid)) {
-				fprintf(stderr, "xtrace: option '-p' expects"
+				fprintf(stderr, "xtruss: option '-p' expects"
 					" either a hex resource id or '-'\n");
 				return 1;
 			    }
@@ -7059,7 +7056,7 @@ int main(int argc, char **argv)
 					 !strzlencmp("event", val, p-val))
 				    set = &events_to_log;
 				else {
-				    fprintf(stderr, "xtrace: unknown keyword"
+				    fprintf(stderr, "xtruss: unknown keyword"
 					    " for '-e': '%.*s'\n", p-val, val);
 				    return 1;
 				}
@@ -7147,7 +7144,7 @@ int main(int argc, char **argv)
     }
 
     if (!xrecord && !cmd) {
-	fprintf(stderr, "xtrace: must specify a command to run, or -p\n");
+	fprintf(stderr, "xtruss: must specify a command to run, or -p\n");
 	usage(stderr);
 	return 1;
     }
@@ -7165,7 +7162,7 @@ int main(int argc, char **argv)
     if (logfile) {
 	xlogfp = fopen(logfile, "w");
 	if (!xlogfp) {
-	    fprintf(stderr, "xtrace: open(\"%s\"): %s\n", logfile,
+	    fprintf(stderr, "xtruss: open(\"%s\"): %s\n", logfile,
 		    strerror(errno));
 	    return 1;
 	}
@@ -7180,7 +7177,7 @@ int main(int argc, char **argv)
 	displaynum = start_xproxy(&cfg, 10);
 
 	/* FIXME: configurable directory? At the very least, look at TMPDIR etc */
-	authfilename = dupstr("/tmp/xtrace-authority-XXXXXX");
+	authfilename = dupstr("/tmp/xtruss-authority-XXXXXX");
 	{
 	    int authfd, oldumask;
 	    FILE *authfp;
