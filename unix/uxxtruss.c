@@ -129,9 +129,6 @@
  *    appropriate DISPLAY and XAUTHORITY environment variables to
  *    standard output in a form easily pasted into another shell
  *    prompt, and then sit there waiting for connections.
- *
- *  - Find some way of more reliably cleaning up the X authority
- *    files in /tmp.
  */
 
 #include <stdio.h>
@@ -6735,6 +6732,8 @@ void xrecord_gotdata(struct ssh_channel *c, const void *vdata, int len)
     crFinish;
 }
 
+#undef read /* to avoid shadowing the Unix system call, for the below */
+
 /* ----------------------------------------------------------------------
  * Unix-specific main program.
  */
@@ -7178,6 +7177,7 @@ int main(int argc, char **argv)
 
 	/* FIXME: configurable directory? At the very least, look at TMPDIR etc */
 	authfilename = dupstr("/tmp/xtruss-authority-XXXXXX");
+
 	{
 	    int authfd, oldumask;
 	    FILE *authfp;
@@ -7189,6 +7189,39 @@ int main(int argc, char **argv)
 	    oldumask = umask(077);
 	    authfd = mkstemp(authfilename);
 	    umask(oldumask);
+
+	    /*
+	     * Spawn a subprocess which will try to reliably delete our
+	     * auth file when we terminate, in case we die by ^C.
+	     */
+	    {
+		int cleanup_pipe[2];
+		pid_t pid;
+
+		/* Don't worry if pipe or fork fails; it's not _that_ critical. */
+		if (!pipe(cleanup_pipe)) {
+		    if ((pid = fork()) == 0) {
+			int buf[1024];
+			/*
+			 * Our parent process holds the writing end of
+			 * this pipe, and writes nothing to it. Hence,
+			 * we expect read() to return EOF as soon as
+			 * that process terminates.
+			 */
+			setpgid(0, 0);
+			close(cleanup_pipe[1]);
+			while (read(cleanup_pipe[0], buf, sizeof(buf)) > 0);
+			unlink(authfilename);
+			exit(0);
+		    } else if (pid < 0) {
+			close(cleanup_pipe[0]);
+			close(cleanup_pipe[1]);
+		    } else {
+			close(cleanup_pipe[0]);
+			cloexec(cleanup_pipe[1]);
+		    }
+		}
+	    }
 
 	    authfp = fdopen(authfd, "wb");
 
