@@ -72,7 +72,7 @@ typedef void (*keyact) (void);
 
 typedef struct buffer buffer;
 
-extern char toprint[256], hex[256][3], message[80];
+extern char toprint[256], hex[256][3], message[512];
 extern char decstatus[], hexstatus[], *statfmt;
 extern char last_char, *pname, *filename;
 extern buffer *filedata, *cutbuffer;
