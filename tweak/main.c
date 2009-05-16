@@ -190,7 +190,7 @@ static void load_file (char *);
 char toprint[256];		       /* LUT: printable versions of chars */
 char hex[256][3];		       /* LUT: binary to hex, 1 byte */
 
-char message[80];
+char message[512];
 
 char decstatus[] = "%s TWEAK "VER": %-18.18s %s posn=%-10"OFF"d size=%-10"OFF"d";
 char hexstatus[] = "%s TWEAK "VER": %-18.18s %s posn=0x%-8"OFF"X size=0x%-8"OFF"X";
