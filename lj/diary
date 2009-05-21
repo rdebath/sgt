@@ -778,7 +778,10 @@ class output:
 		self.html = self.html + htmltext
 	    if text[-1:] == "-":
 		# discretionary break after hyphen
-		self.html = self.html + "<wbr>"
+		if self.html_title:
+		    self.subj = self.subj + "<wbr>"
+		else:
+		    self.html = self.html + "<wbr>"
         if self.mono_ok:
             self.mono_add_word(text, self.mono_attr, 0)
         if self.news_ok:
