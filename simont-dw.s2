@@ -1,0 +1,1069 @@
+# -*-s2-*-
+
+layerinfo type = "layout";
+layerinfo name = "SimonT";
+
+propgroup colors {
+    property Color entry_back {
+        des = "Entry background";
+        s1color = "page_back";
+    }
+    property Color entry_text { 
+        des = "Entry text color";
+        s1color = "page_text";
+    }
+    property Color entry_text_fiction { 
+        des = "Entry text color for entries marked with class=\"fiction\"";
+    }
+    property Color page_link { 
+        des = "Link color";
+        s1color = "page_link";
+    }
+    property Color page_vlink { 
+        des = "Visited link color"; 
+        s1color = "page_vlink";
+    }
+    property Color page_alink { 
+        des = "Active link color";
+        s1color = "page_alink";
+    }
+    property Color page_back { 
+        des = "Page background color (and around userpics)";
+        s1color = "strong_back";
+    }
+    property Color outline { 
+        des = "Color for outlines";
+        s1color = "outline";
+    }
+    property Color stronger_back { 
+        des = "Background color for the bar above entries";
+        s1color = "strong_back";
+    }
+    property Color stronger_text { 
+        des = "Text color for the bar above entries";
+        s1color = "stronger_text";
+    }
+    property Color weak_back { 
+        des = "Background color for the bar below entries";
+        s1color = "weak_back";
+    }
+    property Color weak_text { 
+        des = "Text color for the bar below entries";
+        s1color = "weak_text";
+    }
+    property Color comment_bar_one_bgcolor {
+        des = "Alternating background color for comment bars (one)";
+    }
+    property Color comment_bar_one_fgcolor {
+        des = "Text color on alternating comment bars (one)";
+    }
+    property Color comment_bar_two_bgcolor {
+        des = "Alternating background color for comment bars (two)";
+    }
+    property Color comment_bar_two_fgcolor {
+        des = "Text color on alternating comment bars (two)";
+    }
+}
+
+propgroup other {
+    property int box_width { 
+        des = "Box width (pixels)";
+    }
+
+    property use comment_userpic_style;
+
+    property string journals_to_avoid {
+        des = "Journals to avoid (on friendsfriends etc)";
+    }
+}
+
+propgroup text {
+    property use text_post_comment;
+    property use text_read_comments;
+    property use text_post_comment_friends;
+    property use text_read_comments_friends;
+    property use text_meta_music;
+    property use text_meta_mood;
+}
+
+# Set default colors
+set entry_back = "#ffffff";
+set entry_text = "#000000";
+set entry_text_fiction = "#006000";
+set page_link = "#0000ff";
+set page_vlink = "#0000ff";
+set page_alink = "#00ffff";
+set page_back = "#2d4f89";
+set outline = "#000000";
+set stronger_back = "#000000";
+set stronger_text = "#ffffff";
+set weak_back = "#aaaaaa";
+set weak_text = "#000000";
+set comment_bar_one_bgcolor = "#aaaaaa";
+set comment_bar_one_fgcolor = "#000000";
+set comment_bar_two_bgcolor = "#dddddd";
+set comment_bar_two_fgcolor = "#000000";
+
+set comment_userpic_style = "small";
+
+set box_width = 600;
+
+set journals_to_avoid = "";
+
+function rindex(string haystack, string needle) : int
+{
+    var int mostlen;
+    var int half;
+    var string substr;
+
+    # S2, for some silly reason, does not see fit to provide this as
+    # a builtin, so I'm going to have to do it myself.
+
+    if (not $haystack->contains($needle)) {
+        return -1;
+    }
+
+    $mostlen = $haystack->length() - $needle->length();
+
+    if ($haystack->ends_with($needle)) {
+        return $mostlen;
+    } else {
+        # Divide the string in half and recurse.
+        $half = ($mostlen + 1) / 2;
+	$substr = $haystack->substr($half, $haystack->length() - $half);
+	if ($substr->contains($needle)) {
+	    # It's in the right-hand half.
+	    return $half + rindex($substr, $needle);
+	} else {
+	    # It must at least _start_ within the bit we cut off the
+            # left, although it might overlap into the bit on the right.
+	    return rindex($haystack->substr(0, $half + $needle->length()-1),
+	                  $needle);
+	}
+    }
+}
+
+function fix_tables(string t) : string
+{
+    # The LJ HTML cleaner apparently doesn't know that <tr> and
+    # <td>'s end tags are optional. Therefore, if an entry contains
+    # a table with implicit </tr> and </td> tags, it will sit there
+    # and keep track of how many it's seen, and at the end of the
+    # entry it will output them all in a big splurge, completely
+    # messing up the containing tables in this style.
+    #
+    # To work around this, I manually remove all trailing </tr> and
+    # </td> tags from entry and comment text before displaying. The
+    # cleaner will probably put them back in, but it'll do it right
+    # at the bottom of the entire web page where they don't do any
+    # harm.
+    #
+    # I also have to do this recursively, because S2 doesn't contain
+    # a while statement.
+    #
+    # Finally, LJ helpfully appends tag information to the entry
+    # _before_ passing it to us, so we can't guarantee to find our
+    # table tags right at the end. We need to catch anything that's
+    # after the last </table>.
+
+    var int tabpos;
+    var int trpos;
+    var int tdpos;
+
+    $tabpos = rindex($t, "</table>");
+    $trpos = rindex($t, "</tr>");
+    $tdpos = rindex($t, "</td>");
+    if ($trpos > $tabpos) {
+        $t = $t->substr(0, $trpos) + $t->substr($trpos+5, $t->length()-$trpos-5);
+    } elseif ($tdpos > $tabpos) {
+        $t = $t->substr(0, $tdpos) + $t->substr($tdpos+5, $t->length()-$tdpos-5);
+    } else {
+        return $t;
+    }
+    return fix_tables($t);
+}
+
+function fix_objects(string t) : string
+{
+    # For a reason I don't yet fully understand, <object> tags
+    # output by this style cause complete chaos in some subsequent
+    # processing by LJ. So I remove them mercilessly.
+
+    var int objpos;
+    var int closepos;
+
+    $objpos = rindex($t, "<object");
+    if ($objpos > 0) {
+        $closepos = rindex($t, "</object>");
+	$t = $t->substr(0, $objpos) + "[object tag omitted]" + $t->substr($closepos+9, $t->length()-$closepos-9);
+    } else {
+        return $t;
+    }
+    return fix_objects($t);
+}
+
+function print_stylesheet () {
+"""body, td {
+font-family: verdana, sans-serif;
+font-size: 10pt;
+}
+html body {
+padding: 0;
+}
+tt, pre {
+font-family: monospace;
+}
+a {
+text-decoration: none;
+}
+a:hover {
+text-decoration: underline;
+}
+.shadowed {
+font-size: 8pt;
+background: $*weak_back;
+}
+.meta {
+font-size: 8pt;
+}
+.index {
+font-size: 8pt;
+}
+.caption, .index {
+color: $*stronger_text;
+}
+.fiction {
+color: $*entry_text_fiction;
+}
+.comments {
+font-size: 8pt;
+}""";
+}
+
+function Page::lay_top_userpic () { 
+    var Image up_img = $.journal.default_pic;
+    if (defined $up_img) {
+        """
+<td><table cellpadding="2" bgcolor="$*outline" cellspacing="0" border="0" summary="">
+<tr><td bgcolor="$*outline" align="center">
+<table cellpadding="0" bgcolor="$*entry_back" cellspacing="0" border="0" summary="">
+<tr><td bgcolor="$*entry_back" align="center">
+<a href="http://www.dreamwidth.org/allpics.bml?user=$.journal.username">
+<img border="0" src="$up_img.url" height="$up_img.height" width="$up_img.width" alt=""></a></td></tr>
+</table></td></tr></table></td>
+""";
+    }
+}
+function FriendsPage::lay_top_userpic () { }
+
+function Page::print () 
+{
+    var string title = $this->title();
+
+    var string website;
+    if ($.journal.website_url != "") {
+        $website = """<tr><td class="meta">[</td>
+<td class="meta" align="right"><b>website</b></td>
+<td class="meta" align="center">|</td>
+<td class="meta"><a href="$.journal.website_url">$.journal.website_name</a></td>
+<td class="meta">]</td></tr>""";
+    }
+
+    var string links;
+    $links = $links + ($.view == "recent" ? "<b>entries</b>" : "<a class='index' href='$.base_url/'>entries</a>") + "|";
+    $links = $links + ($.view == "friends" ? "<b>friends</b>" : "<a class='index' href='$.base_url/friends'>friends</a>") + "|";
+    $links = $links + ($.view == "archive" ? "<b>archive</b>" : "<a class='index' href='$.base_url/calendar'>archive</a>");
+    
+"""<!doctype HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<html><head>
+$.head_content
+<style type="text/css">""";
+print_stylesheet();
+"""</style>
+<title>$title</title>
+</head>
+<body bgcolor="$*page_back" text="$*entry_text" link="$*page_link" vlink="$*page_vlink" alink="$*page_alink">
+<div align="center">
+<table width="$*box_width" cellpadding="0" cellspacing="10"
+border="0"
+summary="">
+<tr><td></td><td>
+<table width="$*box_width" cellpadding="2" cellspacing="0">
+<tr><td bgcolor="$*outline">
+<table width="100%" cellpadding="3" cellspacing="0">
+<tr>
+<td bgcolor="$*stronger_back" align="center">
+<table width="100%" cellpadding="3" cellspacing="0"
+border="0"
+summary="">
+<tr class="caption">
+<td class="caption"><span style="color: $*entry_text"><b>$title</b></span></td>
+<td class="index" align="right"><span style="color: $*entry_text">[$links]</span></td>
+</tr></table>
+<table width="100%" cellpadding="3" cellspacing="0"
+border="0"
+summary="">
+<tr>
+<td class="shadowed" align="center">
+<table cellspacing="5"
+cellpadding="0"
+border="0"
+summary="" style="margin-left: auto; margin-right: auto;">
+<tr>""";
+    $this->lay_top_userpic();
+
+"""<td>
+<div align="center"><b>$.journal.name</b></div><p>
+<table cellspacing="0"
+cellpadding="0"
+border="0"
+summary="">
+$website
+<tr>
+<td class="meta">[</td>
+<td class="meta" align="right"><b>userinfo</b></td>
+<td class="meta" align="center">|</td>
+<td class="meta"><a href="$.view_url{"userinfo"}">dreamwidth userinfo</a></td>
+<td class="meta">]</td>
+</tr>
+<tr>
+<td class="meta">[</td>
+<td class="meta" align="right"><b>archive</b></td>
+<td class="meta" align="center">|</td>
+<td class="meta"><a href="$.view_url{"archive"}">journal archive</a></td>
+<td class="meta">]</td>
+</tr>
+</table>
+</td>
+</tr>
+</table>
+</td>
+</tr></table>
+</td></tr>
+</table>
+</td></tr>
+</table>
+</td></tr>
+""";
+    $this->print_body();
+
+"""
+</table>
+</div>
+<p>
+</body>
+</html>
+""";
+}
+
+function print_entry (Page p, Entry e, Color bgcolor, Color fgcolor, bool hide_text)
+{
+    var string datetime;
+    #$datetime = $e.time->date_format("med")+"|<b>" 
+    #    + $e.time->time_format() + "</b>";
+    $datetime = $e.time->date_format("%%da%% %%yyyy%%-%%mm%%-%%dd%% %%HH%%:%%min%%");
+
+    # We never omit posts if we're actually viewing the journal in
+    # question.
+    if ($e.journal.username != $p.journal.username) {
+        var string avoid;
+        $avoid = " " + $*journals_to_avoid + " ";
+        if ($avoid->contains(" " + $e.journal.username + " ")) {
+            var string journal = $e.journal->as_string();
+            """
+<tr><td></td><td valign="top">
+<table width="$*box_width" cellpadding="2" cellspacing="0" border="0" summary="" class="entrybox">
+<tr align='left'>
+<td bgcolor="$*outline" align="center">
+<table width="100%" cellpadding="5" cellspacing="0" border="0" summary="">
+<tr bgcolor="$*stronger_back" align='left'>
+<td class="caption">Omitted <a href="$e.permalink_url">post</a> from $journal</td>
+</tr></table></td></tr></table></td></tr>""";
+            return;
+        }
+    }
+
+    if (defined $e.userpic)
+    {
+        """
+<tr valign="top"><td align="right">
+<table cellpadding="2" cellspacing="0" border="0" summary="">
+<tr align="right">
+<td bgcolor="$*outline">
+<table cellpadding="0" cellspacing="0" border="0" summary="">
+<tr align="right">
+<td bgcolor="$*entry_back">
+<a href="http://www.dreamwidth.org/allpics.bml?user=$e.poster.username">
+<img border="0" src="$e.userpic.url" width="$e.userpic.width" height="$e.userpic.height" alt=""></a></td></tr>
+</table></td></tr></table></td>
+<td valign="top">""";
+    } else {
+        """<tr><td></td><td valign="top">""";
+    }
+
+    """
+<table width="$*box_width" cellpadding="2" cellspacing="0" border="0" summary="" class="entrybox">
+<tr align='left'>
+<td bgcolor="$*outline" align="center">
+<table width="100%" cellpadding="5" cellspacing="0" border="0" summary="">
+<tr bgcolor="$*stronger_back" align='left'>
+<td><table width="100%" cellpadding="0" cellspacing="0" border="0" summary=""><tr>
+<td class="caption">""";
+    
+    if ($e.security != "") {
+        $e.security_icon->print();
+    }
+
+    if ($p.view == "read" or
+        $p.journal_type == "C" or
+        $e.poster.username != $e.journal.username)
+    {
+        var string poster = $e.poster->as_string();
+	var string community = $e.journal->as_string();
+	"""$poster""";
+	if ($e.poster.username != $e.journal.username and
+	    $p.view == "friends") {
+	    """ on $community""";
+	}
+    }
+
+    """</td>
+<td align="right"><span class="datetime">$datetime</span></td>
+</tr></table></td></tr>
+<tr align='left'>
+<td bgcolor="$*entry_back">
+""";
+
+    if ($e.subject != "") {
+        """
+<div style="font-family: arial, helvetica, verdana, sans-serif;
+            font-size: 11pt"><b>$e.subject</b></div>""";
+    }
+
+    var string metadata;
+    if ($e.metadata) {
+        $metadata = """<table cellspacing="0" cellpadding="0" border="0" summary="">""";
+        foreach var string k ($e.metadata) {
+            var string text = $k;
+            var string val = $e.metadata{$k};
+            if ($k == "mood") {
+                $text = $*text_meta_mood;
+            } elseif ($k == "music") {
+                $text = $*text_meta_music;
+            }
+            if ($k == "mood" and defined $e.mood_icon) {
+                var Image i = $e.mood_icon;
+                $val = "<img src='$i.url' width='$i.width' height='$i.height' align='absmiddle'> $val";
+            }
+            $metadata = """$metadata\n<tr><td class="meta">[</td><td class="meta" align="right"><b>$text</b></td>
+            <td class="meta" align="center">|</td><td class="meta">$val</td><td class="meta">]</td></tr>""";
+        }
+        $metadata = """$metadata</table><p>""";
+    }
+    if (not $hide_text) {
+	print "<p>" + fix_objects(fix_tables($e.text));
+	print $metadata;
+    }
+"""</td></tr>
+<tr bgcolor="$*weak_back">
+<td><table width="100%" cellpadding="0" cellspacing="0" border="0" summary=""><tr>
+<td align='left' class='comments'>
+<a href="$e.permalink_url">$*text_permalink</a></td>""";
+    if ($p.view != "entry" and $p.view != "reply") {
+        var Link lnk;
+        "<td align='right' class='comments'>";
+	$e.comments->print();
+	$lnk = $e->get_link("watch_comments");
+	if ($lnk.url != "") { " | <a href='$lnk.url'>Track</a>"; }
+	$lnk = $e->get_link("unwatch_comments");
+	if ($lnk.url != "") { " | <a href='$lnk.url'>Untrack</a>"; }
+	"</td>";
+    } elseif ($e.comments.enabled) {
+        var Link lnk;
+        "<td align='right' class='comments'>";
+	$e.comments->print_postlink();
+	$lnk = $e->get_link("watch_comments");
+	if ($lnk.url != "") { " | <a href='$lnk.url'>Track</a>"; }
+	$lnk = $e->get_link("unwatch_comments");
+	if ($lnk.url != "") { " | <a href='$lnk.url'>Untrack</a>"; }
+	"</td>";
+    } else {
+        "<td></td>";
+    }
+    """</tr></table></td></tr></table></td></tr></table></td></tr>""";
+
+} # print_entry(Page,Entry,Color,Color,bool)
+
+function Page::print_entry (Entry e) {
+   print_entry($this, $e, null Color, null Color, false);
+}
+
+function FriendsPage::print_entry (Entry e) {
+   var Friend f = $.friends{$e.journal.username};
+   print_entry($this, $e, $f.bgcolor, $f.fgcolor, false);
+}
+
+function RecentPage::print_body ()
+{
+    foreach var Entry e ($.entries) {
+        $this->print_entry($e);
+    }
+
+    var string range = "most recent entries";
+    if ($.nav.skip > 0) {
+        $range = "$.nav.skip entries back";
+    }
+
+"""
+<tr><td></td><td><table width="$*box_width" align="left" cellpadding="0" cellspacing="0">
+<tr><td>
+<table align="center" cellpadding="2" cellspacing="0"
+border="0"
+summary="">
+<tr><td bgcolor="$*outline">
+<table cellpadding="3" cellspacing="0"
+border="0"
+summary="">
+<tr bgcolor="$*stronger_back">
+<td align="center" class="index">navigation</td>
+</tr>
+<tr bgcolor="$*entry_back">
+<td align="center">
+<table cellspacing="0"
+cellpadding="0"
+border="0"
+summary="">
+<tr>
+<td class="meta">[</td>
+<td class="meta" align="right"><b>viewing</b></td>
+<td class="meta" align="center">|</td>
+<td class="meta">$range</td>
+<td class="meta">]</td>
+</tr>
+""";
+
+    # go forward/backward if possible
+    if ($.nav.forward_url != "" or $.nav.backward_url != "") {
+        var string sep;
+        var string back;
+        var string forward;
+        if ($.nav.backward_url != "") {
+            $back = """<a href="$.nav.backward_url">earlier</a>""";
+        }
+        if ($.nav.forward_url != "") {
+            $forward = """<a href="$.nav.forward_url">later</a>""";
+        }
+        if ($back != "" and $forward != "") { $sep = "/"; }
+        """<tr bgcolor="$*entry_back">
+<td class="meta">[</td>
+<td class="meta" align="right"><b>go</b></td>
+<td class="meta" align="center">|</td>
+<td class="meta">$back$sep$forward</td>
+<td class="meta">]</td>
+</tr></table></td></tr>""";
+    }
+
+    "</table></td></tr></table></td></tr></table></td></tr>";
+}
+
+function CommentInfo::print ()
+{
+    if (not $.enabled) { return; }
+    if ($.count > 0 or $.screened) {
+        "<b>"; $this->print_readlink(); "</b>";
+        " | ";
+    }
+    $this->print_postlink();
+}
+
+function YearPage::print_year_links ()
+{
+    """<table cellpadding="2" cellspacing="0" border="0" summary="">
+<tr><td bgcolor="$*outline" align="center">
+<table cellpadding="5" cellspacing="0" border="0" summary="">
+<tr bgcolor="$*stronger_back"><td class="caption">Years</td></tr><tr>
+<td colspan="2" bgcolor="$*entry_back">""";
+    foreach var YearYear y ($.years) {
+        if ($y.displayed) {
+            "<b>$y.year</b>&nbsp;";
+        } else {
+            "<a href=\"$y.url\">$y.year</a>&nbsp;";
+        }
+    }
+   """</td></tr></table></td></tr></table><p>""";
+
+}
+
+function YearPage::print_month (YearMonth m)
+{       
+    if (not $m.has_entries) { return; }
+    """<table cellpadding="2" cellspacing="0" border="0" summary="">
+<tr><td bgcolor="$*outline" align="center">
+<table cellpadding="5" cellspacing="0" border="0" summary="">
+<tr bgcolor="$*stronger_back">
+<td class="caption">""";
+        print $m->month_format();
+        """</td> 
+<td class="caption" align="right">[<a href="$m.url" class="index">subjects</a>]</td>
+</tr>
+<tr>
+<td colspan="2" bgcolor="$*entry_back">
+<!-- now the headings for the week -->
+<table width="100%" cellpadding="5" cellspacing="0" border="0" summary="">
+<tr align="center">
+""";
+    foreach var int d (weekdays()) {
+        "<td>"+$*lang_dayname_short[$d]+"</td>\n";
+    }
+    
+    "</tr>";
+
+    foreach var YearWeek w ($m.weeks) {
+        $w->print();
+    }
+
+    """</table></td></tr></table></td></tr></table><p>""";
+}
+
+function YearWeek::print () {
+    "<tr valign='top'>";
+    if ($.pre_empty) { "<td colspan='$.pre_empty'></td>"; }
+    foreach var YearDay d ($.days) {
+        """<td><div class="meta">$d.day</div>""";
+        if ($d.num_entries) {
+            """<div align="center"><a href="$d.url">$d.num_entries</a></div>""";
+        } else {
+            "&nbsp;";
+        }
+        "</td>";
+    }
+    if ($.post_empty) { "<td colspan='$.post_empty'></td>"; }
+    "</tr>";
+}
+
+function DayPage::print_body() {
+
+    foreach var Entry e ($.entries) {
+        $this->print_entry($e);
+    }
+
+    var string tprev = ehtml($*text_day_prev);
+    var string tnext = ehtml($*text_day_next);
+    var string daylong = $.date->date_format("long");
+
+"""
+<tr><td></td><td><table width="$*box_width" align="left" cellpadding="0" cellspacing="0">
+<tr><td>
+<table align="center" cellpadding="2" cellspacing="0"
+border="0"
+summary="">
+<tr><td bgcolor="$*outline">
+<table cellpadding="3" cellspacing="0"
+border="0"
+summary="">
+<tr bgcolor="$*stronger_back">
+<td align="center" class="index">navigation</td>
+</tr>
+<tr>
+<td bgcolor="$*entry_back" align="center">
+<table cellspacing="0" cellpadding="0" border="0" summary="">
+<tr>
+<td class="meta">[</td>
+<td class="meta" align="right"><b>viewing</b></td>
+<td class="meta" align="center">|</td>
+<td class="meta">$daylong</td>
+<td class="meta">]</td>
+</tr>
+
+<tr>
+<td class="meta">[</td>
+<td class="meta" align="right"><b>go</b></td>
+<td class="meta" align="center">|</td>
+<td class="meta"><a href="$.prev_url">$tprev</a>|<a href="$.next_url">$tnext</a></td>
+<td class="meta">]</td>
+</tr>
+</table>
+</td>
+</tr>
+</table></td></tr></table></td></tr></table></td></tr>""";
+
+}
+
+function MonthPage::print_body () {
+    """<tr><td colspan="2"><table width="$*box_width" cellpadding="2" cellspacing="0" border="0" summary="" class="entrybox">
+<tr align='left'>
+<td bgcolor="$*outline" align="center">
+<table width="100%" cellpadding="5" cellspacing="0" border="0" summary="">
+<tr bgcolor="$*stronger_back" align='left'>
+<td class="caption" colspan='2'>""";
+
+    print $.date->date_format($*lang_fmt_month_long);
+
+    """</td></tr>
+<tr align='left'>
+<td colspan="2" bgcolor="$*entry_back">""";
+
+    #Lifted from core, looks decent:
+    "<form method='post' action='$.redir.url'><center>";
+    $.redir->print_hiddens();
+    if ($.prev_url != "") { "[<a href='$.prev_url'>&lt;&lt;&lt;</a>]\n"; }
+    if (size $.months > 1) {
+        "<select name='redir_key'>\n";
+        foreach var MonthEntryInfo mei ($.months) {
+            var string sel;
+            if ($mei.date.year == $.date.year and $mei.date.month == $.date.month) {
+                $sel = " selected='selected'";
+            }
+            "<option value='$mei.redir_key'$sel>" + $mei.date->date_format($*lang_fmt_month_long) + "</option>";
+        }
+        "</select>\n<input type='submit' value='View' />";
+    }
+    if ($.next_url != "") { "\n[<a href='$.next_url'>&gt;&gt;&gt;</a>]\n"; }
+    "</center></form>\n<dl>";
+    foreach var MonthDay d ($.days) {
+        if ($d.has_entries) {
+            "<dt><a href=\"$d.url\"><b>";
+            print lang_ordinal($d.day);
+            "</b></a></dt>\n<dd>";
+            $d->print_subjectlist();
+            "</dd>\n";
+        }
+    }
+    "</dl>\n";
+    """</td></tr></table>
+</td></tr></table></td></tr>""";
+}
+
+function EntryPage::print_body () {
+    var Link next;
+    var Link prev;
+
+    print_entry($this, $.entry, null Color, null Color, $.viewing_thread);
+
+    if ($.entry.comments.enabled)
+    {
+        if ($.comment_pages.total_subitems > 0) {
+            $.comment_pages->print();
+            $this->print_comments($.comments);
+        }
+    }
+
+    $prev = $.entry->get_link("nav_prev");
+    $next = $.entry->get_link("nav_next");
+    if ($prev.url != "" or $next.url != "") {
+"""
+<tr><td></td><td><table width="$*box_width" align="left" cellpadding="0" cellspacing="0">
+<tr><td>
+<table align="center" cellpadding="2" cellspacing="0"
+border="0"
+summary="">
+<tr><td bgcolor="$*outline">
+<table cellpadding="3" cellspacing="0"
+border="0"
+summary="">
+<tr bgcolor="$*stronger_back">
+<td align="center" class="index">navigation</td>
+</tr>
+<tr>
+<td bgcolor="$*entry_back" align="center">
+<table cellspacing="0" cellpadding="0" border="0" summary="">
+<tr>
+<td class="meta">[</td>
+<td class="meta" align="right"><b>go</b></td>
+<td class="meta" align="center">|</td>
+<td class="meta">""";
+    if ($prev.url != "") {
+        """<a href="$prev.url">Previous Entry</a>""";
+    }
+    if ($prev.url != "" and $next.url != "") {
+        """ | """;
+    }
+    if ($next.url != "") {
+        """<a href="$next.url">Next Entry</a>""";
+    }
+"""</td>
+<td class="meta">]</td>
+</tr>
+<tr>
+<td class="meta">[</td>
+<td class="meta" align="right"><b>add</b></td>
+<td class="meta" align="center">|</td>
+<td class="meta"><a
+href="$*SITEROOT/tools/memadd.bml?journal=$.journal.username&itemid=$.entry.itemid">to Memories</a></td>
+<td class="meta">]</td>
+</tr>
+</table>
+</td>
+</tr>
+</table></td></tr></table></td></tr></table></td></tr>""";
+    }
+}
+
+function EntryPage::print_comment (Comment c) {
+    var string poster = defined $c.poster ? $c.poster->as_string() : "<i>(Anonymous)</i>";
+    var string sub_icon;
+    var int indent = $c.depth * 20;
+    var Color background; var Color color;
+    var int cwidth = $*box_width - $indent;
+    var Link lnk;
+
+    if ($cwidth < $*box_width*2/3) {
+        $cwidth = $*box_width*2/3;
+    }
+
+    if ($c.depth % 2) {
+        $background = $*comment_bar_one_bgcolor;
+        $color = $*comment_bar_one_fgcolor;
+    } else {
+        $background = $*comment_bar_two_bgcolor;
+        $color = $*comment_bar_two_fgcolor;
+    }
+
+    if (defined $c.subject_icon) {
+        $sub_icon = $c.subject_icon->as_string();
+    }
+
+    if (defined $c.userpic and $*comment_userpic_style != "off") {
+        """
+<tr valign="top"><td align="right">
+<table cellpadding="2" cellspacing="0" border="0" summary="">
+<tr align="right">
+<td bgcolor="$*outline">
+<table cellpadding="0" cellspacing="0" border="0" summary="">
+<tr align="right">
+<td bgcolor="$*entry_back">
+<a href="http://www.dreamwidth.org/allpics.bml?user=$c.poster.username">
+<img border="0" src="$c.userpic.url" width="$c.userpic.width" height="$c.userpic.height" alt=""></a>
+</td></tr></table></td></tr></table></td>
+<td valign="top">""";
+    } else {
+        """<tr><td></td><td valign="top">""";
+    }
+
+    """
+<table width="$*box_width" cellpadding="0" cellspacing="0" border="0" summary="">
+<tr><td>
+<table width="$indent" cellpadding="0" cellspacing="0" border="0" summary="">
+<tr><td></td></tr></table>
+</td><td>
+<table width="$cwidth" cellpadding="2" cellspacing="0" border="0" summary="" class="entrybox">
+<tr align='left'>
+<td bgcolor="$*outline" align="center">
+<table width="100%" cellpadding="5" cellspacing="0" border="0" summary="">
+<tr bgcolor="$background" color="$color" align='left'>
+<td><table width="100%" cellpadding="0" cellspacing="0" border="0" summary=""><tr>""";
+
+    print "<td align='left'>$poster";
+    if ($c.metadata{"poster_ip"}) { print " (IP Address: " + $c.metadata{"poster_ip"} + ")"; }
+    if ($c.screened) { print " (screened)"; }
+    print "</td>";
+    print "<td align='right'>";
+    print $c.time->date_format("%%da%% %%yyyy%%-%%mm%%-%%dd%% %%HH%%:%%min%%");
+    print "</td></tr></table></td></tr><tr bgcolor=\"$*entry_back\"><td>";
+    if (defined $c.subject_icon or $c.subject != "") {
+        """
+<div style="font-family: arial, helvetica, verdana, sans-serif;
+            font-size: 11pt">$c.subject_icon <b>$c.subject</b></div>""";
+    }
+    print "<p>" + fix_objects(fix_tables($c.text));
+    """</td></tr>
+<tr bgcolor="$background" color="$color">
+<td><table width="100%" cellpadding="0" cellspacing="0" border="0" summary=""><tr>
+<td align='left' class='comments'>
+<a href="$c.permalink_url">$*text_permalink</a></td>
+<td align='right' class='comments'>""";
+
+    print "<a href='$c.reply_url'>Reply to this</a>";
+    if ($c.parent_url != "") { " | <a href='$c.parent_url'>Parent</a>"; }
+    if ($c.thread_url != "") { " | <a href='$c.thread_url'>Thread</a>"; }
+
+    $lnk = $c->get_link("delete_comment");
+    if ($lnk.url != "") { " | <a href='$lnk.url'>Delete</a>"; }
+    $lnk = $c->get_link("edit_comment");
+    if ($lnk.url != "") { " | <a href='$lnk.url'>Edit</a>"; }
+    $lnk = $c->get_link("screen_comment");
+    if ($lnk.url != "") { " | <a href='$lnk.url'>Screen</a>"; }
+    $lnk = $c->get_link("unscreen_comment");
+    if ($lnk.url != "") { " | <a href='$lnk.url'>Unscreen</a>"; }
+    $lnk = $c->get_link("watch_thread");
+    if ($lnk.url != "") { " | <a href='$lnk.url'>Track</a>"; }
+    $lnk = $c->get_link("unwatch_thread");
+    if ($lnk.url != "") { " | <a href='$lnk.url'>Untrack</a>"; }
+    """</tr></table></td></tr></table></td></tr></table></td></tr></table></td></tr>""";
+}
+
+function EntryPage::print_comment_partial (Comment c) {
+    var string poster = defined $c.poster ? $c.poster->as_string() : "<i>(Anonymous)</i>";
+    var string sub_icon;
+    var int indent = $c.depth * 20;
+    var Color background; var Color color;
+    var int cwidth = $*box_width - $indent;
+    var Link lnk;
+    var string subj = $c.subject != "" ? $c.subject : $*text_nosubject;
+    
+    if ($cwidth < $*box_width*2/3) {
+        $cwidth = $*box_width*2/3;
+    }
+
+    if ($c.depth % 2) {
+        $background = $*comment_bar_one_bgcolor;
+        $color = $*comment_bar_one_fgcolor;
+    } else {
+        $background = $*comment_bar_two_bgcolor;
+        $color = $*comment_bar_two_fgcolor;
+    }
+
+    """
+<tr><td></td><td valign="top">
+<table width="$*box_width" cellpadding="0" cellspacing="0" border="0" summary="">
+<tr><td>
+<table width="$indent" cellpadding="0" cellspacing="0" border="0" summary="">
+<tr><td></td></tr></table>
+</td><td>
+<table width="$cwidth" cellpadding="2" cellspacing="0" border="0" summary="" class="entrybox">
+<tr align='left'>
+<td bgcolor="$*outline" align="center">
+<table width="100%" cellpadding="5" cellspacing="0" border="0" summary="">
+<tr bgcolor="$background" color="$color" align='left'><td align="left">""";
+
+    print "$poster";
+    if ($c.screened) { print " (screened)"; }
+    print ": $subj";
+
+    """</td><td align="right" class="comments">""";
+
+    print "<a href=\"$c.permalink_url\">Link</a>";
+
+    """</td></tr></table></td></tr></table></td></tr></table></td></tr>""";
+}
+
+function ItemRange::print() {
+    if ($.all_subitems_displayed) { return; }
+"""
+<tr><td></td><td><table width="$*box_width" align="left" cellpadding="0" cellspacing="0">
+<tr><td>
+<table align="center" cellpadding="2" cellspacing="0"
+border="0"
+summary="">
+<tr><td bgcolor="$*outline">
+<table cellpadding="3" cellspacing="0"
+border="0"
+summary="">
+<tr bgcolor="$*stronger_back">
+<td align="center" class="index">""";
+    print lang_page_of_pages($.current, $.total);
+"""</td>
+</tr>
+<tr bgcolor="$*entry_back">
+<td align="center">""";
+    foreach var int i (1..$.total) {
+        if ($i == $.current) { "<b>[$i]</b> "; }
+        else {
+            var string url_of = $this->url_of($i);
+            "<a href='$url_of'><b>[$i]</b></a> ";
+        }
+    }
+    "</td></tr></table></td></tr></table></td></tr></table></td></tr>";
+}
+
+function ReplyPage::print_body () {
+    if (not $.entry.comments.enabled) {
+        """<tr><td></td><td><table width="$*box_width" cellpadding="2" cellspacing="0" border="0" summary="" class="entrybox">
+<tr align='left'>
+<td bgcolor="$*outline" align="center">
+<table width="100%" cellpadding="5" cellspacing="0" border="0" summary="">
+<tr bgcolor="$*stronger_back" align='left'>
+<td class="caption" colspan='2'>$*text_reply_nocomments_header</td></tr>
+<tr align='left'>
+<td colspan="2" bgcolor="$*entry_back">""";
+
+        print "<p>$*text_reply_nocomments</p>";
+        """</td></tr></table></td></tr></table></td></tr>""";
+        return; 
+    }
+    var string datetime;
+    $datetime = $.replyto.time->date_format("%%da%% %%yyyy%%-%%mm%%-%%dd%% %%HH%%:%%min%%");
+
+    if (defined $.replyto.userpic) {
+        """
+<tr valign="top"><td align="right">
+<table cellpadding="2" cellspacing="0" border="0" summary="">
+<tr align="right">
+<td bgcolor="$*outline">
+<table cellpadding="0" cellspacing="0" border="0" summary="">
+<tr align="right">
+<td bgcolor="$*entry_back">
+<a href="http://www.dreamwidth.org/allpics.bml?user=$.replyto.poster.username">
+<img border="0" src="$.replyto.userpic.url" width="$.replyto.userpic.width" height="$.replyto.userpic.height" alt=""></a>
+</td></tr></table></td></tr></table></td>
+<td valign="top">""";
+    } else {
+        """<tr><td></td><td valign="top">""";
+    }
+
+    """<table bgcolor="$*outline" width="$*box_width" cellpadding="2" cellspacing="0" border="0" summary="" class="entrybox">
+<tr align='left'>
+<td align="center">
+<table width="100%" cellpadding="5" cellspacing="0" border="0" summary="">
+<tr bgcolor="$*stronger_back" align='left'>
+<td>""";
+    if (defined $.replyto.poster) {
+        print $.replyto.poster->as_string();
+    } else {
+        print "<i>Anonymous</i>";
+    }
+"""</td>
+<td align="right">$datetime</td></tr>
+<tr align='left'>
+<td colspan="2" bgcolor="$*entry_back">""";
+    if ($.replyto.subject != "") {
+        """
+<div style="font-family: arial, helvetica, verdana, sans-serif;
+            font-size: 11pt"><b>$.replyto.subject</b></div>""";
+    }
+
+"""$.replyto.text</td></tr>
+<tr bgcolor="$*weak_back"><td align='left' class='comments'>
+<a href="$.replyto.permalink_url">$*text_permalink</a></td>
+<td align='right' class='comments'><a href='$.entry.comments.read_url'>Read Comments</a></td>
+</tr></table></td></tr></table></tr>""";
+
+    """<tr><td></td><td><table bgcolor="$*outline" width="$*box_width" cellpadding="2" cellspacing="0" border="0" summary="" class="entrybox">
+<tr align='left'>
+<td align="center">
+<table width="100%" cellpadding="5" cellspacing="0" border="0" summary="">
+<tr bgcolor="$*stronger_back" align='left'>
+<td class="caption" colspan='2'>Reply:</td></tr>
+<tr bgcolor="$*entry_back" align='left'>
+<td colspan="2">""";
+
+    $.form->print();
+    
+    """</td></tr></table></td></tr></table><p>""";
+}
+
+function print_theme_preview () {
+  """<table width='100%' bgcolor='$*page_back' cellpadding=10><tr><td align='center'>
+
+<table width='400' cellpadding='2' cellspacing='2'>
+<tr align='left'><td bgcolor="$*outline" align="center">
+
+<table width="100%" cellpadding="5" cellspacing="0" border="0" summary="">
+<tr align='left'><td style="color: $*stronger_text">Preview Subject</td><td align="right" style="font-size: 8pt; color: $*stronger_text">[Feb. 5th, 2002|<b>8:46 pm</b>]</td></tr>
+<tr align='left'>
+<td colspan="2" bgcolor="$*entry_back" style='color: $*entry_text'>
+Preview text, preview text, etc, etc..... words, words and more words.
+
+</td></tr>
+
+<tr bgcolor="$*weak_back"><td align='left' class='style: font-size: 8pt'>
+<a style='text-decoration:none;color: $*page_link' href="#">$*text_permalink</a>
+</td><td align='right' style='font-size: 8pt'>
+<a href='#' style='text-decoration:none;color:$*page_vlink'><b>1 comment</b></a>|<a href='#' style='text-decoration:none;color:$*page_link'>post comment</a>
+
+</td></tr></table>
+</td></tr></table>
+</td></tr></table>
+""";
+}
+
