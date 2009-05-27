@@ -40,7 +40,8 @@ string rewrite(string url)
 	     * aren't usernames; `simont' is also included here. */
 	    list = "/pics/userpic/lists/userpic-origin/files/stat/"
 		"bigip/stat-origin/img/status/mail/post/www/ljdev/"
-		"userpic-voxel/wwwstat/files-origin/p-userpic/p-stat/simont/";
+		"userpic-voxel/wwwstat/files-origin/p-userpic/p-stat/"
+		"simont/ext-99325/";
 	    if (index(middle, ".") < 0 && index(list, "/"+middle+"/") < 0)
 		style = true;
 	}
