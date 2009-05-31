@@ -107,8 +107,8 @@ void launch_url(void)
 	string number = substr(str, 0, len(str)-16);
 	int index = index(number, "-");
 	if (index >= 0)		       /* strip off "-forwarded" or similar */
-	    str = substr(str, 0, index);
-	str = "http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=" + str;
+	    number = substr(number, 0, index);
+	str = "http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=" + number;
 
     } else {
 
