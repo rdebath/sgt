@@ -144,7 +144,9 @@ There are other sites tracking bugs and feature requests in
 downstream packages of the Unix port, some of which undoubtedly
 apply to our code:
 <a href="http://packages.qa.debian.org/p/putty.html">Debian</a>,
-<a href="https://launchpad.net/ubuntu/+source/putty">Ubuntu</a>,
+Launchpad
+(<a href="https://bugs.launchpad.net/putty">us</a>,
+<a href="https://bugs.launchpad.net/ubuntu/+source/putty">Ubuntu</a>)
 <a href="ftp://ftp.netbsd.org/pub/pkgsrc/current/pkgsrc/security/putty/README.html">NetBSD</a>.
 
 <p>
