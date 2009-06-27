@@ -255,12 +255,54 @@ def fetchobj(f, xoff, number, gen, printout=0):
     parsed = pdfparse(lexed)
     return parsed
 
+def objnumbers(f, xoff):
+    ret = []
+    offset = None
+    xrefoff = xoff
+    while 1:
+        f.seek(xrefoff)
+        s = pdfgetline(f, 1)
+        fassert(s == "xref", "expected 'xref' keyword in xref section")
+        while 1:
+            s = pdfgetline(f, 1)
+            ss = string.split(s)
+            if len(ss) != 2:
+                break
+            start = string.atoi(ss[0])
+            nobjs = string.atoi(ss[1])
+            ret.append((start, nobjs))
+            curroff = f.tell()
+            # Seek to the end of this bit and try the next bit.
+            f.seek(curroff + nobjs * 20)
+        # Now parse the following trailer.
+        lexed = []
+        d = ""
+        while 1:
+            s = pdfgetline(f, 0)
+            if s == "": break
+            d = d + s
+            d = pdflex(d, lexed)
+            if len(lexed) > 0 and lexed[-1] == "startxref":
+                break
+        parsed = pdfparse(lexed)
+        if number == -1:
+            return parsed
+        fassert(type(parsed[0]) == types.DictType, "expected dictionary in trailer")
+        # Now look backwards to find the previous xref section.
+        prevstr = parsed[0].get("/Prev", "")
+        if prevstr == "":
+            break
+        xrefoff = string.atoi(prevstr)
+
+    return ret
+
 args = sys.argv[1:]
 if len(args) == 0:
     print "usage: pdfread <filename>"
     print "   or: pdfread <filename> <objnum>"
     print "   or: pdfread <filename> <objnum> <gennum>"
     print "   or: pdfread <filename> -p <pagenum>"
+    print "   or: pdfread <filename> -a"
     sys.exit(0)
 
 if args[0] == "-d":
@@ -282,6 +324,9 @@ if len(args) > 0:
         args = args[2:]
     elif args[0] == "-pc":
         mode = "pagecount" # indicates we're in page-counting mode
+        args = args[1:]
+    elif args[0] == "-a":
+        mode = "all" # indicates we're in dump-everything mode
         args = args[1:]
     else:
         number = string.atoi(args[0])
@@ -365,3 +410,12 @@ if mode == "pagecount":
 if mode == "obj":
     # We have an xref table offset and an object number. Go for it.
     fetchobj(f, xrefoff, number, gen, 1)
+
+if mode == "all":
+    # Grab every object we can find in the TOC.
+    nums = objnumbers(f, xrefoff)
+    for low, high in nums:
+        for obj in xrange(low, high):
+            if obj != 0:
+                fetchobj(f, xrefoff, obj, -1, 1)
+
