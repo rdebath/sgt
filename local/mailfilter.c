@@ -659,6 +659,15 @@ static void scanner_feed_text_postqp(scanner *s, stream *st, text *ctx,
 			    specific_msg =
 				"This appears to be a prolific spam.";
 			}
+			if (!strncmp(ctx->htmlattrval,
+				     "http://groups.yahoo.com/group/", 30) &&
+			    !strncmp(ctx->htmlattrval + 30 +
+				     strspn(ctx->htmlattrval+30,
+					    "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"),
+				     "/message/1", 22)) {
+			    specific_msg =
+				"This appears to be a prolific spam.";
+			}
 		    }
 		}
 
@@ -925,7 +934,8 @@ static void scanner_init_filename(scanner *s, stream *st, void *vctx)
 
     for (i = 0; i < npath; i++) {
 	if (path[i].type == ST_RFC822 &&
-	    strcaseprefix(path[i].extra->rfc822.filename, "DSL") &&
+	    (strcaseprefix(path[i].extra->rfc822.filename, "DSL") ||
+	     strcaseprefix(path[i].extra->rfc822.filename, "DSC")) &&
 	    !strcasecmp(path[i].extra->rfc822.filename + 3 +
 			strspn(path[i].extra->rfc822.filename+3, "0123456789"),
 			".png"))
