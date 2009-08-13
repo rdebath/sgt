@@ -2,6 +2,7 @@ Summary: Ability to specify a serial connection on the command-line
 Class: wish
 Difficulty: fun
 Priority: medium
+Fixed-in: r8617 2009-08-11
 Content-type: text/x-html-body
 
 <p>
