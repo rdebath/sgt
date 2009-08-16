@@ -1086,6 +1086,245 @@ struct cube cube4x4 = {
 };
 
 /* ----------------------------------------------------------------------
+ * 3x3x2 Rubik's Cuboid. Eight corner pieces arbitrarily permutable,
+ * eight edge pieces arbitrarily permutable.
+ *
+ * Move notation is a modified form of Singmaster. We orient the
+ * cuboid so that the top and bottom (U and D) faces are the 3x3
+ * ones, and the four side faces are 3x2. Then U means a clockwise
+ * (looking down) quarter turn of the top face, D a clockwise
+ * (looking up) quarter turn of the bottom face, just as in
+ * Singmaster; U' and D' are their inverses, of course; but F, B, L
+ * and R each denote a full half-turn of the appropriate face, on
+ * the grounds that it would be silly to write them as F2 etc when
+ * those faces can't be quarter-turned.
+ *
+ * Since UD' is a twist of the whole cuboid through a quarter-turn
+ * and we don't really want to consider that a distinct position, we
+ * arrange that all four orientations of the starting position are
+ * considered identities, so that groupmap will find the shortest
+ * sequence to return an arbitrary position to _one_ of those
+ * orientations.
+ */
+
+int c332_identity(struct group *gctx, void *velt, int index)
+{
+    int *elt = (int *)velt;
+    int i;
+
+    /*
+     * We have four identity positions, because the cube can be in
+     * any of four orientations.
+     */
+    static const int identities[] = {
+	0,1,2,3,4,5,6,7, 0,1,2,3,4,5,6,7,
+	1,2,3,0,5,6,7,4, 1,2,3,0,5,6,7,4,
+	2,3,0,1,6,7,4,5, 2,3,0,1,6,7,4,5,
+	3,0,1,2,7,4,5,6, 3,0,1,2,7,4,5,6,
+    };
+
+    if (index >= 4) return 0;
+
+    for (i = 0; i < 16; i++)
+	elt[i] = identities[16 * index + i];
+
+    return 1;
+}
+
+int c332_index(struct group *gctx, void *velt)
+{
+    int *elt = (int *)velt;
+    int i, j, mult, ret;
+
+    ret = 0;
+
+    /*
+     * Index the permutation of the corners.
+     */
+    mult = 8;
+    for (i = 0; i < 7; i++) {
+	int k = 0;
+	for (j = 0; j < i; j++)
+	    if (elt[j] < elt[i])
+		k++;
+	ret = ret * mult + elt[i] - k;
+	mult--;
+    }
+
+    /*
+     * Index the permutation of the edges.
+     */
+    mult = 8;
+    for (i = 8; i < 16; i++) {
+	int k = 0;
+	for (j = 8; j < i; j++)
+	    if (elt[j] < elt[i])
+		k++;
+	ret = ret * mult + elt[i] - k;
+	mult--;
+    }
+
+    return ret;
+}
+
+void c332_fromindex(struct group *gctx, void *velt, int index)
+{
+    int *elt = (int *)velt;
+    int i, j, mult;
+
+    /*
+     * Unwind the permutation of the edges.
+     */
+    elt[15] = 0;
+    mult = 2;
+    for (i = 15; i-- > 8 ;) {
+	elt[i] = index % mult;
+	index /= mult;
+	for (j = i+1; j < 16; j++)
+	    if (elt[j] >= elt[i])
+		elt[j]++;
+	mult++;
+    }
+
+    /*
+     * And then the corners.
+     */
+    elt[7] = 0;
+    mult = 2;
+    for (i = 7; i-- ;) {
+	elt[i] = index % mult;
+	index /= mult;
+	for (j = i+1; j < 8; j++)
+	    if (elt[j] >= elt[i])
+		elt[j]++;
+	mult++;
+    }
+}
+
+int c332_maxindex(struct group *gctx)
+{
+    int f, i;
+
+    f = 1;
+    for (i = 1; i <= 8; i++)
+	f *= i;
+
+    return f * f;
+}
+
+char *c332_corners[] = {
+    "ULF", "URF", "URB", "ULB", "DLF", "DRF", "DRB", "DLB",
+};
+char *c332_edges[] = {
+    "UL", "UF", "UR", "UB", "DL", "DF", "DR", "DB",
+};
+
+char *c332_parseelt(struct group *gctx, void *velt, char *s)
+{
+    int *elt = (int *)velt;
+    char *ret;
+    int i, j, k, m, mask;
+
+    mask = 0;
+    for (i = 0; i < 8; i++) {
+	char *t = s;
+	while (*s && isalpha((unsigned char)*s)) s++;
+	if (s-t != 3)
+	    return "Expected three-character corner specifier";
+	while (*s && !isalpha((unsigned char)*s)) s++;
+	for (m = 0; m < 8; m++) {
+	    for (j = 0; j < 3; j++) {
+		int c = toupper((unsigned char)t[j]);
+		for (k = 0; k < 3; k++)
+		    if (c332_corners[m][k] == c)
+			break;	       /* found this character */
+		if (k == 3)
+		    break;	       /* didn't find this character */
+	    }
+	    if (j == 3)
+		break;		       /* found all characters */
+	}
+	if (m == 8)
+	    return "Unrecognised corner specifier";
+	mask |= 1 << m;
+	elt[i] = m;
+    }
+    if (mask != 0xFF)
+	return "Duplicate corner specifier";
+
+    mask = 0;
+    for (i = 8; i < 16; i++) {
+	char *t = s;
+	while (*s && isalpha((unsigned char)*s)) s++;
+	if (s-t != 2)
+	    return "Expected two-character edge specifier";
+	while (*s && !isalpha((unsigned char)*s)) s++;
+	for (m = 0; m < 8; m++) {
+	    for (j = 0; j < 2; j++) {
+		int c = toupper((unsigned char)t[j]);
+		for (k = 0; k < 2; k++)
+		    if (c332_edges[m][k] == c)
+			break;	       /* found this character */
+		if (k == 2)
+		    break;	       /* didn't find this character */
+	    }
+	    if (j == 2)
+		break;		       /* found all characters */
+	}
+	if (m == 8)
+	    return "Unrecognised edge specifier";
+	mask |= 1 << m;
+	elt[i] = m;
+    }
+    if (mask != 0xFF)
+	return "Duplicate edge specifier";
+
+    return NULL;
+}
+
+void c332_printelt(struct group *gctx, void *velt)
+{
+    int *elt = (int *)velt;
+    int i;
+    for (i = 0; i < 8; i++)
+	printf("%s,", c332_corners[elt[i]]);
+    for (i = 8; i < 16; i++)
+	printf("%s%s", c332_edges[elt[i]], i==15?"":",");
+}
+
+int c332_movedata[] = {
+    0, 1, 2, 3, -1, 8, 9, 10, 11, -1, -1,
+    0, 3, 2, 1, -1, 8, 11, 10, 9, -1, -1,
+    4, 7, 6, 5, -1, 12, 15, 14, 13, -1, -1,
+    4, 5, 6, 7, -1, 12, 13, 14, 15, -1, -1,
+    0, 7, -1, 3, 4, -1, 8, 12, -1, -1,
+    0, 5, -1, 1, 4, -1, 9, 13, -1, -1,
+    1, 6, -1, 2, 5, -1, 10, 14, -1, -1,
+    2, 7, -1, 3, 6, -1, 11, 15, -1, -1,
+};
+
+int *c332_moves[] = {
+    c332_movedata + 0,
+    c332_movedata + 11,
+    c332_movedata + 22,
+    c332_movedata + 33,
+    c332_movedata + 44,
+    c332_movedata + 54,
+    c332_movedata + 64,
+    c332_movedata + 74,
+};
+
+int c332counts[] = { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 };
+
+struct perm c332 = {
+    {perm_eltsize, c332_identity, c332_index, c332_fromindex,
+     c332_maxindex, c332_printelt, c332_parseelt, perm_moves,
+     perm_makemove, perm_movename},
+    16, 16, c332counts,
+    8, "U\0U'\0D\0D'\0L\0F\0R\0B", c332_moves
+};
+
+/* ----------------------------------------------------------------------
  * Command-line processing.
  */
 
@@ -1099,6 +1338,7 @@ struct namedgroup {
     {"rtwiddle3x3", &rtwiddle3x3.vtable},
     {"cube3x3", &cube3x3.vtable},
     {"cube4x4", &cube4x4.vtable},
+    {"c332", &c332.vtable},
 };
 
 struct cmdline {
@@ -1417,7 +1657,7 @@ int main(int argc, char **argv)
 #endif
         assert((granularity & (granularity-1)) == 0);  /* must be power of 2 */
         ntodos = 1;
-        while ((granularity << (ntodos-1)) < ndists)
+        while (((unsigned long)granularity << (ntodos-1)) < ndists)
             ntodos++;
 
         for (whichtodo = 0; whichtodo < 2; whichtodo++) {
@@ -1427,7 +1667,7 @@ int main(int argc, char **argv)
 
             for (i = 0; i < ntodos; i++) {
                 int g = granularity << i;
-                int size = (ndists + g - 1) / g;
+                int size = ((unsigned)ndists + g - 1) / g;
                 todos[whichtodo][i] = (int *)malloc(size * sizeof(int));
                 memset(todos[whichtodo][i], 0, size * sizeof(int));
             }
@@ -1590,6 +1830,7 @@ int main(int argc, char **argv)
 
     while (fgets(buf, sizeof(buf), stdin)) {
         char *err;
+	int n;
 
         buf[strcspn(buf, "\r\n")] = '\0';
 
@@ -1604,6 +1845,7 @@ int main(int argc, char **argv)
          * identity.
          */
 
+	n = 0;
         while (1) {
             int dist, j;
 
@@ -1638,9 +1880,11 @@ int main(int argc, char **argv)
             printf("Move %s -> ", gp->movename(gp, j));
             gp->printelt(gp, elt2);
             printf("\n");
+	    n++;
 
             memcpy(elt, elt2, eltsize);
         }
+	printf("Total %d\n", n);
     }
 
     return 0;
