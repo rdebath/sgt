@@ -102,6 +102,27 @@ cutoff you like).
 For complete and excruciating detail, you can read the
 <a href="manpage.html">man page</a> online.
 
+<h2>Windows</h2>
+
+<p>
+<code>agedu</code> itself does not have a native Windows port
+(although one user reported that it at least built in Cygwin).
+However, I do have a small Windows utility, which will scan a
+Windows system and produce a dump file suitable for loading into
+<code>agedu</code>, so if you have a Unix machine available as well
+as Windows then you can use <code>agedu</code> that way.
+
+<p>
+The utility is called
+<a href="ageduscan.exe"><code>ageduscan.exe</code></a>.
+It produces a log file on standard output, so you will probably want
+to run a command like "<code>ageduscan c:\ &gt; scan.dat</code>", or just
+"<code>ageduscan &gt; scan.dat</code>" to scan the current
+directory. Then copy the output file (<code>scan.dat</code> in these
+examples) to a Unix machine where you can run <code>agedu</code>
+itself, and load it in using the <code>-L</code> option (see the <a
+href="manpage.html">man page</a>).
+
 <h2>Status of <code>agedu</code></h2>
 
 <p>
@@ -125,6 +146,14 @@ A Unix source archive of <code>agedu</code> is available here:
 <blockquote>
 <p>
 <a href="ARCHIVE-NAME"><code>ARCHIVE-NAME</code></a>
+</blockquote>
+
+<p>
+The Windows scan-only utility (see above) is here:
+
+<blockquote>
+<p>
+<a href="ageduscan.exe"><code>ageduscan.exe</code></a>
 </blockquote>
 
 <p>
