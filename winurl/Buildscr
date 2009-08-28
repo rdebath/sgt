@@ -11,6 +11,7 @@ delegate windows
   in winurl do cmd /c vcvars32 \& nmake
   return winurl/winurl.exe
 enddelegate
+in winurl do chmod +x winurl.exe
 
 # Windowsify the text files.
 in winurl do perl -i~ -pe 'y/\015//d;s/$$/\015/' README LICENCE
