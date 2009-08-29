@@ -2,16 +2,41 @@ Summary: SSH-2 message strings etc should be in UTF-8
 Class: bug
 Difficulty: tricky
 Priority: medium
-Present-in: 2005-01-19
-Content-type: text/plain
+Present-in: 2005-01-19 2009-08-29
+Content-type: text/x-html-body
 
+<p>
 All of the human-readable and human-supplied strings in SSH-2,
 including user names, passwords, banners, and error messages, are
 specified to be encoded in UTF-8.  PuTTY currently ignores this and
 uses whatever character-set the terminal happens to be configured to
-use instead.
+use instead.  This is likely to cause trouble with passwords
+containing non-ASCII characters, for instance.
 
+<p>
 Fixing this is relatively easy in PuTTY, where it's possible for the
 SSH code to poke around in the terminal's state.  It's not so easy for
 plink and PSFTP, which will need to gain an understanding of character
 sets.
+
+<p>
+The OpenSSH client, which has much the same problem as plink, doesn't
+attempt to have an opinion on character sets (at least as of 5.1p1);
+everything will work according to the standard if the user's terminal
+is in UTF-8 mode, and not otherwise, regardless of the locale that
+OpenSSH is running in.
+
+<p>
+So it's to end up with a setup that mostly works but strictly breaches
+the standard. For instance, a multi-hop scenario where the user's
+terminal is in ISO-8859-1, and the end server's banner (say) is also
+in that character set (illegally), but an intermediate client/server
+running the OpenSSH client (or Plink) has a UTF-8 locale, works today
+but would break if the intermediate client started having an opinion
+on character sets.
+
+<p>
+Given this, if we fix this item, will we need an option to revert to
+our old (non-standard) behaviour -- using the configured terminal
+character set -- to cope with setups that have ended up looking like
+this?
