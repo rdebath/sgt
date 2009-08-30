@@ -1,4 +1,4 @@
-Summary: Bombing out with 'Received SSH_MSH_CHANNEL_SUCCESS for "winadj@putty.projects.tartarus.org"'
+Summary: Bombing out with 'Received SSH_MSG_CHANNEL_SUCCESS for "winadj@putty.projects.tartarus.org"'
 Class: semi-bug
 Priority: high
 Absent-in: 0.60
@@ -11,7 +11,7 @@ following error message, reportedly under heavy load:
 
 <pre>PuTTY Fatal Error
 
-(X)  Disconnected: Received SSH_MSH_CHANNEL_SUCCESS for
+(X)  Disconnected: Received SSH_MSG_CHANNEL_SUCCESS for
      "winadj@putty.projects.tartarus.org"
 
                       [   OK   ]</pre>
