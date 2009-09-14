@@ -42,6 +42,8 @@ ticket #3452</a>
   <br>Again, session log shows it happens on the first "winadj" we send.
 <li>b97d2a650908251029v6d08aadelab7db47c312b4841@mail.gmail.com
   <br>Again, shows up with "ls -l" type activity.
+  <br>Server claims to be "SSH-2.0-OpenSSH_3.8.1p1" but is in fact
+    boks_sshd 6.0.
 </ul>
 
 <p>
@@ -54,7 +56,8 @@ development code, should be seeing this. We probably want to find out
 what's going on before we make a release with this feature in.
 
 <p>
-On the face of it, it looks like the SSH server is incorrectly
+On the face of it, it looks like the SSH server -- which in all the
+cases positively identified so far is "boks_sshd" -- is incorrectly
 responding to our unilaterally-defined channel request message with
 SUCCESS, which it should never do since it's something we made up. 
 (<a href="http://tartarus.org/~simon/putty-snapshots/htmldoc/AppendixF.html#sshnames-channel">Our documentation</a>
