@@ -1,0 +1,59 @@
+This directory contains Grunge: a standalone terminal-based client
+for RGTP[1], with a user interface mimicking Monochrome BBS[2].
+
+ [1] http://www.groggs.group.cam.ac.uk/
+ [2] http://www.mono.org/
+
+This is a perfunctory README to enable somebody to use Grunge if
+they are already technically competent, already have some
+understanding of RGTP, already know where to find a server and what
+login details are required, and already has experience with the
+Monochrome BBS user interface. Nobody has yet attempted to use
+Grunge who did not fit this description; if and when they do, I may
+write better documentation, if I can't persuade them not to :-)
+
+Grunge is configured by means of a file called ~/.grungerc . This is
+a text file, each line of which contains a configuration directive
+or a comment. Comments start with a hash; configuration directives
+consist of a keyword followed by a space followed by
+keyword-specific value data.
+
+Configuration keywords are:
+
+ - 'server': the host name of the RGTP server.
+ - 'port': the port number to connect to on that server.
+ - 'userid': the user id used to log in.
+ - 'grogname': the default Grogname used when posting.
+ - 'scan-straight-in': a boolean (values are 'yes' and 'no')
+   controlling whether or not scanning with [SPACE] causes Grunge to
+   immediately open an unread item and start reading it, or merely
+   stop at the menu containing that file.
+ - 'space-leaves-file': a boolean controlling whether pressing
+   [SPACE] at the end of an item returns to the containing menu.
+ - 'index-check-interval': a value, in seconds, indicating the
+   minimum time between Grunge polling the server for index updates.
+
+You should also create a file called ~/.groggsecret, which has the
+same format as other clients such as Greed. Typically this means it
+will contain one line of the form "md5-secret <hex data>", where
+<hex data> is a byte-by-byte hex encoding of the shared secret used
+in the RGTP MD5 authentication.
+
+When it first connects, Grunge will retrieve the entire index from
+the RGTP server, and store the salient parts of it in ~/.grungeindex
+. This will take a little time, but thereafter Grunge will be able
+to incrementally fetch just the new updates to the index.
+
+If you set the environment variable GRUNGEDIR to point to a
+directory other than $HOME, Grunge will attempt to locate all three
+of the above files in that directory instead of in your home
+directory. This is currently the only support for accessing
+different servers.
+
+Finally, while running 'grunge' will launch the main interactive
+GROGGS-reading mode, there is a second mode of use, 'grunge -c',
+which does a quick check of whether anything new exists to be read,
+and prints 'You have new GROGGS!' if so.
+
+(There are other command line options, but I haven't got round to
+documenting them.)
