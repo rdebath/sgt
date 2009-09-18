@@ -54,7 +54,9 @@ def wrap_optimal(list):
         z = [holder()] + z
         for j in range(1, n-i+1):
             wid = wid + 1 + len(list[i+j-1])
-            if wid > wmax:
+            if wid > wmax and j > 1:
+                # (we permit too-long lines that are only one word,
+                # because it means the word itself won't fit)
                 break
             if j >= len(z):
                 if wid <= wopt:
