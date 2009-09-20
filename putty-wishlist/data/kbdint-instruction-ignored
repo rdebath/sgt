@@ -1,0 +1,21 @@
+Summary: SSH keyboard-interactive instructions to user can be discarded
+Class: bug
+Difficulty: fun
+Priority: high
+Absent-in: 0.58
+Present-in: 0.59 0.60
+Fixed-in: r8172 2008-09-10
+Content-type: text/x-html-body
+
+<p>
+If we get a keyboard-interactive INFO_REQUEST with an "instruction" string but
+no actual prompts, we discard the whole packet without displaying the
+instruction.
+
+<p>
+SunSSH is known to send such packets when providing instructions for password
+expiry and the like.
+
+<p>
+This was probably introduced around r6437, and hence probably a regression
+since 0.58 (although I haven't tested it).
