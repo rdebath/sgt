@@ -1,0 +1,323 @@
+; This is a partial piano arrangement of "Take Five", part of the Dave
+; Brubeck Quartet's album "Time Out". It is intended as a sample of my
+; MUS text sheet music format.
+
+; Important fact: MUS format is for describing sheet music. It is NOT
+; intended as a format for music PLAYING programs to read. Hence features
+; like the Z directive (see music format below) and the modus operandi of
+; the <8v*> directives (likewise). I take no responsibility for the fact that
+; playing music by computer from a MUS file is difficult.
+
+mus 110                          ; file format, version number
+
+; the file is divided into sections:
+;   STAVES, TITLES, EXTERNALS, INTERNALS, MUSIC
+;   MUSIC goes on to the end of the file and MUST come last.
+;   the others may come in any order; everything is optional EXCEPT
+;     stave definitions, time and key signatures. (Hence the STAVES
+;     and EXTERNALS sections must always be present.)
+;   If you omit items the defaults are:
+;   STAVES: no braces or brackets; actual stave specifications are obligatory
+;   TITLES: no titles at all
+;   EXTERNALS: SPLIT NEVER, BAR-NUMBERS OFF; TIME and KEY are obligatory
+;   INTERNALS: NOTE-NAMES ENGLISH, NOTES NATURAL, LINE-BREAKS AUTO, SQUASH 100
+
+staves:                             ; semicolons ALWAYS mean treat rest of
+1 treble                            ; line as comment
+2 bass                              ; MUS files are TOTALLY case-insensitive
+                                    ;  (except for quoted text)
+    ; possible clefs are: treble soprano mezzo-soprano alto tenor baritone bass
+    ; you may also use the clef name "LINE" meaning that the stave degenerates
+    ; into one line for tambourine and triangle music; in this case you may
+    ; not use the standard pitch notation but only the letters N (note) and R
+    ; (rest).
+brace 1-2     ; you may BRACE exactly 2 staves, or BRACKET any number
+              ;   including 1. BRACKETs may be nested but not BRACEs.
+              ; BRACKET directives may be combined, eg BRACKET 1-5 1-2 4-5 6-6
+              ;   instead of BRACKET 1-5 BRACKET 1-2 etc.
+; Also you can give part names to a stave or a pair of staves, like this:
+; NAME 1 "Violin"
+; NAME 2-3 "Piano"
+; These are printed to the left of the (indented) first line of the score.
+
+titles:
+main-title "Sample MUS File: Take Five"   ; centred, 24pt
+author "Transcribed by Simon Tatham"      ; right-aligned, 12pt
+subtitle "Original music played by the Dave Brubeck Quartet"  ; centred, 10pt
+instructions "Jazz time; fairly fast `c`=180" ; left aligned, 10pt, italics
+                          ; the `` surrounding the C mean it is to
+                          ;   be interpreted as meaning "crotchet"
+                          ; this applies to INSTRUCTIONS text and also to
+                          ;   quoted text in melody lines
+                          ; any duration is allowed EXCEPT:
+                          ;   (1) weird ones: ap ac bs
+                          ;   (2) Ntuplets
+                          ; in other words, allowable durations are
+                          ;   (0|1|2|4|8|16|32|64|b|sb|m|c|q|sq|dq|hq).?.?
+
+externals:      ; this section is for things that show up in the printout
+time 5/4            ; INITIAL time signature - you can change it later
+                    ; you may also specify times as follows:
+                    ; C, C|     for 4/4 (common) or 2/2 (alla breve) time
+key A minor     ; INITIAL key signature - you can change it later
+split never     ; Bar line splitting.
+                ; SPLIT NEVER: bar lines never split (default)
+                ; SPLIT BRACKET: bar lines split at bracket/brace level 0
+                ; SPLIT NONBRACE: bar lines always split except in braces
+                ; SPLIT ALWAYS: bar lines always split
+bar-numbers on  ; fairly obvious. ON or OFF. default is OFF
+
+internals:      ; and this one is for options that change the interpretation
+                ; of the rest of the file
+note-names english    ; chromatic scale from A to C goes:
+                      ; A Bb B C (if you're English)
+                      ; A B H C (if you're German)
+                      ; Default is ENGLISH
+notes natural   ; This may need explanation. Suppose there is an F# in
+                ; the key signature and you enter F in the music.
+                ; With NOTES NATURAL the system will insert a natural sign
+                ; for you and you must type F# to remove the accidental;
+                ; with NOTES AS-KEY the system will insert an F#(no accidental)
+                ; and you must type Fn to get F natural. This also applies to
+                ; accidentals in the music: under NOTES AS-KEY entering
+                ; C# followed by C generates two C sharps.
+                ; Note that the accidentals bb, b, n, #, X ALWAYS give the
+                ; same results - the NOTES keyword only alters the meaning
+                ; of a pitch with NO accidental given.
+                ; Default is NATURAL.
+line-breaks auto  ; MANUAL or AUTO; this controls the line breaking of the
+                ; music. If MANUAL is selected you must show ALL line breaks
+                ; using the keyword NEWLINE at the beginning of each bar that
+                ; starts a new line. If AUTO is selected the line breaking is
+                ; automatic.
+squash 100      ; 1% to 100% - the lower the SQUASH, the closer the music is
+                ; spaced and the more you fit on a page. This only applies if
+                ; LINE-BREAKS is on AUTO.
+ysquash 100     ; 1% to 100% and beyond - compresses or expands the
+                ; spacing between complete score lines. (note that
+		; the spacing between staves is fixed due to the
+		; brace symbol being fixed-height)
+
+; The music format is as follows:
+; In each bar you have several MELODY LINES, in braces {}.
+;   All white space in melody lines is TOTALLY ignored except for quoted text.
+;   Each melody line is preceded by its stave number.
+;   If you have two melody lines on the same stave it is ADVISED (not required)
+;     that you precede one with DOWN (i.e. all note stems point down) and the
+;     other with UP.
+;   If you give a stave number followed by "ditto" then that stave for that bar
+;     will simply contain the "repeat previous bar" sign (like a %).
+; In each melody line you have notes denoted as follows:
+;   NOTE = DURATION PITCH(ES) FLAGS
+;   NB some flags pertain to note heads, and are described in the PITCHES
+;     section; others pertain to the whole stem and have their own FLAGS
+;     section.
+;   A special note is the full bar's rest, denoted by a semibreve rest; this
+;     is denoted in MUS format simply by the letter R.
+;   Duration matches the regular expression
+;     (0|1|2|4|8|16|32|64|b|sb|m|c|q|sq|dq|hq|ap|ac|bs).?.?
+;     For Americans: 0=breve, 1=semibreve, 2=minim, 4=crotchet etc.
+;     For British: h=hemidemisemi, d=demisemi, s=semi
+;       b=breve, m=minim, c=crotchet, q=quaver
+;     Special notes: ap=apoggiatura, ac=acciaccatura, bs=black semibreve
+;     The dots work like real dots (one dot means note *= 3/2,
+;       two dots mean note *= 7/4)
+;     To do triplets etc (ie 3 notes in the time of 2) enclose the affected
+;       notes in parentheses (). Just after the opening parenthesis must come
+;       a fraction denoting the speed increase in the notes, then a colon.
+;       For example, a conventional "triplet" means three notes in the time
+;       of two normal ones, so you could write
+;         {[q.c0 sqc0] (3/2: qd+1 qe+1 qf+1) cg+1 cc0}
+;       to get the right effect. Note that the numerator of this fraction is
+;       also the number written above the affected notes. You have to put in
+;       a slur yourself, if you want one, but the number comes up
+;       automatically. Conventional quintuplets and septuplets are 5/4 and 7/4
+;       respectively; other "Ntuplets" are rare, although Jean-Michel Jarre
+;       has been known to use 23-tuplets (23/16) and 19-tuplets (19/16) in his
+;       music...
+;   Pitch: n|r|(c(X|#|n|b|bb)?0|([a-g](X|#|n|b|bb)?[+-][1-9]))*?-?
+;     n means note (unpitched) for use on single-line staves only.
+;     r means rest.
+;     Octave numbers are as follows:
+;       C0 is Middle C.
+;       D+1 up to C+1 is the octave above middle C
+;       D+2 up to C+2 is the next one up, etc.
+;       B-1 down to C-1 is the octave below Middle C
+;       B-2 down to C-2 is the next one down, etc.
+;     # means sharp, b means flat. (Note that as MUS format is case
+;       insensitive, you can use B for flat as well. It's not recommended!)
+;       X (or x) means double sharp, bb means double flat. n means natural.
+;     Note: Cx0 is a double sharpened Middle C even though it should be
+;       in octave +1 because of its pitch. The octave number refers to
+;       note POSITION, not PITCH!
+;     To denote a chord (several note heads on the same stem):
+;       Place an open parenthesis after the duration, then enter all the
+;       pitches consecutively, then place a closed parenthesis before the
+;       flags. Note that the chord will be built up in the order you write it,
+;       and so note heads will be shifted to the other side of the stem only if
+;       a note has ALREADY been placed where it will be in the way.
+;     The * flag changes the note into an open diamond, meaning "artificial
+;       harmonic" for strings players.
+;     - means tie; you put this on the FIRST note of the tie. (If three notes
+;       are tied, treat it as two separate ties, i.e. put - on the first and
+;       second notes of the three. Similarly for over 3). The tie is drawn
+;       upwards or downwards depending on where the stem of the first tied note
+;       goes.
+;   Flags: (.|_|'|^|w|v|+|p|>|o|(t|u|u!|~|~!)|(=[1-4])|g|`[#nb]|i[0-5])*
+;     ._'^wv+fo> are all marks above/below the note: . means staccato, _ means
+;       legato, ' means staccatissimo, ^ means sforzando, w means down bow,
+;       v means up bow, + means stopping (for horn players), p means fermata,
+;       o means natural harmonic (for strings players), > means accent,
+;       t means trill, u means turn, ~ means mordent, ! means inverted.
+;     All those flags are built up in order; some always go above the note,
+;       some always go below, and some follow the note stem. Whatever the
+;       positions, the ones specified FIRST get put NEAREST the note.
+;       This is useful when using the `# `n `b flags for small accidentals
+;       around ornaments and also when using the i (for fIngering) flag to
+;       specify multiple fingerings (e.g. for piano chords).
+;     The = flag causes 1-4 horizontal strokes to be drawn across the note stem
+;       (or above/below the note for a semibreve) to show tremolo/tremolando.
+;     g means arpeggio - a squiggle (let's be brutally honest here) is drawn
+;       to the left of the note (it had better be a chord or you'll look a
+;       fool when the music gets printed).
+;   Beaming of quavers and below is done by [ and ] enclosing the notes
+;     to be beamed. If a beam break is required (e.g. eight demisemiquavers,
+;     connected by three sets of beams but all but the top one break in the
+;     middle) it is denoted [first set of notes]-[second set of notes].
+;   Slurring of notes is done by bracketing the notes by / and \. Note that
+;     these do not need to be nested with respect to []. Note also that
+;     slurs may be carried over a bar line but must remain in the same melody
+;     line. (If there is more than one melody line on a stave, the one with
+;     the slur must remain in the same position over the bar line, e.g. if
+;     the stave has 3 melody lines and you start a slur in the second one,
+;     it must still be the second one in the next bar. If need be it can be
+;     "padded" by entering blank melody lines - that's perfectly allowable.)
+;   8va/8vb octave shifts are done by bracketing the affected notes by <8va>
+;     and <8vb>: <8va> shifts up an octave (so it starts 8va shifts and ends
+;     8vb shifts) and <8vb> does the opposite.
+;     Note: <8va>/<8vb> only control the APPEARANCE - i.e. the dotted line
+;       etc. over/under the stave. Hence if there are two melody lines on
+;       one stave it is NOT necessary to put <8v*> directives on BOTH.
+;   Other <> directives are: <p>, <d> force the next note's stem up or down
+;     (the p and d reflect the shape of the note); <,> and </> insert flute
+;     breathing marks and general pauses (// sign). The <p> and <d> directives
+;     can be used to override an UP or DOWN directive, but they have lower
+;     priority than beam logic (which states that all note stems attached to
+;     a beam should point in the same direction). Again, the case-insensitivity
+;     of MUS file format means that you can use <D> instead of <d> - but it's
+;     not recommended, for reasons of clarity.
+;     New in version 120: <u> inserts a turn *between* two notes (rather than
+;     over the top of one). <u!> does the inverted turn.
+;   If it should ever become necessary to offset a note in one melody line
+;     from another occurring at the same time in a second this can be done
+;     by inserting a Z (for zero) in the melody line.
+; Various text may be placed around a stave by enclosing it in quotes in a
+;   melody line. The first character of the quoted text must be a flag and the
+;     text must be separated from this flag by exactly one space.
+;   D means dynamics; these are below the stave. The FIRST word of the
+;     dynamics must match [smfpz]* and is written in the dynamics font.
+;     The remainder is written in ordinary italics, eg "D p subito"
+;   A places text above the stave; B places it below the stave.
+;   L means lyrics: the text is placed below the stave, centred on the
+;     previous note. (Each lyrics syllable must therefore be placed after
+;     the corresponding note.)
+;   > and < start and end hairpin crescendos/diminuendos. These do not take
+;     any text in the quotes; just ">" or "<" is enough. They are toggle
+;     switches; if a crescendo is in operation, then a "<" will turn it off.
+;     Otherwise it will turn anything else off and turn a crescendo on.
+;     Similarly for diminuendos, controlled by ">".
+; Bars are separated by bar line markers |. Repeat begin/end markers go :|
+;   and |: and of course :|:. Double bars || are used when key/time signatures
+;   and clefs change. Thin-thick bars ||| are used at the end of a piece and
+;   just before a coda section.
+; If a bar has any particular qualities (eg first or second ending)
+;   then you put keywords at the beginning of the bar:
+;   FIRST and SECOND are for repeat endings.
+;   SAMEBAR states that this bar and the next bar are the same bar
+;     (the visible results of this being that a line break will not occur
+;     between them, and also that they are counted as one bar in the bar
+;     numbering scheme) for cases where a double bar line is needed in the
+;     middle of the bar because the clef, key or time signature changes.
+;   KEY and TIME work just like they do in the EXTERNALS section.
+;   SEGNO places a Dal-Segno repeat start sign (a bit like an overdressed %)
+;   CODA places a coda sign.
+;   CLEF stave-number clef-name changes clefs in mid-piece.
+;   REST followed by a number places a multiple-bar rest in the piece.
+;   NEWLINE causes the bar to begin a new line if manual line-breaking is
+;     in use.
+;   Anything in quotes is written above the stave at the left of the bar,
+;     unless preceded by the word RIGHT in which case it goes at the right
+;     of the bar.
+;   Note that if the KEY, TIME or CLEF keywords are used, they MUST come
+;     FIRST, IN THIS ORDER: barline [CLEF [CLEF...]] [KEY] [TIME] the-rest
+;     Also if the NEWLINE keyword for manual line-breaking is used, it must
+;     come before the section labelled "the-rest" which can consist of FIRST,
+;     SECOND, SEGNO, CODA, REST, RIGHT and quoted text.
+
+music:
+
+samebar				; this keyword is needed if the first bar is
+				; a partial bar (anacrusis?)
+
+1 {qe+1 [qa+1 qc+1]}           ; bars can be any length; the TIME directive
+                                ; has no checking function - all it does is
+                                ; to display the time signature
+2 {qr cr}
+|:
+
+1 {[qd#+2 qe+2] [qd#+2 qd+2] cc+1 ce+1 cg+1}
+2 up {qr c(c-1 e-1) qr c(c-1 e-1) cr c(b-2 e-1)}
+2 down {c.a-2 c.a-2 mg-2}
+|
+
+1 {m.a+1 [qb+1~ qa+1] cg+1}
+2 up {qr c(c-1 e-1) qr c(c-1 e-1) cr c(b-2 e-1)}
+2 down {c.a-2 c.a-2 mg-2}
+|
+
+1 {m.a+1 [qg+1~ qe+1] cd+1}
+2 up {qr c(c-1 e-1) qr c(c-1 e-1) cr c(b-2 e-1)}
+2 down {c.a-2 c.a-2 mg-2}
+|
+
+first
+1 {m.e+1 qr qe+1 [qa+1 qc+1]}
+2 up {qr c(c-1 e-1) qr c(c-1 e-1) cr c(b-2 e-1)}
+2 down {c.a-2 c.a-2 mg-2}
+:|
+
+second
+right "Fine"
+1 {m.e+1 mr}
+2 up {qr c(c-1 e-1) qr c(c-1 e-1) m(c-1 e-1)}
+2 down {c.a-2 c.a-2 ma-2}
+|:
+
+1 {qa+1 cc+1 qa+1 cf+1 [qd+1 qe+1] [qf+1 qf#+1]}
+2 up {qr c(a-2 c-1) qr c(a-2 c-1) cr c(f-2 a-2)}
+2 down {c.f-2 c.f-2 md-2}
+|
+
+1 {qg+1 cb+1 qg+1 ce+1 [qc0 qd+1] [qeb+1 qe+1]}
+2 up {qr c(g-2 b-2) qr c(g-2 b-2) cr c(e-2 g-2)}
+2 down {c.e-2 c.e-2 mc-2}
+|
+
+1 {qf+1 ca+1 qf+1 cd+1 [qb-1 qd+1] [qg+1 qf+1]}
+2 up {qr c(f-2 a-2) qr c(f-2 a-2) cr c(g-2 b-2)}
+2 down {c.d-2 c.d-2 md-2}
+|
+
+first
+1 {[qe+1 qeb+1] [qe+1 qf+1] cg+1 [qe+1 qf+1] [qg+1 qab+1]}
+2 up {qr c(g#-2 b-2) qr c(g#-2 b-2) cr c(g#-2 b-2)}
+2 down {c.e-2 c.e-2 me-2}
+:|
+
+second
+right "D.C. al Fine"
+1 {[qe+1 qeb+1] [qe+1 qf+1] cg+1 qr}
+2 up {qr c(g#-2 b-2) qr c(g#-2 b-2) qr}
+2 down {c.e-2 c.e-2 qr}
+|||
+

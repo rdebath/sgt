@@ -1,0 +1,61 @@
+#!/bin/sh 
+
+# usage: lilysetup <fontdir> <oldlilydir> <lilydir>
+#
+# where:  fontdir    is the lilyfonts directory output from './glyphs.py -lily'
+#         oldlilydir is the current default LILYPOND_DATADIR, typically
+#                    /usr/share/lilypond/2.10.33/ or something similar
+#         newlilydir is a directory usable as LILYPOND_DATADIR
+#
+# prerequisites: my 'lns' and 'reservoir' utilities on $PATH
+
+fontdir="$1"
+oldlilydir="$2"
+newlilydir="$3"
+
+rm -rf "$newlilydir"
+lns -a -r "$oldlilydir" "$newlilydir"
+rm -rf "$newlilydir"/fonts
+cp -r "$fontdir" "$newlilydir"/fonts
+
+replace() {
+  local file="$1"
+  shift
+  "$@" "$file" > "${file}.new" && mv "${file}.new" "$file"
+}
+
+replace "$newlilydir"/ly/titling-init.ly \
+perl -pe '/header:meter/ and do { s/\S.*\S/{ \\italic $& }/ };
+END {print "tagline = ##f\n"}'
+
+replace "$newlilydir"/ly/paper-defaults.ly \
+perl -pe 'END {print << '\''EOF'\'';
+\paper {
+  #(define left-margin (* 18 mm))
+  #(define right-margin (* 18 mm))
+  #(define bottom-margin 10)
+  #(define fonts
+    (make-pango-font-tree "Nimbus Roman No9 L"
+                          "Nimbus Sans L"
+                          "Nimbus Mono L" 1))
+}
+EOF
+}'
+
+replace "$newlilydir"/ly/declarations-init.ly \
+perl -pe 'END {print << '\''EOF'\'';
+\layout {
+  \context { \Score
+    \override SpacingSpanner #'\''spacing-increment = #'\''1.5
+    \override TextScript #'\''font-shape = #'\''italic
+    \override TextScript #'\''staff-padding = #2.0
+    \override BarNumber #'\''font-shape = #'\''italic
+    \override MetronomeMark #'\''font-shape = #'\''italic
+    \override MetronomeMark #'\''staff-padding = #2.0
+    \override MetronomeMark #'\''minimum-space = #0.0
+    \override MultiMeasureRestText #'\''font-shape = #'\''italic
+    \override MultiMeasureRestText #'\''staff-padding = #2.0
+  }
+}
+EOF
+}'
