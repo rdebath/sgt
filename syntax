@@ -1,0 +1,96 @@
+/* This is the syntax of MUS melody lines, expressed as a Yacc grammar. It is
+ * not actually used in the compilation of MUS, but is here to demonstrate
+ * the non-existence of any ambiguities in the grammar. */
+
+%token QUOTED_TEXT
+
+%%
+
+melody_line	: /* nothing */
+		| melody_line stream_control
+		| melody_line note
+		;
+
+stream_control	: '['
+		| ']' '-' '['
+		| ']'
+		| '/'
+		| '\\'
+		| '<' angle_sc '>'
+		| QUOTED_TEXT
+		| '(' number '/' number ':'
+		| ')'
+		;
+
+angle_sc	: 'p'
+		| 'd'
+		| '8' 'v' 'a'
+		| '8' 'v' 'b'
+		| ','
+		| '/'
+		| 'u'
+		| 'u' '!'
+		;
+
+note		: duration pitches flags
+		| 'r'
+		;
+
+duration	: number
+		| 'b' | 's' 'b' | 'm' | 'c' | 'q'
+		| 's' 'q' | 'd' 'q' | 'h' 'q'
+		| 'b' 's' | 'a' 'p' | 'a' 'c'
+		;
+
+pitches		: pitch
+		| '(' pitch_list ')'
+		;
+
+pitch_list	: pitch
+		| pitch_list pitch
+		;
+
+pitch		: actual_pitch
+		| pitch '-'
+		| pitch '*'
+		;
+
+actual_pitch	: 'n'
+		| 'r'
+		| note_letter accidental octave
+		;
+
+note_letter	: 'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g'
+		;
+
+accidental	: /* nothing */ | 'x' | '#' | 'n' | 'b' | 'b' 'b'
+		;
+
+octave		: '0'
+		| '+' nzdigit
+		| '-' nzdigit
+		;
+
+flags		: /* nothing */
+		| flags flag
+
+flag		: '.' | '_' | '\'' | '^' | 'w' | 'v' | '+' | 'p' | '>' | 'o'
+		| 't' | 'u' | 'u' '!' | '~' | '~' '!' | '=' onetofour | 'g'
+		| '`' '#' | '`' 'n' | '`' 'b' | 'i' zerotofive
+		;
+
+onetofour	: '1' | '2' | '3' | '4'
+		;
+
+zerotofive	: '0' | '1' | '2' | '3' | '4' | '5'
+		;
+
+number		: digit
+		| number digit
+		;
+
+digit		: '0' | nzdigit
+		;
+
+nzdigit		: '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
+		;
