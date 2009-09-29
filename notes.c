@@ -393,7 +393,7 @@ void process_notes(void) {
 	    nmin = stem_min;
 	    nmax = stem_max;
 	    if (stem) {
-		int stem_len, tails;
+		int stem_len, tails, tailsym;
 		
 		tails = (ns->stem_type==STEM_1TAIL ? 1 :
 			 ns->stem_type==STEM_2TAIL ? 2 :
@@ -441,13 +441,20 @@ void process_notes(void) {
 		    put_line (stem_bx, axpos, stem_by,
 			      stem_bx, axpos, stem_by+stem_len, thin_barline);
 
-		    if (tails)
+		    if (tails) {
 			n_right (&e, tail_width + stem_bx - xpos);
-		    while (tails--) {
-			put_symbol (stem_bx, axpos, stem_by+stem_len,
-				    (ns->stem_down ? s_tailquaverdn :
-				     s_tailquaverup));
-			stem_len += (ns->stem_down ? tail_vspace : -tail_vspace);
+			if (ns->stem_down)
+			    tailsym = (tails==1 ? s_tailquaverdn :
+				       tails==2 ? s_tailsemidn :
+				       tails==3 ? s_taildemidn :
+				       /* tails==1 ? */ s_tailhemidn);
+			else
+			    tailsym = (tails==1 ? s_tailquaverup :
+				       tails==2 ? s_tailsemiup :
+				       tails==3 ? s_taildemiup :
+				       /* tails==1 ? */ s_tailhemiup);
+
+			put_symbol (stem_bx, axpos, stem_by+stem_len, tailsym);
 		    }
 		}
 	    }

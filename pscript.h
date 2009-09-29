@@ -17,15 +17,16 @@ enum {
     s_clefF, s_clefG, s_coda, s_ditto, s_doubleflat, s_doublesharp,
     s_dynamicf, s_dynamicm, s_dynamicp, s_dynamics, s_dynamicz,
     s_fermata, s_flat, s_harmart, s_harmnat, s_headcrotchet,
-    s_headminim, s_legato, s_mordentlower, s_mordentupper, s_natural,
-    s_repeatmarks, s_restbreve, s_restcrotchet, s_restdemi,
-    s_resthemi, s_restminim, s_restquaver, s_restsemi, s_segno,
-    s_semibreve, s_sforzando, s_sharp, s_small0, s_small1, s_small2,
-    s_small3, s_small4, s_small5, s_small6, s_small7, s_small8,
-    s_small9, s_smallflat, s_smallnatural, s_smallsharp,
+    s_headminim, s_legato, s_mordentlower, s_mordentupper,
+    s_natural, s_repeatmarks, s_restbreve, s_restcrotchet,
+    s_restdemi, s_resthemi, s_restminim, s_restquaver, s_restsemi,
+    s_segno, s_semibreve, s_sforzando, s_sharp, s_small0, s_small1,
+    s_small2, s_small3, s_small4, s_small5, s_small6, s_small7,
+    s_small8, s_small9, s_smallflat, s_smallnatural, s_smallsharp,
     s_staccatissdn, s_staccatissup, s_staccato, s_stopping,
-    s_tailquaverdn, s_tailquaverup, s_timeCbar, s_timeC, s_trill,
-    s_turn, s_INVALID
+    s_taildemidn, s_taildemiup, s_tailhemidn, s_tailhemiup,
+    s_tailquaverdn, s_tailquaverup, s_tailsemidn, s_tailsemiup,
+    s_timeCbar, s_timeC, s_trill, s_turn, s_INVALID
 };
 
 #define bigdigit(i)	(s_big0 + (i))
