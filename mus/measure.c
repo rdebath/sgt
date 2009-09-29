@@ -2,14 +2,14 @@
 
 const int tiny_widths[] = {
     67,				       /* dot on dotted notes */
-    326,			       /* breve */
-    227,			       /* semibreve */
-    170,			       /* minim */
-    170,			       /* crotchet */
-    307,			       /* quaver */
-    307,			       /* semiquaver */
-    307,			       /* demisemiquaver */
-    307,			       /* hemidemisemiquaver */
+    351,			       /* breve */
+    247,			       /* semibreve */
+    178,			       /* minim */
+    178,			       /* crotchet */
+    293,			       /* quaver */
+    293,			       /* semiquaver */
+    293,			       /* demisemiquaver */
+    293,			       /* hemidemisemiquaver */
     216,			       /* f */
     460,			       /* m */
     365,			       /* p */
@@ -18,67 +18,67 @@ const int tiny_widths[] = {
 };
 
 const int rest_widths[] = {
-    299,			       /* breve rest */
-    313,			       /* semibreve rest */
-    313,			       /* minim rest */
-    256,			       /* crotchet rest */
-    262,			       /* quaver rest */
-    330,			       /* semiquaver rest */
-    400,			       /* demisemiquaver rest */
-    469,			       /* hemidemisemiquaver rest */
+    285,			       /* breve rest */
+    329,			       /* semibreve rest */
+    329,			       /* minim rest */
+    222,			       /* crotchet rest */
+    257,			       /* quaver rest */
+    331,			       /* semiquaver rest */
+    405,			       /* demisemiquaver rest */
+    479,			       /* hemidemisemiquaver rest */
 };
 
 const int note_widths[] = {
-    613,			       /* breve */
-    415,			       /* semibreve */
-    300,			       /* minim */
-    299,			       /* crotchet or hemi?demi?semi?quaver */
-    285,			       /* acciaccatura */
-    279,			       /* appoggiatura */
-    301,			       /* artificial harmonic */
+    663,			       /* breve */
+    455,			       /* semibreve */
+    316,			       /* minim */
+    316,			       /* crotchet or hemi?demi?semi?quaver */
+    283,			       /* acciaccatura */
+    247,			       /* appoggiatura */
+    319,			       /* artificial harmonic */
 };
 
 const int sprout_left_x[] = {
     0, 0,			       /* not for [semi]breve */
-    -139, -138,			       /* minim and crotchet/quaver */
+    -148, -148,			       /* minim and crotchet/quaver */
     0, 0, 0,			       /* not for ornament notes */
 };
 const int sprout_right_x[] = {
     0, 0,			       /* not for [semi]breve */
-    136, 137,			       /* minim and crotchet/quaver */
+    144, 144,			       /* minim and crotchet/quaver */
     0, 0, 0,			       /* not for ornament notes */
 };
 
 const int sprout_left_y[] = {
     0, 0,			       /* not for [semi]breve */
-    -40, -48,			       /* minim and crotchet/quaver */
+    -36, -36,			       /* minim and crotchet/quaver */
     0, 0, 0,			       /* not for ornament notes */
 };
 const int sprout_right_y[] = {
     0, 0,			       /* not for [semi]breve */
-    37, 50,			       /* minim and crotchet/quaver */
+    36, 36,			       /* minim and crotchet/quaver */
     0, 0, 0,			       /* not for ornament notes */
 };
 
 const int flag_ht[] = {
-    96,				       /* staccato */
-    40,				       /* legato */
-    160,			       /* staccatissimo */
-    262,			       /* sforzando */
-    352,			       /* down bow */
-    416,			       /* up bow */
-    304,			       /* stopping */
-    352,			       /* fermata */
-    120,			       /* natural harmonic */
-    248,			       /* accent */
-    384,			       /* trill */
-    273,			       /* turn */
+    99,				       /* staccato */
+    31,				       /* legato */
+    184,			       /* staccatissimo */
+    409,			       /* sforzando */
+    353,			       /* down bow */
+    410,			       /* up bow */
+    314,			       /* stopping */
+    353,			       /* fermata */
+    164,			       /* natural harmonic */
+    254,			       /* accent */
+    376,			       /* trill */
+    286,			       /* turn */
     0,				       /* (inverted turn) */
-    240,			       /* mordent */
-    704,			       /* inverted mordent */
-    384,			       /* small sharp */
-    376,			       /* small natural */
-    336,			       /* small flat */
+    253,			       /* mordent */
+    413,			       /* inverted mordent */
+    388,			       /* small sharp */
+    333,			       /* small natural */
+    311,			       /* small flat */
     0,				       /* (tremolo) */
     0,				       /* (fingering) */
     0,				       /* (arpeggio) */
