@@ -659,6 +659,8 @@ def tmpfn():
     cont.ox = cx
     cont.extra = "gsave newpath %g 0 moveto 0 1000 rlineto -100 0 rlineto 0 -1000 rlineto closepath 1 setgray fill grestore" % (cx - 9)
 
+    cont.origin = cx * 3600. / cont.scale - 12, (1000-cont.oy) * 3600. / cont.scale
+
     return cont
 tailquaverup = tmpfn()
 
@@ -722,6 +724,8 @@ def tmpfn():
     cx = c2.compute_x(0) + c2.compute_nib(0)[0]
     cont.ox = cx
     cont.extra = "gsave newpath %g 0 moveto 0 1000 rlineto -100 0 rlineto 0 -1000 rlineto closepath 1 setgray fill grestore" % (cx - 8)
+
+    cont.origin = cx * 3600. / cont.scale - 12, (1000-cont.oy) * 3600. / cont.scale
 
     return cont
 tailquaverdn = tmpfn()
