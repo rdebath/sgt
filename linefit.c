@@ -4,7 +4,7 @@
 #include <math.h>
 
 /*
- * C# code implementing two line-fitting algorithms which solve the
+ * C code implementing two line-fitting algorithms which solve the
  * same problem with different quality/speed tradeoffs.
  *
  * The problem is: given a finite sequence of (x,y) coordinates of
