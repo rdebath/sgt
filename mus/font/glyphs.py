@@ -693,6 +693,8 @@ def tmpfn():
     cont.ox = cx
     cont.extra = "gsave newpath %g 0 moveto 0 1000 rlineto -100 0 rlineto 0 -1000 rlineto closepath 1 setgray fill grestore" % (cx - 9)
 
+    cont.origin = cx * 3600. / cont.scale - 12, (1000-cont.oy) * 3600. / cont.scale
+
     return cont
 tailquaverupsquash = tmpfn()
 
@@ -760,6 +762,8 @@ def tmpfn():
     cont.ox = cx
     cont.extra = "gsave newpath %g 0 moveto 0 1000 rlineto -100 0 rlineto 0 -1000 rlineto closepath 1 setgray fill grestore" % (cx - 8)
 
+    cont.origin = cx * 3600. / cont.scale - 12, (1000-cont.oy) * 3600. / cont.scale
+
     return cont
 tailquaverdnsquash = tmpfn()
 
@@ -791,6 +795,8 @@ def tmpfn():
     cx = c2.compute_x(0) + c2.compute_nib(0)[0]
     cont.ox = cx
     cont.extra = "gsave newpath %g 0 moveto 0 1000 rlineto -100 0 rlineto 0 -1000 rlineto closepath 1 setgray fill grestore" % (cx - 8)
+
+    cont.origin = cx * 3600. / cont.scale - 12, (1000-cont.oy) * 3600. / cont.scale
 
     return cont
 tailquaverdnsquashsquash = tmpfn()
@@ -863,6 +869,8 @@ def tmpfn():
     cont.extra = tailquaverupsquash, "0 -90 translate", tailshortupsquash
     cont.ox = tailshortupsquash.ox
     cont.oy = tailshortupsquash.oy - 90
+    cont.origin = tailquaverupsquash.origin
+    cont.origin = (cont.origin[0], cont.origin[1] + 90*3600./cont.scale)
     return cont
 tailsemiup = tmpfn()
 
@@ -871,6 +879,8 @@ def tmpfn():
     cont.extra = (tailquaverupsquash,) + ("0 -90 translate", tailshortupsquash) * 2
     cont.ox = tailquaverupsquash.ox
     cont.oy = tailquaverupsquash.oy - 90*2
+    cont.origin = tailquaverupsquash.origin
+    cont.origin = (cont.origin[0], cont.origin[1] + 90*2*3600./cont.scale)
     return cont
 taildemiup = tmpfn()
 
@@ -879,6 +889,8 @@ def tmpfn():
     cont.extra = (tailquaverupsquash,) + ("0 -90 translate", tailshortupsquash) * 3
     cont.ox = tailquaverupsquash.ox
     cont.oy = tailquaverupsquash.oy - 90*3
+    cont.origin = tailquaverupsquash.origin
+    cont.origin = (cont.origin[0], cont.origin[1] + 90*3*3600./cont.scale)
     return cont
 tailhemiup = tmpfn()
 
@@ -887,6 +899,8 @@ def tmpfn():
     cont.extra = tailquaverdnsquash, "0 90 translate", tailshortdnsquash
     cont.ox = tailshortdnsquash.ox
     cont.oy = tailshortdnsquash.oy + 90
+    cont.origin = tailquaverdnsquash.origin
+    cont.origin = (cont.origin[0], cont.origin[1] - 90*3600./cont.scale)
     return cont
 tailsemidn = tmpfn()
 
@@ -895,6 +909,8 @@ def tmpfn():
     cont.extra = (tailquaverdnsquashsquash,) + ("0 90 translate", tailshortdnsquashsquash) * 2
     cont.ox = tailquaverdnsquashsquash.ox
     cont.oy = tailquaverdnsquashsquash.oy + 90*2
+    cont.origin = tailquaverdnsquashsquash.origin
+    cont.origin = (cont.origin[0], cont.origin[1] - 90*2*3600./cont.scale)
     return cont
 taildemidn = tmpfn()
 
@@ -903,6 +919,8 @@ def tmpfn():
     cont.extra = (tailquaverdnsquashsquash,) + ("0 90 translate", tailshortdnsquashsquash) * 3
     cont.ox = tailquaverdnsquashsquash.ox
     cont.oy = tailquaverdnsquashsquash.oy + 90*3
+    cont.origin = tailquaverdnsquashsquash.origin
+    cont.origin = (cont.origin[0], cont.origin[1] - 90*3*3600./cont.scale)
     return cont
 tailhemidn = tmpfn()
 
@@ -3698,8 +3716,14 @@ elif len(args) == 1 and args[0] == "-mus":
     "staccatissup",
     "staccato",
     "stopping",
+    "taildemidn",
+    "taildemiup",
+    "tailhemidn",
+    "tailhemiup",
     "tailquaverdn",
     "tailquaverup",
+    "tailsemidn",
+    "tailsemiup",
     "timeCbar",
     "timeC",
     "trill",

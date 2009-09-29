@@ -83,8 +83,9 @@ const char *const symnames[] = {
     "small3", "small4", "small5", "small6", "small7", "small8",
     "small9", "smallflat", "smallnatural", "smallsharp",
     "staccatissdn", "staccatissup", "staccato", "stopping",
-    "tailquaverdn", "tailquaverup", "timeCbar", "timeC", "trill",
-    "turn"
+    "taildemidn", "taildemiup", "tailhemidn", "tailhemiup",
+    "tailquaverdn", "tailquaverup", "tailsemidn", "tailsemiup",
+    "timeCbar", "timeC", "trill", "turn"
 };
 
 #define SYM_LINE -1
