@@ -34,8 +34,8 @@
 #define indent 		360
 #define first_indent	1500
 #define scorespacing	3808
-#define stave_spacing	2016
-#define nh		248
+#define stave_spacing	1992
+#define nh		250
 #define ph		(nh/2)
 #define maximum_ax	0.6
 
@@ -49,9 +49,9 @@
  * and horizontal offset "rep_ending_symx". */
 #define repeat_width	122
 #define thin_barline	24
-#define thick_barline	50
+#define thick_barline	100
 #define line_bar_len	500
-#define barline_ispace	50
+#define barline_ispace	75
 #define rep_ending_bot	700
 #define rep_ending_top	1300
 #define rep_ending_symx	400
@@ -66,8 +66,8 @@
  * of brackets should be "bracket_thick" thick. The actual bracket top/bottom
  * *symbols* should be "bracket_s_xoff" back from the stave start position. */
 #define brace_xoffset	100
-#define brace_top_yoff	1008
-#define brace_bot_yoff	1016
+#define brace_top_yoff	996
+#define brace_bot_yoff	996
 #define bracket_xoff	150
 #define bracket_spacing	200
 #define bracket_thick	150
@@ -92,7 +92,7 @@
  * signature. "time_common" is the width of a C (or C-bar) time signature.
  */
 #define time_space	300
-#define time_common	425
+#define time_common	409
 
 /* Markings around staves: "sign_yoff" is the distance above the stave at
  * which a segno or coda sign is placed. "coda_break_wid" is the width of
@@ -106,7 +106,7 @@
  * first score line to draw the stave names. */
 #define sign_yoff	200
 #define coda_break_wid	300
-#define coda_width	443
+#define coda_width	457
 #define barnum_yoff	600
 #define text_yoff	750
 #define text_below_yoff	800
@@ -140,13 +140,13 @@
  * "ntuplet_space" away from the notes. "ntuplet_vspace" should be allowed
  * around the number when recording its position for slurs. "ntuplet_clear" is
  * the minimum vertical clearance between the number and the stave. */
-#define dot_halfht	48
+#define dot_halfht	51
 #define dot_xoff	150
 #define dot_ispace	150
 #define dot_ospace	200
 #define ntuplet_space	200
 #define ntuplet_vspace	50
-#define ntuplet_clear	124
+#define ntuplet_clear	125
 
 /* Accidentals: the hot spot of the rightmost accidental on a note should
  * be "acc_space" to the left of the leftmost part of the note; successive
@@ -163,7 +163,7 @@
 #define stem_line_len	600
 #define stem_tail_extra	150
 #define tail_vspace	150
-#define tail_width	274
+#define tail_width	286
 
 /* Note flags: "turn_inv_space" and "turn_inv_thick" give measurements
  * concerning the vertical line through the middle of an inverted turn - see
@@ -232,7 +232,7 @@
 #define genpause_dx	400
 #define genpause_dy	600
 #define genpause_xoff	200
-#define turn_width	637
+#define turn_width	621
 
 /* General: "bigdigit_wid" is the width of a big digit such as is used in
  * time signatures, multiple bars rest and first/second repeat endings.
@@ -249,7 +249,7 @@
 #define smalldigit_wid	275
 #define ditto_width	900
 #define leger_width	450
-#define sb_rest_ht	128
+#define sb_rest_ht	125
 #define bar_end_space	300
 
 /* The following arrays are all defined in "measure.c". */
