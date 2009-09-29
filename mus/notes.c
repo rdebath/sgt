@@ -426,7 +426,8 @@ void process_notes(void) {
 			stem_len = stem_norm_len;
 
 		    stem_len += stem_max-stem_min;
-		    stem_len += tails * stem_tail_extra;
+		    if (tails > 1)
+			stem_len += (tails - 1) * stem_tail_extra;
 
 		    if (ns->stem_down) {
 			stem_len = -stem_len;
