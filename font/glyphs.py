@@ -1929,8 +1929,8 @@ def tmpfn(): # m (we do this one first to define the baseline)
 
     cont.lby = c2.compute_y(1)
     cont.by = c2.compute_y(1) + c2.compute_nib(1)[0]
-    cont.lx = c2.compute_x(1) - c2.compute_nib(1)[0] - c2.compute_nib(1)[3]
-    cont.rx = c8.compute_x(0) + c8.compute_nib(0)[0] + c8.compute_nib(0)[3]
+    cont.lx = 557 + (-41.38 - 34.62) * cont.scale / 3600.0
+    cont.rx = 751 - (-49.53 - -87.53) * cont.scale / 3600.0
 
     return cont
 dynamicm = tmpfn()
@@ -1975,8 +1975,8 @@ def tmpfn(): # f
     blob(c4, 1, 'r', 20, 8)
 
     cont.by = dynamicm.by
-    cont.lx = c5.compute_x(0) - 0.3*(dynamicm.lby-c5.compute_y(0)) - c5.compute_nib(0)
-    cont.rx = c5.compute_x(1) - 0.3*(dynamicm.lby-c5.compute_y(1)) + c5.compute_nib(1) + 20
+    cont.lx = 496.7 + (-81.74 - -86.74) * cont.scale / 3600.0
+    cont.rx = 657.7 - (-139.36 - -165.36) * cont.scale / 3600.0
 
     return cont
 dynamicf = tmpfn()
@@ -2012,8 +2012,8 @@ def tmpfn(): # p
     cont.default_nib = lambda c,x,y,t,theta: 12-9*sin(shear(theta))
 
     cont.by = dynamicm.by
-    cont.lx = c0.compute_x(0) - 0.3*(dynamicm.lby-c0.compute_y(0)) - c0.compute_nib(0)
-    cont.rx = c5.compute_x(0) - 0.3*(dynamicm.lby-c5.compute_y(0)) + c5.compute_nib(0)
+    cont.lx = 510.4 + (-23.26 - -38.26) * cont.scale / 3600.0
+    cont.rx = 690.615 - (-51.72 - -28.72) * cont.scale / 3600.0
 
     return cont
 dynamicp = tmpfn()
@@ -2037,8 +2037,8 @@ def tmpfn(): # r
     c3.nib = lambda c,x,y,t,theta: (lambda k: 8+k)(15*cos(pi/2*(theta-phi)/(psi-phi))**2)
 
     cont.by = dynamicm.by
-    cont.lx = c2.compute_x(1) - c2.compute_nib(1)[0] - c2.compute_nib(1)[3]
-    cont.rx = c3.compute_x(1) - 0.3*(dynamicm.lby-c3.compute_y(1)) + c3.compute_nib(1)
+    cont.lx = 557 + (-18.93 - 58.07) * cont.scale / 3600.0
+    cont.rx = 670.187 - (-66.39 - -57.39) * cont.scale / 3600.0
 
     return cont
 dynamicr = tmpfn()
@@ -2061,8 +2061,8 @@ def tmpfn(): # s
     blob(c3, 1, 'r', 12, 7)
 
     cont.by = dynamicm.by
-    cont.lx = c3.compute_x(1) - 12
-    cont.rx = c3.compute_x(0) - 0.3*(dynamicm.lby-c3.compute_y(0)) + c3.compute_nib(0)
+    cont.lx = 529 + (-0.36 - 52.64) * cont.scale / 3600.0
+    cont.rx = 628.788 - (-36.35 - -51.35) * cont.scale / 3600.0
 
     return cont
 dynamics = tmpfn()
@@ -2108,8 +2108,8 @@ def tmpfn(): # z
     blob(c4, 1, 'l', 12, 8)
 
     cont.by = dynamicm.by
-    cont.lx = c2.compute_x(0) - 6
-    cont.rx = c3.compute_x(1) - 0.3*(dynamicm.lby-c3.compute_y(1)) + 6
+    cont.lx = 533 + (-0.2 - 22.8) * cont.scale / 3600.0
+    cont.rx = 650.1 - (-65.44 - -42.44) * cont.scale / 3600.0
 
     return cont
 dynamicz = tmpfn()
