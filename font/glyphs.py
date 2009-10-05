@@ -4187,8 +4187,8 @@ elif len(args) == 1 and args[0][:5] == "-lily":
     ("sharp",        "accidentals.2",          0xe10e, 0,0.5, 1,0.5),
     ("sesquisharp",  "accidentals.3",          0xe110, 0,0.5, 1,0.5),
     ("doublesharp",  "accidentals.4",          0xe116, 0,0.5, 1,0.5),
-    ("staccatissdn", "scripts.dstaccatissimo", 0xe15f, 0.5,1, 1,1),
-    ("staccatissup", "scripts.ustaccatissimo", 0xe15e, 0.5,0, 1,0),
+    ("staccatissup", "scripts.dstaccatissimo", 0xe15f, 0.5,1, 1,1),
+    ("staccatissdn", "scripts.ustaccatissimo", 0xe15e, 0.5,0, 1,0),
     ("staccato",     "scripts.staccato",       0xe15d, 0.5,0.5, 1,0.5),
     ("staccato",     "dots.dot",               0xe121, 0,0.5, 1,0.5),
     ("stopping",     "scripts.stopped",        0xe166, 0.5,0.5, 1,0.5),
@@ -4446,6 +4446,9 @@ elif len(args) == 1 and args[0][:5] == "-lily":
     # 	 argument in position 1: #f", where it works with normal
     # 	 fonts. Presumably something about my font is triggering a
     # 	 wrong code path or some such.
+    # 	  + no, in fact it looks as if the reason for this is that
+    # 	    my font segfaults FontForge when writing out the SVG.
+    # 	    Gnarrgh.
     #
     # Things to document as missing in v1
     # -----------------------------------
