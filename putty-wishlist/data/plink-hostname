@@ -1,0 +1,35 @@
+Summary: Plink using wrong hostname when one is saved in Default Settings
+Class: bug
+Difficulty: fun
+Priority: high
+Present-in: 0.60
+Fixed-in: r8651 2009-09-15
+Content-type: text/x-html-body
+
+<p>
+Since <a href="defaults-launchable.html">'defaults-launchable'</a> was
+fixed, it's been possible to save a hostname in Default Settings.
+
+<p>
+However, Plink did not cope gracefully with that possibility -- it was
+not possible to override that hostname on the command line. Attempts
+at doing so would be treated as part of the remote command, but this
+typically wouldn't be obvious as the connection wouldn't get that far.
+
+<p>
+The most common symptom of this is output like this:
+
+<pre>C:\&gt;plink myhost.example.com
+Unable to open connection:
+Host does not exist</pre>
+
+where a PuTTY connection to <tt>myhost.example.com</tt> works fine.
+Upon adding the <tt>-v</tt> option you might get:
+
+<pre>C:\&gt;plink -v myhost.example.com
+Looking up host "otherhost.example.com"
+Unable to open connection:
+Host does not exist</pre>
+
+which "huh?" behaviour is explained by <tt>otherhost.example.com</tt>
+being in "Default Settings".
