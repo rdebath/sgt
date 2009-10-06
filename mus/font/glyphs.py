@@ -2329,11 +2329,16 @@ turn = tmpfn()
 
 def tmpfn():
     cont = GlyphContext()
+    # Saved data from gui.py
+    c0 = StraightLine(cont, 525, 304, 525, 500)
+    # End saved data
 
-    cont.extra = "0 1000 translate 1 -1 scale", turn
+    cont.default_nib = 8
+
+    cont.extra = turn
 
     return cont
-revturn = tmpfn()
+invturn = tmpfn()
 
 # ----------------------------------------------------------------------
 # Mordent and its relatives.
@@ -4080,7 +4085,6 @@ elif len(args) == 1 and args[0][:5] == "-lily":
     ("arpeggioarrowdown", "scripts.arpeggio.arrow.M1", 0xe17a, 0,0, 1,0, {"x0":"lx","x1":"rx","y1":"ey"}),
     ("arpeggioarrowup", "scripts.arpeggio.arrow.1", 0xe17b, 0,0, 1,0, {"x0":"lx","x1":"rx","y0":"ey"}),
     ("trillwiggle",  "scripts.trill_element",  0xe179, 'lx',0, 1,0, {"x0":"lx", "x1":"rx"}),
-    ("trillwiggle",  "scripts.trilelement",    0xe17c, 0.5,0, 1,0, {"x0":"lx", "x1":"rx"}),
     # Irritatingly, we have to put the digits' baselines at the
     # glitch (see below) rather than at the real baseline.
     ("big0",         "zero",                   0x0030, 0,'gy', 1,'gy'),
@@ -4204,7 +4208,7 @@ elif len(args) == 1 and args[0][:5] == "-lily":
     ("timeC",        "timesig.C44",            0xe19d, 0,0.5, 1,0.5),
     ("trill",        "scripts.trill",          0xe16b, 0.5,0, 1,0),
     ("turn",         "scripts.turn",           0xe16a, 0.5,0.5, 1,0.5),
-    ("revturn",      "scripts.reverseturn",    0xe169, 0.5,0.5, 1,0.5),
+    ("invturn",      "scripts.reverseturn",    0xe169, 0.5,0.5, 1,0.5),
     ("openarrowup",  "arrowheads.open.11",     0xe11b, 'cx','cy', 1,0.5),
     ("openarrowdown", "arrowheads.open.1M1",   0xe11c, 'cx','cy', 1,0.5),
     ("openarrowleft", "arrowheads.open.0M1",   0xe11a, 'cx','cy', 1,'cy'),
@@ -4439,6 +4443,29 @@ elif len(args) == 1 and args[0][:5] == "-lily":
     # Lilypond TODO
     # =============
     #
+    # Design issues
+    # -------------
+    #
+    #  - the varbreaths want work. Ice cream cone look is pretty but
+    # 	 inappropriate.
+    #
+    #  - should I replace LP's reverse turn with the bisected one?
+    #
+    #  - re-tilt the hole in the minim head to miss the note stem.
+    #
+    #  - beef up the TAB sign. I may not be able to improve the
+    # 	 calligraphy a great deal, but increasing the line thickness
+    # 	 would be an improvement all by itself.
+    #
+    # Missing glyphs
+    # --------------
+    #
+    #  - I don't think I can sensibly leave out the drum note heads,
+    # 	 even if I leave out the solfa ones and the ancient ones. So
+    # 	 I need diamond, triangle, slash, cross and xcircle, of
+    # 	 which the first four come in three shapes (for semibreve,
+    # 	 minim and crotchet-or-less) and the last is unique.
+    #
     # Functional issues
     # -----------------
     #
@@ -4453,16 +4480,9 @@ elif len(args) == 1 and args[0][:5] == "-lily":
     # Things to document as missing in v1
     # -----------------------------------
     #
-    #  - longa notes (I'm not entirely sure how best to implement
-    # 	 them: LP's default approach of a one-bar breve with one bar
-    # 	 extended would look silly next to the two-bar breves I have
-    # 	 here, but if I do them any other way then I invalidate LP's
-    # 	 configuration options for note head styles)
-    #  - strange note head styles (diamond, triangle, slash, the
-    # 	 sol-fa per-pitch stuff, ancient, etc). Note that this makes
-    # 	 drum notation difficult, so I ought to have this high on my
-    # 	 list to put back in.
-    #  - strange rest styles.
+    #  - all ancient notation: longa notes (though the longa and
+    # 	 maxima rests are supported), ancient note and rest styles
+    #  - solfa note heads.
     #
     # Configuration issues
     # --------------------
@@ -4474,13 +4494,3 @@ elif len(args) == 1 and args[0][:5] == "-lily":
     # 	 between-system-space, but when I try it it only affects the
     # 	 last page of my test data - I assume something horrid is
     # 	 happening in the 'optimal' page breaking.
-    #
-    # Testing still to do
-    # -------------------
-    #
-    #  - test _every_ symbol to ensure it looks nice and behaves the
-    # 	 same as its standard-LP counterpart. Probably need a
-    # 	 special test sheet of my own for that.
-    #
-    #  - include a full test of the dynamics kerning, using the
-    # 	 Ouroborean word 'ffmfpfrfsfzmmpmrmsmzpprpspzrrsrzsszzf'.
