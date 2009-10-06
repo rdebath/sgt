@@ -934,7 +934,7 @@ def tmpfn():
     cont = GlyphContext()
     # Parameters: a unit vector giving the direction of the ellipse's
     # long axis, the squash ratio (short axis divided by long).
-    angle = 30
+    angle = 37
     sq = 0.35
     # The long and short axes as unit vectors.
     lx, ly = cos(angle*(pi/180)), -sin(angle*(pi/180))
@@ -4448,10 +4448,6 @@ elif len(args) == 1 and args[0][:5] == "-lily":
     #
     #  - the varbreaths want work. Ice cream cone look is pretty but
     # 	 inappropriate.
-    #
-    #  - should I replace LP's reverse turn with the bisected one?
-    #
-    #  - re-tilt the hole in the minim head to miss the note stem.
     #
     #  - beef up the TAB sign. I may not be able to improve the
     # 	 calligraphy a great deal, but increasing the line thickness
