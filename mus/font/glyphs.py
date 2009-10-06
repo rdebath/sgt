@@ -586,7 +586,7 @@ def tmpfn():
     c8 = CircleInvolute(cont, 333, 603, 0.98387, 0.178885, 486, 384, 0.0416305, -0.999133)
     c9 = CircleInvolute(cont, 486, 384, 0.110432, 0.993884, 527, 572, 0.398726, 0.91707)
     c10 = CircleInvolute(cont, 527, 572, 0.398726, 0.91707, 572, 605, 0.963518, -0.267644)
-    c11 = CircleInvolute(cont, 441, 541, 0.727013, 0.686624, 491, 555, 0.910366, -0.413803)
+    c11 = CircleInvolute(cont, 441, 541, 0.724999, 0.688749, 482, 555, 0.977176, -0.21243)
     c12 = CircleInvolute(cont, 355, 698, 0.5547, -0.83205, 464, 648, 0.998168, -0.0604951)
     c13 = CircleInvolute(cont, 464, 648, 0.998168, -0.0604951, 551, 700, 0, 1)
     c14 = CircleInvolute(cont, 551, 700, 0, 1, 475, 756, -0.995634, 0.0933407)
@@ -607,10 +607,10 @@ def tmpfn():
 
     # Stave lines as guides used when I was drawing it
     c0.nib = c1.nib = c2.nib = c3.nib = 0
-    cont.default_nib = lambda c,x,y,t,theta: 8+10*sin(theta)**2
+    cont.default_nib = lambda c,x,y,t,theta: 12+10*sin(theta)**2
 
     # Vertical of T needs not to overlap top of T
-    c6.nib = lambda c,x,y,t,theta: (8, theta+pi/2, 10*sin(theta)**2, 10*sin(theta)**2)
+    c6.nib = lambda c,x,y,t,theta: (12, theta+pi/2, 10*sin(theta)**2, 10*sin(theta)**2)
 
     # Special nib for crossbar of A
     c11.nib = lambda c,x,y,t,theta: 12-6*t
@@ -4448,10 +4448,6 @@ elif len(args) == 1 and args[0][:5] == "-lily":
     #
     #  - the varbreaths want work. Ice cream cone look is pretty but
     # 	 inappropriate.
-    #
-    #  - beef up the TAB sign. I may not be able to improve the
-    # 	 calligraphy a great deal, but increasing the line thickness
-    # 	 would be an improvement all by itself.
     #
     # Missing glyphs
     # --------------
