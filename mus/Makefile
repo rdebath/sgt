@@ -34,6 +34,13 @@ spotless:: clean
 hotspot.txt: hotspot.ps prologue.ps
 	gs -sDEVICE=bit -dQUIET hotspot.ps quit.ps >hotspot.txt
 
+tarball::
+	rm -rf mus
+	mkdir mus
+	cd mus; ln -s ../*.c ../*.h ../Makefile ../sample.mus .
+	tar chzf mus.tar.gz mus
+	rm -rf mus
+
 mus: $(OBJ)
 	$(CC) $(LDFLAGS) -o mus $(OBJ)
 
