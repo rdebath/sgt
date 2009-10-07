@@ -3052,10 +3052,10 @@ breath = tmpfn()
 def tmpfn():
     cont = GlyphContext()
     # Saved data from gui.py
-    c0 = StraightLine(cont, 547, 466, 577, 341)
+    c0 = StraightLine(cont, 547, 466, 587, 341)
     # End saved data
 
-    c0.nib = lambda c,x,y,t,theta: 4+30*t
+    c0.nib = lambda c,x,y,t,theta: 4+14*t
 
     return cont
 varbreath = tmpfn()
@@ -4442,12 +4442,6 @@ elif len(args) == 1 and args[0][:5] == "-lily":
 
     # Lilypond TODO
     # =============
-    #
-    # Design issues
-    # -------------
-    #
-    #  - the varbreaths want work. Ice cream cone look is pretty but
-    # 	 inappropriate.
     #
     # Missing glyphs
     # --------------
