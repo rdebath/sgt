@@ -2829,17 +2829,23 @@ fermata2 = tmpfn()
 def tmpfn():
     cont = GlyphContext()
     # Saved data from gui.py
-    c0 = StraightLine(cont, 424, 447, 424, 383)
-    c1 = StraightLine(cont, 424, 383, 630, 383)
-    c2 = StraightLine(cont, 630, 383, 630, 447)
+    c0 = StraightLine(cont, 424, 447, 424, 370)
+    c1 = StraightLine(cont, 424, 370, 630, 370)
+    c2 = StraightLine(cont, 630, 370, 630, 447)
+    c3 = StraightLine(cont, 384, 441, 384, 286)
+    c4 = StraightLine(cont, 384, 286, 670, 286)
+    c5 = StraightLine(cont, 670, 286, 670, 441)
     c0.weld_to(1, c1, 0, 1)
     c1.weld_to(1, c2, 0, 1)
+    c3.weld_to(1, c4, 0, 1)
+    c4.weld_to(1, c5, 0, 1)
     # End saved data
 
-    cont.default_nib = 8, pi/2, 18, 18
+    c0.nib = c1.nib = c2.nib = 8, pi/2, 18, 18
+    c3.nib = c4.nib = c5.nib = 8, pi/2, 24, 24
 
-    # Draw the dot and include the outer layer.
-    cont.extra = fermata2, "newpath 527 446 24 0 360 arc fill "
+    # Draw the dot.
+    cont.extra = "newpath 527 446 24 0 360 arc fill "
 
     return cont
 fermata3 = tmpfn()
