@@ -1277,6 +1277,46 @@ def tmpfn():
     return cont
 crosscircle = tmpfn()
 
+def tmpfn():
+    cont = GlyphContext()
+    r = 12
+    xouter = 116 - r
+    xwidth = 160
+    ay = 130 - r
+    cont.extra = ["gsave 527 472 translate",
+    "newpath %g %g moveto %g %g lineto %g %g lineto %g %g lineto closepath" % (xouter,-ay,xouter-xwidth,-ay,-xouter,ay,-xouter+xwidth,ay),
+    "%g setlinewidth 1 setlinejoin stroke" % (2*r),
+    "grestore"]
+    cont.ay = 472 - ay
+    return cont
+slashsemi = tmpfn()
+def tmpfn():
+    cont = GlyphContext()
+    r = 12
+    xouter = 76 - r
+    xwidth = 80
+    ay = 130 - r
+    cont.extra = ["gsave 527 472 translate",
+    "newpath %g %g moveto %g %g lineto %g %g lineto %g %g lineto closepath" % (xouter,-ay,xouter-xwidth,-ay,-xouter,ay,-xouter+xwidth,ay),
+    "%g setlinewidth 1 setlinejoin stroke" % (2*r),
+    "grestore"]
+    cont.ay = 472 - ay
+    return cont
+slashminim = tmpfn()
+def tmpfn():
+    cont = GlyphContext()
+    r = 12
+    xouter = 56 - r
+    xwidth = 40
+    ay = 130 - r
+    cont.extra = ["gsave 527 472 translate",
+    "newpath %g %g moveto %g %g lineto %g %g lineto %g %g lineto closepath" % (xouter,-ay,xouter-xwidth,-ay,-xouter,ay,-xouter+xwidth,ay),
+    "gsave %g setlinewidth 1 setlinejoin stroke grestore fill" % (2*r),
+    "grestore"]
+    cont.ay = 472 - ay
+    return cont
+slashcrotchet = tmpfn()
+
 # ----------------------------------------------------------------------
 # Trill sign. There seem to be two standard-ish designs for this:
 # one flowery one in which there are loops all over the place as if
@@ -4406,6 +4446,9 @@ elif len(args) == 1 and args[0][:5] == "-lily":
     ("crossminim",   "noteheads.s1cross",      0xe134, 0,0.5, 1,'ay'),
     ("crosscrotchet", "noteheads.s2cross",     0xe135, 0,0.5, 1,'ay'),
     ("crosscircle",  "noteheads.s2xcircle",    0xe136, 0,0.5, 1,0.5),
+    ("slashsemi",    "noteheads.s0slash",      0xe130, 0,0.5, 1,0.5),
+    ("slashminim",   "noteheads.s1slash",      0xe131, 0,0.5, 1,'ay'),
+    ("slashcrotchet", "noteheads.s2slash",     0xe132, 0,0.5, 1,'ay'),
     ]
 
     if args[0] != "-lilybrace":
@@ -4621,11 +4664,6 @@ elif len(args) == 1 and args[0][:5] == "-lily":
 
     # Lilypond TODO
     # =============
-    #
-    # Missing glyphs
-    # --------------
-    #
-    #  - slash note heads
     #
     # Functional issues
     # -----------------
