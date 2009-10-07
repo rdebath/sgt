@@ -1228,6 +1228,54 @@ def tmpfn():
     cont.iy = 2*472 - cont.ay
     return cont
 trianglecrotchet = tmpfn()
+def tmpfn():
+    cont = GlyphContext()
+    outerw = 9
+    innerr = 12
+    outerr = innerr + 2*outerw
+    ax, ay = 116 - outerr, 70 - outerr
+    cont.extra = ["gsave 527 472 translate",
+    "newpath %g %g 1 index neg 1 index neg moveto 1 index 1 index lineto 1 index neg 1 index moveto neg lineto" % (ax,ay),
+    "gsave %g setlinewidth stroke grestore %g setlinewidth 1 setgray stroke" % (2*outerr, 2*innerr),
+    "grestore"]
+    cont.ay = ay
+    return cont
+crosssemi = tmpfn()
+def tmpfn():
+    cont = GlyphContext()
+    outerw = 9
+    innerr = 10
+    outerr = innerr + 2*outerw
+    ax, ay = 79 - outerr, 70 - outerr
+    cont.extra = ["gsave 527 472 translate",
+    "newpath %g %g 1 index neg 1 index neg moveto 1 index 1 index lineto 1 index neg 1 index moveto neg lineto" % (ax,ay),
+    "gsave %g setlinewidth stroke grestore %g setlinewidth 1 setgray stroke" % (2*outerr, 2*innerr),
+    "grestore"]
+    cont.ay = 472 - ay
+    return cont
+crossminim = tmpfn()
+def tmpfn():
+    cont = GlyphContext()
+    r = 12
+    ax, ay = 79 - r, 70 - r
+    cont.extra = ["gsave 527 472 translate",
+    "newpath %g %g 1 index neg 1 index neg moveto 1 index 1 index lineto 1 index neg 1 index moveto neg lineto" % (ax,ay),
+    "%g setlinewidth stroke" % (2*r),
+    "grestore"]
+    cont.ay = 472 - ay
+    return cont
+crosscrotchet = tmpfn()
+def tmpfn():
+    cont = GlyphContext()
+    r = 12
+    ax, ay = 70 - r, 70 - r
+    cont.extra = ["gsave 527 472 translate",
+    "newpath %g %g 1 index neg 1 index neg moveto 1 index 1 index lineto 1 index neg 1 index moveto neg lineto" % (ax,ay),
+    "%g dup 0 moveto 0 exch 0 exch 0 360 arc" % (sqrt(ax*ax+ay*ay)),
+    "%g setlinewidth stroke" % (2*r),
+    "grestore"]
+    return cont
+crosscircle = tmpfn()
 
 # ----------------------------------------------------------------------
 # Trill sign. There seem to be two standard-ish designs for this:
@@ -4349,11 +4397,15 @@ elif len(args) == 1 and args[0][:5] == "-lily":
     ("diamondsemi",  "noteheads.s0diamond",    0xe128, 0,0.5, 1,0.5),
     ("diamondminim", "noteheads.s1diamond",    0xe129, 0,0.5, 1,0.5),
     ("diamondcrotchet", "noteheads.s2diamond", 0xe12a, 0,0.5, 1,0.5),
-    ("trianglesemi",  "noteheads.s0triangle",  0xe12b, 0,0.5, 1,0.5),
+    ("trianglesemi", "noteheads.s0triangle",   0xe12b, 0,0.5, 1,0.5),
     ("triangleminim", "noteheads.d1triangle",  0xe12c, 0,0.5, 1,'iy'),
     ("triangleminim", "noteheads.u1triangle",  0xe12d, 0,0.5, 1,'ay'),
     ("trianglecrotchet", "noteheads.d2triangle", 0xe12e, 0,0.5, 1,'iy'),
     ("trianglecrotchet", "noteheads.u2triangle", 0xe12f, 0,0.5, 1,'ay'),
+    ("crosssemi",    "noteheads.s0cross",      0xe133, 0,0.5, 1,0.5),
+    ("crossminim",   "noteheads.s1cross",      0xe134, 0,0.5, 1,'ay'),
+    ("crosscrotchet", "noteheads.s2cross",     0xe135, 0,0.5, 1,'ay'),
+    ("crosscircle",  "noteheads.s2xcircle",    0xe136, 0,0.5, 1,0.5),
     ]
 
     if args[0] != "-lilybrace":
@@ -4573,7 +4625,6 @@ elif len(args) == 1 and args[0][:5] == "-lily":
     # Missing glyphs
     # --------------
     #
-    #  - cross and xcircle note heads
     #  - slash note heads
     #
     # Functional issues
