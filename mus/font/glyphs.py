@@ -1111,6 +1111,125 @@ def tmpfn():
 breve = tmpfn()
 
 # ----------------------------------------------------------------------
+# Shaped note heads used for drum and other notation.
+
+def tmpfn():
+    cont = GlyphContext()
+    # Saved data from gui.py
+    c0 = CircleInvolute(cont, 411, 472, 0.970536, 0.240956, 527, 539, 0.633646, 0.773623)
+    c1 = CircleInvolute(cont, 527, 539, 0.633646, -0.773623, 643, 472, 0.970536, -0.240956)
+    c2 = CircleInvolute(cont, 643, 472, -0.970536, -0.240956, 527, 405, -0.633646, -0.773623)
+    c3 = CircleInvolute(cont, 527, 405, -0.633646, 0.773623, 411, 472, -0.970536, 0.240956)
+    c0.weld_to(1, c1, 0, 1)
+    c0.weld_to(0, c3, 1, 1)
+    c1.weld_to(1, c2, 0, 1)
+    c2.weld_to(1, c3, 0, 1)
+    # End saved data
+
+    cont.default_nib = lambda c,x,y,t,theta: (6, 0, (527-x)/3, 0)
+
+    return cont
+diamondsemi = tmpfn()
+def tmpfn():
+    cont = GlyphContext()
+    # Saved data from gui.py
+    c0 = CircleInvolute(cont, 448, 472, 0.939517, 0.342501, 527, 539, 0.487147, 0.87332)
+    c1 = CircleInvolute(cont, 527, 539, 0.487147, -0.87332, 606, 472, 0.939517, -0.342501)
+    c2 = CircleInvolute(cont, 606, 472, -0.939517, -0.342501, 527, 405, -0.487147, -0.87332)
+    c3 = CircleInvolute(cont, 527, 405, -0.487147, 0.87332, 448, 472, -0.939517, 0.342501)
+    c0.weld_to(1, c1, 0, 1)
+    c0.weld_to(0, c3, 1, 1)
+    c1.weld_to(1, c2, 0, 1)
+    c2.weld_to(1, c3, 0, 1)
+    # End saved data
+
+    cont.default_nib = 6
+    c1.nib = lambda c,x,y,t,theta: (6, 127*pi/180, min(12, 300*t, 100*(1-t)), 0)
+    c3.nib = lambda c,x,y,t,theta: (6, -53*pi/180, min(12, 300*t, 100*(1-t)), 0)
+
+    return cont
+diamondminim = tmpfn()
+def tmpfn():
+    cont = GlyphContext()
+    # Saved data from gui.py
+    c0 = CircleInvolute(cont, 448, 472, 0.939517, 0.342501, 527, 539, 0.487147, 0.87332)
+    c1 = CircleInvolute(cont, 527, 539, 0.487147, -0.87332, 606, 472, 0.939517, -0.342501)
+    c2 = CircleInvolute(cont, 606, 472, -0.939517, -0.342501, 527, 405, -0.487147, -0.87332)
+    c3 = CircleInvolute(cont, 527, 405, -0.487147, 0.87332, 448, 472, -0.939517, 0.342501)
+    c0.weld_to(1, c1, 0, 1)
+    c0.weld_to(0, c3, 1, 1)
+    c1.weld_to(1, c2, 0, 1)
+    c2.weld_to(1, c3, 0, 1)
+    # End saved data
+
+    # Fill the diamond.
+    cont.default_nib = lambda c,x,y,t,theta: ptp_nib(c,x,y,t,theta,527,472,6)
+
+    return cont
+diamondcrotchet = tmpfn()
+def tmpfn():
+    cont = GlyphContext()
+    # Saved data from gui.py
+    c0 = CircleInvolute(cont, 411, 550, 0.944497, -0.328521, 643, 550, 0.944497, 0.328521)
+    c1 = CircleInvolute(cont, 643, 550, -0.784883, -0.619644, 527, 405, -0.519947, -0.854199)
+    c2 = CircleInvolute(cont, 527, 405, -0.519947, 0.854199, 411, 550, -0.784883, 0.619644)
+    c0.weld_to(1, c1, 0, 1)
+    c0.weld_to(0, c2, 1, 1)
+    c1.weld_to(1, c2, 0, 1)
+    # End saved data
+
+    c0.nib = 6
+    angle = abs(1/tan(c0.compute_theta(0) + pi/30))
+    ybase = c0.compute_y(0)
+    c1.nib = lambda c,x,y,t,theta: (6, 0, 0, min((x-527)/3, (ybase-y)*angle))
+    c2.nib = lambda c,x,y,t,theta: (6, 0, min((527-x)/3, (ybase-y)*angle), 0)
+
+    return cont
+trianglesemi = tmpfn()
+def tmpfn():
+    cont = GlyphContext()
+    # Saved data from gui.py
+    c0 = CircleInvolute(cont, 448, 550, 0.890571, -0.454844, 606, 550, 0.890571, 0.454844)
+    c1 = CircleInvolute(cont, 606, 550, -0.65319, -0.757194, 527, 405, -0.382943, -0.923772)
+    c2 = CircleInvolute(cont, 527, 405, -0.382943, 0.923772, 448, 550, -0.65319, 0.757194)
+    c0.weld_to(1, c1, 0, 1)
+    c0.weld_to(0, c2, 1, 1)
+    c1.weld_to(1, c2, 0, 1)
+    # End saved data
+
+    c1.nib = 6
+    angle = 127*pi/180
+    vx, vy = cos(angle), -sin(angle)
+    vdist = lambda x1,y1,x2,y2: abs(vx*(x1-x2) + vy*(y1-y2))
+    x0, y0 = c0.compute_point(0)
+    c0.nib = lambda c,x,y,t,theta: (6, angle, vdist(x0,y0,x,y)/3, 0)
+    c2.nib = lambda c,x,y,t,theta: (6, angle, 0, min(vdist(x0,y0,x,y)/3, 350*t))
+
+    cont.ay = c0.compute_y(0)
+    cont.iy = 2*472 - cont.ay
+
+    return cont
+triangleminim = tmpfn()
+def tmpfn():
+    cont = GlyphContext()
+    # Saved data from gui.py
+    c0 = CircleInvolute(cont, 448, 550, 0.890571, -0.454844, 606, 550, 0.890571, 0.454844)
+    c1 = CircleInvolute(cont, 606, 550, -0.65319, -0.757194, 527, 405, -0.382943, -0.923772)
+    c2 = CircleInvolute(cont, 527, 405, -0.382943, 0.923772, 448, 550, -0.65319, 0.757194)
+    c0.weld_to(1, c1, 0, 1)
+    c0.weld_to(0, c2, 1, 1)
+    c1.weld_to(1, c2, 0, 1)
+    # End saved data
+
+    # Fill the triangle.
+    cont.default_nib = lambda c,x,y,t,theta: ptp_nib(c,x,y,t,theta,527,472,6)
+
+    cont.ay = c0.compute_y(0)
+    cont.iy = 2*472 - cont.ay
+    return cont
+trianglecrotchet = tmpfn()
+
+# ----------------------------------------------------------------------
 # Trill sign. There seem to be two standard-ish designs for this:
 # one flowery one in which there are loops all over the place as if
 # it's been drawn in several strokes by somebody who didn't bother
@@ -4227,6 +4346,14 @@ elif len(args) == 1 and args[0][:5] == "-lily":
     ("accr",         "accordion.accBayanbase", 0xe1ac, 0.5,0, 1,0),
     ("accdot",       "accordion.accDot",       0xe1a9, 0.5,0.5, 1,0.5),
     ("accstar",      "accordion.accOldEE",     0xe1ad, 0.5,0, 1,0),
+    ("diamondsemi",  "noteheads.s0diamond",    0xe128, 0,0.5, 1,0.5),
+    ("diamondminim", "noteheads.s1diamond",    0xe129, 0,0.5, 1,0.5),
+    ("diamondcrotchet", "noteheads.s2diamond", 0xe12a, 0,0.5, 1,0.5),
+    ("trianglesemi",  "noteheads.s0triangle",  0xe12b, 0,0.5, 1,0.5),
+    ("triangleminim", "noteheads.d1triangle",  0xe12c, 0,0.5, 1,'iy'),
+    ("triangleminim", "noteheads.u1triangle",  0xe12d, 0,0.5, 1,'ay'),
+    ("trianglecrotchet", "noteheads.d2triangle", 0xe12e, 0,0.5, 1,'iy'),
+    ("trianglecrotchet", "noteheads.u2triangle", 0xe12f, 0,0.5, 1,'ay'),
     ]
 
     if args[0] != "-lilybrace":
@@ -4446,11 +4573,8 @@ elif len(args) == 1 and args[0][:5] == "-lily":
     # Missing glyphs
     # --------------
     #
-    #  - I don't think I can sensibly leave out the drum note heads,
-    # 	 even if I leave out the solfa ones and the ancient ones. So
-    # 	 I need diamond, triangle, slash, cross and xcircle, of
-    # 	 which the first four come in three shapes (for semibreve,
-    # 	 minim and crotchet-or-less) and the last is unique.
+    #  - cross and xcircle note heads
+    #  - slash note heads
     #
     # Functional issues
     # -----------------
