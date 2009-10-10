@@ -126,21 +126,37 @@ class Curve:
     def compute_y(self, t):
         return self.compute_point(t)[1]
 
+def squash(x, y, mx):
+    return mx[0]*x + mx[1]*y, mx[2]*x + mx[3]*y
+def unsquash(x, y, mx):
+    det = mx[0]*mx[3] - mx[1]*mx[2]
+    return (mx[3]*x - mx[1]*y) / det, (-mx[2]*x + mx[0]*y) / det
+
 class CircleInvolute(Curve):
-    def __init__(self, cont, x1, y1, dx1, dy1, x2, y2, dx2, dy2):
+    def __init__(self, cont, x1, y1, dx1, dy1, x2, y2, dx2, dy2, mx=None):
         Curve.__init__(self)
-        self.inparams = (x1, y1, dx1, dy1, x2, y2, dx2, dy2)
+        self.inparams = (x1, y1, dx1, dy1, x2, y2, dx2, dy2, mx)
         self.set_params()
         Curve.postinit(self, cont)
 
     def set_params(self):
-        x1, y1, dx1, dy1, x2, y2, dx2, dy2 = self.inparams
+        x1, y1, dx1, dy1, x2, y2, dx2, dy2, mx = self.inparams
         try:
             # Normalise the direction vectors.
             dlen1 = sqrt(dx1**2 + dy1**2); dx1, dy1 = dx1/dlen1, dy1/dlen1
             dlen2 = sqrt(dx2**2 + dy2**2); dx2, dy2 = dx2/dlen2, dy2/dlen2
 
-            self.inparams = (x1, y1, dx1, dy1, x2, y2, dx2, dy2)
+            self.inparams = (x1, y1, dx1, dy1, x2, y2, dx2, dy2, mx)
+
+            # Transform into the squashed coordinate system.
+            if mx != None:
+                x1, y1 = squash(x1, y1, mx)
+                dx1, dy1 = squash(dx1, dy1, mx)
+                x2, y2 = squash(x2, y2, mx)
+                dx2, dy2 = squash(dx2, dy2, mx)
+                # And renormalise.
+                dlen1 = sqrt(dx1**2 + dy1**2); dx1, dy1 = dx1/dlen1, dy1/dlen1
+                dlen2 = sqrt(dx2**2 + dy2**2); dx2, dy2 = dx2/dlen2, dy2/dlen2
 
             # Find the normal vectors at each end by rotating the
             # direction vectors.
@@ -207,24 +223,29 @@ class CircleInvolute(Curve):
             # angle phi to phi+theta, and the actual point on the curve
             # is displaced from that centre by an amount which changes
             # linearly with angle from s1 to s2. Store all that.
-            self.params = (r, cx2, cy2, phi, theta, s1, s2-s1)
+            self.params = (r, cx2, cy2, phi, theta, s1, s2-s1, mx)
         except ZeroDivisionError, e:
             self.params = None # it went pear-shaped
         except TypeError, e:
             self.params = None # it went pear-shaped
 
     def transform(self, matrix):
-        x1, y1, dx1, dy1, x2, y2, dx2, dy2 = self.inparams
+        # We don't transform mx. (We could, but I'm not sure it
+        # isn't better in the usual case to leave it unchanged so
+        # that transforming the overall dimensions of things alters
+        # their shape subtly so as to leave their curve quality
+        # similar.)
+        x1, y1, dx1, dy1, x2, y2, dx2, dy2, mx = self.inparams
         x1, y1 = transform(matrix, x1, y1)
         x2, y2 = transform(matrix, x2, y2)
         dx1, dy1 = transform(matrix, dx1, dy1, 0)
         dx2, dy2 = transform(matrix, dx2, dy2, 0)
-        self.inparams = (x1, y1, dx1, dy1, x2, y2, dx2, dy2)
+        self.inparams = (x1, y1, dx1, dy1, x2, y2, dx2, dy2, mx)
         self.set_params()
 
     def compute_point(self, t): # t in [0,1]
         assert self.params != None
-        (r, cx, cy, phi, theta, s1, ds) = self.params
+        (r, cx, cy, phi, theta, s1, ds, mx) = self.params
 
         angle = phi + theta * t
         s = s1 + ds * t
@@ -233,11 +254,14 @@ class CircleInvolute(Curve):
         nx, ny = -dy, dx
         x = cx + dx * r + nx * s
         y = cy + dy * r + ny * s
-        return x, y
+        if mx != None:
+            return unsquash(x, y, mx)
+        else:
+            return x, y
 
     def compute_direction(self, t): # t in [0,1]
         assert self.params != None
-        (r, cx, cy, phi, theta, s1, ds) = self.params
+        (r, cx, cy, phi, theta, s1, ds, mx) = self.params
 
         angle = phi + theta * t
         s = s1 + ds * t
@@ -249,18 +273,21 @@ class CircleInvolute(Curve):
         dnx, dny = -ddy, ddx
         x = ddx * r + dnx * s + nx * ds
         y = ddy * r + dny * s + ny * ds
-        return x, y
+        if mx != None:
+            return unsquash(x, y, mx)
+        else:
+            return x, y
 
     def tk_refresh(self):
         coords = []
-        x1, y1, dx1, dy1, x2, y2, dx2, dy2 = self.inparams
+        x1, y1, dx1, dy1, x2, y2, dx2, dy2, mx = self.inparams
         if self.params == None:
             coords.extend([x1,y1])
             coords.extend([(2*x1+3*x2)/5 - (y1-y2)/14, (2*y1+3*y2)/5 + (x1-x2)/14])
             coords.extend([(3*x1+2*x2)/5 + (y1-y2)/14, (3*y1+2*y2)/5 - (x1-x2)/14])
             coords.extend([x2,y2])
         else:
-            (r, cx, cy, phi, theta, s1, ds) = self.params
+            (r, cx, cy, phi, theta, s1, ds, mx) = self.params
             dt = min(2 / abs(s1 * theta), 2 / abs((s1+ds) * theta))
             itmax = min(10000, int(1 / dt + 1))
             for it in range(itmax+1):
@@ -287,7 +314,7 @@ class CircleInvolute(Curve):
         self.tk_refresh()
 
     def tk_drag(self, x, y, etype):
-        x1, y1, dx1, dy1, x2, y2, dx2, dy2 = self.inparams
+        x1, y1, dx1, dy1, x2, y2, dx2, dy2, mx = self.inparams
         if etype == 1:
             xc1, yc1 = x1+25*dx1, y1+25*dy1
             xc2, yc2 = x2-25*dx2, y2-25*dy2
@@ -318,7 +345,7 @@ class CircleInvolute(Curve):
             elif self.dragpt == 3 and (x != x1 or y != y1):
                 dx2 = x2 - x
                 dy2 = y2 - y
-            self.inparams = (x1, y1, dx1, dy1, x2, y2, dx2, dy2)
+            self.inparams = (x1, y1, dx1, dy1, x2, y2, dx2, dy2, mx)
             self.set_params()
             self.tk_refresh()
             end = (self.dragpt-1)/2
@@ -349,7 +376,7 @@ class CircleInvolute(Curve):
             self.tk_refresh()
 
     def findend(self, x, y):
-        x1, y1, dx1, dy1, x2, y2, dx2, dy2 = self.inparams
+        x1, y1, dx1, dy1, x2, y2, dx2, dy2, mx = self.inparams
         if (x-x1)**2 + (y-y1)**2 < 32:
             return 0
         elif (x-x2)**2 + (y-y2)**2 < 32:
@@ -358,8 +385,12 @@ class CircleInvolute(Curve):
             return None
 
     def serialise(self):
-        s = "CircleInvolute(cont, %g, %g, %g, %g, %g, %g, %g, %g)" % \
-        self.inparams
+        extra = ""
+        mx = self.inparams[8]
+        if mx != None:
+            extra = extra + ", mx=(%g, %g, %g, %g)" % mx
+        s = "CircleInvolute(cont, %g, %g, %g, %g, %g, %g, %g, %g%s)" % \
+        (self.inparams[:8] + (extra,))
         return s
 
 class StraightLine(Curve):
