@@ -1877,48 +1877,47 @@ big7 = tmpfn()
 def tmpfn(): # eight
 
     # The traditional 8 just contains _too_ many ellipse-like curves
-    # to draw sensibly using involutes, so I resorted to scaling the
-    # x-axis down by 3/4 so that the ellipses became more circular,
-    # and then scaling back up again when drawing the output.
+    # to draw sensibly using involutes, so I resorted to squashing
+    # the x-axis down by 3/4 so that the ellipses became more
+    # circular.
 
-    # Secondary curve set
+    # This glyph is designed so that its _exterior_ outline is
+    # mirror-symmetric. To this end, constraints currently
+    # unenforced by gui.py are:
+    #  - c4 should be an exact mirror image of c3
+    #  - c2 should be an exact mirror image of c7
+    #
+    # Also, of course, c0 must join up precisely to c3 just as c4
+    # does, and likewise c2 to c7 just like c6.
+
     cont = GlyphContext()
     # Saved data from gui.py
-    c0 = CircleInvolute(cont, 549, 365, 0.903738, -0.428086, 529, 255, -1, 0)
-    c1 = CircleInvolute(cont, 529, 255, -1, 0, 497, 288, 0.242536, 0.970143)
-    c2 = CircleInvolute(cont, 497, 288, 0.242536, 0.970143, 561, 353, 0.877896, 0.478852)
-    c3 = CircleInvolute(cont, 561, 353, 0.877896, 0.478852, 529, 469, -1, 0)
-    c4 = CircleInvolute(cont, 529, 469, -1, 0, 497, 353, 0.877896, -0.478852)
+    c0 = CircleInvolute(cont, 529, 255, -1, 0, 490, 293, 0.485643, 0.874157, mx=(0.75, 0, 0, 1))
+    c1 = CircleInvolute(cont, 490, 293, 0.485643, 0.874157, 575, 353, 0.925547, 0.378633, mx=(0.75, 0, 0, 1))
+    c2 = CircleInvolute(cont, 575, 353, 0.925547, 0.378633, 529, 469, -1, 0, mx=(0.75, 0, 0, 1))
+    c3 = CircleInvolute(cont, 559, 365, 0.942302, -0.334765, 529, 255, -1, 0, mx=(0.75, 0, 0, 1))
+    c4 = CircleInvolute(cont, 529, 255, -1, 0, 499, 365, 0.942302, 0.334765, mx=(0.75, 0, 0, 1))
+    c5 = CircleInvolute(cont, 499, 365, 0.942302, 0.334765, 576, 427, 0.263117, 0.964764, mx=(0.75, 0, 0, 1))
+    c6 = CircleInvolute(cont, 576, 427, 0.263117, 0.964764, 529, 469, -1, 0, mx=(0.75, 0, 0, 1))
+    c7 = CircleInvolute(cont, 529, 469, -1, 0, 483, 353, 0.925547, -0.378633, mx=(0.75, 0, 0, 1))
     c0.weld_to(1, c1, 0)
     c1.weld_to(1, c2, 0)
-    c2.weld_to(1, c3, 0)
     c3.weld_to(1, c4, 0)
+    c4.weld_to(1, c5, 0)
+    c5.weld_to(1, c6, 0)
+    c6.weld_to(1, c7, 0)
     # End saved data
-    tcurves = c0,c1,c2,c3,c4
+    tcurves = c0,c1,c2
+    curves = c4,c5,c6
 
-    # Primary curve set
-    cont = GlyphContext()
-    # Saved data from gui.py
-    c0 = CircleInvolute(cont, 549, 365, 0.903738, -0.428086, 529, 255, -1, 0)
-    c1 = CircleInvolute(cont, 529, 255, -1, 0, 509, 365, 0.903738, 0.428086)
-    c2 = CircleInvolute(cont, 509, 365, 0.903738, 0.428086, 565, 429, 0.0499376, 0.998752)
-    c3 = CircleInvolute(cont, 565, 429, 0.0499376, 0.998752, 529, 469, -1, 0)
-    c4 = CircleInvolute(cont, 529, 469, -1, 0, 497, 353, 0.877896, -0.478852)
-    c0.weld_to(1, c1, 0)
-    c1.weld_to(1, c2, 0)
-    c2.weld_to(1, c3, 0)
-    c3.weld_to(1, c4, 0)
-    # End saved data
-    curves = c0,c1,c2,c3,c4
-
+    for i in range(len(tcurves)):
+        tcurves[i].nib = 0
     for i in range(len(curves)):
         curves[i].i = i
-    cont.default_nib = lambda c,x,y,t,theta: follow_curveset_nib(c,x,y,t,theta,tcurves,c.i,len(curves),8)
+        curves[i].nib = lambda c,x,y,t,theta: follow_curveset_nib(c,x,y,t,theta,tcurves,c.i,len(curves),8)
 
-    c0.nib = lambda c,x,y,t,theta: (lambda x1,x2: ((lambda k: (8, 0, 0, k))(5*((x-min(x1,x2))/abs(x2-x1)))))(c.compute_x(0),c.compute_x(1))
-    c4.nib = lambda c,x,y,t,theta: (lambda x1,x2: ((lambda k: (8, 0, k, 0))(5*((max(x1,x2)-x)/abs(x2-x1)))))(c.compute_x(0),c.compute_x(1))
-
-    cont.before = "529 0 translate 4 3 div 1 scale -529 0 translate"
+    c3.nib = lambda c,x,y,t,theta: (lambda x1,x2: ((lambda k: (8, 0, 0, k))(9*((x-min(x1,x2))/abs(x2-x1)))))(c.compute_x(0),c.compute_x(1))
+    c7.nib = lambda c,x,y,t,theta: (lambda x1,x2: ((lambda k: (8, 0, k, 0))(9*((max(x1,x2)-x)/abs(x2-x1)))))(c.compute_x(0),c.compute_x(1))
 
     return cont
 big8 = tmpfn()
