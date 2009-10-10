@@ -630,14 +630,60 @@ clefTABsmall = tmpfn()
 # ----------------------------------------------------------------------
 # Quaver tails.
 
+quavertaildisp = 120 # vertical space between multiple tails
+
+def clipup(tail):
+    # Clipped version of an up-quaver-tail designed to fit above
+    # another identical tail and stop where it crosses the latter.
+    cont = GlyphContext()
+    clip = clippath([tail.c0, tail.c1, (900,1900), (900,100), (100,100), (100,1900)])
+    cont.extra = "gsave 0 %g translate newpath" % quavertaildisp, clip, \
+    "clip 0 -%g translate" % quavertaildisp, tail, "grestore"
+    cont.ox = tail.ox
+    cont.oy = tail.oy
+    return cont
+
+def clipdn(tail):
+    # Clipped version of a down-quaver-tail designed to fit below
+    # another identical tail and stop where it crosses the latter.
+    cont = GlyphContext()
+    clip = clippath([tail.c0, tail.c1, (900,100), (900,1900), (100,1900), (100,900)])
+    cont.extra = "gsave 0 -%g translate newpath" % quavertaildisp, clip, \
+    "clip 0 %g translate" % quavertaildisp, tail, "grestore"
+    cont.ox = tailquaverdn.ox
+    cont.oy = tailquaverdn.oy
+    return cont
+
+def multiup(n, tail):
+    # Up-pointing multitail.
+    short = clipup(tail)
+    cont = GlyphContext()
+    cont.extra = (tail,) + ("0 -%g translate" % quavertaildisp, short) * (n-1)
+    cont.ox = tail.ox
+    cont.oy = tail.oy - quavertaildisp*(n-1)
+    cont.origin = tail.origin
+    cont.origin = (cont.origin[0], cont.origin[1] + quavertaildisp*(n-1)*3600./cont.scale)
+    return cont
+
+def multidn(n, tail):
+    # Down-pointing multitail.
+    short = clipdn(tail)
+    cont = GlyphContext()
+    cont.extra = (tail,) + ("0 %g translate" % quavertaildisp, short) * (n-1)
+    cont.ox = tail.ox
+    cont.oy = tail.oy + quavertaildisp*(n-1)
+    cont.origin = tail.origin
+    cont.origin = (cont.origin[0], cont.origin[1] - quavertaildisp*(n-1)*3600./cont.scale)
+    return cont
+
 def tmpfn():
-    # The main full-size tail, for a note with an up-pointing stem.
+    # Full-size tail for a quaver with an up-pointing stem.
     cont = GlyphContext()
     # Saved data from gui.py
     c0 = CircleInvolute(cont, 535, 567, 0.948683, 0.316228, 611, 607, 0.7282, 0.685365)
-    c1 = CircleInvolute(cont, 611, 607, 0.7282, 0.685365, 612, 822, -0.661622, 0.749838)
+    c1 = CircleInvolute(cont, 611, 607, 0.7282, 0.685365, 606, 840, -0.661622, 0.749838)
     c2 = CircleInvolute(cont, 535, 465, 0.233373, 0.972387, 605, 581, 0.73994, 0.672673)
-    c3 = CircleInvolute(cont, 605, 581, 0.73994, 0.672673, 612, 822, -0.661622, 0.749838)
+    c3 = CircleInvolute(cont, 605, 581, 0.73994, 0.672673, 606, 840, -0.661622, 0.749838)
     c4 = StraightLine(cont, 660, 875, 660, 506)
     c0.weld_to(1, c1, 0)
     c1.weld_to(1, c3, 1, 1)
@@ -665,14 +711,14 @@ def tmpfn():
 tailquaverup = tmpfn()
 
 def tmpfn():
-    # A somewhat squashed version of the tail for up-pointing stems.
+    # Single tail for an up-pointing semiquaver.
     cont = GlyphContext()
     # Saved data from gui.py
-    c0 = CircleInvolute(cont, 535, 567, 1, 0, 591, 573, 0.976187, 0.21693)
-    c1 = CircleInvolute(cont, 591, 573, 0.976187, 0.21693, 596, 782, -0.8, 0.6)
-    c2 = CircleInvolute(cont, 535, 465, 0.233373, 0.972387, 611, 566, 0.816968, 0.576683)
-    c3 = CircleInvolute(cont, 611, 566, 0.816968, 0.576683, 596, 782, -0.8, 0.6)
-    c4 = StraightLine(cont, 660, 875, 660, 506)
+    c0 = CircleInvolute(cont, 535, 567, 0.996815, 0.0797452, 617, 591, 0.807551, 0.589798, mx=(1, 0, 0, 1.28866))
+    c1 = CircleInvolute(cont, 617, 591, 0.807551, 0.589798, 606, 756, -0.750912, 0.660402, mx=(1, 0, 0, 1.28866))
+    c2 = CircleInvolute(cont, 535, 465, 0.29547, 0.955352, 605, 555.016, 0.817132, 0.57645, mx=(1, 0, 0, 1.28866))
+    c3 = CircleInvolute(cont, 605, 555.016, 0.817132, 0.57645, 606, 756, -0.750912, 0.660402, mx=(1, 0, 0, 1.28866))
+    c4 = StraightLine(cont, 660, 783.16, 660, 496.816)
     c0.weld_to(1, c1, 0)
     c1.weld_to(1, c3, 1, 1)
     c2.weld_to(1, c3, 0)
@@ -696,10 +742,78 @@ def tmpfn():
     cont.origin = cx * 3600. / cont.scale - 12, (1000-cont.oy) * 3600. / cont.scale
 
     return cont
-tailquaverupsquash = tmpfn()
+tailsemiup = multiup(2, tmpfn())
 
 def tmpfn():
-    # The main full-size tail for down-pointing stems.
+    # Single tail for an up-pointing demisemiquaver.
+    cont = GlyphContext()
+    # Saved data from gui.py
+    c0 = CircleInvolute(cont, 535, 567, 0.975133, 0.221621, 604, 593, 0.861934, 0.50702, mx=(1, 0, 0, 1.10619))
+    c1 = CircleInvolute(cont, 604, 593, 0.861934, 0.50702, 606, 804, -0.698487, 0.715623, mx=(1, 0, 0, 1.10619))
+    c2 = CircleInvolute(cont, 535, 465, 0.256598, 0.966518, 605, 569.864, 0.772578, 0.634919, mx=(1, 0, 0, 1.10619))
+    c3 = CircleInvolute(cont, 605, 569.864, 0.772578, 0.634919, 606, 804, -0.698487, 0.715623, mx=(1, 0, 0, 1.10619))
+    c4 = StraightLine(cont, 660, 835.64, 660, 502.064)
+    c0.weld_to(1, c1, 0)
+    c1.weld_to(1, c3, 1, 1)
+    c2.weld_to(1, c3, 0)
+    # End saved data
+
+    c4.nib = 0 # guide line to get the width the same across all versions
+
+    c0.nib = c1.nib = 0
+    c2.nib = lambda c,x,y,t,theta: follow_curveset_nib(c,x,y,t,theta,[c0,c1],0,2,8)
+    c3.nib = lambda c,x,y,t,theta: follow_curveset_nib(c,x,y,t,theta,[c0,c1],1,2,8)
+
+    cont.c0 = c0 # for tailshortdn
+    cont.c1 = c1 # for tailshortdn
+
+    cont.oy = c2.compute_y(0) - c2.compute_nib(0)[0] - 2
+
+    cx = c2.compute_x(0) + c2.compute_nib(0)[0]
+    cont.ox = cx
+    cont.extra = "gsave newpath %g 0 moveto 0 1000 rlineto -100 0 rlineto 0 -1000 rlineto closepath 1 setgray fill grestore" % (cx - 9)
+
+    cont.origin = cx * 3600. / cont.scale - 12, (1000-cont.oy) * 3600. / cont.scale
+
+    return cont
+taildemiup = multiup(3, tmpfn())
+
+def tmpfn():
+    # Single tail for an up-pointing hemidemisemiquaver.
+    cont = GlyphContext()
+    # Saved data from gui.py
+    c0 = CircleInvolute(cont, 535, 567, 0.998969, 0.0454077, 597, 581, 0.902861, 0.429934, mx=(1, 0, 0, 1.16822))
+    c1 = CircleInvolute(cont, 597, 581, 0.902861, 0.429934, 606, 786, -0.717744, 0.696307, mx=(1, 0, 0, 1.16822))
+    c2 = CircleInvolute(cont, 535, 465, 0.269964, 0.96287, 605, 564.296, 0.789198, 0.614139, mx=(1, 0, 0, 1.16822))
+    c3 = CircleInvolute(cont, 605, 564.296, 0.789198, 0.614139, 606, 786, -0.717744, 0.696307, mx=(1, 0, 0, 1.16822))
+    c4 = StraightLine(cont, 660, 815.96, 660, 500.096)
+    c0.weld_to(1, c1, 0)
+    c1.weld_to(1, c3, 1, 1)
+    c2.weld_to(1, c3, 0)
+    # End saved data
+
+    c4.nib = 0 # guide line to get the width the same across all versions
+
+    c0.nib = c1.nib = 0
+    c2.nib = lambda c,x,y,t,theta: follow_curveset_nib(c,x,y,t,theta,[c0,c1],0,2,8)
+    c3.nib = lambda c,x,y,t,theta: follow_curveset_nib(c,x,y,t,theta,[c0,c1],1,2,8)
+
+    cont.c0 = c0 # for tailshortdn
+    cont.c1 = c1 # for tailshortdn
+
+    cont.oy = c2.compute_y(0) - c2.compute_nib(0)[0] - 2
+
+    cx = c2.compute_x(0) + c2.compute_nib(0)[0]
+    cont.ox = cx
+    cont.extra = "gsave newpath %g 0 moveto 0 1000 rlineto -100 0 rlineto 0 -1000 rlineto closepath 1 setgray fill grestore" % (cx - 9)
+
+    cont.origin = cx * 3600. / cont.scale - 12, (1000-cont.oy) * 3600. / cont.scale
+
+    return cont
+tailhemiup = multiup(4, tmpfn())
+
+def tmpfn():
+    # Full-size tail for a quaver with a down-pointing stem.
     cont = GlyphContext()
     # Saved data from gui.py
     c0 = CircleInvolute(cont, 535, 363, 0.999201, -0.039968, 585, 354, 0.948683, -0.316228)
@@ -733,15 +847,14 @@ def tmpfn():
 tailquaverdn = tmpfn()
 
 def tmpfn():
-    # A somewhat squashed version of the tail for down-pointing
-    # stems.
+    # Single tail for a down-pointing semiquaver.
     cont = GlyphContext()
     # Saved data from gui.py
-    c0 = CircleInvolute(cont, 535, 363, 0.999201, -0.039968, 585, 354, 0.948683, -0.316228)
-    c1 = CircleInvolute(cont, 585, 354, 0.948683, -0.316228, 652, 156, -0.563337, -0.826227)
-    c2 = CircleInvolute(cont, 535, 465, 0.338427, -0.940993, 627, 349, 0.742268, -0.670103)
-    c3 = CircleInvolute(cont, 627, 349, 0.742268, -0.670103, 652, 156, -0.563337, -0.826227)
-    c4 = StraightLine(cont, 680, 55, 680, 424)
+    c0 = CircleInvolute(cont, 535, 363, 0.965616, 0.259973, 636, 359, 0.928477, -0.371391, mx=(1, 0, 0, 1.47059))
+    c1 = CircleInvolute(cont, 636, 359, 0.928477, -0.371391, 635, 210, -0.70805, -0.706162, mx=(1, 0, 0, 1.47059))
+    c2 = CircleInvolute(cont, 535, 465, 0.467531, -0.883977, 627, 386.12, 0.852227, -0.523173, mx=(1, 0, 0, 1.47059))
+    c3 = CircleInvolute(cont, 627, 386.12, 0.852227, -0.523173, 635, 210, -0.70805, -0.706162, mx=(1, 0, 0, 1.47059))
+    c4 = StraightLine(cont, 680, 186.2, 680, 437.12)
     c0.weld_to(1, c1, 0)
     c1.weld_to(1, c3, 1, 1)
     c2.weld_to(1, c3, 0)
@@ -765,17 +878,17 @@ def tmpfn():
     cont.origin = cx * 3600. / cont.scale - 12, (1000-cont.oy) * 3600. / cont.scale
 
     return cont
-tailquaverdnsquash = tmpfn()
+tailsemidn = multidn(2, tmpfn())
 
 def tmpfn():
-    # A more squashed version of the tail for down-pointing stems.
+    # Single tail for an up-pointing demisemiquaver.
     cont = GlyphContext()
     # Saved data from gui.py
-    c0 = CircleInvolute(cont, 535, 363, 0.999201, -0.039968, 585, 354, 0.948683, -0.316228)
-    c1 = CircleInvolute(cont, 585, 354, 0.948683, -0.316228, 660, 178, -0.563337, -0.826227)
-    c2 = CircleInvolute(cont, 535, 465, 0.338427, -0.940993, 627, 349, 0.742268, -0.670103)
-    c3 = CircleInvolute(cont, 627, 349, 0.742268, -0.670103, 660, 178, -0.563337, -0.826227)
-    c4 = StraightLine(cont, 680, 55, 680, 424)
+    c0 = CircleInvolute(cont, 535, 363, 0.967617, 0.252422, 609, 368, 0.972973, -0.230919, mx=(1, 0, 0, 1.40449))
+    c1 = CircleInvolute(cont, 609, 368, 0.972973, -0.230919, 635, 198, -0.691633, -0.722249, mx=(1, 0, 0, 1.40449))
+    c2 = CircleInvolute(cont, 535, 465, 0.450869, -0.89259, 627, 382.408, 0.841209, -0.54071, mx=(1, 0, 0, 1.40449))
+    c3 = CircleInvolute(cont, 627, 382.408, 0.841209, -0.54071, 635, 198, -0.691633, -0.722249, mx=(1, 0, 0, 1.40449))
+    c4 = StraightLine(cont, 680, 173.08, 680, 435.808)
     c0.weld_to(1, c1, 0)
     c1.weld_to(1, c3, 1, 1)
     c2.weld_to(1, c3, 0)
@@ -799,130 +912,41 @@ def tmpfn():
     cont.origin = cx * 3600. / cont.scale - 12, (1000-cont.oy) * 3600. / cont.scale
 
     return cont
-tailquaverdnsquashsquash = tmpfn()
+taildemidn = multidn(3, tmpfn())
 
 def tmpfn():
-    # Clipped version of tailquaverup designed to fit above another
-    # tailquaverup and stop where it crosses the latter.
+    # Single tail for a down-pointing hemidemisemiquaver.
     cont = GlyphContext()
-    clip = clippath([tailquaverup.c0, tailquaverup.c1, (900,1900), (900,100), (100,100), (100,1900)])
-    cont.extra = "gsave 0 90 translate newpath", clip, "clip 0 -90 translate",\
-    tailquaverup, "grestore"
-    cont.ox = tailquaverup.ox
-    cont.oy = tailquaverup.oy
-    return cont
-tailshortup = tmpfn()
+    # Saved data from gui.py
+    c0 = CircleInvolute(cont, 535, 363, 0.909065, 0.416655, 631, 373, 0.96, -0.28, mx=(1, 0, 0, 1.76056))
+    c1 = CircleInvolute(cont, 631, 373, 0.96, -0.28, 635, 252, -0.768322, -0.640063, mx=(1, 0, 0, 1.76056))
+    c2 = CircleInvolute(cont, 535, 465, 0.534962, -0.844876, 627, 399.112, 0.889833, -0.456287, mx=(1, 0, 0, 1.76056))
+    c3 = CircleInvolute(cont, 627, 399.112, 0.889833, -0.456287, 635, 252, -0.768322, -0.640063, mx=(1, 0, 0, 1.76056))
+    c4 = StraightLine(cont, 680, 232.12, 680, 441.712)
+    c0.weld_to(1, c1, 0)
+    c1.weld_to(1, c3, 1, 1)
+    c2.weld_to(1, c3, 0)
+    # End saved data
 
-def tmpfn():
-    # Clipped version of tailquaverupsquash designed to fit above
-    # another tailquaverupsquash and stop where it crosses the
-    # latter.
-    cont = GlyphContext()
-    clip = clippath([tailquaverupsquash.c0, tailquaverupsquash.c1, (900,1900), (900,100), (100,100), (100,1900)])
-    cont.extra = "gsave 0 90 translate newpath", clip, "clip 0 -90 translate",\
-    tailquaverupsquash, "grestore"
-    cont.ox = tailquaverupsquash.ox
-    cont.oy = tailquaverupsquash.oy
-    return cont
-tailshortupsquash = tmpfn()
+    c4.nib = 0 # guide line to get the width the same across all versions
 
-def tmpfn():
-    # Clipped version of tailquaverdn designed to fit below another
-    # tailquaverdn and stop where it crosses the latter.
-    cont = GlyphContext()
-    clip = clippath([tailquaverdn.c0, tailquaverdn.c1, (900,100), (900,1900), (100,1900), (100,900)])
-    cont.extra = "gsave 0 -90 translate newpath", clip, "clip 0 90 translate",\
-    tailquaverdn, "grestore"
-    cont.ox = tailquaverdn.ox
-    cont.oy = tailquaverdn.oy
-    return cont
-tailshortdn = tmpfn()
+    c0.nib = c1.nib = 0
+    c2.nib = lambda c,x,y,t,theta: follow_curveset_nib(c,x,y,t,theta,[c0,c1],0,2,8)
+    c3.nib = lambda c,x,y,t,theta: follow_curveset_nib(c,x,y,t,theta,[c0,c1],1,2,8)
 
-def tmpfn():
-    # Clipped version of tailquaverdnsquash designed to fit below
-    # another tailquaverdnsquash and stop where it crosses the
-    # latter.
-    cont = GlyphContext()
-    clip = clippath([tailquaverdnsquash.c0, tailquaverdnsquash.c1, (900,100), (900,1900), (100,1900), (100,900)])
-    cont.extra = "gsave 0 -90 translate newpath", clip, "clip 0 90 translate",\
-    tailquaverdnsquash, "grestore"
-    cont.ox = tailquaverdnsquash.ox
-    cont.oy = tailquaverdnsquash.oy
-    return cont
-tailshortdnsquash = tmpfn()
+    cont.c0 = c0 # for tailshortdn
+    cont.c1 = c1 # for tailshortdn
 
-def tmpfn():
-    # Clipped version of tailquaverdnsquashsquash designed to fit
-    # below another tailquaverdnsquashsquash and stop where it
-    # crosses the latter.
-    cont = GlyphContext()
-    clip = clippath([tailquaverdnsquashsquash.c0, tailquaverdnsquashsquash.c1, (900,100), (900,1900), (100,1900), (100,900)])
-    cont.extra = "gsave 0 -90 translate newpath", clip, "clip 0 90 translate",\
-    tailquaverdnsquashsquash, "grestore"
-    cont.ox = tailquaverdnsquashsquash.ox
-    cont.oy = tailquaverdnsquashsquash.oy
-    return cont
-tailshortdnsquashsquash = tmpfn()
+    cont.oy = c2.compute_y(0) + c2.compute_nib(0)[0] + 2
 
-def tmpfn():
-    cont = GlyphContext()
-    cont.extra = tailquaverupsquash, "0 -90 translate", tailshortupsquash
-    cont.ox = tailshortupsquash.ox
-    cont.oy = tailshortupsquash.oy - 90
-    cont.origin = tailquaverupsquash.origin
-    cont.origin = (cont.origin[0], cont.origin[1] + 90*3600./cont.scale)
-    return cont
-tailsemiup = tmpfn()
+    cx = c2.compute_x(0) + c2.compute_nib(0)[0]
+    cont.ox = cx
+    cont.extra = "gsave newpath %g 0 moveto 0 1000 rlineto -100 0 rlineto 0 -1000 rlineto closepath 1 setgray fill grestore" % (cx - 8)
 
-def tmpfn():
-    cont = GlyphContext()
-    cont.extra = (tailquaverupsquash,) + ("0 -90 translate", tailshortupsquash) * 2
-    cont.ox = tailquaverupsquash.ox
-    cont.oy = tailquaverupsquash.oy - 90*2
-    cont.origin = tailquaverupsquash.origin
-    cont.origin = (cont.origin[0], cont.origin[1] + 90*2*3600./cont.scale)
-    return cont
-taildemiup = tmpfn()
+    cont.origin = cx * 3600. / cont.scale - 12, (1000-cont.oy) * 3600. / cont.scale
 
-def tmpfn():
-    cont = GlyphContext()
-    cont.extra = (tailquaverupsquash,) + ("0 -90 translate", tailshortupsquash) * 3
-    cont.ox = tailquaverupsquash.ox
-    cont.oy = tailquaverupsquash.oy - 90*3
-    cont.origin = tailquaverupsquash.origin
-    cont.origin = (cont.origin[0], cont.origin[1] + 90*3*3600./cont.scale)
     return cont
-tailhemiup = tmpfn()
-
-def tmpfn():
-    cont = GlyphContext()
-    cont.extra = tailquaverdnsquash, "0 90 translate", tailshortdnsquash
-    cont.ox = tailshortdnsquash.ox
-    cont.oy = tailshortdnsquash.oy + 90
-    cont.origin = tailquaverdnsquash.origin
-    cont.origin = (cont.origin[0], cont.origin[1] - 90*3600./cont.scale)
-    return cont
-tailsemidn = tmpfn()
-
-def tmpfn():
-    cont = GlyphContext()
-    cont.extra = (tailquaverdnsquashsquash,) + ("0 90 translate", tailshortdnsquashsquash) * 2
-    cont.ox = tailquaverdnsquashsquash.ox
-    cont.oy = tailquaverdnsquashsquash.oy + 90*2
-    cont.origin = tailquaverdnsquashsquash.origin
-    cont.origin = (cont.origin[0], cont.origin[1] - 90*2*3600./cont.scale)
-    return cont
-taildemidn = tmpfn()
-
-def tmpfn():
-    cont = GlyphContext()
-    cont.extra = (tailquaverdnsquashsquash,) + ("0 90 translate", tailshortdnsquashsquash) * 3
-    cont.ox = tailquaverdnsquashsquash.ox
-    cont.oy = tailquaverdnsquashsquash.oy + 90*3
-    cont.origin = tailquaverdnsquashsquash.origin
-    cont.origin = (cont.origin[0], cont.origin[1] - 90*3*3600./cont.scale)
-    return cont
-tailhemidn = tmpfn()
+tailhemidn = multidn(4, tmpfn())
 
 # ----------------------------------------------------------------------
 # Minim note head.
