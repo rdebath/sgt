@@ -229,17 +229,27 @@ class CircleInvolute(Curve):
         except TypeError, e:
             self.params = None # it went pear-shaped
 
-    def transform(self, matrix):
-        # We don't transform mx. (We could, but I'm not sure it
-        # isn't better in the usual case to leave it unchanged so
-        # that transforming the overall dimensions of things alters
-        # their shape subtly so as to leave their curve quality
-        # similar.)
+    def transform(self, matrix, full):
         x1, y1, dx1, dy1, x2, y2, dx2, dy2, mx = self.inparams
         x1, y1 = transform(matrix, x1, y1)
         x2, y2 = transform(matrix, x2, y2)
         dx1, dy1 = transform(matrix, dx1, dy1, 0)
         dx2, dy2 = transform(matrix, dx2, dy2, 0)
+        # We only transform mx optionally. (I think it's better in
+        # many cases to leave it unchanged, so that transforming the
+        # overall dimensions of a glyph alters its shape subtly so
+        # as to leave the curve quality similar.)
+        if full:
+            if mx == None:
+                a, b, c, d = 1, 0, 0, 1
+            else:
+                a, b, c, d = mx
+            det = matrix[0]*matrix[3] - matrix[1]*matrix[2]
+            invmatrix = [matrix[3]/det, -matrix[1]/det, \
+            -matrix[2]/det, matrix[0]/det, 0, 0]
+            a, c = transform(invmatrix, a, c, 0)
+            b, d = transform(invmatrix, b, d, 0)
+            mx = a, b, c, d
         self.inparams = (x1, y1, dx1, dy1, x2, y2, dx2, dy2, mx)
         self.set_params()
 
@@ -400,7 +410,7 @@ class StraightLine(Curve):
         self.weldpri = 3
         Curve.postinit(self, cont)
 
-    def transform(self, matrix):
+    def transform(self, matrix, full):
         x1, y1, x2, y2 = self.inparams
         x1, y1 = transform(matrix, x1, y1)
         x2, y2 = transform(matrix, x2, y2)
@@ -485,7 +495,7 @@ class Bezier(Curve):
         self.weldpri = 1
         Curve.postinit(self, cont)
 
-    def transform(self, matrix):
+    def transform(self, matrix, full):
         (x1, y1, x2, y2, x3, y3, x4, y4) = self.inparams
         x1, y1 = transform(matrix, x1, y1)
         x2, y2 = transform(matrix, x2, y2)

@@ -93,12 +93,12 @@ def key(event):
             if x[:5] == "# End":
                 break
             exec x
-    elif event.char == 'T':
+    elif event.char == 'T' or event.char == '\x14':
         print "Enter a transformation matrix:"
         x = sys.stdin.readline()
         matrix = eval(x)
         for curve in cont.curves.values():
-            curve.transform(matrix)
+            curve.transform(matrix, event.char == '\x14')
             curve.tk_refresh()
     elif event.char == '\x11': # Ctrl-Q
         sys.exit(0)
