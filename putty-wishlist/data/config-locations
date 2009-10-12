@@ -8,9 +8,9 @@ Content-type: text/x-html-body
 PuTTY stores its configuration and host keys in the registry under
 HKEY_CURRENT_USER, because we think that by and large that is the
 best single location for the job. However, not everybody agrees, and
-often for good reason. People carrying PuTTY around on a floppy tend
+often for good reason. People carrying PuTTY around on a USB key tend
 to want to store their configuration in a disk file on the same
-floppy, so they can take absolutely everything with them from place
+device, so they can take absolutely everything with them from place
 to place. (See
 <a href="http://tartarus.org/~simon/putty-snapshots/htmldoc/Chapter4.html#config-file">the docs</a>
 for a current hack to do this, which assumes you have write access to
@@ -49,7 +49,7 @@ single place?
 <p>
 Should PuTTY look for a disk file in the directory it was run from,
 and if found, use that in the first instance? (Supports convenient
-`run from a floppy' operation.)
+`run from a pen-drive' operation.)
 
 <p>
 Finally, although the above design makes it obvious how PuTTY should
