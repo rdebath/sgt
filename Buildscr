@@ -1,0 +1,28 @@
+# -*- sh -*-
+# Build script for Gonville.
+
+module gonville
+
+# Construct the source archive, before we create any new files.
+in . do mkdir gonville-r$(revision)
+in gonville-r$(revision) do cp ../gonville/* .
+in . do tar czvf gonville-r$(revision)-src.tar.gz gonville-r$(revision)
+
+# Build the font set, and construct the distribution archive.
+in gonville do ./glyphs.py -lily
+in gonville-r$(revision) do mv ../gonville/lilyfonts .
+in . do tar czvf gonville-r$(revision).tar.gz gonville-r$(revision)
+
+# Build the demo images.
+in gonville do lilypond --ps lilydemo.ly
+in gonville do gs -sDEVICE=pngmono -sPAPERSIZE=a4 -r720 -sOutputFile=before0.png -dBATCH -dNOPAUSE lilydemo.ps
+in gonville do convert -resize 1400x- -trim -bordercolor white -border 10 before0.png before.png
+in gonville do ./lilysetup ../gonville-r$(revision)/lilyfonts /usr/share/lilypond/* lilydata
+in gonville do env LILYPOND_DATADIR=$$PWD/lilydata lilypond --ps lilydemo.ly
+in gonville do gs -sDEVICE=pngmono -sPAPERSIZE=a4 -r720 -sOutputFile=after0.png -dBATCH -dNOPAUSE lilydemo.ps
+in gonville do convert -resize 1400x- -trim -bordercolor white -border 10 after0.png after.png
+
+deliver gonville-r$(revision)-src.tar.gz $@
+deliver gonville-r$(revision).tar.gz $@
+deliver gonville/before.png $@
+deliver gonville/after.png $@
