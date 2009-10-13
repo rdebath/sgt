@@ -6,6 +6,9 @@
 
 \layout {
   ragged-right = ##t
+}
+
+\header {
   tagline = ##f
 }
 
