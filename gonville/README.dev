@@ -159,7 +159,11 @@ When gui.py starts up, it displays a blank window. You can then:
    as a list (or tuple) of six values, interpreted as a PostScript
    matrix. (That is, [a,b,c,d,e,f] represents the transformation in
    which (x,y) is mapped to (ax+cy+e, bx+dy+f).) Note that
-   y-coordinates in the GUI window go from the top downwards.
+   y-coordinates in the GUI window go from the top downwards. 'T'
+   and Ctrl-T differ in that the latter will create squashed
+   involutes (see below), whereas the former will just transform
+   their endpoints and directions and let the curve shape alter
+   subtly (which is sometimes what I wanted).
 
  - Anything else, you're on your own. The GUI has no method for
    deleting curves, for reordering them so that their Python
@@ -170,6 +174,8 @@ When gui.py starts up, it displays a blank window. You can then:
    'L'. (Again, I didn't want to spend lots of time polishing the
    editor if I could manage with a very basic program and have more
    time to draw glyphs.)
+
+ - Press Ctrl-Q to quit gui.py.
 
 Curve types:
 
