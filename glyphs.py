@@ -3855,7 +3855,7 @@ verstring = "$Revision$"
 args = sys.argv[1:]
 if len(args) == 2 and args[0] == "-test":
     # example usage:
-    # ./glyphs.py -test braceupper | gs -sDEVICE=pngmono -sOutputFile=out.png -r72 -g1000x1000 -dBATCH -dNOPAUSE -q - && v out.png
+    # ./glyphs.py -test braceupper | gs -sDEVICE=pngmono -sOutputFile=out.png -r72 -g1000x1000 -dBATCH -dNOPAUSE -q -
     # and then to view that in gui for correction:
     # convert -recolor '.25 0 0 0 0 .25 0 0 0 0 .25 0 .75 .75 .75 1' out.png zout.gif && ./gui.py zout.gif
     glyph = eval(args[1])
