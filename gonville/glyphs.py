@@ -4708,35 +4708,3 @@ elif len(args) == 1 and args[0][:5] == "-lily":
             "Generate($2)' gonvillebracepart%d.sfd lilyfonts/type1/gonvillebracepart%d.pfa") % ((subid,)*2))
             os.system(("fontforge -lang=ff -c 'Open($1); CorrectDirection(); " + \
             "Generate($2)' gonvillebracepart%d.sfd lilyfonts/svg/gonvillebracepart%d.svg") % ((subid,)*2))
-
-    # Lilypond TODO
-    # =============
-    #
-    # Functional issues
-    # -----------------
-    #
-    #  - SVG output doesn't seem to work: "ERROR: Wrong type
-    # 	 argument in position 1: #f", where it works with normal
-    # 	 fonts. Presumably something about my font is triggering a
-    # 	 wrong code path or some such.
-    # 	  + no, in fact it looks as if the reason for this is that
-    # 	    my font segfaults FontForge when writing out the SVG.
-    # 	    Gnarrgh.
-    #
-    # Things to document as missing in v1
-    # -----------------------------------
-    #
-    #  - all ancient notation: longa notes (though the longa and
-    # 	 maxima rests are supported), ancient note and rest styles
-    #  - solfa note heads.
-    #
-    # Configuration issues
-    # --------------------
-    #
-    #  - it would be nice to be able to fix the time signature
-    # 	 placement without my dreadful hack.
-    #
-    #  - it would be nice to be able to increase
-    # 	 between-system-space, but when I try it it only affects the
-    # 	 last page of my test data - I assume something horrid is
-    # 	 happening in the 'optimal' page breaking.
