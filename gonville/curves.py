@@ -311,8 +311,8 @@ class CircleInvolute(Curve):
         if self.params == None:
             fill = "red"
         else:
-            dx1a, dy1a = (lambda t: (cos(t),-sin(t)))(self.compute_theta(0))
-            dx2a, dy2a = (lambda t: (cos(t),-sin(t)))(self.compute_theta(1))
+            dx1a, dy1a = self.compute_direction(0)
+            dx2a, dy2a = self.compute_direction(1)
             if dx1a * dx1 + dy1a * dy1 < 0 or dx2a * dx2 + dy2a * dy2 < 0:
                 fill = "#ff0000"
             else:
