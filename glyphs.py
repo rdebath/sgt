@@ -6,6 +6,7 @@ import string
 import types
 import math
 import time
+import base64
 from curves import *
 
 class GlyphContext:
@@ -73,6 +74,29 @@ def qc(cond,t,f):
         return t
     else:
         return f
+
+# UTF-7 encoding, ad-hocked to do it the way Fontforge wants it done
+# (encoding control characters and double quotes, in particular).
+def utf7_encode(s):
+    out = ""
+    b64 = ""
+    # Characters we encode directly: RFC 2152's Set D, plus space.
+    ok = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'(),-./:? "
+    for c in s + "\0":
+        assert ord(c) < 128 # we support ASCII only
+        if not (c in ok):
+            b64 = b64 + "\0" + c
+        else:
+            if b64 != "":
+                b64 = base64.b64encode(b64)
+                b64 = string.replace(b64, "\n", "") # just in case
+                b64 = string.replace(b64, "=", "")
+                out = out + "+" + b64 + "-"
+                b64 = ""
+            if c != '\0':
+                out = out + c
+        
+    return out
 
 # 2x2 matrix multiplication.
 def matmul((a,b,c,d),(e,f,g,h)):
@@ -4377,7 +4401,7 @@ elif len(args) == 1 and args[0][:5] == "-lily":
         f.write("FullName: %s\n" % fontname)
         f.write("FamilyName: %s\n" % farray[0])
         f.write("Weight: Medium\n")
-        f.write("Copyright: No copyright is claimed on the outline data of this font.\n")
+        f.write("Copyright: Copyright 2009 Simon Tatham. All rights reserved.\n")
         f.write("Version: 0.1.%s\n" % verstring)
         f.write("ItalicAngle: 0\n")
         f.write("UnderlinePosition: -100\n")
@@ -4415,7 +4439,13 @@ elif len(args) == 1 and args[0][:5] == "-lily":
         f.write("AntiAlias: 1\n")
         f.write("FitToEm: 1\n")
         f.write("WinInfo: 64 8 2\n")
-
+        g = open("LICENCE", "r")
+        licence = g.read()
+        g.close()
+        while licence[-1:] == "\n":
+            licence = licence[:-1]
+        licence = utf7_encode(licence)
+        f.write('LangName: 1033 "" "" "" "" "" "" "" "" "" "" "" "" "" "%s" ""\n' % licence)
         f.write("BeginChars: %d %d\n" % (encodingsize, len(glyphlist)))
 
         i = 0
