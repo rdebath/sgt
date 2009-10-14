@@ -31,6 +31,19 @@ Font editing/construction
    individual strokes to Bezier outlines and then let Fontforge do
    the job of intersection removal.
 
+ - The current set of glyphs includes quite a few which have
+   constraints within their curve data that are not enforced by
+   gui.py. It'd be better if the curve data language could specify
+   all of those things, and gui.py did enforce them. Things like
+   multiple welds (one curve welded to two distinct others),
+   transformed equivalence (in the 8, for instance, one curve is
+   constrained to be a mirror image of another, and the artificial
+   harmonic note head must remain rotationally symmetric), partial
+   endpoint constraints (in the m, for instance, c3 is constrained
+   to start a certain horizontal distance to the right of the line
+   of c2, but it doesn't matter _where_ on that line; meanwhile its
+   direction is constrained to match c2 as well).
+
 Glyph design issues
 -------------------
 
