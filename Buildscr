@@ -9,7 +9,7 @@ in gonville-r$(revision) do cp ../gonville/* .
 in . do tar czvf gonville-r$(revision)-src.tar.gz gonville-r$(revision)
 
 # Build the font set, and construct the distribution archive.
-in gonville do ./glyphs.py -lily
+in gonville do ./glyphs.py --rev=$(revision) -lily
 in gonville-r$(revision) do mv ../gonville/lilyfonts .
 in . do tar czvf gonville-r$(revision).tar.gz gonville-r$(revision)
 

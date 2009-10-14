@@ -3850,9 +3850,12 @@ accstar = tmpfn()
 # ----------------------------------------------------------------------
 # End of actual glyph definitions. Now for the output layer.
 
-verstring = "$Revision$"
+verstring = "$Revision$"[11:-2]
 
 args = sys.argv[1:]
+if len(args) >= 1 and args[0][:6] == "--rev=":
+    verstring = args[0][6:]
+    args = args[1:]
 if len(args) == 2 and args[0] == "-test":
     # example usage:
     # ./glyphs.py -test braceupper | gs -sDEVICE=pngmono -sOutputFile=out.png -r72 -g1000x1000 -dBATCH -dNOPAUSE -q -
@@ -4192,7 +4195,7 @@ elif len(args) == 1 and args[0][:5] == "-lily":
         f.write("FamilyName: %s\n" % farray[0])
         f.write("Weight: Medium\n")
         f.write("Copyright: No copyright is claimed on the outline data of this font.\n")
-        f.write("Version: 0.1.%s\n" % verstring[11:-2])
+        f.write("Version: 0.1.%s\n" % verstring)
         f.write("ItalicAngle: 0\n")
         f.write("UnderlinePosition: -100\n")
         f.write("UnderlineWidth: 50\n")
