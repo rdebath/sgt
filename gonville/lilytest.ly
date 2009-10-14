@@ -132,7 +132,7 @@ arrd = \markup {
   \musicglyph #"arrowheads.close.1M1"
 }
 
-ouroboros = #(make-dynamic-script "ffmfpfrfsfzmmpmrmsmzpprpspzrrsrzsszzf")
+ouroboros = #(make-dynamic-script "ffmfpfrfsfzmmpmrmsmz zpprpspzrrsrzsszzf")
 
 frag = {
   \key e \major
