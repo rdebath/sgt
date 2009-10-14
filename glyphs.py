@@ -3848,6 +3848,18 @@ def tmpfn():
 accstar = tmpfn()
 
 # ----------------------------------------------------------------------
+# A blank glyph!
+
+def tmpfn():
+    cont = GlyphContext()
+    cont.lx = 500
+    cont.rx = 600
+    cont.by = 500
+    cont.ty = 600
+    return cont
+blank = tmpfn()
+
+# ----------------------------------------------------------------------
 # End of actual glyph definitions. Now for the output layer.
 
 verstring = "$Revision$"[11:-2]
@@ -3907,6 +3919,7 @@ lilyglyphlist = [
 ("dynamicr",     "r",                      0x0072, 'lx','by', 'rx','by', {"x0":"lx", "x1":"rx", "xw":"rx"}),
 ("dynamics",     "s",                      0x0073, 'lx','by', 'rx','by', {"x0":"lx", "x1":"rx", "xw":"rx"}),
 ("dynamicz",     "z",                      0x007a, 'lx','by', 'rx','by', {"x0":"lx", "x1":"rx", "xw":"rx"}),
+("blank",        "space",                  0x0020, 'lx','by', 'rx','by', {"x0":"lx", "x1":"rx", "y0":"by", "y1":"ty", "xw":"rx"}),
 ("fermata",      "scripts.ufermata",       0xe152, 0.5,0, 1,0),
 ("fermata0",     "scripts.ushortfermata",  0xe154, 0.5,0, 1,0),
 ("fermata2",     "scripts.ulongfermata",   0xe156, 0.5,0, 1,0),
@@ -4423,7 +4436,7 @@ elif len(args) == 1 and args[0][:5] == "-lily":
             f.write("\nStartChar: %s\n" % theirname)
             f.write("Encoding: %d %d %d\n" % (encoding, encoding, i))
             f.write("Width: %g\n" % width)
-            f.write("Flags: \n")
+            f.write("Flags: W\n")
             f.write("LayerCount: 2\n")
             f.write("Fore\n")
             f.write("SplineSet\n")
