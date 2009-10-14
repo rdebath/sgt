@@ -6,15 +6,17 @@
 #         oldlilydir is the current default LILYPOND_DATADIR, typically
 #                    /usr/share/lilypond/2.10.33/ or something similar
 #         newlilydir is a directory usable as LILYPOND_DATADIR
-#
-# prerequisites: my 'lns' and 'reservoir' utilities on $PATH
 
 fontdir="$1"
 oldlilydir="$2"
 newlilydir="$3"
 
 rm -rf "$newlilydir"
-lns -a -r "$oldlilydir" "$newlilydir"
+mkdir "$newlilydir"
+(cd "$oldlilydir"; find . -type d -print) | \
+  perl -ne 'BEGIN{$d=shift@ARGV;}chomp; s/\.\/// and mkdir "$d/$_"' "$newlilydir"
+(cd "$oldlilydir"; find . ! -type d -print) | \
+  perl -ne 'BEGIN{$s=shift@ARGV;$d=shift@ARGV;}chomp; s/\.\/// and symlink "$s/$_", "$d/$_"' "$oldlilydir" "$newlilydir"
 rm -rf "$newlilydir"/fonts
 cp -r "$fontdir" "$newlilydir"/fonts
 
