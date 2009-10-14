@@ -1,5 +1,9 @@
 #!/bin/sh 
 
+# Setup utility for using the Gonville music font in Lilypond.
+# Creates a symlink-farm 'copy' of the Lilypond data directory, but
+# with the 'fonts' subdirectory replaced with Gonville.
+
 # usage: lilysetup <fontdir> <oldlilydir> <lilydir>
 #
 # where:  fontdir    is the lilyfonts directory output from './glyphs.py -lily'
@@ -20,44 +24,9 @@ mkdir "$newlilydir"
 rm -rf "$newlilydir"/fonts
 cp -r "$fontdir" "$newlilydir"/fonts
 
-replace() {
-  local file="$1"
-  shift
-  "$@" "$file" > "${file}.new" && mv "${file}.new" "$file"
-}
-
-replace "$newlilydir"/ly/titling-init.ly \
-perl -pe '/header:meter/ and do { s/\S.*\S/{ \\italic $& }/ };
-END {print "tagline = ##f\n"}'
-
-replace "$newlilydir"/ly/paper-defaults.ly \
-perl -pe 'END {print << '\''EOF'\'';
-\paper {
-  #(define left-margin (* 18 mm))
-  #(define right-margin (* 18 mm))
-  #(define bottom-margin 10)
-  #(define fonts
-    (make-pango-font-tree "Nimbus Roman No9 L"
-                          "Nimbus Sans L"
-                          "Nimbus Mono L" 1))
-}
-EOF
-}'
-
-replace "$newlilydir"/ly/declarations-init.ly \
-perl -pe 'END {print << '\''EOF'\'';
-\layout {
-  \context { \Score
-    \override SpacingSpanner #'\''spacing-increment = #'\''1.5
-    \override TextScript #'\''font-shape = #'\''italic
-    \override TextScript #'\''staff-padding = #2.0
-    \override BarNumber #'\''font-shape = #'\''italic
-    \override MetronomeMark #'\''font-shape = #'\''italic
-    \override MetronomeMark #'\''staff-padding = #2.0
-    \override MetronomeMark #'\''minimum-space = #0.0
-    \override MultiMeasureRestText #'\''font-shape = #'\''italic
-    \override MultiMeasureRestText #'\''staff-padding = #2.0
-  }
-}
-EOF
-}'
+# If there's a file called 'lilysetup.local' in the same directory
+# as this script, source it. This allows a user, while they're
+# replicating the Lilypond data directory anyway, to make other
+# configuration changes as well as using the Gonville font.
+localscript="`dirname "$0"`/lilysetup.local"
+if test -f "$localscript"; then . "$localscript"; fi
