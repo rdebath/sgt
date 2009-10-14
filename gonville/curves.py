@@ -181,7 +181,9 @@ class CircleInvolute(Curve):
             # of this is just the inverse cosine of their dot product.
             # The sign must be chosen to reflect which way round they
             # are.
-            theta = -acos(dx1*dx2 + dy1*dy2)
+            dp = dx1*dx2 + dy1*dy2
+            if abs(dp) > 1: dp /= abs(dp) # avoid EDOM from rounding error
+            theta = -acos(dp)
             if dx1*dy2 - dx2*dy1 > 0:
                 theta = -theta
 
