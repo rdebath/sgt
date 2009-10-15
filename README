@@ -48,6 +48,13 @@ So, to install Gonville, you should:
    command in my '.bashrc' file, but the details may depend on your
    local system.
 
+If you're running Lilypond on Windows, I'm afraid no equivalent of
+the 'lilysetup' script is currently provided. You'll have to do it
+by hand using the Windows Explorer or the Command Prompt: find the
+Lilypond data directory, make a complete copy of it, delete the
+'fonts' subdirectory in the copy, move Gonville's 'lilyfonts'
+directory into the copy and rename it to 'fonts'.
+
 Supported features
 ------------------
 

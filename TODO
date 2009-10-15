@@ -8,6 +8,12 @@ Lilypond integration
    signature digits where I want them without me having to do that
    dreadful bounding box hack in the font files.
 
+ - A Windows installer of some sort would be useful. (I _probably_
+   mean here a batch-file analogue of lilysetup, not a Windows-
+   installer-like installer. Getting the latter to find the parent
+   Lilypond directory and copy bits of it would probably be
+   painful.)
+
 Font editing/construction
 -------------------------
 
