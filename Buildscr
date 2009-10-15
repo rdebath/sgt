@@ -21,7 +21,7 @@ in . do tar czvf gonville-r$(revision).tar.gz gonville-r$(revision)
 # copies instead of symlinks, and which (in what I think is still
 # Windows's normal convention) doesn't contain everything inside a
 # subdirectory.
-in gonville-r($revision) do zip -r ../gonville-r($revision).zip *
+in gonville-r$(revision) do zip -r ../gonville-r$(revision).zip *
 
 # Build the demo images.
 in gonville do (unset LILYPOND_DATADIR; lilypond --ps lilydemo.ly)
