@@ -361,6 +361,11 @@ def get_ps_path(char, debug=None):
             bbox = update_bbox(bbox, c[-2], c[-1])
     return bbox, path
 
+# Wrapper on os.system() that enforces a success return.
+def system(cmd):
+    ret = os.system(cmd)
+    assert ret == 0
+
 # ----------------------------------------------------------------------
 # G clef (treble).
 #
@@ -4665,12 +4670,12 @@ elif len(args) == 1 and args[0][:5] == "-lily":
                 pass # probably already existed, which we don't mind
 
         for size in sizes:
-            os.system(("fontforge -lang=ff -c 'Open($1); CorrectDirection(); " + \
+            system(("fontforge -lang=ff -c 'Open($1); CorrectDirection(); " + \
             "LoadTableFromFile(\"LILC\", \"gonville%d.LILC\"); " + \
             "LoadTableFromFile(\"LILF\", \"gonville%d.LILF\"); " + \
             "LoadTableFromFile(\"LILY\", \"gonville%d.LILY\"); " + \
             "Generate($2)' gonville%d.sfd lilyfonts/otf/gonville%d.otf") % ((size,)*5))
-            os.system(("fontforge -lang=ff -c 'Open($1); CorrectDirection(); " + \
+            system(("fontforge -lang=ff -c 'Open($1); CorrectDirection(); " + \
             "Generate($2)' gonville%d.sfd lilyfonts/svg/gonville%d.svg") % ((size,)*2))
             try:
                 os.symlink("gonville%d.otf" % size, "lilyfonts/otf/emmentaler-%d.otf" % size)
@@ -4678,9 +4683,9 @@ elif len(args) == 1 and args[0][:5] == "-lily":
             except OSError, e:
                 pass # probably already existed, which we don't mind
         for size in sizes:
-            os.system(("fontforge -lang=ff -c 'Open($1); CorrectDirection(); " + \
+            system(("fontforge -lang=ff -c 'Open($1); CorrectDirection(); " + \
             "Generate($2)' gonvillealpha%d.sfd lilyfonts/type1/gonvillealpha%d.pfa") % ((size,)*2))
-            os.system(("fontforge -lang=ff -c 'Open($1); CorrectDirection(); " + \
+            system(("fontforge -lang=ff -c 'Open($1); CorrectDirection(); " + \
             "Generate($2)' gonvillealpha%d.sfd lilyfonts/svg/gonvillealpha%d.svg") % ((size,)*2))
             try:
                 os.symlink("gonvillealpha%d.pfa" % size, "lilyfonts/type1/feta-alphabet%d.pfa" % size)
@@ -4688,9 +4693,9 @@ elif len(args) == 1 and args[0][:5] == "-lily":
             except OSError, e:
                 pass # probably already existed, which we don't mind
         for subid in range(1,subids):
-            os.system(("fontforge -lang=ff -c 'Open($1); CorrectDirection(); " + \
+            system(("fontforge -lang=ff -c 'Open($1); CorrectDirection(); " + \
             "Generate($2)' gonvillepart%d.sfd lilyfonts/type1/gonvillepart%d.pfa") % ((subid,)*2))
-            os.system(("fontforge -lang=ff -c 'Open($1); CorrectDirection(); " + \
+            system(("fontforge -lang=ff -c 'Open($1); CorrectDirection(); " + \
             "Generate($2)' gonvillepart%d.sfd lilyfonts/svg/gonvillepart%d.svg") % ((subid,)*2))
 
     # Now do most of that all over again for the specialist brace
@@ -4734,12 +4739,12 @@ elif len(args) == 1 and args[0][:5] == "-lily":
         for subid in range(subids):
             writesfd("gonvillebracepart%d" % subid, "Gonville Brace %d" % subid, "Custom", 256, outlines, subbracelists[subid])
 
-        os.system(("fontforge -lang=ff -c 'Open($1); CorrectDirection(); " + \
+        system(("fontforge -lang=ff -c 'Open($1); CorrectDirection(); " + \
         "LoadTableFromFile(\"LILC\", \"gonvillebrace.LILC\"); " + \
         "LoadTableFromFile(\"LILF\", \"gonvillebrace.LILF\"); " + \
         "LoadTableFromFile(\"LILY\", \"gonvillebrace.LILY\"); " + \
         "Generate($2)' gonvillebrace.sfd lilyfonts/otf/gonvillebrace.otf"))
-        os.system(("fontforge -lang=ff -c 'Open($1); CorrectDirection(); " + \
+        system(("fontforge -lang=ff -c 'Open($1); CorrectDirection(); " + \
         "Generate($2)' gonvillebrace.sfd lilyfonts/svg/gonvillebrace.svg"))
         try:
             os.symlink("gonvillebrace.otf", "lilyfonts/otf/aybabtu.otf")
@@ -4747,9 +4752,9 @@ elif len(args) == 1 and args[0][:5] == "-lily":
         except OSError, e:
             pass # probably already existed, which we don't mind
         for subid in range(subids):
-            os.system(("fontforge -lang=ff -c 'Open($1); CorrectDirection(); " + \
+            system(("fontforge -lang=ff -c 'Open($1); CorrectDirection(); " + \
             "Generate($2)' gonvillebracepart%d.sfd lilyfonts/type1/gonvillebracepart%d.pfa") % ((subid,)*2))
-            os.system(("fontforge -lang=ff -c 'Open($1); CorrectDirection(); " + \
+            system(("fontforge -lang=ff -c 'Open($1); CorrectDirection(); " + \
             "Generate($2)' gonvillebracepart%d.sfd lilyfonts/svg/gonvillebracepart%d.svg") % ((subid,)*2))
 elif len(args) == 2 and args[0] == "-lilycheck":
     # Run over the list of glyph names in another font file and list
@@ -4790,7 +4795,7 @@ elif len(args) == 2 and args[0] == "-lilycheck":
     ]
 
     s = string.replace(args[1], "'", "'\\''")
-    os.system("fontforge -lang=ff -c 'Open($1); Save($2)' '%s' temp.sfd >&/dev/null" % s)
+    system("fontforge -lang=ff -c 'Open($1); Save($2)' '%s' temp.sfd >&/dev/null" % s)
     f = open("temp.sfd", "r")
     while 1:
         s = f.readline()
