@@ -17,6 +17,11 @@ in gonville do cp LICENCE README lilysetup ../gonville-r$(revision)
 in gonville do ./glyphs.py --rev=$(revision) -lily
 in gonville-r$(revision) do mv ../gonville/lilyfonts .
 in . do tar czvf gonville-r$(revision).tar.gz gonville-r$(revision)
+# And build a zip file for Windows users, which will of course store
+# copies instead of symlinks, and which (in what I think is still
+# Windows's normal convention) doesn't contain everything inside a
+# subdirectory.
+in gonville-r($revision) do zip -r ../gonville-r($revision).zip *
 
 # Build the demo images.
 in gonville do (unset LILYPOND_DATADIR; lilypond --ps lilydemo.ly)
@@ -29,5 +34,6 @@ in gonville do convert -resize 1400x- -trim -bordercolor white -border 10 after0
 
 deliver gonville-r$(revision)-src.tar.gz $@
 deliver gonville-r$(revision).tar.gz $@
+deliver gonville-r$(revision).zip $@
 deliver gonville/before.png $@
 deliver gonville/after.png $@
