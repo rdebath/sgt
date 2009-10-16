@@ -4416,7 +4416,7 @@ elif len(args) == 1 and args[0][:5] == "-lily":
         f.write("FullName: %s\n" % fontname)
         f.write("FamilyName: %s\n" % farray[0])
         f.write("Weight: Medium\n")
-        f.write("Copyright: Copyright 2009 Simon Tatham. All rights reserved.\n")
+        f.write("Copyright: No copyright is claimed on this font file.\n")
         f.write("Version: 0.1.%s\n" % verstring)
         f.write("ItalicAngle: 0\n")
         f.write("UnderlinePosition: -100\n")
@@ -4454,13 +4454,6 @@ elif len(args) == 1 and args[0][:5] == "-lily":
         f.write("AntiAlias: 1\n")
         f.write("FitToEm: 1\n")
         f.write("WinInfo: 64 8 2\n")
-        g = open("LICENCE", "r")
-        licence = g.read()
-        g.close()
-        while licence[-1:] == "\n":
-            licence = licence[:-1]
-        licence = utf7_encode(licence)
-        f.write('LangName: 1033 "" "" "" "" "" "" "" "" "" "" "" "" "" "%s" ""\n' % licence)
         f.write("BeginChars: %d %d\n" % (encodingsize, len(glyphlist)))
 
         i = 0

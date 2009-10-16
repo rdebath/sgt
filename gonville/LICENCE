@@ -1,4 +1,24 @@
-Gonville is copyright 2009 Simon Tatham. All rights reserved.
+This is the LICENCE file for Simon Tatham's musical symbols font
+'Gonville'.
+
+The usable form of Gonville consists of font files in standard font
+formats: OTF, Type 1 PFA and SVG. These files are generated as
+output by running a set of computer programs (the source code).
+
+Use of the output font files is UNRESTRICTED. I, Simon Tatham,
+hereby disclaim any copyright I may hold in those files, to the
+maximum extent permitted by law. Anybody receiving a copy of a
+Gonville font file is hereby granted permission to use, copy, modify
+and redistribute it in any form with no restrictions and with no
+conditions. In particular, typesetting with Gonville font files in a
+way that embeds portions of the font data in the output document
+(e.g. PDF) imposes no constraint whatsoever on the ways in which you
+may use or license the resulting document.
+
+---
+
+The Gonville source code is copyright 2009 Simon Tatham. All rights
+reserved.
 
 Permission is hereby granted, free of charge, to any person
 obtaining a copy of this software and associated documentation files
