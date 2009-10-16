@@ -2924,160 +2924,6 @@ def tmpfn():
 fermata3up = tmpfn()
 
 # ----------------------------------------------------------------------
-# Flat (and multiples of flat).
-
-def tmpfn():
-    cont = GlyphContext()
-    # Saved data from gui.py
-    c0 = StraightLine(cont, 430, 236, 430, 548)
-    c1 = Bezier(cont, 430, 548, 481, 499, 515.999, 458, 505, 424)
-    c2 = CircleInvolute(cont, 505, 424, -0.307801, -0.951451, 430, 436, -0.462566, 0.886585)
-    c0.weld_to(1, c1, 0, 1)
-    c1.weld_to(1, c2, 0)
-    # End saved data
-
-    c0.nib = 8
-
-    x0 = c1.compute_x(0)
-    x1 = c1.compute_x(1)
-    cont.default_nib = lambda c,x,y,t,theta: 8+12*((x-x0)/(x1-x0))**2
-
-    cont.ox = c0.compute_x(0.5)
-    cont.hy = 469 # no sensible way to specify this except manually
-
-    return cont
-flat = tmpfn()
-
-def tmpfn():
-    cont = GlyphContext()
-    cont.extra = flat, "gsave -90 0 translate", flat, "grestore"
-    cont.ox = flat.ox - 90
-    cont.hy = flat.hy
-    return cont
-doubleflat = tmpfn()
-
-def tmpfn():
-    cont = GlyphContext()
-    reflectpt = flat.ox - 20
-    cont.extra = "gsave %g 0 translate -1 1 scale" % (2*reflectpt), \
-    flat, "grestore"
-    cont.hy = flat.hy
-    return cont
-semiflat = tmpfn()
-
-def tmpfn():
-    cont = GlyphContext()
-    cont.extra = flat, semiflat
-    cont.hy = flat.hy
-    return cont
-sesquiflat = tmpfn()
-
-def tmpfn():
-    cont = GlyphContext()
-    cont.extra = "gsave 580 380 translate 0.5 dup scale -580 -380 translate", flat, "grestore"
-    return cont
-smallflat = tmpfn()
-
-# ----------------------------------------------------------------------
-# Natural.
-
-def tmpfn():
-    cont = GlyphContext()
-    # Saved data from gui.py
-    c0 = StraightLine(cont, 519, 622, 519, 399)
-    c1 = StraightLine(cont, 519, 399, 442, 422)
-    c2 = StraightLine(cont, 442, 318, 442, 539)
-    c3 = StraightLine(cont, 442, 539, 519, 520)
-    c0.weld_to(1, c1, 0, 1)
-    c2.weld_to(1, c3, 0, 1)
-    # End saved data
-
-    cont.default_nib = (8, pi/2, 16, 16)
-
-    return cont
-natural = tmpfn()
-
-def tmpfn():
-    cont = GlyphContext()
-    cont.extra = "gsave 580 280 translate 0.5 dup scale -580 -280 translate", natural, "grestore"
-    return cont
-smallnatural = tmpfn()
-
-# ----------------------------------------------------------------------
-# Sharp.
-
-def tmpfn():
-    cont = GlyphContext()
-    # Saved data from gui.py
-    c0 = StraightLine(cont, 442, 306, 442, 652)
-    c1 = StraightLine(cont, 493, 291, 493, 637)
-    c2 = StraightLine(cont, 413, 419, 523, 392)
-    c3 = StraightLine(cont, 413, 552, 523, 524)
-    # End saved data
-
-    cont.default_nib = (8, pi/2, 16, 16)
-
-    return cont
-sharp = tmpfn()
-
-def tmpfn():
-    cont = GlyphContext()
-    cont.extra = "gsave 580 280 translate 0.5 dup scale -580 -280 translate", sharp, "grestore"
-    return cont
-smallsharp = tmpfn()
-
-def tmpfn():
-    cont = GlyphContext()
-    # Saved data from gui.py
-    c0 = StraightLine(cont, 442, 306, 442, 652)
-    c1 = StraightLine(cont, 413, 421, 472, 401.518)
-    c2 = StraightLine(cont, 413, 555, 472, 533.981)
-    # End saved data
-
-    cont.default_nib = (8, pi/2, 16, 16)
-
-    return cont
-semisharp = tmpfn()
-
-def tmpfn():
-    cont = GlyphContext()
-    # Saved data from gui.py
-    c0 = StraightLine(cont, 442, 300.351, 442, 646.351)
-    c1 = StraightLine(cont, 493, 291, 493, 637)
-    c2 = StraightLine(cont, 544, 281.649, 544, 627.649)
-    c3 = StraightLine(cont, 413, 414, 574, 384.481)
-    c4 = StraightLine(cont, 413, 547, 574, 517.481)
-    # End saved data
-
-    cont.default_nib = (8, pi/2, 16, 16)
-
-    return cont
-sesquisharp = tmpfn()
-
-# ----------------------------------------------------------------------
-# Double sharp.
-
-def tmpfn():
-    cont = GlyphContext()
-    # Saved data from gui.py
-    c0 = StraightLine(cont, 409, 426, 504, 521)
-    c1 = StraightLine(cont, 409, 521, 504, 426)
-    # End saved data
-
-    cont.default_nib = 8
-
-    # Blobs at the ends of the lines.
-    cont.extra = \
-    "/square { gsave 3 1 roll translate newpath dup dup moveto dup neg dup neg lineto dup neg dup lineto dup neg lineto closepath fill grestore } def " + \
-    "newpath 409 426 24 square " + \
-    "newpath 409 521 24 square " + \
-    "newpath 504 426 24 square " + \
-    "newpath 504 521 24 square "
-
-    return cont
-doublesharp = tmpfn()
-
-# ----------------------------------------------------------------------
 # Parentheses to go round accidentals.
 
 def tmpfn():
@@ -3243,6 +3089,26 @@ def tmpfn():
     return cont
 harmart = tmpfn()
 
+def tmpfn():
+    cont = GlyphContext()
+    # Saved data from gui.py
+    c0 = CircleInvolute(cont, 526, 402, 0.526355, 0.850265, 609, 476, 0.884918, 0.465746)
+    c1 = CircleInvolute(cont, 609, 476, -0.850265, 0.526355, 528, 541, -0.613941, 0.789352)
+    c2 = CircleInvolute(cont, 528, 541, -0.526355, -0.850265, 445, 467, -0.884918, -0.465746)
+    c3 = CircleInvolute(cont, 445, 467, 0.850265, -0.526355, 526, 402, 0.613941, -0.789352)
+    c0.weld_to(1, c1, 0, 1)
+    c0.weld_to(0, c3, 1, 1)
+    c1.weld_to(1, c2, 0, 1)
+    c2.weld_to(1, c3, 0, 1)
+    # End saved data
+
+    cont.default_nib = lambda c,x,y,t,theta: ptp_nib(c,x,y,t,theta,527,472,2)
+
+    cont.ay = c1.compute_y(0)
+
+    return cont
+harmartfilled = tmpfn()
+
 # ----------------------------------------------------------------------
 # Natural harmonic mark and a couple of other miscellaneous note flags.
 
@@ -3347,6 +3213,16 @@ def tmpfn():
     return cont
 caesura = tmpfn()
 
+def tmpfn():
+    cont = GlyphContext()
+    # Saved data from gui.py
+    c0 = CircleInvolute(cont, 400, 625, 550-400, 375-625, 500, 375, 0, -1)
+    c1 = CircleInvolute(cont, 475, 625, 625-475, 375-625, 575, 375, 0, -1)
+    # End saved data
+    cont.default_nib = lambda c,x,y,t,theta: 8+4.0*(x-c.compute_x(0))/(c.compute_x(1)-c.compute_x(0))
+    return cont
+caesuracurved = tmpfn()
+
 # ----------------------------------------------------------------------
 # Random functional stuff like arrowheads.
 
@@ -3383,6 +3259,439 @@ openarrowup = tmpfn(270,1)
 closearrowup = tmpfn(270,0)
 openarrowdown = tmpfn(90,1)
 closearrowdown = tmpfn(90,0)
+
+# ----------------------------------------------------------------------
+# Flat (and multiples of flat).
+
+def tmpfn():
+    cont = GlyphContext()
+    # Saved data from gui.py
+    c0 = StraightLine(cont, 430, 236, 430, 548)
+    c1 = Bezier(cont, 430, 548, 481, 499, 515.999, 458, 505, 424)
+    c2 = CircleInvolute(cont, 505, 424, -0.307801, -0.951451, 430, 436, -0.462566, 0.886585)
+    c0.weld_to(1, c1, 0, 1)
+    c1.weld_to(1, c2, 0)
+    # End saved data
+
+    c0.nib = 8
+
+    x0 = c1.compute_x(0)
+    x1 = c1.compute_x(1)
+    cont.default_nib = lambda c,x,y,t,theta: 8+12*((x-x0)/(x1-x0))**2
+
+    cont.ox = c0.compute_x(0.5)
+    cont.hy = 469 # no sensible way to specify this except manually
+
+    return cont
+flat = tmpfn()
+
+def tmpfn():
+    cont = GlyphContext()
+    # Saved data from gui.py
+    c0 = StraightLine(cont, 430, 236, 430, 548)
+    c1 = Bezier(cont, 430, 548, 481, 499, 515.999, 458, 505, 424)
+    c2 = CircleInvolute(cont, 505, 424, -0.307801, -0.951451, 430, 436, -0.462566, 0.886585)
+    c0.weld_to(1, c1, 0, 1)
+    c1.weld_to(1, c2, 0)
+    # End saved data
+
+    c0.nib = 8
+
+    x0 = c1.compute_x(0)
+    x1 = c1.compute_x(1)
+    cont.default_nib = lambda c,x,y,t,theta: 8+12*((x-x0)/(x1-x0))**2
+
+    cont.ox = c0.compute_x(0.5)
+    cont.hy = 469 # no sensible way to specify this except manually
+
+    cont.extra = "gsave 430 236 16 add translate 0.7 dup scale -500 dup 150 sub translate", closearrowup, "grestore"
+
+    return cont
+flatup = tmpfn()
+
+def tmpfn():
+    cont = GlyphContext()
+    # Saved data from gui.py
+    c0 = StraightLine(cont, 430, 236, 430, 568)
+    c1 = Bezier(cont, 430, 548, 481, 499, 515.999, 458, 505, 424)
+    c2 = CircleInvolute(cont, 505, 424, -0.307801, -0.951451, 430, 436, -0.462566, 0.886585)
+    c1.weld_to(1, c2, 0)
+    # End saved data
+
+    c0.nib = 8
+
+    x0 = c1.compute_x(0)
+    x1 = c1.compute_x(1)
+    cont.default_nib = lambda c,x,y,t,theta: 8+12*((x-x0)/(x1-x0))**2
+
+    cont.ox = c0.compute_x(0.5)
+    cont.hy = 469 # no sensible way to specify this except manually
+
+    cont.extra = "gsave 430 568 16 sub translate 0.7 dup scale -500 dup 150 add translate", closearrowdown, "grestore"
+
+    return cont
+flatdn = tmpfn()
+
+def tmpfn():
+    cont = GlyphContext()
+    # Saved data from gui.py
+    c0 = StraightLine(cont, 430, 236, 430, 568)
+    c1 = Bezier(cont, 430, 548, 481, 499, 515.999, 458, 505, 424)
+    c2 = CircleInvolute(cont, 505, 424, -0.307801, -0.951451, 430, 436, -0.462566, 0.886585)
+    c1.weld_to(1, c2, 0)
+    # End saved data
+
+    c0.nib = 8
+
+    x0 = c1.compute_x(0)
+    x1 = c1.compute_x(1)
+    cont.default_nib = lambda c,x,y,t,theta: 8+12*((x-x0)/(x1-x0))**2
+
+    cont.ox = c0.compute_x(0.5)
+    cont.hy = 469 # no sensible way to specify this except manually
+
+    cont.extra = flatup.extra + flatdn.extra
+
+    return cont
+flatupdn = tmpfn()
+
+def tmpfn():
+    cont = GlyphContext()
+    cont.extra = flat, "gsave -90 0 translate", flat, "grestore"
+    cont.ox = flat.ox - 90
+    cont.hy = flat.hy
+    return cont
+doubleflat = tmpfn()
+
+def tmpfn():
+    cont = GlyphContext()
+    reflectpt = flat.ox - 20
+    cont.extra = "gsave %g 0 translate -1 1 scale" % (2*reflectpt), \
+    flat, "grestore"
+    cont.hy = flat.hy
+    return cont
+semiflat = tmpfn()
+
+def tmpfn():
+    cont = GlyphContext()
+    cont.extra = flat, semiflat
+    cont.hy = flat.hy
+    return cont
+sesquiflat = tmpfn()
+
+def tmpfn():
+    cont = GlyphContext()
+    cont.extra = "gsave 580 380 translate 0.5 dup scale -580 -380 translate", flat, "grestore"
+    return cont
+smallflat = tmpfn()
+
+def tmpfn():
+    cont = GlyphContext()
+    # Saved data from gui.py
+    c0 = StraightLine(cont, 370, 363, 490, 303)
+    # End saved data
+
+    c0.nib = 8
+
+    cont.ox = flat.ox
+    cont.hy = flat.hy
+
+    cont.extra = flat
+
+    return cont
+flatslash = tmpfn()
+
+def tmpfn():
+    cont = GlyphContext()
+    # Saved data from gui.py
+    c0 = StraightLine(cont, 372, 373, 490, 333)
+    c1 = StraightLine(cont, 372, 313, 490, 273)
+    # End saved data
+
+    c0.nib = c1.nib = 8
+
+    cont.ox = flat.ox
+    cont.hy = flat.hy
+
+    cont.extra = flat
+
+    return cont
+flatslash2 = tmpfn()
+
+def tmpfn():
+    cont = GlyphContext()
+    reflectpt = flat.ox - 20
+    cont.extra = "gsave %g 0 translate -1 1 scale" % (2*reflectpt), \
+    flatslash, "grestore"
+    cont.hy = flatslash.hy
+    return cont
+semiflatslash = tmpfn()
+
+def tmpfn():
+    cont = GlyphContext()
+    # Saved data from gui.py
+    c0 = StraightLine(cont, 282, 361, 490, 281)
+    # End saved data
+
+    c0.nib = 8
+
+    cont.ox = doubleflat.ox
+    cont.hy = doubleflat.hy
+
+    cont.extra = doubleflat
+
+    return cont
+doubleflatslash = tmpfn()
+
+# ----------------------------------------------------------------------
+# Natural.
+
+def tmpfn():
+    cont = GlyphContext()
+    # Saved data from gui.py
+    c0 = StraightLine(cont, 519, 622, 519, 399)
+    c1 = StraightLine(cont, 519, 399, 442, 418)
+    c2 = StraightLine(cont, 442, 318, 442, 539)
+    c3 = StraightLine(cont, 442, 539, 519, 520)
+    c0.weld_to(1, c1, 0, 1)
+    c2.weld_to(1, c3, 0, 1)
+    # End saved data
+
+    cont.default_nib = (8, pi/2, 16, 16)
+
+    cont.cy = (c1.compute_y(1) + c2.compute_y(0)) / 2.0
+
+    return cont
+natural = tmpfn()
+
+def tmpfn():
+    cont = GlyphContext()
+    # Saved data from gui.py
+    c0 = StraightLine(cont, 519, 622, 519, 399)
+    c1 = StraightLine(cont, 519, 399, 442, 418)
+    c2 = StraightLine(cont, 442, 318, 442, 539)
+    c3 = StraightLine(cont, 442, 539, 519, 520)
+    c0.weld_to(1, c1, 0, 1)
+    c2.weld_to(1, c3, 0, 1)
+    # End saved data
+
+    cont.default_nib = (8, pi/2, 16, 16)
+
+    cont.extra = "gsave 442 318 translate 0.7 dup scale -500 dup 150 sub translate", closearrowup, "grestore"
+
+    cont.cy = natural.cy
+
+    return cont
+naturalup = tmpfn()
+
+def tmpfn():
+    cont = GlyphContext()
+    # Saved data from gui.py
+    c0 = StraightLine(cont, 519, 622, 519, 399)
+    c1 = StraightLine(cont, 519, 399, 442, 418)
+    c2 = StraightLine(cont, 442, 318, 442, 539)
+    c3 = StraightLine(cont, 442, 539, 519, 520)
+    c0.weld_to(1, c1, 0, 1)
+    c2.weld_to(1, c3, 0, 1)
+    # End saved data
+
+    cont.default_nib = (8, pi/2, 16, 16)
+
+    cont.extra = "gsave 519 622 translate 0.7 dup scale -500 dup 150 add translate", closearrowdown, "grestore"
+
+    cont.cy = natural.cy
+
+    return cont
+naturaldn = tmpfn()
+
+def tmpfn():
+    cont = GlyphContext()
+    # Saved data from gui.py
+    c0 = StraightLine(cont, 519, 622, 519, 399)
+    c1 = StraightLine(cont, 519, 399, 442, 418)
+    c2 = StraightLine(cont, 442, 318, 442, 539)
+    c3 = StraightLine(cont, 442, 539, 519, 520)
+    c0.weld_to(1, c1, 0, 1)
+    c2.weld_to(1, c3, 0, 1)
+    # End saved data
+
+    cont.default_nib = (8, pi/2, 16, 16)
+
+    cont.extra = naturalup.extra + naturaldn.extra
+
+    cont.cy = natural.cy
+
+    return cont
+naturalupdn = tmpfn()
+
+def tmpfn():
+    cont = GlyphContext()
+    cont.extra = "gsave 580 280 translate 0.5 dup scale -580 -280 translate", natural, "grestore"
+    return cont
+smallnatural = tmpfn()
+
+# ----------------------------------------------------------------------
+# Sharp.
+
+def tmpfn():
+    cont = GlyphContext()
+    # Saved data from gui.py
+    c0 = StraightLine(cont, 442, 306, 442, 652)
+    c1 = StraightLine(cont, 493, 291, 493, 637)
+    c2 = StraightLine(cont, 413, 419, 523, 392)
+    c3 = StraightLine(cont, 413, 551, 523, 524)
+    # End saved data
+
+    cont.default_nib = (8, pi/2, 16, 16)
+
+    cont.cy = (c2.compute_y(0) + c3.compute_y(1))/2.0
+
+    return cont
+sharp = tmpfn()
+
+def tmpfn():
+    cont = GlyphContext()
+    # Saved data from gui.py
+    c0 = StraightLine(cont, 442, 306, 442, 652)
+    c1 = StraightLine(cont, 493, 271, 493, 637)
+    c2 = StraightLine(cont, 413, 419, 523, 392)
+    c3 = StraightLine(cont, 413, 551, 523, 524)
+    # End saved data
+
+    cont.default_nib = (8, pi/2, 16, 16)
+
+    cont.extra = "gsave 493 271 translate 0.7 dup scale -500 dup 150 sub translate", closearrowup, "grestore"
+
+    cont.cy = sharp.cy
+
+    return cont
+sharpup = tmpfn()
+
+def tmpfn():
+    cont = GlyphContext()
+    # Saved data from gui.py
+    c0 = StraightLine(cont, 442, 306, 442, 672)
+    c1 = StraightLine(cont, 493, 291, 493, 637)
+    c2 = StraightLine(cont, 413, 419, 523, 392)
+    c3 = StraightLine(cont, 413, 551, 523, 524)
+    # End saved data
+
+    cont.default_nib = (8, pi/2, 16, 16)
+
+    cont.extra = "gsave 442 672 translate 0.7 dup scale -500 dup 150 add translate", closearrowdown, "grestore"
+
+    cont.cy = sharp.cy
+
+    return cont
+sharpdn = tmpfn()
+
+def tmpfn():
+    cont = GlyphContext()
+    # Saved data from gui.py
+    c0 = StraightLine(cont, 442, 306, 442, 672)
+    c1 = StraightLine(cont, 493, 271, 493, 637)
+    c2 = StraightLine(cont, 413, 419, 523, 392)
+    c3 = StraightLine(cont, 413, 551, 523, 524)
+    # End saved data
+
+    cont.default_nib = (8, pi/2, 16, 16)
+
+    cont.extra = sharpup.extra + sharpdn.extra
+
+    cont.cy = sharp.cy
+
+    return cont
+sharpupdn = tmpfn()
+
+def tmpfn():
+    cont = GlyphContext()
+    cont.extra = "gsave 580 280 translate 0.5 dup scale -580 -280 translate", sharp, "grestore"
+    return cont
+smallsharp = tmpfn()
+
+def tmpfn():
+    cont = GlyphContext()
+    # Saved data from gui.py
+    c0 = StraightLine(cont, 442, 306, 442, 652)
+    c1 = StraightLine(cont, 413, 421, 472, 401.518)
+    c2 = StraightLine(cont, 413, 555, 472, 533.981)
+    # End saved data
+
+    cont.default_nib = (8, pi/2, 16, 16)
+
+    return cont
+semisharp = tmpfn()
+
+def tmpfn():
+    cont = GlyphContext()
+    # Saved data from gui.py
+    c0 = StraightLine(cont, 442, 300.351, 442, 646.351)
+    c1 = StraightLine(cont, 493, 291, 493, 637)
+    c2 = StraightLine(cont, 544, 281.649, 544, 627.649)
+    c3 = StraightLine(cont, 413, 414, 574, 384.481)
+    c4 = StraightLine(cont, 413, 547, 574, 517.481)
+    # End saved data
+
+    cont.default_nib = (8, pi/2, 16, 16)
+
+    return cont
+sesquisharp = tmpfn()
+
+def tmpfn():
+    cont = GlyphContext()
+    # Saved data from gui.py
+    c0 = StraightLine(cont, 442, 306, 442, 652)
+    c1 = StraightLine(cont, 493, 291, 493, 637)
+    c2 = StraightLine(cont, 413, 397, 523, 370)
+    c3 = StraightLine(cont, 413, 573, 523, 546)
+    c4 = StraightLine(cont, 401, 487.945, 535, 455.055)
+    # End saved data
+
+    cont.default_nib = (8, pi/2, 16, 16)
+
+    cont.cy = (c2.compute_y(0) + c3.compute_y(1))/2.0
+
+    return cont
+sharp3 = tmpfn()
+
+def tmpfn():
+    cont = GlyphContext()
+    # Saved data from gui.py
+    c0 = StraightLine(cont, 442, 306, 442, 652)
+    c1 = StraightLine(cont, 413, 399, 472, 379.518)
+    c2 = StraightLine(cont, 413, 577, 472, 555.981)
+    c3 = StraightLine(cont, 400.5, 492.703, 483.5, 465.297)
+    # End saved data
+
+    cont.default_nib = (8, pi/2, 16, 16)
+
+    cont.cy = (c2.compute_y(0) + c3.compute_y(1))/2.0
+
+    return cont
+semisharp3 = tmpfn()
+
+# ----------------------------------------------------------------------
+# Double sharp.
+
+def tmpfn():
+    cont = GlyphContext()
+    # Saved data from gui.py
+    c0 = StraightLine(cont, 409, 426, 504, 521)
+    c1 = StraightLine(cont, 409, 521, 504, 426)
+    # End saved data
+
+    cont.default_nib = 8
+
+    # Blobs at the ends of the lines.
+    cont.extra = \
+    "/square { gsave 3 1 roll translate newpath dup dup moveto dup neg dup neg lineto dup neg dup lineto dup neg lineto closepath fill grestore } def " + \
+    "newpath 409 426 24 square " + \
+    "newpath 409 521 24 square " + \
+    "newpath 504 426 24 square " + \
+    "newpath 504 521 24 square "
+
+    return cont
+doublesharp = tmpfn()
 
 # ----------------------------------------------------------------------
 # Arpeggio mark and friends.
@@ -3930,6 +4239,7 @@ lilyglyphlist = [
 ("revvarbreath", "scripts.lvarcomma",      0, 0.5,0.5, 1,0.5),
 ("caesura",      "scripts.caesura",        0, 0,0.4, 1,0.4),
 ("caesura",      "scripts.caesura.straight", 0, 0,0.4, 1,0.4),
+("caesuracurved", "scripts.caesura.curved", 0, 0,0.4, 1,0.4),
 ("breve",        "noteheads.sM1",          0, 0,0.5, 1,0.5),
 ("clefC",        "clefs.C",                0, 0,0.5, 1,0.5),
 ("clefF",        "clefs.F",                0, 0,'hy', 1,'hy'),
@@ -3960,13 +4270,21 @@ lilyglyphlist = [
 ("fermata3up",   "scripts.dverylongfermata", 0, 0.5,1, 1,1),
 ("semiflat",     "accidentals.M1",         0, 0,'hy', 1,'hy'),
 ("semiflat",     "accidentals.mirroredflat", 0, 0,'hy', 1,'hy'),
+("semiflatslash", "accidentals.mirroredflat.backslash", 0, 0,'hy', 1,'hy'),
 ("flat",         "accidentals.M2",         0, 'ox','hy', 1,'hy'),
 ("flat",         "accidentals.flat",       0, 'ox','hy', 1,'hy'),
+("flatup",       "accidentals.flat.arrowup", 0, 'ox','hy', 1,'hy'),
+("flatdn",       "accidentals.flat.arrowdown", 0, 'ox','hy', 1,'hy'),
+("flatupdn",     "accidentals.flat.arrowboth", 0, 'ox','hy', 1,'hy'),
+("flatslash",    "accidentals.flat.slash", 0, 'ox','hy', 1,'hy'),
+("flatslash2",   "accidentals.flat.slashslash", 0, 'ox','hy', 1,'hy'),
 ("sesquiflat",   "accidentals.M3",         0, 0,'hy', 1,'hy'),
 ("sesquiflat",   "accidentals.mirroredflat.flat", 0, 0,'hy', 1,'hy'),
 ("doubleflat",   "accidentals.M4",         0, 'ox','hy', 1,'hy'),
 ("doubleflat",   "accidentals.flatflat",   0, 'ox','hy', 1,'hy'),
+("doubleflatslash",   "accidentals.flatflat.slash", 0, 'ox','hy', 1,'hy'),
 ("harmart",      "noteheads.s0harmonic",   0, 0,0.5, 1,'ay'),
+("harmartfilled", "noteheads.s2harmonic",  0, 0,0.5, 1,'ay'),
 ("harmnat",      "scripts.flageolet",      0, 0.5,0.5, 1,0.5),
 ("flagopen",     "scripts.open",           0, 0.5,'cy', 1,'cy'),
 ("flagthumb",    "scripts.thumb",          0, 0.5,'cy', 1,'cy'),
@@ -3986,8 +4304,11 @@ lilyglyphlist = [
 ("downmordentupperlower", "scripts.downmordent", 0, 0.5,'cy', 1,'cy'),
 ("mordentupperlongup", "scripts.prallup",  0, 0.5,'cy', 1,'cy'),
 ("straightmordentupperlong", "scripts.lineprall", 0, 0.5,'cy', 1,'cy'),
-("natural",      "accidentals.0",          0, 0,0.5, 1,0.5),
-("natural",      "accidentals.natural",    0, 0,0.5, 1,0.5),
+("natural",      "accidentals.0",          0, 0,'cy', 1,'cy'),
+("natural",      "accidentals.natural",    0, 0,'cy', 1,'cy'),
+("naturalup",    "accidentals.natural.arrowup", 0, 0,'cy', 1,'cy'),
+("naturaldn",    "accidentals.natural.arrowdown", 0, 0,'cy', 1,'cy'),
+("naturalupdn",  "accidentals.natural.arrowboth", 0, 0,'cy', 1,'cy'),
 ("peddot",       "pedal..",                0, 0,'by', 1,'by'),
 ("pedP",         "pedal.P",                0, 0,'by', 1,'by'),
 ("pedd",         "pedal.d",                0, 0,'by', 1,'by'),
@@ -4015,8 +4336,13 @@ lilyglyphlist = [
 ("sforzandodn",  "scripts.dmarcato",       0, 0.5,1, 1,1),
 ("semisharp",    "accidentals.1",          0, 0,0.5, 1,0.5),
 ("semisharp",    "accidentals.sharp.slashslash.stem", 0, 0,0.5, 1,0.5),
-("sharp",        "accidentals.2",          0, 0,0.5, 1,0.5),
-("sharp",        "accidentals.sharp",      0, 0,0.5, 1,0.5),
+("semisharp3",   "accidentals.sharp.slashslashslash.stem", 0, 0,0.5, 1,0.5),
+("sharp",        "accidentals.2",          0, 0,'cy', 1,'cy'),
+("sharp",        "accidentals.sharp",      0, 0,'cy', 1,'cy'),
+("sharp3",       "accidentals.sharp.slashslashslash.stemstem", 0, 0,'cy', 1,'cy'),
+("sharpup",      "accidentals.sharp.arrowup", 0, 0,'cy', 1,'cy'),
+("sharpdn",      "accidentals.sharp.arrowdown", 0, 0,'cy', 1,'cy'),
+("sharpupdn",    "accidentals.sharp.arrowboth", 0, 0,'cy', 1,'cy'),
 ("sesquisharp",  "accidentals.3",          0, 0,0.5, 1,0.5),
 ("sesquisharp",  "accidentals.sharp.slashslash.stemstemstem", 0, 0,0.5, 1,0.5),
 ("doublesharp",  "accidentals.4",          0, 0,0.5, 1,0.5),
