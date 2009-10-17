@@ -1,0 +1,167 @@
+<html> <!-- -*- html -*- -->
+<head>
+<title>Gonville: a font of musical symbols, compatible with GNU
+Lilypond</title>
+</head>
+<link rel="stylesheet" type="text/css" href="../sitestyle.css" name="Simon Tatham's Home Page Style">
+<body>
+<h1 align=center>Gonville</h1>
+
+<p align=center><i>a font of musical symbols, compatible with GNU
+Lilypond</i>
+
+<h2>Introduction</h2>
+
+<p>
+Gonville is a font of symbols for typesetting music: clefs, note
+heads, quaver tails, and so on. It is compatible with
+<a href="http://lilypond.org/">GNU Lilypond</a>.
+
+<p>
+I designed it because Lilypond's standard font (Feta) was not to my
+taste: I found it to be (variously) over-ornate, strangely
+proportioned, and subtly not like the music I was used to reading.
+Music set in Feta looks to me like strangely stylised music;
+music set in Gonville just looks to me like <em>music</em>, so I can
+read it without being distracted so much.
+
+<p>
+Unfortunately, at the time of writing this, Lilypond contains no
+configuration option to select a different music font, so installing
+and using Gonville is not completely trivial: you have to make a
+copy of the whole Lilypond data directory, replace the fonts within
+that copy, and then set an environment variable pointing to the
+copied directory. I've tried to make that as easy as possible by
+providing a Unix shell script to construct the modified data
+directory.
+
+<h2>Samples</h2>
+
+<p>
+Here are a few sample bars of music set in Gonville:
+
+<p align=center>
+<a href="after.png">
+<img border="0" src="after.png" title="Sample music in Gonville" width=WWW height=HHH alt="[WWWxHHH image, SSSK"]>
+</a>
+
+<p>
+For comparison, here is the output of standard Lilypond given the
+same input file:
+
+<p align=center>
+<a href="before.png">
+<img border="0" src="before.png" title="Sample music in Feta" width=WWW height=HHH alt="[WWWxHHH image, SSSK"]>
+</a>
+
+<p>
+If (like me) you prefer the one at the top, try downloading Gonville!
+
+<h2>What is not supported</h2>
+
+<p>
+Gonville has been tested against Lilypond version 2.10.33 (the
+version shipped in Debian 5.0), 2.12.2 and 2.13.5. It is possible
+that it will not work properly with other versions, if the Lilypond
+developers choose to add new glyphs or change the names under which
+they expect to find the existing ones. I intend to try to keep
+Gonville up to date; if you find a problem with a later version of
+Lilypond, let me know the details and I'll see what I can do.
+
+<p>
+There are a few parts of the standard Lilypond font which I have not
+attempted to reproduce, so music using those features cannot be
+typeset in Gonville. The missing elements are:
+<ul>
+<li>The longa note (twice as long as a breve). Unused in modern music.
+<li>Ancient music notation: any of Lilypond's non-default styles
+such as <code>mensural</code>, <code>neomensural</code>,
+<code>petrucci</code> and so on.
+<li>The set of differently shaped note heads for each note of the
+scale (enabled using <code>shapeNoteStyles</code>).
+</ul>
+
+<h2>Licence</h2>
+
+<p>
+The Gonville font files themselves may be used <em>without
+restriction</em>. You don't even have to preserve a copyright notice
+or anything. Use freely and enjoy.
+
+<p>
+In particular, this means that you may embed the Gonville font or
+portions of it in PostScript, PDF, SVG or other document file
+formats without incurring any constraint whatsoever on your
+subsequent use or licensing of those files.
+
+<p>
+The source code that generates those font files (if you download the
+source archive below, or look in the Subversion repository) is
+distributed under the MIT licence.
+
+<p>
+For more details, see the file called <code>LICENCE</code> in the
+distribution archive.
+
+<h2>Download</h2>
+
+<p>
+The Gonville fonts, in immediately usable form, can be downloaded here:
+
+<ul>
+<li>
+<a href="DIST-TARBALL-NAME"><code>DIST-TARBALL-NAME</code></a>
+(Unix-style, with symlinks)
+<li>
+<a href="DIST-ZIPFILE-NAME"><code>DIST-ZIPFILE-NAME</code></a>
+(Windows-style, plain and simple)
+</ul>
+
+<p>
+The font files in that archive are not the original form in which I
+created the glyphs. The original form &#8211; the source code, in
+fact &#8211; can be downloaded here. It's written in Python, and
+somewhat hacky at present.
+
+<ul>
+<li>
+<a href="SRC-ARCHIVE-NAME"><code>SRC-ARCHIVE-NAME</code></a>
+</ul>
+
+<p>
+The source files are also stored in my public Subversion repository;
+if you want to see the latest state of development, you can look
+there directly.
+
+<p>
+The Subversion URL you need is
+<code>svn://svn.tartarus.org/sgt/gonville</code>. So you could use a
+checkout command such as this:
+<pre><code>svn co svn://svn.tartarus.org/sgt/gonville</code></pre>
+
+<p>
+Alternatively, you can browse the Subversion repository on the WWW,
+<a href="http://svn.tartarus.org/sgt/gonville/">here</a>.
+</p>
+
+<h2>Feedback</h2>
+
+<p>
+Please report problems to
+<a href="mailto:&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;">&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;</a>.
+
+<p>
+You might find it helpful to read
+<a href="../bugs.html">this article</a>
+before reporting a bug.
+
+<hr>
+(comments to <a href="mailto:&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;">&#97;&#110;&#97;&#107;&#105;&#110;&#64;&#112;&#111;&#98;&#111;&#120;&#46;&#99;&#111;&#109;</a>)
+<br>
+(thanks to
+<a href="http://www.chiark.greenend.org.uk/">chiark</a>
+for hosting this page)
+<br>
+(last modified on <!--LASTMOD-->[insert date here]<!--END-->)
+</body>
+</html>
