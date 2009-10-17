@@ -3459,7 +3459,7 @@ def tmpfn():
 
     cont.default_nib = (8, pi/2, 16, 16)
 
-    cont.cy = (c1.compute_y(1) + c2.compute_y(0)) / 2.0
+    cont.cy = (c0.compute_y(0) + c2.compute_y(0)) / 2.0
 
     return cont
 natural = tmpfn()
