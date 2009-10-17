@@ -59,8 +59,9 @@ Supported features
 ------------------
 
 Gonville has been tested against Lilypond 2.10.33 (the version
-included in Debian 5.0) and supports all the symbols in that version
-of Lilypond's standard font, except for the following omissions:
+included in Debian 5.0), 2.12.2 and 2.13.5. It supports all the same
+symbols as the standard fonts for those versions of Lilypond, except
+for the following omissions:
 
  - Solfa note head shapes (set using shapeNoteStyles) are not
    supported.

@@ -18,11 +18,11 @@ class GlyphContext:
 
         # Scale in units per inch. 1900 happens to be the scale at
         # which I drew most of these glyphs; unhelpfully, the real
-        # scale used by Mus is 3600.
+        # scale used by LIlypond (and Mus) is 3600.
         self.scale = 1900 # default unless otherwise specified
-        # Location of the glyph's origin, in Mus coordinates (i.e.
-        # the location in the glyph's own coordinates will be this,
-        # divided by 3600, multiplied by self.scale).
+        # Location of the glyph's origin, in output coordinates
+        # (i.e. the location in the glyph's own coordinates will be
+        # this, divided by 3600, multiplied by self.scale).
         self.origin = 1000, 1000
         # Default size of canvas (in glyph coordinates) on which we
         # will display the image.
@@ -687,11 +687,14 @@ def multiup(n, tail):
     # Up-pointing multitail.
     short = clipup(tail)
     cont = GlyphContext()
-    cont.extra = (tail,) + ("0 -%g translate" % quavertaildisp, short) * (n-1)
+    # To make room for the five-tailed quasihemidemisemiquaver, we
+    # translate downwards a bit. 95 (== 5*19) in glyph coordinates
+    # equals 128 (== 5*36) in output coordinates.
+    cont.extra = ("0 95 translate", tail,) + ("0 -%g translate" % quavertaildisp, short) * (n-1)
     cont.ox = tail.ox
-    cont.oy = tail.oy - quavertaildisp*(n-1)
+    cont.oy = tail.oy - quavertaildisp*(n-1) + 95
     cont.origin = tail.origin
-    cont.origin = (cont.origin[0], cont.origin[1] + quavertaildisp*(n-1)*3600./cont.scale)
+    cont.origin = (cont.origin[0], cont.origin[1] + quavertaildisp*(n-1)*3600./cont.scale + 180)
     return cont
 
 def multidn(n, tail):
@@ -842,6 +845,40 @@ def tmpfn():
 tailhemiup = multiup(4, tmpfn())
 
 def tmpfn():
+    # Single tail for an up-pointing quasihemidemisemiquaver.
+    cont = GlyphContext()
+    # Saved data from gui.py
+    c0 = CircleInvolute(cont, 535, 567, 0.950193, 0.311663, 611, 606, 0.73369, 0.679484, mx=(1, 0, 0, 1.01626))
+    c1 = CircleInvolute(cont, 611, 606, 0.73369, 0.679484, 606, 834, -0.667606, 0.744514, mx=(1, 0, 0, 1.01626))
+    c2 = CircleInvolute(cont, 535, 465, 0.236956, 0.97152, 605, 579.144, 0.745312, 0.666716, mx=(1, 0, 0, 1.01626))
+    c3 = CircleInvolute(cont, 605, 579.144, 0.745312, 0.666716, 606, 834, -0.667606, 0.744514, mx=(1, 0, 0, 1.01626))
+    c4 = StraightLine(cont, 660, 868.44, 660, 505.344)
+    c0.weld_to(1, c1, 0)
+    c1.weld_to(1, c3, 1, 1)
+    c2.weld_to(1, c3, 0)
+    # End saved data
+
+    c4.nib = 0 # guide line to get the width the same across all versions
+
+    c0.nib = c1.nib = 0
+    c2.nib = lambda c,x,y,t,theta: follow_curveset_nib(c,x,y,t,theta,[c0,c1],0,2,8)
+    c3.nib = lambda c,x,y,t,theta: follow_curveset_nib(c,x,y,t,theta,[c0,c1],1,2,8)
+
+    cont.c0 = c0 # for tailshortdn
+    cont.c1 = c1 # for tailshortdn
+
+    cont.oy = c2.compute_y(0) - c2.compute_nib(0)[0] - 2
+
+    cx = c2.compute_x(0) + c2.compute_nib(0)[0]
+    cont.ox = cx
+    cont.extra = "gsave newpath %g 0 moveto 0 1000 rlineto -100 0 rlineto 0 -1000 rlineto closepath 1 setgray fill grestore" % (cx - 9)
+
+    cont.origin = cx * 3600. / cont.scale - 12, (1000-cont.oy) * 3600. / cont.scale
+
+    return cont
+tailquasiup = multiup(5, tmpfn())
+
+def tmpfn():
     # Full-size tail for a quaver with a down-pointing stem.
     cont = GlyphContext()
     # Saved data from gui.py
@@ -976,6 +1013,40 @@ def tmpfn():
 
     return cont
 tailhemidn = multidn(4, tmpfn())
+
+def tmpfn():
+    # Single tail for a down-pointing quasihemidemisemiquaver.
+    cont = GlyphContext()
+    # Saved data from gui.py
+    c0 = CircleInvolute(cont, 535, 363, 0.970143, 0.242536, 644, 364, 0.910366, -0.413803, mx=(1, 0, 0, 1.66667))
+    c1 = CircleInvolute(cont, 644, 364, 0.910366, -0.413803, 635, 240, -0.750714, -0.660628, mx=(1, 0, 0, 1.66667))
+    c2 = CircleInvolute(cont, 535, 465, 0.514127, -0.857714, 627, 395.4, 0.879292, -0.476283, mx=(1, 0, 0, 1.66667))
+    c3 = CircleInvolute(cont, 627, 395.4, 0.879292, -0.476283, 635, 240, -0.750714, -0.660628, mx=(1, 0, 0, 1.66667))
+    c4 = StraightLine(cont, 680, 219, 680, 440.4)
+    c0.weld_to(1, c1, 0)
+    c1.weld_to(1, c3, 1, 1)
+    c2.weld_to(1, c3, 0)
+    # End saved data
+
+    c4.nib = 0 # guide line to get the width the same across all versions
+
+    c0.nib = c1.nib = 0
+    c2.nib = lambda c,x,y,t,theta: follow_curveset_nib(c,x,y,t,theta,[c0,c1],0,2,8)
+    c3.nib = lambda c,x,y,t,theta: follow_curveset_nib(c,x,y,t,theta,[c0,c1],1,2,8)
+
+    cont.c0 = c0 # for tailshortdn
+    cont.c1 = c1 # for tailshortdn
+
+    cont.oy = c2.compute_y(0) + c2.compute_nib(0)[0] + 2
+
+    cx = c2.compute_x(0) + c2.compute_nib(0)[0]
+    cont.ox = cx
+    cont.extra = "gsave newpath %g 0 moveto 0 1000 rlineto -100 0 rlineto 0 -1000 rlineto closepath 1 setgray fill grestore" % (cx - 8)
+
+    cont.origin = cx * 3600. / cont.scale - 12, (1000-cont.oy) * 3600. / cont.scale
+
+    return cont
+tailquasidn = multidn(5, tmpfn())
 
 # ----------------------------------------------------------------------
 # Minim note head.
@@ -2467,6 +2538,14 @@ def tmpfn(): # staccatissimo pointing the other way
 
     return cont
 staccatissup = tmpfn()
+
+def tmpfn(): # snap-pizzicato
+    cont = GlyphContext()
+
+    cont.extra = "newpath 500 500 50 0 360 arc 500 500 moveto 500 400 lineto 16 setlinewidth 1 setlinejoin 1 setlinecap stroke"
+
+    return cont
+snappizz = tmpfn()
 
 # ----------------------------------------------------------------------
 # The 'segno' sign (for 'D.S. al Fine' sort of stuff).
@@ -4351,6 +4430,7 @@ lilyglyphlist = [
 ("staccatissdn", "scripts.ustaccatissimo", 0, 0.5,0, 1,0),
 ("staccato",     "scripts.staccato",       0, 0.5,0.5, 1,0.5),
 ("staccato",     "dots.dot",               0, 0,0.5, 1,0.5),
+("snappizz",     "scripts.snappizzicato",  0, 0.5,0.5, 1,0.5),
 ("stopping",     "scripts.stopped",        0, 0.5,0.5, 1,0.5),
 ("tailquaverdn", "flags.d3",               0, 'ox','oy', 1,'oy'),
 ("tailquaverup", "flags.u3",               0, 'ox','oy', 1,'oy'),
@@ -4360,6 +4440,8 @@ lilyglyphlist = [
 ("taildemiup",   "flags.u5",               0, 'ox','oy', 1,'oy'),
 ("tailhemidn",   "flags.d6",               0, 'ox','oy', 1,'oy'),
 ("tailhemiup",   "flags.u6",               0, 'ox','oy', 1,'oy'),
+("tailquasidn",  "flags.d7",               0, 'ox','oy', 1,'oy'),
+("tailquasiup",  "flags.u7",               0, 'ox','oy', 1,'oy'),
 ("timeCbar",     "timesig.C22",            0, 0,0.5, 1,0.5),
 ("timeC",        "timesig.C44",            0, 0,0.5, 1,0.5),
 ("trill",        "scripts.trill",          0, 0.5,0, 1,0),
