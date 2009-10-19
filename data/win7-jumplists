@@ -1,0 +1,15 @@
+Summary: "Jump list" support in Windows 7
+Class: wish
+Difficulty: fun
+Priority: medium
+Content-type: text/x-html-body
+
+<p>
+Several people have suggested that PuTTY could use Windows 7's new
+<a href="http://msdn.microsoft.com/en-us/library/dd378402%28VS.85%29.aspx">Jump List</a>
+feature to provide access to saved sessions.
+
+<ul>
+<li>Patch: 001101ca2f2b$03adee30$0b09ca90$@roy@infi.nl (files
+<a href="http://speeltuin.infi.nl/~daniel/putty/">here</a>)
+</ul>
