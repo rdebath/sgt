@@ -173,7 +173,7 @@ class Lump:
     def correct_headers(self, revmap):
 	# First reconstitute the properties block.
 	self.prop = ""
-	if len(self.props[0]) > 0:
+	if (not (self.props is None)) and len(self.props[0]) > 0:
 	    for key in self.props[0]:
 		val = self.props[1][key]
 		if val == None:
