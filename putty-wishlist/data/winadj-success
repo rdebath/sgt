@@ -67,6 +67,10 @@ aren't understood -- we don't expect any server to specifically
 handle this message.)
 
 <p>
+The maintainers of boks_sshd, foxt.com, are tracking this
+interoperability problem as 090916-090424.
+
+<p>
 We could just ignore the protocol error, and quietly treat a (bogus)
 SUCCESS response to "winadj" the same as a FAILURE response -- it
 won't do any harm, since all we're interested in is when the server
