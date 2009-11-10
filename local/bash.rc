@@ -366,6 +366,8 @@ bashrc_rm_prompt_fn() {
 
 _prompt_cmd() {
   local i
+  local IFS
+  unset IFS
   for i in $bashrc_prompt_fns; do $i; done
 }
 
