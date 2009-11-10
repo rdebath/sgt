@@ -750,3 +750,21 @@ grep-n() {
 alias grep=grep-n
 	      
 #}}}
+#{{{ hacky commands to flail at my command history if I need to
+
+# Like 'history', but does not itself go into the history.
+History() {
+  command history -d $((HISTCMD-1))
+  command history "$@"
+}
+
+# Delete some set of history command numbers.
+Histdel() {
+  local i j c
+  c=$((HISTCMD-1))
+  for i in `for j in $* $c; do echo $j; done | sort -n -r -u`; do
+    command history -d $i
+  done
+}
+
+#}}}
