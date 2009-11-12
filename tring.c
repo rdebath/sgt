@@ -169,7 +169,7 @@ static int zero_pixel(void *vctx, int x, int y) { return 0; }
 char *excdata, excdatalocal[65536];
 int excdatapos, excdatasize;
 int subproc_started;
-sig_atomic_t subproc_running = 0;
+sig_atomic_t subproc_status = 0;
 sigset_t sigchldset;
 #define MAXEXCEPTS 32
 int excepts[MAXEXCEPTS];
@@ -182,7 +182,10 @@ void sigchld(int signum)
     waitpid(-1, &status, WNOHANG);
 
     if (WIFEXITED(status) || WIFSIGNALED(status)) {
-	subproc_running = 0;
+	if (WIFEXITED(status) && WEXITSTATUS(status) == 5)
+	    subproc_status = -1;
+	else
+	    subproc_status = 0;
 	sigprocmask(SIG_BLOCK, &sigchldset, NULL);
     }
 }
@@ -209,14 +212,14 @@ void start_excsubproc(void)
      * from our exception server, if we've got one.
      */
 
-    if (!exception_url || !excdata || subproc_started || subproc_running)
+    if (!exception_url || !excdata || subproc_started || subproc_status == 1)
 	return;
 
     subproc_started = 1;
 
     pid = fork();
     if (pid > 0) {
-	subproc_running = 1;
+	subproc_status = 1;
 	sigprocmask(SIG_UNBLOCK, &sigchldset, NULL);
     } else if (pid == 0) {
 	/*
@@ -352,6 +355,7 @@ int main(int argc, char **argv)
     ls->dmode = DMODE_NORMAL;
     ls->pressed_button_id = -1;
     ls->saved_hours_digit = -1;
+    ls->network_fault = 0;
 
     curl_global_init(CURL_GLOBAL_ALL);
 
@@ -473,12 +477,14 @@ int main(int argc, char **argv)
 	    if ((ret & GET_EXCEPTIONS))
 		start_excsubproc();
 
-	    if (subproc_started && !subproc_running) {
+	    if (subproc_started && subproc_status != 1) {
 		subproc_started = 0;
 		memcpy(excdatalocal, excdata, excdatasize);
 		excdatalocal[excdatasize-1] = '\0';
 		process_excdata(excdatalocal);
 		event_updated_excdata(tod, wd, date, ps, ls);
+		if (subproc_status < 0)
+		    ls->network_fault = 1;
 	    }
 	}
 

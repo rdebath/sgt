@@ -117,6 +117,7 @@ extern const struct sprite _binary_build_image097_spr_start;
 extern const struct sprite _binary_build_image098_spr_start;
 extern const struct sprite _binary_build_image099_spr_start;
 extern const struct sprite _binary_build_image100_spr_start;
+extern const struct sprite _binary_build_image101_spr_start;
 
 static const struct sprite *const sprites[] = {
     &_binary_build_image001_spr_start,
@@ -219,6 +220,7 @@ static const struct sprite *const sprites[] = {
     &_binary_build_image098_spr_start,
     &_binary_build_image099_spr_start,
     &_binary_build_image100_spr_start,
+    &_binary_build_image101_spr_start,
 };
 
 enum {
@@ -322,6 +324,7 @@ enum {
     ALARMTIME_8,
     ALARMTIME_9,
     CONFIRM_ALARM,
+    NETWORK_FAULT,
     NBASESPRITES
 };
 
@@ -507,8 +510,14 @@ int display_update(int timeofday, int dayofweek, int date,
 	/*
 	 * Normal display mode, or top-level configuration menu.
 	 * Always show the week day, and the time.
+	 *
+	 * (Exception: if the network is on the fritz, replace the
+	 * day of the week with a big white NETWORK FAULT message.)
 	 */
-	PUTSPRITE(WEEKDAY_MONDAY + dayofweek);
+	if (ls->network_fault)
+	    PUTSPRITE(NETWORK_FAULT);
+	else
+	    PUTSPRITE(WEEKDAY_MONDAY + dayofweek);
 	breakdown_time(timeofday, digits);
 	for (i = 0; i < 4; i++)
 	    if (i || digits[i])	       /* don't display leading 0 on hours */
