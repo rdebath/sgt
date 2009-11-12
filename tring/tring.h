@@ -64,6 +64,7 @@ struct lstate {
     int dmode;
     int pressed_button_id;
     int saved_hours_digit;
+    int network_fault;
 };
 
 #define TIMEOFDAY(h,m,s) (((h)*60+(m))*60+(s))
