@@ -462,7 +462,7 @@ In fact I don't currently \e{have} any incidents in my version
 control history when a file from outside PuTTY was copied into it,
 but I certainly didn't want to rule out the possibility that I might
 have such an incident in future. So I wrote
-\W{http://svn.tartarus.org/svn-tools/svndumpfilter2?view=markup}{a
+\W{http://svn.tartarus.org/sgt/svn-tools/svndumpfilter2?view=markup}{a
 replacement for \cw{svndumpfilter}} (easy enough when my migration
 script already contained general routines to read and write
 Subversion dump files) which also knew the location of the
