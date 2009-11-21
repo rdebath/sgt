@@ -198,5 +198,7 @@
 ;; Key binding for merge-with-next-workspace {{{
 (bind-keys global-keymap
     "H-M-F1" 'merge-next-workspace
+    "M-C-Right" 'merge-next-workspace
+    "M-C-Left" 'merge-previous-workspace
 )
 ;; }}}
