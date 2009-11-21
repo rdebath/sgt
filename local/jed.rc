@@ -490,6 +490,21 @@ define armasm_mode_hook() %{{{
 %}}}
 
 %}}}
+%{{{ redefine bits of TeX mode
+
+define tex_mode_hook() %{{{
+{
+    variable keymap;
+    keymap = what_keymap();
+    definekey("jedrc_tex_format_paragraph", "^[Q", keymap);
+#ifexists unset_buffer_hook
+    unset_buffer_hook("par_sep");
+#endif
+}
+
+%}}}
+
+%}}}
 %{{{ redefine bits of PS mode
 
 define ps_mode_hook() %{{{
@@ -1584,6 +1599,18 @@ define jedrc_armasm_format_paragraph() {
 define jedrc_ps_format_paragraph() {
     jedrc_format_paragraph("% ");
 }
+define jedrc_tex_format_paragraph() {
+    push_spot();
+    bol();
+    skip_white();
+    looking_at("% ");
+    pop_spot();
+    if (()) {
+	jedrc_format_paragraph("% ");
+    } else {
+	jedrc_format_paragraph("");
+    }
+}
 define jedrc_perl_format_paragraph() {
     jedrc_format_paragraph("# ");
 }
@@ -1622,7 +1649,7 @@ define halibut_mode_hook() {
 }
 
 %}}}
-%{{{ M-x cvs-*, svn-*, bzr-*
+%{{{ M-x cvs-*, svn-*, bzr-*, git-*
 
 % Define these so that they can be redefined in .jedrc2 if necessary
 variable jedrc_svn_log_cmd = "svnlog";
@@ -1636,38 +1663,43 @@ variable jedrc_null_device =
     "/dev/null";
 #endif
 
-define cvssvn_which(dir) {
-    if (file_status(dir + ".svn") == 2)
-	return "svn";
-    if (file_status(dir + "CVS") == 2)
-	return "cvs";
-    if (file_status(dir + ".bzr") == 2)
-	return "bzr";
-    return 0;
+define cvssvn_which(dir, preferred) {
+    variable got = ":";
+    if (file_status(dir + ".svn") == 2) got = got + "svn:";
+    if (file_status(dir + "CVS") == 2) got = got + "cvs:";
+    if (file_status(dir + ".bzr") == 2) got = got + "bzr:";
+    if (file_status(dir + ".git") == 2) got = got + "git:";
+    if (is_substr(got, ":"+preferred+":")) return preferred;
+    % Ick: this relies on all the above values being 3 characters long.
+    return substr(got, 2, 3);
 }
 
-define cvssvn_log() {
+define cvssvn_log(preferred) {
     variable file, dir, name, which;
     (file, dir, name, ) = getbuf_info();
     if (strcmp(substr(name, 1, 10), "*cvs-log*:") == 0 or
 	strcmp(substr(name, 1, 10), "*svn-log*:") == 0 or
-	strcmp(substr(name, 1, 10), "*bzr-log*:") == 0) {
+	strcmp(substr(name, 1, 10), "*bzr-log*:") == 0 or
+	strcmp(substr(name, 1, 10), "*git-log*:") == 0) {
         message("This is already a log buffer\n");
         return;
     }
     if (strcmp(substr(name, 1, 15), "*cvs-annotate*:") == 0 or
         strcmp(substr(name, 1, 15), "*svn-annotate*:") == 0 or
-        strcmp(substr(name, 1, 15), "*bzr-annotate*:") == 0) {
+        strcmp(substr(name, 1, 15), "*bzr-annotate*:") == 0 or
+        strcmp(substr(name, 1, 15), "*git-annotate*:") == 0) {
         name = substr(name, 16, -1);
     }
     if (strcmp(substr(name, 1, 11), "*cvs-diff*:") == 0 or
         strcmp(substr(name, 1, 11), "*svn-diff*:") == 0 or
-        strcmp(substr(name, 1, 11), "*bzr-diff*:") == 0) {
+        strcmp(substr(name, 1, 11), "*bzr-diff*:") == 0 or
+        strcmp(substr(name, 1, 11), "*git-diff*:") == 0) {
         name = substr(name, 12, -1);
     }
     if (strcmp(substr(name, 1, 10), "*cvs-cat*:") == 0 or
 	strcmp(substr(name, 1, 10), "*svn-cat*:") == 0 or
-	strcmp(substr(name, 1, 10), "*bzr-cat*:") == 0) {
+	strcmp(substr(name, 1, 10), "*bzr-cat*:") == 0 or
+	strcmp(substr(name, 1, 10), "*git-cat*:") == 0) {
         name = substr(name, 11, -1);
     }
     if (strcmp(file, "") == 0) {
@@ -1677,7 +1709,7 @@ define cvssvn_log() {
     if (blocal_var_exists("cvssvn-which")) {
 	which = get_blocal_var("cvssvn-which");
     } else {
-	which = cvssvn_which(dir);
+	which = cvssvn_which(dir, preferred);
 	jedrc_create_blocal_var("cvssvn-which", 's');
 	set_blocal_var(which, "cvssvn-which");
     }
@@ -1694,8 +1726,10 @@ define cvssvn_log() {
     } else if (which == "svn") {
 	run_shell_cmd(jedrc_svn_log_cmd + " " + file +
                       " || svn log -v " + file);
-    } else { % bzr
+    } else if (which == "bzr") {
 	run_shell_cmd("bzr log " + file);
+    } else { % git
+	run_shell_cmd("git log " + file);
     }
     setbuf_info((getbuf_info & ~1) | 8); % clear modified bit, set readonly
     bob();
@@ -1706,20 +1740,23 @@ define cvssvn_log() {
     jedrc_create_blocal_var("cvssvn-file", 's');
     set_blocal_var(file, "cvssvn-file");
 }
-define cvssvn_diff() {
+define cvssvn_diff(preferred) {
     variable file, dir, name, bufname, bufnum, which, rev1, rev2, dr1, args;
     (file, dir, name, ) = getbuf_info();
     if (strcmp(substr(name, 1, 10), "*cvs-log*:") == 0 or
 	strcmp(substr(name, 1, 10), "*svn-log*:") == 0 or
 	strcmp(substr(name, 1, 10), "*bzr-log*:") == 0 or
+	strcmp(substr(name, 1, 10), "*git-log*:") == 0 or
         strcmp(substr(name, 1, 10), "*cvs-cat*:") == 0 or
 	strcmp(substr(name, 1, 10), "*svn-cat*:") == 0 or
-	strcmp(substr(name, 1, 10), "*bzr-cat*:") == 0) {
+	strcmp(substr(name, 1, 10), "*bzr-cat*:") == 0 or
+	strcmp(substr(name, 1, 10), "*git-cat*:") == 0) {
         name = substr(name, 11, -1);
     }
     if (strcmp(substr(name, 1, 15), "*cvs-annotate*:") == 0 or
         strcmp(substr(name, 1, 15), "*svn-annotate*:") == 0 or
-        strcmp(substr(name, 1, 15), "*bzr-annotate*:") == 0) {
+        strcmp(substr(name, 1, 15), "*bzr-annotate*:") == 0 or
+        strcmp(substr(name, 1, 15), "*git-annotate*:") == 0) {
         name = substr(name, 16, -1);
     }
     % Unlike log and annotate, it's perfectly meaningful to do a
@@ -1727,7 +1764,8 @@ define cvssvn_diff() {
     % parametrised.
     if (strcmp(substr(name, 1, 11), "*cvs-diff*:") == 0 or
         strcmp(substr(name, 1, 11), "*svn-diff*:") == 0 or
-        strcmp(substr(name, 1, 11), "*bzr-diff*:") == 0) {
+        strcmp(substr(name, 1, 11), "*bzr-diff*:") == 0 or
+        strcmp(substr(name, 1, 11), "*git-diff*:") == 0) {
         name = substr(name, 12, -1);
     }
     if (strcmp(file, "") == 0) {
@@ -1737,7 +1775,7 @@ define cvssvn_diff() {
     if (blocal_var_exists("cvssvn-which")) {
 	which = get_blocal_var("cvssvn-which");
     } else {
-	which = cvssvn_which(dir);
+	which = cvssvn_which(dir, preferred);
 	jedrc_create_blocal_var("cvssvn-which", 's');
 	set_blocal_var(which, "cvssvn-which");
     }
@@ -1745,9 +1783,19 @@ define cvssvn_diff() {
 	error("Unable to find an applicable version control tool");
     }
     rev2 = read_mini ("Later revision: (default: working copy)", "", "");
-    if (rev2 != "" and strtrim(rev2, "0123456789") == "") {
+    if (which == "svn" and rev2 != "" and strtrim(rev2, "0123456789") == "") {
         % rev2 is numeric, so default to the previous revision as rev1.
         dr1 = sprintf("%d", integer(rev2) - 1);
+        rev1 = read_mini ("Earlier revision:", dr1, "");
+    } else if (which == "git" and rev2 != "" and rev2 != "index") {
+        % rev2 is a commit id, so default to the previous revision as rev1.
+        dr1 = rev2 + "^";
+        rev1 = read_mini ("Earlier revision:", dr1, "");
+    } else if (which == "git" and rev2 == "index") {
+        dr1 = "HEAD";
+        rev1 = read_mini ("Earlier revision:", dr1, "");
+    } else if (which == "git" and rev2 == "") {
+        dr1 = "index";
         rev1 = read_mini ("Earlier revision:", dr1, "");
     } else {
         rev1 = read_mini ("Earlier revision: (default: current)", "", "");
@@ -1780,40 +1828,58 @@ define cvssvn_diff() {
         else
             args = args + " -r" + rev1;
 	run_shell_cmd("svn diff" + args + " " + file);
-    } else { % bzr
+    } else if (which == "bzr") {
         args = "";
         if (rev1 != "" and rev2 != "")
             args = args + " -r" + rev1 + ".." + rev2;
         else if (rev1 != "")
             args = args + " -r" + rev1;
 	run_shell_cmd("bzr diff" + args + " " + file);
+    } else { % git
+	if (rev1 == "") {
+	    error("git-diff with earlier revision blank unsupported");
+	}
+	if (rev1 == "index" and rev2 == "") {
+	    args = "";
+	} else if (rev2 == "index") {
+	    args = " --cached " + rev1;
+	} else if (rev2 == "") {
+	    args = " " + rev1;
+	} else {
+	    args = " " + rev1 + " " + rev2;
+	}
+	run_shell_cmd("git diff" + args + " -- " + file);
     }
     setbuf_info((getbuf_info & ~1) | 8); % clear modified bit, set readonly
     bob();
     jedrc_create_blocal_var("cvssvn-file", 's');
     set_blocal_var(file, "cvssvn-file");
 }
-define cvssvn_annotate() {
+define cvssvn_annotate(preferred) {
     variable file, dir, name, line, ret, rev, which;
     (file, dir, name, ) = getbuf_info();
     line = what_line();
     if (strcmp(substr(name, 1, 15), "*cvs-annotate*:") == 0 or
 	strcmp(substr(name, 1, 15), "*svn-annotate*:") == 0 or
-	strcmp(substr(name, 1, 15), "*bzr-annotate*:") == 0) {
+	strcmp(substr(name, 1, 15), "*bzr-annotate*:") == 0 or
+	strcmp(substr(name, 1, 15), "*git-annotate*:") == 0) {
         message("This is already an annotation buffer\n");
         return;
     }
     if (strcmp(substr(name, 1, 10), "*cvs-log*:") == 0 or
 	strcmp(substr(name, 1, 10), "*svn-log*:") == 0 or
 	strcmp(substr(name, 1, 10), "*bzr-log*:") == 0 or
+	strcmp(substr(name, 1, 10), "*git-log*:") == 0 or
         strcmp(substr(name, 1, 10), "*cvs-cat*:") == 0 or
 	strcmp(substr(name, 1, 10), "*svn-cat*:") == 0 or
-	strcmp(substr(name, 1, 10), "*bzr-cat*:") == 0) {
+	strcmp(substr(name, 1, 10), "*bzr-cat*:") == 0 or
+	strcmp(substr(name, 1, 10), "*git-cat*:") == 0) {
         name = substr(name, 11, -1);
     }
     if (strcmp(substr(name, 1, 11), "*cvs-diff*:") == 0 or
         strcmp(substr(name, 1, 11), "*svn-diff*:") == 0 or
-        strcmp(substr(name, 1, 11), "*bzr-diff*:") == 0) {
+        strcmp(substr(name, 1, 11), "*bzr-diff*:") == 0 or
+        strcmp(substr(name, 1, 11), "*git-diff*:") == 0) {
         name = substr(name, 12, -1);
     }
     if (strcmp(file, "") == 0) {
@@ -1823,7 +1889,7 @@ define cvssvn_annotate() {
     if (blocal_var_exists("cvssvn-which")) {
 	which = get_blocal_var("cvssvn-which");
     } else {
-	which = cvssvn_which(dir);
+	which = cvssvn_which(dir, preferred);
 	jedrc_create_blocal_var("cvssvn-which", 's');
 	set_blocal_var(which, "cvssvn-which");
     }
@@ -1843,33 +1909,35 @@ define cvssvn_annotate() {
     if (which == "cvs") {
         if (rev == "") {
             ret = run_shell_cmd("cvs-annotate 2>" + jedrc_null_device + " " + file);
+	    if (ret > 0) {
+		erase_buffer();
+		ret = run_shell_cmd("cvs annotate " + file);
+	    }
         } else {
-            ret = run_shell_cmd("cvs annotate 2>" + jedrc_null_device + " -r" + rev + " " + file);
+            ret = run_shell_cmd("cvs annotate -r" + rev + " " + file);
         }
-	if (ret > 0) {
-	    erase_buffer();
-	    ret = run_shell_cmd("cvs annotate " + file);
-	}
     } else if (which == "svn") {
         if (rev == "") {
             ret = run_shell_cmd(jedrc_svn_blame_cmd + " 2>" + jedrc_null_device + " " + file);
+	    if (ret > 0) {
+		erase_buffer();
+		ret = run_shell_cmd("svn blame " + file);
+	    }
         } else {
-            ret = run_shell_cmd("svn blame 2>" + jedrc_null_device + " -r" + rev + " " + file);
+            ret = run_shell_cmd("svn blame -r" + rev + " " + file);
         }
-	if (ret > 0) {
-	    erase_buffer();
-	    ret = run_shell_cmd("svn blame " + file);
-	}
-    } else {
+    } else if (which == "bzr") {
         if (rev == "") {
-            ret = run_shell_cmd("bzr annotate --all 2>" + jedrc_null_device + " " + file);
+            ret = run_shell_cmd("bzr annotate --all " + file);
         } else {
-            ret = run_shell_cmd("bzr annotate --all 2>" + jedrc_null_device + " -r" + rev + " " + file);
+            ret = run_shell_cmd("bzr annotate --all -r" + rev + " " + file);
         }
-	if (ret > 0) {
-	    erase_buffer();
-	    ret = run_shell_cmd("bzr annotate --all " + file);
-	}
+    } else { % git
+        if (rev == "") {
+            ret = run_shell_cmd("git blame " + file);
+        } else {
+            ret = run_shell_cmd("git blame " + rev + " " + file);
+        }
     }
     setbuf_info((getbuf_info & ~1) | 8); % clear modified bit, set readonly
     goto_line(line);
@@ -1877,26 +1945,30 @@ define cvssvn_annotate() {
     jedrc_create_blocal_var("cvssvn-file", 's');
     set_blocal_var(file, "cvssvn-file");
 }
-define cvssvn_cat() {
+define cvssvn_cat(preferred) {
     variable file, dir, name, origname, line, ret, rev, which, args;
     (file, dir, name, ) = getbuf_info();
     line = what_line();
     if (strcmp(substr(name, 1, 15), "*cvs-annotate*:") == 0 or
 	strcmp(substr(name, 1, 15), "*svn-annotate*:") == 0 or
-	strcmp(substr(name, 1, 15), "*bzr-annotate*:") == 0) {
+	strcmp(substr(name, 1, 15), "*bzr-annotate*:") == 0 or
+	strcmp(substr(name, 1, 15), "*git-annotate*:") == 0) {
         name = substr(name, 16, -1);
     }
     if (strcmp(substr(name, 1, 10), "*cvs-log*:") == 0 or
 	strcmp(substr(name, 1, 10), "*svn-log*:") == 0 or
 	strcmp(substr(name, 1, 10), "*bzr-log*:") == 0 or
+	strcmp(substr(name, 1, 10), "*git-log*:") == 0 or
         strcmp(substr(name, 1, 10), "*cvs-cat*:") == 0 or
 	strcmp(substr(name, 1, 10), "*svn-cat*:") == 0 or
-	strcmp(substr(name, 1, 10), "*bzr-cat*:") == 0) {
+	strcmp(substr(name, 1, 10), "*bzr-cat*:") == 0 or
+	strcmp(substr(name, 1, 10), "*git-cat*:") == 0) {
         name = substr(name, 11, -1);
     }
     if (strcmp(substr(name, 1, 11), "*cvs-diff*:") == 0 or
         strcmp(substr(name, 1, 11), "*svn-diff*:") == 0 or
-        strcmp(substr(name, 1, 11), "*bzr-diff*:") == 0) {
+        strcmp(substr(name, 1, 11), "*bzr-diff*:") == 0 or
+        strcmp(substr(name, 1, 11), "*git-diff*:") == 0) {
         name = substr(name, 12, -1);
     }
     if (strcmp(file, "") == 0) {
@@ -1906,7 +1978,7 @@ define cvssvn_cat() {
     if (blocal_var_exists("cvssvn-which")) {
 	which = get_blocal_var("cvssvn-which");
     } else {
-	which = cvssvn_which(dir);
+	which = cvssvn_which(dir, preferred);
 	jedrc_create_blocal_var("cvssvn-which", 's');
 	set_blocal_var(which, "cvssvn-which");
     }
@@ -1930,11 +2002,16 @@ define cvssvn_cat() {
         if (rev != "")
             args = args + " -r" + rev;
 	run_shell_cmd("svn cat " + args + " " + file);
-    } else {
+    } else if (which == "bzr") {
         args = "";
         if (rev != "")
             args = args + " -r" + rev;
 	run_shell_cmd("bzr cat " + args + " " + file);
+    } else { % git
+        args = "";
+        if (rev != "")
+            args = rev + ":";
+	run_shell_cmd("git show " + args + file);
     }
 #ifexists what_syntax_table
     if (bufferp(origname)) {
@@ -1960,27 +2037,37 @@ define cvssvn_cat() {
     }
 }
 
-define cvs_log() { cvssvn_log(); }
-define cvs_cat() { cvssvn_cat(); }
-define cvs_annotate() { cvssvn_annotate(); }
-define cvs_diff() { cvssvn_diff(); }
-define svn_log() { cvssvn_log(); }
-define svn_cat() { cvssvn_cat(); }
-define svn_annotate() { cvssvn_annotate(); }
-define svn_diff() { cvssvn_diff(); }
-define svn_blame() { cvssvn_annotate(); }
-define svn_praise() { cvssvn_annotate(); }
-define bzr_log() { cvssvn_log(); }
-define bzr_cat() { cvssvn_cat(); }
-define bzr_annotate() { cvssvn_annotate(); }
-define bzr_diff() { cvssvn_diff(); }
-define bzr_blame() { cvssvn_annotate(); }
-define bzr_praise() { cvssvn_annotate(); }
+define cvs_log() { cvssvn_log("cvs"); }
+define cvs_cat() { cvssvn_cat("cvs"); }
+define cvs_annotate() { cvssvn_annotate("cvs"); }
+define cvs_diff() { cvssvn_diff("cvs"); }
+define cvs_blame() { cvssvn_annotate("cvs"); }
+define cvs_praise() { cvssvn_annotate("cvs"); }
+define svn_log() { cvssvn_log("svn"); }
+define svn_cat() { cvssvn_cat("svn"); }
+define svn_annotate() { cvssvn_annotate("svn"); }
+define svn_diff() { cvssvn_diff("svn"); }
+define svn_blame() { cvssvn_annotate("svn"); }
+define svn_praise() { cvssvn_annotate("svn"); }
+define bzr_log() { cvssvn_log("bzr"); }
+define bzr_cat() { cvssvn_cat("bzr"); }
+define bzr_annotate() { cvssvn_annotate("bzr"); }
+define bzr_diff() { cvssvn_diff("bzr"); }
+define bzr_blame() { cvssvn_annotate("bzr"); }
+define bzr_praise() { cvssvn_annotate("bzr"); }
+define git_log() { cvssvn_log("git"); }
+define git_cat() { cvssvn_cat("git"); }
+define git_annotate() { cvssvn_annotate("git"); }
+define git_diff() { cvssvn_diff("git"); }
+define git_blame() { cvssvn_annotate("git"); }
+define git_praise() { cvssvn_annotate("git"); }
 
 add_completion("cvs_log");
 add_completion("cvs_cat");
 add_completion("cvs_annotate");
 add_completion("cvs_diff");
+add_completion("cvs_blame");
+add_completion("cvs_praise");
 add_completion("svn_log");
 add_completion("svn_cat");
 add_completion("svn_blame");
@@ -1989,6 +2076,10 @@ add_completion("bzr_log");
 add_completion("bzr_cat");
 add_completion("bzr_blame");
 add_completion("bzr_diff");
+add_completion("git_log");
+add_completion("git_cat");
+add_completion("git_blame");
+add_completion("git_diff");
 
 %}}}
 %{{{ M-x rot13
