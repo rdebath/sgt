@@ -1664,14 +1664,38 @@ variable jedrc_null_device =
 #endif
 
 define cvssvn_which(dir, preferred) {
-    variable got = ":";
+    variable suffix, actualdir, actuallast, subdir, got = ":";
+    % svn and cvs keep their state directories in every subdir
     if (file_status(dir + ".svn") == 2) got = got + "svn:";
     if (file_status(dir + "CVS") == 2) got = got + "cvs:";
-    if (file_status(dir + ".bzr") == 2) got = got + "bzr:";
-    if (file_status(dir + ".git") == 2) got = got + "git:";
-    if (is_substr(got, ":"+preferred+":")) return preferred;
-    % Ick: this relies on all the above values being 3 characters long.
-    return substr(got, 2, 3);
+    % bzr and git keep theirs only at the top level
+    suffix = ".";
+    actuallast = "not"; actualdir = "equal";
+    subdir = NULL;
+    while (1) {
+	variable found = 0;
+	actualdir = expand_filename(path_concat(dir, suffix));
+	if (actualdir == actuallast)
+	    break;
+	if (file_status(path_concat(actualdir, ".bzr")) == 2) {
+	    got = got + "bzr:";
+	    found = 1;
+	}
+	if (file_status(path_concat(actualdir, ".git")) == 2) {
+	    got = got + "git:";
+	    found = 1;
+	}
+	if (found) {
+	    variable tmp1 = path_concat(actualdir, "x");
+	    subdir = substr(expand_filename(dir), strlen(tmp1), -1);
+	    break;
+	}
+	actuallast = actualdir;
+	suffix = path_concat(suffix, "..");
+    }
+    if (is_substr(got, ":"+preferred+":"))
+	return (preferred, subdir);
+    return (extract_element(got, 1, ':'), subdir);
 }
 
 define cvssvn_log(preferred) {
@@ -1709,7 +1733,7 @@ define cvssvn_log(preferred) {
     if (blocal_var_exists("cvssvn-which")) {
 	which = get_blocal_var("cvssvn-which");
     } else {
-	which = cvssvn_which(dir, preferred);
+	(which,) = cvssvn_which(dir, preferred);
 	jedrc_create_blocal_var("cvssvn-which", 's');
 	set_blocal_var(which, "cvssvn-which");
     }
@@ -1775,7 +1799,7 @@ define cvssvn_diff(preferred) {
     if (blocal_var_exists("cvssvn-which")) {
 	which = get_blocal_var("cvssvn-which");
     } else {
-	which = cvssvn_which(dir, preferred);
+	(which,) = cvssvn_which(dir, preferred);
 	jedrc_create_blocal_var("cvssvn-which", 's');
 	set_blocal_var(which, "cvssvn-which");
     }
@@ -1889,7 +1913,7 @@ define cvssvn_annotate(preferred) {
     if (blocal_var_exists("cvssvn-which")) {
 	which = get_blocal_var("cvssvn-which");
     } else {
-	which = cvssvn_which(dir, preferred);
+	(which,) = cvssvn_which(dir, preferred);
 	jedrc_create_blocal_var("cvssvn-which", 's');
 	set_blocal_var(which, "cvssvn-which");
     }
@@ -1978,7 +2002,7 @@ define cvssvn_cat(preferred) {
     if (blocal_var_exists("cvssvn-which")) {
 	which = get_blocal_var("cvssvn-which");
     } else {
-	which = cvssvn_which(dir, preferred);
+	(which,) = cvssvn_which(dir, preferred);
 	jedrc_create_blocal_var("cvssvn-which", 's');
 	set_blocal_var(which, "cvssvn-which");
     }
@@ -2008,10 +2032,16 @@ define cvssvn_cat(preferred) {
             args = args + " -r" + rev;
 	run_shell_cmd("bzr cat " + args + " " + file);
     } else { % git
-        args = "";
+	variable subdir, path;
         if (rev != "")
             args = rev + ":";
-	run_shell_cmd("git show " + args + file);
+        else
+	    args = "HEAD:";
+	(,subdir) = cvssvn_which(dir, "git");
+	path = file;
+	if (subdir != NULL)
+	    path = path_concat(subdir, file);
+	run_shell_cmd("git show " + args + path);
     }
 #ifexists what_syntax_table
     if (bufferp(origname)) {
