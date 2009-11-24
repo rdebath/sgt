@@ -1734,8 +1734,6 @@ define cvssvn_log(preferred) {
 	which = get_blocal_var("cvssvn-which");
     } else {
 	(which,) = cvssvn_which(dir, preferred);
-	jedrc_create_blocal_var("cvssvn-which", 's');
-	set_blocal_var(which, "cvssvn-which");
     }
     if (which == "") {
 	error("Unable to find an applicable version control tool");
@@ -1745,6 +1743,9 @@ define cvssvn_log(preferred) {
     sw2buf(name);
     erase_buffer();
     text_mode();
+    if (not blocal_var_exists("cvssvn-which"))
+        jedrc_create_blocal_var("cvssvn-which", 's');
+    set_blocal_var(which, "cvssvn-which");
     if (which == "cvs") {
 	run_shell_cmd("cvs log " + file);
     } else if (which == "svn") {
@@ -1800,8 +1801,6 @@ define cvssvn_diff(preferred) {
 	which = get_blocal_var("cvssvn-which");
     } else {
 	(which,) = cvssvn_which(dir, preferred);
-	jedrc_create_blocal_var("cvssvn-which", 's');
-	set_blocal_var(which, "cvssvn-which");
     }
     if (which == "") {
 	error("Unable to find an applicable version control tool");
@@ -1833,6 +1832,9 @@ define cvssvn_diff(preferred) {
     change_default_dir(dir);
     sw2buf(bufname);
     erase_buffer();
+    if (not blocal_var_exists("cvssvn-which"))
+        jedrc_create_blocal_var("cvssvn-which", 's');
+    set_blocal_var(which, "cvssvn-which");
     text_mode();
     if (which == "cvs") {
         args = "";
@@ -1914,8 +1916,6 @@ define cvssvn_annotate(preferred) {
 	which = get_blocal_var("cvssvn-which");
     } else {
 	(which,) = cvssvn_which(dir, preferred);
-	jedrc_create_blocal_var("cvssvn-which", 's');
-	set_blocal_var(which, "cvssvn-which");
     }
     if (which == "") {
 	error("Unable to find an applicable version control tool");
@@ -1928,8 +1928,11 @@ define cvssvn_annotate(preferred) {
     name = "*" + which + "-annotate*:" + name;
     change_default_dir(dir);
     sw2buf(name);
-    text_mode();
     erase_buffer();
+    if (not blocal_var_exists("cvssvn-which"))
+        jedrc_create_blocal_var("cvssvn-which", 's');
+    set_blocal_var(which, "cvssvn-which");
+    text_mode();
     if (which == "cvs") {
         if (rev == "") {
             ret = run_shell_cmd("cvs-annotate 2>" + jedrc_null_device + " " + file);
@@ -2003,8 +2006,6 @@ define cvssvn_cat(preferred) {
 	which = get_blocal_var("cvssvn-which");
     } else {
 	(which,) = cvssvn_which(dir, preferred);
-	jedrc_create_blocal_var("cvssvn-which", 's');
-	set_blocal_var(which, "cvssvn-which");
     }
     if (which == "") {
 	error("Unable to find an applicable version control tool");
@@ -2014,8 +2015,11 @@ define cvssvn_cat(preferred) {
     name = "*" + which + "-cat*:" + name;
     change_default_dir(dir);
     sw2buf(name);
-    text_mode();
     erase_buffer();
+    if (not blocal_var_exists("cvssvn-which"))
+        jedrc_create_blocal_var("cvssvn-which", 's');
+    set_blocal_var(which, "cvssvn-which");
+    text_mode();
     if (which == "cvs") {
         args = "";
         if (rev != "")
