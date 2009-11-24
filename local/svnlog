@@ -7,6 +7,8 @@ case "$1" in
   *) dashr=-rHEAD:1;;
 esac
 
+if test -t 1; then cmd=${PAGER-less}; else cmd=cat; fi
+
 uuid=`svn info "$1" | tr -d '\r' | grep '^Repository UUID:' | cut -f3- -d' '`
 
 svn log -v $dashr "$@" | \
@@ -49,4 +51,4 @@ while (<>) {
     }
 }
 
-' $uuid
+' $uuid | $cmd
