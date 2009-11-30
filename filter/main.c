@@ -124,9 +124,6 @@ static void bufchain_prefix(bufchain *ch, void **data, int *len)
 
 #define LOCALBUF_LIMIT 65536
 
-sig_atomic_t exitcode = -1;
-pid_t childpid = -1;
-
 int signalpipe[2];
 
 void sigchld(int sig)
@@ -186,6 +183,8 @@ int main(int argc, char **argv)
     struct mainopts opts;
     bufchain tochild, tostdout;
     int tochild_active, tostdout_active, fromstdin_active, fromchild_active;
+    int exitcode = -1;
+    pid_t childpid = -1;
 
     opts.pipe = FALSE;
     opts.quit = FALSE;
@@ -280,6 +279,15 @@ int main(int argc, char **argv)
     }
 
     /*
+     * Now that pipe exists, we can set up the SIGCHLD handler to
+     * write to one end of it. We needn't already know details like
+     * which child pid we're waiting for, because we don't need that
+     * until we respond to reading the far end of the pipe in the
+     * main select loop.
+     */
+    signal(SIGCHLD, sigchld);
+
+    /*
      * Allocate the pty or pipes.
      */
     if (opts.pipe) {
@@ -371,7 +379,6 @@ int main(int argc, char **argv)
     close(slaver);
     close(slavew);
     childpid = pid;
-    signal(SIGCHLD, sigchld);
 
     if (!opts.pipe) {
 	tcgetattr(0, &oldattrs);
