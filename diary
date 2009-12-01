@@ -1133,6 +1133,8 @@ def rdinput(file):
 		    o.special("&" + tok[1] + ";", tok[1][:1])
 		elif diphthongs.has_key(tok[1]):
 		    o.special("&" + diphthongs[tok[1]] + ";", tok[1])
+		elif tok[1] == "ohung":
+		    o.special("&#337;", "o")
 		elif tok[1] == "TM":
 		    o.special("&#8482;", "(TM)")
 		elif tok[1] == "x":
