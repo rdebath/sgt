@@ -147,7 +147,7 @@ class output:
         self.mono.append("")
 	self.mono_edit_count = self.mono_edit_count + 1
 
-    def warn(msg):
+    def warn(self, msg):
 	self.warnings.append(msg)
 
     def mono_add_word(self, text, attrs, isbreak):
