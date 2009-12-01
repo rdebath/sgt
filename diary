@@ -442,6 +442,7 @@ class output:
 	self.news_bullet_txt = ""
 	self.emph_level = 0
 	self.code_level = 0
+	self.bold_level = 0
 	self.prev_para = self.para_type
 	self.para_type = typ
 
@@ -666,18 +667,24 @@ class output:
 	self.code_level = on
 
     def bold(self, on):
+	assert self.bold_level == 0 or on == 0
+	assert self.bold_level != 0 or on != 0
+
 	if self.html_ok:
 	    self.html = self.html + ["</b>","<b>"][on != 0]
 	elif self.html_title:
 	    self.subj = self.subj + ["</b>","<b>"][on != 0]
 
-	if on:
+        if on:
             self.mono_attr = self.mono_attr | ATTR_BOLD
-	else:
+        else:
             self.mono_attr = self.mono_attr & ~ATTR_BOLD
 
-	if self.news_ok:
-	    self.news_add_word("*", 0)
+	if self.bold_level == 1 or on == 1:
+            if self.news_ok:
+                self.news_add_word("*", 0)
+
+	self.bold_level = on
 
     def url(self, text, inline, image):
 	utext = text
@@ -1249,6 +1256,8 @@ def rdinput(file):
 			o.code(1)
 		    elif tok[1] == "b":
 			o.bold(1)
+		    elif tok[1] == "wb":
+			o.bold(0.5)
 		    else:
 			sys.stderr.write("unknown tag `" + tok[1] + "'\n")
 	    elif tok[0] == TCLOSE:
@@ -1266,7 +1275,7 @@ def rdinput(file):
 			o.deletion(0)
 		    elif s == "c" or s == "wc":
 			o.code(0)
-		    elif s == "b":
+		    elif s == "b" or s == "wb":
 			o.bold(0)
 		    elif s == "url":
 			o.posturlmode(0, 0)
