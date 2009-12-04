@@ -686,6 +686,27 @@ class output:
 
 	self.bold_level = on
 
+    def pow(self, base, expt, expbracketed):
+	if self.html_ok or self.html_title:
+            html = self.htmlsafe(base) + \
+            "<span style=\"display: none\">^</span>" + \
+            "<span style=\"font-size: 70%; vertical-align: top\">" + \
+            self.htmlsafe(expt) + "</span>"
+            if self.html_ok:
+                self.html = self.html + html
+            elif self.html_title:
+                self.subj = self.subj + html
+
+        if self.news_ok or self.mono_ok:
+            if expbracketed:
+                text = base + "^(" + expt + ")"
+            else:
+                text = base + "^" + expt
+            if self.news_ok:
+                self.news_add_word(text, 0)
+            if self.mono_ok:
+                self.mono_add_word(text, self.mono_attr, 0)
+
     def url(self, text, inline, image):
 	utext = text
 	if image:
@@ -1193,6 +1214,29 @@ def rdinput(file):
 			    # Subsequent stuff inside this element
 			    # will be treated normally.
 			    stack = stack + ["url"]
+			    break
+		if tok[1] == "pow":
+		    tok = t.next()
+		    base = expt = ""
+                    expbrackets = 0
+                    mode = 1
+		    while tok != (EOF,):
+			if tok[0] == WORD:
+                            if mode == 1:
+                                base = base + tok[1]
+                            else:
+                                expt = expt + tok[1]
+			    tok = t.next()
+                        elif tok[0] == WHITE:
+                            if mode == 1:
+                                mode = 2
+                            else:
+                                expt = expt + tok[1] # might as well
+                                expbrackets = 1
+			    tok = t.next()
+                        elif tok == (TCLOSE,):
+                            o.pow(base, expt, expbrackets)
+                            t.next()
 			    break
 		elif tok[1] == "link":
 		    tok = t.next()
