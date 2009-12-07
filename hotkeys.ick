@@ -159,6 +159,14 @@ void launch_wikipedia_url(void)
     open_url(str);
 }
 
+/*
+ * This is a null function which can be overridden by a version
+ * provided in a previous source file.
+ */
+void local_extra_keys(int arg)
+{
+}
+
 int keynum = 0;
 bool keycheck(int arg, string key)
 {
@@ -190,4 +198,6 @@ void main(int arg)
 	launch_wikipedia_url();
     else if (keycheck(arg, "leftwindows ctrl g"))
 	launch_google_url(true);
+    else
+        local_extra_keys(arg);
 }
