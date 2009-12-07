@@ -12,6 +12,8 @@
 
 #include <unistd.h>
 #include <fcntl.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 #include <X11/X.h>
 #include <X11/Xlib.h>
@@ -166,6 +168,32 @@ void open_url(const char *url)
     *p = '\0';
     system(buf);
     sfree(buf);
+}
+
+void spawn_process(const char *cmd)
+{
+    pid_t pid = fork();
+    if (pid == 0) {
+	/*
+	 * Double-fork so that the real subprocess ends up with a
+	 * parent other than us.
+	 */
+	pid_t pid2 = fork();
+	if (pid2 == 0) {
+	    execlp("/bin/sh", "sh", "-c", cmd, (char *)NULL);
+	    _exit(127);
+	} else {
+	    _exit(0);
+	}
+    } else if (pid < 0) {
+	fprintf(stderr, "ick-keys: fork: %s\n", strerror(errno));
+    } else {
+	/*
+	 * Reap the immediate child.
+	 */
+	int status;
+	waitpid(pid, &status, 0);
+    }
 }
 
 void debug_message(const char *msg)

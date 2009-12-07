@@ -207,6 +207,21 @@ void debug_message(const char *msg)
 	       MB_OK | MB_ICONINFORMATION);
 }
 
+void spawn_process(const char *cmd)
+{
+    STARTUPINFO si;
+    PROCESS_INFORMATION pi;
+    si.cb = sizeof(si);
+    si.lpReserved = NULL;
+    si.lpDesktop = NULL;
+    si.lpTitle = NULL;
+    si.dwFlags = 0;
+    si.cbReserved2 = 0;
+    si.lpReserved2 = NULL;
+    CreateProcess(NULL, cmd, NULL, NULL, FALSE, NORMAL_PRIORITY_CLASS,
+		  NULL, NULL, &si, &pi);
+}
+
 int *hotkeyids = NULL;
 int hotkeyidsize = 0;
 
