@@ -2021,6 +2021,9 @@ static int ick_semantic_expr(struct ick_parse_ctx *ctx,
 		j++;
 		arg = arg->e2;
 	    }
+
+	    if (expr->fn)
+		break;		       /* with multiple defns, use the first */
 	}
 
 	if (!expr->fn) {
@@ -2521,7 +2524,7 @@ static int ick_semantic_analysis(struct ick_parse_ctx *ctx,
     struct ick_parse_tree *tree = ctx->tree;
 
     /*
-     * First of all, find the script's main function, and swap it
+     * First of all, find the script's main function, and move it
      * to the front of the fndecl list.
      */
     for (i = 0; i < tree->nfns; i++) {
@@ -2568,11 +2571,15 @@ static int ick_semantic_analysis(struct ick_parse_ctx *ctx,
 	return 0;
     }
     if (i > 0) {
-	/* If main function isn't first, swap it into place. */
+	/* If main function isn't first, move it into place,
+	 * preserving the order of the rest. */
 	struct ick_fndecl tmp;
-	tmp = tree->fns[0];
-	tree->fns[0] = tree->fns[i];
-	tree->fns[i] = tmp;
+	int j;
+
+	tmp = tree->fns[i];
+	for (j = i; j > 0; j--)
+	    tree->fns[j] = tree->fns[j-1];
+	tree->fns[0] = tmp;
     }
 
     ctx->varscope = NULL;
