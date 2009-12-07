@@ -73,6 +73,17 @@ static int kl_open_url(void *result, const char **sparams,
     return 0;
 }
 
+static int kl_spawn(void *result, const char **sparams,
+		    const int *iparams)
+{
+    if (in_init) {
+	error("attempt to spawn a subprocess during initialisation");
+	return ICK_RTE_USER;
+    }
+    spawn_process(sparams[0]);
+    return 0;
+}
+
 static int kl_debug(void *result, const char **sparams,
 		    const int *iparams)
 {
@@ -184,6 +195,7 @@ static void setup_lib(icklib *lib)
     ick_lib_addfn(lib, "read_clipboard", "S", kl_read_clipboard, NULL);
     ick_lib_addfn(lib, "write_clipboard", "VS", kl_write_clipboard, NULL);
     ick_lib_addfn(lib, "open_url", "VS", kl_open_url, NULL);
+    ick_lib_addfn(lib, "spawn", "VS", kl_spawn, NULL);
     ick_lib_addfn(lib, "debug", "VS", kl_debug, NULL);
     ick_lib_addfn(lib, "register_hot_key", "VIS", kl_register_hotkey, NULL);
 }
