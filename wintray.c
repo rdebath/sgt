@@ -237,6 +237,8 @@ int register_hotkey(int index, int modifiers, const char *key,
     mods = 0;
     if (modifiers & LEFT_WINDOWS)
 	mods |= MOD_WIN;
+    if (modifiers & ALT)
+	mods |= MOD_ALT;
     if (modifiers & CTRL)
 	mods |= MOD_CONTROL;
 

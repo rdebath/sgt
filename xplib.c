@@ -96,6 +96,9 @@ static int kl_register_hotkey(void *result, const char **sparams,
 	} else if (!strncmp(key, "ctrl ", 5)) {
 	    key += 5;
 	    modifiers |= CTRL;
+	} else if (!strncmp(key, "alt ", 4)) {
+	    key += 4;
+	    modifiers |= ALT;
 	} else
 	    break;
     }
