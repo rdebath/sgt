@@ -12,6 +12,7 @@ void error(char *s, ...);
 enum {
     LEFT_WINDOWS = 1,
     CTRL = 2,
+    ALT = 4,
 };
 
 void add_config_filename(const char *filename);
