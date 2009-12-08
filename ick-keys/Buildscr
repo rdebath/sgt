@@ -11,6 +11,11 @@ module ick-keys
 # Create the makefiles.
 in ick-keys do perl mkfiles.pl
 
+# Substitute the SVN revision into the source files which give the
+# version number.
+in ick-keys do perl -i~ -pe 's/~SVNREVISION~/$(revision)/' *.[cm]
+in ick-keys do rm -f *~
+
 # Build the Windows binary.
 delegate windows
   in ick-keys do cmd /c 'vcvars32 & nmake -f Makefile.vc clean'
