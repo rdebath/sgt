@@ -120,7 +120,7 @@ def run_script_line(s, is_config, cfg):
             else:
                 dir = os.path.join(cfg.workpath, dir)
             log.logmsg("Running command in directory `%s': %s" % (dir, cmd))
-            cmd = misc.shellquote(["cd", dir]) + "; " + cmd
+            cmd = misc.shellquote(["cd", dir]) + " && " + cmd
             f = os.popen(cmd + " 2>&1", "r")
             while 1:
                 line = f.readline()
