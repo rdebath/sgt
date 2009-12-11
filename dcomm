@@ -1,0 +1,66 @@
+#!/usr/bin/perl
+
+# Essentially equivalent to comm(1), but doesn't insist on the input
+# files being sorted - so it has to do a diff rather than a sorted
+# list merge.
+
+$p1 = $p2 = $pboth = 1;
+
+while ($ARGV[0] =~ /^-(.*)/) {
+    shift @ARGV;
+    $arg = $1;
+    if ($arg eq "-") {
+        last;
+    } elsif ($arg eq "-help") {
+	&usage;
+	exit 0;
+    } elsif ($arg =~ /[123]*/) {
+        $p1 = 0 if $arg =~ /1/;
+        $p2 = 0 if $arg =~ /2/;
+        $pboth = 0 if $arg =~ /3/;
+    } else {
+        die "dcomm: unrecognised option '-$arg'\n";
+    }
+}
+
+if ($#ARGV != 1) {
+    die "dcomm: expected exactly two filename arguments\n";
+}
+
+$pfx = "";
+
+if ($p1) {
+    $f1 = "${pfx}%L";
+    $pfx .= "\t";
+} else {
+    $f1 = "";
+}
+
+if ($p2) {
+    $f2 = "${pfx}%L";
+    $pfx .= "\t";
+} else {
+    $f2 = "";
+}
+
+if ($pboth) {
+    $fboth = "${pfx}%L";
+    $pfx .= "\t";
+} else {
+    $fboth = "";
+}
+
+exec "diff",
+  "--old-line-format=$f1",
+  "--new-line-format=$f2",
+  "--unchanged-line-format=$fboth",
+  "--",
+  @ARGV;
+
+sub usage {
+    print "usage: dcomm [options] file1 file2\n";
+    print "where: -1            suppress lines only appearing in file1\n";
+    print "       -2            suppress lines only appearing in file2\n";
+    print "       -3            suppress lines common to both files\n";
+    print " also: dcomm --help  display this help text\n";
+};
