@@ -3,7 +3,7 @@
 import types
 import math
 
-def gcd(a,b):
+def _gcd(a,b):
     "Return the greatest common divisor of a modulo b"
     while b != 0:
         a, b = b, a % b
@@ -40,7 +40,7 @@ class Rational:
         x = xn * yd
         y = xd * yn
         assert y != 0
-        g = gcd(x, y)
+        g = _gcd(x, y)
         if (g < 0) != (y < 0):
             g = -g
         self.n = long(x/g)
