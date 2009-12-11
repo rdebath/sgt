@@ -411,6 +411,16 @@ $1 = "Timber";
     % ^X c counts the messages in the folder.
     definekey("timber_count", "^XC", $1);
     definekey("timber_count", "^Xc", $1);
+
+    % The standard binding of ^X n (narrow region) seems to be
+    % extremely harmful to Timber buffers, causing mail folder
+    % corruption. Disable it. Also ^X < and ^X >, which are pretty
+    % unhelpful too. All of these are easy to hit by mistake when I
+    % aimed for ^X m.
+    undefinekey("^Xn", $1);
+    undefinekey("^XN", $1);
+    undefinekey("^X<", $1);
+    undefinekey("^X>", $1);
 }
 
 %}}}
