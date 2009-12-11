@@ -6,6 +6,7 @@
 
 import sys
 import math
+import types
 
 try:
     from pymaths import *
@@ -46,11 +47,32 @@ def fact(n):
 def choose(n,k):
     return fact(n) / (fact(k) * fact(n-k))
 
-def gcd(a,b):
+def gcd2(a,b):
     "Return the greatest common divisor of a modulo b"
     while b != 0:
         a, b = b, a % b
     return a
+
+def lcm2(a,b):
+    return a * b / gcd2(a,b)
+
+def gcd1(x):
+    if type(x) == types.TupleType or type(x) == types.ListType:
+        return reduce(gcd2, map(gcd1, x))
+    else:
+        return x
+
+def lcm1(x):
+    if type(x) == types.TupleType or type(x) == types.ListType:
+        return reduce(lcm2, map(lcm1, x))
+    else:
+        return x
+
+def gcd(*x):
+    return gcd1(x)
+
+def lcm(*x):
+    return lcm1(x)
 
 def powerset(x, append=[]):
     if len(x) == 0:
@@ -161,7 +183,7 @@ def intexp(f):
     return m, e
 
 def modmin(a,b,c,r,t):
-    "Return x in [r,t] which has maximal (a*x mod b) below c"
+    "Return x in [r,t] which has maximal (a*x mod b) less than or equal to c"
 
     # Reduce a and c mod b
     a = a % b
