@@ -222,6 +222,7 @@ def checkout(cfg, module, path, is_main):
             except OSError, e:
                 pass # already exists
             shutil.copyfile(details[2] + "/" + s, p)
+            shutil.copymode(details[2] + "/" + s, p)
         f.close()
         lcrev = newrev
         if lcrev[-1:] == "M":
