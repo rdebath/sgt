@@ -88,11 +88,14 @@ def geturls(url):
     return p.urls
 
 verbose = 1
+incremental = 0
 
 args = sys.argv[1:]
 while 1:
     if args[0] == "-q":
         verbose = 0
+    elif args[0] == "-i":
+        incremental = 1
     else:
         break
     args = args[1:]
@@ -110,14 +113,21 @@ cookurl.loadcookies(session)
 # Find the full set of years used in the journal. We start by
 # retrieving the front "calendar" page, and then follow links to
 # any year pages mentioned in that.
-u = geturls(prefix + "/calendar/")
 yeardict = {}
-expr = re.compile(re.escape(prefix) + r'/(\d+)/')
-for url in u:
-    m = expr.match(url)
-    if m:
-        yeardict[m.group(1)] = 1
-years = yeardict.keys()
+years = []
+yexpr = re.compile(re.escape(prefix) + r'/(\d+)/')
+u = geturls(prefix + "/calendar/")
+while len(u) > 0:
+    u2 = []
+    for url in u:
+        m = yexpr.match(url)
+        if m:
+            y = m.group(1)
+            if not yeardict.has_key(y):
+                yeardict[y] = 1
+                years.append(y)
+                u2 = u2 + geturls(prefix + "/" + y + "/")
+    u = u2
 years.sort()
 
 # Now we have a list of years, we can retrieve each of the month
@@ -141,12 +151,13 @@ print entries
 # And finally, we're ready to retrieve and save each actual entry page.
 for entry in entries:
     fname = "%d.html" % entry
-    d = getdata(prefix + "/" + fname)
-    tmpfname = fname + ".tmp"
-    f = open(tmpfname, "w")
-    f.write(d)
-    f.close()
-    os.rename(tmpfname, fname)
+    if not (incremental and os.access(fname, os.F_OK)):
+        d = getdata(prefix + "/" + fname)
+        tmpfname = fname + ".tmp"
+        f = open(tmpfname, "w")
+        f.write(d)
+        f.close()
+        os.rename(tmpfname, fname)
 
 for file in cachelist:
     try:
