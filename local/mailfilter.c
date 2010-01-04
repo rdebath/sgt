@@ -16,6 +16,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <wchar.h>
+#include <wctype.h>
 #include <limits.h>
 #include <time.h>
 #include <assert.h>
@@ -664,7 +665,16 @@ static void scanner_feed_text_postqp(scanner *s, stream *st, text *ctx,
 			    !strncmp(ctx->htmlattrval + 30 +
 				     strspn(ctx->htmlattrval+30,
 					    "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"),
-				     "/message/1", 22)) {
+				     "/message/1", 10)) {
+			    specific_msg =
+				"This appears to be a prolific spam.";
+			}
+			if (!strncmp(ctx->htmlattrval,
+				     "http://profiles.yahoo.com/blog/", 31) &&
+			    !strncmp(ctx->htmlattrval + 31 +
+				     strspn(ctx->htmlattrval+31,
+					    "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"),
+				     "?eid=", 5)) {
 			    specific_msg =
 				"This appears to be a prolific spam.";
 			}
@@ -820,7 +830,7 @@ static void scanner_cleanup_text(scanner *s, stream *st, void *vctx)
 {
     text *ctx = (text *)vctx;
     const wchar_t *str;
-    int linelen;
+    int linelen, stringlen;
     int i;
 
     if (ctx->charset == CS_NONE)
@@ -920,6 +930,15 @@ static void scanner_cleanup_text(scanner *s, stream *st, void *vctx)
 		     wcsspn(compressed+11, L"0123456789abcdefABCDEF"),
 		     L".spaces.live.com/blog/", 22))
 	    specific_msg = "This appears to be a prolific pharmaceutical spam.";
+    }
+    str = L"You are receiving this email because we wish you to use our web design service.";
+    stringlen = wcslen(str);
+    linelen = wcscspn(ctx->firstbit, L"\n");
+    while (linelen > 0 && iswspace(ctx->firstbit[linelen-1]))
+	linelen--;
+    if (linelen >= stringlen &&
+	!wcsncmp(ctx->firstbit + linelen - stringlen, str, stringlen)) {
+	specific_msg = "This appears to be a persistent corporate-web-design spam.";
     }
 }
 
@@ -1079,7 +1098,39 @@ const char *process_address(const char *hdr, const char *addr)
 	    return "This address is currently under suspicion of being "
 		"a virus vector.";
 	}
-	
+
+	/*
+	 * 'Sid and Sally', whoever they are, have been persistently
+	 * spamming me for a while now.
+	 */
+	if (!strcasecmp(addr, "sidandsally@id1.idrelay.com")) {
+	    return "I don't know what this is, but I get a lot of it"
+		" and never asked for it, so I'm assuming it to be spam.";
+	}
+
+	/*
+	 * 2009-09-09: emergency response to a sudden flood.
+	 */
+	if (!strncmp(addr, "Amina@", 6) && strlen(addr) > 10 &&
+	    !strcmp(addr + strlen(addr) - 10, ".pobox.com")) {
+	    return "This looks like spam.";
+	}
+
+	/*
+	 * 2009-10-04: another emergency flood response.
+	 */
+	if (!strcasecmp(addr, "NAVER-MAILER@naver.com")) {
+	    return "This looks like part of a flood of meaningless non-bounces.";
+	}
+
+	/*
+	 * 2010-01-04: some software distribution site has
+	 * unilaterally decided to send me weekly volume reports in
+	 * the mistaken belief that I care
+	 */
+	if (!strcasecmp(addr, "users@brothersoft.com")) {
+	    return "I have never requested regular mail from this address and must therefore consider it spam.";
+	}
     }
 
     if (!strcasecmp(hdr, "Reply-to")) {
