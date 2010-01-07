@@ -14,7 +14,8 @@ instruction.
 
 <p>
 SunSSH is known to send such packets when providing instructions for password
-expiry and the like.
+expiry and the like (see for instance
+<a href="http://forums.sun.com/thread.jspa?threadID=5354958">this thread</a>).
 
 <p>
 This was probably introduced around r6437, and hence probably a regression
