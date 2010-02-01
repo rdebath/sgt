@@ -52,19 +52,37 @@
 ;; }}}
 ;; Left-Windows + x to minimise windows {{{
 
-(define (iconify-window-under-pointer)
+(define (window-under-pointer)
+    ;; A tweaked version of query-pointer-window which returns the
+    ;; window under the pointer if possible, or if there is no such
+    ;; window falls back to the one with the input focus. (It's just
+    ;; conceivable that there might not be one of those either, so
+    ;; callers of this function should still be prepared for it to
+    ;; return nil.)
     (let ((w1 (query-pointer-window))
 	  (w2 (input-focus)))
-	(cond ((not (null w1)) (iconify-window w1))
-            ((not (null w2)) (iconify-window w2))
+	(cond
+            ((not (null w1)) w1)
+            (t w2)
 	)
     )
 )
 
-(define-command 'iconify-window-under-pointer iconify-window-under-pointer)
+(define (iconify-window-under-pointer)
+    (let ((w (window-under-pointer)))
+	(cond ((not (null w)) (iconify-window w)))
+    )
+)
+
+(define (lower-window-under-pointer)
+    (let ((w (window-under-pointer)))
+	(cond ((not (null w)) (lower-window w)))
+    )
+)
 
 (bind-keys window-keymap
     "H-x" 'iconify-window-under-pointer
+    "H-z" 'lower-window-under-pointer
 )
 
 ;; }}}
