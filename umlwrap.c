@@ -1043,6 +1043,10 @@ int main(int argc, char **argv)
 	    ctx->ttygid = 0;
     }
     ctx->cwd = getcwd(NULL, 0);	       /* NB non-portable Linux extension */
+    if (!ctx->cwd) {
+	perror(PNAME ": getcwd");
+	return 1;
+    }
     ctx->error = 0;
     {
 	/*
