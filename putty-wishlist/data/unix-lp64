@@ -2,6 +2,7 @@ Summary: PuTTY is broken on LP64 Unix systems
 Class: bug
 Priority: medium
 Present-in: 0.58
+Fixed-in: r8855
 Difficulty: fun
 Content-type: text/x-html-body
 
