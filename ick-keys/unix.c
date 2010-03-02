@@ -11,9 +11,13 @@
 #include <errno.h>
 
 #include <unistd.h>
+#include <pwd.h>
+#include <netdb.h>
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <sys/socket.h>
+#include <sys/un.h>
 
 #include <X11/X.h>
 #include <X11/Xlib.h>
@@ -43,28 +47,142 @@ void platform_fatal_error(const char *s)
     exit(1);
 }
 
+char *get_sawfish_socket(char *display)
+{
+    char protocol[1024], host[1024];
+    int dispno, screen;
+    char *user;
+    uid_t uid;
+    struct passwd *p;
+
+    user = getlogin();
+    uid = getuid();
+    setpwent();
+    if (user && (p = getpwnam(user)) != NULL && p->pw_uid == uid)
+        user = dupstr(user);
+    else if ((p = getpwuid(uid)) != NULL)
+        user = dupstr(p->pw_name);
+    else
+        user = dupfmt("%d", uid);
+    endpwent();
+
+    if ((protocol[0] = host[0] = '\0', dispno = screen = 0, display == NULL) ||
+        (sscanf(display, "%1000[^/:]/%1000[^:]:%i.%i", protocol, host, &dispno, &screen)) == 4 ||
+        (protocol[0] = '\0', sscanf(display, "%1000[^:]:%i.%i", host, &dispno, &screen)) == 3 ||
+        (protocol[0] = host[0] = '\0', sscanf(display, ":%i.%i", &dispno, &screen)) == 2 ||
+        (screen = 0, sscanf(display, "%1000[^/:]/%1000[^:]:%i", protocol, host, &dispno)) == 3 ||
+        (protocol[0] = '\0', screen = 0, sscanf(display, "%1000[^:]:%i", host, &dispno)) == 2 ||
+        (protocol[0] = host[0] = '\0', screen = 0, sscanf(display, ":%i", &dispno)) == 1) {
+        if (protocol[0])
+            strcat(protocol, "/");
+        if (!host[0])
+            gethostname(host, 1000);
+        if (!strchr(host, '.')) {
+            struct hostent *h = gethostbyname(host);
+            if (h) {
+                char *newhost;
+                int i;
+                for (i = -1; (newhost = (i<0?h->h_name:h->h_aliases[i])) != NULL; i++)
+                    if (strchr(newhost, '.')) {
+                        strncpy(host, newhost, 1000);
+                        break;
+                    }
+            }
+        }
+        return dupfmt("/tmp/.sawfish-%s/%s%s:%d.%d", user, protocol, host, dispno, screen);
+    } else
+        return dupstr(display);        /* random fallback */
+}
+
+char *sawfish_socket;
+
+void sawfish_client(char *string)
+{
+    struct sockaddr_un addr;
+    int i, j, fd;
+    char *data;
+    char *realcmd = dupfmt("(call-command (quote %s))", string);
+    int len = strlen(realcmd);
+    unsigned long lenbuf;
+
+    addr.sun_family = AF_UNIX;
+    strncpy(addr.sun_path, sawfish_socket, lenof(addr.sun_path)-1);
+    addr.sun_path[lenof(addr.sun_path)-1] = '\0';
+
+    fd = socket(AF_UNIX, SOCK_STREAM, 0);
+    if (fd < 0) {
+        error("socket: %s", strerror(errno));
+        sfree(realcmd);
+        return;
+    }
+    if (connect(fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
+        error("connect: %s", strerror(errno));
+        close(fd);
+        sfree(realcmd);
+        return;
+    }
+    data = malloc(1 + sizeof(unsigned long) + len);
+    data[0] = 0;
+    lenbuf = len;
+    memcpy(data+1, &lenbuf, sizeof(lenbuf));
+    memcpy(data+1+sizeof(unsigned long), realcmd, len);
+    sfree(realcmd);
+    len += 1+sizeof(unsigned long);
+    for (i = 0; i < len ;) {
+        j = write(fd, data + i, len - i);
+        if (j < 0) {
+            error("write: %s", strerror(errno));
+            close(fd);
+            sfree(data);
+            return;
+        }
+        i += j;
+    }
+    len = sizeof(unsigned long);
+    for (i = 0; i < len ;) {
+        j = read(fd, data + i, len - i);
+        if (j < 0) {
+            error("read: %s", strerror(errno));
+            close(fd);
+            sfree(data);
+            return;
+        }
+        i += j;
+    }
+    memcpy(&lenbuf, data, sizeof(lenbuf));
+    len = lenbuf + sizeof(lenbuf);
+    for (i = sizeof(lenbuf); i < len ;) {
+        j = read(fd, data + i, len - i);
+        if (j < 0) {
+            error("read: %s", strerror(errno));
+            close(fd);
+            sfree(data);
+            return;
+        }
+        i += j;
+    }
+    close(fd);
+    sfree(data);
+}
+
 void minimise_window(void)
 {
-    system("sawfish-client -c '"
-	   "(let ((w1 (query-pointer-window))"
-		 "(w2 (input-focus)))"
-	      "(cond ((not (null w1)) (iconify-window w1))"
-	            "((not (null w2)) (iconify-window w2))"
-	      ")"
-	   ")"
-	   "' >& /dev/null");
+    sawfish_client("(let ((w1 (query-pointer-window))"
+                        " (w2 (input-focus)))"
+                     " (cond ((not (null w1)) (iconify-window w1))"
+                           " ((not (null w2)) (iconify-window w2))"
+                      ")"
+                   ")");
 }
 
 void window_to_back(void)
 {
-    system("sawfish-client -c '"
-	   "(let ((w1 (query-pointer-window))"
-		 "(w2 (input-focus)))"
-	      "(cond ((not (null w1)) (lower-window w1))"
-	            "((not (null w2)) (lower-window w2))"
-	      ")"
-	   ")"
-	   "' >& /dev/null");
+    sawfish_client("(let ((w1 (query-pointer-window))"
+                        " (w2 (input-focus)))"
+                     " (cond ((not (null w1)) (lower-window w1))"
+                           " ((not (null w2)) (lower-window w2))"
+                      ")"
+                   ")");
 }
 
 char *read_clipboard(void)
@@ -279,6 +397,8 @@ int main(int ac, char **av)
     disp = XOpenDisplay(display);
     if (!disp)
 	error("unable to open display");
+
+    sawfish_socket = get_sawfish_socket(display);
 
     /* grab all the relevant hot keys */
     configure();
