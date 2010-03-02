@@ -22,13 +22,29 @@
 #include <X11/X.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
+#include <X11/Xatom.h>
 #include <X11/keysym.h>
 
 #include "misc.h"
 #include "xplib.h"
 
 char *pname;			       /* program name */
+
 Display *disp = NULL;
+int screen;
+Window root = None, ourwin = None;
+Atom compound_text_atom, targets_atom, timestamp_atom;
+Atom atom_atom, atom_pair_atom, multiple_atom, integer_atom;
+Atom sel_property;
+
+Time hktime = CurrentTime;
+
+#define SELDELTA 16384
+char *seldata = NULL;
+int seldatalen;
+Time seltime = CurrentTime;
+Window selrequestor;
+Atom selproperty;
 
 void error(char *fmt, ...)
 {
@@ -51,13 +67,170 @@ int hotkeysize = 0;
 struct hotkey_event {
     struct hotkey_event *next;
     int id;
+    Time time;
 } *hkhead = NULL, *hktail = NULL;
 
 #define XEV_HOTKEY 1
+#define XEV_PASTE 2
+
+Atom convert_sel_inner(Window requestor, Atom target, Atom property)
+{
+    if (target == XA_STRING) {
+	XChangeProperty (disp, requestor, property, XA_STRING,
+			 8, PropModeReplace,
+			 (unsigned char *)seldata, seldatalen);
+	return property;
+    } else if (target == compound_text_atom) {
+	XTextProperty tp;
+	XmbTextListToTextProperty(disp, &seldata, 1,
+				  XCompoundTextStyle, &tp);
+	XChangeProperty(disp, requestor, property, target,
+			tp.format, PropModeReplace,
+			tp.value, tp.nitems);
+	return property;
+    } else if (target == targets_atom) {
+	Atom targets[16];
+	int len = 0;
+	targets[len++] = timestamp_atom;
+	targets[len++] = targets_atom;
+	targets[len++] = multiple_atom;
+	targets[len++] = XA_STRING;
+	targets[len++] = compound_text_atom;
+	XChangeProperty (disp, requestor, property,
+			 atom_atom, 32, PropModeReplace,
+			 (unsigned char *)targets, len);
+	return property;
+    } else if (target == timestamp_atom) {
+	Time rettime = seltime;
+	XChangeProperty (disp, requestor, property,
+			 integer_atom, 32, PropModeReplace,
+			 (unsigned char *)&rettime, 1);
+	return property;
+    } else {
+	return None;
+    }
+}
+
+Atom convert_sel_outer(Window requestor, Atom target, Atom property)
+{
+    if (target == multiple_atom) {
+	/*
+	 * Support for the MULTIPLE selection type, since it's
+	 * specified as required in the ICCCM. Completely
+	 * untested, though, because I have no idea of what X
+	 * application might implement it for me to test against.
+	 */
+
+	int size = SELDELTA;
+	Atom actual_type;
+	int actual_format, i;
+	unsigned long nitems, bytes_after;
+	unsigned char *data;
+	Atom *adata;
+
+        if (property == (Atom)None)
+            return None;               /* ICCCM says this isn't allowed */
+
+	/*
+	 * Fetch the requestor's window property giving a list of
+	 * selection requests.
+	 */
+	while (XGetWindowProperty(disp, requestor, property, 0, size,
+				  False, AnyPropertyType, &actual_type,
+				  &actual_format, &nitems, &bytes_after,
+				  (unsigned char **) &data) == Success &&
+	       nitems * (actual_format / 8) == size) {
+	    XFree(data);
+	    size *= 3 / 2;
+	}
+
+	if (actual_type != atom_pair_atom || actual_format != 32) {
+	    XFree(data);
+	    return None;
+	}
+
+	adata = (Atom *)data;
+
+	for (i = 0; i+1 < nitems; i += 2) {
+            if (adata[i+1] != (Atom)None)   /* ICCCM says this isn't allowed */
+                adata[i+1] = convert_sel_inner(requestor, adata[i],
+                                               adata[i+1]);
+	}
+
+	XChangeProperty (disp, requestor, property,
+			 atom_pair_atom, 32, PropModeReplace,
+			 (unsigned char *)data, nitems);
+
+	XFree(data);
+
+	return property;
+    } else {
+        if (property == (Atom)None)
+            property = target;      /* ICCCM says this is a sensible default */
+	return convert_sel_inner(requestor, target, property);
+    }
+}
+
+char *do_paste(Window window, Atom property, int Delete)
+{
+    Atom actual_type;
+    int actual_format;
+    unsigned long nitems, bytes_after, nread;
+    unsigned char *data;
+    char *ret = NULL;
+    int retlen = 0;
+
+    nread = 0;
+    while (XGetWindowProperty(disp, window, property, nread / 4, SELDELTA,
+                              Delete, AnyPropertyType, &actual_type,
+                              &actual_format, &nitems, &bytes_after,
+                              (unsigned char **) &data) == Success) {
+	if (nitems > 0) {
+	    /*
+	     * We expect all returned chunks of data to be
+	     * multiples of 4 bytes (because we can only request
+	     * the subsequent starting offset in 4-byte
+	     * increments). Of course you can store an odd number
+	     * of bytes in a selection, so this can't be the case
+	     * every time XGetWindowProperty returns; but it
+	     * should be the case every time it returns _and there
+	     * is more data to come_.
+	     *
+	     * Hence, whenever XGetWindowProperty returns, we
+	     * verify that the size of the data returned _last_
+	     * time was divisible by 4.
+	     */
+	    if ((nread & 3) != 0) {
+		error("unexpected data size: %d read (not a multiple"
+		      " of 4), but more to come", nread);
+	    }
+
+	    if (actual_format != 8) {
+		error("unexpected data format: expected 8-bit, got %d-bit",
+		      actual_format);
+	    }
+	}
+
+        if (nitems > 0) {
+	    int oldlen = retlen;
+	    retlen += nitems * actual_format / 8;
+	    ret = sresize(ret, retlen+1, char);
+	    memcpy(ret + oldlen, data, retlen - oldlen);
+	    nread += nitems * actual_format / 8;
+        }
+        XFree(data);
+        if (nitems == 0)
+            break;
+    }
+
+    if (ret)
+	ret[retlen] = '\0';
+    return ret;
+}
 
 int xeventloop(int retflags)
 {
-    XEvent ev;
+    XEvent ev, e2;
     int i;
 
     while (1) {
@@ -72,6 +245,7 @@ int xeventloop(int retflags)
 		    (ev.xkey.state & ~Mod2Mask) == hotkeys[i].modifiers) {
 		    struct hotkey_event *hk = snew(struct hotkey_event);
 		    hk->id = i;
+		    hk->time = ev.xkey.time;
 		    hk->next = NULL;
 		    if (hktail)
 			hktail->next = hk;
@@ -80,6 +254,30 @@ int xeventloop(int retflags)
 		    hktail = hk;
 		    break;
 		}
+	  case SelectionClear:
+	    seldata = NULL;
+	    break;
+	  case SelectionRequest:
+	    if (seldata) {
+		e2.xselection.type = SelectionNotify;
+		e2.xselection.requestor = ev.xselectionrequest.requestor;
+		e2.xselection.selection = ev.xselectionrequest.selection;
+		e2.xselection.target = ev.xselectionrequest.target;
+		e2.xselection.time = ev.xselectionrequest.time;
+		e2.xselection.property =
+		    convert_sel_outer(ev.xselectionrequest.requestor,
+				      ev.xselectionrequest.target,
+				      ev.xselectionrequest.property);
+		XSendEvent (disp, ev.xselectionrequest.requestor,
+			    False, 0, &e2);
+	    }
+	    break;
+	  case SelectionNotify:
+	    if (retflags & XEV_PASTE) {
+		selrequestor = ev.xselection.requestor;
+		selproperty = ev.xselection.property;
+		return XEV_PASTE;
+	    }
 	    break;
 	}
     }
@@ -231,81 +429,55 @@ void window_to_back(void)
 
 char *read_clipboard(void)
 {
-    char *buf = NULL;
-    int buflen = 0, bufsize = 0;
-    FILE *fp;
-    int ret;
+    char *ret = NULL;
 
-    /*
-     * Disgustinger. Should I fold pieces of xcopy into this?
-     */
-    fp = popen("xcopy -r", "r");
-    if (!fp) {
-	error("popen: %s", strerror(errno));
-	return NULL;
+    if (XGetSelectionOwner(disp, XA_PRIMARY) == None) {
+	/* No primary selection, so use the cut buffer. */
+	ret = do_paste(root, XA_CUT_BUFFER0, False);
+    } else {
+	XConvertSelection(disp, XA_PRIMARY, XA_STRING,
+			  sel_property, ourwin, CurrentTime);
+	xeventloop(XEV_PASTE);
+	if (selrequestor)
+	    ret = do_paste(selrequestor, selproperty, True);
     }
-    while (1) {
-	if (bufsize < buflen + 2048) {
-	    bufsize = buflen * 3 / 2 + 2048;
-	    buf = sresize(buf, bufsize, char);
-	}
-	ret = fread(buf + buflen, 1, bufsize-1 - buflen, fp);
-	if (ret < 0) {
-	    error("fread: %s", strerror(errno));
-	    pclose(fp);
-	    sfree(buf);
-	    return NULL;
-	} else if (ret == 0) {
-	    buf[buflen] = '\0';
-	    ret = pclose(fp);
-	    if (ret < 0) {
-		error("wait4: %s", strerror(errno));
-		sfree(buf);
-		buf = NULL;
-	    } else if (ret > 0) {
-		error("xcopy -r returned error code: %d", ret);
-		sfree(buf);
-		buf = NULL;
-	    }
-	    return buf;
-	} else {
-	    buflen += ret;
-	}
-    }
+
+    return ret;
 }
 
 void write_clipboard(const char *buf)
 {
-    FILE *fp;
-    int pos, len, ret;
+    seldatalen = strlen(buf);
+    seldata = dupstr(buf);
+    seltime = hktime;
 
+    XSetSelectionOwner(disp, XA_PRIMARY, ourwin, seltime);
+    if (XGetSelectionOwner (disp, XA_PRIMARY) != ourwin)
+	error ("unable to obtain primary X selection");
     /*
-     * Still disgusting.
+     * ICCCM-required cut buffer initialisation.
      */
-    fp = popen("xcopy", "w");
-    if (!fp) {
-	error("popen: %s", strerror(errno));
-	return;
-    }
-    len = strlen(buf);
-    pos = 0;
-    while (pos < len) {
-	ret = fwrite(buf + pos, 1, len - pos, fp);
-	if (ret < 0) {
-	    error("fwrite: %s", strerror(errno));
-	    pclose(fp);
-	    return;
-	} else {
-	    pos += ret;
-	}
-    }
-
-    ret = pclose(fp);
-    if (ret < 0) {
-	error("wait4: %s", strerror(errno));
-    } else if (ret > 0) {
-	error("xcopy returned error code: %d", ret);
-    }
+    XChangeProperty(disp, root, XA_CUT_BUFFER0,
+		    XA_STRING, 8, PropModeAppend, (unsigned char *)"", 0);
+    XChangeProperty(disp, root, XA_CUT_BUFFER1,
+		    XA_STRING, 8, PropModeAppend, (unsigned char *)"", 0);
+    XChangeProperty(disp, root, XA_CUT_BUFFER2,
+		    XA_STRING, 8, PropModeAppend, (unsigned char *)"", 0);
+    XChangeProperty(disp, root, XA_CUT_BUFFER3,
+		    XA_STRING, 8, PropModeAppend, (unsigned char *)"", 0);
+    XChangeProperty(disp, root, XA_CUT_BUFFER4,
+		    XA_STRING, 8, PropModeAppend, (unsigned char *)"", 0);
+    XChangeProperty(disp, root, XA_CUT_BUFFER5,
+		    XA_STRING, 8, PropModeAppend, (unsigned char *)"", 0);
+    XChangeProperty(disp, root, XA_CUT_BUFFER6,
+		    XA_STRING, 8, PropModeAppend, (unsigned char *)"", 0);
+    XChangeProperty(disp, root, XA_CUT_BUFFER7,
+		    XA_STRING, 8, PropModeAppend, (unsigned char *)"", 0);
+    /*
+     * Rotate the cut buffers and add our text in CUT_BUFFER0.
+     */
+    XRotateBuffers(disp, 1);
+    XStoreBytes(disp, seldata, seldatalen);
 }
 
 void open_url(const char *url)
@@ -430,11 +602,32 @@ int main(int ac, char **av)
 	}
     }
 
-    /* open the X display */
+    /* open the X display and grab various bits and bobs */
     disp = XOpenDisplay(display);
     if (!disp)
 	error("unable to open display");
+    screen = DefaultScreen(disp);
+    root = RootWindow(disp, screen);
+    compound_text_atom = XInternAtom(disp, "COMPOUND_TEXT", False);
+    targets_atom = XInternAtom(disp, "TARGETS", False);
+    timestamp_atom = XInternAtom(disp, "TIMESTAMP", False);
+    atom_atom = XInternAtom(disp, "ATOM", False);
+    atom_pair_atom = XInternAtom(disp, "ATOM_PAIR", False);
+    multiple_atom = XInternAtom(disp, "MULTIPLE", False);
+    integer_atom = XInternAtom(disp, "INTEGER", False);
+    sel_property = XInternAtom(disp, "VT_SELECTION", False);
 
+    /* create a trivial window for selection ownership */
+    ourwin = XCreateSimpleWindow(disp, root, 0, 0, 10, 10,0,
+				 BlackPixel(disp, screen),
+				 WhitePixel(disp, screen));
+    {
+	XClassHint class_hints;
+	class_hints.res_name = class_hints.res_class = "ick-keys";
+	XSetClassHint (disp, ourwin, &class_hints);
+    }
+
+    /* figure out the sawfish socket name, for minimising/lowering windows */
     sawfish_socket = get_sawfish_socket(display);
 
     /* grab all the relevant hot keys */
@@ -445,7 +638,9 @@ int main(int ac, char **av)
 	while (hkhead) {
 	    struct hotkey_event *hk = hkhead;
 	    hkhead = hk->next;
+	    hktime = hk->time;
 	    run_hotkey(hk->id);
+	    hktime = CurrentTime;
 	    sfree(hk);
 	}
 	hktail = NULL;
