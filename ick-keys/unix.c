@@ -41,6 +41,50 @@ void error(char *fmt, ...)
     fprintf(stderr, "%s: %s\n", pname, errbuf);
 }
 
+struct hotkey {
+    int exists;
+    int keycode;
+    unsigned modifiers;
+} *hotkeys = NULL;
+int hotkeysize = 0;
+
+struct hotkey_event {
+    struct hotkey_event *next;
+    int id;
+} *hkhead = NULL, *hktail = NULL;
+
+#define XEV_HOTKEY 1
+
+int xeventloop(int retflags)
+{
+    XEvent ev;
+    int i;
+
+    while (1) {
+	if ((retflags & XEV_HOTKEY) && hkhead)
+	    return XEV_HOTKEY;
+	XNextEvent (disp, &ev);
+	switch (ev.type) {
+	  case KeyPress:
+	    for (i = 0; i < hotkeysize; i++)
+		if (hotkeys[i].exists &&
+		    ev.xkey.keycode == hotkeys[i].keycode &&
+		    (ev.xkey.state & ~Mod2Mask) == hotkeys[i].modifiers) {
+		    struct hotkey_event *hk = snew(struct hotkey_event);
+		    hk->id = i;
+		    hk->next = NULL;
+		    if (hktail)
+			hktail->next = hk;
+		    else
+			hkhead = hk;
+		    hktail = hk;
+		    break;
+		}
+	    break;
+	}
+    }
+}
+
 void platform_fatal_error(const char *s)
 {
     fprintf(stderr, "%s: %s\n", pname, s);
@@ -319,13 +363,6 @@ void debug_message(const char *msg)
     printf("ick-keys debug: %s\n", msg);
 }
 
-struct hotkey {
-    int exists;
-    int keycode;
-    unsigned modifiers;
-} *hotkeys = NULL;
-int hotkeysize = 0;
-
 void unregister_all_hotkeys(void)
 {
     int i;
@@ -404,21 +441,14 @@ int main(int ac, char **av)
     configure();
 
     while (1) {
-	XEvent ev;
-	int i;
-
-	XNextEvent (disp, &ev);
-	switch (ev.type) {
-	  case KeyPress:
-	    for (i = 0; i < hotkeysize; i++)
-		if (hotkeys[i].exists &&
-		    ev.xkey.keycode == hotkeys[i].keycode &&
-		    (ev.xkey.state & ~Mod2Mask) == hotkeys[i].modifiers) {
-		    run_hotkey(i);
-		    break;
-		}
-	    break;
+	xeventloop(XEV_HOTKEY);
+	while (hkhead) {
+	    struct hotkey_event *hk = hkhead;
+	    hkhead = hk->next;
+	    run_hotkey(hk->id);
+	    sfree(hk);
 	}
+	hktail = NULL;
     }
 
     XCloseDisplay (disp);
