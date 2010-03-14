@@ -5077,9 +5077,9 @@ elif len(args) == 1 and args[0][:5] == "-lily":
 
         sizes = 11, 13, 14, 16, 18, 20, 23, 26
         for size in sizes:
-            writesfd("gonville%d" % size, "Gonville %d" % size, "UnicodeBmp", 65537, outlines, lilyglyphlist)
+            writesfd("gonville-%d" % size, "Gonville %d" % size, "UnicodeBmp", 65537, outlines, lilyglyphlist)
             subnames = ["feta-alphabet%d" % size] + ["gonvillepart%d" % subid for subid in range(1,subids)]
-            writetables("gonville%d" % size, size, subids, subnames, outlines, lilyglyphlist)
+            writetables("gonville-%d" % size, size, subids, subnames, outlines, lilyglyphlist)
             writesfd("gonvillealpha%d" % size, subnames[0], "Custom", 256, outlines, subglyphlists[0])
         for subid in range(1,subids):
             writesfd("gonvillepart%d" % subid, "GonvillePart%d" % subid, "Custom", 256, outlines, subglyphlists[subid])
@@ -5092,15 +5092,15 @@ elif len(args) == 1 and args[0][:5] == "-lily":
 
         for size in sizes:
             system(("fontforge -lang=ff -c 'Open($1); CorrectDirection(); " + \
-            "LoadTableFromFile(\"LILC\", \"gonville%d.LILC\"); " + \
-            "LoadTableFromFile(\"LILF\", \"gonville%d.LILF\"); " + \
-            "LoadTableFromFile(\"LILY\", \"gonville%d.LILY\"); " + \
-            "Generate($2)' gonville%d.sfd lilyfonts/otf/gonville%d.otf") % ((size,)*5))
+            "LoadTableFromFile(\"LILC\", \"gonville-%d.LILC\"); " + \
+            "LoadTableFromFile(\"LILF\", \"gonville-%d.LILF\"); " + \
+            "LoadTableFromFile(\"LILY\", \"gonville-%d.LILY\"); " + \
+            "Generate($2)' gonville-%d.sfd lilyfonts/otf/gonville-%d.otf") % ((size,)*5))
             system(("fontforge -lang=ff -c 'Open($1); CorrectDirection(); " + \
-            "Generate($2)' gonville%d.sfd lilyfonts/svg/gonville%d.svg") % ((size,)*2))
+            "Generate($2)' gonville-%d.sfd lilyfonts/svg/gonville-%d.svg") % ((size,)*2))
             try:
-                os.symlink("gonville%d.otf" % size, "lilyfonts/otf/emmentaler-%d.otf" % size)
-                os.symlink("gonville%d.svg" % size, "lilyfonts/svg/emmentaler-%d.svg" % size)
+                os.symlink("gonville-%d.otf" % size, "lilyfonts/otf/emmentaler-%d.otf" % size)
+                os.symlink("gonville-%d.svg" % size, "lilyfonts/svg/emmentaler-%d.svg" % size)
             except OSError, e:
                 pass # probably already existed, which we don't mind
         for size in sizes:
@@ -5154,29 +5154,29 @@ elif len(args) == 1 and args[0][:5] == "-lily":
             bracelist[i] = bracelist[i] + (thissubid, thissubcode)
         subids = subid + 1
 
-        writesfd("gonvillebrace", "Gonville Brace", "UnicodeBmp", 65537, outlines, bracelist)
-        subnames = ["gonvillebracepart%d" % subid for subid in range(subids)]
-        writetables("gonvillebrace", 20, subids, subnames, outlines, bracelist, 1)
+        writesfd("gonville-brace", "Gonville Brace", "UnicodeBmp", 65537, outlines, bracelist)
+        subnames = ["gonville-bracepart%d" % subid for subid in range(subids)]
+        writetables("gonville-brace", 20, subids, subnames, outlines, bracelist, 1)
         for subid in range(subids):
-            writesfd("gonvillebracepart%d" % subid, "Gonville Brace %d" % subid, "Custom", 256, outlines, subbracelists[subid])
+            writesfd("gonville-bracepart%d" % subid, "Gonville Brace %d" % subid, "Custom", 256, outlines, subbracelists[subid])
 
         system(("fontforge -lang=ff -c 'Open($1); CorrectDirection(); " + \
-        "LoadTableFromFile(\"LILC\", \"gonvillebrace.LILC\"); " + \
-        "LoadTableFromFile(\"LILF\", \"gonvillebrace.LILF\"); " + \
-        "LoadTableFromFile(\"LILY\", \"gonvillebrace.LILY\"); " + \
-        "Generate($2)' gonvillebrace.sfd lilyfonts/otf/gonvillebrace.otf"))
+        "LoadTableFromFile(\"LILC\", \"gonville-brace.LILC\"); " + \
+        "LoadTableFromFile(\"LILF\", \"gonville-brace.LILF\"); " + \
+        "LoadTableFromFile(\"LILY\", \"gonville-brace.LILY\"); " + \
+        "Generate($2)' gonville-brace.sfd lilyfonts/otf/gonville-brace.otf"))
         system(("fontforge -lang=ff -c 'Open($1); CorrectDirection(); " + \
-        "Generate($2)' gonvillebrace.sfd lilyfonts/svg/gonvillebrace.svg"))
+        "Generate($2)' gonville-brace.sfd lilyfonts/svg/gonville-brace.svg"))
         try:
-            os.symlink("gonvillebrace.otf", "lilyfonts/otf/aybabtu.otf")
-            os.symlink("gonvillebrace.svg", "lilyfonts/svg/aybabtu.svg")
+            os.symlink("gonville-brace.otf", "lilyfonts/otf/aybabtu.otf")
+            os.symlink("gonville-brace.svg", "lilyfonts/svg/aybabtu.svg")
         except OSError, e:
             pass # probably already existed, which we don't mind
         for subid in range(subids):
             system(("fontforge -lang=ff -c 'Open($1); CorrectDirection(); " + \
-            "Generate($2)' gonvillebracepart%d.sfd lilyfonts/type1/gonvillebracepart%d.pfa") % ((subid,)*2))
+            "Generate($2)' gonville-bracepart%d.sfd lilyfonts/type1/gonville-bracepart%d.pfa") % ((subid,)*2))
             system(("fontforge -lang=ff -c 'Open($1); CorrectDirection(); " + \
-            "Generate($2)' gonvillebracepart%d.sfd lilyfonts/svg/gonvillebracepart%d.svg") % ((subid,)*2))
+            "Generate($2)' gonville-bracepart%d.sfd lilyfonts/svg/gonville-bracepart%d.svg") % ((subid,)*2))
 elif len(args) == 2 and args[0] == "-lilycheck":
     # Run over the list of glyph names in another font file and list
     # the ones not known to this file. Expects one additional
