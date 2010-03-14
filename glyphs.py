@@ -18,7 +18,7 @@ class GlyphContext:
 
         # Scale in units per inch. 1900 happens to be the scale at
         # which I drew most of these glyphs; unhelpfully, the real
-        # scale used by LIlypond (and Mus) is 3600.
+        # scale used by Lilypond (and Mus) is 3600.
         self.scale = 1900 # default unless otherwise specified
         # Location of the glyph's origin, in output coordinates
         # (i.e. the location in the glyph's own coordinates will be
@@ -746,10 +746,10 @@ def tmpfn():
     # Single tail for an up-pointing semiquaver.
     cont = GlyphContext()
     # Saved data from gui.py
-    c0 = CircleInvolute(cont, 535, 567, 0.996815, 0.0797452, 617, 591, 0.807551, 0.589798, mx=(1, 0, 0, 1.28866))
-    c1 = CircleInvolute(cont, 617, 591, 0.807551, 0.589798, 606, 756, -0.750912, 0.660402, mx=(1, 0, 0, 1.28866))
-    c2 = CircleInvolute(cont, 535, 465, 0.29547, 0.955352, 605, 555.016, 0.817132, 0.57645, mx=(1, 0, 0, 1.28866))
-    c3 = CircleInvolute(cont, 605, 555.016, 0.817132, 0.57645, 606, 756, -0.750912, 0.660402, mx=(1, 0, 0, 1.28866))
+    c0 = CircleInvolute(cont, 535, 567, 0.996815, 0.0797452, 607, 594, 0.732793, 0.680451)
+    c1 = CircleInvolute(cont, 607, 594, 0.732793, 0.680451, 617, 792, -0.661622, 0.749838)
+    c2 = CircleInvolute(cont, 535, 465, 0.233373, 0.972387, 611, 585, 0.729537, 0.683941)
+    c3 = CircleInvolute(cont, 611, 585, 0.729537, 0.683941, 617, 792, -0.661622, 0.749838)
     c4 = StraightLine(cont, 660, 783.16, 660, 496.816)
     c0.weld_to(1, c1, 0)
     c1.weld_to(1, c3, 1, 1)
@@ -780,10 +780,10 @@ def tmpfn():
     # Single tail for an up-pointing demisemiquaver.
     cont = GlyphContext()
     # Saved data from gui.py
-    c0 = CircleInvolute(cont, 535, 567, 0.975133, 0.221621, 604, 593, 0.861934, 0.50702, mx=(1, 0, 0, 1.10619))
-    c1 = CircleInvolute(cont, 604, 593, 0.861934, 0.50702, 606, 804, -0.698487, 0.715623, mx=(1, 0, 0, 1.10619))
-    c2 = CircleInvolute(cont, 535, 465, 0.256598, 0.966518, 605, 569.864, 0.772578, 0.634919, mx=(1, 0, 0, 1.10619))
-    c3 = CircleInvolute(cont, 605, 569.864, 0.772578, 0.634919, 606, 804, -0.698487, 0.715623, mx=(1, 0, 0, 1.10619))
+    c0 = CircleInvolute(cont, 535, 555, 0.986394, 0.164399, 592, 579, 0.83205, 0.5547)
+    c1 = CircleInvolute(cont, 592, 579, 0.83205, 0.5547, 621, 778, -0.664364, 0.747409)
+    c2 = CircleInvolute(cont, 535, 465, 0.26963, 0.962964, 607, 573, 0.686624, 0.727013)
+    c3 = CircleInvolute(cont, 607, 573, 0.686624, 0.727013, 621, 778, -0.664364, 0.747409)
     c4 = StraightLine(cont, 660, 835.64, 660, 502.064)
     c0.weld_to(1, c1, 0)
     c1.weld_to(1, c3, 1, 1)
@@ -814,10 +814,10 @@ def tmpfn():
     # Single tail for an up-pointing hemidemisemiquaver.
     cont = GlyphContext()
     # Saved data from gui.py
-    c0 = CircleInvolute(cont, 535, 567, 0.998969, 0.0454077, 597, 581, 0.902861, 0.429934, mx=(1, 0, 0, 1.16822))
-    c1 = CircleInvolute(cont, 597, 581, 0.902861, 0.429934, 606, 786, -0.717744, 0.696307, mx=(1, 0, 0, 1.16822))
-    c2 = CircleInvolute(cont, 535, 465, 0.269964, 0.96287, 605, 564.296, 0.789198, 0.614139, mx=(1, 0, 0, 1.16822))
-    c3 = CircleInvolute(cont, 605, 564.296, 0.789198, 0.614139, 606, 786, -0.717744, 0.696307, mx=(1, 0, 0, 1.16822))
+    c0 = CircleInvolute(cont, 536, 555, 0.894427, 0.447214, 621, 620, 0.635707, 0.77193)
+    c1 = CircleInvolute(cont, 621, 620, 0.635707, 0.77193, 626, 797, -0.668965, 0.743294)
+    c2 = CircleInvolute(cont, 535, 465, 0.113547, 0.993533, 596, 581, 0.747409, 0.664364)
+    c3 = CircleInvolute(cont, 596, 581, 0.747409, 0.664364, 626, 797, -0.668965, 0.743294)
     c4 = StraightLine(cont, 660, 815.96, 660, 500.096)
     c0.weld_to(1, c1, 0)
     c1.weld_to(1, c3, 1, 1)
@@ -848,10 +848,10 @@ def tmpfn():
     # Single tail for an up-pointing quasihemidemisemiquaver.
     cont = GlyphContext()
     # Saved data from gui.py
-    c0 = CircleInvolute(cont, 535, 567, 0.950193, 0.311663, 611, 606, 0.73369, 0.679484, mx=(1, 0, 0, 1.01626))
-    c1 = CircleInvolute(cont, 611, 606, 0.73369, 0.679484, 606, 834, -0.667606, 0.744514, mx=(1, 0, 0, 1.01626))
-    c2 = CircleInvolute(cont, 535, 465, 0.236956, 0.97152, 605, 579.144, 0.745312, 0.666716, mx=(1, 0, 0, 1.01626))
-    c3 = CircleInvolute(cont, 605, 579.144, 0.745312, 0.666716, 606, 834, -0.667606, 0.744514, mx=(1, 0, 0, 1.01626))
+    c0 = CircleInvolute(cont, 535, 555, 0.950193, 0.311663, 585, 579, 0.794358, 0.60745)
+    c1 = CircleInvolute(cont, 585, 579, 0.794358, 0.60745, 629, 791, -0.611448, 0.791285)
+    c2 = CircleInvolute(cont, 535, 465, 0.196116, 0.980581, 594, 568, 0.745241, 0.666795)
+    c3 = CircleInvolute(cont, 594, 568, 0.745241, 0.666795, 629, 791, -0.611448, 0.791285)
     c4 = StraightLine(cont, 660, 868.44, 660, 505.344)
     c0.weld_to(1, c1, 0)
     c1.weld_to(1, c3, 1, 1)
@@ -916,10 +916,10 @@ def tmpfn():
     # Single tail for a down-pointing semiquaver.
     cont = GlyphContext()
     # Saved data from gui.py
-    c0 = CircleInvolute(cont, 535, 363, 0.965616, 0.259973, 636, 359, 0.928477, -0.371391, mx=(1, 0, 0, 1.47059))
-    c1 = CircleInvolute(cont, 636, 359, 0.928477, -0.371391, 635, 210, -0.70805, -0.706162, mx=(1, 0, 0, 1.47059))
-    c2 = CircleInvolute(cont, 535, 465, 0.467531, -0.883977, 627, 386.12, 0.852227, -0.523173, mx=(1, 0, 0, 1.47059))
-    c3 = CircleInvolute(cont, 627, 386.12, 0.852227, -0.523173, 635, 210, -0.70805, -0.706162, mx=(1, 0, 0, 1.47059))
+    c0 = CircleInvolute(cont, 535, 378, 0.99083, -0.135113, 611, 356, 0.868243, -0.496139)
+    c1 = CircleInvolute(cont, 611, 356, 0.868243, -0.496139, 663, 195, -0.447214, -0.894427)
+    c2 = CircleInvolute(cont, 535, 465, 0.467531, -0.883977, 620, 363, 0.768221, -0.640184)
+    c3 = CircleInvolute(cont, 620, 363, 0.768221, -0.640184, 663, 195, -0.447214, -0.894427)
     c4 = StraightLine(cont, 680, 186.2, 680, 437.12)
     c0.weld_to(1, c1, 0)
     c1.weld_to(1, c3, 1, 1)
@@ -947,13 +947,13 @@ def tmpfn():
 tailsemidn = multidn(2, tmpfn())
 
 def tmpfn():
-    # Single tail for an up-pointing demisemiquaver.
+    # Single tail for a down-pointing demisemiquaver.
     cont = GlyphContext()
     # Saved data from gui.py
-    c0 = CircleInvolute(cont, 535, 363, 0.967617, 0.252422, 609, 368, 0.972973, -0.230919, mx=(1, 0, 0, 1.40449))
-    c1 = CircleInvolute(cont, 609, 368, 0.972973, -0.230919, 635, 198, -0.691633, -0.722249, mx=(1, 0, 0, 1.40449))
-    c2 = CircleInvolute(cont, 535, 465, 0.450869, -0.89259, 627, 382.408, 0.841209, -0.54071, mx=(1, 0, 0, 1.40449))
-    c3 = CircleInvolute(cont, 627, 382.408, 0.841209, -0.54071, 635, 198, -0.691633, -0.722249, mx=(1, 0, 0, 1.40449))
+    c0 = CircleInvolute(cont, 535, 392, 0.939793, -0.341743, 607, 363, 0.903738, -0.428086)
+    c1 = CircleInvolute(cont, 607, 363, 0.903738, -0.428086, 653, 202, -0.691633, -0.722249)
+    c2 = CircleInvolute(cont, 535, 465, 0.450869, -0.89259, 620, 366, 0.841209, -0.54071)
+    c3 = CircleInvolute(cont, 620, 366, 0.841209, -0.54071, 653, 202, -0.691633, -0.722249)
     c4 = StraightLine(cont, 680, 173.08, 680, 435.808)
     c0.weld_to(1, c1, 0)
     c1.weld_to(1, c3, 1, 1)
@@ -984,10 +984,10 @@ def tmpfn():
     # Single tail for a down-pointing hemidemisemiquaver.
     cont = GlyphContext()
     # Saved data from gui.py
-    c0 = CircleInvolute(cont, 535, 363, 0.909065, 0.416655, 631, 373, 0.96, -0.28, mx=(1, 0, 0, 1.76056))
-    c1 = CircleInvolute(cont, 631, 373, 0.96, -0.28, 635, 252, -0.768322, -0.640063, mx=(1, 0, 0, 1.76056))
-    c2 = CircleInvolute(cont, 535, 465, 0.534962, -0.844876, 627, 399.112, 0.889833, -0.456287, mx=(1, 0, 0, 1.76056))
-    c3 = CircleInvolute(cont, 627, 399.112, 0.889833, -0.456287, 635, 252, -0.768322, -0.640063, mx=(1, 0, 0, 1.76056))
+    c0 = CircleInvolute(cont, 534, 383, 0.99763, -0.0688021, 600, 370, 0.96, -0.28)
+    c1 = CircleInvolute(cont, 600, 370, 0.96, -0.28, 643, 228, -0.658505, -0.752577)
+    c2 = CircleInvolute(cont, 535, 465, 0.338719, -0.940888, 632, 361, 0.825307, -0.564684)
+    c3 = CircleInvolute(cont, 632, 361, 0.825307, -0.564684, 643, 228, -0.658505, -0.752577)
     c4 = StraightLine(cont, 680, 232.12, 680, 441.712)
     c0.weld_to(1, c1, 0)
     c1.weld_to(1, c3, 1, 1)
@@ -1018,10 +1018,10 @@ def tmpfn():
     # Single tail for a down-pointing quasihemidemisemiquaver.
     cont = GlyphContext()
     # Saved data from gui.py
-    c0 = CircleInvolute(cont, 535, 363, 0.970143, 0.242536, 644, 364, 0.910366, -0.413803, mx=(1, 0, 0, 1.66667))
-    c1 = CircleInvolute(cont, 644, 364, 0.910366, -0.413803, 635, 240, -0.750714, -0.660628, mx=(1, 0, 0, 1.66667))
-    c2 = CircleInvolute(cont, 535, 465, 0.514127, -0.857714, 627, 395.4, 0.879292, -0.476283, mx=(1, 0, 0, 1.66667))
-    c3 = CircleInvolute(cont, 627, 395.4, 0.879292, -0.476283, 635, 240, -0.750714, -0.660628, mx=(1, 0, 0, 1.66667))
+    c0 = CircleInvolute(cont, 535, 382, 0.982006, -0.188847, 612, 352, 0.885832, -0.464007)
+    c1 = CircleInvolute(cont, 612, 352, 0.885832, -0.464007, 653, 202, -0.750714, -0.660628)
+    c2 = CircleInvolute(cont, 535, 465, 0.338719, -0.940888, 633, 348, 0.768221, -0.640184)
+    c3 = CircleInvolute(cont, 633, 348, 0.768221, -0.640184, 653, 202, -0.750714, -0.660628)
     c4 = StraightLine(cont, 680, 219, 680, 440.4)
     c0.weld_to(1, c1, 0)
     c1.weld_to(1, c3, 1, 1)
