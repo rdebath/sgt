@@ -755,10 +755,10 @@ def tmpfn():
     # Single tail for an up-pointing semiquaver.
     cont = GlyphContext()
     # Saved data from gui.py
-    c0 = CircleInvolute(cont, 535, 556, 1, 0, 608, 574, 0.825307, 0.564684)
-    c1 = CircleInvolute(cont, 608, 574, 0.825307, 0.564684, 617, 761, -0.661622, 0.749838)
-    c2 = CircleInvolute(cont, 535, 465, 0.371391, 0.928477, 626, 579, 0.732793, 0.680451)
-    c3 = CircleInvolute(cont, 626, 579, 0.732793, 0.680451, 617, 761, -0.661622, 0.749838)
+    c0 = CircleInvolute(cont, 535, 556, 1, 0, 602, 571, 0.825307, 0.564684)
+    c1 = CircleInvolute(cont, 602, 571, 0.825307, 0.564684, 617, 779, -0.661622, 0.749838)
+    c2 = CircleInvolute(cont, 535, 465, 0.371391, 0.928477, 613, 566, 0.732793, 0.680451)
+    c3 = CircleInvolute(cont, 613, 566, 0.732793, 0.680451, 617, 779, -0.661622, 0.749838)
     c4 = StraightLine(cont, 660, 783.16, 660, 496.816)
     c0.weld_to(1, c1, 0)
     c1.weld_to(1, c3, 1, 1)
@@ -766,7 +766,7 @@ def tmpfn():
     # End saved data
 
     # Make sure the tail length matches what it should be.
-    assert round(c1.compute_y(1) - (840 + 36*1 - quavertaildispup*1)) == 0
+    assert round(c1.compute_y(1) - (840 + 54 - quavertaildispup*1)) == 0
 
     c4.nib = 0 # guide line to get the width the same across all versions
 
@@ -792,10 +792,10 @@ def tmpfn():
     # Single tail for an up-pointing demisemiquaver.
     cont = GlyphContext()
     # Saved data from gui.py
-    c0 = CircleInvolute(cont, 535, 555, 0.996815, 0.0797452, 587, 569, 0.865426, 0.501036)
-    c1 = CircleInvolute(cont, 587, 569, 0.865426, 0.501036, 621, 814, -0.536875, 0.843662)
-    c2 = CircleInvolute(cont, 535, 465, 0.26963, 0.962964, 603, 558, 0.7282, 0.685365)
-    c3 = CircleInvolute(cont, 603, 558, 0.7282, 0.685365, 621, 814, -0.536875, 0.843662)
+    c0 = CircleInvolute(cont, 535, 555, 0.998868, -0.0475651, 586, 561, 0.913812, 0.406138)
+    c1 = CircleInvolute(cont, 586, 561, 0.913812, 0.406138, 621, 800, -0.536875, 0.843662)
+    c2 = CircleInvolute(cont, 535, 465, 0.416655, 0.909065, 608, 555, 0.734803, 0.67828)
+    c3 = CircleInvolute(cont, 608, 555, 0.734803, 0.67828, 621, 800, -0.536875, 0.843662)
     c4 = StraightLine(cont, 660, 835.64, 660, 502.064)
     c0.weld_to(1, c1, 0)
     c1.weld_to(1, c3, 1, 1)
@@ -803,7 +803,7 @@ def tmpfn():
     # End saved data
 
     # Make sure the tail length matches what it should be.
-    assert round(c1.compute_y(1) - (840 + 36*2 - quavertaildispup*2 + 132)) == 0
+    assert round(c1.compute_y(1) - (840 + 58 - quavertaildispup*2 + 132)) == 0
 
     c4.nib = 0 # guide line to get the width the same across all versions
 
@@ -829,10 +829,10 @@ def tmpfn():
     # Single tail for an up-pointing hemidemisemiquaver.
     cont = GlyphContext()
     # Saved data from gui.py
-    c0 = CircleInvolute(cont, 535, 555, 0.967617, -0.252422, 592, 569, 0.724999, 0.688749)
-    c1 = CircleInvolute(cont, 592, 569, 0.724999, 0.688749, 626, 801, -0.668965, 0.743294)
-    c2 = CircleInvolute(cont, 535, 465, 0.28, 0.96, 575, 532, 0.7282, 0.685365)
-    c3 = CircleInvolute(cont, 575, 532, 0.7282, 0.685365, 626, 801, -0.668965, 0.743294)
+    c0 = CircleInvolute(cont, 535, 555, 0.853282, -0.52145, 577, 552, 0.894427, 0.447214)
+    c1 = CircleInvolute(cont, 577, 552, 0.894427, 0.447214, 640, 753, -0.447214, 0.894427)
+    c2 = CircleInvolute(cont, 535, 465, 0.28, 0.96, 592, 545, 0.77193, 0.635707)
+    c3 = CircleInvolute(cont, 592, 545, 0.77193, 0.635707, 640, 753, -0.447214, 0.894427)
     c4 = StraightLine(cont, 660, 815.96, 660, 500.096)
     c0.weld_to(1, c1, 0)
     c1.weld_to(1, c3, 1, 1)
@@ -840,7 +840,7 @@ def tmpfn():
     # End saved data
 
     # Make sure the tail length matches what it should be.
-    assert round(c1.compute_y(1) - (840 + 36*3 - quavertaildispup*3 + 132*1.5)) == 0
+    assert round(c1.compute_y(1) - (840 + 60 - quavertaildispup*3 + 132*1.5)) == 0
 
     c4.nib = 0 # guide line to get the width the same across all versions
 
@@ -866,10 +866,10 @@ def tmpfn():
     # Single tail for an up-pointing quasihemidemisemiquaver.
     cont = GlyphContext()
     # Saved data from gui.py
-    c0 = CircleInvolute(cont, 535, 546, 0.996546, 0.0830455, 604, 585, 0.525696, 0.850672)
-    c1 = CircleInvolute(cont, 604, 585, 0.525696, 0.850672, 629, 854, -0.611448, 0.791285)
-    c2 = CircleInvolute(cont, 535, 465, 0.371391, 0.928477, 580, 538, 0.6, 0.8)
-    c3 = CircleInvolute(cont, 580, 538, 0.6, 0.8, 629, 854, -0.611448, 0.791285)
+    c0 = CircleInvolute(cont, 535, 546, 0.996546, 0.0830455, 607, 575, 0.707107, 0.707107)
+    c1 = CircleInvolute(cont, 607, 575, 0.707107, 0.707107, 629, 772, -0.611448, 0.791285)
+    c2 = CircleInvolute(cont, 535, 465, 0.371391, 0.928477, 595, 544, 0.707107, 0.707107)
+    c3 = CircleInvolute(cont, 595, 544, 0.707107, 0.707107, 629, 772, -0.611448, 0.791285)
     c4 = StraightLine(cont, 660, 868.44, 660, 505.344)
     c0.weld_to(1, c1, 0)
     c1.weld_to(1, c3, 1, 1)
@@ -877,7 +877,7 @@ def tmpfn():
     # End saved data
 
     # Make sure the tail length matches what it should be.
-    assert round(c1.compute_y(1) - (840 + 36*4 - quavertaildispup*4 + 132*2.5)) == 0
+    assert round(c1.compute_y(1) - (840 + 62 - quavertaildispup*4 + 132*2.5)) == 0
 
     c4.nib = 0 # guide line to get the width the same across all versions
 
