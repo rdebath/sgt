@@ -659,15 +659,24 @@ clefTABsmall = tmpfn()
 # ----------------------------------------------------------------------
 # Quaver tails.
 
-quavertaildisp = 120 # vertical space between multiple tails
+# Vertical space between multiple tails, which after some
+# experimentation I decided should be different between the up- and
+# down-pointing stems.
+#
+# For down stems (so that the tails have to fit under the note
+# head), it's about 80% of the spacing between adjacent stave lines
+# (which is, in this coordinate system, 250 * 1900/3600 = 132 minus
+# 1/18. For up stems, it's a bit more than that: closer to 87%.
+quavertaildispdn = 105
+quavertaildispup = 115
 
 def clipup(tail):
     # Clipped version of an up-quaver-tail designed to fit above
     # another identical tail and stop where it crosses the latter.
     cont = GlyphContext()
     clip = clippath([tail.c0, tail.c1, (900,1900), (900,100), (100,100), (100,1900)])
-    cont.extra = "gsave 0 %g translate newpath" % quavertaildisp, clip, \
-    "clip 0 -%g translate" % quavertaildisp, tail, "grestore"
+    cont.extra = "gsave 0 %g translate newpath" % quavertaildispup, clip, \
+    "clip 0 -%g translate" % quavertaildispup, tail, "grestore"
     cont.ox = tail.ox
     cont.oy = tail.oy
     return cont
@@ -677,8 +686,8 @@ def clipdn(tail):
     # another identical tail and stop where it crosses the latter.
     cont = GlyphContext()
     clip = clippath([tail.c0, tail.c1, (900,100), (900,1900), (100,1900), (100,900)])
-    cont.extra = "gsave 0 -%g translate newpath" % quavertaildisp, clip, \
-    "clip 0 %g translate" % quavertaildisp, tail, "grestore"
+    cont.extra = "gsave 0 -%g translate newpath" % quavertaildispdn, clip, \
+    "clip 0 %g translate" % quavertaildispdn, tail, "grestore"
     cont.ox = tailquaverdn.ox
     cont.oy = tailquaverdn.oy
     return cont
@@ -690,22 +699,22 @@ def multiup(n, tail):
     # To make room for the five-tailed quasihemidemisemiquaver, we
     # translate downwards a bit. 95 (== 5*19) in glyph coordinates
     # equals 128 (== 5*36) in output coordinates.
-    cont.extra = ("0 95 translate", tail,) + ("0 -%g translate" % quavertaildisp, short) * (n-1)
+    cont.extra = ("0 95 translate", tail,) + ("0 -%g translate" % quavertaildispup, short) * (n-1)
     cont.ox = tail.ox
-    cont.oy = tail.oy - quavertaildisp*(n-1) + 95
+    cont.oy = tail.oy - quavertaildispup*(n-1) + 95
     cont.origin = tail.origin
-    cont.origin = (cont.origin[0], cont.origin[1] + quavertaildisp*(n-1)*3600./cont.scale + 180)
+    cont.origin = (cont.origin[0], cont.origin[1] + quavertaildispup*(n-1)*3600./cont.scale + 180)
     return cont
 
 def multidn(n, tail):
     # Down-pointing multitail.
     short = clipdn(tail)
     cont = GlyphContext()
-    cont.extra = (tail,) + ("0 %g translate" % quavertaildisp, short) * (n-1)
+    cont.extra = (tail,) + ("0 %g translate" % quavertaildispdn, short) * (n-1)
     cont.ox = tail.ox
-    cont.oy = tail.oy + quavertaildisp*(n-1)
+    cont.oy = tail.oy + quavertaildispdn*(n-1)
     cont.origin = tail.origin
-    cont.origin = (cont.origin[0], cont.origin[1] - quavertaildisp*(n-1)*3600./cont.scale)
+    cont.origin = (cont.origin[0], cont.origin[1] - quavertaildispdn*(n-1)*3600./cont.scale)
     return cont
 
 def tmpfn():
@@ -746,15 +755,18 @@ def tmpfn():
     # Single tail for an up-pointing semiquaver.
     cont = GlyphContext()
     # Saved data from gui.py
-    c0 = CircleInvolute(cont, 535, 567, 0.996815, 0.0797452, 607, 594, 0.732793, 0.680451)
-    c1 = CircleInvolute(cont, 607, 594, 0.732793, 0.680451, 617, 792, -0.661622, 0.749838)
-    c2 = CircleInvolute(cont, 535, 465, 0.233373, 0.972387, 611, 585, 0.729537, 0.683941)
-    c3 = CircleInvolute(cont, 611, 585, 0.729537, 0.683941, 617, 792, -0.661622, 0.749838)
+    c0 = CircleInvolute(cont, 535, 556, 1, 0, 608, 574, 0.825307, 0.564684)
+    c1 = CircleInvolute(cont, 608, 574, 0.825307, 0.564684, 617, 761, -0.661622, 0.749838)
+    c2 = CircleInvolute(cont, 535, 465, 0.371391, 0.928477, 626, 579, 0.732793, 0.680451)
+    c3 = CircleInvolute(cont, 626, 579, 0.732793, 0.680451, 617, 761, -0.661622, 0.749838)
     c4 = StraightLine(cont, 660, 783.16, 660, 496.816)
     c0.weld_to(1, c1, 0)
     c1.weld_to(1, c3, 1, 1)
     c2.weld_to(1, c3, 0)
     # End saved data
+
+    # Make sure the tail length matches what it should be.
+    assert round(c1.compute_y(1) - (840 + 36*1 - quavertaildispup*1)) == 0
 
     c4.nib = 0 # guide line to get the width the same across all versions
 
@@ -780,15 +792,18 @@ def tmpfn():
     # Single tail for an up-pointing demisemiquaver.
     cont = GlyphContext()
     # Saved data from gui.py
-    c0 = CircleInvolute(cont, 535, 555, 0.986394, 0.164399, 592, 579, 0.83205, 0.5547)
-    c1 = CircleInvolute(cont, 592, 579, 0.83205, 0.5547, 621, 778, -0.664364, 0.747409)
-    c2 = CircleInvolute(cont, 535, 465, 0.26963, 0.962964, 607, 573, 0.686624, 0.727013)
-    c3 = CircleInvolute(cont, 607, 573, 0.686624, 0.727013, 621, 778, -0.664364, 0.747409)
+    c0 = CircleInvolute(cont, 535, 555, 0.996815, 0.0797452, 587, 569, 0.865426, 0.501036)
+    c1 = CircleInvolute(cont, 587, 569, 0.865426, 0.501036, 621, 814, -0.536875, 0.843662)
+    c2 = CircleInvolute(cont, 535, 465, 0.26963, 0.962964, 603, 558, 0.7282, 0.685365)
+    c3 = CircleInvolute(cont, 603, 558, 0.7282, 0.685365, 621, 814, -0.536875, 0.843662)
     c4 = StraightLine(cont, 660, 835.64, 660, 502.064)
     c0.weld_to(1, c1, 0)
     c1.weld_to(1, c3, 1, 1)
     c2.weld_to(1, c3, 0)
     # End saved data
+
+    # Make sure the tail length matches what it should be.
+    assert round(c1.compute_y(1) - (840 + 36*2 - quavertaildispup*2 + 132)) == 0
 
     c4.nib = 0 # guide line to get the width the same across all versions
 
@@ -814,15 +829,18 @@ def tmpfn():
     # Single tail for an up-pointing hemidemisemiquaver.
     cont = GlyphContext()
     # Saved data from gui.py
-    c0 = CircleInvolute(cont, 536, 555, 0.894427, 0.447214, 621, 620, 0.635707, 0.77193)
-    c1 = CircleInvolute(cont, 621, 620, 0.635707, 0.77193, 626, 797, -0.668965, 0.743294)
-    c2 = CircleInvolute(cont, 535, 465, 0.113547, 0.993533, 596, 581, 0.747409, 0.664364)
-    c3 = CircleInvolute(cont, 596, 581, 0.747409, 0.664364, 626, 797, -0.668965, 0.743294)
+    c0 = CircleInvolute(cont, 535, 555, 0.967617, -0.252422, 592, 569, 0.724999, 0.688749)
+    c1 = CircleInvolute(cont, 592, 569, 0.724999, 0.688749, 626, 801, -0.668965, 0.743294)
+    c2 = CircleInvolute(cont, 535, 465, 0.28, 0.96, 575, 532, 0.7282, 0.685365)
+    c3 = CircleInvolute(cont, 575, 532, 0.7282, 0.685365, 626, 801, -0.668965, 0.743294)
     c4 = StraightLine(cont, 660, 815.96, 660, 500.096)
     c0.weld_to(1, c1, 0)
     c1.weld_to(1, c3, 1, 1)
     c2.weld_to(1, c3, 0)
     # End saved data
+
+    # Make sure the tail length matches what it should be.
+    assert round(c1.compute_y(1) - (840 + 36*3 - quavertaildispup*3 + 132*1.5)) == 0
 
     c4.nib = 0 # guide line to get the width the same across all versions
 
@@ -848,15 +866,18 @@ def tmpfn():
     # Single tail for an up-pointing quasihemidemisemiquaver.
     cont = GlyphContext()
     # Saved data from gui.py
-    c0 = CircleInvolute(cont, 535, 555, 0.950193, 0.311663, 585, 579, 0.794358, 0.60745)
-    c1 = CircleInvolute(cont, 585, 579, 0.794358, 0.60745, 629, 791, -0.611448, 0.791285)
-    c2 = CircleInvolute(cont, 535, 465, 0.196116, 0.980581, 594, 568, 0.745241, 0.666795)
-    c3 = CircleInvolute(cont, 594, 568, 0.745241, 0.666795, 629, 791, -0.611448, 0.791285)
+    c0 = CircleInvolute(cont, 535, 546, 0.996546, 0.0830455, 604, 585, 0.525696, 0.850672)
+    c1 = CircleInvolute(cont, 604, 585, 0.525696, 0.850672, 629, 854, -0.611448, 0.791285)
+    c2 = CircleInvolute(cont, 535, 465, 0.371391, 0.928477, 580, 538, 0.6, 0.8)
+    c3 = CircleInvolute(cont, 580, 538, 0.6, 0.8, 629, 854, -0.611448, 0.791285)
     c4 = StraightLine(cont, 660, 868.44, 660, 505.344)
     c0.weld_to(1, c1, 0)
     c1.weld_to(1, c3, 1, 1)
     c2.weld_to(1, c3, 0)
     # End saved data
+
+    # Make sure the tail length matches what it should be.
+    assert round(c1.compute_y(1) - (840 + 36*4 - quavertaildispup*4 + 132*2.5)) == 0
 
     c4.nib = 0 # guide line to get the width the same across all versions
 
@@ -926,6 +947,9 @@ def tmpfn():
     c2.weld_to(1, c3, 0)
     # End saved data
 
+    # Make sure the tail length matches what it should be.
+    assert round(c1.compute_y(1) - (90 + quavertaildispdn*1)) == 0
+
     c4.nib = 0 # guide line to get the width the same across all versions
 
     c0.nib = c1.nib = 0
@@ -950,15 +974,18 @@ def tmpfn():
     # Single tail for a down-pointing demisemiquaver.
     cont = GlyphContext()
     # Saved data from gui.py
-    c0 = CircleInvolute(cont, 535, 392, 0.939793, -0.341743, 607, 363, 0.903738, -0.428086)
-    c1 = CircleInvolute(cont, 607, 363, 0.903738, -0.428086, 653, 202, -0.691633, -0.722249)
-    c2 = CircleInvolute(cont, 535, 465, 0.450869, -0.89259, 620, 366, 0.841209, -0.54071)
-    c3 = CircleInvolute(cont, 620, 366, 0.841209, -0.54071, 653, 202, -0.691633, -0.722249)
+    c0 = CircleInvolute(cont, 535, 380, 0.9916, -0.129339, 615, 354, 0.861934, -0.50702)
+    c1 = CircleInvolute(cont, 615, 354, 0.861934, -0.50702, 653, 168, -0.536875, -0.843662)
+    c2 = CircleInvolute(cont, 535, 465, 0.450869, -0.89259, 616, 376, 0.789352, -0.613941)
+    c3 = CircleInvolute(cont, 616, 376, 0.789352, -0.613941, 653, 168, -0.536875, -0.843662)
     c4 = StraightLine(cont, 680, 173.08, 680, 435.808)
     c0.weld_to(1, c1, 0)
     c1.weld_to(1, c3, 1, 1)
     c2.weld_to(1, c3, 0)
     # End saved data
+
+    # Make sure the tail length matches what it should be.
+    assert round(c1.compute_y(1) - (90 + quavertaildispdn*2 - 132)) == 0
 
     c4.nib = 0 # guide line to get the width the same across all versions
 
@@ -984,15 +1011,18 @@ def tmpfn():
     # Single tail for a down-pointing hemidemisemiquaver.
     cont = GlyphContext()
     # Saved data from gui.py
-    c0 = CircleInvolute(cont, 534, 383, 0.99763, -0.0688021, 600, 370, 0.96, -0.28)
-    c1 = CircleInvolute(cont, 600, 370, 0.96, -0.28, 643, 228, -0.658505, -0.752577)
-    c2 = CircleInvolute(cont, 535, 465, 0.338719, -0.940888, 632, 361, 0.825307, -0.564684)
-    c3 = CircleInvolute(cont, 632, 361, 0.825307, -0.564684, 643, 228, -0.658505, -0.752577)
+    c0 = CircleInvolute(cont, 534, 382, 0.999133, -0.0416305, 605, 369, 0.921635, -0.388057)
+    c1 = CircleInvolute(cont, 605, 369, 0.921635, -0.388057, 646, 207, -0.784883, -0.619644)
+    c2 = CircleInvolute(cont, 535, 465, 0.338719, -0.940888, 630, 363, 0.825307, -0.564684)
+    c3 = CircleInvolute(cont, 630, 363, 0.825307, -0.564684, 646, 207, -0.784883, -0.619644)
     c4 = StraightLine(cont, 680, 232.12, 680, 441.712)
     c0.weld_to(1, c1, 0)
     c1.weld_to(1, c3, 1, 1)
     c2.weld_to(1, c3, 0)
     # End saved data
+
+    # Make sure the tail length matches what it should be.
+    assert round(c1.compute_y(1) - (90 + quavertaildispdn*3 - 132*1.5)) == 0
 
     c4.nib = 0 # guide line to get the width the same across all versions
 
@@ -1018,15 +1048,18 @@ def tmpfn():
     # Single tail for a down-pointing quasihemidemisemiquaver.
     cont = GlyphContext()
     # Saved data from gui.py
-    c0 = CircleInvolute(cont, 535, 382, 0.982006, -0.188847, 612, 352, 0.885832, -0.464007)
-    c1 = CircleInvolute(cont, 612, 352, 0.885832, -0.464007, 653, 202, -0.750714, -0.660628)
+    c0 = CircleInvolute(cont, 535, 384, 0.982007, -0.188847, 608, 357, 0.885547, -0.464549)
+    c1 = CircleInvolute(cont, 608, 357, 0.885547, -0.464549, 653, 180, -0.606043, -0.795432)
     c2 = CircleInvolute(cont, 535, 465, 0.338719, -0.940888, 633, 348, 0.768221, -0.640184)
-    c3 = CircleInvolute(cont, 633, 348, 0.768221, -0.640184, 653, 202, -0.750714, -0.660628)
+    c3 = CircleInvolute(cont, 633, 348, 0.768221, -0.640184, 653, 180, -0.606043, -0.795432)
     c4 = StraightLine(cont, 680, 219, 680, 440.4)
     c0.weld_to(1, c1, 0)
     c1.weld_to(1, c3, 1, 1)
     c2.weld_to(1, c3, 0)
     # End saved data
+
+    # Make sure the tail length matches what it should be.
+    assert round(c1.compute_y(1) - (90 + quavertaildispdn*4 - 132*2.5)) == 0
 
     c4.nib = 0 # guide line to get the width the same across all versions
 
