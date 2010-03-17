@@ -4851,12 +4851,10 @@ elif len(args) == 1 and args[0][:5] == "-lily":
     def writesfd(filepfx, fontname, encodingname, encodingsize, outlines, glyphlist):
         fname = filepfx + ".sfd"
         f = open(fname, "w")
-        farray = string.split(fontname)
         f.write("SplineFontDB: 3.0\n")
-        f.write("FontName: %s\n" % "-".join(farray))
+        f.write("FontName: %s\n" % fontname)
         f.write("FullName: %s\n" % fontname)
-        f.write("FamilyName: %s\n" % farray[0])
-        f.write("Weight: Medium\n")
+        f.write("FamilyName: %s\n" % fontname)
         f.write("Copyright: No copyright is claimed on this font file.\n")
         f.write("Version: 0.1.%s\n" % verstring)
         f.write("ItalicAngle: 0\n")
@@ -5110,12 +5108,12 @@ elif len(args) == 1 and args[0][:5] == "-lily":
 
         sizes = 11, 13, 14, 16, 18, 20, 23, 26
         for size in sizes:
-            writesfd("gonville-%d" % size, "Gonville %d" % size, "UnicodeBmp", 65537, outlines, lilyglyphlist)
+            writesfd("gonville-%d" % size, "Gonville-%d" % size, "UnicodeBmp", 65537, outlines, lilyglyphlist)
             subnames = ["feta-alphabet%d" % size] + ["gonvillepart%d" % subid for subid in range(1,subids)]
             writetables("gonville-%d" % size, size, subids, subnames, outlines, lilyglyphlist)
             writesfd("gonvillealpha%d" % size, subnames[0], "Custom", 256, outlines, subglyphlists[0])
         for subid in range(1,subids):
-            writesfd("gonvillepart%d" % subid, "GonvillePart%d" % subid, "Custom", 256, outlines, subglyphlists[subid])
+            writesfd("gonvillepart%d" % subid, "Gonville-Part%d" % subid, "Custom", 256, outlines, subglyphlists[subid])
 
         for dir in "lilyfonts", "lilyfonts/type1", "lilyfonts/otf", "lilyfonts/svg":
             try:
@@ -5187,11 +5185,11 @@ elif len(args) == 1 and args[0][:5] == "-lily":
             bracelist[i] = bracelist[i] + (thissubid, thissubcode)
         subids = subid + 1
 
-        writesfd("gonville-brace", "Gonville Brace", "UnicodeBmp", 65537, outlines, bracelist)
+        writesfd("gonville-brace", "Gonville-Brace", "UnicodeBmp", 65537, outlines, bracelist)
         subnames = ["gonville-bracepart%d" % subid for subid in range(subids)]
         writetables("gonville-brace", 20, subids, subnames, outlines, bracelist, 1)
         for subid in range(subids):
-            writesfd("gonville-bracepart%d" % subid, "Gonville Brace %d" % subid, "Custom", 256, outlines, subbracelists[subid])
+            writesfd("gonville-bracepart%d" % subid, "Gonville-Brace-Part%d" % subid, "Custom", 256, outlines, subbracelists[subid])
 
         system(("fontforge -lang=ff -c 'Open($1); CorrectDirection(); " + \
         "LoadTableFromFile(\"LILC\", \"gonville-brace.LILC\"); " + \
