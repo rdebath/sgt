@@ -331,7 +331,13 @@ int init_X(void) {
     /* do selection fiddling */
     if (reading) {
         /*
-         * We are reading the selection, so we must FIXME.
+         * We are reading the selection. Call XConvertSelection to
+         * request transmission of the selection data in the
+         * appropriate format; the X event loop will then wait to
+         * receive the data from the selection owner.
+	 *
+	 * If there is no selection owner, look in the cut buffer
+	 * property on the root window.
          */
         if (XGetSelectionOwner(disp, sel_atom) == None) {
             /* No primary selection, so use the cut buffer. */
