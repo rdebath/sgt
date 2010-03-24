@@ -16,8 +16,7 @@
 # a 480 response from the news server; if your news server isn't paranoid
 # then the script will never need to look at NNTPAUTH.
 
-# Copyright 2000 Simon Tatham. All rights reserved.
-# FIXME: put in a licence notice.
+# Copyright 2000,2004 Simon Tatham. All rights reserved.
 
 require 5.002;
 use Socket;
