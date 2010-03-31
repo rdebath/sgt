@@ -66,7 +66,7 @@ int main(int argc, char **argv)
     enum { UNSPEC, READ, WRITE } mode = UNSPEC;
     int doing_opts = 1;
     char *lockfile = NULL;
-    char **command;
+    char **command = NULL;
 
     while (--argc > 0) {
 	char *p = *++argv;
@@ -109,8 +109,14 @@ int main(int argc, char **argv)
 	 * our command, write its exit code to the lock file, and
 	 * terminate.
 	 */
-	int status;
-	int lockfd = open(lockfile, O_WRONLY);
+	int status, lockfd;
+
+	if (!command) {
+	    fprintf(stderr, "buildrun: -w mode requires a command\n");
+	    return 1;
+	}
+
+	lockfd = open(lockfile, O_WRONLY);
 	if (!lockfd) {
 	    fprintf(stderr, "buildrun: %s: open: %s\n", lockfile,
 		    strerror(errno));
@@ -266,7 +272,16 @@ int main(int argc, char **argv)
 	}
     }
 
-    execvp(command[0], command);
-    fprintf(stderr, "buildrun: %s: exec: %s\n", command[0], strerror(errno));
-    return 127;
+    if (command) {
+	execvp(command[0], command);
+	fprintf(stderr, "buildrun: %s: exec: %s\n", command[0], strerror(errno));
+	return 127;
+    } else {
+	/*
+	 * In -r mode, exec-ing a command is optional; in the
+	 * absence of one, we simply return true, so the user can
+	 * invoke as 'buildrun -r file && complex shell command'.
+	 */
+	return 0;
+    }
 }
