@@ -1,0 +1,19 @@
+Summary: Support OpenSSH AES-encrypted keys in PuTTYgen
+Class: wish
+Priority: high
+Difficulty: fun
+Content-type: text/x-html-body
+
+<p>
+From the
+<a href="http://lists.mindrot.org/pipermail/openssh-unix-announce/2010-March/000098.html">OpenSSH 5.4 changelog</a>:
+
+<pre> * Passphrase-protected SSH protocol 2 private keys are now protected
+   with AES-128 instead of 3DES. This applied to newly-generated keys
+   as well as keys that are reencrypted (e.g. by changing their
+   passphrase).</pre>
+
+<p>
+PuTTYgen should certainly learn to import such keys. It should
+probably also have the option to export keys encrypted with either
+cipher.
