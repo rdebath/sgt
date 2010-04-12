@@ -2,6 +2,7 @@ Summary: Support OpenSSH AES-encrypted keys in PuTTYgen
 Class: wish
 Priority: high
 Difficulty: fun
+Fixed-in: r8917
 Content-type: text/x-html-body
 
 <p>
@@ -17,3 +18,6 @@ From the
 PuTTYgen should certainly learn to import such keys. It should
 probably also have the option to export keys encrypted with either
 cipher.
+
+<b>SGT, 2010-04-12</b>: r8917 can now import the new keys, but won't
+export them yet.
