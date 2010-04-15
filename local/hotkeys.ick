@@ -23,6 +23,13 @@ string clean_whitespace(string str)
     return str;
 }
 
+string remove_whitespace(string str)
+{
+    str = tr(" \n\t\r\v\f\240", "       ", str);
+    str = subst(" ", "", str);
+    return str;
+}
+
 string hex = "0123456789abcdef";
 string hexquote(string str, string ok)
 {
@@ -52,6 +59,15 @@ void cleanclip(void)
 
     str = read_clipboard();
     str = clean_whitespace(str);
+    write_clipboard(str);
+}
+
+void trimclip(void)
+{
+    string str;
+
+    str = read_clipboard();
+    str = remove_whitespace(str);
     write_clipboard(str);
 }
 
@@ -190,6 +206,8 @@ void main(int arg)
 	window_to_back();
     else if (keycheck(arg, "leftwindows c"))
 	cleanclip();
+    else if (keycheck(arg, "leftwindows ctrl c"))
+	trimclip();
     else if (keycheck(arg, "leftwindows w"))
 	launch_url();
     //else if (keycheck(arg, "leftwindows g"))
