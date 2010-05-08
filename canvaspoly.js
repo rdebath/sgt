@@ -16,7 +16,8 @@
  *    polyhedron starts moving again when we bring the mouse back
  *    on without the button pressed.
  *
- *  - implement spinning.
+ *  - have spinning polyhedra gradually slow down, so that timeouts
+ *    don't continue forever?
  */
 
 /* ----------------------------------------------------------------------
@@ -345,17 +346,19 @@ function setupPolyhedron(acanvas, apoly) {
 	var coords = canvascoords(state.canvas);
 	var mx = (event.pageX-state.canvas.offsetLeft-coords.ox)/coords.scale * -pdistance;
 	var my = (event.pageY-state.canvas.offsetTop-coords.oy)/coords.scale * -pdistance;
-	state.dragstart = vnorm({x:mx, y:my, z:1});
+	state.mousepos = {x:mx, y:my, z:1};
+	state.time = new Date().getTime();
 	state.mode = 1;
     }
 
     state.canvas.onmousemove = function(event) {
-	var coords = canvascoords(state.canvas);
-	var mx = (event.pageX-state.canvas.offsetLeft-coords.ox)/coords.scale * -pdistance;
-	var my = (event.pageY-state.canvas.offsetTop-coords.oy)/coords.scale * -pdistance;
 	if (state.mode == 1) {
-	    var dragstart = state.dragstart;
-	    var dragend = vnorm({x:mx, y:my, z:1});
+	    var coords = canvascoords(state.canvas);
+	    var mx = (event.pageX-state.canvas.offsetLeft-coords.ox)/coords.scale * -pdistance;
+	    var my = (event.pageY-state.canvas.offsetTop-coords.oy)/coords.scale * -pdistance;
+	    var newmousepos = {x:mx, y:my, z:1};
+	    var dragstart = vnorm(state.mousepos);
+	    var dragend = vnorm(newmousepos);
 	    var axis = vnorm(vcross(dragstart, dragend));
 	    var perpstart = vcross(dragstart, axis);
 	    var perpend = vcross(dragend, axis);
@@ -367,12 +370,65 @@ function setupPolyhedron(acanvas, apoly) {
 		              zx:perpstart.x, zy:perpstart.y, zz:perpstart.z});
 	    state.matrix = morthog(matmul(rot, state.matrix));
 	    draw(state);
-	    state.dragstart = dragend;
+	    state.oldpos = state.mousepos;
+	    state.oldtime = state.time;
+	    state.time = new Date().getTime();
+	    state.mousepos = newmousepos;
 	}
     }
 
     state.canvas.onmouseup = function(event) {
-	state.mode = 0;
+	var now = new Date().getTime();
+
+	/*
+	 * Decide whether we're going to start the polyhedron
+	 * spinning.
+	 */
+	if (now - state.oldtime > 50 ||
+	    (state.oldpos.x == state.mousepos.x &&
+	     state.oldpos.y == state.mousepos.y)) {
+	    state.mode = 0;
+	    return;
+	}
+
+	/*
+	 * Right. So we now have two different vectors and two
+	 * timestamps, which means we can calculate an axis and an
+	 * angular speed.
+	 */
+	var vbefore = vnorm(state.oldpos), vafter = vnorm(state.mousepos);
+	var interval = state.time - state.oldtime;
+	var axis = vnorm(vcross(vbefore, vafter));
+	var aspeed = Math.acos(vdot(vbefore, vafter)) / interval;
+
+	/*
+	 * Last check, just in case, that neither axis or angular
+	 * speed went to zero.
+	 */
+	if (aspeed == 0 || (axis.x == 0 && axis.y == 0 && axis.z == 0)) {
+	    state.mode = 0;
+	    return;
+	}
+
+	/*
+	 * Set us spinning.
+	 */
+	state.axis = axis;
+	state.aspeed = aspeed;
+	state.spinstarttime = state.time;
+	state.spinstartmatrix = state.matrix;
+	state.mode = 2;
+
+	state.timeout = function() {
+	    if (state.mode != 2)
+		return;
+	    var time = new Date().getTime() - state.spinstarttime;
+	    var rot = mrotate(state.axis, state.aspeed * time);
+	    state.matrix = morthog(matmul(rot, state.spinstartmatrix));
+	    draw(state);
+	    setTimeout(state.timeout, 20);
+	}
+	setTimeout(state.timeout, 20);
     }
 
     /*
