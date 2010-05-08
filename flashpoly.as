@@ -394,10 +394,18 @@ class Application {
 	   var newnorm = mattrans(currmatrix, poly.faces[i]);
 
 	   /*
-	    * And set up phase based on whether the z component of
-	    * that vector is positive or negative.
+	    * The face is facing the viewer iff a vector from the
+	    * camera point (the origin) to somewhere on the face has
+	    * negative dot product with that normal.
+	    *
+	    * Such vectors include, of course, the points'
+	    * positions.
 	    */
-	   poly.faces[i].phase = (newnorm.z > 0 ? 0 : 1);
+	   var facept = mattrans(currmatrix, poly.faces[i].points[0]);
+	   facept.z += pdistance;
+	   var dotprod = vdot(newnorm, facept);
+
+	   poly.faces[i].phase = (dotprod > 0 ? 0 : 1);
        }
 
        /*
