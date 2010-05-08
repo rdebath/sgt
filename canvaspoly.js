@@ -7,10 +7,6 @@
 /*
  * To do:
  *
- *  - set up a mechanism for getting the polyhedron description out
- *    of the HTML, to make it easy to put many of these canvases on
- *    the same page.
- *
  *  - work out how to handle drags off the edge of the canvas.
  *    Currently, if we drag off the edge and then let go, the
  *    polyhedron starts moving again when we bring the mouse back
@@ -437,27 +433,40 @@ function setupPolyhedron(acanvas, apoly) {
     draw(state);
 }
 
-var testpoly = {
-    points: [{ x:-1, y:0, z:0 },
-	     { x:0, y:-1, z:0 },
-	     { x:1, y:0, z:0 },
-	     { x:0, y:0, z:-1 },
-	     { x:0, y:1, z:0 },
-	     { x:0, y:0, z:1 }],
-    faces: [{ points: [5,4,0], x:-0.57735026918962573, y:0.57735026918962573, z:0.57735026918962573 },
-	    { points: [3,4,2], x:0.57735026918962573, y:0.57735026918962573, z:-0.57735026918962573 },
-	    { points: [2,4,5], x:0.57735026918962573, y:0.57735026918962573, z:0.57735026918962573 },
-	    { points: [0,1,5], x:-0.57735026918962573, y:-0.57735026918962573, z:0.57735026918962573 },
-	    { points: [3,1,0], x:-0.57735026918962573, y:-0.57735026918962573, z:-0.57735026918962573 },
-	    { points: [2,1,3], x:0.57735026918962573, y:-0.57735026918962573, z:-0.57735026918962573 },
-	    { points: [5,1,2], x:0.57735026918962573, y:-0.57735026918962573, z:0.57735026918962573 },
-	    { points: [0,4,3], x:-0.57735026918962573, y:0.57735026918962573, z:-0.57735026918962573 }]
-};
-
 function initCanvasPolyhedra() {
     var canvases = document.getElementsByTagName('canvas');
     for (var i = 0; i < canvases.length; i++) {
 	var canvas = canvases[i];
-	setupPolyhedron(canvas, testpoly);
+	var data = canvas.getAttribute("data");
+	var poly;
+	//if (data == null || data == undefined)
+	//    poly = testpoly;
+	//else
+	{
+	    poly = {points:[], faces:[]};
+	    var list = eval(data);
+	    var pos = 0;
+	    var npts = list[pos++];
+	    for (var j = 0; j < npts; j++) {
+		var x = list[pos++];
+		var y = list[pos++];
+		var z = list[pos++];
+		poly.points.push({x:x, y:y, z:z});
+	    }
+	    var nfaces = list[pos++];
+	    for (var j = 0; j < nfaces; j++) {
+		var npts = list[pos++];
+		var facepoints = [];
+		for (var k = 0; k < npts; k++) {
+		    var pt = list[pos++];
+		    facepoints.push(pt);
+		}
+		var x = list[pos++];
+		var y = list[pos++];
+		var z = list[pos++];
+		poly.faces.push({points:facepoints, x:x, y:y, z:z});
+	    }
+	}
+	setupPolyhedron(canvas, poly);
     }
 }
