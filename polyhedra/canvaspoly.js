@@ -7,10 +7,6 @@
 /*
  * To do:
  *
- *  - finalise the line weights and grey shades
- *     + in particular, try adding the white border used by
- * 	 drawpoly.py?
- *
  *  - rethink scaling to fit the image, again
  *     + the existing mechanism of fitting a sphere is basically OK,
  * 	 but instead of always assuming the _unit_ sphere we should
@@ -296,8 +292,9 @@ function pdraw(canvas, poly) {
      * Now we're ready to actually render the faces.
      */
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    var passes = [{linewid:1, colour:'#808080', faces:backfaces},
-		  {linewid:2, colour:'#000000', faces:frontfaces}];
+    var passes = [{linewid:1, colour:'#c0c0c0', faces:backfaces},
+		  {linewid:5, colour:'#ffffff', faces:frontfaces},
+		  {linewid:3, colour:'#000000', faces:frontfaces}];
     for (var i = 0; i < passes.length; i++) {
 	var pass = passes[i];
 	ctx.lineWidth = pass.linewid;
