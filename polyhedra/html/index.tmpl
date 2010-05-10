@@ -1,9 +1,10 @@
 <html>
 <head>
 <title>Constructing Polyhedra from Repelling Points on a Sphere</title>
+<script type="text/javascript" src="canvaspoly.js"></script>
 </head>
 <link rel="stylesheet" type="text/css" href="../sitestyle.css" name="Simon Tatham's Home Page Style">
-<body>
+<body onload="initCanvasPolyhedra();">
 <h1 align=center>Constructing Polyhedra from Repelling Points on a Sphere</h1>
 
 <p>
@@ -64,8 +65,7 @@ according to whether they were on the front or the back side. So for
 60 points, it would have looked something like this:
 
 <p align=center>
-<a href="points60.png"><img src="points60.png"
-alt="[307x308 greyscale PNG, 11KB]" width=307 height=308 border=0></a>
+<image name="points60">
 
 <p>
 From this diagram you can observe that the points are arranged in
@@ -77,8 +77,7 @@ represented by one of these diagrams; how about this one, with 13
 points?
 
 <p align=center>
-<a href="points13.png"><img src="points13.png"
-alt="[306x306 greyscale PNG, 7KB]" width=306 height=306 border=0></a>
+<image name="points13">
 
 <p>
 I know <em>I</em> couldn't stare at that set of points and work out
@@ -105,8 +104,7 @@ polygon in the middle of the mess. It typically looked something
 like this:
 
 <p align=center>
-<a href="facediagram.png"><img src="facediagram.png"
-alt="[400x400 greyscale PNG, 20KB]" width=400 height=400 border=0></a>
+<image name="facediagram">
 </li>
 
 <p>
@@ -136,8 +134,7 @@ order to put that face back in its proper place. Repeat for every
 point, and we have a model:
 
 <p align=center>
-<a href="faces13.png"><img src="faces13.png"
-alt="[271x277 greyscale PNG, 11KB]" width=271 height=277 border=0></a>
+<poly name="faces13">
 
 </li>
 <li>
@@ -179,8 +176,7 @@ again we have now generated a 3D polyhedron model, in precisely the
 same form as the last one:
 
 <p align=center>
-<a href="vertices13.png"><img src="vertices13.png"
-alt="[261x254 greyscale PNG, 13KB]" width=261 height=254 border=0></a>
+<poly name="vertices13">
 
 </ul>
 
@@ -197,12 +193,9 @@ applying the vertex construction to 4, 6 and 12 points does create a
 tetrahedron, an octahedron and an icosahedron:
 
 <p align=center>
-<a href="vertices4.png"><img src="vertices4.png"
-alt="[232x202 greyscale PNG, 5KB]" width=232 height=202 border=0></a>
-<a href="vertices6.png"><img src="vertices6.png"
-alt="[228x253 greyscale PNG, 8KB]" width=228 height=253 border=0></a>
-<a href="vertices12.png"><img src="vertices12.png"
-alt="[264x277 greyscale PNG, 13KB]" width=264 height=277 border=0></a>
+<poly name="vertices4">
+<poly name="vertices6">
+<poly name="vertices12">
 
 <p>
 And, of course, applying the face construction instead generates
@@ -210,12 +203,9 @@ their duals. The tetrahedron's dual is another tetrahedron (not very
 interesting), but the other two generate a cube and a dodecahedron:
 
 <p align=center>
-<a href="faces4.png"><img src="faces4.png"
-alt="[211x215 greyscale PNG, 5KB]" width=211 height=215 border=0></a>
-<a href="faces6.png"><img src="faces6.png"
-alt="[248x252 greyscale PNG, 7KB]" width=248 height=252 border=0></a>
-<a href="faces12.png"><img src="faces12.png"
-alt="[272x264 greyscale PNG, 10KB]" width=272 height=264 border=0></a>
+<poly name="faces4">
+<poly name="faces6">
+<poly name="faces12">
 
 <p>
 Where it gets interesting is that although doing the face
@@ -224,8 +214,7 @@ construction on eight <em>doesn't</em>. Instead we get a more
 interesting solid:
 
 <p align=center>
-<a href="vertices8.png"><img src="vertices8.png"
-alt="[245x236 greyscale PNG, 8KB]" width=245 height=236 border=0></a>
+<poly name="vertices8">
 
 <p>
 What's happened here is that instead of the points arranging
@@ -255,8 +244,7 @@ the dodecahedron not to work either. And, indeed, when we apply the
 vertex construction to 20 points, we get this:
 
 <p align=center>
-<a href="vertices20.png"><img src="vertices20.png"
-alt="[280x285 greyscale PNG, 17KB]" width=280 height=285 border=0></a>
+<poly name="vertices20">
 
 <p>
 Far from a nice clean dodecahedron with twelve large flat pentagonal
@@ -267,8 +255,7 @@ vertex construction to 60 points gives a solid which is nothing at
 all like the truncated icosahedron structure of buckminsterfullerene:
 
 <p align=center>
-<a href="vertices60.png"><img src="vertices60.png"
-alt="[281x282 greyscale PNG, 26KB]" width=281 height=282 border=0></a>
+<poly name="vertices60">
 
 <p>
 With its structure composed of rigid triangles, in fact, it seems to
@@ -289,8 +276,7 @@ was the work of a moment to construct a point set of size 7, apply
 the face construction, and produce ...
 
 <p align=center>
-<a href="faces7.png"><img src="faces7.png"
-alt="[260x276 greyscale PNG, 7KB]" width=260 height=276 border=0></a>
+<poly name="faces7">
 
 <p>
 ... a total disappointment! There are apparently no
@@ -302,12 +288,9 @@ Some slightly larger numbers give some more interesting results.
 Here are the solids with 9, 10 and 11 faces:
 
 <p align=center>
-<a href="faces9.png"><img src="faces9.png"
-alt="[269x259 greyscale PNG, 8KB]" width=269 height=259 border=0></a>
-<a href="faces10.png"><img src="faces10.png"
-alt="[264x281 greyscale PNG, 9KB]" width=264 height=281 border=0></a>
-<a href="faces11.png"><img src="faces11.png"
-alt="[228x246 greyscale PNG, 9KB]" width=228 height=246 border=0></a>
+<poly name="faces9">
+<poly name="faces10">
+<poly name="faces11">
 
 <p>
 The 9-face solid is quite pretty in particular, I think. It's most
@@ -323,8 +306,7 @@ buckminsterfullerene truncated icosahedron. However, if we apply the
 <em>face</em> construction to 32 points, we get this:
 
 <p align=center>
-<a href="faces32.png"><img src="faces32.png"
-alt="[284x285 greyscale PNG, 17KB]" width=284 height=285 border=0></a>
+<poly name="faces32">
 
 <p>
 This <em>is</em> the truncated icosahedron! Or something very close
