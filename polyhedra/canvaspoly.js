@@ -7,13 +7,21 @@
 /*
  * To do:
  *
- *  - work out how to handle drags off the edge of the canvas.
- *    Currently, if we drag off the edge and then let go, the
- *    polyhedron starts moving again when we bring the mouse back
- *    on without the button pressed.
- *
  *  - have spinning polyhedra gradually slow down, so that timeouts
  *    don't continue forever?
+ *
+ *  - finalise the line weights and grey shades
+ *     + in particular, try adding the white border used by
+ * 	 drawpoly.py?
+ *
+ *  - rethink scaling to fit the image, again
+ *     + the existing mechanism of fitting a sphere is basically OK,
+ * 	 but instead of always assuming the _unit_ sphere we should
+ * 	 work out the polyhedron's max radius at init time and use
+ * 	 that
+ *     + then, once we're confident that we really _do_ stay inside
+ * 	 the given sphere, we can scale right out to the image edges
+ * 	 instead of stopping at 0.9.
  */
 
 /* ----------------------------------------------------------------------
@@ -425,6 +433,17 @@ function setupPolyhedron(acanvas, apoly) {
 	    setTimeout(state.timeout, 20);
 	}
 	setTimeout(state.timeout, 20);
+    }
+
+    /*
+     * If the mouse pointer leaves the canvas, we won't be able to
+     * detect a subsequent mouse-up event. So we treat a mouse-out
+     * as a mouse-up (and, on general principles of caution, one
+     * which _never_ sets us spinning).
+     */
+    state.canvas.onmouseout = function(event) {
+	state.mode = 0;
+	return;
     }
 
     /*
