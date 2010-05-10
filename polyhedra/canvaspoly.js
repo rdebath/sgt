@@ -4,19 +4,6 @@
  * HTML 5 canvas.
  */
 
-/*
- * To do:
- *
- *  - rethink scaling to fit the image, again
- *     + the existing mechanism of fitting a sphere is basically OK,
- * 	 but instead of always assuming the _unit_ sphere we should
- * 	 work out the polyhedron's max radius at init time and use
- * 	 that
- *     + then, once we're confident that we really _do_ stay inside
- * 	 the given sphere, we can scale right out to the image edges
- * 	 instead of stopping at 0.9.
- */
-
 /* ----------------------------------------------------------------------
  * Basic functions for manipulating 3-d matrices and vectors.
  *
@@ -227,7 +214,7 @@ var pdistance = 50;
 function canvascoords(canvas)
 {
     var ox = canvas.width/2, oy = canvas.height/2, r = (ox < oy ? ox : oy);
-    var scale = r * 0.9 / Math.asin(1/pdistance);
+    var scale = (r-10) / Math.asin(1/pdistance);
     /*
      * We scale the polyhedron to fit the canvas follows: if our
      * entire polyhedron is contained within a unit sphere about the
@@ -352,6 +339,19 @@ function spindown(t) {
  * assigning mouse and timeout handlers.
  */
 function setupPolyhedron(acanvas, apoly) {
+    /*
+     * Scale the polyhedron to maximum radius 1.
+     */
+    var max = 0;
+    for (var i = 0; i < apoly.points.length; i++) {
+	var d2 = vdot(apoly.points[i], apoly.points[i]);
+	if (max < d2)
+	    max = d2;
+    }
+    max = Math.sqrt(1/max);
+    for (var i = 0; i < apoly.points.length; i++)
+	apoly.points[i] = vscale(apoly.points[i], max);
+
     /*
      * Set up persistent state for this canvas.
      */
