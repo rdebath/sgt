@@ -7,9 +7,6 @@
 /*
  * To do:
  *
- *  - have spinning polyhedra gradually slow down, so that timeouts
- *    don't continue forever?
- *
  *  - finalise the line weights and grey shades
  *     + in particular, try adding the white border used by
  * 	 drawpoly.py?
@@ -328,6 +325,30 @@ function draw(state) {
     pdraw(state.canvas, newpoly);
 }
 
+var spindowntime = 5*60*1000;
+var spindownstart = Math.pow(spindowntime, 1.5);
+var spindownscale = 1 / (1.5 * Math.sqrt(spindowntime));
+function spindown(t) {
+    /*
+     * Computes a function of t such that its velocity at time 0 is
+     * 1, and at time 'spindowntime' its velocity has dwindled to
+     * zero. This is used to gradually reduce the angular speed of a
+     * spinning polyhedron, so that its spin lasts for finite time
+     * and hence flicking one of these canvases and walking away
+     * doesn't consume CPU in the browser for ever.
+     *
+     * The function I use here is based on x^1.5, on the grounds
+     * that the derivative (velocity) is then proportional to x^0.5
+     * and hence the square of the derivative (squared velocity,
+     * proportional to energy) is linear. In other words, this
+     * bleeds kinetic energy out of the spinning polyhedron at a
+     * constant rate. (Constant for each spin, at least; if you spin
+     * it harder, energy will bleed out faster so that it becomes
+     * stationary in the same total time.)
+     */
+    return spindownscale * (spindownstart - Math.pow(spindowntime - t, 1.5));
+}
+
 /*
  * Call this once on a canvas to turn it into a
  * polyhedron-displaying applet. This function will take care of
@@ -427,10 +448,15 @@ function setupPolyhedron(acanvas, apoly) {
 	    if (state.mode != 2)
 		return;
 	    var time = new Date().getTime() - state.spinstarttime;
-	    var rot = mrotate(state.axis, state.aspeed * time);
+	    if (time >= spindowntime) {
+		time = spindowntime;
+		state.mode = 0;
+	    }
+	    var rot = mrotate(state.axis, state.aspeed * spindown(time));
 	    state.matrix = morthog(matmul(rot, state.spinstartmatrix));
 	    draw(state);
-	    setTimeout(state.timeout, 20);
+	    if (state.mode == 2)
+		setTimeout(state.timeout, 20);
 	}
 	setTimeout(state.timeout, 20);
     }
