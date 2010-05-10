@@ -465,7 +465,8 @@ function setupPolyhedron(acanvas, apoly) {
      * which _never_ sets us spinning).
      */
     state.canvas.onmouseout = function(event) {
-	state.mode = 0;
+	if (state.mode == 1)
+	    state.mode = 0;
 	return;
     }
 
