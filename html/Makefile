@@ -27,8 +27,8 @@ facediagram.png: ../examples/13.points ../nfaces.py
 	../nfaces.py -ps ../examples/13.points tmp.ps
 	gs -sDEVICE=bmpmono -sOutputFile=tmp%d.bmp -g3000x4200 -r360 \
 		-dBATCH -dNOPAUSE -q tmp.ps
-	convert -crop 2880x2880+0+260 -geometry 400x400 \
-		-antialias tmp2.bmp $@
+	convert -crop 2880x2880+0+660 -antialias tmp2.bmp tmp2a.bmp
+	convert -resize 400x400 tmp2a.bmp $@
 	rm -f tmp.ps tmp*.bmp
 
 points%.png: ../examples/%.points ../drawpoints.py
