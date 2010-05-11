@@ -477,10 +477,32 @@ function setupPolyhedron(acanvas, apoly) {
 }
 
 function initCanvasPolyhedra() {
-    var canvases = document.getElementsByTagName('canvas');
-    for (var i = 0; i < canvases.length; i++) {
-	var canvas = canvases[i];
-	var data = canvas.getAttribute("data");
+    var spans = document.getElementsByTagName('span');
+    /*
+     * The list returned from getElementsByTagName is dynamically
+     * updated when the document changes shape. So we can't just
+     * loop over 0 ... spans.length-1 and replace each span with a
+     * canvas, because every time we get rid of a span like that the
+     * rest of spans[] will move up and we'll end up missing every
+     * other one.
+     *
+     * So instead I loop over spans and copy all its (relevant)
+     * content into a nice static Javascript array which I
+     * understand. Then I loop over _that_ constructing canvases.
+     */
+    var spanlist = [];
+    for (var i = 0; i < spans.length; i++)
+	if (spans[i].className == "polyhedron")
+	    spanlist.push(spans[i]);
+    for (var i = 0; i < spanlist.length; i++) {
+	var span = spanlist[i];
+	var canvas = document.createElement("canvas");
+	if (canvas == null || canvas.getContext == null)
+	    continue;
+	canvas.setAttribute('width', span.getAttribute('width'));
+	canvas.setAttribute('height', span.getAttribute('height'));
+	var data = span.getAttribute("data");
+	span.parentNode.replaceChild(canvas, span);
 	var poly;
 	//if (data == null || data == undefined)
 	//    poly = testpoly;

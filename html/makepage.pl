@@ -16,10 +16,10 @@ sub dopoly($) {
     my $name = shift @_;
     chomp($desc = `cat ${name}.desc`);
     $img = &doimage($name); # HACK HACK HACK: sets globals $x and $y
-    return "<canvas class=\"polyhedron\" width=\"$x\" height=\"$y\" ".
+    return "<span class=\"polyhedron\" width=\"$x\" height=\"$y\" ".
       "data=\"$desc\">\n" .
       "$img\n" .
-      "</canvas>";
+      "</span>";
 }
 
 sub doimage($) {
