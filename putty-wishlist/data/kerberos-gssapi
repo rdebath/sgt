@@ -2,15 +2,14 @@ Summary: Support for GSSAPI (for Kerberos, GSI, etc)
 Class: wish
 Priority: low
 Difficulty: taxing
-Fixed-in: r8138 2008-08-10
+Fixed-in: r8952, 2010-05-20
 Content-type: text/x-html-body
 
 <p>
 We occasionally get requests for Kerberos and/or GSSAPI support.
 
 <p>
-This looks complicated and messy, and isn't that important to us,
-so we're rather unlikely to add it ourselves.
+This looks complicated and messy.
 
 <p>
 Any proposed solution should take into account our
@@ -30,7 +29,7 @@ on earlier versions of this specification, for instance the userauth
 method "gssapi".)
 
 <p>
-It appears that Globus <a href="http://www.globus.org/security/">
+It appears that Globus <a href="http://www.globus.org/security/overview.html">
 GSI</a> authentication also uses GSSAPI, though for some reason needs
 a different client implementation (and yet a third if you want to support
 both).
@@ -76,3 +75,24 @@ which uses the Windows SSPI for GSSAPI support. It includes features
 specific to their other products.
 
 </ul>
+
+<hr>
+
+<em>Update:</em> some forms of Kerberos support are now implemented:
+
+<ul>
+<li>As of 2008-08-10, r8138: support for Kerberos user authentication in
+  SSH-2 using a single library (SSPI in Windows, build-time choice on Unix);
+<li>As of 2010-05-20, r8952: support for multiple libraries with choice
+  at run time; Windows builds now support
+  <a href="http://web.mit.edu/Kerberos/">MIT Kerberos</a> in addition to SSPI.
+</ul>
+  
+Things not done:
+
+<ul>
+<li>GSSAPI key exchange;
+<li>Any authentication protocol other than Kerberos;
+<li>SSH-1 support (we are very unlikely to do anything about this; SSH-1
+is obsolete).
+<ul>
