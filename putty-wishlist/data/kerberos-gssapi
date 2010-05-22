@@ -2,7 +2,7 @@ Summary: Support for GSSAPI (for Kerberos, GSI, etc)
 Class: wish
 Priority: low
 Difficulty: taxing
-Fixed-in: r8952, 2010-05-20
+Fixed-in: r8952 2010-05-20
 Content-type: text/x-html-body
 
 <p>
@@ -95,4 +95,4 @@ Things not done:
 <li>Any authentication protocol other than Kerberos;
 <li>SSH-1 support (we are very unlikely to do anything about this; SSH-1
 is obsolete).
-<ul>
+</ul>
