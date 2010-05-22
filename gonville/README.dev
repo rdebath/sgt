@@ -197,6 +197,14 @@ Curve types:
    you of this, the control arms will turn from green to red in this
    situation.
 
+ - 'e' is a segment of an involute of an exponential decay curve. I
+   introduced this for one specific purpose, which was to join the
+   curve at the bottom of the treble clef to the straight line down
+   its middle: the involute of a curve that asymptotes to the x-axis
+   attains zero curvature when it meets the axis itself, because the
+   radius of curvature tends to infinity. So this permits a
+   reasonably smooth join between a straight line and a curve.
+
 Special features you can access by manually editing the curve
 definitions:
 

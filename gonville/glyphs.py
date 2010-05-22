@@ -401,9 +401,10 @@ def tmpfn():
     c4 = CircleInvolute(cont, 437, 470, 0.581238, -0.813733, 536, 357, 0.731055, -0.682318)
     c5 = CircleInvolute(cont, 536, 357, 0.731055, -0.682318, 603, 161, -0.33035, -0.943858)
     c6 = CircleInvolute(cont, 603, 161, -0.33035, -0.943858, 559, 90, -0.83205, -0.5547)
-    c7 = CircleInvolute(cont, 559, 90, -0.77193, 0.635707, 500, 267, 0.208758, 0.977967)
-    c8 = StraightLine(cont, 500, 267, 611, 787)
-    c9 = CircleInvolute(cont, 611, 787, 0.208758, 0.977967, 446, 865, -0.633238, -0.773957)
+    c7 = CircleInvolute(cont, 559, 90, -0.77193, 0.635707, 500, 267, 0.211282, 0.977425)
+    c8 = StraightLine(cont, 500, 267, 605.66, 762)
+    c9 = ExponentialInvolute(cont, 606, 762, 0.211282, 0.977425, 598, 856, -0.514496, 0.857493)
+    c10 = CircleInvolute(cont, 598, 856, -0.514496, 0.857493, 446, 865, -0.633238, -0.773957)
     c0.weld_to(1, c1, 0)
     c1.weld_to(1, c2, 0)
     c2.weld_to(1, c3, 0)
@@ -413,6 +414,7 @@ def tmpfn():
     c6.weld_to(1, c7, 0, 1)
     c7.weld_to(1, c8, 0)
     c8.weld_to(1, c9, 0)
+    c9.weld_to(1, c10, 0)
     # End saved data
 
     cont.default_nib = lambda c,x,y,t,theta: 17+11*cos(theta-c.nibdir(t))
@@ -425,8 +427,8 @@ def tmpfn():
     c5.nib = lambda c,x,y,t,theta: 18+10*cos(theta-c.nibdir(t))
     c6.nib = lambda c,x,y,t,theta: follow_curveset_nib(c,x,y,t,theta,[tc0,tc1],0,2,8)
     c7.nib = lambda c,x,y,t,theta: follow_curveset_nib(c,x,y,t,theta,[tc0,tc1],1,2,8)
-    c8.nib = c9.nib = 8
-    blob(c9, 1, 'r', 45, 9)
+    c8.nib = c9.nib = c10.nib = 8
+    blob(c10, 1, 'r', 45, 9)
 
     # I drew this one at a silly scale for some reason
     cont.scale = 1736
