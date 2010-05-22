@@ -43,6 +43,8 @@ def key(event):
         curve = StraightLine(cont, event.x-50, event.y-20, event.x+50, event.y+20)
     elif event.char == 'b':
         curve = Bezier(cont, event.x - 50, event.y, event.x-25, event.y-25, event.x+25, event.y+25, event.x+50, event.y)
+    elif event.char == 'e':
+        curve = ExponentialInvolute(cont, event.x - 50, event.y, 2, -1, event.x + 50, event.y, 2, 1.2)
     elif event.char == 'w':
         ends = []
         for curve in cont.curves.values():

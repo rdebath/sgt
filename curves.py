@@ -18,6 +18,9 @@ def translate(x,y):
 def scale(x,y):
     return [x, 0, 0, y, 0, 0]
 
+def atanh(x):
+    return 0.5*log((1+x)/(1-x))
+
 class Curve:
     def __init__(self, cont = None):
         self.tkitems = []
@@ -402,6 +405,313 @@ class CircleInvolute(Curve):
         if mx != None:
             extra = extra + ", mx=(%g, %g, %g, %g)" % mx
         s = "CircleInvolute(cont, %g, %g, %g, %g, %g, %g, %g, %g%s)" % \
+        (self.inparams[:8] + (extra,))
+        return s
+
+class ExponentialInvolute(Curve):
+    # Involute of an exponential curve. This curve form has zero
+    # curvature at one end, where the thread length goes to
+    # infinity, so it will hopefully be a good choice for joining on
+    # to straight lines without a jolt.
+    #
+    # I pick an exponential because it's a curve asymptotic to the
+    # x-axis with arc length we can find exactly. Arc length for a
+    # curve y=f(x) is given by integrating sqrt(1+f'(x)^2) with
+    # respect to x, so we'll start by doing that for f(x) =
+    # exp(-bx). So we want to evaluate the indefinite integral
+    #
+    #        I = int sqrt(1 + b^2 exp(-2bx)) dx
+    #
+    # Substitution: let u be the entire integrand. So we have
+    #
+    #        u = sqrt(1 + b^2 exp(-2bx))
+    # => du/dx = 1/(2 sqrt(1 + b^2 exp(-2bx))) . -2 b^3 exp(-2bx)
+    #          = 1/(2u) . -2b(u^2-1)
+    # =>    dx = { -u / b(u^2-1) } du
+    #
+    # and then we can substitute into I to get
+    #
+    #        I = int u dx
+    #          = int { -u^2 / b(u^2 - 1) } du
+    #          = -1/b int { u^2 / (u^2 - 1) } du 
+    #          = -1/b int { 1 - 1 / (1 - u^2) } du
+    #          = -1/b int { 1 - 1/2 / (1-u) - 1/2 / (1+u) } du
+    #          = -1/b ( u + 1/2 log |1-u| - 1/2 log |1+u| ) + c
+    #          = -u/b + 1/(2b) log |(1+u)/(1-u)|
+    #          = -1/b (u + modatanh u)
+    #
+    # where modatanh(u) is the function defined by atanh(u) or
+    # atanh(-1/u), whichever of those is valid. (In other words,
+    # atanh(u) if |u| < 1, or atanh(-1/u) if |u| > 1.) In this case,
+    # recall that u is the square root of 1 plus something positive,
+    # so we always have |u| > 1, and thus
+    #
+    #        I = -1/b (u + atanh(-1/u))
+    #
+    # where u, of course, is sqrt(1 + b^2 exp(-2bx)) as defined
+    # above.
+    #
+    # Another thing we need to know is the amount by which the whole
+    # arc length of this curve (from a given point, say 0, onwards)
+    # exceeds the distance to the x-axis. In other words, we need
+    # the limit of I(x) - I(0) - x as x tends to infinity. I'll call
+    # this the 'excess'.
+    #
+    # I was unable to find an analytic solution to that problem in
+    # the general case with b as a parameter, but using a computer
+    # algebra system to calculate some specific values and examining
+    # those suggested empirically that the answer is
+    #
+    #   1/b (sqrt(b^2+1) - arctanh(1/sqrt(b^2+1)) - log(b/2) - 1)
+    #
+    # This curve type is currently very scrappily implemented: error
+    # checking is nonexistent (really, set_params ought to have a
+    # great big 'try' around it), plotting is very slow and lots of
+    # things that could be cached are not, curve subdivision is
+    # ad-hoc, there's a hideous hack to avoid loss of significance
+    # causing wobbles at the flat end, and even the above piece of
+    # analysis lacks a proof. However, it works well enough for the
+    # one Gonville glyph (clefG) in which I've so far used it.
+
+    def __init__(self, cont, x1, y1, dx1, dy1, x2, y2, dx2, dy2, mx=None):
+        Curve.__init__(self)
+        self.inparams = (x1, y1, dx1, dy1, x2, y2, dx2, dy2, mx)
+        self.set_params()
+        Curve.postinit(self, cont)
+
+    def set_params(self):
+        # x1,y1 is the end at which the thread becomes infinitely
+        # long, so that the curvature of the involute is zero.
+        #
+        # x2,y2 is the other end.
+        #
+        # We begin by mentally transforming so that x2,y2 is at
+        # (0,1), and x1,y1 lies on the x-axis. We know the starting
+        # slope b we want for the exponential (it has to start off
+        # tangent to the normal vector to x2,y2), so that leaves us
+        # one degree of freedom, which is the involute's radius of
+        # curvature (the starting thread length) at x2,y2. At one
+        # extreme, the exponential itself starts off at (0,1) and so
+        # the radius of curvature at that point is zero; at the
+        # other extreme our exponential squashes itself entirely on
+        # to the x-axis and we just have a circular arc.
+        #
+        # In general, let us suppose our exponential starts at some
+        # y-coordinate k. That must put its starting x-coordinate at
+        # (1-k)/b. Then the x-coordinate of the terminating point of
+        # the involute on the x-axis must be equal to:
+        #  - that starting position (1-k)/b
+        #  - minus k times the excess of the curve as given above
+        #  - minus the starting thread length, (1-k)*sqrt(1+1/b^2).
+        #
+        # The excess and sqrt(1+1/b^2) are complicated to work out,
+        # but fortunately they don't depend on k, so we end up with
+        # a simple linear equation to solve for our remaining
+        # parameter.
+
+        x1, y1, dx1, dy1, x2, y2, dx2, dy2, mx = self.inparams
+
+        # Normalise the direction vectors.
+        dlen1 = sqrt(dx1**2 + dy1**2); dx1, dy1 = dx1/dlen1, dy1/dlen1
+        dlen2 = sqrt(dx2**2 + dy2**2); dx2, dy2 = dx2/dlen2, dy2/dlen2
+
+        self.inparams = (x1, y1, dx1, dy1, x2, y2, dx2, dy2, mx)
+
+        # Decide on our notional canonical coordinate system. We
+        # expect to end up with the straight end to the left of and
+        # below the curvy end, so flip the coordinate senses round
+        # as appropriate.
+        ydx, ydy = dx1, dy1 # y-axis is along the curve direction at x1,y1
+        xdx, xdy = -ydy, ydx # x-axis is perpendicular to that
+        if (x2-x1)*xdx + (y2-y1)*xdy < 0:
+            xdx, xdy = -xdx, -xdy # flip x-axis
+        if (x2-x1)*ydx + (y2-y1)*ydy < 0:
+            ydx, ydy = -ydx, -ydy # flip y-axis
+        unit = (x2-x1)*ydx + (y2-y1)*ydy
+        ox, oy = x2 - unit*ydx, y2 - unit*ydy
+
+        # Determine the initial gradient b of the exponential.
+        b = abs((dy2 * ydx - dx2 * ydy) / (dy2 * xdx - dx2 * xdy))
+
+        # Compute the basic (unscaled) excess of the curve, and the
+        # ratio between y-extent and length for lines slanting at b.
+        excess = (sqrt(b*b+1) - atanh(1/sqrt(b*b+1)) - log(b/2.) - 1) / b
+        slantratio = sqrt(1 + 1/(b*b))
+
+        # Find the x-position of the flat end, in our coordinate
+        # system.
+        cx1 = ((x1-ox)*xdx + (y1-oy)*xdy) / unit
+
+        # Solve for k. The equation is:
+        #    (1-k)/b - k*excess - (1-k)*slantratio = cx1
+        # => 1/b - slantratio - cx1 = k/b + k*excess - k*slantratio
+        k = (1./b - slantratio - cx1) / (1./b - slantratio + excess)
+
+        # Use k to work out the actual starting radius of curvature.
+        r = (1-k) * slantratio
+
+        # That should be all the parameters we need. Save them.
+        self.params = (b, k, r, ox, oy, xdx, xdy, ydx, ydy, unit, cx1)
+
+    def compute_point(self, t): # t in [0,1]
+        assert self.params != None
+        (b, k, r, ox, oy, xdx, xdy, ydx, ydy, unit, cx1) = self.params
+
+        if t == 0:
+            # The usual formula hits a singularity here, so we just
+            # drop in the known value.
+            x, y = cx1, 0
+        else:
+            # Find the position on the exponential curve itself, and
+            # the current direction of that curve.
+            t = (1-t) * 15
+            x = (1-k)/b + k*t
+            y = k*exp(-b*t)
+            dx = 1
+            dy = -b*exp(-b*t)
+            dlen = sqrt(dx*dx + dy*dy)
+            dx, dy = -dx/dlen, -dy/dlen
+            # Find the current radius of curvature.
+            u = sqrt(1 + b*b*exp(-2*b*t))
+            u0 = sqrt(1 + b*b)
+            if u < 1.000001:
+                x, y = cx1, 0
+            else:
+                arc = ((u + atanh(-1/u)) - (u0 + atanh(-1/u0))) / -b
+                r = r + k*arc
+                # Augment x and y appropriately.
+                x = x + dx * r
+                y = y + dy * r
+
+        # Now we have our position in logical coordinates, just
+        # convert back to reality.
+        return ox + xdx*unit*x + ydx*unit*y, oy + xdy*unit*x + ydy*unit*y
+
+    def compute_direction(self, t): # t in [0,1]
+        assert self.params != None
+        (b, k, r, ox, oy, xdx, xdy, ydx, ydy, unit, cx1) = self.params
+
+        if t == 0:
+            dx, dy = 0, 1
+        else:
+            t = (1-t) * 15
+            dx = 1
+            dy = -b*exp(-b*t)
+
+        dx, dy = xdx*dx + ydx*dy, xdy*dx + ydy*dy
+        dlen = sqrt(dx*dx + dy*dy)
+        return dx/dlen, dy/dlen
+
+    def tk_refresh(self):
+        coords = []
+        x1, y1, dx1, dy1, x2, y2, dx2, dy2, mx = self.inparams
+        if self.params == None:
+            coords.extend([x1,y1])
+            coords.extend([(2*x1+3*x2)/5 - (y1-y2)/14, (2*y1+3*y2)/5 + (x1-x2)/14])
+            coords.extend([(3*x1+2*x2)/5 + (y1-y2)/14, (3*y1+2*y2)/5 - (x1-x2)/14])
+            coords.extend([x2,y2])
+        else:
+            dt = 0.0001 # FIXME: should think up a better way of deciding how many points to use
+            itmax = min(10000, int(1 / dt + 1))
+            for it in range(itmax+1):
+                t = it / float(itmax)
+                x, y = self.compute_point(t)
+                coords.extend([x,y])
+        for x in self.tkitems:
+            self.canvas.delete(x)
+        if self.params == None:
+            fill = "red"
+        else:
+            (b, k, r, ox, oy, xdx, xdy, ydx, ydy, unit, cx1) = self.params
+            if k < 0 or k > 1:
+                fill = "#ff0000"
+            else:
+                fill = "#00c000"
+        self.tkitems.append(self.canvas.create_line(x1, y1, x1+25*dx1, y1+25*dy1, fill=fill))
+        self.tkitems.append(self.canvas.create_line(x2, y2, x2-25*dx2, y2-25*dy2, fill=fill))
+        self.tkitems.append(self.canvas.create_line(coords))
+
+    def tk_addto(self, canvas):
+        self.canvas = canvas
+        self.tk_refresh()
+
+    def tk_drag(self, x, y, etype):
+        x1, y1, dx1, dy1, x2, y2, dx2, dy2, mx = self.inparams
+        if etype == 1:
+            xc1, yc1 = x1+25*dx1, y1+25*dy1
+            xc2, yc2 = x2-25*dx2, y2-25*dy2
+            if (x-x1)**2 + (y-y1)**2 < 32:
+                self.dragpt = 1
+            elif (x-x2)**2 + (y-y2)**2 < 32:
+                self.dragpt = 4
+            elif (x-xc1)**2 + (y-yc1)**2 < 32:
+                self.dragpt = 2
+            elif (x-xc2)**2 + (y-yc2)**2 < 32:
+                self.dragpt = 3
+            else:
+                self.dragpt = None
+                return 0
+            return 1
+        elif self.dragpt == None:
+            return 0
+        else:
+            if self.dragpt == 1:
+                x1 = x
+                y1 = y
+            elif self.dragpt == 4:
+                x2 = x
+                y2 = y
+            elif self.dragpt == 2 and (x != x1 or y != y1):
+                dx1 = x - x1
+                dy1 = y - y1
+            elif self.dragpt == 3 and (x != x1 or y != y1):
+                dx2 = x2 - x
+                dy2 = y2 - y
+            self.inparams = (x1, y1, dx1, dy1, x2, y2, dx2, dy2, mx)
+            self.set_params()
+            self.tk_refresh()
+            end = (self.dragpt-1)/2
+            self.weld_update(end, 2)
+            return 1
+
+    def enddata(self, end):
+        x, y, dx, dy = self.inparams[4*end:4*(end+1)]
+        if end:
+            dx, dy = -dx, -dy
+        return x, y, dx, dy
+
+    def setenddata(self, end, x, y, dx, dy):
+        ox, oy, odx, ody = self.inparams[4*end:4*(end+1)]
+        if end:
+            odx, ody = -odx, -ody
+        changed = (x != ox or y != oy or dx * ody != dy * odx)
+        if changed:
+            if end:
+                dx, dy = -dx, -dy
+            p = list(self.inparams)
+            p[4*end] = x
+            p[4*end+1] = y
+            p[4*end+2] = dx
+            p[4*end+3] = dy
+            self.inparams = tuple(p)
+            self.set_params()
+            self.tk_refresh()
+
+    def findend(self, x, y):
+        x1, y1, dx1, dy1, x2, y2, dx2, dy2, mx = self.inparams
+        if (x-x1)**2 + (y-y1)**2 < 32:
+            return 0
+        elif (x-x2)**2 + (y-y2)**2 < 32:
+            return 1
+        else:
+            return None
+
+    def serialise(self):
+        extra = ""
+        mx = self.inparams[8]
+        if mx != None:
+            extra = extra + ", mx=(%g, %g, %g, %g)" % mx
+        s = "ExponentialInvolute(cont, %g, %g, %g, %g, %g, %g, %g, %g%s)" % \
         (self.inparams[:8] + (extra,))
         return s
 
