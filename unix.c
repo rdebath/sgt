@@ -254,6 +254,7 @@ int xeventloop(int retflags)
 		    hktail = hk;
 		    break;
 		}
+            break;
 	  case SelectionClear:
 	    seldata = NULL;
 	    break;
