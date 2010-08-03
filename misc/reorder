@@ -19,6 +19,7 @@
 # order.
 
 # Usage: reorder [options] [<perl-fragment> [<directory>]]
+#    or: reorder -l <directory> <file> [<file>...]
 #
 # <perl-fragment> is a piece of Perl which will be run once for
 # each filename in the directory. When run, $_ will be the
@@ -37,6 +38,12 @@
 # convenience functions detailed below. As long as the Perl
 # fragment stays clear of that namespace, it won't tread on this
 # program's internal state.
+#
+# Alternative usage mode: if '-l' is provided, then the directory
+# name is expected first, and the ordering function will be to place
+# the specified list of files at the start of the output order.
+# Anything not mentioned in the list will be placed at the end, in
+# ASCII order.
 #
 # As the last thing it does, the program will check that its
 # reordering was successful, and print an error message if it was
@@ -61,6 +68,9 @@
 #
 #  -d       debug mode: print diagnostic output on standard error at
 #           several stages of the program
+#
+#  -l       list mode: expect a list of filenames following the
+#           directory instead of a Perl fragment before it
 #
 #  --       stop processing options (in case the Perl fragment starts
 #           with a minus sign).
@@ -104,6 +114,8 @@ while ($ARGV[0] =~ /^-/) {
 	$__dryrun = 1;
     } elsif ($__arg eq "-d") {
 	$__debug = 1;
+    } elsif ($__arg eq "-l") {
+	$__list = 1;
     } elsif ($__arg eq "--") {
 	last; # stop processing things that look like options
     } else {
@@ -111,9 +123,18 @@ while ($ARGV[0] =~ /^-/) {
     }
 }
 
-$__frag = shift @ARGV;
+if (!$__list) {
+    $__frag = shift @ARGV;
+}
 $__dir = shift @ARGV;
-$__frag = '$_' unless defined $__frag; # by default, sort in ASCII order
+if ($__list) {
+    # standard $__frag that should do the right thing with the list
+    @__filelist = map { s/\/$//; $_ } @ARGV; # lose trailing / from tab completion
+    %__fraghash = map { $__filelist[$_] => $_+1 } 0..$#__filelist;
+    $__frag = '$__fraghash{$_} ? &i($__fraghash{$_}) : "D$_"';
+} else {
+    $__frag = '$_' unless defined $__frag; # by default, sort in ASCII order
+}
 chdir $__dir if defined $__dir;
 
 sub i {
