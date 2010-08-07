@@ -36,7 +36,7 @@ int fork_when_writing = True;
 /* selection data */
 char *seltext;
 int sellen, selsize;
-#define SELDELTA 64
+#define SELDELTA 16384
 
 /* functional parameters */
 int reading;                           /* read instead of writing? */
