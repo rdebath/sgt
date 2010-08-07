@@ -221,6 +221,21 @@ char *do_paste(Window window, Atom property, int Delete)
         XFree(data);
         if (nitems == 0)
             break;
+	if (bytes_after == 0) {
+	    /*
+	     * We've come to the end of the property we're reading.
+	     * If we have the Delete flag set, we may be receiving
+	     * the selection data in multiple chunks, in which case
+	     * we should reset nread to zero so that when the next
+	     * chunk arrives we resume reading from the start of the
+	     * replaced property. Otherwise, this is our cue to
+	     * exit.
+	     */
+	    if (Delete)
+		nread = 0;
+	    else
+		break;
+	}
     }
 
     if (ret)
