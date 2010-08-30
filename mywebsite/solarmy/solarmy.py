@@ -4,7 +4,7 @@ import math
 import os
 import sys
 
-limit = 12
+limit = 20
 
 grid = {}
 
