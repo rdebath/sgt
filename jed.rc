@@ -919,7 +919,7 @@ define q() {
 
     bol();
     if (eolp())
-        break;
+        return;
 
     while ((what_char() != '\n') and (bobp() == 0)) {
         go_up(1);
@@ -945,7 +945,7 @@ define Q() {
 
     bol();
     if (eolp())
-        break;
+        return;
 
     while ((what_char() != '\n') and (bobp() == 0)) {
         go_up(1);
@@ -974,7 +974,7 @@ define rq() {
 
     bol();
     if (eolp())
-        break;
+        return;
 
     while ((what_char() != '\n') and (bobp() == 0)) {
         go_up(1);
@@ -1012,7 +1012,7 @@ define sq() {
 
     bol();
     if (eolp())
-        break;
+        return;
 
     while ((what_char() != '\n') and (bobp() == 0)) {
         go_up(1);
