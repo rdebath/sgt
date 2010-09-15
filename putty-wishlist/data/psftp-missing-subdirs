@@ -1,6 +1,8 @@
 Summary: PSFTP "mput -r *" misses some items in subdirectories
 Class: bug
 Priority: medium
+Present-in: 0.59
+Fixed-in: r7438 2007-04-03
 Content-type: text/plain
 
 As reported to us:
