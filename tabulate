@@ -5,11 +5,44 @@
 # spaces so that each column lines up neatly.
 #
 # Expanded into legibility from a line-noise three-liner I posted in
-# Monochrome's Unix tips and tricks file (<TDOUUT>) on 2007-03-02.
+# Monochrome's Unix tips and tricks file (<TDOUUT>) on 2007-03-02,
+# and configurable alignment and gutter settings added somewhat
+# later.
 #
 # (Handy in particular as a post-filter on the Unix 'paste' command,
 # which lines up two or more files side by side - separated by
 # single tab characters no matter how long the input lines are.)
+
+$gutter = 2;
+@alignments = ();
+
+while ($ARGV[0] =~ /^-/) {
+    if ($ARGV[0] eq "--") { last; } # stop processing options
+    $_ = substr $ARGV[0], 1; # strip off leading -
+    shift @ARGV;
+    while ($_ ne "") {
+	$opt = substr $_, 0, 1;
+	$_ = substr $_, 1;
+	if ($opt eq "l") {
+	    push @alignments, 0;
+	} elsif ($opt eq "c") {
+	    push @alignments, 1;
+	} elsif ($opt eq "r") {
+	    push @alignments, 2;
+	} elsif ($opt eq "g") {
+	    if ($_ eq "") {
+		if (!@ARGV) {
+		    die "option '-$opt' expects an argument\n";
+		}
+		$_ = shift @ARGV;
+	    }
+	    $gutter = $_;
+	    $_ = "";
+	} else {
+	    die "unknown option '-$opt'\n";
+	}
+    }
+}
 
 while (<>) {
     chomp;
@@ -22,7 +55,18 @@ while (<>) {
 
 for $line (@lines) {
     for $i (0..$#$line) {
-	printf "%-*s", $max[$i]+2, $line->[$i];
+	$text = $line->[$i];
+	$wid = $max[$i];
+	$align = $alignments[$i];
+	$space = $wid - length $text;
+	$left = int($space * $align / 2);
+	$right = $space - $left;
+	if ($i == $#$line) {
+	    $right = 0;
+	} else {
+	    $right += $gutter;
+	}
+	print " " x $left, $text, " " x $right;
     }
     print "\n";
 }
