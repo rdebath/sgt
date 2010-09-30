@@ -705,7 +705,7 @@ def multiup(n, tail):
     cont.ox = tail.ox
     cont.oy = tail.oy - quavertaildispup*(n-1) + 95
     cont.origin = tail.origin
-    cont.origin = (cont.origin[0], cont.origin[1] + quavertaildispup*(n-1)*3600./cont.scale + 180)
+    cont.origin = (cont.origin[0], cont.origin[1] + quavertaildispup*(n-1)*3600./cont.scale - 180)
     return cont
 
 def multidn(n, tail):
@@ -2478,6 +2478,9 @@ def tmpfn(): # z
 
     return cont
 dynamicz = tmpfn()
+for x in dynamicf, dynamicm, dynamicp, dynamicr, dynamics, dynamicz:
+    x.origin = (x.by * 3600. / x.scale, x.lx * 3600. / x.scale)
+    x.width = x.rx - x.lx
 
 # ----------------------------------------------------------------------
 # Accent mark.
@@ -3142,6 +3145,9 @@ def tmpfn(span): # arbitrarily sized brace
 
     return cont
 scaledbrace = tmpfn # note this is a function, not an actual GlyphContext
+
+# Should be equivalent to 'braceupper'+'bracelower'
+fixedbrace = scaledbrace(3982)
 
 # ----------------------------------------------------------------------
 # End pieces for an arbitrary-sized bracket between two staves.
@@ -4517,6 +4523,92 @@ lilyglyphlist = [
 ("slashcrotchet", "noteheads.s2slash",     0, 0,0.5, 1,'ay'),
 ]
 
+def writesfd(filepfx, fontname, encodingname, encodingsize, outlines, glyphlist):
+    fname = filepfx + ".sfd"
+    f = open(fname, "w")
+    f.write("SplineFontDB: 3.0\n")
+    f.write("FontName: %s\n" % fontname)
+    f.write("FullName: %s\n" % fontname)
+    f.write("FamilyName: %s\n" % fontname)
+    f.write("Copyright: No copyright is claimed on this font file.\n")
+    f.write("Version: 0.1.%s\n" % verstring)
+    f.write("ItalicAngle: 0\n")
+    f.write("UnderlinePosition: -100\n")
+    f.write("UnderlineWidth: 50\n")
+    f.write("Ascent: 800\n")
+    f.write("Descent: 200\n")
+    f.write("LayerCount: 2\n")
+    f.write("Layer: 0 0 \"Back\" 1\n")
+    f.write("Layer: 1 0 \"Fore\" 0\n")
+    f.write("UseXUID: 0\n")
+    f.write("OS2Version: 0\n")
+    f.write("OS2_WeightWidthSlopeOnly: 0\n")
+    f.write("OS2_UseTypoMetrics: 1\n")
+    f.write("CreationTime: 1252826347\n") # when I first wrote this prologue-writing code
+    f.write("ModificationTime: %d\n" % time.time())
+    f.write("OS2TypoAscent: 0\n")
+    f.write("OS2TypoAOffset: 1\n")
+    f.write("OS2TypoDescent: 0\n")
+    f.write("OS2TypoDOffset: 1\n")
+    f.write("OS2TypoLinegap: 0\n")
+    f.write("OS2WinAscent: 0\n")
+    f.write("OS2WinAOffset: 1\n")
+    f.write("OS2WinDescent: 0\n")
+    f.write("OS2WinDOffset: 1\n")
+    f.write("HheadAscent: 0\n")
+    f.write("HheadAOffset: 1\n")
+    f.write("HheadDescent: 0\n")
+    f.write("HheadDOffset: 1\n")
+    f.write("OS2Vendor: 'PfEd'\n")
+    f.write("DEI: 0\n")
+    f.write("Encoding: %s\n" % encodingname)
+    f.write("UnicodeInterp: none\n")
+    f.write("NameList: Adobe Glyph List\n")
+    f.write("DisplaySize: -96\n")
+    f.write("AntiAlias: 1\n")
+    f.write("FitToEm: 1\n")
+    f.write("WinInfo: 64 8 2\n")
+    f.write("BeginChars: %d %d\n" % (encodingsize, len(glyphlist)))
+
+    i = 0
+    for glyph in glyphlist:
+        ourname, theirname, encoding, ox, oy = glyph[:5]
+        bbox, path = outlines[ourname]
+        char = eval(ourname)
+        xrt = lambda x: x * (3600.0 / (40*char.scale)) # potrace's factor of ten, ours of four
+        yrt = lambda y: y * (3600.0 / (40*char.scale))
+        xat = lambda x: xrt(x) - char.origin[0]
+        yat = lambda y: yrt(y) - char.origin[1]
+        xt = lambda x: xat(x) - xat(ox)
+        yt = lambda y: yat(y) - yat(oy)
+        if len(glyph) > 9 and glyph[9].has_key("xw"):
+            width = xt(glyph[9]["xw"]) # explicitly specified width
+        else:
+            width = xt(bbox[2]) # mostly default to RHS of bounding box
+        f.write("\nStartChar: %s\n" % theirname)
+        f.write("Encoding: %d %d %d\n" % (encoding, encoding, i))
+        f.write("Width: %g\n" % width)
+        f.write("Flags: W\n")
+        f.write("LayerCount: 2\n")
+        f.write("Fore\n")
+        f.write("SplineSet\n")
+        for c in path:
+            if c[0] == 'm':
+                f.write("%g %g m 1\n" % (xt(c[1]), yt(c[2])))
+            elif c[0] == 'l':
+                f.write(" %g %g l 1\n" % (xt(c[3]), yt(c[4])))
+            elif c[0] == 'c':
+                f.write(" %g %g %g %g %g %g c 0\n" % (xt(c[3]), yt(c[4]), xt(c[5]), yt(c[6]), xt(c[7]), yt(c[8])))
+            # closepath is not given explicitly
+        f.write("EndSplineSet\n")
+        f.write("EndChar\n")
+        i = i + 1
+
+    f.write("\nEndChars\n")
+
+    f.write("EndSplineFont\n")
+    f.close()
+
 args = sys.argv[1:]
 if len(args) >= 1 and args[0][:6] == "--rev=":
     verstring = args[0][6:]
@@ -4850,92 +4942,6 @@ elif len(args) == 1 and args[0][:5] == "-lily":
     # Generate .sfd files and supporting metadata which we then
     # process with FontForge into a replacement system font set for
     # GNU LilyPond.
-    def writesfd(filepfx, fontname, encodingname, encodingsize, outlines, glyphlist):
-        fname = filepfx + ".sfd"
-        f = open(fname, "w")
-        f.write("SplineFontDB: 3.0\n")
-        f.write("FontName: %s\n" % fontname)
-        f.write("FullName: %s\n" % fontname)
-        f.write("FamilyName: %s\n" % fontname)
-        f.write("Copyright: No copyright is claimed on this font file.\n")
-        f.write("Version: 0.1.%s\n" % verstring)
-        f.write("ItalicAngle: 0\n")
-        f.write("UnderlinePosition: -100\n")
-        f.write("UnderlineWidth: 50\n")
-        f.write("Ascent: 800\n")
-        f.write("Descent: 200\n")
-        f.write("LayerCount: 2\n")
-        f.write("Layer: 0 0 \"Back\" 1\n")
-        f.write("Layer: 1 0 \"Fore\" 0\n")
-        f.write("UseXUID: 0\n")
-        f.write("OS2Version: 0\n")
-        f.write("OS2_WeightWidthSlopeOnly: 0\n")
-        f.write("OS2_UseTypoMetrics: 1\n")
-        f.write("CreationTime: 1252826347\n") # when I first wrote this prologue-writing code
-        f.write("ModificationTime: %d\n" % time.time())
-        f.write("OS2TypoAscent: 0\n")
-        f.write("OS2TypoAOffset: 1\n")
-        f.write("OS2TypoDescent: 0\n")
-        f.write("OS2TypoDOffset: 1\n")
-        f.write("OS2TypoLinegap: 0\n")
-        f.write("OS2WinAscent: 0\n")
-        f.write("OS2WinAOffset: 1\n")
-        f.write("OS2WinDescent: 0\n")
-        f.write("OS2WinDOffset: 1\n")
-        f.write("HheadAscent: 0\n")
-        f.write("HheadAOffset: 1\n")
-        f.write("HheadDescent: 0\n")
-        f.write("HheadDOffset: 1\n")
-        f.write("OS2Vendor: 'PfEd'\n")
-        f.write("DEI: 0\n")
-        f.write("Encoding: %s\n" % encodingname)
-        f.write("UnicodeInterp: none\n")
-        f.write("NameList: Adobe Glyph List\n")
-        f.write("DisplaySize: -96\n")
-        f.write("AntiAlias: 1\n")
-        f.write("FitToEm: 1\n")
-        f.write("WinInfo: 64 8 2\n")
-        f.write("BeginChars: %d %d\n" % (encodingsize, len(glyphlist)))
-
-        i = 0
-        for glyph in glyphlist:
-            ourname, theirname, encoding, ox, oy = glyph[:5]
-            bbox, path = outlines[ourname]
-            char = eval(ourname)
-            xrt = lambda x: x * (3600.0 / (40*char.scale)) # potrace's factor of ten, ours of four
-            yrt = lambda y: y * (3600.0 / (40*char.scale))
-            xat = lambda x: xrt(x) - char.origin[0]
-            yat = lambda y: yrt(y) - char.origin[1]
-            xt = lambda x: xat(x) - xat(ox)
-            yt = lambda y: yat(y) - yat(oy)
-            if len(glyph) > 9 and glyph[9].has_key("xw"):
-                width = xt(glyph[9]["xw"]) # explicitly specified width
-            else:
-                width = xt(bbox[2]) # mostly default to RHS of bounding box
-            f.write("\nStartChar: %s\n" % theirname)
-            f.write("Encoding: %d %d %d\n" % (encoding, encoding, i))
-            f.write("Width: %g\n" % width)
-            f.write("Flags: W\n")
-            f.write("LayerCount: 2\n")
-            f.write("Fore\n")
-            f.write("SplineSet\n")
-            for c in path:
-                if c[0] == 'm':
-                    f.write("%g %g m 1\n" % (xt(c[1]), yt(c[2])))
-                elif c[0] == 'l':
-                    f.write(" %g %g l 1\n" % (xt(c[3]), yt(c[4])))
-                elif c[0] == 'c':
-                    f.write(" %g %g %g %g %g %g c 0\n" % (xt(c[3]), yt(c[4]), xt(c[5]), yt(c[6]), xt(c[7]), yt(c[8])))
-                # closepath is not given explicitly
-            f.write("EndSplineSet\n")
-            f.write("EndChar\n")
-            i = i + 1
-
-        f.write("\nEndChars\n")
-
-        f.write("EndSplineFont\n")
-        f.close()
-
     def writetables(filepfx, size, subids, subnames, outlines, glyphlist, bracesonly=0):
         fname = filepfx + ".LILF"
         f = open(fname, "w")
@@ -5210,6 +5216,251 @@ elif len(args) == 1 and args[0][:5] == "-lily":
             "Generate($2)' gonville-bracepart%d.sfd lilyfonts/type1/gonville-bracepart%d.pfa") % ((subid,)*2))
             system(("fontforge -lang=ff -c 'Open($1); CorrectDirection(); " + \
             "Generate($2)' gonville-bracepart%d.sfd lilyfonts/svg/gonville-bracepart%d.svg") % ((subid,)*2))
+elif len(args) == 1 and args[0] == "-simple":
+    # Generate an .sfd file which can be compiled into a really
+    # simple binary font in which all the glyphs are in the bottom
+    # 256 code points.
+    #
+    # Future glyphs should be added to the end of this list, so that
+    # the existing code point values stay the same.
+    glyphlist = [
+    ("big0", 0x30),
+    ("big1", 0x31),
+    ("big2", 0x32),
+    ("big3", 0x33),
+    ("big4", 0x34),
+    ("big5", 0x35),
+    ("big6", 0x36),
+    ("big7", 0x37),
+    ("big8", 0x38),
+    ("big9", 0x39),
+    ("dynamicf", 0x66),
+    ("dynamicm", 0x6d),
+    ("dynamicp", 0x70),
+    ("dynamicr", 0x72),
+    ("dynamics", 0x73),
+    ("dynamicz", 0x7a),
+    ("asciiplus", 0x2b),
+    ("asciicomma", 0x2c),
+    ("asciiminus", 0x2d),
+    ("asciiperiod", 0x2e),
+    ("accent", 0x3e),
+    ("acclparen", 0x28),
+    ("accrparen", 0x29),
+    ("fixedbrace", 0x7b),
+    "espressivo",
+    "accslashbigup",
+    "accslashbigdn",
+    "acciaccatura",
+    "appoggiatura",
+    "arpeggioshort",
+    "arpeggioarrowdown",
+    "arpeggioarrowup",
+    "trillwiggle",
+    "bowdown",
+    "bowup",
+    "bracketlowerlily",
+    "bracketupperlily",
+    "breath",
+    "revbreath",
+    "varbreath",
+    "revvarbreath",
+    "caesura",
+    "caesuracurved",
+    "breve",
+    "clefC",
+    "clefF",
+    "clefG",
+    "clefTAB",
+    "clefperc",
+    "clefCsmall",
+    "clefFsmall",
+    "clefGsmall",
+    "clefTABsmall",
+    "clefpercsmall",
+    "coda",
+    "varcoda",
+    "ditto",
+    "fermata",
+    "fermata0",
+    "fermata2",
+    "fermata3",
+    "fermataup",
+    "fermata0up",
+    "fermata2up",
+    "fermata3up",
+    "semiflat",
+    "semiflatslash",
+    "flat",
+    "flatup",
+    "flatdn",
+    "flatupdn",
+    "flatslash",
+    "flatslash2",
+    "sesquiflat",
+    "doubleflatslash",
+    "harmart",
+    "harmartfilled",
+    "harmnat",
+    "flagopen",
+    "flagthumb",
+    "headcrotchet",
+    "headminim",
+    "legato",
+    "portatoup",
+    "portatodn",
+    "mordentlower",
+    "mordentupper",
+    "mordentupperlong",
+    "mordentupperlower",
+    "upmordentupperlong",
+    "upmordentupperlower",
+    "mordentupperlongdown",
+    "downmordentupperlong",
+    "downmordentupperlower",
+    "mordentupperlongup",
+    "straightmordentupperlong",
+    "natural",
+    "naturalup",
+    "naturaldn",
+    "naturalupdn",
+    "peddot",
+    "pedP",
+    "pedd",
+    "pede",
+    "pedPed",
+    "pedPeddot",
+    "pedstar",
+    "peddash",
+    "repeatmarks",
+    "restdbllonga",
+    "restlonga",
+    "restbreve",
+    "restcrotchet",
+    "restcrotchetx",
+    "restdemi",
+    "resthemi",
+    "restquasi",
+    "restminimo",
+    "restquaver",
+    "restsemi",
+    "restsemibreveo",
+    "segno",
+    "semibreve",
+    "sforzando",
+    "sforzandodn",
+    "semisharp",
+    "semisharp3",
+    "sharp",
+    "sharp3",
+    "sharpup",
+    "sharpdn",
+    "sharpupdn",
+    "sesquisharp",
+    "doublesharp",
+    "staccatissup",
+    "staccatissdn",
+    "staccato",
+    "snappizz",
+    "stopping",
+    "tailquaverdn",
+    "tailquaverup",
+    "tailsemidn",
+    "tailsemiup",
+    "taildemidn",
+    "taildemiup",
+    "tailhemidn",
+    "tailhemiup",
+    "tailquasidn",
+    "tailquasiup",
+    "timeCbar",
+    "timeC",
+    "trill",
+    "turn",
+    "invturn",
+    "openarrowup",
+    "openarrowdown",
+    "openarrowleft",
+    "openarrowright",
+    "closearrowup",
+    "closearrowdown",
+    "closearrowleft",
+    "closearrowright",
+    "upedalheel",
+    "dpedalheel",
+    "upedaltoe",
+    "dpedaltoe",
+    "acc2",
+    "acc3",
+    "acc4",
+    "accr",
+    "accdot",
+    "accstar",
+    "diamondsemi",
+    "diamondminim",
+    "diamondcrotchet",
+    "trianglesemi",
+    "triangleminim",
+    "trianglecrotchet",
+    "crosssemi",
+    "crossminim",
+    "crosscrotchet",
+    "crosscircle",
+    "slashsemi",
+    "slashminim",
+    "slashcrotchet",
+    ]
+
+    code = 0x21 # use sequential code points for anything not explicitly given
+
+    codes = {0x7f: None} # don't use 0x7f
+
+    outlines = {}
+    for i in range(len(glyphlist)):
+        gid = glyphlist[i]
+
+        if type(gid) == types.TupleType:
+            # Allocate a specific code.
+            gid, thiscode = gid
+        else:
+            while codes.has_key(code):
+                code = code + 1
+            assert code < 0x100
+            thiscode = code
+        codes[thiscode] = gid
+
+        char = eval(gid)
+
+        if not outlines.has_key(gid):
+            outlines[gid] = get_ps_path(char)
+
+        xo, yo = char.origin
+        if (xo,yo) == (1000,1000):
+            # Hack: that particular origin is taken to indicate that
+            # the origin was not set to anything more sensible by
+            # GlyphContext.__init__, and so we instead use the
+            # centre of the glyph's bounding box.
+            x0, y0, x1, y1 = outlines[gid][0]
+            xo = (x0+x1)/2
+            yo = (y0+y1)/2
+        else:
+            xo = xo * char.scale / 3600. * 40
+            yo = yo * char.scale / 3600. * 40
+        if char.__dict__.has_key("hy"):
+            yo = (1000 - char.hy) * 40
+        if char.__dict__.has_key("hx"):
+            xo = char.hx * 40
+
+        dict = {}
+        if char.__dict__.has_key("width"):
+            dict["xw"] = char.width * 40 + xo
+
+        glyphlist[i] = (gid, gid, thiscode, xo, yo, None, None, None, None, dict)
+
+    writesfd("gonville-simple", "Gonville-Simple", "UnicodeBmp", 65537, outlines, glyphlist)
+    system("fontforge -lang=ff -c 'Open($1); CorrectDirection(); " + \
+    "Generate($2)' gonville-simple.sfd gonville-simple.otf")
+
 elif len(args) == 2 and args[0] == "-lilycheck":
     # Run over the list of glyph names in another font file and list
     # the ones not known to this file. Expects one additional
