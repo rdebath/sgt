@@ -1215,7 +1215,7 @@ def rdinput(file):
 			    # will be treated normally.
 			    stack = stack + ["url"]
 			    break
-		if tok[1] == "pow":
+		elif tok[1] == "pow":
 		    tok = t.next()
 		    base = expt = ""
                     expbrackets = 0
