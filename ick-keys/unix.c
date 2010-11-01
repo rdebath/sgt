@@ -14,6 +14,8 @@
 #include <pwd.h>
 #include <netdb.h>
 #include <fcntl.h>
+#include <sys/time.h>
+#include <sys/select.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/socket.h>
@@ -70,8 +72,30 @@ struct hotkey_event {
     Time time;
 } *hkhead = NULL, *hktail = NULL;
 
+int got_hup = 0;
+
 #define XEV_HOTKEY 1
 #define XEV_PASTE 2
+#define XEV_HUP 4
+
+int signalpipe[2];
+
+void nonblock(int fd)
+{
+    int flags = fcntl(fd, F_GETFL);
+    if (flags < 0) {
+        error("fcntl(%d, F_GETFL): %s", fd, strerror(errno));
+        exit(1);
+    } else if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) < 0) {
+        error("fcntl(%d, F_GETFL): %s", fd, strerror(errno));
+        exit(1);
+    }
+}
+
+void sighup(int sig)
+{
+    write(signalpipe[1], "H", 1);      /* ignore EAGAIN */
+}
 
 Atom convert_sel_inner(Window requestor, Atom target, Atom property)
 {
@@ -247,55 +271,93 @@ int xeventloop(int retflags)
 {
     XEvent ev, e2;
     int i;
+    int xfd = ConnectionNumber(disp);
 
     while (1) {
+        fd_set rd;
+        int max, ret;
+
 	if ((retflags & XEV_HOTKEY) && hkhead)
 	    return XEV_HOTKEY;
-	XNextEvent (disp, &ev);
-	switch (ev.type) {
-	  case KeyPress:
-	    for (i = 0; i < hotkeysize; i++)
-		if (hotkeys[i].exists &&
-		    ev.xkey.keycode == hotkeys[i].keycode &&
-		    (ev.xkey.state & ~Mod2Mask) == hotkeys[i].modifiers) {
-		    struct hotkey_event *hk = snew(struct hotkey_event);
-		    hk->id = i;
-		    hk->time = ev.xkey.time;
-		    hk->next = NULL;
-		    if (hktail)
-			hktail->next = hk;
-		    else
-			hkhead = hk;
-		    hktail = hk;
-		    break;
-		}
-            break;
-	  case SelectionClear:
-	    seldata = NULL;
-	    break;
-	  case SelectionRequest:
-	    if (seldata) {
-		e2.xselection.type = SelectionNotify;
-		e2.xselection.requestor = ev.xselectionrequest.requestor;
-		e2.xselection.selection = ev.xselectionrequest.selection;
-		e2.xselection.target = ev.xselectionrequest.target;
-		e2.xselection.time = ev.xselectionrequest.time;
-		e2.xselection.property =
-		    convert_sel_outer(ev.xselectionrequest.requestor,
-				      ev.xselectionrequest.target,
-				      ev.xselectionrequest.property);
-		XSendEvent (disp, ev.xselectionrequest.requestor,
-			    False, 0, &e2);
-	    }
-	    break;
-	  case SelectionNotify:
-	    if (retflags & XEV_PASTE) {
-		selrequestor = ev.xselection.requestor;
-		selproperty = ev.xselection.property;
-		return XEV_PASTE;
-	    }
-	    break;
-	}
+	if ((retflags & XEV_HUP) && got_hup)
+	    return XEV_HUP;
+
+        XFlush(disp);
+
+        FD_ZERO(&rd);
+        max = 0;
+        FD_SET(signalpipe[0], &rd); if (max <= signalpipe[0]) max = signalpipe[0]+1;
+        FD_SET(xfd, &rd); if (max <= xfd) max = xfd+1;
+
+        ret = select(max, &rd, NULL, NULL, NULL);
+        if (ret < 0) {
+#ifdef EAGAIN
+            if (errno == EAGAIN)
+                continue;
+#endif
+#ifdef EINTR
+            if (errno == EINTR)
+                continue;
+#endif
+            error("select: %s\n", strerror(errno));
+            exit(1);
+        }
+
+        if (FD_ISSET(signalpipe[0], &rd)) {
+            char c;
+            int n = read(signalpipe[0], &c, 1);
+            if (n > 0 && c == 'H') {
+                got_hup = 1;
+            }
+        }
+
+        if (FD_ISSET(xfd, &rd)) {
+            XNextEvent (disp, &ev);
+            switch (ev.type) {
+              case KeyPress:
+                for (i = 0; i < hotkeysize; i++)
+                    if (hotkeys[i].exists &&
+                        ev.xkey.keycode == hotkeys[i].keycode &&
+                        (ev.xkey.state & ~Mod2Mask) == hotkeys[i].modifiers) {
+                        struct hotkey_event *hk = snew(struct hotkey_event);
+                        hk->id = i;
+                        hk->time = ev.xkey.time;
+                        hk->next = NULL;
+                        if (hktail)
+                            hktail->next = hk;
+                        else
+                            hkhead = hk;
+                        hktail = hk;
+                        break;
+                    }
+                break;
+              case SelectionClear:
+                seldata = NULL;
+                break;
+              case SelectionRequest:
+                if (seldata) {
+                    e2.xselection.type = SelectionNotify;
+                    e2.xselection.requestor = ev.xselectionrequest.requestor;
+                    e2.xselection.selection = ev.xselectionrequest.selection;
+                    e2.xselection.target = ev.xselectionrequest.target;
+                    e2.xselection.time = ev.xselectionrequest.time;
+                    e2.xselection.property =
+                        convert_sel_outer(ev.xselectionrequest.requestor,
+                                          ev.xselectionrequest.target,
+                                          ev.xselectionrequest.property);
+                    XSendEvent (disp, ev.xselectionrequest.requestor,
+                                False, 0, &e2);
+                }
+                break;
+              case SelectionNotify:
+                if (retflags & XEV_PASTE) {
+                    selrequestor = ev.xselection.requestor;
+                    selproperty = ev.xselection.property;
+                    return XEV_PASTE;
+                }
+                break;
+            }
+        }
     }
 }
 
@@ -618,6 +680,15 @@ int main(int ac, char **av)
 	}
     }
 
+    /* establish a SIGHUP handler so we can reread config */
+    if (pipe(signalpipe) < 0) {
+        error("pipe: %s", strerror(errno));
+        return 0;
+    }
+    nonblock(signalpipe[1]);
+    nonblock(signalpipe[0]);
+    signal(SIGHUP, sighup);
+
     /* open the X display and grab various bits and bobs */
     disp = XOpenDisplay(display);
     if (!disp)
@@ -650,7 +721,11 @@ int main(int ac, char **av)
     configure();
 
     while (1) {
-	xeventloop(XEV_HOTKEY);
+	xeventloop(XEV_HOTKEY | XEV_HUP);
+        if (got_hup) {
+            configure();
+            got_hup = 0;
+        }
 	while (hkhead) {
 	    struct hotkey_event *hk = hkhead;
 	    hkhead = hk->next;
