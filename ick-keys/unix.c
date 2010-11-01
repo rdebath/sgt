@@ -312,52 +312,58 @@ int xeventloop(int retflags)
         }
 
         if (FD_ISSET(xfd, &rd)) {
-            XNextEvent (disp, &ev);
-            switch (ev.type) {
-              case KeyPress:
-                for (i = 0; i < hotkeysize; i++)
-                    if (hotkeys[i].exists &&
-                        ev.xkey.keycode == hotkeys[i].keycode &&
-                        (ev.xkey.state & ~Mod2Mask) == hotkeys[i].modifiers) {
-                        struct hotkey_event *hk = snew(struct hotkey_event);
-                        hk->id = i;
-                        hk->time = ev.xkey.time;
-                        hk->next = NULL;
-                        if (hktail)
-                            hktail->next = hk;
-                        else
-                            hkhead = hk;
-                        hktail = hk;
-                        break;
-                    }
-                break;
-              case SelectionClear:
-                seldata = NULL;
-                break;
-              case SelectionRequest:
-                if (seldata) {
-                    e2.xselection.type = SelectionNotify;
-                    e2.xselection.requestor = ev.xselectionrequest.requestor;
-                    e2.xselection.selection = ev.xselectionrequest.selection;
-                    e2.xselection.target = ev.xselectionrequest.target;
-                    e2.xselection.time = ev.xselectionrequest.time;
-                    e2.xselection.property =
-                        convert_sel_outer(ev.xselectionrequest.requestor,
-                                          ev.xselectionrequest.target,
-                                          ev.xselectionrequest.property);
-                    XSendEvent (disp, ev.xselectionrequest.requestor,
-                                False, 0, &e2);
-                }
-                break;
-              case SelectionNotify:
-                if (retflags & XEV_PASTE) {
-                    selrequestor = ev.xselection.requestor;
-                    selproperty = ev.xselection.property;
-                    return XEV_PASTE;
-                }
-                break;
-            }
-        }
+	    do {
+		XNextEvent (disp, &ev);
+		switch (ev.type) {
+		  case KeyPress:
+		    for (i = 0; i < hotkeysize; i++)
+			if (hotkeys[i].exists &&
+			    ev.xkey.keycode == hotkeys[i].keycode &&
+			    (ev.xkey.state&~Mod2Mask) == hotkeys[i].modifiers)
+			{
+			    struct hotkey_event *hk =
+				snew(struct hotkey_event);
+			    hk->id = i;
+			    hk->time = ev.xkey.time;
+			    hk->next = NULL;
+			    if (hktail)
+				hktail->next = hk;
+			    else
+				hkhead = hk;
+			    hktail = hk;
+			    break;
+			}
+		    break;
+		  case SelectionClear:
+		    seldata = NULL;
+		    break;
+		  case SelectionRequest:
+		    if (seldata) {
+			e2.xselection.type = SelectionNotify;
+			e2.xselection.requestor =
+			    ev.xselectionrequest.requestor;
+			e2.xselection.selection =
+			    ev.xselectionrequest.selection;
+			e2.xselection.target = ev.xselectionrequest.target;
+			e2.xselection.time = ev.xselectionrequest.time;
+			e2.xselection.property =
+			    convert_sel_outer(ev.xselectionrequest.requestor,
+					      ev.xselectionrequest.target,
+					      ev.xselectionrequest.property);
+			XSendEvent (disp, ev.xselectionrequest.requestor,
+				    False, 0, &e2);
+		    }
+		    break;
+		  case SelectionNotify:
+		    if (retflags & XEV_PASTE) {
+			selrequestor = ev.xselection.requestor;
+			selproperty = ev.xselection.property;
+			return XEV_PASTE;
+		    }
+		    break;
+		}
+	    } while (XPending(disp) > 0);
+	}
     }
 }
 
