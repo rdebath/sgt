@@ -424,13 +424,13 @@ int uxmain(int multiuser, int port, char *dropprivuser, char **singleusercmd,
 	 */
 	configure_master(port);
     } else {
-	signal(SIGHUP, sighup);
-
 	if (pipe(signalpipe) < 0) {
 	    fprintf(stderr, "ick-proxy: pipe: %s\n", strerror(errno));
 	    exit(1);
 	}
 	new_fdstruct(signalpipe[0], FD_SIGNAL_PIPE);
+
+	signal(SIGHUP, sighup);
 
 	if (!configure_single_user())
 	    return 1;
