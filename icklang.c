@@ -4150,14 +4150,14 @@ static int ick_sstack_set(struct ick_stacks *stacks, int index,
 	(a) = (b) + stacks->isp; \
     else \
 	(a) = (b); \
-    assert((a) >= 0 && (a) < stacks->isp); \
+    assert((unsigned)(a) < (unsigned)stacks->isp); \
 } while (0)
 #define SPOS(a,b) do { \
     if ((b) < 0) \
 	(a) = (b) + stacks->ssp; \
     else \
 	(a) = (b); \
-    assert((a) >= 0 && (a) < stacks->ssp); \
+    assert((unsigned)(a) < (unsigned)stacks->isp); \
 } while (0)
 
 int ick_exec_limited_v(void *result, int maxcycles, int maxstk, int maxstr,
