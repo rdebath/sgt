@@ -289,7 +289,17 @@ void run_hotkey(int index)
 {
     int rte;
 
-    assert(scr);		       /* FIXME: can this occur by accident? */
+    if (!scr) {
+	/*
+	 * scr can be NULL if the last run-time reconfiguration
+	 * encountered a compile error. In this situation we don't
+	 * want to bomb out of the whole program; we want to stay
+	 * running, so the user can edit their scripts and do
+	 * another reconfig to reload the working version.
+	 */
+	error("hotkey %d: no valid script loaded\n");
+	return;
+    }
     in_init = 0;
     rte = ick_exec_limited(NULL, 1000000, 0, 0, scr, index);
     if (rte) {
