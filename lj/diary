@@ -1407,7 +1407,7 @@ else:
 
 if need_edit:
     f = open(fname, "w")
-    f.write("-*- diary -*-\n\n")
+    f.write("-*- sgt-diary -*-\n\n")
     f.close()
     os.system(os.environ["VISUAL"] + " +3 " + fname)
 
