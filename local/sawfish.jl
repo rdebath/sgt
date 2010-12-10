@@ -80,7 +80,7 @@
     )
 )
 
-(bind-keys window-keymap
+(bind-keys global-keymap
     "H-x" 'iconify-window-under-pointer
     "H-z" 'lower-window-under-pointer
 )
