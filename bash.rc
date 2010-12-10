@@ -147,9 +147,9 @@ bashrc_dovars() {
   local foo
   foo=`type -p less`
   if [ -n "$foo" ]; then export PAGER=$foo; export LESS=-M; fi
-  foo=`type -p jed`
+  foo=`type -p emacs`
   if [ ! -e "$foo" ]; then
-    foo=`type -p emacs`; fi
+    foo=`type -p jed`; fi
   if [ ! -e "$foo" ]; then
     foo=`type -p vi`; fi
   if [ -f $HOME/.hostaliases ]; then
