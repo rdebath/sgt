@@ -109,15 +109,7 @@ define slang_mode_hook() {
 }
 
 %}}}
-%{{{ ^X^D to insert the date; ^X4^D/^X4d to insert eight-digit dates
-
-% insert date
-define insert_date() {
-    variable t = time;
-    insert(sprintf("%s-%s-%s", substr(t,9,2),
-                   substr(t,5,3), substr(t,21,4)));
-}
-setkey("insert_date", "^X^D");
+%{{{ ^Cd/^CD to insert eight-digit dates
 
 % insert 8-digit date
 define insert_8dig_date(s) {
@@ -132,15 +124,16 @@ define insert_8dig_date(s) {
     y = substr(t,21,4);
     insert(sprintf("%s%s%02d%s%s", y, s, nm, s, d));
 }
-setkey("insert_date", "^X^D");
-setkey(". \"-\" insert_8dig_date", "^X4^D");
-setkey(". \"\" insert_8dig_date", "^X4d");
-setkey(". \"\" insert_8dig_date", "^X4D");
+setkey(". \"-\" insert_8dig_date", "^Cd");
+setkey(". \"\" insert_8dig_date", "^CD");
+setkey(". \"\" insert_8dig_date", "^CD");
 
 %}}}
-%{{{ Extra bindings: ^X^I to toggle insert mode, ^Xg to go to line
-setkey("toggle_overwrite", "^X^I");
-setkey("goto_line_cmd", "^Xg");
+%{{{ Extra bindings: Ins to toggle insert mode, M-g g to go to line
+setkey("toggle_overwrite", "^[[2~");
+unsetkey("\eg");
+setkey("goto_line_cmd", "\egg");
+setkey("goto_line_cmd", "\eg\eg");
 %}}}
 %{{{ turn off the menu bar
 
@@ -421,7 +414,8 @@ define c_mode_hook() %{{{
     keymap = what_keymap();
     definekey("insert_openbrace_cmd", "{", keymap);
     definekey("insert_shutbrace_cmd", "}", keymap);
-    definekey("c_multiline_comment", "^XC", keymap);
+    definekey("c_multiline_comment", "^CC", keymap);
+    definekey("c_multiline_comment", "^Cc", keymap);
     definekey("jedrc_c_format_paragraph", "^[Q", keymap);
     definekey("jedrc_c_format_paragraph", "^[q", keymap);
 #ifexists set_buffer_hook
@@ -596,7 +590,7 @@ define sh_mode_hook() {
 unsetkey("^Xf");
 unsetkey("^XF");
 %}}}
-%{{{ ^X T to open a new temp buffer with no attached file
+%{{{ ^C T to open a new temp buffer with no attached file
 define make_temp_buffer() {
     variable bufname, number;
 
@@ -612,8 +606,8 @@ define make_temp_buffer() {
     text_mode();
 }
 
-setkey("make_temp_buffer", "^Xt");
-setkey("make_temp_buffer", "^XT");
+setkey("make_temp_buffer", "^Ct");
+setkey("make_temp_buffer", "^CT");
 %}}}
 %{{{ global variables
 
