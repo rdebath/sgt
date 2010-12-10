@@ -689,7 +689,14 @@ verbose() {
 # source copies.
 #
 # usage: find <paths> $sp <args>
+#
+# Also $gp, to do the same with git. git's internal data is less
+# plain-text than svn's, so the risk is not so much that there'll be
+# false positives when grepping the whole directory; the real problem
+# is that .git directories are gigantic and grepping them
+# unnecessarily is a big waste of time!
 sp='-name .svn -prune -o'
+gp='-name .git -prune -o'
 
 # For finding the svn directories in the first place: finds every
 # directory below the current one that contains a .svn subdir. Run
@@ -697,6 +704,19 @@ sp='-name .svn -prune -o'
 svndirs() {
   test $# -eq 0 && set -- .
   \find "$@" -follow -mindepth 1 -type d -exec test -d {}/.svn \; -print -prune
+}
+gitdirs() {
+  test $# -eq 0 && set -- .
+  \find "$@" -follow -mindepth 1 -type d -exec test -d {}/.git \; -print -prune
+}
+
+# In some repositories I find that gitk --date-order is much more
+# readable than the default topological order. There doesn't seem to
+# be a 'git config' option to change that default, but I can make one
+# up as follows. Just do 'git config gitk.opts --date-order' in such a
+# repository.
+gitk() {
+    command gitk $(git config gitk.opts) "$@"
 }
 
 #}}}
