@@ -334,6 +334,21 @@ function spindown(t) {
 }
 
 /*
+ * Find the pageX and pageY coordinates of an event. This is not
+ * totally trivial, because on multi-touch touchscreen platforms such
+ * as an iPad, a list of touches is returned and we must look in that.
+ */
+function eventcoords(event) {
+    var ret;
+    if ('touches' in event && event.touches.length > 0) {
+        ret = { x: event.touches[0].pageX, y: event.touches[0].pageY };
+    } else {
+        ret = { x: event.pageX, y: event.pageY };
+    }
+    return ret;
+}
+
+/*
  * Call this once on a canvas to turn it into a
  * polyhedron-displaying applet. This function will take care of
  * assigning mouse and timeout handlers.
@@ -364,20 +379,22 @@ function setupPolyhedron(acanvas, apoly) {
     /*
      * Set up mouse handlers.
      */
-    state.canvas.onmousedown = function(event) {
+    state.canvas.onmousedown = state.canvas.ontouchstart = function(event) {
 	var coords = canvascoords(state.canvas);
-	var mx = (event.pageX-state.canvas.offsetLeft-coords.ox)/coords.scale * -pdistance;
-	var my = (event.pageY-state.canvas.offsetTop-coords.oy)/coords.scale * -pdistance;
+        var ecoords = eventcoords(event);
+	var mx = (ecoords.x-state.canvas.offsetLeft-coords.ox)/coords.scale * -pdistance;
+	var my = (ecoords.y-state.canvas.offsetTop-coords.oy)/coords.scale * -pdistance;
 	state.mousepos = {x:mx, y:my, z:1};
 	state.time = new Date().getTime();
 	state.mode = 1;
     }
 
-    state.canvas.onmousemove = function(event) {
+    state.canvas.onmousemove = state.canvas.ontouchmove = function(event) {
 	if (state.mode == 1) {
 	    var coords = canvascoords(state.canvas);
-	    var mx = (event.pageX-state.canvas.offsetLeft-coords.ox)/coords.scale * -pdistance;
-	    var my = (event.pageY-state.canvas.offsetTop-coords.oy)/coords.scale * -pdistance;
+            var ecoords = eventcoords(event);
+	    var mx = (ecoords.x-state.canvas.offsetLeft-coords.ox)/coords.scale * -pdistance;
+	    var my = (ecoords.y-state.canvas.offsetTop-coords.oy)/coords.scale * -pdistance;
 	    var newmousepos = {x:mx, y:my, z:1};
 	    var dragstart = vnorm(state.mousepos);
 	    var dragend = vnorm(newmousepos);
@@ -399,7 +416,7 @@ function setupPolyhedron(acanvas, apoly) {
 	}
     }
 
-    state.canvas.onmouseup = function(event) {
+    state.canvas.onmouseup = state.canvas.ontouchend = function(event) {
 	var now = new Date().getTime();
 
 	/*
