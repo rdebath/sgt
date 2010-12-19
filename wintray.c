@@ -225,6 +225,15 @@ void spawn_process(const char *cmd)
 int *hotkeyids = NULL;
 int hotkeyidsize = 0;
 
+#define IDM_CLOSE    0x0010
+#define IDM_ABOUT    0x0020
+#define IDM_RECONF   0x0030
+#define IDM_HK_BASE  0x0040
+
+static HMENU systray_menu;
+static int systray_nhk;  /* number of hotkey-related menu entries,
+                          * including a separator below all hotkeys */
+
 void unregister_all_hotkeys(void)
 {
     int i;
@@ -233,6 +242,10 @@ void unregister_all_hotkeys(void)
 	    UnregisterHotKey(ickkeys_hwnd, hotkeyids[i]);
 	    hotkeyids[i] = -1;
 	}
+    while (systray_nhk > 0) {
+        DeleteMenu(systray_menu, systray_nhk-1, MF_BYPOSITION);
+        systray_nhk--;
+    }
 }
 
 int register_hotkey(int index, int modifiers, const char *key,
@@ -240,6 +253,7 @@ int register_hotkey(int index, int modifiers, const char *key,
 {
     int id = (index + 1) * 16;
     int mods;
+    char name[512];
 
     if (index >= hotkeyidsize) {
 	int oldsize = hotkeyidsize;
@@ -250,12 +264,20 @@ int register_hotkey(int index, int modifiers, const char *key,
     }
 
     mods = 0;
-    if (modifiers & LEFT_WINDOWS)
+    name[0] = '\0';
+    if (modifiers & LEFT_WINDOWS) {
 	mods |= MOD_WIN;
-    if (modifiers & ALT)
+        strcat(name, "Windows-");
+    }
+    if (modifiers & ALT) {
 	mods |= MOD_ALT;
-    if (modifiers & CTRL)
+        strcat(name, "Alt-");
+    }
+    if (modifiers & CTRL) {
 	mods |= MOD_CONTROL;
+        strcat(name, "Ctrl-");
+    }
+    sprintf(name + strlen(name), "%c", (char)toupper((unsigned char)key[0]));
 
     if (!RegisterHotKey(ickkeys_hwnd, id, mods,
 			(char)toupper((unsigned char)key[0]))) {
@@ -265,6 +287,15 @@ int register_hotkey(int index, int modifiers, const char *key,
 	sfree(syserr);
 	return 0;
     }
+
+    if (!systray_nhk) {
+        InsertMenu(systray_menu, systray_nhk,
+                   MF_BYPOSITION | MF_SEPARATOR, 0, 0);
+        systray_nhk++;
+    }
+    InsertMenu(systray_menu, systray_nhk - 1, MF_BYPOSITION,
+               IDM_HK_BASE + 0x10 * index, name);
+    systray_nhk++;
 
     hotkeyids[index] = id;
     return 1;
@@ -308,12 +339,6 @@ char *read_whole_file(char **err, char *filename)
 	}
     }
 }
-
-#define IDM_CLOSE    0x0010
-#define IDM_ABOUT    0x0020
-#define IDM_RECONF   0x0030
-
-static HMENU systray_menu;
 
 static int tray_init(void)
 {
@@ -505,6 +530,15 @@ static LRESULT CALLBACK WndProc (HWND hwnd, UINT message,
 	    configure();
 	    return 0;
 	}
+        if ((wParam & ~0xF) >= IDM_HK_BASE &&
+            (wParam & ~0xF) < (unsigned)(IDM_HK_BASE + 0x10 * hotkeyidsize)) {
+            i = (unsigned)((wParam & ~0xF) - IDM_HK_BASE) / 0x10;
+	    if (hotkeyids[i] >= 0) {
+                run_hotkey(i);
+                return 0;
+            }            
+        }
+            
 	break;
     }
 
