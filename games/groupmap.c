@@ -1325,6 +1325,245 @@ struct perm c332 = {
 };
 
 /* ----------------------------------------------------------------------
+ * 2x2x2 Rubik's Cube.
+ *
+ * Move notation is Singmaster.
+ */
+
+/*
+ * Internal group structure is an array of 8 integers, storing the
+ * contents of each of the 8 cubelet positions in the order:
+ *
+ *   ufl urf ulb ubr dlf dfr dbl drb
+ *
+ * Each of those integers is of the form 3n+m, where n identifies a
+ * cubelet, and m is the number of clockwise turns required to return
+ * the cubelet to the orientation in which the u or d facelet is on
+ * the u or d face.
+ */
+
+struct c222_internal {
+    int slot[8];
+};
+
+int c222counts[] = { 1,1,1,1,1,1,1,1 };
+struct perm c222_perm = {
+    {perm_eltsize, perm_identity, perm_index, perm_fromindex, perm_maxindex,
+     perm_printelt, perm_parseelt, perm_moves, perm_makemove, perm_movename},
+    8, 8, c222counts, 0, NULL, NULL
+};
+
+int c222_eltsize(struct group *gctx)
+{
+    return sizeof(struct c222_internal);
+}
+
+int c222_identity(struct group *gctx, void *velt, int i)
+{
+    struct c222_internal *elt = (struct c222_internal *)velt;
+    int j;
+
+    if (i > 0)
+        return 0;
+
+    for (j = 0; j < 8; j++)
+        elt->slot[j] = 3*j;
+
+    return 1;
+}
+
+int c222_index(struct group *gctx, void *velt)
+{
+    struct c222_internal *elt = (struct c222_internal *)velt;
+    int p[8];
+    int j;
+    int ret;
+
+    /*
+     * Compute the permutation of the faces.
+     */
+    for (j = 0; j < 8; j++)
+        p[j] = elt->slot[j] / 3;
+    ret = perm_index(&c222_perm.vtable, p);
+
+    /*
+     * Fold in the pieces' orientations. The last piece's orientation
+     * is determined by the other seven, by parity.
+     */
+    for (j = 0; j < 7; j++)
+        ret = ret * 3 + elt->slot[j] % 3;
+
+    return ret;
+}
+
+void c222_fromindex(struct group *gctx, void *velt, int index)
+{
+    struct c222_internal *elt = (struct c222_internal *)velt;
+    int p[8];
+    int j, parity;
+
+    /*
+     * Fetch the pieces' orientations, and get back the last one by
+     * parity.
+     */
+    parity = 0;
+    for (j = 7; j-- > 0 ;) {
+        elt->slot[j] = index % 3;
+        index /= 3;
+        parity += elt->slot[j];
+    }
+    elt->slot[7] = (30 - parity) % 3;
+
+    /*
+     * Decode the permutation of the faces.
+     */
+    perm_fromindex(&c222_perm.vtable, p, index);
+    for (j = 0; j < 8; j++)
+        elt->slot[j] += 3 * p[j];
+}
+
+int c222_maxindex(struct group *gctx)
+{
+    return 3*3*3*3*3*3*3 * 8*7*6*5*4*3*2*1;
+}
+
+void c222_printelt(struct group *gctx, void *velt)
+{
+    struct c222_internal *elt = (struct c222_internal *)velt;
+    int j;
+    for (j = 0; j < 8; j++) {
+        int val = elt->slot[j];
+        int orientation = val % 3;
+        int cubie = val / 3;
+        char u = (cubie & 4) ? 'd' : 'u';
+        char f = (cubie & 2) ? 'b' : 'f';
+        char l = (cubie & 1) ? 'r' : 'l';
+        char text[6];
+        text[0] = text[3] = u;
+        if ((cubie ^ (cubie >> 1) ^ (cubie >> 2)) & 1) {
+            text[1] = text[4] = l;
+            text[2] = text[5] = f;
+        } else {
+            text[1] = text[4] = f;
+            text[2] = text[5] = l;
+        }
+        printf("%s%.3s", j ? "," : "", text + orientation);
+    }
+}
+
+char *c222_parseelt(struct group *gctx, void *velt, char *text)
+{
+    struct c222_internal *elt = (struct c222_internal *)velt;
+    int cubies = 0, parity = 0;
+    int j;
+
+    for (j = 0; j < 8; j++) {
+        int k;
+        int bits = 0, cubie = 0, first = 0;
+
+        for (k = 0; k < 3; k++) {
+            char c = tolower((unsigned char)*text);
+            text++;
+            if (c == 'u' || c == 'd') {
+                bits |= 4;
+                if (c == 'd') cubie |= 4;
+                if (!first) first = 4;
+            } else if (c == 'f' || c == 'b') {
+                bits |= 2;
+                if (c == 'b') cubie |= 2;
+                if (!first) first = 2;
+            } else if (c == 'l' || c == 'r') {
+                bits |= 1;
+                if (c == 'r') cubie |= 1;
+                if (!first) first = 1;
+            } else {
+                return "Unable to parse cubie specification";
+            }
+        }
+        if (*text != (j==7 ? '\0' : ','))
+            return "Unexpected text after cubie specification";
+        text++;
+
+        if (cubies & (1 << cubie))
+            return "Duplicate cubie";
+        cubies |= (1 << cubie);
+
+        elt->slot[j] = 3 * cubie;
+        if ((cubie ^ (cubie >> 1) ^ (cubie >> 2)) & 1) {
+            elt->slot[j] += (first==4 ? 0 : first==2 ? 2 : 1);
+        } else {
+            elt->slot[j] += (first==4 ? 0 : first==2 ? 1 : 2);
+        }
+        parity += elt->slot[j];
+    }
+    if (parity % 3)
+        return "Impossible parity";
+    return NULL;
+}
+
+struct c222_move {
+    char *names[3];
+    int indices[4];
+    int first_orientation_fix;
+} c222_moves[] = {
+    {{"U'", "U", "U2"}, {0,2,3,1}, 0},
+    {{"D'", "D", "D2"}, {4,5,7,6}, 0},
+    {{"F'", "F", "F2"}, {0,1,5,4}, 2},
+    {{"B'", "B", "B2"}, {2,6,7,3}, 1},
+    {{"L'", "L", "L2"}, {0,4,6,2}, 1},
+    {{"R'", "R", "R2"}, {1,3,7,5}, 2},
+};
+
+int c222q_moves(struct group *gctx)
+{
+    return 12;                         /* q-turns, so U and U' count */
+}
+
+int c222f_moves(struct group *gctx)
+{
+    return 18;                         /* face-turns, so U,U',U2 count */
+}
+
+void c222_makemove(struct group *gctx, void *velt, int n, int out)
+{
+    struct c222_internal *elt = (struct c222_internal *)velt;
+    int movetype = n % 6, moveclass = n / 6;
+    struct c222_move *move = &c222_moves[n % 6];
+    int reps = (moveclass == 0 ? 1 : moveclass == 1 ? 3 : 2);
+    int rot02 = move->first_orientation_fix;
+    int rot13 = 3-rot02;
+    int p = move->indices[0], q = move->indices[1];
+    int r = move->indices[2], s = move->indices[3];
+
+    if (!out)
+        reps = 4 - reps;
+
+    while (reps-- > 0) {
+        int tmp =      (elt->slot[s] / 3) * 3 + (elt->slot[s] % 3 + rot13) % 3;
+        elt->slot[s] = (elt->slot[r] / 3) * 3 + (elt->slot[r] % 3 + rot02) % 3;
+        elt->slot[r] = (elt->slot[q] / 3) * 3 + (elt->slot[q] % 3 + rot13) % 3;
+        elt->slot[q] = (elt->slot[p] / 3) * 3 + (elt->slot[p] % 3 + rot02) % 3;
+        elt->slot[p] = tmp;
+    }
+}
+
+char *c222_movename(struct group *gctx, int n)
+{
+    return c222_moves[n % 6].names[n / 6];
+}
+
+struct group c222q = {
+    c222_eltsize, c222_identity, c222_index, c222_fromindex,
+    c222_maxindex, c222_printelt, c222_parseelt, c222q_moves,
+    c222_makemove, c222_movename
+};
+struct group c222f = {
+    c222_eltsize, c222_identity, c222_index, c222_fromindex,
+    c222_maxindex, c222_printelt, c222_parseelt, c222f_moves,
+    c222_makemove, c222_movename
+};
+
+/* ----------------------------------------------------------------------
  * Command-line processing.
  */
 
@@ -1339,6 +1578,8 @@ struct namedgroup {
     {"cube3x3", &cube3x3.vtable},
     {"cube4x4", &cube4x4.vtable},
     {"c332", &c332.vtable},
+    {"c222q", &c222q},
+    {"c222f", &c222f},
 };
 
 struct cmdline {
