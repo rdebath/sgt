@@ -31,4 +31,5 @@ only get improved download performance.
 
 <p>PSCP and PSFTP do both of these as of r7679, and get decent
 download performance. (We're not aware that any server yet takes any
-notice of our <tt>simple@putty.projects.tartarus.org</tt> hint, though.)
+notice of our <a href="http://tartarus.org/~simon/putty-snapshots/htmldoc/AppendixF.html#sshnames-channel"><tt>simple@putty.projects.tartarus.org</tt></a>
+hint, though.)
