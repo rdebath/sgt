@@ -40,7 +40,16 @@ which is why I didn't fix it before the 0.54 release.
 these days no weird user behaviour is a surprise to me.)
 
 BJH21: I've added an assert() to the code so that the explosion when trying
-       to use a too-short key is more controlled.
+       to use a too-short key is more controlled. The signature of the
+       assertion failure looks something like this:
+
+         Assertion failed!
+
+         Program: putty.exe
+         File: ..\sshrsa.c
+         Line: 793
+         
+         Expression: 1 <= nbytes - 20 - ASN1_LEN
 
        It occurs to me that PuTTYgen really should warn (and maybe fail)
        when asked to generate an ssh-rsa key that can't possibly be used.
