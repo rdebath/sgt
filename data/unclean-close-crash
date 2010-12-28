@@ -21,6 +21,11 @@ Many (all?) of the reports indicate that port-forwarding is in use.
 We've not yet been able to reproduce it.
 
 <p>
+See also <a href="unclean-close-hang.html">unclean-close-hang</a>,
+which seems more or less specific to Windows Vista and Windows 7, and
+definitely doesn't require port forwarding to be active.
+
+<p>
 Reports:
 
 <ul>
