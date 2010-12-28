@@ -25,11 +25,11 @@ Win7 systems have managed to reproduce the problem.
 <p>
 Intriguingly, some of the reports hint that dwm.exe -- Windows'
 Desktop Window Manager -- also consumes significant CPU until PuTTY is
-killed. One report appears to sayS that stopping the 'uxsms' service
+killed. One report appears to say that stopping the 'uxsms' service
 ("Desktop Window Manager Session Manager") made the problem go away,
 but that probably isn't a good idea as a workaround. (On this
 developer's machine at least, that service is running and I still
-can't reproduce it.)
+can't reproduce the problem.)
 
 <p>
 There are also a couple of reports of very similar behaviour on XP,
