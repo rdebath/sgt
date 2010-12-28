@@ -1,0 +1,126 @@
+Summary: Unclean close on Vista/Windows 7 leads to CPU-bound hang
+Class: bug
+Present-in: 0.59 0.60 2008-07-02 2008-12-15 2009-01-28 2009-11-17 2010-05-24 2010-07-28 2010-09-20
+Content-type: text/x-html-body
+
+<p>
+We've had numerous reports that if a PuTTY session on Windows Vista or
+Windows 7 closes with a network error -- for instance, "Connection
+timed out" at startup, or "Software caused connection abort" in an
+established session -- then after hitting OK, and after the window
+title has changed to "PuTTY (inactive)", the PuTTY window becomes
+unresponsive, and the PuTTY process consumes a lot of CPU, and must be
+killed via Task Manager.
+
+<p>
+This apparently happens with PuTTY's default setting of "Close window
+on exit": "Only on clean exit". Changing this to "Always" is reported
+to avoid the problem.
+
+<p>
+Unfortunately, while this is readily reproducible for sufferers, none
+of the development team who have tried it on a variety of Vista and
+Win7 systems have managed to reproduce the problem.
+
+<p>
+Intriguingly, some of the reports hint that dwm.exe -- Windows'
+Desktop Window Manager -- also consumes significant CPU until PuTTY is
+killed. One report appears to sayS that stopping the 'uxsms' service
+("Desktop Window Manager Session Manager") made the problem go away,
+but that probably isn't a good idea as a workaround. (On this
+developer's machine at least, that service is running and I still
+can't reproduce it.)
+
+<p>
+There are also a couple of reports of very similar behaviour on XP,
+but nowhere near as many as Vista / Windows 7. It could be that this is a
+manifestation of <a href="unclean-close-crash.html">unclean-close-crash</a>
+that's just particularly reproducible on the new versions of Windows.
+
+<p>
+(Note that we did fix another Vista-specific CPU-bound hang in r8030,
+after 0.60 was released, but that was specific to processing of
+disconnection messages sent by SSH servers -- for instance after
+entering an incorrect password too many times -- and can't be
+implicated in these instances of network errors.)
+
+<p>
+Reports on Vista and Windows 7:
+
+<ul>
+
+<li><tt>4802EEDB.7050908@gmail.com</tt>
+<br>Vista SP1; hints of RAM munching also
+</li>
+
+<li><tt>42453A7809FE8F4F99CD7697CEF964CD0E0816964C@hpserver-exch.gadellnet.local</tt>
+<br>Vista SP1; PuTTY 0.60
+</li>
+
+<li><tt>f685e3ca0807272327r19c24587t722e9278063dd845@mail.gmail.com</tt>
+<br>Vista 32-bit; PuTTY 0.60; dwm.exe also taking lots of CPU
+</li>
+
+<li><tt>Pine.LNX.4.64.0805122143270.20049@mulva.they.org</tt>
+<br>Vista Home Premium; PuTTY 0.60, 2008-07-02
+</li>
+
+<li><tt>D1598C2AF60F433E85E85BC86938AB71@blue</tt>
+<br>Vista Home Premium; PuTTY 0.60
+</li>
+
+<li><tt>21aed3f90812142037y224ebb9fw71737392bc6517cd@mail.gmail.com</tt>
+<br>Vista Home Premium SP1; PuTTY 0.59, 0.60, 2008-12-15
+</li>
+
+<li><tt>4980A115.50709@gmail.com</tt>
+<br>Vista; PuTTY 0.60, 2009-01-28; explorer.exe also taking lots of CPU
+</li>
+
+<li><tt>283365400AEE054DA4089467FDA6C78B09643568@PTEEXB02.mtsallstream.com</tt>
+<br>Vista 64-bit
+</li>
+
+<li><tt>44c111ef0911171632r7d515cd9r72bf83ba1e9a3af4@mail.gmail.com</tt>
+<br>Vista 32/64-bit and Windows 7 64-bit (but not XP 32-bit)
+<br>PuTTY 0.59, 0.60, 2009-11-17
+</li>
+
+<li><tt>CA6A6D14F091ED4B9BAED858B52EE9950132158F@mail0.niksoftware.loc</tt>
+<br>Windows 7 64-bit
+
+<li><tt>AANLkTik4o6rvjnu0RHC5U_G0g8GuyvcUq0PDmXJNH5tS@mail.gmail.com</tt>
+<br>Windows 7 64-bit; PuTTY 2010-05-24, 2010-07-28
+</li>
+
+<li><tt>SNT138-w35C7A1ABCA375AA953BC9B82840@phx.gbl</tt>
+<br>Windows 7
+</li>
+
+<li><tt>AANLkTinrDMEJSBiTy3pXg6mr_Fd+R81O8eVgwaNsDx4J@mail.gmail.com</tt>
+<br>Windows 7; PuTTY 0.60, 2010-09-20
+</li>
+
+<li><a href="http://social.technet.microsoft.com/Forums/en/w7itproappcompat/thread/8c007fbb-fd34-471b-890d-73405bde72e7">Windows Client TechCenter</a>
+<br>Windows 7 Pro 32-bit; PuTTY 0.60; using Aero
+<br>Reported to make the taskbar unresponsive too
+<br>Stopping the 'uxsms' service (Desktop Window Manager Session Manager)
+is reported to stop the problem 
+</li>
+
+</ul>
+
+<p>
+Other reports that don't fit the pattern in some way:
+
+<ul>
+
+<li><tt>003901c77dd0$44baf080$0100a8c0@cgusa</tt>
+<br><b>XP SP2</b>; PuTTY 0.59, 2007-04-13
+</li>
+
+<li><tt>98D6DBD179F61A46AF5C064829A832A0023BD076E5@erebus.totalmanaged.com</tt>
+<br><b>XP 32-bit</b>; PuTTY 0.59, 0.60, 2008-07-01
+</li>
+
+</ul>
