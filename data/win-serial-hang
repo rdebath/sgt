@@ -1,0 +1,14 @@
+Summary: Serial backend on Windows hangs on simultaneous input/output
+Class: bug
+Present-in: 0.60
+Fixed-in: r8410 2009-01-13
+Content-type: text/x-html-body
+
+<p>
+PuTTY 0.60 for Windows can lock up when using the serial backend and
+there is simultaneous input and output.
+
+<p>
+For instance, doing <tt>more&nbsp;/var/adm/messages</tt> to a Unix
+system and pressing and holding 'j' to scroll is reported to be
+sufficient to cause the session to lock up.
