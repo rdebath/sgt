@@ -1,0 +1,19 @@
+Summary: Support for non-monospaced fonts
+Class: wish
+Fixed-in: r9067 2010-12-31
+Content-type: text/x-html-body
+
+<p>
+Both Windows and Unix PuTTY can now use fonts which are not internally
+marked as monospaced.
+
+<p>
+This allows use of fonts which are designed for a fixed-width grid but
+do not declare themselves as monospaced, such as
+<a href="http://unifoundry.com/unifont.html">Unifont</a> or
+<a href="http://www.fixedsysexcelsior.com/">Fixedsys Excelsior</a>.
+
+<p>
+If you <a href="http://xkcd.com/840/">really want to</a>, it's also
+possible to use a non-monospaced font, although the result may not
+look very good.
