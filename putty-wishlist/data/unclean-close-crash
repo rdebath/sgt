@@ -63,7 +63,8 @@ Reports:
 <br>0.56; XPSP1; SSH server disconnect ("connection timed out" is fine!)
 
 <li>141902151.20090211120208@kilgus.net
-<br>2009-02-10; <em>evidence of use of freed memory</em>
+<br>2009-02-10; <em>evidence of use of freed memory</em> (this one fixed in
+r9069)
 
 </ul>
 
@@ -73,4 +74,6 @@ Possibly related code activity:
 <li>access of freed ssh-&gt;channels fixed r4946, s/s 2004-12-03
 <li>leaving channels/listening sockets lying around fixed r5325, s/s
 2005-02-18
+<li>not properly closing port-forwardings in CHAN_SOCKDATA_DORMANT state,
+fixed r9069, s/s 2011-11-04
 </ul>
