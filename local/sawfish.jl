@@ -100,21 +100,16 @@
 ;; }}}
 ;; On creation of new windows, fiddle with their properties {{{
 
-(define (sgt-add-window w)
-    ;; Some applications have a nasty habit of trying to place all
-    ;; their windows at (0,0). Identify those apps' windows, ignore
-    ;; their specified positions, and let Sawfish DTRT.
-    (let ((class (caddr (get-x-property w 'WM_CLASS))))
-	(when (or
-	       (equal class "Gecko\0Mozilla-bin\0")
-	       (equal class "mozilla-bin\0Mozilla-bin\0")
-	       (equal class "gnotravex\0Gnotravex\0")
-	       (equal class "win\0Xpdf\0"))
-	    (window-put w 'ignore-program-position t)
-	)
-    )
-)
-(add-hook 'add-window-hook sgt-add-window)
+;; Some applications have a nasty habit of trying to place all
+;; their windows at (0,0). Identify those apps' windows, ignore
+;; their specified positions, and let Sawfish DTRT.
+(add-hook 'add-window-hook
+          (lambda (w)
+            (let ((class (window-class w)))
+              (when (or (equal class "Mozilla-bin")
+                        (equal class "Gnotravex")
+                        (equal class "Xpdf"))
+                (window-put w 'ignore-program-position t)))))
 
 ;; }}}
 ;; My personalised focus handling {{{
