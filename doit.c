@@ -565,11 +565,28 @@ int listener_newthread(SOCKET sock, int port, SOCKADDR_IN remoteaddr) {
  */
 void listener_cmdline(char *cmdline) {
     secret_reload = 0;
-    while (*cmdline && isspace(*cmdline)) cmdline++;
-    if (!strncmp(cmdline, "-r", 2)) {
-	secret_reload = 1;
-	cmdline += 2;
-	while (*cmdline && isspace(*cmdline)) cmdline++;
+    while (1) {
+        while (*cmdline && isspace(*cmdline)) cmdline++;
+
+        if (!strncmp(cmdline, "-r", 2) &&
+            (!cmdline[2] || isspace(cmdline[2]))) {
+            secret_reload = 1;
+            cmdline += 2;
+            while (*cmdline && isspace(*cmdline)) cmdline++;
+        } else if (!strncmp(cmdline, "-p", 2)) {
+            int port = 0, *ports;
+            cmdline += 2;
+            while (*cmdline && isspace(*cmdline)) cmdline++;
+            while (*cmdline && !isspace(*cmdline)) {
+                if (isdigit(*cmdline))
+                    port = port * 10 + (*cmdline - '0');
+                cmdline++;
+            }
+            ports = malloc(sizeof(int));
+            ports[0] = port;
+            listener_ports = ports;
+        } else
+            break;
     }
     secretname = cmdline;
     if (!secret_reload)
