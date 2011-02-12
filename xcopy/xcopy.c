@@ -610,25 +610,27 @@ void run_X(void) {
                 return;
             }
         } else {
-            int exiting = False;
+            int have_ownership = True;
 
             switch (ev.type) {
               case SelectionClear:
                 /* Selection has been cleared by another app. */
-                exiting = True;
+                have_ownership = False;
                 break;
               case SelectionRequest:
-                e2.xselection.type = SelectionNotify;
-                e2.xselection.requestor = ev.xselectionrequest.requestor;
-                e2.xselection.selection = ev.xselectionrequest.selection;
-                e2.xselection.target = ev.xselectionrequest.target;
-                e2.xselection.time = ev.xselectionrequest.time;
-                e2.xselection.property =
-		    convert_sel_outer(ev.xselectionrequest.requestor,
-				      ev.xselectionrequest.target,
-				      ev.xselectionrequest.property);
-                XSendEvent (disp, ev.xselectionrequest.requestor,
-			    False, 0, &e2);
+                if (have_ownership) {
+                    e2.xselection.type = SelectionNotify;
+                    e2.xselection.requestor = ev.xselectionrequest.requestor;
+                    e2.xselection.selection = ev.xselectionrequest.selection;
+                    e2.xselection.target = ev.xselectionrequest.target;
+                    e2.xselection.time = ev.xselectionrequest.time;
+                    e2.xselection.property =
+                        convert_sel_outer(ev.xselectionrequest.requestor,
+                                          ev.xselectionrequest.target,
+                                          ev.xselectionrequest.property);
+                    XSendEvent (disp, ev.xselectionrequest.requestor,
+                                False, 0, &e2);
+                }
                 break;
               case PropertyNotify:
                 for (i = j = 0; i < nincrs; i++) {
@@ -667,7 +669,7 @@ void run_X(void) {
                 nincrs = j;
                 break;
             }
-            if (nincrs == 0 && exiting)
+            if (nincrs == 0 && !have_ownership)
                 return;
         }
     }
