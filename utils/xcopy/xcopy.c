@@ -610,10 +610,13 @@ void run_X(void) {
                 return;
             }
         } else {
+            int exiting = False;
+
             switch (ev.type) {
               case SelectionClear:
                 /* Selection has been cleared by another app. */
-                return;
+                exiting = True;
+                break;
               case SelectionRequest:
                 e2.xselection.type = SelectionNotify;
                 e2.xselection.requestor = ev.xselectionrequest.requestor;
@@ -664,6 +667,8 @@ void run_X(void) {
                 nincrs = j;
                 break;
             }
+            if (nincrs == 0 && exiting)
+                return;
         }
     }
 }
