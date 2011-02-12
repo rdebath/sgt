@@ -33,11 +33,13 @@ enum { STRING, CTEXT, UTF8, TARGETS, TIMESTAMP, CUSTOM } mode = STRING;
 int use_clipboard = False;
 char *custom_seltype = NULL;
 int fork_when_writing = True;
+int use_cutbuffers = True;
+int use_outgoing_incr = True;
+int sel_delta = 16384;
 
 /* selection data */
 char *seltext;
 int sellen, selsize;
-#define SELDELTA 16384
 
 /* incremental transfers still pending when we return to the event loop */
 struct incr {
@@ -57,17 +59,20 @@ int verbose;
 
 const char usagemsg[] =
     "usage: xcopy [ -r ] [ -u | -c ] [ -C ]\n"
-    "where: -r       read X selection and print on stdout\n"
-    "       no -r    read stdin and store in X selection\n"
-    "       -u       work with UTF8_STRING type selections\n"
-    "       -c       work with COMPOUND_TEXT type selections\n"
-    "       -C       suppress automatic conversion to COMPOUND_TEXT\n"
-    "       -b       read the CLIPBOARD rather than the PRIMARY selection\n"
-    "       -t       get the list of targets available to retrieve\n"
+    "modes: -r       read X selection and print on stdout\n"
+    "       no -r    write to X selection from stdin\n"
+    " read: -t       get the list of targets available to retrieve\n"
     "       -T       get the time stamp of the selection contents\n"
     "       -a atom  get an arbitrary form of the selection data\n"
-    "       -F       do not fork in write mode\n"
-    "       -v       proceed verbosely when reading selection\n"
+    "       -v       verbosely report progress in reading selection\n"
+    "write: -F       remain in foreground until selection reclaimed\n"
+    "       -I       do not attempt incremental transfers (INCR)\n"
+    " both: -u       work with UTF8_STRING type selections\n"
+    "       -c       work with COMPOUND_TEXT type selections\n"
+    "       -C       suppress automatic conversion to COMPOUND_TEXT\n"
+    "       -b       use the CLIPBOARD rather than the PRIMARY selection\n"
+    "       -d size  transfer data in chunks of at most <size> (default 16384)\n"
+    "       -B       do not use root window cut buffers\n"
     " also: xcopy --version              report version number\n"
     "       xcopy --help                 display this help text\n"
     "       xcopy --licence              display the (MIT) licence text\n"
@@ -152,12 +157,21 @@ int main(int ac, char **av) {
             mode = TARGETS;
         } else if (!strcmp(p, "-T")) {
             mode = TIMESTAMP;
+        } else if (!strcmp(p, "-I")) {
+            use_outgoing_incr = False;
+        } else if (!strcmp(p, "-B")) {
+            use_cutbuffers = False;
         } else if (!strcmp(p, "-a")) {
 	    if (--ac > 0)
 		custom_seltype = *++av;
 	    else
 		error ("expected an argument to `-a'");
             mode = CUSTOM;
+        } else if (!strcmp(p, "-d")) {
+	    if (--ac > 0)
+		sel_delta = atoi(*++av);
+	    else
+		error ("expected an argument to `-d'");
 	} else if (!strcmp(p, "-F")) {
 	    fork_when_writing = False;
 	} else if (!strcmp(p, "-v")) {
@@ -188,22 +202,22 @@ int main(int ac, char **av) {
     }
 
     if (!reading) {
-        seltext = malloc(SELDELTA);
+        seltext = malloc(sel_delta);
         if (!seltext)
             error ("out of memory");
-        selsize = SELDELTA;
+        selsize = sel_delta;
         sellen = 0;
         do {
             n = fread(seltext+sellen, 1, selsize-sellen, stdin);
             sellen += n;
             if (sellen >= selsize) {
-                seltext = realloc(seltext, selsize += SELDELTA);
+                seltext = realloc(seltext, selsize += sel_delta);
                 if (!seltext)
                     error ("out of memory");
             }
         } while (n > 0);
         if (sellen == selsize) {
-            seltext = realloc(seltext, selsize += SELDELTA);
+            seltext = realloc(seltext, selsize += sel_delta);
             if (!seltext)
                 error ("out of memory");
         }
@@ -355,14 +369,7 @@ int init_X(void) {
 	 * property on the root window.
          */
         XSelectInput(disp, ourwin, PropertyChangeMask);
-        if (XGetSelectionOwner(disp, sel_atom) == None) {
-            /* No primary selection, so use the cut buffer. */
-	    if (verbose)
-		fprintf(stderr, "no selection owner: trying cut buffer\n");
-            if (strtype == XA_STRING)
-		do_paste(DefaultRootWindow(disp), XA_CUT_BUFFER0, True);
-            return False;
-        } else {
+        if (XGetSelectionOwner(disp, sel_atom) != None) {
             Atom sel_property = XInternAtom(disp, "VT_SELECTION", False);
 	    if (verbose)
 		fprintf(stderr, "calling XConvertSelection: selection=%s"
@@ -374,19 +381,31 @@ int init_X(void) {
             XConvertSelection(disp, sel_atom, strtype,
                               sel_property, ourwin, CurrentTime);
             return True;
+        } else if (use_cutbuffers) {
+            /* No primary selection, so use the cut buffer. */
+	    if (verbose)
+		fprintf(stderr, "no selection owner: trying cut buffer\n");
+            if (strtype == XA_STRING)
+		do_paste(DefaultRootWindow(disp), XA_CUT_BUFFER0, True);
+            return False;
+        } else {
+            /* Last fallback: do nothing. */
+            return False;
         }
     } else {
         /*
-         * We are writing to the selection, so we establish
-         * ourselves as selection owner. Also place the data in
-         * CUT_BUFFER0, if it isn't of an exotic type (cut buffers
-         * can only take ordinary string data, it turns out).
+         * We are writing to the selection, so we establish ourselves
+         * as selection owner.
+         *
+         * Also place the data in CUT_BUFFER0, if it isn't of an
+         * exotic type (cut buffers can only take ordinary string
+         * data, it turns out) or bigger than our maximum chunk size.
          */
         XSetSelectionOwner (disp, sel_atom, ourwin, CurrentTime);
         if (XGetSelectionOwner (disp, sel_atom) != ourwin)
             error ("unable to obtain primary X selection");
         compound_text_atom = XInternAtom(disp, "COMPOUND_TEXT", False);
-	if (strtype == XA_STRING) {
+	if (strtype == XA_STRING && sellen <= sel_delta && use_cutbuffers) {
 	    /*
 	     * ICCCM-required cut buffer initialisation.
 	     */
@@ -423,7 +442,7 @@ void write_data(Window requestor, Atom property, Atom type, int format,
     unsigned char *data = (unsigned char *)vdata;
     XEvent ev;
 
-    if (size * bformat <= SELDELTA) {
+    if (!use_outgoing_incr || size * bformat <= sel_delta) {
 	XChangeProperty(disp, requestor, property, type, format,
                         PropModeReplace, data, size);
     } else {
@@ -508,7 +527,7 @@ Atom convert_sel_outer(Window requestor, Atom target, Atom property) {
 	 * application might implement it for me to test against.
 	 */
 
-	int size = SELDELTA;
+	int size = sel_delta;
 	Atom actual_type;
 	int actual_format, i;
 	long nitems, bytes_after, nread;
@@ -605,8 +624,8 @@ void run_X(void) {
                         incrs[i].property == ev.xproperty.atom &&
                         ev.xproperty.state == PropertyDelete) {
                         size_t thissize = incrs[i].size;
-                        if (thissize > SELDELTA)
-                            thissize = SELDELTA;
+                        if (thissize > sel_delta)
+                            thissize = sel_delta;
 
                         XChangeProperty(disp,
                                         incrs[i].window, incrs[i].property,
@@ -657,7 +676,7 @@ void do_paste(Window window, Atom property, int cutbuffer) {
     XEvent ev;
 
     nread = 0;
-    while (XGetWindowProperty(disp, window, property, nread / 4, SELDELTA,
+    while (XGetWindowProperty(disp, window, property, nread / 4, sel_delta / 4,
                               !cutbuffer, AnyPropertyType, &actual_type,
                               &actual_format, &nitems, &bytes_after,
                               (unsigned char **) &data) == Success) {
