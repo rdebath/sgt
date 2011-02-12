@@ -12,6 +12,7 @@
 #include <assert.h>
 
 #include <X11/X.h>
+#include <X11/Intrinsic.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/Xatom.h>
@@ -37,6 +38,17 @@ int fork_when_writing = True;
 char *seltext;
 int sellen, selsize;
 #define SELDELTA 16384
+
+/* incremental transfers still pending when we return to the event loop */
+struct incr {
+    Window window;
+    Atom property;
+    Atom type;
+    int format;
+    unsigned char *data;
+    size_t size;
+} *incrs = NULL;
+int nincrs = 0, incrsize = 0;
 
 /* functional parameters */
 int reading;                           /* read instead of writing? */
@@ -404,18 +416,68 @@ int init_X(void) {
     }
 }
 
+void write_data(Window requestor, Atom property, Atom type, int format,
+                void *vdata, size_t size)
+{
+    int bformat = format / 8;          /* bytes per element */
+    unsigned char *data = (unsigned char *)vdata;
+    XEvent ev;
+
+    if (size * bformat <= SELDELTA) {
+	XChangeProperty(disp, requestor, property, type, format,
+                        PropModeReplace, data, size);
+    } else {
+        /*
+         * For large data, an incremental transfer as per ICCCM 2.7.2.
+         */
+        Cardinal totalsize = size * bformat;
+        Cardinal sent, thissize;
+
+        /*
+         * We're going to need PropertyNotify events on the target
+         * window to tell us when to send the next chunk.
+         */
+        XSelectInput(disp, requestor, PropertyChangeMask);
+
+        /*
+         * Start by sending a single 32-bit word with type INCR giving
+         * the total size in bytes.
+         */
+	XChangeProperty(disp, requestor, property, incr_atom, 32,
+                        PropModeReplace, (unsigned char *)&totalsize, 1);
+
+        /*
+         * Now set up an entry in our list of ongoing incremental
+         * transfers, so that whenever that property is deleted, we'll
+         * send the next batch.
+         */
+        if (nincrs >= incrsize) {
+            incrsize = nincrs * 9 / 8 + 16;
+            incrs = realloc(incrs, incrsize * sizeof(*incrs));
+            if (!incrs)
+                error ("out of memory");
+        }
+        incrs[nincrs].window = requestor;
+        incrs[nincrs].property = property;
+        incrs[nincrs].type = type;
+        incrs[nincrs].format = format;
+        incrs[nincrs].size = totalsize;
+        incrs[nincrs].data = malloc(totalsize);
+        if (!incrs[nincrs].data)
+            error("out of memory");
+        memcpy(incrs[nincrs].data, data, size);
+        nincrs++;
+    }
+}
+
 Atom convert_sel_inner(Window requestor, Atom target, Atom property) {
     if (target == strtype) {
-	XChangeProperty (disp, requestor, property, strtype,
-			 8, PropModeReplace, seltext, sellen);
+	write_data(requestor, property, strtype, 8, seltext, sellen);
 	return property;
     } else if (target == compound_text_atom && convert_to_ctext) {
 	XTextProperty tp;
-	XmbTextListToTextProperty (disp, &seltext, 1,
-				   XCompoundTextStyle, &tp);
-	XChangeProperty (disp, requestor, property, target,
-			 tp.format, PropModeReplace,
-			 tp.value, tp.nitems);
+	XmbTextListToTextProperty(disp, &seltext, 1, XCompoundTextStyle, &tp);
+	write_data(requestor, property, target, tp.format, tp.value,tp.nitems);
 	return property;
     } else if (target == targets_atom) {
 	Atom targets[16];
@@ -426,15 +488,11 @@ Atom convert_sel_inner(Window requestor, Atom target, Atom property) {
 	targets[len++] = strtype;
 	if (strtype != compound_text_atom && convert_to_ctext)
 	    targets[len++] = compound_text_atom;
-	XChangeProperty (disp, requestor, property,
-			 atom_atom, 32, PropModeReplace,
-			 (unsigned char *)targets, len);
+	write_data(requestor, property, atom_atom, 32, targets, len);
 	return property;
     } else if (target == timestamp_atom) {
 	Time rettime = CurrentTime;
-	XChangeProperty (disp, requestor, property,
-			 integer_atom, 32, PropModeReplace,
-			 (unsigned char *)&rettime, 1);
+	write_data(requestor, property, integer_atom, 32, &rettime, 1);
 	return property;
     } else {
 	return None;
@@ -502,6 +560,7 @@ Atom convert_sel_outer(Window requestor, Atom target, Atom property) {
 
 void run_X(void) {
     XEvent ev, e2;
+    int i, j;
 
     while (1) {
 	XNextEvent (disp, &ev);
@@ -538,6 +597,43 @@ void run_X(void) {
 				      ev.xselectionrequest.property);
                 XSendEvent (disp, ev.xselectionrequest.requestor,
 			    False, 0, &e2);
+                break;
+              case PropertyNotify:
+                for (i = j = 0; i < nincrs; i++) {
+                    int keep = True;
+                    if (incrs[i].window == ev.xproperty.window &&
+                        incrs[i].property == ev.xproperty.atom &&
+                        ev.xproperty.state == PropertyDelete) {
+                        size_t thissize = incrs[i].size;
+                        if (thissize > SELDELTA)
+                            thissize = SELDELTA;
+
+                        XChangeProperty(disp,
+                                        incrs[i].window, incrs[i].property,
+                                        incrs[i].type, incrs[i].format,
+                                        PropModeReplace, incrs[i].data,
+                                        thissize / (incrs[i].format/8));
+
+                        if (thissize == 0) {
+                            /*
+                             * If we've just sent a zero-length block,
+                             * the incremental transfer is over and we
+                             * should delete this entry.
+                             */
+                            keep = False;
+                        }
+
+                        incrs[i].data += thissize;
+                        incrs[i].size -= thissize;
+                    }
+                    if (keep) {
+                        if (j != i)
+                            incrs[j] = incrs[i];
+                        j++;
+                    }
+                }
+                nincrs = j;
+                break;
             }
         }
     }
