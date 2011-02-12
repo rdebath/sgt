@@ -249,7 +249,7 @@ char *ucasename = "XCopy";
 Display *disp = NULL;
 Window ourwin = None;
 Atom compound_text_atom, targets_atom, timestamp_atom, atom_atom, integer_atom;
-Atom multiple_atom, atom_pair_atom;
+Atom multiple_atom, atom_pair_atom, incr_atom;
 int screen, wwidth, wheight;
 
 Atom strtype = XA_STRING;
@@ -289,6 +289,7 @@ int init_X(void) {
     atom_pair_atom = XInternAtom(disp, "ATOM_PAIR", False);
     multiple_atom = XInternAtom(disp, "MULTIPLE", False);
     integer_atom = XInternAtom(disp, "INTEGER", False);
+    incr_atom = XInternAtom(disp, "INCR", False);
     if (mode == UTF8) {
 	strtype = XInternAtom(disp, "UTF8_STRING", False);
     } else if (mode == CTEXT) {
@@ -334,17 +335,20 @@ int init_X(void) {
          * We are reading the selection. Call XConvertSelection to
          * request transmission of the selection data in the
          * appropriate format; the X event loop will then wait to
-         * receive the data from the selection owner.
+         * receive the data from the selection owner. Also we need to
+         * make sure we receive PropertyNotify events, for INCR
+         * transfers.
 	 *
 	 * If there is no selection owner, look in the cut buffer
 	 * property on the root window.
          */
+        XSelectInput(disp, ourwin, PropertyChangeMask);
         if (XGetSelectionOwner(disp, sel_atom) == None) {
             /* No primary selection, so use the cut buffer. */
 	    if (verbose)
 		fprintf(stderr, "no selection owner: trying cut buffer\n");
             if (strtype == XA_STRING)
-		do_paste(DefaultRootWindow(disp), XA_CUT_BUFFER0, False);
+		do_paste(DefaultRootWindow(disp), XA_CUT_BUFFER0, True);
             return False;
         } else {
             Atom sel_property = XInternAtom(disp, "VT_SELECTION", False);
@@ -514,7 +518,7 @@ void run_X(void) {
 
                 if (ev.xselection.property != None)
                     do_paste(ev.xselection.requestor,
-                             ev.xselection.property, True);
+                             ev.xselection.property, False);
                 return;
             }
         } else {
@@ -548,21 +552,44 @@ void done_X(void) {
 	XCloseDisplay (disp);
 }
 
-void do_paste(Window window, Atom property, int Delete) {
+void do_paste(Window window, Atom property, int cutbuffer) {
     Atom actual_type;
     int actual_format, i;
     long nitems, bytes_after, nread;
     unsigned char *data;
+    int incremental = False;
+    XEvent ev;
 
     nread = 0;
     while (XGetWindowProperty(disp, window, property, nread / 4, SELDELTA,
-                              Delete, AnyPropertyType, &actual_type,
+                              !cutbuffer, AnyPropertyType, &actual_type,
                               &actual_format, &nitems, &bytes_after,
                               (unsigned char **) &data) == Success) {
 	if (verbose)
 	    fprintf(stderr, "got %ld items of %d-byte data, type=%s;"
 		    " %ld to go\n", nitems, actual_format,
 		    translate_atom(disp, actual_type), bytes_after);
+
+        /*
+         * ICCCM 2.7.2: if we receive data with the type atom set to
+         * INCR, it indicates that the actual data will arrive in
+         * multiple chunks, terminating with a zero-length one.
+         * Between each pair, we must wait for a PropertyNotify event
+         * which tells us that the next chunk has arrived.
+         */
+        if (actual_type == incr_atom && !cutbuffer) {
+            incremental = True;
+            /*
+             * Immediately wait for the first chunk of real data.
+             */
+            do {
+                XMaskEvent(disp, PropertyChangeMask, &ev);
+            } while (ev.xproperty.state != PropertyNewValue);
+            /*
+             * And loop straight back round to read it.
+             */
+            continue;
+        }
 
 	if (nitems > 0) {
 	    /*
@@ -614,22 +641,31 @@ void do_paste(Window window, Atom property, int Delete) {
 	    }
         }
         XFree(data);
-        if (nitems == 0)
-            break;
 	if (bytes_after == 0) {
-	    /*
-	     * We've come to the end of the property we're reading.
-	     * If we have the Delete flag set, we may be receiving
-	     * the selection data in multiple chunks, in which case
-	     * we should reset nread to zero so that when the next
-	     * chunk arrives we resume reading from the start of the
-	     * replaced property. Otherwise, this is our cue to
-	     * exit.
-	     */
-	    if (Delete)
-		nread = 0;
-	    else
+            /*
+             * We've come to the end of the property we're reading.
+             */
+            if (incremental) {
+                /*
+                 * For an incremental transfer, this means we wait for
+                 * another property to be dumped in the same place on
+                 * our window, and loop round again reading that. The
+                 * exception is if the total length of the property we
+                 * got was zero, which signals the end.
+                 */
+                if (nread == 0 && nitems == 0)
+                    break;             /* all done */
+
+                /* otherwise wait for the next chunk */
+                do {
+                    XMaskEvent(disp, PropertyChangeMask, &ev);
+                } while (ev.xproperty.state != PropertyNewValue);
+
+                /* which we read from the beginning */
+                nread = 0;
+            } else {
 		break;
+            }
 	}
     }
 }
