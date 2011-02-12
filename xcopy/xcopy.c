@@ -519,6 +519,16 @@ Atom convert_sel_inner(Window requestor, Atom target, Atom property) {
 }
 
 Atom convert_sel_outer(Window requestor, Atom target, Atom property) {
+    /*
+     * ICCCM 2.2 says that obsolete clients requesting the selection
+     * request may not specify a property name under which they want
+     * the data written to their window; selection owners are
+     * encouraged to support such clients by reusing the selection
+     * target name as the property.
+     */
+    if (property == None)
+        property = target;
+
     if (target == multiple_atom) {
 	/*
 	 * Support for the MULTIPLE selection type, since it's
