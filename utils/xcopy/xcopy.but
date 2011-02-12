@@ -125,7 +125,7 @@ type. The target type can be anything listed by \cq{xcopy -r -t}.
 commentary on the progress of reading the X selection. Can be useful
 for debugging interactions with other programs.
 
-\dt \cw{-T}
+\dt \cw{-F}
 
 \dd Causes \cw{xcopy} not to fork, when in write mode. Instead the
 original \cw{xcopy} process will continue to run until the selection
@@ -133,6 +133,24 @@ is taken away from it. Probably only useful when debugging
 \cw{xcopy} itself, although it's just possible that it might turn
 out to be useful for some other special purpose (e.g. having the
 process waiting for it know when the selection owner has changed).
+
+\dt \cw{-d} \e{size}
+
+\dd Alters the maximum size of data transferred in one lump by
+\cw{xcopy}. (Probably most useful for diagnostic purposes.)
+
+\dt \cw{-I}
+
+\dd Inhibits \cw{xcopy}, in write mode, from using the \cw{INCR}
+mechanism for transferring large amounts of selection data a piece at
+a time and waiting for the recipient to acknowledge each chunk before
+sending the next. (Just in case a client doesn't support it.)
+
+\dt \cw{-B}
+
+\dd Inhibits \cw{xcopy}, in write mode, from storing its data in the
+persistent \q{cut buffers} on the root window as well as using the
+peer-to-peer selection mechanism.
 
 \U BUGS
 
