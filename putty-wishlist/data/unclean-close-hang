@@ -124,3 +124,9 @@ Other reports that don't fit the pattern in some way:
 </li>
 
 </ul>
+
+<p>
+<b>SGT, 2011-03-02</b>: Committed r9115, which looks like a probable
+cause of this. I hesitate to mark the whole thing as fixed, but if
+anyone still experiences it, please try updating to r9115 or later; if
+anyone does see the problem in an updated version, please let us know.
