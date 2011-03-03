@@ -150,6 +150,11 @@ bashrc_dovars() {
   foo=`type -p less`
   if [ -n "$foo" ]; then export PAGER=$foo; export LESS=-M; fi
   foo=`type -p emacs`
+  if [ -e "$foo" -a -e "${foo}client" ]; then
+    bashrc_emacsclient="${foo}client"
+  else
+    unset bashrc_emacsclient
+  fi
   if [ ! -e "$foo" ]; then
     foo=`type -p jed`; fi
   if [ ! -e "$foo" ]; then
@@ -194,6 +199,15 @@ bashrc_dovars() {
 }
 bashrc_dovars
 unset bashrc_dovars
+
+if test -n "$bashrc_emacsclient" -a -x "$bashrc_emacsclient"; then
+  e() {
+    # It would be nice here if we could detect that a server-enabled
+    # emacs was not already running, and respond by launching one in
+    # the background and then retrying this command.
+    "$bashrc_emacsclient" --no-wait "$@"
+  }
+fi
 
 #}}}
 #{{{ shell settings and simple aliases
