@@ -2,14 +2,16 @@ Summary: Support for "zlib@openssh.com"
 Class: wish
 Difficulty: tricky
 Priority: medium
+Fixed-in: r9120 2011-03-05
 Content-type: text/x-html-body
 
 <p>
 OpenSSH 4.2 introduces a variety of ZLIB compression called "zlib@openssh.com"
 which delays starting compression until after the server has sent
-SSH_MSG_USERAUTH_ACCEPT.  It's configured to use this by default (or with
-the "Compression delayed" option), but ordinary "zlib"
-compression can be reinstated with "Compression yes".
+SSH_MSG_USERAUTH_ACCEPT.  It's configured to use only this by default (or
+with the "Compression delayed" option in sshd_config), which means that
+PuTTY cannot negotiate compression; ordinary "zlib" compression can be
+reinstated with "Compression yes".
 
 <p>
 The new method is specified in
@@ -36,3 +38,7 @@ packets.  This suggests that the following implementation would be safe
 <p>
 There's no need for PuTTY to stop supporting "zlib", since by the time we
 send NEWKEYS, we've authenticated the server.
+
+<p>
+<em>Update, 2011-03-05:</em> this is now supported, using the method
+described above.
