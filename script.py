@@ -12,6 +12,17 @@ import checkout
 import misc
 import name
 
+try:
+    # New Python 2.6 way of spawning subprocesses
+    import subprocess
+    def popen2(command):
+        p = subprocess.Popen(command, shell=True, stdin=subprocess.PIPE, \
+                                 stdout=subprocess.PIPE, close_fds=True)
+        return (p.stdin, p.stdout)
+except ImportError, e:
+    # Old-style fallback, deprecated in 2.6
+    from os import popen2
+
 delegatefps = None
 
 def run_script_line(s, is_config, cfg):
@@ -222,7 +233,7 @@ def run_script_line(s, is_config, cfg):
                 delcmd.append(name.server)
             delcmd = misc.shellquote(delcmd)
         log.logmsg("  Running delegation command: " + delcmd)
-        delegatefps = os.popen2(delcmd)
+        delegatefps = popen2(delcmd)
 
         # Wait for the announcement from the far end which says the
         # delegate server is running.
