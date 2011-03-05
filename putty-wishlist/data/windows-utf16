@@ -2,6 +2,7 @@ Summary: Support UTF-16 on Windows
 Class: wish
 Difficulty: tricky
 Priority: low
+Fixed-in: r8495 2009-03-25
 Content-type: text/x-html-body
 
 <p>
@@ -50,3 +51,6 @@ front end!)
 I'm currently inclined to the first option, because UTF-16 is nasty
 and I'd rather it complicated only those front ends that had to deal
 with it than that it complicated the core code.
+
+<p>
+<em>Update, 2009-03:</em> fixed (using the second option).
