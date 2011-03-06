@@ -1,6 +1,7 @@
 Summary: Unclean close on Vista/Windows 7 leads to CPU-bound hang
 Class: bug
 Present-in: 0.59 0.60 2008-07-02 2008-12-15 2009-01-28 2009-11-17 2010-05-24 2010-07-28 2010-09-20
+Fixed-in: r9115 2011-03-03
 Content-type: text/x-html-body
 
 <p>
@@ -126,7 +127,8 @@ Other reports that don't fit the pattern in some way:
 </ul>
 
 <p>
-<b>SGT, 2011-03-02</b>: Committed r9115, which looks like a probable
-cause of this. I hesitate to mark the whole thing as fixed, but if
-anyone still experiences it, please try updating to r9115 or later; if
-anyone does see the problem in an updated version, please let us know.
+<b>Update, 2011-03-02</b>: Committed r9115, which looks like a probable
+cause of this; it's made it go away for at least two people, so we've
+counted it as fixed despite never being able to reproduce it; if
+anyone still sees the problem with a version after r9115, please let
+us know.
