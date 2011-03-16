@@ -211,9 +211,6 @@ function print_stylesheet () {
 font-family: verdana, sans-serif;
 font-size: 10pt;
 }
-html body {
-padding: 0;
-}
 tt, pre {
 font-family: monospace;
 }
@@ -284,8 +281,9 @@ $.head_content
 <link rel='stylesheet' type='text/css' href='$.stylesheet_url' />
 <title>$title</title>
 </head>
-<body bgcolor="$*page_back" text="$*entry_text" link="$*page_link" vlink="$*page_vlink" alink="$*page_alink">
-<div align="center">
+<body bgcolor="$*page_back" text="$*entry_text" link="$*page_link" vlink="$*page_vlink" alink="$*page_alink">""";
+$this->print_control_strip();
+"""<div align="center">
 <table width="$*box_width" cellpadding="0" cellspacing="10"
 border="0"
 summary="">
