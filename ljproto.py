@@ -20,13 +20,26 @@ def chomp(s):
         s = s[:-1]
     return s
 
-url = "http://www.livejournal.com/interface/flat"
+LJ = {'url':"http://www.livejournal.com/interface/flat",
+      'file':".ljscan/login",
+      'abbr':"lj",
+      'ABBR':"LJ",
+      'checkfriends':"checkfriends",
+      'logincookies':"/.ljscan/ljsesscookies",
+      'friendssuffix':".livejournal.com/friends"}
+DW = {'url':"http://www.dreamwidth.org/interface/flat",
+      'file':".ljscan/dwlogin",
+      'abbr':"dw",
+      'ABBR':"DW",
+      'checkfriends':"checkforupdates",
+      'logincookies':"/.ljscan/dwsesscookies",
+      'friendssuffix':".dreamwidth.org/read"}
 
-def ljbasiccall(dict):
+def ljbasiccall(dict, site=LJ):
     "Do a basic LJ call."
     postdata = urllib.urlencode(dict)
     results = {}
-    f = urllib.urlopen(url, postdata)
+    f = urllib.urlopen(site['url'], postdata)
     while 1:
         s = f.readline()
         if s == "":
@@ -40,7 +53,7 @@ def ljbasiccall(dict):
     f.close()
     return results
 
-def ljcall(dict):
+def ljcall(dict, site=LJ):
     "Do an LJ call, but find the user's login details and encode those first."
     cfg = os.environ["HOME"] + "/.ljscan/login"
     f = open(cfg, "r")
@@ -54,7 +67,7 @@ def ljcall(dict):
         key = s[:i]
         value = s[i+1:]
         dict[key] = value
-    return ljbasiccall(dict)
+    return ljbasiccall(dict, site)
 
 def ljok(dict):
     "Determine whether an LJ call was successful."
@@ -66,9 +79,9 @@ def ljerror(dict):
     "Return the error message from an unsuccessful LJ call."
     return dict.get("errmsg", "Server failed to return an error code")
 
-def ljusername():
+def ljusername(site=LJ):
     "Retrieve the user's LJ login name."
-    cfg = os.environ["HOME"] + "/.ljscan/login"
+    cfg = os.environ["HOME"] + "/" + site['file']
     f = open(cfg, "r")
     try:
         while 1:
@@ -84,7 +97,7 @@ def ljusername():
         f.close()
     return None
 
-def ljuserhost():
+def ljuserhost(site=LJ):
     "Retrieve the user's LJ host name."
-    name = ljusername()
+    name = ljusername(site)
     return string.replace(name, "_", "-")
