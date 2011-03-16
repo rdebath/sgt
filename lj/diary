@@ -362,9 +362,9 @@ class output:
 
     def ljcut(self, text):
 	if text == None:
-	    self.html = self.html + "</lj-cut>"
+	    self.html = self.html + "</cut>"
 	elif text == []:
-	    self.html = self.html + "<lj-cut>"
+	    self.html = self.html + "<cut>"
 	else:
 	    strtext = ""
 	    for i in text:
@@ -760,11 +760,17 @@ class output:
 	    self.mono_add_word(text, ATTR_URL, 0)
 	    self.news_add_word(text, 0)
 
-    def name(self, text):
+    def ljname(self, text):
 	if self.html_ok:
-	    self.html = self.html + "<lj user=\"" + text + "\">"
+	    self.html = self.html + "<user name=\"" + text + "\" site=\"livejournal.com\">"
 	elif self.html_title:
-	    self.subj = self.subj + "<lj user=\"" + text + "\">"
+	    self.subj = self.subj + "<user name=\"" + text + "\" site=\"livejournal.com\">"
+
+    def dwname(self, text):
+	if self.html_ok:
+	    self.html = self.html + "<user name=\"" + text + "\">"
+	elif self.html_title:
+	    self.subj = self.subj + "<user name=\"" + text + "\">"
 
     def posturlmode(self, on, image):
         self.mono_ok = self.news_ok = (on == 0)
@@ -1257,7 +1263,8 @@ def rdinput(file):
 			    # will be treated normally.
 			    stack = stack + ["link"]
 			    break
-		elif tok[1] == "name":
+		elif tok[1] == "ljname" or tok[1] == "dwname":
+                    nametype = tok[1]
 		    tok = t.next()
 		    name = ""
 		    while tok != (EOF,) and tok != (TCLOSE,):
@@ -1265,7 +1272,10 @@ def rdinput(file):
 			    name = name + tok[1]
 			    tok = t.next()
 			else:
-			    o.name(name)
+			    if nametype == "ljname":
+                                o.ljname(name)
+                            elif nametype == "dwname":
+                                o.dwname(name)
 			    o.postnamemode(1)
 			    if tok[0] == WHITE or tok[0] == NL:
 				t.next()
@@ -1509,14 +1519,14 @@ while 1:
 		dict["security"] = security
 	    if nocomments:
 		dict["prop_opt_nocomments"] = "1"
-	    ret = ljproto.ljcall(dict)
+	    ret = ljproto.ljcall(dict, ljproto.DW)
 	    if not ljproto.ljok(ret):
-		print "Unable to post to LJ: " + ljproto.ljerror(ret)
+		print "Unable to post to DW: " + ljproto.ljerror(ret)
 		need_unlink = 0
 	    else:
-		print "Posted to LJ; itemid =", ret["itemid"]
+		print "Posted to DW; itemid =", ret["itemid"]
 	else:
-	    print "Not posted to LJ (restricted command given)"
+	    print "Not posted to DW (restricted command given)"
 	if s == "p\n" or s == "pn\n":
 	    f = os.popen("inews", "w")
 	    for i in out.news:

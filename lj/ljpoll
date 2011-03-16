@@ -10,6 +10,7 @@ import time
 
 verbose = force = last = 0
 args = sys.argv[1:]
+site = ljproto.LJ
 while len(args) > 0:
     arg = args[0]
     args = args[1:]
@@ -17,6 +18,8 @@ while len(args) > 0:
         verbose = 1
     elif arg == "--force":
         force = 1
+    elif arg == "--dw":
+        site = ljproto.DW
     elif arg == "--last":
         last = 1
     else:
@@ -27,7 +30,7 @@ def chomp(s):
         s = s[:-1]
     return s
 
-cfg = os.environ["HOME"] + "/.ljscan/ljpoll"
+cfg = os.environ["HOME"] + "/.ljscan/" + site['abbr'] + "poll"
 date_start = date_stop = ""
 lastupdate = ""
 lastrealdate = ""
@@ -57,25 +60,25 @@ try:
 
     now = time.time()
     if now < then and not force:
-        sys.stderr.write("LJ polling discouraged for " +
-        "%d seconds (until %s).\n" % \
-        (int(then-now), time.strftime("%H:%M:%S", time.localtime(then))))
+        sys.stderr.write(("%s polling discouraged for " +
+        "%d seconds (until %s).\n") % \
+        (site["ABBR"], int(then-now), time.strftime("%H:%M:%S", time.localtime(then))))
         sys.exit(0)
 except IOError:
     lastupdate = ""
 
-dict = {"mode":"checkfriends", "lastupdate":lastupdate}
+dict = {"mode":site["checkfriends"], "lastupdate":lastupdate}
 tries = 0
 while 1:
     if verbose:
         print "Input:", dict
     try:
         error = None
-        ret = ljproto.ljcall(dict)
+        ret = ljproto.ljcall(dict, site)
         break
     except IOError, e:
         if verbose or tries > 0:
-            print "checkfriends:", e
+            print site["checkfriends"] + ":", e
         if tries > 0:
             sys.exit(1)
         tries = tries + 1
@@ -88,7 +91,7 @@ if ljproto.ljok(ret):
     if ret["lastupdate"] == "":
         # This appears to indicate that checkfriends is bust, and
         # so we should retrieve the URL.
-        nonemsg = "no visible change; checkfriends was uninformative"
+        nonemsg = "no visible change; %s was uninformative" % site["checkfriends"]
         tryit = 1
         if interval <= 0 or interval > 300:
             interval = 300 # in this case, we don't trust the interval either
@@ -97,16 +100,16 @@ if ljproto.ljok(ret):
         # The checkfriends protocol tells us there is something
         # new. If we have date delimiters, we now check the real
         # friends page to see if it's actually correct or not.
-        nonemsg = "no visible change, although checkfriends reported one"
+        nonemsg = "no visible change, although %s reported one" % site["checkfriends"]
         tryit = 1
         new = 2 # means quite likely to be new stuff, but uncertain
     if tryit:
-        urlguts = ljproto.ljuserhost() + ".livejournal.com/friends"
+        urlguts = ljproto.ljuserhost(site) + site['friendssuffix']
         if date_start != "" and date_stop != "":
             url = "http://" + urlguts + "/"
 
-            # Fetch LJ login details, if available.
-            session = os.environ["HOME"] + "/.ljscan/ljsesscookies"
+            # Fetch login details, if available.
+            session = os.environ["HOME"] + site['logincookies']
             cookurl.loadcookies(session)
 
             try:
@@ -137,17 +140,16 @@ if ljproto.ljok(ret):
             explain = None
             if new == 1:
                 newstr = "No information available on"
-                explain = "(checkfriends was unhelpful, and retrieval of" + \
-                " friends page itself failed)"
+                explain = ("(%s was unhelpful, and retrieval of" + \
+                " friends page itself failed)") % site["checkfriends"]
             elif new == 2:
                 newstr = "Possibly new"
-                explain = "(checkfriends said so, but retrieval of friends "+ \
-                "page itself failed)"
+                explain = ("(%s said so, but retrieval of friends "+ \
+                "page itself failed)") % site["checkfriends"]
             else:
                 newstr = "New"
                 explain = "([%s] -> [%s])" % (olddate, newdate)
-            print newstr, "entries at www.livejournal.com/users/" + \
-            ljproto.ljusername() + "/friends"
+            print newstr, "entries at " + urlguts
             if explain != None: print explain
     f = open(cfg, "w")
     if date_start != "\n":

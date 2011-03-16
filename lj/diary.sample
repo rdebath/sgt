@@ -1,4 +1,4 @@
--*- diary -*-
+-*- sgt-diary -*-
 
 {t Sample Half-Title}: Things On Springs
 
@@ -19,7 +19,7 @@ Special characters: {L}12.99.
 {tl anakin}{q Ooh, hi there.}
 {tl longline}{q This is a talker-formatted paragraph. Ain't that
 cool? Now let's see if this line will wrap.}
-{tl {name simont anakin} }wonders whether {{name}} in {{tl}} will work
+{tl {dwname simont anakin} }wonders whether {{dwname}} in {{tl}} will work
 
 {ljcut LJ cut}
 
@@ -29,8 +29,8 @@ So there.
 
 {/ljcut}
 
-Here is {name simont Simon}'s name, which should come out as a magic
-LJ user tag on LJ but be normal text on Mono.
+Here is {dwname simont Simon}'s name, which should come out as a magic
+DW user tag on LJ/DW but be normal text on Mono. Also {ljname simont Simon} should come out as the LJ version of the same tag.
 
 {Q}
 This paragraph is quoted. This means that on mono, it should be
