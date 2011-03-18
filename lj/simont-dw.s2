@@ -73,7 +73,7 @@ propgroup other {
     property use comment_userpic_style;
 
     property string journals_to_avoid {
-        des = "Journals to avoid (on friendsfriends etc)";
+        des = "Journals to avoid (on network page etc)";
     }
 }
 
@@ -269,6 +269,8 @@ function Page::print ()
     var string links;
     $links = $links + ($.view == "recent" ? "<b>entries</b>" : "<a class='index' href='$.base_url/'>entries</a>") + "|";
     $links = $links + ($.view == "read" ? "<b>reading</b>" : "<a class='index' href='$.base_url/read'>reading</a>") + "|";
+
+    $links = $links + ($.view == "network" ? "<b>network</b>" : "<a class='index' href='$.base_url/network'>network</a>") + "|";
     $links = $links + ($.view == "archive" ? "<b>archive</b>" : "<a class='index' href='$.base_url/calendar'>archive</a>");
     
 """<!doctype HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
@@ -412,7 +414,7 @@ function print_entry (Page p, Entry e, Color bgcolor, Color fgcolor, bool hide_t
         $e.security_icon->print();
     }
 
-    if ($p.view == "read" or
+    if ($p.view == "read" or $p.view == "network" or
         $p.journal_type == "C" or
         $e.poster.username != $e.journal.username)
     {
