@@ -10,7 +10,12 @@ import time
 
 verbose = force = last = 0
 args = sys.argv[1:]
-site = ljproto.LJ
+if os.path.basename(sys.argv[0]) == "ljpoll":
+    site = ljproto.LJ
+elif os.path.basename(sys.argv[0]) == "dwpoll":
+    site = ljproto.DW
+else:
+    site = None
 while len(args) > 0:
     arg = args[0]
     args = args[1:]
@@ -18,12 +23,19 @@ while len(args) > 0:
         verbose = 1
     elif arg == "--force":
         force = 1
+    elif arg == "--lj":
+        site = ljproto.LJ
     elif arg == "--dw":
         site = ljproto.DW
     elif arg == "--last":
         last = 1
     else:
         sys.stderr.write("ljpoll: unknown option \"" + arg + "\"\n")
+        sys.exit(1)
+
+if site == None:
+    sys.stderr.write("ljpoll: specify --lj or --dw\n")
+    sys.exit(1)
 
 def chomp(s):
     while s[-1:] == "\n" or s[-1:] == "\r":
