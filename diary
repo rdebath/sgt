@@ -594,7 +594,7 @@ class output:
 
     def line_break(self):
 	if self.html_ok:
-	    self.html = self.html + "<br>"
+	    self.html = self.html + "<br />"
         if self.mono_ok:
             self.mono_show_para(1)
             self.mono_words = []
@@ -1001,6 +1001,7 @@ class tokeniser:
 			break # discretionary word break
 		    else:
 			neednext = 0 # don't lose the char after the hyphen
+                        c = c2
 	return (WORD, ret)
 
     def curr(self):
