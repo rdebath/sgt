@@ -315,6 +315,11 @@ $1 = "Timber";
     definekey("timber_expunge", "X", $1);
     definekey("timber_expunge", "x", $1);
 
+    % L (look for new messages) revisits the main mailbox and checks
+    % for new arrivals therein.
+    definekey("timber", "L", $1);
+    definekey("timber", "l", $1);
+
     % Q (quit / qlosefolder) does an expunge and then kills the buffer.
     definekey("timber_qlose", "Q", $1);
     definekey("timber_qlose", "q", $1);
