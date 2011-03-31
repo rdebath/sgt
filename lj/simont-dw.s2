@@ -245,7 +245,7 @@ function Page::lay_top_userpic () {
 <tr><td bgcolor="$*outline" align="center">
 <table cellpadding="0" bgcolor="$*entry_back" cellspacing="0" border="0" summary="">
 <tr><td bgcolor="$*entry_back" align="center">
-<a href="http://www.dreamwidth.org/allpics.bml?user=$.journal.username">
+<a href="http://${.journal.username}.dreamwidth.org/icons">
 <img border="0" src="$up_img.url" height="$up_img.height" width="$up_img.width" alt=""></a></td></tr>
 </table></td></tr></table></td>
 """;
@@ -393,7 +393,7 @@ function print_entry (Page p, Entry e, Color bgcolor, Color fgcolor, bool hide_t
 <table cellpadding="0" cellspacing="0" border="0" summary="">
 <tr align="right">
 <td bgcolor="$*entry_back">
-<a href="http://www.dreamwidth.org/allpics.bml?user=$e.poster.username">
+<a href="http://${e.poster.username}.dreamwidth.org/icons">
 <img border="0" src="$e.userpic.url" width="$e.userpic.width" height="$e.userpic.height" alt=""></a></td></tr>
 </table></td></tr></table></td>
 <td valign="top">""";
@@ -832,7 +832,7 @@ function EntryPage::print_comment (Comment c) {
 <table cellpadding="0" cellspacing="0" border="0" summary="">
 <tr align="right">
 <td bgcolor="$*entry_back">
-<a href="http://www.dreamwidth.org/allpics.bml?user=$c.poster.username">
+<a href="http://${c.poster.username}.dreamwidth.org/icons">
 <img border="0" src="$c.userpic.url" width="$c.userpic.width" height="$c.userpic.height" alt=""></a>
 </td></tr></table></td></tr></table></td>
 <td valign="top">""";
@@ -993,7 +993,7 @@ function ReplyPage::print_body () {
 <table cellpadding="0" cellspacing="0" border="0" summary="">
 <tr align="right">
 <td bgcolor="$*entry_back">
-<a href="http://www.dreamwidth.org/allpics.bml?user=$.replyto.poster.username">
+<a href="http://${.replyto.poster.username}.dreamwidth.org/icons">
 <img border="0" src="$.replyto.userpic.url" width="$.replyto.userpic.width" height="$.replyto.userpic.height" alt=""></a>
 </td></tr></table></td></tr></table></td>
 <td valign="top">""";
