@@ -15,6 +15,7 @@ facelabels = 0
 cmpsign = +1
 picfile = None
 adjpairs = {}
+dotabs = 1
 while len(args) > 0 and args[0][:1] == "-":
     a = args[0]
     args = args[1:]
@@ -27,6 +28,8 @@ while len(args) > 0 and args[0][:1] == "-":
         cmpsign = -1
     elif a == "-f":
         facelabels = 1
+    elif a == "-T":
+        dotabs = 0
     elif a[:2] == "-p":
         # Undocumented option which allows you to specify a file
         # containing a PostScript fragment. That file is included
@@ -598,6 +601,13 @@ for f1, f2 in folded:
     assert len(edge) == 2
     if edge[1] < edge[0]: edge = (edge[1],edge[0])
     del cutedges[edge]
+
+# Slight kludge to process the -T option (suppress tabs): rather than
+# going to the hassle of putting half this script in a giant if
+# statement, I instead just empty the cutedges hash here.
+if not dotabs:
+    cutedges = {}
+
 # Initialise our decision hash that tells us which of the two
 # instances of a cut edge has the tab on it.
 tabpos = {}
