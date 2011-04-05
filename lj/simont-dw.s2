@@ -422,7 +422,7 @@ function print_entry (Page p, Entry e, Color bgcolor, Color fgcolor, bool hide_t
 	var string community = $e.journal->as_string();
 	"""$poster""";
 	if ($e.poster.username != $e.journal.username and
-	    $p.view == "read") {
+	    ($p.view == "read" or $p.view == "network")) {
 	    """ on $community""";
 	}
     }
