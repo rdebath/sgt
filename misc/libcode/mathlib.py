@@ -335,22 +335,22 @@ def sqrt(n):
 # and integer cube roots, while I'm here
 def cbrt(N):
     x = T1 = T2 = 0L
-    as = len(hex(long(N))) * 4 / 3
-    T0 = 1L << (3*as)
+    sh = len(hex(long(N))) * 4 / 3
+    T0 = 1L << (3*sh)
     R = long(N)
 
-    while as >= 0:
+    while sh >= 0:
         T = T0 + T1 + T2
         if R >= T:
             R = R - T
-            x = x + (1L << as)
+            x = x + (1L << sh)
             T2 = T2 + T1
             T1 = T1 + 3*T0
             T2 = T2 + T1
         T0 = T0 >> 3
         T1 = T1 >> 2
         T2 = T2 >> 1
-        as = as - 1
+        sh = sh - 1
 
     return x
 
@@ -385,3 +385,6 @@ def choices(inlist, k):
     outlist = []
     recurse(inlist, outlist, 0, k, ret)
     return ret
+
+# phi is always useful
+phi = (1 + math.sqrt(5))/2
