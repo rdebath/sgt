@@ -25,6 +25,8 @@ print "---", now
 # 30 seconds should be ample timeout for the moment.
 endtime = starttime + 30
 
+os.setpgrp()
+
 stuff = []
 for command in commands:
     p = popen2.Popen3(command + " 2>&1")
@@ -42,11 +44,23 @@ while len(stuff) > 0:
         sys.stdout.write(prefix)
         space = ""
         for t in stuff:
-            os.kill(t[1].pid, 15)
             t[1].fromchild.close()
             sys.stdout.write(space + t[0])
             space = " "
         sys.stdout.write("\n")
+
+        # Vigorously kill all the subprocesses, so we don't leave them
+        # hanging forever in whatever wedged state they've got into.
+        # We take advantage here of the fact that neither os.popen2
+        # nor the shell it invokes will move a process into a
+        # different process group - so everything we need to kill is
+        # in our own process group. But we move _ourself_ out of that
+        # group before SIGKILLing the whole thing, so as to terminate
+        # cleanly ourself!
+        pid = os.getpid()
+        pgid = os.getpgid(pid)
+        os.setpgid(pid, os.getppid())
+        os.kill(-pgid, 9)
         break
 
     newstuff = []
