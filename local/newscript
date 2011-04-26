@@ -11,5 +11,6 @@ if test ! -n "$i"; then
   esac
 fi
 i=`which $i`
-/bin/echo "#!$i $@" > $s
+set -- "#!$i" "$@"
+/bin/echo "$@" > $s
 chmod +x $s
