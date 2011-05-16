@@ -14,7 +14,7 @@ open OUT,">".$ARGV[0] and select OUT;
 # Called with POINT at the beginning of the line.
 sub issep($) {
   my ($k) = @_;
-  $k =~ /^From [^ ]+ *( [A-Z][a-z]{2}){2} [\d ]\d [\d ]\d:\d\d:\d\d \d\d\d\d$/;
+  $k =~ /^From ([^ ]|"[^"]*")+ *( [A-Z][a-z]{2}){2} [\d ]\d [\d ]\d:\d\d:\d\d \d\d\d\d$/;
 }
 
 # Convert a raw mail folder into a Timber-style mail folder.
