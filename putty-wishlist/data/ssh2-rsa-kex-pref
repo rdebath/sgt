@@ -4,6 +4,7 @@ Priority: high
 Difficulty: tricky
 Absent-in: 0.60
 Present-in: 2007-05-07
+Fixed-in: r9181
 Content-type: text/x-html-body
 
 <p>The addition of <a href="ssh2-rsa-kex.html">ssh2-rsa-kex</a> has caused
@@ -17,3 +18,7 @@ be reasonable to promote RSA to just above WARN if it's absent, but there
 probably isn't a suitable general rule.  Another approach would be to
 scrap the preference lists and have a better <a href="cipher-selection.html">
 cipher selection</a> mechanism.
+
+<p><b>sgt, 2011-06-25</b>: introduced a mechanism for specifying the
+default position of new items in a preference list as just before or
+after some existing item, which is good enough to solve this one.
