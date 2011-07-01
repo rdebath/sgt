@@ -213,7 +213,9 @@ EOF
                             map(classifyver($_),
                                 (split / /,$bugs{$_}->{hdrs}->{"absent-in"}))),
                        @{$fixedvers{$class}});
-        subtractbugs(\@fullbuglist, printbugs(\@tmp));
+        printbugs(\@tmp);
+        subtractbugs($fixedvers{$class}, \@tmp);
+        subtractbugs(\@fullbuglist, \@tmp);
         unnest("</ul>\n");
     }
 
