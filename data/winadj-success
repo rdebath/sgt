@@ -3,6 +3,7 @@ Class: semi-bug
 Priority: high
 Absent-in: 0.60
 Present-in: 2008-03-28 2008-12-01
+Fixed-in: r9185 2011-07-02
 Content-type: text/x-html-body
 
 <p>
@@ -19,11 +20,9 @@ following error message, reportedly under load:
 <p>
 This message has only existed in PuTTY since the
 <a href="flow-control.html">'flow-control'</a>
-feature was implemented, which was after we released 0.60; so
-<!-- XXX-REVIEW-BEFORE-RELEASE -->at the time of writing, only people
-using development snapshots, or third-party code incorporating
-development code, should be seeing this. We probably want to find out
-what's going on before we make a release with this feature in.
+feature was implemented, which was after we released 0.60; so only
+people using development snapshots, or third-party code incorporating
+development code, should have seen this.
 
 <p>
 On the face of it, it looks like the SSH server -- which in all the
@@ -41,10 +40,11 @@ The maintainers of boks_sshd, foxt.com, are tracking this
 interoperability problem as 090916-090424.
 
 <p>
-We could just ignore the protocol error, and quietly treat a (bogus)
-SUCCESS response to "winadj" the same as a FAILURE response -- it
-won't do any harm, since all we're interested in is when the server
-replies; we don't actually care about the content.
+The obvious workaround for this server's behaviour is to just ignore
+the protocol error, and quietly treat a (bogus) SUCCESS response to
+"winadj@putty" the same as a FAILURE response -- it won't do any harm,
+since all we're interested in is when the server replies; we don't
+actually care about the content. So we did that.
 
 <p>
 Reports:
