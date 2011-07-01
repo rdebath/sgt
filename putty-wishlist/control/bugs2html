@@ -190,7 +190,32 @@ foreach my $bug (grep(exists($bugs{$_}->{"hdrs"}->{"fixed-in"}), @fullbuglist)) 
 }
 
 # Now spit them out in order.
+my $oldclass = undef;
 foreach my $class (sort compareverclass_s (keys %fixedvers)) {
+
+    if (defined($oldclass)) {
+        # Pull out bugs that never affected any release, only snapshots.
+        # We occasionally like to track these in the wishlist, but
+        # we don't want to give the impression that they were in
+        # release N-1 by listing them as "fixed" in release N.
+        #
+        # We assume only things that can be described as "breakage"
+        # (i.e., bugs) will be listed in this class, and in any case
+        # most users don't care about these, so we don't bother to
+        # classify them further.
+        nest(<<EOF);
+<h3>Broken and fixed between $oldclass and $class</h3>
+<ul>
+EOF
+        # This horror wouldn't work too well if
+        # $oldclass = "current snapshots". Fortunately, it never will.
+        my @tmp = grep(grep(($_ eq $oldclass),
+                            map(classifyver($_),
+                                (split / /,$bugs{$_}->{hdrs}->{"absent-in"}))),
+                       @{$fixedvers{$class}});
+        subtractbugs(\@fullbuglist, printbugs(\@tmp));
+        unnest("</ul>\n");
+    }
 
     nest(<<EOF);
 <h3>Fixed in $class</h3>
@@ -232,6 +257,10 @@ EOF
     unnest("</ul>\n");
 
     unnest("</ul>\n");
+
+    # Keep track of "previous" release. add_release_fixes() should
+    # have ensured there are no gaps.
+    $oldclass = $class;
 
 }
 
