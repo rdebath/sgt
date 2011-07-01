@@ -17,36 +17,6 @@ following error message, reportedly under load:
                       [   OK   ]</pre>
 
 <p>
-Reports:
-<ul>
-<li>E2E34FB668D4874FA28658B489F40BB0028F47DA@BP1XEUEX706-C.bp1.ad.bp.com
-  <br>Using "Portable PuTTY from the Xming project" (not our code)
-  <br>but also seen with 2008-12-01:r8355
-  <br>Server claims to be "SSH-2.0-OpenSSH_4.3" -- however, if that
-    were really true I'd have expected <em>many</em> more reports, and
-    looking at the OpenSSH 4.3/p1/p2 source code I can't see how this
-    can happen; apparently the server is actually "boks_sshd" from
-    <a href="http://foxt.com/">foxt.com</a>.
-  <br>Seems to happen readily -- a few "ls -ltr"s are sufficient to break it
-  <br>Session log shows this happening the very first time we send one of
-    our "winadj" requests; there aren't any ambiguities with multiple
-    outstanding requests or anything like that.
-<li><a href="http://trac.filezilla-project.org/ticket/3452">FileZilla
-ticket #3452</a>
-  <br>(but also reported with PSFTP 2008-03-28:r7934:
-  E00B544DC95563489A6C43CCD571EDD304EF8AFB@somodd.som.umaryland.edu)
-  <br>Reported as failure shortly after 1Gbyte of a file transfer.
-<li>OF31BAE29C.9F8D62FE-ON862574FF.00743D6C-852574FF.007508E8@notes.wachovia.com
-  <br>Again, server claims to be "SSH-2.0-OpenSSH_4.3"
-  <br>Again, shows up under light load ("ls -l" etc)
-  <br>Again, session log shows it happens on the first "winadj" we send.
-<li>b97d2a650908251029v6d08aadelab7db47c312b4841@mail.gmail.com
-  <br>Again, shows up with "ls -l" type activity.
-  <br>Server claims to be "SSH-2.0-OpenSSH_3.8.1p1" but is in fact
-    boks_sshd 6.0.
-</ul>
-
-<p>
 This message has only existed in PuTTY since the
 <a href="flow-control.html">'flow-control'</a>
 feature was implemented, which was after we released 0.60; so
@@ -75,3 +45,33 @@ We could just ignore the protocol error, and quietly treat a (bogus)
 SUCCESS response to "winadj" the same as a FAILURE response -- it
 won't do any harm, since all we're interested in is when the server
 replies; we don't actually care about the content.
+
+<p>
+Reports:
+<ul>
+<li>E2E34FB668D4874FA28658B489F40BB0028F47DA@BP1XEUEX706-C.bp1.ad.bp.com
+  <br>Using "Portable PuTTY from the Xming project" (not our code)
+  <br>but also seen with 2008-12-01:r8355
+  <br>Server claims to be "SSH-2.0-OpenSSH_4.3" -- however, if that
+    were really true I'd have expected <em>many</em> more reports, and
+    looking at the OpenSSH 4.3/p1/p2 source code I can't see how this
+    can happen; apparently the server is actually "boks_sshd" from
+    <a href="http://foxt.com/">foxt.com</a>.
+  <br>Seems to happen readily -- a few "ls -ltr"s are sufficient to break it
+  <br>Session log shows this happening the very first time we send one of
+    our "winadj" requests; there aren't any ambiguities with multiple
+    outstanding requests or anything like that.
+<li><a href="http://trac.filezilla-project.org/ticket/3452">FileZilla
+ticket #3452</a>
+  <br>(but also reported with PSFTP 2008-03-28:r7934:
+  E00B544DC95563489A6C43CCD571EDD304EF8AFB@somodd.som.umaryland.edu)
+  <br>Reported as failure shortly after 1Gbyte of a file transfer.
+<li>OF31BAE29C.9F8D62FE-ON862574FF.00743D6C-852574FF.007508E8@notes.wachovia.com
+  <br>Again, server claims to be "SSH-2.0-OpenSSH_4.3"
+  <br>Again, shows up under light load ("ls -l" etc)
+  <br>Again, session log shows it happens on the first "winadj" we send.
+<li>b97d2a650908251029v6d08aadelab7db47c312b4841@mail.gmail.com
+  <br>Again, shows up with "ls -l" type activity.
+  <br>Server claims to be "SSH-2.0-OpenSSH_3.8.1p1" but is in fact
+    boks_sshd 6.0.
+</ul>
