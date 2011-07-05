@@ -36,15 +36,17 @@ aren't understood -- we don't expect any server to specifically
 handle this message.)
 
 <p>
-The maintainers of boks_sshd, foxt.com, are tracking this
-interoperability problem as 090916-090424.
+The maintainers of boks_sshd, foxt.com, acknowledged this server issue
+(case 090916-090424). It was fixed in BoKS 6.5.4, released on June 2,
+2010.
 
 <p>
-The obvious workaround for this server's behaviour is to just ignore
-the protocol error, and quietly treat a (bogus) SUCCESS response to
-"winadj@putty" the same as a FAILURE response -- it won't do any harm,
-since all we're interested in is when the server replies; we don't
-actually care about the content. So we did that.
+The obvious workaround for the behaviour of old versions of this
+server behaviour is to just ignore the protocol error, and quietly
+treat a (bogus) SUCCESS response to "winadj@putty" the same as a
+FAILURE response -- it won't do any harm, since all we're interested
+in is when the server replies; we don't actually care about the
+content. So we did that.
 
 <p>
 Reports:
