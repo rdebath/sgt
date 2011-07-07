@@ -1,0 +1,13 @@
+#!/bin/sh 
+
+# Sort the input file(s), using a collation order which is basically
+# textual comparison from start-of-line except that any sequence of
+# digits is compared numerically no matter where it occurs.
+#
+# To do this, I transform/sort/untransform in Perl.
+
+perl -pe ' # transform code:
+s/=/==/g; s/\d+/"=" . ("Z" x length $&) . $& . "="/eg;
+' "$@" | sort | perl -pe '
+s/=(Z+(\d+))?=/($1 eq "" ? "=" : $2)/eg;
+'
