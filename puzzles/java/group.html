@@ -2,8 +2,9 @@
 <head>
 <title>Group, an unfinished puzzle from Simon Tatham's Portable Puzzle Collection</title>
 <link rel="stylesheet" type="text/css" href="../../sitestyle.css" name="Simon Tatham's Home Page Style">
+<script type="text/javascript" src="resize-puzzle-applet.js"></script>
 </head>
-<body>
+<body onLoad="initResizablePuzzleApplet();">
 <h1 align=center>Group</h1>
 <h2 align=center>an unfinished puzzle</h2>
 <h2 align=center>from Simon Tatham's Portable Puzzle Collection</h2>
@@ -15,8 +16,25 @@ puzzles page</a>. Don't be surprised if things are hard to understand
 or don't work as you expect.
 
 <p align="center">
-<applet archive="group.jar" code="PuzzleApplet" width="700" height="500">
+<table cellpadding="0">
+<tr>
+<td>
+<applet id="applet" archive="group.jar" code="PuzzleApplet"
+        width="700" height="500">
 </applet>
+</td>
+<td>
+<div id="eresize" style="width:5px;height:500px;cursor:e-resize;"></div>
+</td>
+</tr>
+<td>
+<div id="sresize" style="width:700px;height:5px;cursor:s-resize;"></div>
+</td>
+<td>
+<div id="seresize" style="width:5px;height:5px;cursor:se-resize;"></div>
+</td>
+</tr>
+</table>
 
 <p>
 Fill in the grid with the letters shown to the top and left of it, so
