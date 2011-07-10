@@ -2,14 +2,32 @@
 <head>
 <title>Galaxies, from Simon Tatham's Portable Puzzle Collection</title>
 <link rel="stylesheet" type="text/css" href="../../sitestyle.css" name="Simon Tatham's Home Page Style">
+<script type="text/javascript" src="resize-puzzle-applet.js"></script>
 </head>
-<body>
+<body onLoad="initResizablePuzzleApplet();">
 <h1 align=center>Galaxies</h1>
 <h2 align=center>from Simon Tatham's Portable Puzzle Collection</h2>
 
 <p align="center">
-<applet archive="galaxies.jar" code="PuzzleApplet" width="700" height="500">
+<table cellpadding="0">
+<tr>
+<td>
+<applet id="applet" archive="galaxies.jar" code="PuzzleApplet"
+        width="700" height="500">
 </applet>
+</td>
+<td>
+<div id="eresize" style="width:5px;height:500px;cursor:e-resize;"></div>
+</td>
+</tr>
+<td>
+<div id="sresize" style="width:700px;height:5px;cursor:s-resize;"></div>
+</td>
+<td>
+<div id="seresize" style="width:5px;height:5px;cursor:se-resize;"></div>
+</td>
+</tr>
+</table>
 
 <p>
 Draw lines along grid edges so as to divide the grid up into
