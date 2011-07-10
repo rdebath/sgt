@@ -1,6 +1,6 @@
-Summary: Ability to backend onto a Windows command interpreter
+Summary: Ability to backend on to a Windows command interpreter
 Class: wish
-Difficulty: taxing
+Difficulty: mayhem
 Priority: low
 Content-type: text/x-html-body
 
@@ -10,111 +10,75 @@ for Windows command interpreters (Command Prompt, bash, etc), in
 place of the not-very-pleasant standard console window.
 
 <p>
-I haven't investigated this very closely, but it's not clear to me
-that this would be useful for anything except Cygwin. I've used
-Windows telnetds, and they look to me as if they're working in a
-fundamentally different way from a Unix telnetd. When you issue a
-command that scrolls the screen a lot, it seems to get
-<em>redrawn</em> from the server end rather than scrolled - as if
-the server had its own image of what the console screen ought to
-look like and was running something like <code>libcurses</code> to
-reproduce that image on the client side.
+I (SGT) have done some experimental work in this direction, but it
+doesn't look promising, since Windows's interface to its console
+devices is fundamentally different in nature from Unix's system of
+terminals and pseudo-terminals.
 
 <p>
-This leads me to conjecture that Windows's equivalent of a pty works
-more like <code>/dev/vcs</code> than <code>/dev/pty*</code> -
-Windows will still do the terminal emulation itself, and all you can
-do is read the results off a rectangular screen buffer and transfer
-them to an output device. So there would be no scope, in this model,
-for PuTTY to supply superior terminal emulation.
+Unix programs communicate with their terminal via a serialised stream
+of data in which literal text to be written to the screen is
+intermixed with control codes to do operations such as positioning the
+cursor, clearing the screen, and setting the colour. This architecture
+makes it very natural and simple to put a network connection in
+between the terminal application and the software or hardware which is
+converting that serialised data stream into a rectangular view of a
+terminal window; Unix supports this by providing "pseudo-terminal"
+devices, which look and behave just like an ordinary Unix terminal
+from the point of view of the applications running in them, but which
+pass the data stream to another application which can interpret it
+itself. Unix programs such as <code>xterm</code>, and also network
+servers such as <code>sshd</code>, all work by using these
+pseudo-terminal devices to retrieve the stream of terminal data. In
+<code>sshd</code>'s case, the data is then passed on to a remote
+network client such as PuTTY, which receives that stream of terminal
+data and interprets all the control codes so as to display the literal
+text into its window as those codes instruct it.
 
 <p>
-The alternative to that, of course, would be to ignore Windows's pty
-equivalent (whatever it is) and run the application in an ordinary
-pair of pipes instead. But this doesn't seem to work very well for
-the ordinary Windows Command Prompt utility: if you do that, you
-lose the command-line editing and recall which the console device
-provides.
-
-<p> As far as I can tell (and this is still all deductions based on
-observation, and might be wrong), the Cygwin library takes a
-completely different approach: the first Cygwin program you run in a
-Windows console will turn part of itself into a terminal emulator,
-create some pipes, and run the rest of the program in those pipes.
-If the program spawns other programs, they are passed the same
-pipes, and all terminal emulation is done by whichever program was
-first to get hold of the real console device. So in <em>this</em>
-model, PuTTY could contribute: it could run (say) Cygwin bash in a
-pair of pipes, and apply its own terminal emulation to the data it
-received from bash. However, there's still the question of what it
-would do about local line editing (which Unix utilities would still
-want to enable sometimes). I suspect Cygwin has a means of dealing
-with this, which a hypothetical local-PuTTY would have to implement.
+By contrast, Windows's console device is much more geared to direct
+access via the Windows API: there are API functions to ask Windows to
+read or write out the contents of a console's rectangular screen
+buffer, to change the colour, and so on. Windows has no analogue of
+Unix's pseudo-terminal device: there is no convenient way to create
+something that looks like a Windows console to its client application
+but passes all requests on to another application which can decide how
+to answer them.
 
 <p>
-In summary: I believe Windows does not supply an interface at the
-right level to make it sensibly possible to run a Command Prompt
-inside PuTTY's terminal emulator. I believe it would be possible in
-theory, but quite fiddly, to turn PuTTY into a local xterm-alike for
-the use of Cygwin programs only; but this is significantly less
-useful than the original goal of making it a generic replacement for
-the Command Prompt window. So unless anyone can correct my
-deductions above, I don't think this has a sufficiently high
-benefit-to-effort ratio to be worth doing.
+(This is a slight oversimplification. Unix does include one or two
+terminal operations which are not serialised into the usual data
+stream but are instead performed by direct Unix API calls, such as
+resizing the window. However, in such cases Unix is careful to provide
+an out-of-band mechanism for applications using pseudo-terminals to
+arrange correct handling of the operation.)
 
 <p>
-A workaround is of course to run an SSH (or telnet) server on your
-Windows box.
-
-<hr>
-<p>
-<a name="puttycyg"></a>Mark Edgar has created
-PuTTYcyg (link on <a href="../links.html">Links page</a>),
-which allows PuTTY to act as a terminal for
-<a href="http://www.cygwin.com">Cygwin</a> (with the aid of a helper
-application linked against Cygwin).
-(further discussion in <code>4032C9DD.4000202@student.gc.maricopa.edu</code>)
+It is just about possible (though extremely fiddly) to construct an
+application which instantiates a Windows console as a hidden window,
+and uses the same console API used by applications running in the
+console to read out its screen buffer and transfer that into the PuTTY
+window. This would give a window that had the look and feel of PuTTY
+(and, in particular, PuTTY's cut and paste interface), but running a
+Windows command prompt inside it. I have an experimental branch of the
+PuTTY code base (last touched in 2009) which attempts this.
 
 <p>
-Simon's reaction:
+However, it's not of production quality and probably never will be.
+Many things go subtly wrong when you attempt this sort of hackery, and
+handling of errors and exceptional cases is often very hard to get
+right. For example, it's extremely hard to arrange that if the PuTTY
+managing the invisible console window crashes, all processes using the
+console are cleaned up correctly. It's also hard to get GUI processes
+started from the invisible console not to be invisible themselves.
+Also, important keystrokes like Ctrl-C are difficult to pass through
+properly to the underlying console.
 
-<pre>
-This certainly looks believable enough for the moment.
-
-What I'd _like_ to do is to set up a more general mechanism for
-having PuTTY monitor Windows file descriptors as well as network
-sockets. This would be useful for supporting the OpenSSH-like
-<a href="proxy-command.html">ProxyCommand</a> function (for example running PuTTY over a secondary
-Plink), and for talking to <a href="serial-backend.html">serial ports</a>; and it would _also_ be an
-interesting alternative approach to your problem, since we could
-arrange to run (something like) cthelper with a group of pipes
-rather than local network connections.
-
-If we were to do this, it would open up two or three possible
-avenues of implementation for your feature:
-
- (a) cthelper works roughly as it now does, with two data channels
-     from PuTTY to it so that data and screen resizes can be
-     separated. They could now be pipes rather than network sockets,
-     but this would still require an extra back end in PuTTY.
-
- (b) If cthelper were to speak (a reasonably small subset of) the
-     Telnet protocol on its stdin/stdout, then it might be possible
-     to do this _without_ any modifications to PuTTY once I
-     implement proxy commands: you would supply `cthelper' as a
-     proxy command, and select Telnet as the protocol (the host and
-     port would then become unimportant). Then cthelper could
-     separate the incoming Telnet stream into screen resize events
-     and data, perform minimal Telnet encoding on the data it sent
-     back, and your code could be completely independent of changes
-     to mine.
-
- (c) I'd also quite like to implement a <a href="mdpi.html">DLL plugin interface</a>; I've
-     been wanting to do this for a while but recently there have
-     been some slightly more immediate reasons for wanting it. It
-     would obviously be good to have DLL plugins be able to add
-     extra back ends, so possibly that would be a good approach.
-
-For the moment, though, yours looks entirely workable and I'll have
-to give it a try...
-</pre>
+<p>
+On the other hand, making PuTTY behave like a local terminal window
+for <em>Cygwin</em> processes in particular is a much more feasible
+piece of work, since Cygwin carefully emulates the Unix-like terminal
+model which PuTTY already understands, so all that PuTTY has to do is
+to arrange to be able to talk to that emulation. See <a
+href="cygwin-terminal-window.html">cygwin-terminal-window</a> for
+thoughts on this.

@@ -1,0 +1,144 @@
+Summary: Use PuTTY as a local GUI terminal app for the Cygwin shell
+Class: wish
+Priority: low
+Difficulty: taxing
+Depends: local-proxy-telnet
+Content-type: text/x-html-body
+
+<p>
+It would be nice to be able to use PuTTY as a local terminal window
+application for Cygwin shell sessions: a sort of local
+<code>xterm</code>-alike (or rather, <code>pterm</code>-alike).
+
+<p>
+This is a perfectly feasible piece of work (much, much more so than
+the superficially similar-looking but far more difficult
+<a href="win-command-prompt.html">win-command-prompt</a>), and in fact
+it can just about be achieved without any actual changes to PuTTY.
+PuTTY's support for talking to a local Windows proxy subprocess in
+place of making a network connection permits a solution in which that
+proxy subprocess sets up a Cygwin pseudo-terminal, and speaks Telnet
+on its standard input and output (which connect to PuTTY). So you
+would configure PuTTY to think it was making a telnet connection to
+localhost, but actually interpose this helper program via the Proxy
+configuration panel &#8211; and the effect is that PuTTY speaks
+directly to the Telnet implementation in the helper program, which
+starts a Cygwin pty and runs a shell in it.
+
+<p>
+So the helper process has to be a Cygwin application (it must link
+against the Cygwin DLL so it can work with the Cygwin emulation of
+ptys), and it needs to speak Telnet on its standard I/O channels and
+at the other end talk to a pty. In other words, it's actually very
+similar to a Unix telnet daemon, of the type that can be launched
+from <code>inetd</code>.
+
+<p>
+In fact, it would be <em>really</em> nice if Cygwin's
+own <code>telnetd</code> could be used to do this job. Then an
+unmodified PuTTY could talk to an unmodified Cygwin installation with
+only a mildly fiddly piece of configuration.
+
+<p>
+However, when I actually tried this I found that Cygwin's telnet
+server wouldn't quite do the job: for instance, it wouldn't operate in
+the absence of syslogd, and it didn't have a command-line option to
+make it invoke some program other than <code>login</code> in its
+pseudo-terminal. I wouldn't expect that those should be difficult
+features to add, but I've never got round to making a serious effort
+to write them properly and get them accepted upstream.
+
+<p>
+However, I have written a small and specialist Telnet server of my own
+which <em>is</em> suitable for this job. (That was a lot less work
+than it sounds, since several pieces of PuTTY were easily reused to do
+most of the heavy lifting &#8211; client-side and server-side Telnet
+are very similar.) I'm just not sure how to sensibly package it, since
+really it should be a Cygwin application so as to work with Cygwin
+installations of all versions, but in that case it's better just to
+adapt Cygwin telnetd...
+
+<p>
+In the meantime, though, for anyone who wants to use it, here's the
+(currently rather long and involved) process for setting it up:
+<ul>
+<li>
+For a start, make sure you have a PuTTY containing the fix for
+<a href="local-proxy-telnet.html">local-proxy-telnet</a>, which is
+critical to this mechanism working at all.
+<li>
+Get the source code for my Telnet server, which is in the
+subdirectory <code>contrib/cygtermd</code> of the PuTTY source tree.
+(You can get the PuTTY source code from
+the <a href="../download.html">Download page</a>, as a zip or tar file
+or by checking it out from Subversion.)
+<li>
+In the <code>contrib/cygtermd</code> directory, run the
+Cygwin <code>make</code> command. (You will need
+Cygwin's <code>make</code> and <code>gcc</code> installed.) This will
+create an executable file called <code>cygtermd.exe</code>.
+<li>
+Copy <code>cygtermd.exe</code> into Cygwin's <code>/bin</code>
+directory. (This is unfortunately necessary because it will be run by
+a non-Cygwin application and will therefore need to be in the same
+directory as the Cygwin DLL in order to find it.)
+<li>
+Now configure PuTTY to run a session using cygtermd, as follows.
+<ul>
+<li>
+On the front page (Session panel):
+<ul>
+<li>
+Set connection type to Telnet.
+<li>
+Enter something in the host name box. (PuTTY won't launch a session at
+all unless it believes it's connecting to <em>something</em>; also
+whatever you type here will go in the window title bar. "localhost" is
+probably sufficient, if you have no better idea.)
+</ul>
+<li>
+In the Proxy panel:
+<ul>
+<li>
+Tick the box labelled "Consider proxying local host connections".
+(Otherwise, PuTTY will not use the information in this panel to
+override its default behaviour of just making a normal Telnet
+connection to your local machine.)
+<li>
+Set "Proxy type" to Local.
+<li>
+Enter in the command line field a Windows command line which launches
+cygtermd in the right directory and with the right subcommand.
+cygtermd will expect a directory name as its first argument (in Cygwin
+style), and will interpret the rest of its arguments as a command
+line. So you might, for instance, do something like this:
+<pre>c:\cygwin\bin\cygtermd.exe /home/simon /bin/bash -login
+</pre>
+which would arrange that the helper program will be run in
+Cygwin's <code>/home/simon</code> directory, and will launch the
+program "<code>/bin/bash -login</code>" (i.e. a normal Cygwin login
+shell) inside the telnet session.
+</ul>
+<li>
+In the Data panel:
+<ul>
+<li>
+You should be able to configure your terminal type and set environment
+variables, if you want to do either of those things. cygtermd supports
+the Telnet options for both.
+</ul>
+</ul>
+</ul>
+
+<p>
+This is all a lot of hassle, even though it only has to be set up
+once. If Cygwin telnetd were fixed so that it could do the job of my
+cygtermd utility, I would probably think it reasonable to add a piece
+of dedicated PuTTY user interface to make it trivially easy to run a
+local Cygwin shell session.
+
+<p>
+Our <a href="../links.html">Links page</a> links to a modified version
+of PuTTY called PuTTYcyg, which was able to act as a Cygwin local
+terminal (again using a helper process linked against Cygwin) before
+PuTTY proper could do so.

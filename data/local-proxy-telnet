@@ -1,0 +1,19 @@
+Summary: Data received from local proxy commands tagged as TCP Urgent (breaks telnet)
+Class: bug
+Priority: low
+Difficulty: fun
+Absent-in: r6807
+Present-in: r6808
+Fixed-in: r8158
+Content-type: text/x-html-body
+
+<p>
+When I implemented the
+<a href="proxy-command.html">proxy-command</a> feature, I accidentally
+set it up so that all data received from a local proxy subprocess (on
+both Unix and Windows) was tagged as TCP Urgent.
+
+<p>
+This made no difference to SSH (which is how I didn't notice), but it
+completely breaks Telnet. Fixed in r8158.
+
