@@ -18,6 +18,7 @@ print << "EOF";
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <HTML><HEAD>
 <TITLE>$title</TITLE>
+<link rel="canonical" href="http://www.chiark.greenend.org.uk/~sgtatham/putty/$ARGV[0]">
 <link rel="stylesheet" type="text/css" href="sitestyle.css" title="PuTTY Home Page Style">
 <link rel="shortcut icon" href="putty.ico">
 <meta http-equiv="content-type" content="text/html; charset=US-ASCII">
