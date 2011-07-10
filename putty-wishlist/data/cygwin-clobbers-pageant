@@ -3,6 +3,7 @@ Class: semi-bug
 Content-type: text/x-html-body
 Present-in: 0.52
 Absent-in: 0.51
+Fixed-in: r9178
 Priority: medium
 Difficulty: taxing
 
@@ -58,3 +59,10 @@ Workaround from Angus Duggan:
 Use <tt>cygstart.exe</tt> to start both Pageant and PuTTY. This starts
 with the same set of credentials that the cygwin programs start with,
 and all work fine.
+
+<p>
+<b>SGT, 2011-07-10</b>: this <em>should</em> be fixed in r9178 (which
+in turn fixes a bug introduced by r9043 which was my first attempt to
+fix this). Both PuTTY and Pageant now use the SID corresponding to the
+current user account for their access control, whether or not that
+account is also a member of the administrators group.
