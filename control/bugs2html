@@ -40,7 +40,8 @@ require "./config.pl";
     [ "0.58", "2005-04-05", "r5599" ],
     [ "0.59", "2007-01-25", "r7147" ],
     [ "0.60", "2007-04-29", "r7489" ]
-  # [ "0.61", "YYYY-MM-DD", "rXXXX" ] : populate with trunk rev
+    [ "0.61", "2011-07-12", "r9203" ]
+  # [ "0.62", "YYYY-MM-DD", "rXXXX" ] : populate with trunk rev
 );
 
 %classdesc =
