@@ -24,6 +24,7 @@ Redirect temp /~sgtatham/putty/0.57/ http://the.earth.li/~sgtatham/putty/0.57/
 Redirect temp /~sgtatham/putty/0.58/ http://the.earth.li/~sgtatham/putty/0.58/
 Redirect temp /~sgtatham/putty/0.59/ http://the.earth.li/~sgtatham/putty/0.59/
 Redirect temp /~sgtatham/putty/0.60/ http://the.earth.li/~sgtatham/putty/0.60/
+Redirect temp /~sgtatham/putty/0.61/ http://the.earth.li/~sgtatham/putty/0.61/
 Redirect permanent /~sgtatham/putty/bugs.html http://www.chiark.greenend.org.uk/~sgtatham/putty/feedback.html
 Redirect permanent /~sgtatham/putty/wishlist.html http://www.chiark.greenend.org.uk/~sgtatham/putty/wishlist/
 AddType application/octet-stream .chm
