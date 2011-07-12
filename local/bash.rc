@@ -302,16 +302,20 @@ xu() {
 #
 # and get away with it.
 
-bashrc_do_bindings() {
-  set -- '"\\C-xM": "\001\013timber\n"'
-  bind "`echo -e "$1"`"
-  set -- '"\\C-xm": "\001\013timber '\'\''\n"'
-  bind "`echo -e "$1"`"
-  set -- '"\\C-x\\C-m": "\001\013timber -f "'
-  bind "`echo -e "$1"`"
-}
-bashrc_do_bindings
-unset bashrc_do_bindings
+case "$-" in
+  *i*) # only do this if the shell is interactive
+    bashrc_do_bindings() {
+      set -- '"\\C-xM": "\001\013timber\n"'
+      bind "`echo -e "$1"`"
+      set -- '"\\C-xm": "\001\013timber '\'\''\n"'
+      bind "`echo -e "$1"`"
+      set -- '"\\C-x\\C-m": "\001\013timber -f "'
+      bind "`echo -e "$1"`"
+    }
+    bashrc_do_bindings
+    unset bashrc_do_bindings
+    ;;
+esac
 
 #}}}
 #{{{ F7 to execute macro
@@ -320,7 +324,11 @@ unset bashrc_do_bindings
 # alternative to ^X e. Since the record-macro keys are the same
 # between bash and Jed, I want my favourite execute-macro key in
 # both places as well.
-bind '"\e[18~": call-last-kbd-macro'
+case "$-" in
+  *i*) # only do this if the shell is interactive
+    bind '"\e[18~": call-last-kbd-macro'
+    ;;
+esac
 
 #}}}
 #{{{ fix tput weirdnesses
