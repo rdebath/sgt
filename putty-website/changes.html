@@ -36,6 +36,44 @@ not updating, which happens sometimes):
 For features planned for the next full release (and already available in
 the development snapshots), see the <a href="wishlist/">wishlist page</a>.
 
+<p>These features are new in beta 0.61 (released 2011-07-12):
+
+<ul>
+<li>
+Kerberos/GSSAPI authentication in SSH-2.
+<li>
+Local X11 authorisation support on Windows. (Unix already had it, of
+course.)
+<li>
+Support for non-fixed-width fonts on Windows.
+<li>
+GTK 2 support on Unix.
+<li>
+Specifying the logical host name independently of the physical network
+address to connect to.
+<li>
+Crypto and flow control optimisations.
+<li>
+Support for the <code>zlib@openssh.com</code> SSH-2 compression method.
+<li>
+Support for new Windows 7 UI features: Aero resizing and jump lists.
+<li>
+Support for OpenSSH AES-encrypted private key files in PuTTYgen.
+<li>
+Bug fix: handles OpenSSH private keys with primes in either order.
+<li>
+Bug fix: corruption of port forwarding is fixed (we think).
+<li>
+Bug fix: various crashes and hangs when exiting on failure,
+<li>
+Bug fix: hang in the serial back end on Windows.
+<li>
+Bug fix: Windows clipboard is now read asynchronously, in case of
+deadlock due to the clipboard owner being at the far end of the same
+PuTTY's network connection (either via X forwarding or via
+tunnelled <code>rdesktop</code>).
+</ul>
+
 <p>These features are new in beta 0.60 (released 2007-04-29):
 
 <ul>
