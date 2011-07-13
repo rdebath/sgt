@@ -445,6 +445,16 @@ popd() {
 #}}}
 #{{{ X window title configuration
 
+# Above, I worked out $bashrc_home, which is the realpath of my home
+# directory. Substituting this with ~ when it appears at the front of
+# $PWD is generally the right thing, but there's one special case:
+# what if $PWD is _right now_ itself a symlinkful path? I've done 'set
+# -P' above, but that doesn't correct the existing value of PWD - it
+# will only be reset when I change directory.
+#
+# Hence, force an update now.
+cd . # this is the silliest shell command I've ever had to write
+
 if [ -t 1 ]; then case "$TERM" in
   xterm | screen)
 
