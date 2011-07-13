@@ -148,6 +148,7 @@ if test x`type -t bashrc_dopath` = xfunction; then bashrc_dopath; fi
 bashrc_dovars() {
   local foo
   bashrc_hostname=`hostname | sed 's/\..*$//' | tr A-Z a-z`
+  bashrc_home="$(cd $HOME; set -P; pwd)"
   foo=`type -p less`
   if [ -n "$foo" ]; then export PAGER=$foo; export LESS=-M; fi
   foo=`type -p emacs`
@@ -444,26 +445,32 @@ popd() {
 #}}}
 #{{{ X window title configuration
 
-if [ -t 1 -a "Z$TERM" = "Zxterm" ]; then
+if [ -t 1 ]; then case "$TERM" in
+  xterm | screen)
 
-  # We maintain in the shell variable 'bashrc_xtitle' our current idea
-  # of what we want the X title bar to say. Before printing any shell
-  # prompt, we refresh this in the terminal. (So that, in particular,
-  # subshells or ssh sessions which changed the title to read some
-  # other hostname or directory will get cleaned up.)
-  bashrc_update_xtitle() {
-    [ -n "$bashrc_xtitle" ] && echo -ne '\033]0;'"$bashrc_xtitle"'\007'
-  }
-  bashrc_add_prompt_fn bashrc_update_xtitle
+    # We maintain in the shell variable 'bashrc_xtitle' our current idea
+    # of what we want the X title bar to say. Before printing any shell
+    # prompt, we refresh this in the terminal. (So that, in particular,
+    # subshells or ssh sessions which changed the title to read some
+    # other hostname or directory will get cleaned up.)
+    bashrc_update_xtitle() {
+      [ -n "$bashrc_xtitle" ] && echo -ne '\033]0;'"$bashrc_xtitle"'\007'
+    }
+    bashrc_add_prompt_fn bashrc_update_xtitle
 
-  # We assign our title bar to be based on the hostname and current
-  # directory, which means we must update it after every chdir.
-  bashrc_compute_xtitle() {
-    bashrc_xtitle="${USER}@${bashrc_hostname}:${PWD/$HOME/~}"
-  }
-  bashrc_compute_xtitle # do this _now_ ...
-  bashrc_add_changedir_fn bashrc_compute_xtitle # ... and after any chdir
+    # We assign our title bar to be based on the hostname and current
+    # directory, which means we must update it after every chdir.
+    #
+    # Use $bashrc_home rather than $HOME to deal with the possibility
+    # that $HOME proper might be set to a symlink rather than the
+    # canonical path of my home dir (e.g. on atreus).
+    bashrc_compute_xtitle() {
+      bashrc_xtitle="${USER}@${bashrc_hostname}:${PWD/$bashrc_home/~}"
+    }
+    bashrc_compute_xtitle # do this _now_ ...
+    bashrc_add_changedir_fn bashrc_compute_xtitle # ... and after any chdir
 
+  esac
 fi
 
 #}}}
