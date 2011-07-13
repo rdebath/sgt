@@ -30,6 +30,11 @@ string remove_whitespace(string str)
     return str;
 }
 
+bool strprefix(string str, string pfx)
+{
+    return (len(str) >= len(pfx) && substr(str, 0, len(pfx)) == pfx);
+}
+
 string hex = "0123456789abcdef";
 string hexquote(string str, string ok)
 {
@@ -116,7 +121,14 @@ void launch_url(void)
     if ((tmp = local_url_rewrite(str)) != str) {
 
 	str = tmp;
-    
+
+    } else if (strprefix(str, "http://lists.tartarus.org/")) {
+
+        /* When pasting links out of lists.tartarus.org cronmail, I
+         * want to be directed to the VPN-secured version of that
+         * URL. */
+	str = substr(str, 0, 7) + "tunnel." + substr(str, 7);
+
     } else if (substr(str, len(str)-16) == "@bugs.debian.org") {
 
 	/* Rewrite <number>@bugs.debian.org into a URL in the Debian BTS. */
