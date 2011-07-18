@@ -35,16 +35,24 @@ static int float_compare(const void *av, const void *bv)
 static void generate(int w, int h, unsigned char *retgrid, int steps,
                      int levels)
 {
+    /*
+     * We actually compute a region larger than the one we're
+     * returning, to avoid edge effects due to the edge and corner
+     * pixels getting greater weight in averaging steps and hence
+     * unduly influencing their surroundings.
+     */
+    int W = w + 2*steps, H = h + 2*steps;
+
     float *fgrid;
     float *fgrid2;
     int step, i, j;
     float min, max;
 
-    fgrid = malloc(w*h*sizeof(float));
+    fgrid = malloc(W*H*sizeof(float));
 
-    for (i = 0; i < h; i++) {
-        for (j = 0; j < w; j++) {
-            fgrid[i*w+j] = rand() / (float)RAND_MAX;
+    for (i = 0; i < H; i++) {
+        for (j = 0; j < W; j++) {
+            fgrid[i*W+j] = rand() / (float)RAND_MAX;
         }
     }
 
@@ -55,10 +63,10 @@ static void generate(int w, int h, unsigned char *retgrid, int steps,
      * cells (or the average of fewer, if we're on a corner).
      */
     for (step = 0; step < steps; step++) {
-        fgrid2 = malloc(w*h*sizeof(float));
+        fgrid2 = malloc(W*H*sizeof(float));
 
-        for (i = 0; i < h; i++) {
-            for (j = 0; j < w; j++) {
+        for (i = 0; i < H; i++) {
+            for (j = 0; j < W; j++) {
                 float sx, xbar;
                 int n, p, q;
 
@@ -69,15 +77,15 @@ static void generate(int w, int h, unsigned char *retgrid, int steps,
                 sx = 0.F;
                 for (p = -1; p <= +1; p++) {
                     for (q = -1; q <= +1; q++) {
-                        if (i+p < 0 || i+p >= h || j+q < 0 || j+q >= w)
+                        if (i+p < 0 || i+p >= H || j+q < 0 || j+q >= W)
                             continue;
                         n++;
-                        sx += fgrid[(i+p)*w+(j+q)];
+                        sx += fgrid[(i+p)*W+(j+q)];
                     }
                 }
                 xbar = sx / n;
 
-                fgrid2[i*w+j] = xbar;
+                fgrid2[i*W+j] = xbar;
             }
         }
 
@@ -85,15 +93,15 @@ static void generate(int w, int h, unsigned char *retgrid, int steps,
         fgrid = fgrid2;
     }
 
-    fgrid2 = malloc(w*h*sizeof(float));
-    memcpy(fgrid2, fgrid, w*h*sizeof(float));
-    qsort(fgrid2, w*h, sizeof(float), float_compare);
+    fgrid2 = malloc(W*H*sizeof(float));
+    memcpy(fgrid2, fgrid, W*H*sizeof(float));
+    qsort(fgrid2, W*H, sizeof(float), float_compare);
     min = fgrid2[0];
-    max = fgrid2[w*h-1];
+    max = fgrid2[W*H-1];
 
     for (i = 0; i < h; i++) {
         for (j = 0; j < w; j++) {
-            float val = fgrid[i*w+j];
+            float val = fgrid[(i+steps)*W+(j+steps)];
             int level = levels * (val - min) / (max - min);
             if (level >= levels) level = levels-1;
             retgrid[i*w+j] = 255 * level / (levels-1);
