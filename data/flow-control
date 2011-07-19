@@ -51,14 +51,25 @@ too large, but my experiments suggest that getting this right will be tricky.
 </blockquote>
 
 <p>
-(The new channel requests emitted by PuTTY as part of this change
+Knock-on effects of this change:
+<ul>
+<li>The new channel requests emitted by PuTTY as part of this change
 can cause a lot of noise in the logs of the OpenSSH server -- 
 "<tt>sshd[6386]: session_input_channel_req: no session 1 req
 winadj@putty.projects.tartarus.org</tt>". This should be mitigated as of
-<a href="https://bugzilla.mindrot.org/show_bug.cgi?id=1395">OpenSSH 5.1</a>.)
+<a href="https://bugzilla.mindrot.org/show_bug.cgi?id=1395">OpenSSH 5.1</a>.
+</li>
+<li>The frequent new channel requests exposed a bug in the
+<a href="http://matt.ucc.asn.au/dropbear/dropbear.html">Dropbear</a>
+SSH server, leading to PuTTY terminating sessions with a "Received
+SSH2_MSG_CHANNEL_FAILURE for nonexistent channel" message. This bug
+has been fixed in new versions of Dropbear (probably
+<a href="http://lists.ucc.gu.uwa.edu.au/pipermail/dropbear/2008q4/000831.html">0.52</a>
+onwards).</li>
+</ul>
 
 <p>
-Another approach: the Pittsburgh Supercomputing Center
+Another approach (not taken): the Pittsburgh Supercomputing Center
 <a href="http://www.psc.edu/networking/hpn-ssh/">suggest</a>
 that basing the SSH window size on the TCP window size from the
 underlying OS can help in some circumstances.  This would only
