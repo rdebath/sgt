@@ -1,5 +1,6 @@
 # Script execution engine for my build system.
 
+import sys
 import os
 import glob
 import struct
@@ -219,11 +220,18 @@ def run_script_line(s, is_config, cfg):
         if usercmd != None:
             delcmd = usercmd
         else:
-            if host == "-":
+            if hosttype == "-":
                 # Special case: a host name of "-" causes a
                 # self-delegation, i.e. we invoke the delegate
                 # server directly rather than bothering with ssh.
-                delcmd = [name.server]
+                for pdir in sys.path:
+                    delcmd = pdir + "/" + name.server
+                    if os.path.exists(delcmd):
+                        break
+                    delcmd = None
+                if delcmd == None:
+                    raise misc.builderr("unable to find delegate server")
+                delcmd = [delcmd]
             else:
                 delcmd = ["ssh"]
                 # If the user has specified an SSH identity key, use it.
