@@ -3,8 +3,22 @@
 
 module ipbt
 
-# Build the documentation.
-in ipbt do make ipbt.1 ipbt.html
+in ipbt do sed '/AC_INIT/s/rXXXX/r$(revision)/' configure.ac > tmp.ac
+in ipbt do mv tmp.ac configure.ac
+in ipbt do ./mkauto.sh
+in ipbt do rm -rf autom4te.cache
+
+# Build the documentation. This also tests the automake setup to
+# ensure configure actually works; but we use a self-delegation (i.e.
+# do all of this in a throwaway copy of the build directory) to avoid
+# accidentally shipping any outputs of configure. Instead we return
+# only the actual man page from the delegation environment.
+delegate -
+  in ipbt do ./configure
+  in ipbt do make doc
+  return ipbt/*.1
+  return ipbt/*.html
+enddelegate
 
 # Build a source archive with the right name.
 in . do ln -s ipbt ipbt-r$(revision)

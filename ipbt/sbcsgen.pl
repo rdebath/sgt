@@ -3,7 +3,8 @@
 # This script generates sbcsdat.c (the data for all the SBCSes) from its
 # source form sbcs.dat.
 
-$infile = "sbcs.dat";
+$infile = shift @ARGV;
+$infile = "sbcs.dat" unless defined $infile;
 $outfile = "sbcsdat.c";
 
 open FOO, $infile;
