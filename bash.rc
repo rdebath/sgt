@@ -137,34 +137,13 @@ case "`id`" in
     ;;
 esac
 #}}}
-#{{{ ~/bin should be on $PATH if it exists; also run bashrc_dopath
-if test -d ~/bin; then
-  addpath ~/bin
-fi
-if test x`type -t bashrc_dopath` = xfunction; then bashrc_dopath; fi
-#}}}
 #{{{ various global variables
 
 bashrc_dovars() {
-  local foo
   bashrc_hostname=`hostname | sed 's/\..*$//' | tr A-Z a-z`
   bashrc_home="$(cd $HOME; set -P; pwd)"
-  foo=`type -p less`
-  if [ -n "$foo" ]; then export PAGER=$foo; export LESS=-M; fi
-  foo=`type -p emacs`
-  if [ -e "$foo" -a -e "${foo}client" ]; then
-    bashrc_emacsclient="${foo}client"
-  else
-    unset bashrc_emacsclient
-  fi
-  if [ ! -e "$foo" ]; then
-    foo=`type -p jed`; fi
-  if [ ! -e "$foo" ]; then
-    foo=`type -p vi`; fi
   if [ -f $HOME/.hostaliases ]; then
     export HOSTALIASES=$HOME/.hostaliases; fi
-  export VISUAL=$foo
-  export EDITOR=$foo
   export FAST_PNEWS=y
   export TRNINIT="-F>\  -h +hFrom +hNewsgroups +hDate +hFollowup-To -Os -q"
   # Complex ATTRIBUTION line for trn, causing the `In article' line to
@@ -201,6 +180,44 @@ bashrc_dovars() {
 }
 bashrc_dovars
 unset bashrc_dovars
+
+if test -n "$bashrc_emacsclient" -a -x "$bashrc_emacsclient"; then
+  e() {
+    # It would be nice here if we could detect that a server-enabled
+    # emacs was not already running, and respond by launching one in
+    # the background and then retrying this command.
+    "$bashrc_emacsclient" --no-wait "$@"
+  }
+fi
+
+#}}}
+#{{{ ~/bin should be on $PATH if it exists; also run bashrc_dopath
+if test -d ~/bin; then
+  addpath ~/bin
+fi
+if test x`type -t bashrc_dopath` = xfunction; then bashrc_dopath; fi
+#}}}
+#{{{ more global variables, the ones that need $PATH set up to get right
+
+bashrc_dovars2() {
+  local foo
+  foo=`type -p less`
+  if [ -n "$foo" ]; then export PAGER=$foo; export LESS=-M; fi
+  foo=`type -p emacs`
+  if [ -e "$foo" -a -e "${foo}client" ]; then
+    bashrc_emacsclient="${foo}client"
+  else
+    unset bashrc_emacsclient
+  fi
+  if [ ! -e "$foo" ]; then
+    foo=`type -p jed`; fi
+  if [ ! -e "$foo" ]; then
+    foo=`type -p vi`; fi
+  export VISUAL=$foo
+  export EDITOR=$foo
+}
+bashrc_dovars2
+unset bashrc_dovars2
 
 if test -n "$bashrc_emacsclient" -a -x "$bashrc_emacsclient"; then
   e() {
