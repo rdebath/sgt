@@ -77,7 +77,7 @@ def checkout(cfg, module, path, is_main):
             while 1:
                 s = f.readline()
                 if s == "":
-                    raise misc.builderr("working directory `%s': unable to find git-svn latest revision in `git log' output")
+                    raise misc.builderr("working directory `%s': unable to find git-svn latest revision in `git log' output" % details[2])
                 if s[-1:] == "\n": s = s[:-1]
                 if s[:16] == "    git-svn-id: ":
                     ss = string.split(s)
@@ -96,7 +96,7 @@ def checkout(cfg, module, path, is_main):
             f.close()
             log.logmsg("  Revision faked via git-svn: %s" % newrev)
         else:
-            raise misc.builderr("working directory `%s' is not a Subversion working copy")
+            raise misc.builderr("working directory `%s' is not a Subversion working copy" % details[2])
 
         # If there's more than one revision represented here, raise
         # an error unless we've been told to accept that.
