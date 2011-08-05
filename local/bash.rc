@@ -181,15 +181,6 @@ bashrc_dovars() {
 bashrc_dovars
 unset bashrc_dovars
 
-if test -n "$bashrc_emacsclient" -a -x "$bashrc_emacsclient"; then
-  e() {
-    # It would be nice here if we could detect that a server-enabled
-    # emacs was not already running, and respond by launching one in
-    # the background and then retrying this command.
-    "$bashrc_emacsclient" --no-wait "$@"
-  }
-fi
-
 #}}}
 #{{{ ~/bin should be on $PATH if it exists; also run bashrc_dopath
 if test -d ~/bin; then
