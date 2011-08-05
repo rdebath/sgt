@@ -279,6 +279,15 @@ xu() {
   xcopy -u -r | cvt-utf8 -i
 }
 
+# sgt-jotting-export, wrapping my batch-mode-emacs facility of the
+# same name
+sgt-jotting-export() {
+    local i
+    for i in "$@"; do
+        emacs --batch -l ~/.emacs "$i" -f sgt-jotting-export 2>/dev/null
+    done
+}
+
 #}}}
 #{{{ keybindings to run Timber
 
