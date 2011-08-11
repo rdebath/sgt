@@ -1,12 +1,44 @@
-Summary: Control of file permissions in PSCP
+Summary: Control of file permissions in PSCP and PSFTP
 Class: wish
 Priority: medium
 Difficulty: fun
-Content-type: text/plain
+Content-type: text/x-html-body
 
-It would be nice if PSCP could allow user control of the file
-permissions it sends to the remote side when uploading files. I'm
-not entirely sure what the user interface for this should be, but
-whatever it is I think it would have to be a blanket option covering
-all files transferred in a single connection - it would just be too
-fiddly to give fine-grained control when copying many files.
+<p>
+It would be nice if PSCP and PSFTP could allow user control of the
+file permissions on files they create during transfers in both
+directions.
+
+<p>
+As of r9260, permissions are preserved (modulo umask) by the Unix file
+transfer tools, in both directions and in both SCP and SFTP protocols,
+and the Windows tools use a non-configurable default (which is 0644
+when we're speaking SCP, and unspecified in SFTP meaning that the
+server will use <em>its</em> default).
+
+<p>
+It would be nice to have more control over this. Thoughts include:
+<ul>
+<li>
+Ability to configure the default used on Windows.
+<li>
+Ability to inhibit propagation of existing permissions on Unix,
+reverting to the Windows-like behaviour (and, as per previous bullet
+point, ability to configure that default again).
+<li>
+Ability to <em>partially</em> propagate existing permissions on Unix.
+For instance, sometimes you only want to propagate the one property of
+whether a file is executable or not: imagine a situation in which on
+one machine all your files are habitually <code>go-rwx</code> and on
+another they're merely <code>o-rwx</code>. Copying executable files
+like scripts from the one to the other would want to
+translate <code>-rwx------</code> to <code>-rwxr-x---</code> and vice
+versa, whereas copying non-executable files would want to
+translate <code>-rw-------</code> to <code>-rw-r-----</code> and vice
+versa. It's not clear how extensive needs in this area might be, and
+hence what the configuration interface ought to look like. Perhaps a
+good starting point would just be to add an option to normalise the
+input permissions into one of <code>-rwxrwxrwx</code>
+or <code>-rw-rw-rw</code>, and then let the umask take care of the
+rest.
+</ul>
