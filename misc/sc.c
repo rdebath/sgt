@@ -335,7 +335,7 @@ int main(int argc, char **argv)
         }
 
         if (FD_ISSET(fd, &rfds)) {
-            ret = read(fd, recvbuf + recvlen, sizeof(recvlen) - recvlen);
+            ret = read(fd, recvbuf + recvlen, sizeof(recvbuf) - recvlen);
             if (ret < 0) {
                 fprintf(stderr, "sc: read: %s\n", strerror(errno));
                 return 1;
@@ -347,7 +347,7 @@ int main(int argc, char **argv)
         }
 
         if (FD_ISSET(0, &rfds)) {
-            ret = read(0, sendbuf + sendlen, sizeof(sendlen) - sendlen);
+            ret = read(0, sendbuf + sendlen, sizeof(sendbuf) - sendlen);
             if (ret < 0) {
                 fprintf(stderr, "sc: read: %s\n", strerror(errno));
                 return 1;
