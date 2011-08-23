@@ -260,10 +260,11 @@ int day_excluded(int date)
     return 0;
 }
 
-void process_excdata(char *data)
+int process_excdata(char *data)
 {
     int exc[MAXEXCEPTS];
     int nexc = 0;
+    int ok = 0;
 
     while (*data) {
 	unsigned y, m, d;
@@ -276,11 +277,14 @@ void process_excdata(char *data)
 	} else if (!strncmp(data, "done", 4)) {
 	    memcpy(excepts, exc, sizeof(excepts));
 	    nexcepts = nexc;
+            ok = 1;
 	}
 
 	data += strcspn(data, "\r\n");
 	data += strspn(data, "\r\n");
     }
+
+    return ok;
 }
 
 int main(int argc, char **argv)
@@ -481,10 +485,11 @@ int main(int argc, char **argv)
 		subproc_started = 0;
 		memcpy(excdatalocal, excdata, excdatasize);
 		excdatalocal[excdatasize-1] = '\0';
-		process_excdata(excdatalocal);
-		event_updated_excdata(tod, wd, date, ps, ls);
-		if (subproc_status < 0)
-		    ls->network_fault = 1;
+		if (subproc_status < 0 || !process_excdata(excdatalocal)) {
+                    ls->network_fault = 1;
+                } else {
+                    event_updated_excdata(tod, wd, date, ps, ls);
+                }
 	    }
 	}
 
