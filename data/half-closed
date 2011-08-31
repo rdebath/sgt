@@ -26,3 +26,35 @@ direction, and to sprinkle use of <code>shutdown()</code> and EOF
 notifications such as <code>SSH1_MSG_CHANNEL_CLOSE</code> and
 <code>SSH2_MSG_CHANNEL_EOF</code> throughout the code. This is a
 noticeable amount of work.
+
+<p>
+<b>SGT, 2011-08-31</b>: This also affects Plink in some circumstances.
+For instance, if you do a command along the lines of<pre>plink myhost
+'cat > thing' < thing</pre>then Plink can (intermittently, depending
+on how the server's window behaviour) accidentaly send the
+<code>SSH2_MSG_CHANNEL_EOF</code> <em>before</em> the rest of the data
+in the channel's outbuffer. This could be sort-of-fixed by setting the
+<code>pending_close</code> flag in <code>ssh_special</code> rather
+than immediately sending the EOF message, but that's only a partial
+fix since it would cause sending of CLOSE rather than EOF. I think it
+would be better to treat that as part of the full revamp described
+here, and fix it in a unified way.
+
+<p>
+While I'm here, another thing we would have to work out is when to
+<em>break</em> the rule about EOFs being independent in each
+direction. GUI PuTTY, for instance, <em>cannot</em> generate an EOF
+from client to server, since there's no UI action to cause one; for
+that case we'd have to adopt a rule that has more or less the effect
+of the current behaviour, in the assumption that that's what login
+sessions generally expect.
+
+<p>
+Another possibly relevant issue is
+<a href="https://bugzilla.mindrot.org/show_bug.cgi?id=1818">this bug</a>
+which I raised against OpenSSH last year. If our channel-closing
+behaviour changes so that the sending of EOF is decoupled from sending
+the first of the CLOSE messages which actually destroy the channel
+itself, it would make it more convenient to work around that ambiguous
+aspect of the ssh-connection protocol by waiting until we've seen
+replies to all our winadj requests before sending the actual CLOSE.
