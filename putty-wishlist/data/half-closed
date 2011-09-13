@@ -3,6 +3,7 @@ Class: bug
 Difficulty: tricky
 Priority: medium
 Present-in: 0.58
+Fixed-in: r9280
 Content-type: text/x-html-body
 
 <p>
@@ -58,3 +59,8 @@ the first of the CLOSE messages which actually destroy the channel
 itself, it would make it more convenient to work around that ambiguous
 aspect of the ssh-connection protocol by waiting until we've seen
 replies to all our winadj requests before sending the actual CLOSE.
+
+<b>SGT, 2011-09-13</b>: just committed r9279 and r9280, which
+<em>should</em> fix these issues throughout the code base. However,
+it's quite likely I've made a mistake or two somewhere, since it was
+quite a complicated fix.
