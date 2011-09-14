@@ -32,8 +32,8 @@ noticeable amount of work.
 <b>SGT, 2011-08-31</b>: This also affects Plink in some circumstances.
 For instance, if you do a command along the lines of
 <pre>plink myhost 'cat > thing' < thing</pre>
-then Plink can (intermittently, depending on how the server's window
-behaviour) accidentaly send the <code>SSH2_MSG_CHANNEL_EOF</code>
+then Plink can (intermittently, depending on the server's window
+behaviour) accidentally send the <code>SSH2_MSG_CHANNEL_EOF</code>
 <em>before</em> the rest of the data in the channel's outbuffer. This
 could be sort-of-fixed by setting the <code>pending_close</code> flag
 in <code>ssh_special</code> rather than immediately sending the EOF
@@ -60,6 +60,7 @@ itself, it would make it more convenient to work around that ambiguous
 aspect of the ssh-connection protocol by waiting until we've seen
 replies to all our winadj requests before sending the actual CLOSE.
 
+<p>
 <b>SGT, 2011-09-13</b>: just committed r9279 and r9280, which
 <em>should</em> fix these issues throughout the code base. However,
 it's quite likely I've made a mistake or two somewhere, since it was
