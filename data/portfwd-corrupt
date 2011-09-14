@@ -21,7 +21,7 @@ data with a remote-to-local SSH-2 port forwarding, where a burst data
 is sent from remote to local followed immediately by EOF. I suspect
 that PuTTY's <a href="half-closed.html">lack of support for
 half-closed connections</a> is to blame in at least this case.
-<em>Update, 2011-09-13: I (SGT) have just (hopefully) fixed the
+<em>Update, 2011-09-13</em>: I (SGT) have just (hopefully) fixed the
 half-closed issue, so perhaps that will be improved now.
 
 <p>
