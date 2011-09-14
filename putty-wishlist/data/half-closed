@@ -30,16 +30,16 @@ noticeable amount of work.
 
 <p>
 <b>SGT, 2011-08-31</b>: This also affects Plink in some circumstances.
-For instance, if you do a command along the lines of<pre>plink myhost
-'cat > thing' < thing</pre>then Plink can (intermittently, depending
-on how the server's window behaviour) accidentaly send the
-<code>SSH2_MSG_CHANNEL_EOF</code> <em>before</em> the rest of the data
-in the channel's outbuffer. This could be sort-of-fixed by setting the
-<code>pending_close</code> flag in <code>ssh_special</code> rather
-than immediately sending the EOF message, but that's only a partial
-fix since it would cause sending of CLOSE rather than EOF. I think it
-would be better to treat that as part of the full revamp described
-here, and fix it in a unified way.
+For instance, if you do a command along the lines of
+<pre>plink myhost 'cat > thing' < thing</pre>
+then Plink can (intermittently, depending on how the server's window
+behaviour) accidentaly send the <code>SSH2_MSG_CHANNEL_EOF</code>
+<em>before</em> the rest of the data in the channel's outbuffer. This
+could be sort-of-fixed by setting the <code>pending_close</code> flag
+in <code>ssh_special</code> rather than immediately sending the EOF
+message, but that's only a partial fix since it would cause sending of
+CLOSE rather than EOF. I think it would be better to treat that as
+part of the full revamp described here, and fix it in a unified way.
 
 <p>
 While I'm here, another thing we would have to work out is when to
