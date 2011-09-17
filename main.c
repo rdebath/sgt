@@ -395,7 +395,7 @@ int main(int argc, char **argv)
 	char buf[65536];
 	int maxfd, ret;
 	double twait;
-	int itimeout, otimeout, used_iwait, used_owait;
+	int iflags, oflags, used_iwait, used_owait;
 	struct timeval tv, *ptv;
 
 	FD_ZERO(&rset);
@@ -444,7 +444,7 @@ int main(int argc, char **argv)
 	    ret = select(maxfd, &rset, &wset, NULL, ptv);
 	} while (ret < 0 && (errno == EINTR || errno == EAGAIN));
 
-	itimeout = otimeout = FALSE;
+	iflags = oflags = 0;
 	if (ret == 0) {
 	    double left = (ret == 0 ? 0.0 : tv.tv_sec + tv.tv_usec/1000000.0);
 	    twait -= left;
@@ -452,13 +452,13 @@ int main(int argc, char **argv)
 		iwait -= twait;
 		assert(iwait >= 0);
 		if (!iwait)
-		    itimeout = TRUE;
+		    iflags |= EV_TIMEOUT;
 	    }
 	    if (owait && used_owait) {
 		owait -= twait;
 		assert(owait >= 0);
 		if (!owait)
-		    otimeout = TRUE;
+		    oflags |= EV_TIMEOUT;
 	    }
 	}
 
@@ -467,7 +467,7 @@ int main(int argc, char **argv)
 	    return 1;
 	}
 
-	if (FD_ISSET(masterr, &rset) || otimeout) {
+	if (FD_ISSET(masterr, &rset) || oflags) {
 	    char *translated;
 	    int translen;
 
@@ -487,12 +487,14 @@ int main(int argc, char **argv)
 		    close(masterr);
 		    fromchild_active = FALSE;
 		    ret = 0;
+                    oflags |= EV_EOF;
 		}
 	    } else
 		ret = 0;
 
-	    if (ret || otimeout) {
-		translated = translate(state, buf, ret, &translen, &owait, 0);
+	    if (ret || oflags) {
+		translated = translate(state, buf, ret, &translen, &owait, 0,
+                                       oflags);
 
 		if (translen > 0)
 		    bufchain_add(&tostdout, translated, translen);
@@ -500,7 +502,7 @@ int main(int argc, char **argv)
 		free(translated);
 	    }
 	}
-	if (FD_ISSET(0, &rset) || itimeout) {
+	if (FD_ISSET(0, &rset) || iflags) {
 	    char *translated;
 	    int translen;
 
@@ -513,12 +515,14 @@ int main(int argc, char **argv)
 		    close(0);
 		    fromstdin_active = FALSE;
 		    ret = 0;
+                    iflags |= EV_EOF;
 		}
 	    } else
 		ret = 0;
 
-	    if (ret || itimeout) {
-		translated = translate(state, buf, ret, &translen, &iwait, 1);
+	    if (ret || iflags) {
+		translated = translate(state, buf, ret, &translen, &iwait, 1,
+                                       iflags);
 
 		if (translen)
 		    bufchain_add(&tochild, translated, translen);
