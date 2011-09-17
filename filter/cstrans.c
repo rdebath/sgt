@@ -19,6 +19,8 @@ struct tstate {
     charset_state instate2;	       /* for input (Unicode -> incset) */
     charset_state outstate1;	       /* for output (incset -> Unicode) */
     charset_state outstate2;	       /* for output (Unicode -> outcset) */
+    int escapes;           /* send ESC % G / ESC % @ around session */
+    int sent_start_escape;
 };
 
 tstate *tstate_init(void)
@@ -39,11 +41,17 @@ tstate *tstate_init(void)
 
     state->nargs = 0;
 
+    state->escapes = state->sent_start_escape = FALSE;
+
     return state;
 }
 
 int tstate_option(tstate *state, int shortopt, char *longopt, char *value)
 {
+    if (shortopt == 'e') {
+        state->escapes = TRUE;
+        return OPT_OK;
+    }
     return OPT_UNKNOWN;
 }
 
@@ -94,6 +102,9 @@ char *translate(tstate *state, char *data, int inlen, int *outlen,
 	exit(1);
     }
 
+    retlen = 0;
+    inptr = data;
+
     if (input) {
 	fromcs = state->outcset;
 	tocs = state->incset;
@@ -104,10 +115,24 @@ char *translate(tstate *state, char *data, int inlen, int *outlen,
 	tocs = state->outcset;
 	state1 = &state->outstate1;
 	state2 = &state->outstate2;
+
+        /*
+         * Hacky: we assume that the lengths of these escape sequences
+         * will not add up to more than the initial buffer size we
+         * allocated above (which is at least 512).
+         */
+        if (!state->sent_start_escape) {
+            state->sent_start_escape = TRUE;
+
+            if (state->escapes && state->outcset == CS_UTF8)
+                retlen += sprintf(ret + retlen, "\033%%G");
+        }
+        if (flags & EV_EOF) {
+            if (state->escapes && state->outcset == CS_UTF8)
+                retlen += sprintf(ret + retlen, "\033%%@");
+        }
     }
 
-    retlen = 0;
-    inptr = data;
     while ( (inret = charset_to_unicode(&inptr, &inlen, midbuf,
 					lenof(midbuf), fromcs,
 					state1, NULL, 0)) > 0) {
