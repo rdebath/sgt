@@ -16,12 +16,17 @@ int pty_get(char *name);
 #define OPT_MISSINGARG -3
 #define OPT_OK 0
 
+/* Special flags passed in to translate to indicate events. Always
+ * accompanied with inlen==0. */
+#define EV_TIMEOUT 1
+#define EV_EOF 2
+
 tstate *tstate_init(void);
 int tstate_option(tstate *state, int shortopt, char *longopt, char *value);
 void tstate_argument(tstate *state, char *arg);
 void tstate_ready(tstate *state, double *idelay, double *odelay);
 char *translate(tstate *state, char *data, int inlen, int *outlen,
-		double *delay, int input);
+		double *delay, int input, int flags);
 void tstate_done(tstate *state);
 
 #endif

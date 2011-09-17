@@ -46,7 +46,7 @@ void tstate_ready(tstate *state, double *idelay, double *odelay)
 }
 
 char *translate(tstate *state, char *data, int inlen, int *outlen,
-		double *delay, int input)
+		double *delay, int input, int flags)
 {
     char *ret;
     char *p;
@@ -60,14 +60,13 @@ char *translate(tstate *state, char *data, int inlen, int *outlen,
     if (input) {
 	p = ret;
 
-	if (inlen == 0) {
+	if (flags & EV_TIMEOUT) {
 	    /*
-	     * We are called with inlen==0 if we have timed out
-	     * after returning a positive delay value after
-	     * processing a previous piece of input. This means
-	     * that our last piece of input ended with an ESC, and
-	     * we've given up waiting for a following character, so
-	     * we're going to output the ESC on its own.
+	     * We have timed out after returning a positive delay
+	     * value after processing a previous piece of input. This
+	     * means that our last piece of input ended with an ESC,
+	     * and we've given up waiting for a following character,
+	     * so we're going to output the ESC on its own.
 	     */
 	    if (state->seen_esc) {
 		*p++ = '\033';

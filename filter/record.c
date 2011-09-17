@@ -138,7 +138,7 @@ static void nhr_timestamp(tstate *state)
 }
 
 char *translate(tstate *state, char *data, int inlen, int *outlen,
-		double *delay, int input)
+		double *delay, int input, int flags)
 {
     char *ret;
 
