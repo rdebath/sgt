@@ -5157,11 +5157,23 @@ elif len(args) == 1 and args[0][:5] == "-lily":
             "Generate($2)' gonville-%d.sfd lilyfonts/svg/emmentaler-%d.svg") % ((size,)*5))
         for size in sizes:
             system(("fontforge -lang=ff -c 'Open($1); CorrectDirection(); " + \
-            "Generate($2)' gonvillealpha%d.sfd lilyfonts/type1/gonvillealpha%d.pfa") % ((size,)*2))
+            "SetFontNames(\"feta-alphabet%d\",\"feta-alphabet%d\",\"feta-alphabet%d\"); " + \
+            "Generate($2)' gonvillealpha%d.sfd lilyfonts/type1/gonvillealpha%d.pfa") % ((size,)*5))
             system(("fontforge -lang=ff -c 'Open($1); CorrectDirection(); " + \
-            "Generate($2)' gonvillealpha%d.sfd lilyfonts/svg/gonvillealpha%d.svg") % ((size,)*2))
+            "SetFontNames(\"feta-alphabet%d\",\"feta-alphabet%d\",\"feta-alphabet%d\"); " + \
+            "Generate($2)' gonvillealpha%d.sfd lilyfonts/type1/gonvillealpha%d.pfb") % ((size,)*5))
+            system(("fontforge -lang=ff -c 'Open($1); CorrectDirection(); " + \
+            "SetFontNames(\"feta-alphabet%d\",\"feta-alphabet%d\",\"feta-alphabet%d\"); " + \
+            "Generate($2)' gonvillealpha%d.sfd lilyfonts/svg/gonvillealpha%d.svg") % ((size,)*5))
             try:
                 os.symlink("gonvillealpha%d.pfa" % size, "lilyfonts/type1/feta-alphabet%d.pfa" % size)
+            except OSError, e:
+                pass # probably already existed, which we don't mind
+            try:
+                os.symlink("gonvillealpha%d.pfb" % size, "lilyfonts/type1/feta-alphabet%d.pfb" % size)
+            except OSError, e:
+                pass # probably already existed, which we don't mind
+            try:
                 os.symlink("gonvillealpha%d.svg" % size, "lilyfonts/svg/feta-alphabet%d.svg" % size)
             except OSError, e:
                 pass # probably already existed, which we don't mind
