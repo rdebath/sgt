@@ -5117,7 +5117,7 @@ elif len(args) == 1 and args[0][:5] == "-lily":
         sizes = 11, 13, 14, 16, 18, 20, 23, 26
         for size in sizes:
             writesfd("gonville-%d" % size, "Gonville-%d" % size, "UnicodeBmp", 65537, outlines, lilyglyphlist)
-            subnames = ["feta-alphabet%d" % size] + ["gonvillepart%d" % subid for subid in range(1,subids)]
+            subnames = ["gonvillealpha%d" % size] + ["gonvillepart%d" % subid for subid in range(1,subids)]
             writetables("gonville-%d" % size, size, subids, subnames, outlines, lilyglyphlist)
             writesfd("gonvillealpha%d" % size, subnames[0], "Custom", 256, outlines, subglyphlists[0])
         for subid in range(1,subids):
@@ -5136,12 +5136,14 @@ elif len(args) == 1 and args[0][:5] == "-lily":
             "LoadTableFromFile(\"LILY\", \"gonville-%d.LILY\"); " + \
             "Generate($2)' gonville-%d.sfd lilyfonts/otf/gonville-%d.otf") % ((size,)*5))
             system(("fontforge -lang=ff -c 'Open($1); CorrectDirection(); " + \
-            "Generate($2)' gonville-%d.sfd lilyfonts/svg/gonville-%d.svg") % ((size,)*2))
-            try:
-                os.symlink("gonville-%d.otf" % size, "lilyfonts/otf/emmentaler-%d.otf" % size)
-                os.symlink("gonville-%d.svg" % size, "lilyfonts/svg/emmentaler-%d.svg" % size)
-            except OSError, e:
-                pass # probably already existed, which we don't mind
+            "LoadTableFromFile(\"LILC\", \"gonville-%d.LILC\"); " + \
+            "LoadTableFromFile(\"LILF\", \"gonville-%d.LILF\"); " + \
+            "LoadTableFromFile(\"LILY\", \"gonville-%d.LILY\"); " + \
+            "SetFontNames(\"Emmentaler-%d\",\"Emmentaler-%d\",\"Emmentaler-%d\"); " + \
+            "Generate($2)' gonville-%d.sfd lilyfonts/otf/emmentaler-%d.otf") % ((size,)*8))
+            system(("fontforge -lang=ff -c 'Open($1); CorrectDirection(); " + \
+            "SetFontNames(\"Emmentaler-%d\",\"Emmentaler-%d\",\"Emmentaler-%d\"); " + \
+            "Generate($2)' gonville-%d.sfd lilyfonts/svg/emmentaler-%d.svg") % ((size,)*5))
         for size in sizes:
             system(("fontforge -lang=ff -c 'Open($1); CorrectDirection(); " + \
             "Generate($2)' gonvillealpha%d.sfd lilyfonts/type1/gonvillealpha%d.pfa") % ((size,)*2))
@@ -5209,6 +5211,8 @@ elif len(args) == 1 and args[0][:5] == "-lily":
         try:
             os.symlink("gonville-brace.otf", "lilyfonts/otf/aybabtu.otf")
             os.symlink("gonville-brace.svg", "lilyfonts/svg/aybabtu.svg")
+            os.symlink("gonville-brace.otf", "lilyfonts/otf/emmentaler-brace.otf")
+            os.symlink("gonville-brace.svg", "lilyfonts/svg/emmentaler-brace.svg")
         except OSError, e:
             pass # probably already existed, which we don't mind
         for subid in range(subids):

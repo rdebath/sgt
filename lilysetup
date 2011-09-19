@@ -21,8 +21,10 @@ mkdir "$newlilydir"
   perl -ne 'BEGIN{$d=shift@ARGV;}chomp; s/\.\/// and mkdir "$d/$_"' "$newlilydir"
 (cd "$oldlilydir"; find . ! -type d -print) | \
   perl -ne 'BEGIN{$s=shift@ARGV;$d=shift@ARGV;}chomp; s/\.\/// and symlink "$s/$_", "$d/$_"' "$oldlilydir" "$newlilydir"
-rm -rf "$newlilydir"/fonts
-cp -r "$fontdir" "$newlilydir"/fonts
+(cd "$fontdir"; find . ! -type d -print) |
+  perl -ne 'BEGIN{$d=shift@ARGV;}chomp; s/\.\/// and unlink "$d/fonts/$_"' "$newlilydir"
+(cd "$fontdir"; find . ! -type d -print) |
+  while read x; do cp -r "$fontdir/$x" "$newlilydir/fonts/$x"; done
 
 # If there's a file called 'lilysetup.local' in the same directory
 # as this script, source it. This allows a user, while they're
