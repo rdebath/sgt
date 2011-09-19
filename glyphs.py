@@ -9,6 +9,17 @@ import time
 import base64
 from curves import *
 
+try:
+    # New Python 2.6 way of spawning subprocesses
+    import subprocess
+    def popen2(command):
+        p = subprocess.Popen(command, shell=True, stdin=subprocess.PIPE, \
+                                 stdout=subprocess.PIPE, close_fds=True)
+        return (p.stdin, p.stdout)
+except ImportError, e:
+    # Old-style fallback, deprecated in 2.6
+    from os import popen2
+
 class GlyphContext:
     def __init__(self):
         self.curves = {}
@@ -271,7 +282,7 @@ def get_ps_path(char, debug=None):
     else:
         tee1 = " | tee z1.%s" % debug
         tee2 = " | tee z2.%s" % debug
-    fin, fout = os.popen2("gs -sDEVICE=pbm -sOutputFile=- -g%dx%d -r%d -dBATCH -dNOPAUSE -q -%s | potrace -b ps -c -q -W 1in -H 1in -r 4000 -M 1000 -O 1 -o - -%s" % (xsize*res, ysize*res, 72*res, tee1, tee2))
+    fin, fout = popen2("gs -sDEVICE=pbm -sOutputFile=- -g%dx%d -r%d -dBATCH -dNOPAUSE -q -%s | potrace -b ps -c -q -W 1in -H 1in -r 4000 -M 1000 -O 1 -o - -%s" % (xsize*res, ysize*res, 72*res, tee1, tee2))
     fin.write("0 %d translate 1 -1 scale\n" % ysize)
     fin.write(char.makeps())
     fin.write("showpage")
