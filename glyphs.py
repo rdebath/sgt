@@ -5298,6 +5298,7 @@ elif len(args) == 1 and args[0] == "-simple":
     "flatslash",
     "flatslash2",
     "sesquiflat",
+    "doubleflat",
     "doubleflatslash",
     "harmart",
     "harmartfilled",
@@ -5413,7 +5414,9 @@ elif len(args) == 1 and args[0] == "-simple":
 
     code = 0x21 # use sequential code points for anything not explicitly given
 
-    codes = {0x7f: None} # don't use 0x7f
+    codes = {}
+    for i in range(0x7f, 0xa1):
+        codes[i] = None # avoid these code points
 
     outlines = {}
     for i in range(len(glyphlist)):
