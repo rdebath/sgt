@@ -21,11 +21,11 @@
         r1
         \time 3/4
         f2^\fermata
-        f'4^\trill
+        f'4^\trill\f
         \time 15/64
-        g'8\noBeam
-        ais'16\noBeam
-        b'32\noBeam
+        g'8\noBeam\mf
+        ais'16\noBeam\p
+        b'32\noBeam\sfz
         c''64\noBeam
       }
       \new GrandStaff <<
