@@ -276,10 +276,10 @@ function Page::print ()
     $links = $links + ($.view == "archive" ? "<b>archive</b>" : "<a class='index' href='$.base_url/calendar'>archive</a>");
     
 """<!doctype HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
-<html><head>
-$.head_content
-<link rel='stylesheet' type='text/css' href='$.stylesheet_url' />
-<title>$title</title>
+<html><head>""";
+$this->print_head();
+$this->print_stylesheets();
+"""<title>$title</title>
 </head>
 <body bgcolor="$*page_back" text="$*entry_text" link="$*page_link" vlink="$*page_vlink" alink="$*page_alink">""";
 $this->print_control_strip();
