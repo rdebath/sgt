@@ -30,12 +30,14 @@ use Cwd;
 
 $checkoutdir = ".";
 $verbose = 0;
+$reapply = 0;
 
 while (@ARGV) {
     $arg = shift @ARGV;
     if (!$nomoreopts and $arg =~ /^-(.)(.*)/) {
         if ($arg eq "--") { $nomoreopts = 1; next; }
         if ($1 eq "v") { $verbose = 1; next; }
+        if ($1 eq "r") { $reapply = 1; next; }
         die "gitify: unrecognised option '-$1'\n";
     } else {
         $checkoutdir = $arg;
@@ -80,6 +82,48 @@ close EXCLUDEOUT;
 # from git's point of view all the differences from the svn head look
 # like working-copy changes unstaged even in the index.
 &run("git", "reset", "--mixed");
+
+# If -r was given, use 'svn diff' to get the changes from each
+# modified file, and reapply them using 'git apply'. This should
+# remove changes due only to keyword substitution, and leave only the
+# meaningful changes.
+#
+# This is rather hacky at present, since it depends on the exact
+# format of 'svn status' output which hasn't always remained constant.
+# It would probably be better to use --xml and pull in a Perl XML
+# parsing module, tedious though that would be.
+if ($reapply) {
+    open OLDSTDOUT, ">&", \*STDOUT;
+
+    # Retrieve diffs from svn and apply them in the index (where we
+    # have a pristine but non-keyword-substituted version of each
+    # file).
+    @files = ();
+    open STDOUT, "|-", "git", "apply", "--cache", "-p0";
+    open STATUS, "-|", "svn", "status";
+    while (<STATUS>) {
+        /^M       (.*)$/ and do {
+            &run("svn", "diff", $1);
+            push @files, $1;
+        };
+    }
+    close STATUS;
+    die "svn status exited with status code $?\n" if $?;
+
+    close STDOUT;
+    die "git apply exited with status code $?\n" if $?;
+
+    open STDOUT, ">&", \*OLDSTDOUT;
+
+    # Pull those files out of the index into the working tree, where
+    # they will overwrite the original versions.
+    for $file (@files) {
+        &run("git", "checkout", "-f", "--", $file);
+    }
+
+    # And reset the index to pristine state.
+    &run("git", "reset", "--mixed");
+}
 
 sub run {
     my $hash;
