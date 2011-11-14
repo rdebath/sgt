@@ -212,6 +212,18 @@ unset bashrc_dovars2
 
 if test -n "$bashrc_emacsclient" -a -x "$bashrc_emacsclient"; then
   e() {
+    # Compilers and grep often output locations in files in the form
+    # 'filename:line-number'. To facilitate pasting such a thing, we
+    # spot it here and turn it into the appropriate emacsclient rune.
+    #
+    # To work around this behaviour, you can prepend the argument
+    # '+1', which will force the next argument to be treated as the
+    # filename even if it ends in :digits.
+    if [[ "x$1" =~ '^x(.*):([0-9]+)$' ]]; then
+        shift
+        set -- "+${BASH_REMATCH[2]}" "${BASH_REMATCH[1]}"
+    fi
+
     # It would be nice here if we could detect that a server-enabled
     # emacs was not already running, and respond by launching one in
     # the background and then retrying this command.
