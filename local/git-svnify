@@ -1,0 +1,96 @@
+#!/usr/bin/perl
+
+# Script to construct a git-svn clone on top of a given Subversion
+# checkout. Does not fetch all the history; only clones the same
+# revision as is currently checked out. On the other hand, any
+# uncommitted local changes in the svn checkout become uncommitted
+# changes in the git checkout too, so you can then do selective 'git
+# add' of them.
+#
+# The idea is that if you need to prepare several patches in parallel
+# to an SVN checkout area, you might just run 'gitify' to construct a
+# throwaway git repository, manage your patches, commit them with 'git
+# svn dcommit', and then once there's nothing uncommitted left, delete
+# the .git subdirectory and do an ordinary svn update.
+#
+# There are probably hairier use cases which revolve around doing the
+# Subversion commits by hand using the .svn metadata (which will still
+# be present the whole time), which might help work around git-svn's
+# unfortunate inability to handle SVN property updates, but I haven't
+# thought those through yet...
+#
+# One annoying feature at the moment is that you'll be left with a
+# modified working copy which includes SVN keyword expansions. It
+# would be nice to be able to automatically de-expand the keywords and
+# leave only the _meaningful_ diffs from the SVN head, but I haven't
+# worked out a sensible way yet.
+
+use File::Find;
+use Cwd;
+
+$checkoutdir = ".";
+$verbose = 0;
+
+while (@ARGV) {
+    $arg = shift @ARGV;
+    if (!$nomoreopts and $arg =~ /^-(.)(.*)/) {
+        if ($arg eq "--") { $nomoreopts = 1; next; }
+        if ($1 eq "v") { $verbose = 1; next; }
+        die "gitify: unrecognised option '-$1'\n";
+    } else {
+        $checkoutdir = $arg;
+    }
+}
+
+chdir $checkoutdir or die "$checkoutdir: chdir: $!\n";
+
+open INFO, "-|", "svn", "info";
+while (<INFO>) {
+    /^URL: (.*)$/ and do { $url = $1; };
+    /^Revision: (\d+)$/ and do { $rev = $1; };
+}
+close INFO;
+
+die "svn info exited with status code $?\n" if $?;
+die "svn info did not provide URL and Revision lines\n"
+    unless defined $url and defined $rev;
+
+# A normal 'git svn clone' would fail at the final step (attempting to
+# check out the working tree) because those files are all already in
+# the way. We add --no-checkout to inhibit this.
+&run("git", "svn", "clone",
+     ($verbose ? () : ("-q")),
+     "--no-checkout", "-r$rev", $url, ".");
+
+# Set up a sensible .git/info/exclude.
+open EXCLUDEIN, "-|", "git", "svn", "show-ignore";
+open EXCLUDEOUT, ">>", ".git/info/exclude";
+print EXCLUDEOUT ".svn/\n"; # ignore all '.svn' subdirectories
+print EXCLUDEOUT $_ while <EXCLUDEIN>;
+close EXCLUDEIN;
+close EXCLUDEOUT;
+
+# --no-checkout inhibits _creation_ of the 'master' reference. So we
+# create it here, and point it at git-svn.
+&run("git", "update-ref", "refs/heads/master", "refs/remotes/git-svn");
+
+# Populate the index from HEAD, without touching the working tree. In
+# the absence of keyword substitution, this leaves us exactly where we
+# want to be - the working tree is unmodified from how it started, and
+# from git's point of view all the differences from the svn head look
+# like working-copy changes unstaged even in the index.
+&run("git", "reset", "--mixed");
+
+sub run {
+    my $hash;
+    if ("HASH" eq ref $_[0]) {
+        $hash = shift @_;
+    } else {
+        $hash = undef;
+    }
+    if ($verbose) {
+        printf "%s\n", join " ", @_; # FIXME: better quoting
+    }
+    system @_;
+    die "$_[0] returned exit status $?\n" if $? & 255;
+}
