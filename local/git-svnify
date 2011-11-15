@@ -19,11 +19,11 @@
 # unfortunate inability to handle SVN property updates, but I haven't
 # thought those through yet...
 #
-# One annoying feature at the moment is that you'll be left with a
-# modified working copy which includes SVN keyword expansions. It
-# would be nice to be able to automatically de-expand the keywords and
-# leave only the _meaningful_ diffs from the SVN head, but I haven't
-# worked out a sensible way yet.
+# If run in the default mode, the working tree files will be left
+# completely untouched, so that SVN keyword expansions will be marked
+# as differences from the git head. You can use the '-r' option to
+# make git-svnify attempt to handle that case intelligently, and
+# retain only _meaningful_ local changes.
 
 use File::Find;
 use Cwd;
