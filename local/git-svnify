@@ -81,7 +81,8 @@ close EXCLUDEOUT;
 # want to be - the working tree is unmodified from how it started, and
 # from git's point of view all the differences from the svn head look
 # like working-copy changes unstaged even in the index.
-&run("git", "reset", "--mixed");
+&run("git", "reset", "--mixed",
+     ($reapply ? ("-q") : ()));
 
 # If -r was given, use 'svn diff' to get the changes from each
 # modified file, and reapply them using 'git apply'. This should
@@ -93,35 +94,40 @@ close EXCLUDEOUT;
 # It would probably be better to use --xml and pull in a Perl XML
 # parsing module, tedious though that would be.
 if ($reapply) {
-    open OLDSTDOUT, ">&", \*STDOUT;
+    # Save a copy of the original checkout area, just in case the
+    # following goes painfully wrong and we lose it all.
+    &run("git", "add", "-u", "."); # don't include files we won't modify
+    &run("git", "commit", "-q", "--author=git-svnify <git-svnify>",
+         "-mSnapshot of original SVN working tree.");
+    &run("git", "update-ref", "refs/remotes/git-svnify-snapshot", "HEAD");
+    &run("git", "reset", "--mixed", "-q", "git-svn");
 
     # Retrieve diffs from svn and apply them in the index (where we
     # have a pristine but non-keyword-substituted version of each
     # file).
+    #
+    # We copy files _into_ the index if svn diff says they're
+    # different but binary. That should arrange that we end up with
+    # everything we need in the index.
     @files = ();
-    open STDOUT, "|-", "git", "apply", "--cache", "-p0";
-    open STATUS, "-|", "svn", "status";
-    while (<STATUS>) {
-        /^M       (.*)$/ and do {
-            &run("svn", "diff", $1);
-            push @files, $1;
-        };
+    open GITAPPLY, "|-", "git", "apply", "--cache", "-p0";
+    open DIFF, "-|", "svn", "diff";
+    $filename = undef;
+    while (<DIFF>) {
+        /^Index: (.*)$/ and do { $filename = $1; };
+        /^Cannot display/ and do { &run("git", "add", $filename); };
+        print GITAPPLY $_;
     }
-    close STATUS;
-    die "svn status exited with status code $?\n" if $?;
+    close DIFF;
+    die "svn diff exited with status code $?\n" if $?;
+    close GITAPPLY;
+    # git apply can exit with code 256 if nothing needed doing
+    die "git apply exited with status code $?\n" if $? & 255;
 
-    close STDOUT;
-    die "git apply exited with status code $?\n" if $?;
+    # Now copy the index into the working tree.
+    &run("git", "checkout", "-f", "--", ".");
 
-    open STDOUT, ">&", \*OLDSTDOUT;
-
-    # Pull those files out of the index into the working tree, where
-    # they will overwrite the original versions.
-    for $file (@files) {
-        &run("git", "checkout", "-f", "--", $file);
-    }
-
-    # And reset the index to pristine state.
+    # And reset the index to the head commit.
     &run("git", "reset", "--mixed");
 }
 
