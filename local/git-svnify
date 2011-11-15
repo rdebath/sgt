@@ -49,13 +49,38 @@ chdir $checkoutdir or die "$checkoutdir: chdir: $!\n";
 open INFO, "-|", "svn", "info";
 while (<INFO>) {
     /^URL: (.*)$/ and do { $url = $1; };
-    /^Revision: (\d+)$/ and do { $rev = $1; };
 }
 close INFO;
 
 die "svn info exited with status code $?\n" if $?;
-die "svn info did not provide URL and Revision lines\n"
-    unless defined $url and defined $rev;
+die "svn info did not provide repository URL\n"
+    unless defined $url;
+
+open VER, "-|", "svnversion", ".";
+$rev .= $_ while <VER>;
+close VER;
+
+die "svnversion exited with status code $?\n" if $?;
+chomp($rev);
+$rev =~ s/M$//;
+die "svnversion did not provide checked-out revision number\n"
+    unless $rev ne "";
+die "svnversion reported version '$rev', which is not consistent\n"
+    unless $rev =~ /^[0-9]+$/;
+
+# Now look for the last _changed_ revision matching the checked-out
+# one.
+open INFO, "-|", "svn", "info", "-r$rev", $url;
+while (<INFO>) {
+    /^Last Changed Rev: (.*)$/ and do { $lcrev = $1; };
+}
+close INFO;
+
+die "svn info exited with status code $?\n" if $?;
+die "svn info did not provide last changed revision\n"
+    unless defined $lcrev;
+
+$rev = $lcrev;
 
 # A normal 'git svn clone' would fail at the final step (attempting to
 # check out the working tree) because those files are all already in
