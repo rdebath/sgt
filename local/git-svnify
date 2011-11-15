@@ -84,6 +84,18 @@ close EXCLUDEOUT;
 &run("git", "reset", "--mixed",
      ($reapply ? ("-q") : ()));
 
+# Save a snapshot of the original SVN checkout as a commit. This is
+# vitally important if we're given -r (the reapply trick may go
+# painfully wrong, in which case we'll need to provide the user with
+# the state of the world before it happened), but also generally
+# useful for reverting to the original state before deleting the .git
+# directory.
+&run("git", "add", "-u", "."); # don't include files we won't modify
+&run("git", "commit", "-q", "--author=git-svnify <git-svnify>",
+     "-mSnapshot of original SVN working tree.");
+&run("git", "update-ref", "refs/remotes/git-svnify-snapshot", "HEAD");
+&run("git", "reset", "--mixed", "-q", "git-svn");
+
 # If -r was given, use 'svn diff' to get the changes from each
 # modified file, and reapply them using 'git apply'. This should
 # remove changes due only to keyword substitution, and leave only the
@@ -94,14 +106,6 @@ close EXCLUDEOUT;
 # It would probably be better to use --xml and pull in a Perl XML
 # parsing module, tedious though that would be.
 if ($reapply) {
-    # Save a copy of the original checkout area, just in case the
-    # following goes painfully wrong and we lose it all.
-    &run("git", "add", "-u", "."); # don't include files we won't modify
-    &run("git", "commit", "-q", "--author=git-svnify <git-svnify>",
-         "-mSnapshot of original SVN working tree.");
-    &run("git", "update-ref", "refs/remotes/git-svnify-snapshot", "HEAD");
-    &run("git", "reset", "--mixed", "-q", "git-svn");
-
     # Retrieve diffs from svn and apply them in the index (where we
     # have a pristine but non-keyword-substituted version of each
     # file).
