@@ -64,6 +64,10 @@ die "svn info did not provide URL and Revision lines\n"
      ($verbose ? () : ("-q")),
      "--no-checkout", "-r$rev", $url, ".");
 
+# --no-checkout inhibits _creation_ of the 'master' reference. So we
+# create it here, and point it at git-svn.
+&run("git", "update-ref", "refs/heads/master", "refs/remotes/git-svn");
+
 # Set up a sensible .git/info/exclude.
 open EXCLUDEIN, "-|", "git", "svn", "show-ignore";
 open EXCLUDEOUT, ">>", ".git/info/exclude";
@@ -71,10 +75,6 @@ print EXCLUDEOUT ".svn/\n"; # ignore all '.svn' subdirectories
 print EXCLUDEOUT $_ while <EXCLUDEIN>;
 close EXCLUDEIN;
 close EXCLUDEOUT;
-
-# --no-checkout inhibits _creation_ of the 'master' reference. So we
-# create it here, and point it at git-svn.
-&run("git", "update-ref", "refs/heads/master", "refs/remotes/git-svn");
 
 # Populate the index from HEAD, without touching the working tree. In
 # the absence of keyword substitution, this leaves us exactly where we
