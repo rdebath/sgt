@@ -139,19 +139,35 @@ if ($reapply) {
     # different but binary. That should arrange that we end up with
     # everything we need in the index.
     @files = ();
-    open GITAPPLY, "|-", "git", "apply", "--cache", "-p0";
+    $opened_gitapply = 0;
+    $buffered_data = 0;
     open DIFF, "-|", "svn", "diff";
     $filename = undef;
     while (<DIFF>) {
-        /^Index: (.*)$/ and do { $filename = $1; };
-        /^Cannot display/ and do { &run("git", "add", $filename); };
-        print GITAPPLY $_;
+        if (!$opened_gitapply) {
+            $buffered_data .= $_;
+        } else {
+            print GITAPPLY $_;
+        }
+
+        if (/^Index: (.*)$/) { $filename = $1; }
+        elsif (/^Cannot display/) { &run("git", "add", $filename); }
+        elsif (/^[-+]/) {
+            if (!$opened_gitapply) {
+                open GITAPPLY, "|-", "git", "apply", "--cache", "-p0";
+                print GITAPPLY $buffered_data;
+                $buffered_data = "";
+                $opened_gitapply = 1;
+            }
+        }
     }
     close DIFF;
     die "svn diff exited with status code $?\n" if $?;
-    close GITAPPLY;
-    # git apply can exit with code 256 if nothing needed doing
-    die "git apply exited with status code $?\n" if $? & 255;
+    if ($opened_gitapply) {
+        close GITAPPLY;
+        # git apply can exit with code 256 if nothing needed doing
+        die "git apply exited with status code $?\n" if $? & 255;
+    }
 
     # Now copy the index into the working tree.
     &run("git", "checkout", "-f", "--", ".");
