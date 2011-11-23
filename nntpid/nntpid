@@ -174,7 +174,12 @@ sub getline {
 
 sub docmd {
   my ($cmd) = @_;
-  while (1) {
+  # We go at most twice round the following loop. If the first attempt
+  # to fetch the article fails with a 480 response, we try again
+  # having authenticated first; but if the second attempt also fails
+  # with 480, then the authentication didn't work, so we should give
+  # up rather than try it pointlessly again.
+  for my $n (0,1) {
     &putline($cmd);
     $line = &getline;
     if ($code eq "480") { &auth; } else { last; }
