@@ -137,8 +137,10 @@ if ($mode eq 'all') {
   $fatal = 0; # ignore failure to retrieve any given article
   for ($mid = $numbers[1]; $mid <= $numbers[2]; $mid++) {
     $art = &getart("$group:$mid");
-    $art =~ s/\n(>*From )/\n>$1/gs;
-    print "From nntpid ".(localtime)."\n".$art."\n";
+    if (defined $art) {
+      $art =~ s/\n(>*From )/\n>$1/gs;
+      print "From nntpid ".(localtime)."\n".$art."\n";
+    }
   }
 } elsif ($mode eq 'stdin') {
   while (<>) {
@@ -178,6 +180,7 @@ sub displayarticle {
   &connect;
 
   my $art = &getart($mid);
+  return unless defined $art;
 
   if ($pager and -t STDOUT) {
     # Close the NNTP connection before invoking the pager, in case the
