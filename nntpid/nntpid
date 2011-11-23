@@ -16,17 +16,22 @@
 # a 480 response from the news server; if your news server isn't paranoid
 # then the script will never need to look at NNTPAUTH.
 
-# Copyright 2000,2004 Simon Tatham. All rights reserved.
+# Copyright 2000,2004,2011 Simon Tatham. All rights reserved.
 
 require 5.002;
 use Socket;
 use FileHandle;
 
 $usage =
-  "usage: nntpid [ -v ] [ -d ] <message-id>\n" .
-  "   or: nntpid [ -v ] [ -d ] <newsgroup> <article-number>\n" .
-  "   or: nntpid [ -v ] -a <newsgroup>\n" .
-  "where: -v                  verbose (print interaction with news server)\n" .
+  "usage: nntpid [ -v ] [ -d ] <article> [<article>...]           display articles\n" .
+  "   or: nntpid [ -v ] [ -d ]           display articles read from standard input\n" .
+  "   or: nntpid [ -v ] -a <newsgroup>             dump a newsgroup in mbox format\n" .
+  "where: <article>           a news article specified in one of several ways:\n" .
+  "                            - Message-Id in angle brackets\n" .
+  "                            - bare Message-Id without angle brackets\n" .
+  "                            - newsgroup and article number in separate words\n" .
+  "                            - newsgroup and article number separated by :\n" .
+  "       -v                  verbose (print interaction with news server)\n" .
   "       -d                  direct output (don't consider using PAGER)\n" .
   "       -a                  dump all articles in group to stdout as mbox\n" .
   " also: nntpid --version    report version number\n" .
@@ -34,7 +39,7 @@ $usage =
   "       nntpid --licence    display (MIT) licence text\n";
 
 $licence =
-  "nntpid is copyright 2000,2004 Simon Tatham.\n" .
+  "nntpid is copyright 2000,2004,2011 Simon Tatham.\n" .
   "\n" .
   "Permission is hereby granted, free of charge, to any person\n" .
   "obtaining a copy of this software and associated documentation files\n" .
@@ -58,13 +63,13 @@ $licence =
 
 $pager = 1;
 $verbose = 0;
-$all = 0;
+$mode = 'list';
 
 while ($ARGV[0] =~ /^-(.+)$/) {
   shift @ARGV;
   $verbose = 1, next if $1 eq "v";
   $pager = 0, next if $1 eq "d";
-  $all = 1, next if $1 eq "a";
+  $mode = 'all', next if $1 eq "a";
   if ($1 eq "-help") {
     print STDERR $usage;
     exit 0;
@@ -81,19 +86,37 @@ while ($ARGV[0] =~ /^-(.+)$/) {
   }
 }
 
-die $usage if !defined $ARGV[0];
-
-if ($all) {
+if ($mode eq 'all') {
+  # -a uses completely different command-line semantics from the
+  # normal ones..
+  die "nntpid: -a expected exactly one argument\n" if @ARGV != 1;
   $group = $ARGV[0];
-} elsif (defined $ARGV[1]) {
-  $group = $ARGV[0];
-  $mid = $ARGV[1];
+} elsif (!@ARGV) {
+  # We will read article ids from standard input once we've connected
+  # to the NNTP server.
+  $mode = 'stdin';
 } else {
-  $group = "misc.misc";
-  $mid = $ARGV[0];
-  $mid =~ s/^<//;
-  $mid =~ s/>$//;
-  $mid = "<$mid>";
+  @list = ();
+  while (defined ($arg = shift @ARGV)) {
+    # See if this argument makes sense on its own.
+    ($group, $mid) = &parsearticle($arg);
+    if (defined $mid) {
+      push @list, $arg;
+    } else {
+      # If it doesn't, try concatenating it with a space to the next
+      # argument (so you can provide a group and article number in two
+      # successive command-line arguments).
+      $args = $arg . " " . $ARGV[0];
+      ($group, $mid) = &parsearticle($args);
+      if (defined $mid) {
+        push @list, $args;
+        shift @ARGV; # and eat the second argument
+      } else {
+        # If all else fails, die in panic.
+        die "nntpid: argument '$arg': unable to parse\n";
+      }
+    }
+  }
 }
 
 $ns=$ENV{'NNTPSERVER'};
@@ -106,47 +129,96 @@ $ns = inet_aton($ns);
 $proto = getprotobyname("tcp");
 $paddr = sockaddr_in($port, $ns);
 
-socket(S,PF_INET,SOCK_STREAM,$proto) or die "socket: $!";
-connect(S,$paddr) or die "connect: $!";
+&connect;
+if ($mode eq 'all') {
+  # Write out the entire contents of a newsgroup in mbox format.
+  $numbers = &docmd("GROUP $group");
+  @numbers = split / /, $numbers;
+  $fatal = 0; # ignore failure to retrieve any given article
+  for ($mid = $numbers[1]; $mid <= $numbers[2]; $mid++) {
+    $art = &getart("$group:$mid");
+    $art =~ s/\n(>*From )/\n>$1/gs;
+    print "From nntpid ".(localtime)."\n".$art."\n";
+  }
+} elsif ($mode eq 'stdin') {
+  while (<>) {
+    chomp;
+    s/^\s+//; s/\s+$//; # trim whitespace
+    &displayarticle($_);
+  }
+} elsif ($mode eq 'list') {
+  for $item (@list) {
+    &displayarticle($item);
+  }
+}
 
-S->autoflush(1);
+sub parsearticle {
+  # Article identifiers used as input to this program can be in a
+  # variety of formats. This function untangles one into a standard
+  # format, which is either (undef, message-id) or (group, article
+  # number). In case of parse failure, it returns (undef, undef).
+  my $art = shift @_;
+  if ($art =~ /^(.*<)?([^<>]*\@[^<>]*)(>.*)?$/) {
+    # Anything with an @ sign is treated as a Message-ID. We trim
+    # angle brackets and anything outside them.
+    return (undef, $2);
+  } elsif ($art =~ /^(\S+)(\s+|:)(\d+)$/) {
+    # A group name and article number separated by whitespace or a
+    # colon.
+    return ($1, $3);
+  } else {
+    # Unable to parse.
+    return (undef, undef);
+  }
+}
 
-$fatal = 1; # most errors need to be fatal
+sub displayarticle {
+  my $mid = shift @_; 
 
-&getline;
-$code =~ /^2\d\d/ or die "no initial greeting from server\n";
+  &connect;
 
-&docmd("MODE READER");
-# some servers require a GROUP before an ARTICLE command
-$numbers = &docmd("GROUP $group");
-if ($all) {
-    @numbers = split / /, $numbers;
-    $fatal = 0; # ignore failure to retrieve any given article
-    for ($mid = $numbers[1]; $mid <= $numbers[2]; $mid++) {
-	$art = &getart($mid);
-	$art =~ s/\n(>*From )/\n>$1/gs;
-	print "From nntpid ".(localtime)."\n".$art."\n";
-    }
-} else {
-    $art = &getart($mid);
-    &docmd("QUIT");
-    close S;
+  my $art = &getart($mid);
 
-    if ($pager and -t STDOUT) {
-	$pagername = $ENV{"PAGER"};
-	$pagername = "more" unless defined $pagername;
-	open PAGER, "| $pagername";
-	print PAGER $art;
-	close PAGER;
-    } else {
-	print $art;
-    }
+  if ($pager and -t STDOUT) {
+    # Close the NNTP connection before invoking the pager, in case the
+    # user spends so long looking at the article that the server times
+    # us out.
+    &disconnect;
+
+    $pagername = $ENV{"PAGER"};
+    $pagername = "more" unless defined $pagername;
+    open PAGER, "| $pagername";
+    print PAGER $art;
+    close PAGER;
+  } else {
+    print $art;
+  }
 }
 
 sub getart {
-  my ($mid) = @_;
-  $ret = &docmd("ARTICLE $mid");
+  my $art = shift @_;
+  my $group;
+  my $mid;
+
+  ($group, $mid) = &parsearticle($art);
+  if (!defined $mid) {
+    warn "unable to parse '$art'\n";
+    return undef;
+  } elsif (defined $group) {
+    # This is a (group, article number) pair.
+    &docmd("GROUP $group");
+    $ret = &docmd("ARTICLE $mid");
+  } else {
+    # This is a Message-Id. Some NNTP servers will insist on having
+    # seen a GROUP command before 'ARTICLE <some.random@message.id>',
+    # so ensure we've sent one.
+    &docmd("GROUP misc.misc") unless $in_a_group;
+    $ret = &docmd("ARTICLE <$mid>");
+  }
+
   return undef if !defined $ret;
+  $in_a_group = 1;
+
   $art = "";
   while (1) {
     &getline;
@@ -170,6 +242,30 @@ sub getline {
   $code = substr($_,0,3);
   print STDERR "<<< $_\n" if $verbose;
   return substr($_,4);
+}
+
+sub connect {
+  return if $connected;
+  socket(S,PF_INET,SOCK_STREAM,$proto) or die "socket: $!";
+  connect(S,$paddr) or die "connect: $!";
+
+  S->autoflush(1);
+
+  $fatal = 1; # most errors need to be fatal
+
+  &getline;
+  $code =~ /^2\d\d/ or die "no initial greeting from server\n";
+
+  &docmd("MODE READER");
+
+  $connected = 1;
+  $in_a_group = 0;
+}
+
+sub disconnect {
+  &docmd("QUIT");
+  close S;
+  $connected = 0;
 }
 
 sub docmd {

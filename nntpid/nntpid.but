@@ -8,17 +8,17 @@
 
 \U SYNOPSIS
 
-\c nntpid [ -v ] [ -d ] message-id
-\e bbbbbb   bb     bb   iiiiiiiiii
-\c nntpid [ -v ] [ -d ] newsgroup-name article-number
-\e bbbbbb   bb     bb   iiiiiiiiiiiiii iiiiiiiiiiiiii
+\c nntpid [ -v ] [ -d ] article [ article... ]
+\e bbbbbb   bb     bb   iiiiiii   iiiiiii
+\c nntpid [ -v ] [ -d ]
+\e bbbbbb   bb     bb
 \c nntpid [ -v ] -a newsgroup-name
 \e bbbbbb   bb   bb iiiiiiiiiiiiii
 
 \U DESCRIPTION
 
 \cw{nntpid} makes a connection to a news server, retrieves one or
-more articles, and displays it.
+more articles, and displays them.
 
 You can specify the article you want by either:
 
@@ -40,9 +40,9 @@ that cause unexpected behaviour in your terminal. If \cw{nntpid}
 detects that its standard output is not a terminal, however, it will
 bypass the pager and just write out the article directly.
 
-There is a third mode of operation, enabled by the \cw{-a} option,
-in which \cw{nntpid} retrieves \e{all} available articles in the
-group and writes them to standard output in \cw{mbox} format.
+There is an alternative mode of operation, enabled by the \cw{-a}
+option, in which \cw{nntpid} retrieves \e{all} available articles in
+the group and writes them to standard output in \cw{mbox} format.
 
 The location of the news server is obtained by reading the
 environment variable \cw{NNTPSERVER}, or failing that the file
@@ -50,13 +50,40 @@ environment variable \cw{NNTPSERVER}, or failing that the file
 
 \U ARGUMENTS
 
-If you specify one argument, \cw{nntpid} assumes it is a Message-ID.
-The angle brackets that usually delimit Message-IDs are optional;
-\cw{nntpid} will strip them off if it sees them, and will not
-complain if it does not.
+\cw{nntpid} will attempt to interpret its argument list as specifying
+a series of news articles, as follows:
 
-If you specify two arguments, \cw{nntpid} will interpret the first
-as a newsgroup name, and the second as an article number.
+\b An argument containing an @ sign will be parsed as a Message-ID.
+The angle brackets that usually delimit Message-IDs are optional;
+\cw{nntpid} will strip them off if it sees them, and will not complain
+if it does not. If the angle brackets are present, anything outside
+them will also be discarded.
+
+\b Otherwise, an argument containing whitespace or a colon will be
+parsed as a group name and an article number.
+
+\b Otherwise, two successive arguments will be treated as a group name
+and an article number.
+
+For example, the following invocations should all behave identically.
+(Single quotes are intended to represent POSIX shell quoting, not part
+of the command line as it reaches \cw{nntpid}.)
+
+\c $ nntpid '<foo.bar@baz.quux>' misc.test 1234
+\e   bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+\c $ nntpid 'foo.bar@baz.quux' misc.test:1234
+\e   bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+\c $ nntpid 'wibble <foo.bar@baz.quux> blah' 'misc.test 1234'
+\e   bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+
+If \cw{nntpid} is given no arguments at all, it will read from
+standard input. Every line it reads will be interpreted as described
+above, except that whitespace will also be trimmed from the start and
+end of the line first.
+
+If you provide the \cw{-a} option (see below), none of the above
+applies. Instead, \cw{nntpid} will expect exactly one command-line
+argument, which it will treat as a newsgroup name.
 
 \U OPTIONS
 
