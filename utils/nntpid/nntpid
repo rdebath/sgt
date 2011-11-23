@@ -99,6 +99,7 @@ if ($all) {
 $ns=$ENV{'NNTPSERVER'};
 if (!defined $ns or !length $ns) {
   $ns = `cat /etc/nntpserver`;
+  chomp $ns;
 }
 $port = (getservbyname("nntp", "tcp"))[2];
 $ns = inet_aton($ns);
