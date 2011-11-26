@@ -1,0 +1,29 @@
+Summary: 0.61-style Pageant does not work with 0.60-style PuTTY
+Class: bug
+Difficulty: fun
+Priority: high
+Present-in: 0.61
+Fixed-in: r9264
+Content-type: text/x-html-fragment
+
+<p>
+Pageant ensures that other concurrent users of the same Windows
+machine do not connect to it by checking that a SID on the file
+mapping object passed to it in each request matches its own. In 0.60,
+it checked the SID against its default one, which caused some troubles
+with Cygwin
+(see <a href="cygwin-clobbers-pageant.html">cygwin-clobbers-pageant</a>)
+which does something odd to the default SID. In 0.61, it was reworked
+to check the SID against the one identifying the running <em>user</em>,
+and all the Pageant clients were correspondingly modified to make that
+SID the owner of the file mapping.
+
+<p>
+Unfortunately, this has the side effect that Pageant 0.61 will not
+talk to PuTTY 0.60, and (perhaps even more importantly) not to any
+other program that still uses 0.60's SID selection, such as WinSCP.
+
+<p>
+The fix is to allow Pageant to accept <em>either</em> the default or
+user SID as the owner of the file mapping. We think this is still safe
+in terms of keeping other users out of Pageant.

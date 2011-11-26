@@ -1,0 +1,25 @@
+Summary: Spurious "Access denied" printed in the PuTTY window after GSSAPI failure
+Class: bug
+Difficulty: fun
+Priority: high
+Absent-in: 0.60
+Present-in: 0.61
+Fixed-in: r9232
+Content-type: text/x-html-fragment
+
+<p>
+PuTTY 0.61 attempts GSSAPI authentication by default, before asking
+the user for any other kinds of authentication such as passwords or
+key passphrases. If that authentication fails (which it does in the
+very common case where GSSAPI is not set up) it prints "Access denied"
+in the window, and then proceeds with other methods of authentication.
+The "Access denied" message is ugly, and also confusing: it has
+confused a few users into thinking that the entire authentication
+phase had failed, instead of just one method.
+
+<p>
+As of r9232, this is fixed, and the logging of authentication messages
+in both the PuTTY window and the Event Log has been generally cleaned
+up so that a message about authentication failure is only printed if a
+message had already been displayed indicating that that method was
+even being tried.

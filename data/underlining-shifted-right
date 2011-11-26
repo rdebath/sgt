@@ -1,0 +1,15 @@
+Summary: Underlining on text displayed to the right of where it should be
+Class: bug
+Difficulty: fun
+Priority: high
+Absent-in: 0.60
+Present-in: 0.61
+Fixed-in: r9217
+Content-type: text/x-html-fragment
+
+<p>
+During the Windows text-drawing reorganisation required to implement
+<a href="non-fixed-width-fonts.html">non-fixed-width-fonts</a>,
+a bug was introduced which can cause the underline on underlined text
+to be displayed somewhere off to the right rather than under the
+correct characters.
