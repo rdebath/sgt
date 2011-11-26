@@ -4,7 +4,7 @@ Difficulty: fun
 Priority: high
 Present-in: 0.61
 Fixed-in: r9221
-Content-type: text/x-html-fragment
+Content-type: text/x-html-body
 
 <p>
 The VT100 line drawing character set contains four characters (encoded
