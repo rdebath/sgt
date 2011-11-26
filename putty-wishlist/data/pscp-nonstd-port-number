@@ -1,0 +1,14 @@
+Summary: PSCP and PSFTP do not honour nonstandard port numbers in saved sessions
+Class: bug
+Difficulty: fun
+Priority: high
+Present-in: 0.61
+Fixed-in: r9254
+Content-type: text/x-html-fragment
+
+<p>
+If you have a saved session directing PuTTY to connect to a machine by
+SSH but to use a port number other than 22, and then use that saved
+session as the host name in a PSCP or PSFTP command line, the
+non-standard port number is ignored and PSCP/PSFTP attempts to connect
+to the standard SSH port 22 on the same host.

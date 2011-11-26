@@ -1,0 +1,14 @@
+Summary: PuTTYtel fails a assertion when saving a session
+Class: bug
+Difficulty: fun
+Priority: high
+Absent-in: 0.60
+Present-in: 0.61
+Fixed-in: r9276
+Content-type: text/x-html-fragment
+
+<p>
+PuTTYtel fails an assertion if you try to save a session, because the
+session saving code can't cope with an empty list of GSSAPI method
+strings (and PuTTYtel, unlike PuTTY proper, does not link any in).
+Easily fixed.

@@ -1,0 +1,19 @@
+Summary: VT100 vertically offset horizontal line characters mis-displayed on Windows
+Class: bug
+Difficulty: fun
+Priority: high
+Present-in: 0.61
+Fixed-in: r9221
+Content-type: text/x-html-fragment
+
+<p>
+The VT100 line drawing character set contains four characters (encoded
+as o,p,r,s) which are vertically offset versions of the normal box-drawing
+horizontal line character (q). On Windows, PuTTY displays these by
+displaying the ordinary horizontal line with a vertical offset, since
+some fonts do not include the offset versions.
+
+<p>
+A bug in PuTTY's Windows text display code was causing other VT100
+characters immediately to the right of one of those to be displayed
+using the same horizontal offset.
