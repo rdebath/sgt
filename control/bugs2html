@@ -524,7 +524,7 @@ sub bug2html {
 <a href="$baseurl/maillist.html">Updates</a> |
 <a href="$baseurl/feedback.html">Feedback</a> |
 <a href="$baseurl/changes.html">Changes</a> |
-<b><a href="index.html">Wishlist</a></b> |
+<b><a href="./">Wishlist</a></b> |
 <a href="$baseurl/team.html">Team</a></p>
 
 EOH
