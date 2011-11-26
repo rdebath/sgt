@@ -4,7 +4,7 @@ Difficulty: fun
 Priority: high
 Present-in: 0.61
 Fixed-in: r9254
-Content-type: text/x-html-fragment
+Content-type: text/x-html-body
 
 <p>
 If you have a saved session directing PuTTY to connect to a machine by
