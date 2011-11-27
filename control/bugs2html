@@ -21,27 +21,39 @@ $bugdir = "../data";
 #
 require "./config.pl";
 
-# This array maps releases to snapshot dates/revs - it's used to
-# automatically mark bugs which were fixed before or on the relevant
-# snapshot date/rev as also being fixed in a release.
-# For trunk releases, the date and rev of the checkin for the
-# release tag will do.
-# For branch releases, you probably want the date/rev of the branch;
-# you're presumably going to explicitly mark up the fixes that were
-# back-ported to the branch.
+# This array is used to automatically add release version numbers to
+# the Fixed-in header, by inferring them from snapshot dates or SVN
+# revision numbers.
+#
+# Each entry maps a release version number to a _trunk_ snapshot date
+# and revision number. (The revision number is omitted for historic
+# releases when we didn't record it.) In the case of releases made
+# from a branch, the entry in this array should be the location on
+# trunk from which the branch started. We cannot (currently)
+# automatically handle fixes made on branches, so those must be
+# explicitly stated in bug records.
+#
+# You can also mark a release as "pre", meaning that it hasn't been
+# released yet. This only changes the wording on the output page.
+#
 # (Date and/or rev are only necessary for releases made since
 # these capabilities were added to this script - older releases
 # are all explicitly marked in the wishlist data.)
 @releases = (
     [ "0.54", "2004-02-12" ],
     [ "0.55", "2004-08-02" ],
-    [ "0.56", "2004-10-13" ],     # branch date -- released on 2004-10-26
-    [ "0.57", "2004-10-13" ],     # released on 2005-02-20, from 0.56 branch
+    # 0.56 and 0.57 were both released from a branch, so their dates
+    # below are identical and both refer to the branch start point.
+    [ "0.56", "2004-10-13" ],     # real release date: 2004-10-26
+    [ "0.57", "2004-10-13" ],     # real release date: 2005-02-20
     [ "0.58", "2005-04-05", "r5599" ],
     [ "0.59", "2007-01-25", "r7147" ],
     [ "0.60", "2007-04-29", "r7489" ],
     [ "0.61", "2011-07-12", "r9203" ],
-  # [ "0.62", "YYYY-MM-DD", "rXXXX" ], : populate with trunk rev
+    # 0.62 will be from a branch made just after the 0.61 release, so
+    # its date and rev are those of the branch start point.
+    [ "0.62", "2011-07-12", "r9213", "pre" ],
+  # [ "0.63", "YYYY-MM-DD", "rXXXX" ], : populate with trunk rev
 );
 
 %classdesc =
@@ -641,9 +653,13 @@ sub classifyver {
     my ($ver) = @_;
     $ver =~ s/^\((.*)\)$/$1/;   # remove "auto-generated" hint
     my $name;
-    if   ($ver =~ m/^\d{4}-\d{2}-\d{2}$/ ||
-          $ver =~ m/^r\d+$/)              { $name = "current snapshots"; }
-    else                                  { $name = "release " . $ver; }
+    if ($ver =~ m/^\d{4}-\d{2}-\d{2}$/ || $ver =~ m/^r\d+$/) {
+        $name = "current snapshots";
+    } elsif (grep {$_->[0] eq $ver and $_->[3] eq "pre"} @releases) {
+        $name = "pre-release builds of " . $ver;
+    } else {
+        $name = "release " . $ver;
+    }
     return $name;
 }
 
@@ -659,6 +675,7 @@ sub compareverclass_s {
     } else {
         my ($aver, $bver) = ($a, $b);
         map s/^release //, ($aver, $bver);
+        map s/^pre-release builds of //, ($aver, $bver);
         # Debian version compare algorithm (packaging manual 3.1.1.1)
         my $cmp = 0;
         while ($cmp == 0) {
