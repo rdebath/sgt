@@ -36,7 +36,33 @@ not updating, which happens sometimes):
 For features planned for the next full release (and already available in
 the development snapshots), see the <a href="wishlist/">wishlist page</a>.
 
-<p>These features are new in beta 0.61 (released 2011-07-12):
+<p>These features are new in beta 0.62 (released 2011-12-10):
+<ul>
+<li>
+Security fix: PuTTY no longer retains passwords in memory by mistake.
+<li>
+Bug fix: Pageant now talks to both new-style clients (0.61 and above)
+and old-style (0.60 and below).
+<li>
+Bug fix: PuTTY no longer prints a spurious "Access denied" message
+when GSSAPI authentication fails.
+<li>
+Bug fix: PSCP and PSFTP now honour nonstandard port numbers in SSH
+saved sessions.
+<li>
+Bug fix: Pageant no longer leaks a file handle when an authentication
+fails.
+<li>
+Bug fix: PuTTYtel no longer crashes when saving a session.
+<li>
+Bug fix: PuTTY now draws underlines under the underlined text instead
+of sometimes putting them somewhere off to the right.
+<li>
+Bug fix: PuTTY now should not draw VT100 line drawing characters at
+the wrong vertical offset.
+</ul>
+
+<p>These features were new in beta 0.61 (released 2011-07-12):
 
 <ul>
 <li>
