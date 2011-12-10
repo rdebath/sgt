@@ -50,9 +50,9 @@ require "./config.pl";
     [ "0.59", "2007-01-25", "r7147" ],
     [ "0.60", "2007-04-29", "r7489" ],
     [ "0.61", "2011-07-12", "r9203" ],
-    # 0.62 will be from a branch made just after the 0.61 release, so
-    # its date and rev are those of the branch start point.
-    [ "0.62", "2011-07-12", "r9213", "pre" ],
+    # 0.62 was from a branch made just after the 0.61 release, so its
+    # date and rev are those of the branch start point.
+    [ "0.62", "2011-07-12", "r9213" ],
   # [ "0.63", "YYYY-MM-DD", "rXXXX" ], : populate with trunk rev
 );
 
