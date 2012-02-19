@@ -8,10 +8,11 @@
 # add' of them.
 #
 # The idea is that if you need to prepare several patches in parallel
-# to an SVN checkout area, you might just run 'gitify' to construct a
-# throwaway git repository, manage your patches, commit them with 'git
-# svn dcommit', and then once there's nothing uncommitted left, delete
-# the .git subdirectory and do an ordinary svn update.
+# to an SVN checkout area, you might just run 'git-svnify' to
+# construct a throwaway git repository, manage your patches, commit
+# them with 'git svn dcommit', and then once there's nothing
+# uncommitted left, delete the .git subdirectory and do an ordinary
+# svn update.
 #
 # There are probably hairier use cases which revolve around doing the
 # Subversion commits by hand using the .svn metadata (which will still
@@ -38,7 +39,7 @@ while (@ARGV) {
         if ($arg eq "--") { $nomoreopts = 1; next; }
         if ($1 eq "v") { $verbose = 1; next; }
         if ($1 eq "r") { $reapply = 1; next; }
-        die "gitify: unrecognised option '-$1'\n";
+        die "git-svnify: unrecognised option '-$1'\n";
     } else {
         $checkoutdir = $arg;
     }
