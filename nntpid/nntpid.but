@@ -40,9 +40,12 @@ that cause unexpected behaviour in your terminal. If \cw{nntpid}
 detects that its standard output is not a terminal, however, it will
 bypass the pager and just write out the article directly.
 
-There is an alternative mode of operation, enabled by the \cw{-a}
-option, in which \cw{nntpid} retrieves \e{all} available articles in
-the group and writes them to standard output in \cw{mbox} format.
+There are a couple of alternative mode of operation. In one, enabled
+by the \cw{-a} option, \cw{nntpid} retrieves \e{all} available
+articles in the group and writes them to standard output in \cw{mbox}
+format. In the other, enabled with \cw{-b}, \cw{nntpid} simply prints
+the lowest and highest article numbers currently available in that
+group from the news server.
 
 The location of the news server is obtained by reading the
 environment variable \cw{NNTPSERVER}, or failing that the file
@@ -102,6 +105,13 @@ straight to standard output without bothering to try using a pager.
 \dd Retrieve all articles from the given newsgroup. In this mode,
 \cw{nntpid} will always write straight to standard output (so the
 \cw{-d} option is unnecessary).
+
+\dt \cw{-b}
+
+\dd Print the current bounds on that group's article numbers. The
+output is one line consisting of a minimum and maximum article number.
+(Not every article in that range will necessarily actually exist: a
+cancelled article will still use up a space in the numbering range.)
 
 \U AUTHENTICATION
 
