@@ -34,6 +34,7 @@ $usage =
   "       -v                  verbose (print interaction with news server)\n" .
   "       -d                  direct output (don't consider using PAGER)\n" .
   "       -a                  dump all articles in group to stdout as mbox\n" .
+  "       -b                  return current bounds on group's article numbers\n" .
   " also: nntpid --version    report version number\n" .
   "       nntpid --help       display this help text\n" .
   "       nntpid --licence    display (MIT) licence text\n";
@@ -70,6 +71,7 @@ while ($ARGV[0] =~ /^-(.+)$/) {
   $verbose = 1, next if $1 eq "v";
   $pager = 0, next if $1 eq "d";
   $mode = 'all', next if $1 eq "a";
+  $mode = 'bounds', next if $1 eq "b";
   if ($1 eq "-help") {
     print STDERR $usage;
     exit 0;
@@ -90,6 +92,10 @@ if ($mode eq 'all') {
   # -a uses completely different command-line semantics from the
   # normal ones..
   die "nntpid: -a expected exactly one argument\n" if @ARGV != 1;
+  $group = $ARGV[0];
+} elsif ($mode eq 'bounds') {
+  # -b has similar command-line semantics to -a.
+  die "nntpid: -b expected exactly one argument\n" if @ARGV != 1;
   $group = $ARGV[0];
 } elsif (!@ARGV) {
   # We will read article ids from standard input once we've connected
@@ -142,6 +148,11 @@ if ($mode eq 'all') {
       print "From nntpid ".(localtime)."\n".$art."\n";
     }
   }
+} elsif ($mode eq 'bounds') {
+  # Write out the bounds of the group's article numbers.
+  $numbers = &docmd("GROUP $group");
+  @numbers = split / /, $numbers;
+  print "$numbers[1] $numbers[2]\n";
 } elsif ($mode eq 'stdin') {
   while (<>) {
     chomp;
