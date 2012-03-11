@@ -1,0 +1,866 @@
+\cfg{xhtml-leaf-level}{0}
+\cfg{chapter}{Section}
+\cfg{text-title-align}{left}
+\cfg{text-indent}{0}
+\cfg{text-chapter-numeric}{yes}
+\cfg{text-chapter-suffix}{. }
+\cfg{text-chapter-underline}{-}
+\cfg{text-section-numeric}{0}{yes}
+\cfg{text-section-suffix}{0}{. }
+\cfg{text-section-underline}{0}{-}
+\cfg{xhtml-chapter-numeric}{yes}
+\cfg{xhtml-chapter-suffix}{. }
+\cfg{xhtml-section-numeric}{0}{yes}
+\cfg{xhtml-section-suffix}{0}{. }
+\cfg{xhtml-section-numeric}{1}{yes}
+\cfg{xhtml-section-suffix}{1}{. }
+
+\cfg{xhtml-address-start}{Copyright &copy; 2012 Simon Tatham.
+<br>This document is
+<a href="http://www.opencontent.org/">OpenContent</a>.
+<br>You may copy and use the text under the terms of the
+<a href="http://www.opencontent.org/opl.shtml">OpenContent
+Licence</a>.
+<br>Please send comments and criticism on this article to
+<a href="mailto:anakin@pobox.com">anakin@pobox.com</a>.}
+
+\define{dash} \u2013{-}
+
+\define{ddd} \u2026{...}
+
+\title Metaprogramming custom control structures in C
+
+by \W{http://pobox.com/~anakin/}{Simon Tatham}
+
+This article describes a technique for using the C preprocessor to
+implement a form of metaprogramming in C, allowing a programmer to
+define custom looping and control constructions which behave
+syntactically like C's own \c{for}, \c{while} and \c{if} but manage
+control flow in a user-defined way. The technique is almost all
+portable C89, except that some constructions need the feature
+(available in both C99 and C++) of defining a variable in the
+initialiser of a \c{for} statement. Sample code is provided.
+
+\U Motivation
+
+The existing control constructions in C need no introduction. Every C
+programmer is familiar with \c{if}, \c{while}, \c{do}\ddd\c{while}, and
+\c{for} statements, and their effects on control flow. Every so often,
+though, you might come across a situation in which it might be nice to
+have slightly different control mechanisms in your language.
+
+For instance, you might have used other languages and found their
+control structures useful. Python, for example, allows an \c{else}
+clause on the end of a \c{for} loop, which is executed if the loop
+terminates normally but skipped if it terminates by \c{break}. This is
+ideal for situations in which the \c{for} loop is searching for a
+suitable element of a list, and you want special-case handling if no
+such element turned out to exist. If C had that feature too, then
+you'd be able to write things like:
+
+\c for (i = 0; i < n; i++) {
+\c     if (array[i] == the_droid_we_are_looking_for)
+\c         break;
+\c } else {
+\c     /* only executed if no array element matched */
+\e     iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+\c     move_along();
+\c }
+
+whereas currently you have to do this by testing after the loop to see
+if \cw{i==n}, or if the loop conditions weren't as simple as that then
+you might resort to something even uglier like declaring an extra flag
+variable.
+
+Or you might make up your own constructions. I occasionally feel that
+it would be nice to put an \c{else} clause on a \c{while} loop, with
+the semantics (this time \e{not} like Python's) that the \c{else}
+clause is executed if and only if the main loop body was run zero
+times. This would be handy, for example, in cases where you're
+printing a message to the user every time you go round the loop but
+you feel it would be unfriendly not to print \e{anything} if you're
+not going round at all:
+
+\c while ((p = get_a_thing()) != NULL) {
+\c     printf("Processing %s\n", p->name);
+\c     do_stuff_with(p);
+\c } else {
+\c     /* only executed if the condition was false the first time */
+\e     iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+\c     printf("No things to process\n");
+\c }
+
+Again, to do this in standard C you have to put the \c{while} inside
+an \c{if} with the same condition, or something equally ugly.
+
+Another output-related example is that of printing a collection of
+strings with commas between them, so that however many actual output
+values you're printing (at least, if it was non-zero) you print one
+comma fewer. I've always done that by means of a variable storing a
+separator string:
+
+\c sep = "";    /* the first value has nothing before it */
+\e              iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+\c while ((p = get_a_thing()) != NULL) {
+\c     printf("%s%d", sep, p->value);
+\c     sep = ",";   /* all subsequent values are preceded by a comma */
+\e                  iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+\c }
+
+But it would be cute if you could avoid the extra variable
+declaration, by writing something like
+
+\c while_interleaved ((p = get_a_thing()) != NULL)
+\c     printf("%d", p->value);
+\c and_in_between
+\c     putchar(',');
+
+and relying on the loop construct to do the job of arranging to run
+the second block one fewer times than the first.
+
+All of the above are reasonably general-purpose control constructions:
+they might be useful in specific \e{kinds} of situation, but they
+don't depend on any specific data type or function or feature of the
+particular program you're writing them in, so it's possible to imagine
+a language providing one or more of them as standard. (Indeed, some do
+\dash as I mention above, Python's \c{for} statement has exactly that
+form of \c{else} clause.) But there's also a lot of scope for
+\e{program-specific} control constructions, if you find yourself
+writing some particular kind of loop a lot in a specific code base.
+For instance, suppose you have some kind of API for retrieving a list
+of things, and the API requires a lot of setup and teardown and
+function calls. You might find that even the simplest of loops to
+actually do something with your list looks a bit like this:
+
+\c {
+\c     hippo_retrieval_context *hc;
+\c     hc = new_hippo_retrieval_context();
+\c     while (hippo_available(hc)) {
+\c         hippo *h = get_hippo(hc);
+\c         printf("We have a hippo called %s\n", h->name);
+\c         free_hippo(hc, h);
+\c     }
+\c     free_hippo_retrieval_context(hc);
+\c }
+
+and if you find yourself needing to iterate over these lists a lot,
+then your program will become tediously full of copies of that kind of
+boilerplate. In such a program you'd really like to wrap all that
+machinery up into a macro defined in your own program's headers, so
+that you could write just the part of the loop that needed to change
+every time:
+
+\c FOR_EACH_HIPPO (hippo *h)
+\c     printf("We have a hippo called %s\n", h->name);
+
+Better still, if you were doing it like this, you'd probably also like
+to arrange that \c{break} statements were handled sensibly. In the
+above example, if the code which actually deals with a list element
+wants to terminate the loop, it probably has to make sure to write a
+second copy of the \cw{free_hippo} call before its \c{break}
+statement, because the copy at the end of the \c{while} loop body will
+be skipped by the \c{break}. If you were inventing a custom loop
+construction, you'd like to arrange that \c{break} had configurable
+handling, so that it automatically cleaned up this sort of thing.
+
+All of the above reads like a what-if exercise. It might be nice if
+this sort of facility had been designed into C, but given that it
+hasn't been, there's surely nothing we can do? Unless you feel like
+designing a new language that extends C, or writing some kind of
+custom macro processor that permits you to define this sort of thing,
+this is all a pipe dream.
+
+Well, actually, no it isn't. There is \e{already} a way to implement
+all of the above control constructions in standard C, if you're
+prepared to be devious enough with the preprocessor. In this article,
+I will explain how all of them can be done (except that the extended
+\c{for} and \c{while} will have to be called by other names), and I'll
+provide sample code to prove it!
+
+\U Mechanism
+
+If we're going to build custom loop constructions of this type, then
+how can we do it?
+
+If we want our finished loop construction to be used by means of
+syntax like this:
+
+\c MY_LOOP_KEYWORD (parameters)
+\c     statement or braced block
+\e     iiiiiiiiiiiiiiiiiiiiiiiii
+
+then it's clear that we're going to have to define
+\cw{MY_LOOP_KEYWORD} as a macro, and also that the macro must expand
+to a \e{statement prefix}: that is, something which you can put on the
+front of a valid C statement to yield another valid C statement.
+
+So what do those constraints allow us to do? Well, there are several
+types of statement prefix in the C syntax:
+
+\b a label
+
+\b \cw{while (}\e{stuff}\cw{)}
+
+\b \cw{for (}\e{stuff}\cw{; }\e{stuff}\cw{; }\e{stuff}\cw{)}
+
+\b \cw{if (}\e{stuff}\cw{) \{}\e{stuff}\cw{\} else}
+
+\b more than one of the above, one after another.
+
+(There's also \cw{switch (}\e{stuff}\cw{)} and case labels, but we'd
+like to avoid those if possible because of their side effect of
+interfering with case labels from an outer switch. It turns out we
+don't need them anyway; the above list is sufficient.)
+
+So we're going to explore the range of possibilities allowed by
+defining a macro to expand to a chain of those types of thing, and
+then prefixing it to a user-supplied statement.
+
+The critical component in the list above is the \c{if}\ddd\c{else}
+statement prefix, because it allows us to provide a braced statement
+block of our own, in which we can put code of our choice. This will of
+course be vital for any loop construction which has to run specialist
+code at the start and end, or between iterations.
+
+So, to begin with, here's a construction that lets us run code of our
+choice \e{and then} run the user's code. Suppose we define our macro
+so that, when followed by a statement or block, it expands to this:
+
+\c if (1) {
+\c     /* code of our choice */
+\e     iiiiiiiiiiiiiiiiiiiiiiii
+\c     goto body;
+\c } else
+\c     body:
+\c         { /* block following the expanded macro */ }
+\e           iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+
+You can see how this works by following the control flow through from
+the top. We come into the \c{if} statement; the condition is always
+true, so we execute the \q{code of our choice} section first; then we
+reach the \c{goto}, which conveniently lets us get into the \c{else}
+clause of the same \c{if} statement even though that would not
+otherwise have been executed at all. So we execute our code, and then
+the user's code.
+
+That was nice and easy. Now what if we want to run code of our choice
+\e{after} the user's loop body?
+
+Well, we certainly can't do that using only \c{if} and labels, because
+those can't stop execution from falling off the end of the user's
+block and on to the following code. The code we want to run afterwards
+has to be written \e{above} the user's code, which means control flow
+has to move backwards in the source file \dash and to do that, we have
+to use a loop statement. So we can do this, for example:
+ 
+\c if (1)
+\c     goto body;
+\c else
+\c     while (1)
+\c         if (1) {
+\c             /* code of our choice */
+\e             iiiiiiiiiiiiiiiiiiiiiiii
+\c             break;
+\c         } else
+\c             body:
+\c                 { /* block following the expanded macro */ }
+\e                   iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+
+As before, we first go into the then-clause of the outermost \c{if},
+which contains a \c{goto} that jumps us directly to the user's block.
+We execute that block, but then what? Well, that block is enclosed in
+a \c{while (1)} statement, so we now go back round to the top of the
+\c{while} and enter the then-clause of the \e{inner} \c{if} \dash
+where we then run code of our choice, and after that, execute the
+\c{break} statement which terminates the loop. So we've successfully
+injected code to be run \e{after} the user's code has been executed.
+And still the whole construction consists solely of a chain of
+statement prefixes prepended to the user's block, so we could feasibly
+define a macro to expand to all but the last line of the above snippet.
+
+So this is beginning to look pretty promising. We can use both of the
+techniques above to get code to run before and after the user's code;
+we can further mess about with the control flow by scattering extra
+labels all over the place and have our inserted code blocks test
+conditions, think hard about what to do, and then issue an appropriate
+\c{goto}.
+
+Another thing we may well want to do is to bring variable declarations
+into scope, so that they can be accessed both by our added code in
+\c{if} blocks and by the user's code itself. This is unfortunately not
+feasible in old-style C89, since in that you can only open a new scope
+with an open brace character, and that would mean the user would have
+to provide an extra closing brace after their statement, which would
+look ugly and (worse still) confuse editors' automatic C indentation
+policies.
+
+But if you're willing to allow yourself the one extra language feature
+of being able to use a declaration as the initialiser clause of a
+\c{for} statement (which is legal in both C99 and C++, so the chances
+are that your compiler probably has \e{some} mode that supports it),
+then suddenly it becomes possible to bring any declaration you like
+into scope.
+
+So an obvious approach is to put the declaration in a \c{for}, and
+then use exactly the same technique as above to stop the \c{for} from
+actually causing a loop: i.e. repeat exactly the previous code snippet
+but replace the \c{while} with a \c{for}.
+
+That's not quite ideal, though, because execution jumps \e{over} the
+declaration rather than passing \e{through} it. If the declaration
+doesn't include an initialiser, that makes no difference; but you
+might want to declare and initialise the declaration in one go. One
+reason for that might be if you're working in C++ and need the
+constructor to be called; another reason might be if the \e{user} was
+providing a parameter to the loop macro which you wanted to treat as
+part of a combined declaration and initialiser, such as the \cq{hippo
+*h} in one of the examples in the previous section. (If the user
+provides a macro parameter which is either of the form \cq{type *var}
+or just \cq{var}, then we can put that parameter before an assignment
+to produce either a declaration-with-initialiser or a plain
+assignment, but we can't extract the variable name on its own in order
+to do the declaration and initialisation separately.)
+
+So, can we fix that? Well, we'll have to do two things. One is to
+recover control after the user's block runs (but we can do that using
+the \c{while}-based construction above), and the other is to find a
+way to transfer control back out of the \c{for} without falling into
+the trap of writing a \c{break} which is executed in the context of
+the \c{while}.
+
+For this, a helpful trick is to put a label inside an \c{if (0)}.
+Like this:
+
+\c if (0)
+\c     finished: ;
+\c else
+\c     for (/* declaration of our choice */ ;;)
+\c         if (1)
+\c             goto body;
+\c         else
+\c             while (1)
+\c                 if (1)
+\c                     goto finished;
+\c                 else
+\c                     body:
+\c                         { /* block following the expanded macro */ }
+\e                           iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+
+So the initial \c{if (0)} is ignored and we begin executing the
+\c{for} statement, including its declaration. The construction inside
+the \c{for} should now be familiar from examples above, and its job is
+to execute the user's block and then loop back round to the \c{goto},
+which transfers control to the \cq{finished} label in the then-clause
+of the outermost \c{if}. From there, control bypasses the whole
+else-clause and drops out of the bottom. So this approach to
+declarations works.
+
+Now what about handling \c{break}? If you think about what would
+happen to some of the above snippets if the suffixed block executes
+\c{break}, you find that the first one (that executes code of our
+choice before the user's code) doesn't interfere with \c{break} at
+all, so that it would still terminate the next outermost loop or
+switch; but the other two, in which the user's code is embedded in a
+\c{while} or a \c{for}, both have the side effect of changing the
+meaning of \c{break} within the suffixed block so that it just
+terminates the \c{while} or \c{for}. This will be nasty if we have to
+embed either of those constructs inside an \e{actual} loop (by which I
+mean one intended to execute the user's code multiple times, unlike
+the above dummy loops that we always break out of after one
+iteration), because then a \c{break} in the user's code won't
+terminate the real loop, only the current iteration of the loop body
+\dash in other words, it'll become synonymous with \c{continue}, which
+isn't very useful.
+
+At first sight one is inclined to think that since the problem arose
+due to a side effect of using a C loop keyword, we surely can't solve
+the problem except by removing the loop. But in fact, we head in the
+other direction: we can recover useful handling of \c{break} by adding
+\e{another} layer of loop! Specifically, we put the user's code inside
+two nested \c{while} loops, like this:
+
+\c if (1)
+\c     goto body;
+\c else
+\c     while (1)
+\c         if (1) {
+\c             /* we reach here if the block terminated by break */
+\e             iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+\c             break;
+\c         } else
+\c             while (1)
+\c                 if (1) {
+\c                     /* we reach here if the block terminated normally */
+\e                     iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+\c                     break;
+\c                 } else
+\c                     body:
+\c                         { /* block following the expanded macro */ }
+\e                           iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+
+As in the previous examples, the outermost \c{if} jumps us into the
+innermost loop and executes the user's code block. If that block
+terminates normally, then we loop round to the top of the inner
+\c{while}, and execute a code snippet of our own choice. But if the
+user's block terminated by means of a \c{break} statement, that will
+terminate the inner \c{while} and cause us to loop round to the top of
+the \e{other} one. So we've now arranged for control flow to go to
+different places based on whether the user issued a \c{break} or not;
+and of course each of the code snippets we provide above can act on
+that information as it sees fit, including in particular jumping to a
+location of its choice via \c{goto}.
+
+Finally, some of the examples in the previous section involved
+permitting the user to put a \e{second} block after the first one,
+separated by \c{else}, so that they would write code with the
+syntactic form of
+
+\c MY_LOOP_KEYWORD (parameters)
+\c     statement or braced block
+\e     iiiiiiiiiiiiiiiiiiiiiiiii
+\c else
+\c     statement or braced block
+\e     iiiiiiiiiiiiiiiiiiiiiiiii
+
+None of the above discussion has touched on this, because all of the
+components we've glued on to the front of the user's code have been
+carefully designed \e{not} to interfere with the syntactic
+r\u00F4{o}le of anything else nearby. But, of course, if we do want to
+permit the user to provide an \c{else} clause, it's easy to do so: we
+simply insert an unmatched \c{if} statement somewhere in our chain of
+statement prefixes, and then it will match an \c{else} written by the
+user after their first statement or block.
+
+A reasonably general way to arrange this is by using an \c{if (0)}
+with a label on each side, like this:
+
+\c else_clause:
+\c     if (0)
+\c         then_clause:
+\c             { /* first block following the expanded macro */ }
+\e               iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+\c     else
+\c         { /* second block following the expanded macro */ }
+\e           iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+
+(In case it's becoming unclear, our macro in this case would expand to
+everything up to and including the \c{then_clause} label; everything
+after that is code written by the user following the invocation of our
+control macro.)
+
+Now we place other control constructions outside that one which can
+execute either \c{goto then_clause} (which will jump straight to the
+user's main loop body) or \c{goto else_clause} (which will jump to
+just before the \c{if (0)}, and therefore head for the \c{else}
+clause).
+
+Doing that has the unfortunate effect that control flow will go to the
+same place after executing either of the user's blocks. To get around
+that, we can put additional control constructions just before or after
+the \c{then_clause} label; those will only be run for one of the two
+clauses, so now we can arrange (by the techniques shown above) to
+redirect control to a different place after each one. For example, a
+general approach might look like this:
+
+\c while (1)
+\c     if (1) {
+\c         /* we reach here after the user's else clause */
+\e         iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+\c         goto somewhere;
+\c     } else
+\c         else_clause:
+\c             if (0)
+\c                 while (1)
+\c                     if (1) {
+\c                         /* we reach here after the then clause */
+\e                         iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
+\c                         goto somewhere_else;
+\c                     } else
+\c                         then_clause:
+\c                             { /* user's first block */ }
+\e                               iiiiiiiiiiiiiiiiiiiiiiii
+\c             else
+\c                 { /* user's second block */ }
+\e                   iiiiiiiiiiiiiiiiiiiiiiiii
+
+I'm assuming that code further up will jump to either the
+\c{then_clause} label or the \c{else_clause} one. If the former, we
+immediately execute the user's then-clause, then we go round to the
+top of the inner \c{while} and reach one of our two code snippets. If
+the latter, then we execute the \c{if (0)}, which drops us through to
+the user's \c{else} clause (shown above with indentation reflecting
+its place in the real syntactic structure, though of course the user
+will indent it rather differently), and since that's not inside the
+inner \c{while} at all, we would then loop round to the top of the
+\e{outer} \c{while} and execute a different snippet.
+
+So that demonstrates how to make use of two code blocks provided by
+the user. They will have to be separated by the keyword \c{else}, or
+else none of this trickery will work; but of course you can always
+trivially \cw{#define} some synonyms for \c{else} to make the code
+look nicer, such as \c{and_in_between} in the example in the previous
+section.
+
+\U Construction kit
+
+Hopefully the previous section has shown that the general technique of
+expanding a macro into a well-chosen collection of statement prefixes
+is surprisingly powerful, and contains all the needed functionality to
+implement a wide range of looping constructions.
+
+However, actually doing it by chaining together \c{if}s and \c{while}s
+and labels is a bit of a headache, and if you were trying to define a
+custom loop construction in a particular application to cope with some
+inconvenient piece of API (as in one of my motivating examples above)
+then you might very well run out of patience before getting the
+sequence of bits and pieces quite right. It would be nicer to have a
+pre-packaged collection of the snippets in the previous section, in a
+form that was reasonably easy for a user to put together into whatever
+loop construct was most useful to them that day. A sort of \q{loop
+construction kit}.
+
+Well, all of the trickery in the previous section has a nice property:
+because it's all in the form of statement prefixes, it's all
+composable. So you could quite feasibly define macros to do jobs like
+\q{execute this code before the suffixed block}, \q{execute this code
+after the suffixed block}, \q{bring this declaration into scope},
+\q{catch and handle \c{break}}, and so on, and have each of those
+macros expand to a statement prefix. Then a user could define a loop
+macro simply by means of chaining together a collection of those
+prefixes.
+
+So I've written one of these, and it's available for download at the
+bottom of this page. I won't document it in full in this article,
+because the main documentation is in comments in the header file
+itself and it's easier not to try to keep them in sync in two places;
+but here's an example of it in use. The following definition, if
+you've included my header file first, constructs exactly the
+\c{FOR_EACH_HIPPO} loop type described in an earlier secion:
+
+\c #define FOR_EACH_HIPPO(loopvar)                                 \
+\c     MPP_DECLARE(1, hippo_retrieval_context *_hc)                \
+\c     MPP_BEFORE(2, _hc = new_hippo_retrieval_context())          \
+\c     MPP_AFTER(3, free_hippo_retrieval_context(_hc))             \
+\c     MPP_WHILE(4, hippo_available(_hc))                          \
+\c     MPP_BREAK_CATCH(5)                                          \
+\c     MPP_DECLARE(6, hippo *_h = get_hippo(_hc))                  \
+\c     MPP_DECLARE(7, loopvar = _h)                                \
+\c     MPP_BREAK_THROW(5)                                          \
+\c     MPP_FINALLY(8, free_hippo(_hc, _h))
+
+I hope you'll agree that that sort of thing is a lot easier to write
+(and read) than the elaborate constructions in the previous section!
+And yet it achieves more, by pasting together many things of about the
+size of the above snippets.
+
+Most of the example should be reasonably clear, but I'll talk through
+it anyway just in case:
+
+\b \c{MPP_DECLARE} brings a declaration into scope, specifically the
+\c{hippo_retrieval_context} that the original version of the loop had
+to instantiate surrounding the loop as a whole.
+
+\b \c{MPP_BEFORE} and \c{MPP_AFTER} arrange to run the supplied pieces
+of code before and after the code that follows, i.e. before and after
+the whole loop. So the \c{hippo_retrieval_context} is allocated at the
+start of the loop, and freed when the loop terminates.
+
+\b \c{MPP_WHILE} is the loop itself, and includes the termination
+condition.
+
+\b The next two \c{MPP_DECLARE}s declare variables with scope
+\e{inside} the loop, holding the actual value retrieved by
+\c{get_hippo}. The second one refers to \c{loopvar}, the macro
+parameter passed in by the user.
+
+\b \c{MPP_BREAK_CATCH} and \c{MPP_BREAK_THROW} are used to get round
+the problem discussed in the previous section, where using a \c{for}
+loop to bring a declaration into scope has the side effect of causing
+\c{break} to do something unhelpful. \c{MPP_BREAK_THROW} is a macro
+which detects when the user's code has issued a \c{break} (by the
+technique shown in the previous section), and responds by issuing a
+\c{goto} to a label defined by the corresponding \c{MPP_BREAK_CATCH},
+which in turn issues another \c{break} statement. So any \c{break}
+written by the user will be propagated past the two dangerous
+\c{MPP_DECLARE}s, and instead will terminate the \c{MPP_WHILE} loop as
+the user really wanted.
+
+\b \c{MPP_FINALLY} is another \c{break}-handling macro. It arranges
+that the \c{free_hippo} call takes place no matter whether the user
+exited the block naturally (by falling off the end) or by \c{break}.
+
+The numbers used as the first parameter to each \c{MPP_} macro are
+called \q{label IDs}. Most of those macros have to define labels
+somewhere in their structure and jump to them using \c{goto}s, as you
+can see in the code snippets in the last section. Those code snippets
+use fixed label names for simplicity; but of course in serious use you
+can't do that, or else you'd never be able to use the same \c{MPP_}
+macro even twice in the same \e{function}, let alone twice in the same
+loop macro (as we do above, with three instances of \c{MPP_DECLARE}).
+We get round this by constructing label names using the C
+preprocessor's token-pasting operator \c{##}: each label includes
+\c{__LINE__} to ensure that multiple invocations of the same loop
+macro define different labels, and also includes the label ID passed
+to the macro defining the label. So the constraint is just that each
+separate \c{MPP_} macro used in a loop construct definition must have
+a different label ID, to stop them colliding with each other. But it
+doesn't matter what the label IDs actually \e{are}; I use numbers
+above for brevity, but you could use descriptive names if you prefer.
+
+(One exception to the unique-IDs rule is that corresponding instances
+of \c{MPP_BREAK_THROW} and \c{MPP_BREAK_CATCH} must have the \e{same}
+number, so that one can jump to a label defined in the other. In more
+complex macros you might have to use two instances of each, and then
+the numbering makes it clear how they match up.)
+
+You might notice that the variable names invented by the above macro
+begin with underscores (\c{_hc} and \c{_h}). This is just a convention
+I chose to make it unlikely that they'll clash with variable names
+used by the end user calling the loop macro. You don't have to follow
+the same convention, of course, but I'd suggest that \e{some}
+convention along those lines is probably useful.
+
+Also on the subject of variable declarations, here's a useful feature
+of \c{MPP_DECLARE}. It places the declaration you give it in the
+initialisation clause of a \c{for} statement \dash but there's no
+actual need for the thing in a \c{for} statement to be a declaration.
+So \c{MPP_DECLARE} can take a declaration \e{or} an ordinary
+assignment. This is useful in the case where we're assigning to a
+macro parameter passed in by the user, as in the declaration above
+assigning to \c{loopvar}. It means that the user can call the loop
+macro as either \c{FOR_EACH_HIPPO(hippo *h)}, declaring a new variable
+with scope limited to the loop body, or if they prefer they could
+instead call it as just \c{FOR_EACH_HIPPO(h)} where \c{h} is some
+variable of the right type which was \e{already} in scope. By writing
+the loop macro in the above form, we can arrange for both uses to
+work.
+
+Another thing in the above code that needs explaining is the
+distinction between \c{MPP_AFTER} and \c{MPP_FINALLY}, and why I had
+to use both in the above definition. Both arrange for code to be run
+after the suffixed statement terminates, but they have different
+semantics. Firstly, \c{MPP_AFTER} only executes its code snippet if
+the suffixed statement terminated \e{normally}, not by \c{break},
+whereas \c{MPP_FINALLY} executes its statement either way. But the
+suffixed statement of \c{MPP_AFTER}, in the above, is a loop, so any
+\c{break} will stop there. So why wouldn't \c{MPP_FINALLY} have done
+just as well?
+
+The answer is that \c{MPP_FINALLY} doesn't just \e{handle} \c{break}
+by running some code: it also \e{reissues} the \c{break}. That means
+that \c{MPP_FINALLY} expands to a statement prefix which includes a
+\c{break} statement that's not contained in any loop \dash so it would
+be illegal C to use \c{MPP_FINALLY} in any context where there wasn't
+a surrounding loop. So I can't use \c{MPP_FINALLY} at the top level of
+my loop construction, \e{even if} the break statement in it would
+never actually be reached.
+
+All of this is documented more fully in comments in the header file
+itself, along with some additional macros to the ones shown, including
+ones that absorb a following \c{else} clause. But the example above
+should give you an idea of what sort of thing this system can do.
+
+\U Use with coroutines
+
+For my \e{pi\u00E8{e}ce de r\u00E9{e}sistance}, here's a mechanism for
+implementing something very similar to Ruby's \q{iterator method}
+mechanism, in which you can define an arbitrary function which is
+called with a suffixed block of code and can \q{call} that block, with
+arguments, anywhere in its own control flow.
+
+If you combine the loop-definition macros described above with my
+other C preprocessor hack to implement coroutines, you can achieve
+pretty much the same thing in standard C99!
+
+As an example, let's write some code that generates a sequence of
+integers: specifically, all those integers which are either a power of
+2 or three times a power of 2, in increasing order. If we just wanted
+to print those numbers, we could use the following snippet of code:
+
+\c void twothree_up_to(int limit)
+\c {
+\c     int i;
+\c     for (i = 1; i < limit; i *= 2) {
+\c         printf("%d\n", i); /* a power of 2 */
+\e                            iiiiiiiiiiiiiiiiii
+\c         if (i > 1) {
+\c             int tmp = i + (i >> 1);
+\c             if (tmp < limit)
+\c                 printf("%d\n", tmp); /* 3 times a power of 2 */
+\e                                      iiiiiiiiiiiiiiiiiiiiiiiiii
+\c         }
+\c     }
+\c }
+
+(I've deliberately picked an example with slightly fiddly control
+flow, to show off the technique to the full. It's easiest to loop over
+the powers of two and issue two print statements in each loop
+iteration, but we must also allow for the special case that when the
+power of two is 1 there isn't a second value to print, and also check
+the second number in each loop against the limit to avoid
+overrunning.)
+
+So now let's rewrite that as an \q{iterator} with more or less Rubyish
+semantics.
+
+First we must define a set of coroutine macros. For full details of
+the general technique, see my article
+\q{\W{../coroutines.html}{Coroutines in C}}. Here I'll just observe
+that the details have to be adjusted from the ones in that article to
+allow for the state structure being allocated on the stack of the
+calling function rather than being either dynamically allocated or
+\c{static}:
+
+\c #define MPCR_BEGIN switch (s->_line) { case 0:
+\c #define MPCR_END(dummyval) s->_line = -1; }
+\c #define MPCR_YIELD(value) do                    \
+\c     {                                           \
+\c         s->_line = __LINE__;                    \
+\c         s->_val = (value);                      \
+\c         return;                                 \
+\c       case __LINE__:;                           \
+\c     } while (0)
+
+These macros expect to be used in a function which takes a parameter
+called \cq{s}, which is a pointer to a structure that contains the
+coroutine's state. The state structure must in turn contain a member
+called \c{_line}, which tracks the coroutine's next resumption point
+(and is initialised to zero, and set to the special value \cw{-1} to
+indicate that the coroutine has finished and isn't yielding another
+value), and another member called \c{_val} which is the value passed
+out of the coroutine to the user's code block in each yield operation.
+
+So now we can rewrite the above function as an iterator using those
+macros. Of course any local variable in the above function which has
+to persist across a yield must become an extra field in the state
+structure, which in the above case means that \cq{limit} and \cq{i}
+must move but \cq{tmp} is OK as it is:
+
+\c struct twothree_state {
+\c     int _line, _val;
+\c     int limit;
+\c     int i;
+\c };
+\c void twothree_iterator(struct twothree_state *s)
+\c {
+\c     MPCR_BEGIN;
+\c     for (s->i = 1; s->i < s->limit; s->i *= 2) {
+\c         MPCR_YIELD(s->i);
+\c         if (s->i > 1) {
+\c             int tmp = s->i + (s->i >> 1);
+\c             if (tmp < s->limit)
+\c                 MPCR_YIELD(tmp);
+\c         }
+\c     }
+\c     MPCR_END(0);
+\c }
+
+Now the other end of the mechanism has to be a loop macro which
+declares a state structure for that function, then repeatedly calls it
+function to get a value, and stops when it terminates. We can build
+such a macro without any difficulty using the loop construction kit
+discussed in the previous section:
+
+\c #define TWOTHREE_UP_TO(loopvar, limitval)               \
+\c     MPP_DECLARE(1, struct twothree_state _state)        \
+\c     MPP_BEFORE(2, _state._line = 0;                     \
+\c                _state.limit = limitval;                 \
+\c                twothree_iterator(&_state))              \
+\c     MPP_WHILE(3, _state._line >= 0)                     \
+\c     MPP_BREAK_CATCH(4)                                  \
+\c     MPP_AFTER(5, twothree_iterator(&_state))            \
+\c     MPP_DECLARE(6, loopvar = _state._val)               \
+\c     MPP_BREAK_THROW(4)
+
+(So we have to declare the coroutine's state; set it all up and call
+the iterator to get the first value; loop until the \c{_line} field
+becomes negative, which happens as a result of reaching \c{MPCR_END}
+and is the signal to terminate the loop; arrange to call the iterator
+again after executing the loop body; assign the yielded value into the
+user's specified loop variable; and finally handle \c{break} by
+propagating it past the \c{MPP_AFTER} and \c{MPP_DECLARE} macros. All
+of this is more or less the same as the example in the previous
+section.)
+
+After all those definitions, we can now call our loop macro with a
+statement or block of our choice:
+
+\c TWOTHREE_UP_TO(int k, 1000)
+\c     printf("twothree: %d\n", k);
+
+\U Limitations
+
+Of course, whenever you use macros to extend C's syntax, the mechanism
+comes with a few extra constraints. Only a \e{proper} language
+extension would avoid doing that.
+
+To begin with, though, here are some things that \e{aren't}
+limitations.
+
+Loops constructed by this mechanism are valid standard C99, or valid
+standard C++. If you avoid using declarations in \c{for} loops (so no
+\c{MPP_DECLARE}, if you're using my construction-kit header) then
+they're valid C89 as well.
+
+All of these macros are \c{switch}/\c{case} safe, in the sense that a
+\c{case} label inside the user's block will still be associated with a
+\c{switch} completely outside the loop construction. (That's a
+consequence of not having used \c{switch} in the macros themselves.)
+Of course, jumping into a loop like that will skip any implicit
+initialisations and allocations and so on that might be hidden in the
+loop macro, but nothing in the macros \e{themselves} forbids the
+technique.
+
+All of these macros can handle being followed by either a single
+statement or a braced block, just like C's built-in loop statements.
+They're \c{if}/\c{else} safe (in the sense that you can put an
+unbraced \c{if}\ddd\c{else} inside one, or put an unbraced one inside
+\c{if}...\c{else}, without causing syntactic confusion), unless of
+course you've deliberately set them up to eat a following \c{else}
+clause.
+
+Those are the good points. Now for the actual limitations of the
+technique:
+
+As discussed in the previous section, the loop-construction macros use
+\c{goto} with labels constructed programmatically using \c{__LINE__}.
+So don't put two loop macros defined using these building blocks on
+the same source line, or they'll define the same labels twice and
+cause a compile error.
+
+Loops defined using these macros have no way to control the handling
+of \c{continue}. Fortunately, the default handling is probably the
+right one anyway: in any loop defined using this system, \c{continue}
+will be equivalent to a jump to just before the end of the loop body.
+(So any post-loop machinery concealed in the loop macro will still be
+run.)
+
+The mechanism for catching \c{break} can only catch \c{break}, and
+won't catch any other kinds of non-local exit from the loop body such
+as \c{return}, \c{goto}, \c{longjmp()} or \c{exit()}. The fact that I
+called one of my component macros \c{MPP_FINALLY} should not mislead
+you into thinking it's as good as a \q{real} \c{finally}. So if you
+define a loop by this mechanism which sets up state that has to be
+cleaned up when the loop finishes, don't write any \c{return}s (or
+anything else on the above list) in the loop body.
+
+The mechanism for accepting an \c{else} clause relies on the C syntax
+rule that every \c{else} binds to the nearest unmatched \c{if}. This
+isn't a problem \e{per se}, in that no compiler I've ever heard of
+gets that rule wrong, but unfortunately some compilers (e.g. GCC) give
+a warning whenever you write code that actually depends on the rule.
+So although in principle \c{else} clauses on constructions defined
+like this are optional, you might find that in practice they're
+mandatory to avoid those annoying warnings.
+
+\U Downloads
+
+The header file I describe above is available here: \W{mp.h}\c{mp.h}.
+
+You can also download a test program that uses that header file:
+\W{mptest.c}\c{mptest.c}. If compiled normally, that file sets up a
+number of these loops and test-runs them in various ways; if compiled
+with the macro \c{EXPECTED} defined, it instead compiles to equivalent
+\q{normal} C code, so you can check that the two versions give the
+same output. Compile with \c{C89} defined as well to cut out all the
+tests that depend on declaring variables in \c{for} statements.

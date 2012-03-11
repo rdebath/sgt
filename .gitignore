@@ -1,0 +1,8 @@
+metaloop.jotting
+mptest
+mpexpected
+real.out
+expected.out
+*.exe
+*.obj
+mp.html
