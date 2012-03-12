@@ -300,6 +300,10 @@
  * break through, but include a 'break' statement at the top level of
  * MPP_BREAK_CATCH, so that must always be contained inside some loop
  * or switch construction.
+ *
+ * We also provide MPS_BREAK_THROW, which is a statement-type macro
+ * that manufactures a break event and passes it to a specified
+ * MPP_BREAK_CATCH.
  */
 #define MPP_BREAK_CATCH(labid)                  \
     if (0)                                      \
@@ -320,6 +324,8 @@
                         goto MPI_LABEL(labid, finish);  \
                     else                                \
                     MPI_LABEL(labid, body):
+
+#define MPS_BREAK_THROW(labid) goto MPI_LABEL(labid, catch)
 
 /*
  * MPP_BREAK_HANDLER: handle a 'break' in the suffixed statement by
@@ -445,3 +451,33 @@
 
 #define MPS_ELSE_INVOKE(labid)                  \
     goto MPI_LABEL(labid, else)
+
+/*
+ * MPP_ELSE_GENERAL: like MPP_ELSE_ACCEPT, but also lets you provide a
+ * snippet of code that will be run after the else clause terminates
+ * and one which will be run after the else clause breaks.
+ *
+ * You can use MPS_MAIN_INVOKE and MPS_ELSE_INVOKE with this as well
+ * as with MPP_ELSE_ACCEPT.
+ *
+ * Will mess up what happens after the main body, so you'll probably
+ * want to follow this macro with others such as MPP_AFTER and
+ * something to catch break in the main body too.
+ */
+#define MPP_ELSE_GENERAL(labid, after, breakhandler)    \
+    if (1)                                              \
+        goto MPI_LABEL(labid, body);                    \
+    else                                                \
+        while (1)                                       \
+            if (1) {                                    \
+                {breakhandler;}                         \
+                break;                                  \
+            } else                                      \
+                while (1)                               \
+                    if (1) {                            \
+                        {after;}                        \
+                        break;                          \
+                    } else                              \
+                    MPI_LABEL(labid, else):             \
+                        if (0)                          \
+                        MPI_LABEL(labid, body):

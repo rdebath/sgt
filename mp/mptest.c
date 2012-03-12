@@ -149,17 +149,20 @@ int _i;
  *   } WITH {
  *       putchar(',');
  *   }
+ *
+ * This is a pretty fiddly one to implement, since you have to arrange
+ * correct handling of the four possibilities 'else clause
+ * terminates', 'else clause breaks', 'main clause terminates' and
+ * 'main clause breaks'. I use MPP_ELSE_GENERAL for the former two,
+ * followed by MPP_AFTER and MPP_BREAK_THROW to handle the latter two.
  */
-#define WHILE_INTERLEAVED(condition)                    \
-    MPP_IF(1, condition)                                \
-    MPP_BEFORE(2, MPS_MAIN_INVOKE(6))                   \
-    MPP_WHILE(3, 1)                                     \
-    MPP_BREAK_CATCH(4)                                  \
-    MPP_BREAK_CATCH(5)                                  \
-    MPP_ELSE_ACCEPT(6)                                  \
-    MPP_AFTER(7, if (condition) MPS_ELSE_INVOKE(6);     \
-              else MPP_BREAK_THROW(4) break)            \
-    MPP_BREAK_THROW(5)
+#define WHILE_INTERLEAVED(condition)                                    \
+    MPP_IF(1, condition)                                                \
+    MPP_WHILE(2, 1)                                                     \
+    MPP_BREAK_CATCH(3)                                                  \
+    MPP_ELSE_GENERAL(4, MPS_MAIN_INVOKE(4), MPS_BREAK_THROW(3))         \
+    MPP_AFTER(5, if (condition) MPS_ELSE_INVOKE(4); else MPS_BREAK_THROW(3)) \
+    MPP_BREAK_THROW(3)
 
 #define WITH else          /* a cheap piece of syntactic saccharine */
 
