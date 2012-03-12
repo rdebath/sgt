@@ -273,11 +273,12 @@ struct twothree_state {
 };
 void twothree_iterator(struct twothree_state *s)
 {
+    int tmp;
     MPCR_BEGIN;
     for (s->i = 1; s->i < s->limit; s->i *= 2) {
         MPCR_YIELD(s->i);
         if (s->i > 1) {
-            int tmp = s->i + (s->i >> 1);
+            tmp = s->i + (s->i >> 1);
             if (tmp < s->limit)
                 MPCR_YIELD(tmp);
         }
@@ -304,11 +305,11 @@ void twothree_iterator(struct twothree_state *s)
  */
 void twothree_up_to(int limit)
 {
-    int i;
+    int i, tmp;
     for (i = 1; i < limit; i *= 2) {
         printf("twothree: %d\n", i); /* a power of 2 */
         if (i > 1) {
-            int tmp = i + (i >> 1);
+            tmp = i + (i >> 1);
             if (tmp < limit)
                 printf("twothree: %d\n", tmp); /* 3 times a power of 2 */
         }
