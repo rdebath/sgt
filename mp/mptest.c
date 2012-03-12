@@ -46,6 +46,9 @@ int _i;
 #define HOPEFULLY_DECLARE_AS_INT(x) int x
 #endif
 
+/*
+ * General test loops to exercise a lot of the macros.
+ */
 #define TEST_LOOP_1(loopvar, start, limit)                      \
     MPP_DECLARE(1, HOPEFULLY_DECLARE_AS_INT(_i))                \
     MPP_BEFORE(2, printf("preloop\n"); _i = start)              \
@@ -71,6 +74,17 @@ int _i;
     MPP_BREAK_THROW(5)                                          \
     MPP_BREAK_HANDLER(9, printf("break!\n"))                    \
     MPP_FINALLY(10, printf("finally\n"))
+
+/*
+ * for_general out of the document.
+ */
+#define for_general(init, firstcond, nextcond, increment)       \
+    MPP_DECLARE(1, init)                                        \
+    MPP_IF(2, firstcond)                                        \
+    MPP_DO_WHILE(3, nextcond)                                   \
+    MPP_BREAK_CATCH(4)                                          \
+    MPP_AFTER(5, increment)                                     \
+    MPP_BREAK_THROW(4)
 
 /*
  * WHILE_ELSE: a modified while that accepts an else clause. Does
@@ -452,6 +466,40 @@ int main(void)
                    j, j+100, j+100, j);
     }
     printf("postloop\n");
+#endif
+
+    /*
+     * Test for_general.
+     */
+    printf("for_general tests\n");
+#ifndef EXPECTED
+    /* This loop shouldn't run at all because the initial test fails */
+    for_general (j = 0, j != 0, j < 10, j++) printf("first %d\n", j);
+    /* This loop should run to completion, proving that the initial test
+     * is not re-run after subsequent loop iterations */
+    for_general (j = 0, j != 5, j < 10, j++) printf("second %d\n", j);
+    /* This loop should run ten times, proving that the iteration test
+     * is not run at the start */
+    for_general (j = 0, 1, j % 10 != 0, j++) printf("third %d\n", j);
+    /* This loop should terminate at the break, proving that I haven't
+     * broken break. */
+    for_general (j = 0, 1, j % 10 != 0, j++) {
+        printf("fourth %d\n", j);
+        if (j == 7)
+            break;
+    }
+    /* This loop should skip one print but still run sensibly, proving
+     * that 'continue' doesn't skip the increment.. */
+    for_general (j = 0, 1, j % 10 != 0, j++) {
+        if (j == 4)
+            continue;
+        printf("fifth %d\n", j);
+    }
+#else
+    for (j = 0; j < 10; j++) printf("second %d\n", j);
+    for (j = 0; j < 10; j++) printf("third %d\n", j);
+    for (j = 0; j <= 7; j++) printf("fourth %d\n", j);
+    for (j = 0; j < 10; j++) if (j != 4) printf("fifth %d\n", j);
 #endif
 
 #ifndef C89
