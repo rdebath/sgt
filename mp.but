@@ -679,12 +679,12 @@ to print those numbers, we could use the following snippet of code:
 
 \c void twothree_up_to(int limit)
 \c {
-\c     int i;
+\c     int i, tmp;
 \c     for (i = 1; i < limit; i *= 2) {
 \c         printf("%d\n", i); /* a power of 2 */
 \e                            iiiiiiiiiiiiiiiiii
 \c         if (i > 1) {
-\c             int tmp = i + (i >> 1);
+\c             tmp = i + (i >> 1);
 \c             if (tmp < limit)
 \c                 printf("%d\n", tmp); /* 3 times a power of 2 */
 \e                                      iiiiiiiiiiiiiiiiiiiiiiiiii
@@ -743,11 +743,12 @@ must move but \cq{tmp} is OK as it is:
 \c };
 \c void twothree_iterator(struct twothree_state *s)
 \c {
+\c     int tmp;
 \c     MPCR_BEGIN;
 \c     for (s->i = 1; s->i < s->limit; s->i *= 2) {
 \c         MPCR_YIELD(s->i);
 \c         if (s->i > 1) {
-\c             int tmp = s->i + (s->i >> 1);
+\c             tmp = s->i + (s->i >> 1);
 \c             if (tmp < s->limit)
 \c                 MPCR_YIELD(tmp);
 \c         }
