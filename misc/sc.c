@@ -202,7 +202,7 @@ int main(int argc, char **argv)
 
     if (unixdomain) {
         if (nargs < 1) {
-            fprintf(stderr, "sc: expected port number after -l\n");
+            fprintf(stderr, "sc: expected Unix socket pathname after -U\n");
             return 1;
         }
         pathname = (nargs--, *args++);
