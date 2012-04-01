@@ -77,6 +77,7 @@ pagesize = pagesizes["A4P"]
 margin = Dimension("15pt")
 croplen = Dimension("10pt")
 cropdist = Dimension("5pt")
+verbose = False
 pages = [[]]
 currentimage = {}
 
@@ -119,6 +120,9 @@ while len(args) > 0:
             elif opt == "--output":
                 longoptarg()
                 outfile = optval
+            elif opt == "--verbose":
+                longoptnoarg()
+                verbose = True
             elif opt == "--pagesize":
                 longoptarg()
                 try:
@@ -180,6 +184,7 @@ options across all images:
       --margin DIM           space to avoid around edge of page (default 15pt)
       --croplen DIM          length of crop marks (default 10pt)
       --cropdist DIM         distance from crop marks to image boundary (5pt)
+      -v, --verbose          print diagnostics about image placement
 options per image:
       --xsplit D[,POS[,N]]   split page into D columns, start at column POS
                                  (default 0), use N columns (default 1)
@@ -203,13 +208,20 @@ dimension syntax:
       NNNpx                  dimension in image pixels
       NNNx                   dimension as multiple of whole image width/height
 examples:
-      for an A4 greetings card:
+      for an A4 greetings card (use any image with about 1:sqrt(2) ratio):
         imagepdf.py --ysplit 0 [rotate] image.png -o card.pdf
       for an A5 greetings card:
         imagepdf.py --ysplit 0 --xsplit 0,1 [rotate] image.png -o card.pdf
       for two A5 greetings cards:
         imagepdf.py --ysplit 0   --xsplit 0,1 [rotate] image1.png \
                     --ysplit 0,1 --xsplit 0,1 [rotate] image2.png -o card.pdf
+      for a batch of gift tags (use images in aspect ratio 2:3):
+        imagepdf.py -p A4L \
+             --xsplit 5.2,0.1 -w 2in --crop --ycrop 0x,1x,2x picture1.png \
+             --xsplit 5.2,1.1 -w 2in --crop --ycrop 0x,1x,2x picture2.png \
+             --xsplit 5.2,2.1 -w 2in --crop --ycrop 0x,1x,2x picture3.png \
+             --xsplit 5.2,3.1 -w 2in --crop --ycrop 0x,1x,2x picture4.png \
+             --xsplit 5.2,4.1 -w 2in --crop --ycrop 0x,1x,2x picture5.png
 """[1:-1] # get rid of leading/trailing newlines
                 sys.exit(0)
             else:
@@ -290,6 +302,8 @@ examples:
                     # Short options requiring no arguments.
                     if c == 'n':
                         pages.append([])
+                    elif c == 'v':
+                        verbose = True
                     else:
                         die("unrecognised option", opt)
     else:
@@ -415,6 +429,16 @@ for page in pages:
                          image["x0"] - cropdist.val - croplen.val, ycrop.val + image["y"])
                 pdf.line(image["x1"] + cropdist.val, ycrop.val + image["y"],
                          image["x1"] + cropdist.val + croplen.val, ycrop.val + image["y"])
+
+        if verbose:
+            print "%s: bl (%d,%d), tr (%d,%d), size (%d,%d), dpi (%g,%g)" % (
+                image["filename"],
+                image["x"], image["y"],
+                image["x"]+image["w"], image["y"]+image["h"],
+                image["w"], image["h"],
+                image["pw"] * 72.0 / image["w"],
+                image["ph"] * 72.0 / image["h"],
+            )
 
         # Rotate.
         rotates = [
