@@ -35,6 +35,10 @@ class Dimension(object):
                 self.abs = True
                 unit = cm
                 s = s[:-2]
+            elif s[-2:] == "mm":
+                self.abs = True
+                unit = mm
+                s = s[:-2]
             elif s[-2:] == "in":
                 self.abs = True
                 unit = inch
@@ -54,7 +58,7 @@ class Dimension(object):
                 unit = 1
                 s = s[:-1]
             else:
-                raise ValueError, "dimensions must end in cm, in, pt, px or x"
+                raise ValueError, "dimensions must end in cm, mm, in, pt, px or x"
             self.val = float(s) * unit
     def normalise(self, pixels, size):
         ret = Dimension(self)
@@ -210,18 +214,21 @@ dimension syntax:
 examples:
       for an A4 greetings card (use any image with about 1:sqrt(2) ratio):
         imagepdf.py --ysplit 0 [rotate] image.png -o card.pdf
-      for an A5 greetings card:
+      for an A5 greetings card (same kind of image):
         imagepdf.py --ysplit 0 --xsplit 0,1 [rotate] image.png -o card.pdf
-      for two A5 greetings cards:
+      for two A5 greetings cards (same kind of image again, but two of them):
         imagepdf.py --ysplit 0   --xsplit 0,1 [rotate] image1.png \
                     --ysplit 0,1 --xsplit 0,1 [rotate] image2.png -o card.pdf
-      for a batch of gift tags (use images in aspect ratio 2:3):
-        imagepdf.py -p A4L \
+      for a batch of gift tags (use images with aspect ratio of about 2:3):
+        imagepdf.py -p A4L -o tags.pdf \
              --xsplit 5.2,0.1 -w 2in --crop --ycrop 0x,1x,2x picture1.png \
              --xsplit 5.2,1.1 -w 2in --crop --ycrop 0x,1x,2x picture2.png \
              --xsplit 5.2,2.1 -w 2in --crop --ycrop 0x,1x,2x picture3.png \
              --xsplit 5.2,3.1 -w 2in --crop --ycrop 0x,1x,2x picture4.png \
              --xsplit 5.2,4.1 -w 2in --crop --ycrop 0x,1x,2x picture5.png
+      for a DVD case (273mm x 183mm aspect ratio; spine is middle 14mm):
+        imagepdf.py -p A4L -o cover.pdf \
+             --crop --xcrop 0x,129.5mm,133.5mm,1x pic.png
 """[1:-1] # get rid of leading/trailing newlines
                 sys.exit(0)
             else:
