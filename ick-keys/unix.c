@@ -94,7 +94,10 @@ void nonblock(int fd)
 
 void sighup(int sig)
 {
-    write(signalpipe[1], "H", 1);      /* ignore EAGAIN */
+    if (write(signalpipe[1], "H", 1) < 0 && errno != EAGAIN) {
+        error("write (internal signal pipe): %s", strerror(errno));
+        exit(1);
+    }
 }
 
 Atom convert_sel_inner(Window requestor, Atom target, Atom property)
@@ -584,7 +587,8 @@ void open_url(const char *url)
     }
     *p++ = '\'';
     *p = '\0';
-    system(buf);
+    if (system(buf) < 0)
+        error("system(\"%s\"): %s", buf, strerror(errno));
     sfree(buf);
 }
 
