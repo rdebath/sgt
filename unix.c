@@ -384,6 +384,9 @@ char *get_sawfish_socket(char *display)
     uid_t uid;
     struct passwd *p;
 
+    if (!display)
+        display = getenv("DISPLAY");
+
     user = getlogin();
     uid = getuid();
     setpwent();
