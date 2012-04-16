@@ -704,8 +704,10 @@ int main(int ac, char **av)
 
     /* open the X display and grab various bits and bobs */
     disp = XOpenDisplay(display);
-    if (!disp)
+    if (!disp) {
 	error("unable to open display");
+        exit(1);
+    }
     screen = DefaultScreen(disp);
     root = RootWindow(disp, screen);
     compound_text_atom = XInternAtom(disp, "COMPOUND_TEXT", False);
