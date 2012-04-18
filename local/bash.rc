@@ -219,10 +219,21 @@ if test -n "$bashrc_emacsclient" -a -x "$bashrc_emacsclient"; then
     # To work around this behaviour, you can prepend the argument
     # '+1', which will force the next argument to be treated as the
     # filename even if it ends in :digits.
-    if [[ "x$1" =~ '^x(.*):([0-9]+)$' ]]; then
-        shift
-        set -- "+${BASH_REMATCH[2]}" "${BASH_REMATCH[1]}"
-    fi
+    local suffix
+    case "$1" in
+        *:*)
+            # We have at least one colon in the string. Look at the
+            # stuff to the right of the rightmost one.
+            suffix=${1##*:}
+            case "$suffix" in
+                *[^0-9]*) ;;
+                *)
+                    # The suffix is made of nothing but digits. We've
+                    # found a line number!
+                    set -- "+$suffix" "${1%:*}"
+            esac
+            ;;
+    esac
 
     # It would be nice here if we could detect that a server-enabled
     # emacs was not already running, and respond by launching one in
