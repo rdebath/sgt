@@ -88,9 +88,13 @@ string local_url_rewrite(string str)
 void launch_url(void)
 {
     string str, tmp;
+    int i;
 
     str = read_clipboard();
 
+    /*
+     * Preliminary tidying of line starts and ends.
+     */
     while (true) {
 	tmp = str;
 	str = subst("\n ", "\n", str);
@@ -100,7 +104,63 @@ void launch_url(void)
 	if (tmp == str)
 	    break;
     }
-    str = subst("\n", "", str);
+
+    /*
+     * Heuristically try to detect which line breaks are in mid-URL
+     * and which are between URLs.
+     */
+    while ((i = index(str, "\n")) >= 0) {
+        string before = substr(str, 0, i);
+        string after = substr(str, i+1);
+        int j = index(after, ":");
+        bool new_url = false;
+        if (j > 0) {
+            string protocol = substr(after, 0, j);
+            if (protocol == "mailto" || protocol == "about") {
+                /*
+                 * These are valid URL protocols which don't expect
+                 * a // after the colon.
+                 */
+                new_url = true;
+            } else if ((protocol == "http" || protocol == "ftp" ||
+                        protocol == "https" || protocol == "gopher" ||
+                        protocol == "file") &&
+                       substr(after, j, j+3) == "://") {
+                /*
+                 * These are valid URL protocols which do expect a //,
+                 * and we've found one.
+                 */
+                new_url = true;
+            }
+        }
+
+        if (new_url) {
+            /*
+             * A new URL looks to be starting after this newline.
+             * Launch what came before it, and start afresh on what's
+             * left.
+             */
+            launch_one_url(before);
+            str = after;
+        } else {
+            /*
+             * This newline seems to be in mid-URL, so just delete it
+             * and look for the next newline.
+             */
+            str = before + after;
+        }
+    }
+
+    /*
+     * Launch whatever we've got left after that loop, which is the
+     * last URL in the copied text.
+     */
+    launch_one_url(str);
+}
+
+void launch_one_url(string str)
+{
+    string tmp;
 
     while (true) {
 	string c = substr(str, 0, 1);
