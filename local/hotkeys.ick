@@ -6,6 +6,7 @@
 
 string clean_whitespace(string str)
 {
+    str = subst("\302\240", "", str); /* UTF-8 for \240 :-/ */
     str = tr(" \n\t\r\v\f\240", "       ", str);
 
     while (true) {
@@ -25,6 +26,7 @@ string clean_whitespace(string str)
 
 string remove_whitespace(string str)
 {
+    str = subst("\302\240", "", str); /* UTF-8 for \240 :-/ */
     str = tr(" \n\t\r\v\f\240", "       ", str);
     str = subst(" ", "", str);
     return str;
@@ -99,6 +101,8 @@ void launch_url(void)
 	tmp = str;
 	str = subst("\n ", "\n", str);
 	str = subst(" \n", "\n", str);
+	str = subst("\n\302\240", "\n", str); /* UTF-8 for \240 :-/ */
+	str = subst("\302\240\n", "\n", str);
 	str = subst("\n\240", "\n", str);
 	str = subst("\240\n", "\n", str);
 	if (tmp == str)
@@ -164,16 +168,21 @@ void launch_one_url(string str)
 
     while (true) {
 	string c = substr(str, 0, 1);
-	if (c != "" && index(" \r\n\t\f\v\240", c) >= 0)
+        if (c == "\302" && substr(str, 0, 2) == "\302\240")
+	    str = substr(str, 2);      /* UTF-8 for \240 :-/ */
+	else if (c != "" && index(" \r\n\t\f\v\240", c) >= 0)
 	    str = substr(str, 1);
 	else
 	    break;
     }
 
     while (true) {
-	string c = substr(str, len(str)-1);
-	if (c != "" && index(" \r\n\t\f\v\240", c) >= 0)
-	    str = substr(str, 0, len(str)-1);
+        int slen = len(str);
+	string c = substr(str, slen-1);
+        if (c == "\240" && substr(str, slen-2) == "\302\240")
+	    str = substr(str, 0, slen-2);
+	else if (c != "" && index(" \r\n\t\f\v\240", c) >= 0)
+	    str = substr(str, 0, slen-1);
 	else
 	    break;
     }
