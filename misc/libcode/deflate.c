@@ -2155,6 +2155,10 @@ int deflate_decompress_data(deflate_decompress_ctx *dctx,
 		goto finished;
 	    nlen = dctx->bits & 0xFFFF;
 	    EATBITS(16);
+            if (dctx->uncomplen != (nlen ^ 0xFFFF)) {
+                error = DEFLATE_ERR_UNCOMP_HDR;
+                goto finished;
+            }
 	    if (dctx->uncomplen == 0) {/* block is empty */
 		if (dctx->lastblock)
 		    dctx->state = END;
