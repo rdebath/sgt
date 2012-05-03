@@ -776,10 +776,11 @@ must move but \cq{tmp} is OK as it is:
 \c }
 
 Now the other end of the mechanism has to be a loop macro which
-declares a state structure for that function, then repeatedly calls it
-function to get a value, and stops when it terminates. We can build
-such a macro without any difficulty using the loop construction kit
-discussed in \k{kit}:
+declares an instance of \c{struct twothree_state} to keep the
+iterator's persistent state in, then repeatedly calls the iterator
+function on that state structure to get an output value, and stops
+when it terminates. We can build such a macro without any difficulty
+using the loop construction kit discussed in \k{kit}:
 
 \c #define TWOTHREE_UP_TO(loopvar, limitval)               \
 \c     MPP_DECLARE(1, struct twothree_state _state)        \
