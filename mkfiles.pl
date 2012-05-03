@@ -47,7 +47,7 @@ while (<IN>) {
   next if /^\s*#/ and !defined $divert;
 
   chomp;
-  split;
+  @_ = split;
   if ($_[0] eq "!begin" and $_[1] eq "help") { $divert = \$help; next; }
   if ($_[0] eq "!end") { $divert = undef; next; }
   if ($_[0] eq "!name") { $project_name = $_[1]; next; }
