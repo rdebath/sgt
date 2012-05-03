@@ -56,7 +56,7 @@ readinput: while (1) {
   }
 
   chomp;
-  split;
+  @_ = split;
 
   # Skip comments (unless the comments belong, for example because
   # they're part of a diversion).
