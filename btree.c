@@ -989,7 +989,6 @@ bt_element_t bt_findrelpos(btree *bt, bt_element_t element, cmpfn_t cmp,
     int child, is_elt;
     bt_element_t gotit;
     int pos = 0;
-    int count;
 
     if (!cmp) cmp = bt->cmp;
 
@@ -1011,7 +1010,6 @@ bt_element_t bt_findrelpos(btree *bt, bt_element_t element, cmpfn_t cmp,
     n = bt_read_lock_root(bt);
     if (!n)
 	return NULL;
-    count = bt_node_count(bt, n);
     while (n) {
 	child = bt_lookup_cmp(bt, n, element, cmp, &is_elt);
 	if (is_elt) {
