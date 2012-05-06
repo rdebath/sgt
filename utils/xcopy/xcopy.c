@@ -10,6 +10,9 @@
 #include <math.h>
 #include <errno.h>
 #include <assert.h>
+#include <ctype.h>
+
+#include <unistd.h>
 
 #include <X11/X.h>
 #include <X11/Intrinsic.h>
@@ -409,22 +412,23 @@ int init_X(void) {
 	    /*
 	     * ICCCM-required cut buffer initialisation.
 	     */
+	    static const unsigned char emptystring[] = {0};
 	    XChangeProperty(disp, root, XA_CUT_BUFFER0,
-			    XA_STRING, 8, PropModeAppend, "", 0);
+			    XA_STRING, 8, PropModeAppend, emptystring, 0);
 	    XChangeProperty(disp, root, XA_CUT_BUFFER1,
-			    XA_STRING, 8, PropModeAppend, "", 0);
+			    XA_STRING, 8, PropModeAppend, emptystring, 0);
 	    XChangeProperty(disp, root, XA_CUT_BUFFER2,
-			    XA_STRING, 8, PropModeAppend, "", 0);
+			    XA_STRING, 8, PropModeAppend, emptystring, 0);
 	    XChangeProperty(disp, root, XA_CUT_BUFFER3,
-			    XA_STRING, 8, PropModeAppend, "", 0);
+			    XA_STRING, 8, PropModeAppend, emptystring, 0);
 	    XChangeProperty(disp, root, XA_CUT_BUFFER4,
-			    XA_STRING, 8, PropModeAppend, "", 0);
+			    XA_STRING, 8, PropModeAppend, emptystring, 0);
 	    XChangeProperty(disp, root, XA_CUT_BUFFER5,
-			    XA_STRING, 8, PropModeAppend, "", 0);
+			    XA_STRING, 8, PropModeAppend, emptystring, 0);
 	    XChangeProperty(disp, root, XA_CUT_BUFFER6,
-			    XA_STRING, 8, PropModeAppend, "", 0);
+			    XA_STRING, 8, PropModeAppend, emptystring, 0);
 	    XChangeProperty(disp, root, XA_CUT_BUFFER7,
-			    XA_STRING, 8, PropModeAppend, "", 0);
+			    XA_STRING, 8, PropModeAppend, emptystring, 0);
 	    /*
 	     * Rotate the cut buffers and add our text in CUT_BUFFER0.
 	     */
@@ -540,7 +544,7 @@ Atom convert_sel_outer(Window requestor, Atom target, Atom property) {
 	int size = sel_delta;
 	Atom actual_type;
 	int actual_format, i;
-	long nitems, bytes_after, nread;
+	unsigned long nitems, bytes_after, nread;
 	unsigned char *data;
 	Atom *adata;
 
@@ -567,7 +571,7 @@ Atom convert_sel_outer(Window requestor, Atom target, Atom property) {
 
 	adata = (Atom *)data;
 
-	for (i = 0; i+1 < nitems; i += 2) {
+	for (i = 0; i+1 < (long)nitems; i += 2) {
             if (adata[i+1] != (Atom)None)   /* ICCCM says this isn't allowed */
                 adata[i+1] = convert_sel_inner(requestor, adata[i],
                                                adata[i+1]);
@@ -687,7 +691,7 @@ void done_X(void) {
 void do_paste(Window window, Atom property, int cutbuffer) {
     Atom actual_type;
     int actual_format, i;
-    long nitems, bytes_after, nread;
+    unsigned long nitems, bytes_after, nread;
     unsigned char *data;
     int incremental = False;
     XEvent ev;
