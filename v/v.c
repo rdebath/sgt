@@ -693,7 +693,7 @@ int main(int argc, char **argv)
      */
     while (--argc) {
 	char *p = *++argv;
-	if (*p == '-' && p[1]) {
+	if (opts && *p == '-' && p[1]) {
 	    /*
 	     * An option.
 	     */
