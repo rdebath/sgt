@@ -8,11 +8,10 @@ GTK_CONFIG = gtk-config
 LIBS = -lgdk_imlib
 else
 GTK_CONFIG = pkg-config gtk+-2.0 imlib2
-LIBS =#
+LIBS = `$(GTK_CONFIG) --libs`
 endif
 
 CFLAGS = -O2 -Wall -Werror -g -I./ `$(GTK_CONFIG) --cflags`
-LDFLAGS = `$(GTK_CONFIG) --libs`
 
 %.o: %.c
 	$(CC) $(CFLAGS) $(XFLAGS) -c $<
