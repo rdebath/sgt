@@ -26,8 +26,8 @@
 #    does not wish to rewrite the URL, or else it may output a
 #    different URL (which must be fully formed).
 
-$try1 = '"mozilla", "-remote", "openurl($url,new-window)"';
-$try2 = '"mozilla", $url';
+$try1 = '"firefox", "-remote", "openurl($url,new-tab)"';
+$try2 = '"firefox", $url';
 
 if (-f "$ENV{'HOME'}/.urllaunch") {
     open RC, "$ENV{'HOME'}/.urllaunch";
