@@ -1,6 +1,7 @@
 all: tektite.fon tektitec.fon \
      tektite.pcf.Z tektite.pcf.gz \
-     tektiteu.pcf.Z tektiteu.pcf.gz
+     tektiteu.pcf.Z tektiteu.pcf.gz \
+     tektiteu8.pcf.Z tektiteu8.pcf.gz
 
 tektite.pcf.gz: tektite.bdf
 	bdftopcf < tektite.bdf | gzip -9 > tektite.pcf.gz
@@ -11,6 +12,11 @@ tektiteu.pcf.gz: tektiteu.bdf
 	bdftopcf < tektiteu.bdf | gzip -9 > tektiteu.pcf.gz
 tektiteu.pcf.Z: tektiteu.bdf
 	bdftopcf < tektiteu.bdf | compress > tektiteu.pcf.Z
+
+tektiteu8.pcf.gz: tektiteu8.bdf
+	bdftopcf < tektiteu8.bdf | gzip -9 > tektiteu8.pcf.gz
+tektiteu8.pcf.Z: tektiteu8.bdf
+	bdftopcf < tektiteu8.bdf | compress > tektiteu8.pcf.Z
 
 tektite.fon: tektite.fd
 	../winfont/mkwinfont -o tektite.fon tektite.fd
