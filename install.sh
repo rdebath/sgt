@@ -3,7 +3,7 @@
 # Set up a Unix account the way I like it.
 # Requires this `local' directory checked out, and also `utils'.
 
-SCRIPTS="addcr cal detab findgrep mono mtribs newscript nsort remcr rot13 timber"
+SCRIPTS="addcr cal detab findgrep mono mtribs newscript nsort remcr rot13 svnlog timber"
 
 test -r $HOME/bin || mkdir $HOME/bin
 
