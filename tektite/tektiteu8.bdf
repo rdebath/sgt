@@ -20,7 +20,7 @@ COMMENT    not sell or otherwise charge for VFONT. However, users' groups may
 COMMENT    charge a small fee (not to exceed $10) for media and postage.
 COMMENT 
 
-FONT -clySmic-Tektite-Medium-R-Normal--15-140-75-75-C-80-ISO10646-1
+FONT -clySmic-Tektite-Medium-R-SemiCondensed--15-140-75-75-C-80-ISO10646-1
 SIZE 14 75 75
 FONTBOUNDINGBOX 8 15 0 -3
 
@@ -30,7 +30,7 @@ STARTPROPERTIES 24
   FAMILY_NAME "Tektite"
   WEIGHT_NAME "Medium"
   SLANT "R"
-  SETWIDTH_NAME "Normal"
+  SETWIDTH_NAME "SemiCondensed"
   ADD_STYLE_NAME ""
   PIXEL_SIZE 15
   POINT_SIZE 140
@@ -41,7 +41,7 @@ STARTPROPERTIES 24
   CHARSET_REGISTRY "ISO10646"
   CHARSET_ENCODING "1"
   COPYRIGHT "Portions copyright 1991,1993,1998 clySmic Software."
-  FONT "-clySmic-Tektite-Medium-R-Normal--15-140-75-75-C-80-ISO10646-1"
+  FONT "-clySmic-Tektite-Medium-R-SemiCondensed--15-140-75-75-C-80-ISO10646-1"
   WEIGHT 10
   RESOLUTION 103
   X_HEIGHT 12
