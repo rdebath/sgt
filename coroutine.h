@@ -154,7 +154,7 @@
 #define ccrContParam     void **ccrParam
 
 #define ccrBeginContext  struct ccrContextTag { int ccrLine
-#define ccrEndContext(x) } *x = *ccrParam
+#define ccrEndContext(x) } *x = (struct ccrContextTag *)*ccrParam
 
 #define ccrBegin(x)      if(!x) {x= *ccrParam=malloc(sizeof(*x)); x->ccrLine=0;}\
                          if (x) switch(x->ccrLine) { case 0:;
