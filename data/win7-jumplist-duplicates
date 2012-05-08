@@ -1,0 +1,37 @@
+Summary: Windows "jump list" duplicates items between pinned and recent lists
+Class: semi-bug
+Difficulty: taxing
+Present-in: 0.61
+Content-type: text/x-html-body
+
+<p>
+Several people have reported that in PuTTY's implementation of the
+Windows <a href="win7-jumplists.html">jump list</a>, when a session is
+"pinned" to the taskbar, it does not disappear from the "Recent
+Sessions" section (so it appears in two places).
+
+<p>
+We've reproduced this, and it's not ideal. Unfortunately it doesn't
+seem to be under our control -- this part of the "jump list" feature
+is managed by Windows. 
+<a href="http://msdn.microsoft.com/en-us/library/dd378396(v=VS.85).aspx">Microsoft's documentation</a>
+says:
+
+<blockquote>
+The user might decide to pin one or more of the destinations provided in
+the custom category to the Jump List. The list of pinned destinations is
+not available to the application, but duplication is prevented by the UI
+so no extra action is required of the application. Visually, a pinned
+item moves to the Pinned section of the Jump List and disappears from
+its original location.
+</blockquote>
+
+<p>
+But Windows seems to be failing to do this here.
+
+<p>
+This aberrant behaviour is not apparent with other applications using
+Jump Lists, such as Notepad and Internet Explorer. Not sure what the
+significant difference is. The other apps are using the standard
+Recent/Frequent categories, whereas PuTTY has a custom "Recent
+Session" category.
