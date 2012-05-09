@@ -35,4 +35,4 @@ tektitec.fon: tektitec.fd
 	../winfont/mkwinfont -o tektitec.fon tektitec.fd
 
 clean:
-	rm -f *.fon
+	rm -f *.fon tektite8.bdf tektite.bdf
