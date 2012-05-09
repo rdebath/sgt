@@ -24,6 +24,11 @@ tektiteu8.pcf.gz: tektiteu8.bdf
 tektiteu8.pcf.Z: tektiteu8.bdf
 	bdftopcf < tektiteu8.bdf | compress > tektiteu8.pcf.Z
 
+tektite8.bdf: tektiteu8.bdf reencode.pl
+	./reencode.pl ISO8859-1 tektiteu8.bdf > tektite8.bdf
+tektite.bdf: tektiteu.bdf reencode.pl
+	./reencode.pl ISO8859-1 tektiteu.bdf > tektite.bdf
+
 tektite.fon: tektite.fd
 	../winfont/mkwinfont -o tektite.fon tektite.fd
 tektitec.fon: tektitec.fd
