@@ -204,8 +204,10 @@
     )
 )
 
-;; Set it as the default.
+;; Set it as the default, and disable focus-windows-when-mapped which
+;; would negate the entire point of doing all this.
 (setq focus-mode 'sgt-enter-only)
+(setq focus-windows-when-mapped nil)
 
 ;; }}}
 ;; Key binding for merge-with-next-workspace {{{
