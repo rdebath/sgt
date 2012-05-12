@@ -1,4 +1,4 @@
-;; -*- mode: lisp; mode: fold -*-
+;; -*- lisp -*-
 ;;
 ;; Simon Tatham's standardised Sawfish setup file.
 ;;
@@ -7,7 +7,8 @@
 ;;
 ;;   (load (concat (getenv "HOME") "/src/local/sawfish.jl") nil t t)
 
-;; Mouse actions on window title/border {{{
+;; ----------------------------------------------------------------------
+;; Mouse actions on window title/border
 
 ;;  - On the title bar, dragging moves the window, unless you
 ;;    double-click first in which case it resizes.
@@ -49,8 +50,8 @@
     "Button2-Click"
 )
 
-;; }}}
-;; Left-Windows + x to minimise windows {{{
+;; ----------------------------------------------------------------------
+;; Left-Windows + x to minimise windows
 
 (define (window-under-pointer)
     ;; A tweaked version of query-pointer-window which returns the
@@ -85,8 +86,8 @@
     "H-z" 'lower-window-under-pointer
 )
 
-;; }}}
-;; Some variable settings {{{
+;; ----------------------------------------------------------------------
+;; Some variable settings
 
 ;; In _general_, I approve of programs stating their own window
 ;; position. I'll override that for specific window types that
@@ -97,8 +98,8 @@
 ;; which looks ugly.
 (setq sp-padding 6)
 
-;; }}}
-;; On creation of new windows, fiddle with their properties {{{
+;; ----------------------------------------------------------------------
+;; On creation of new windows, fiddle with their properties
 
 ;; Some applications have a nasty habit of trying to place all
 ;; their windows at (0,0). Identify those apps' windows, ignore
@@ -111,8 +112,8 @@
                         (equal class "Xpdf"))
                 (window-put w 'ignore-program-position t)))))
 
-;; }}}
-;; My personalised focus handling {{{
+;; ----------------------------------------------------------------------
+;; My personalised focus handling
 
 ;; Fun new focus mode. Acts like `enter-only' in _almost_ all cases,
 ;; except that when a new window is created _underneath_
@@ -209,14 +210,17 @@
 (setq focus-mode 'sgt-enter-only)
 (setq focus-windows-when-mapped nil)
 
-;; }}}
-;; Key binding for merge-with-next-workspace {{{
+;; ----------------------------------------------------------------------
+;; Key binding for merge-with-next-workspace
 (bind-keys global-keymap
     "H-M-F1" 'merge-next-workspace
     "M-C-Right" 'merge-next-workspace
     "M-C-Left" 'merge-previous-workspace
 )
-;; }}}
+
+;; ----------------------------------------------------------------------
+;; Some other miscellaneous configuration options I feel strongly
+;; about
 
 (setq place-window-mode 'first-fit)
 (setq default-frame-style 'Crux)
