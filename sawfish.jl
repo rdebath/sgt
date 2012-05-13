@@ -158,6 +158,7 @@
     (let ((class (window-class w)))
 	(or (equal class "Panel")
 	    (equal class "Gnome-panel")
+	    (equal class "Xfce4-panel")
 	)
     )
 )
