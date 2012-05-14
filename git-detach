@@ -1,0 +1,36 @@
+#!/usr/bin/perl
+
+# Switch a git repository into 'detached HEAD' state, without actually
+# moving HEAD.
+#
+# If given the name of a git remote which is accessible via SSH or a
+# local path, do the same thing to the _remote_ repository. (Helpful
+# for doing a 'git push' back to an upstream non-bare repo which
+# affects the checked-out branch - you can quickly arrange for the
+# upstream repo to have a detached HEAD without destroying any of its
+# local changes.)
+
+# I would like to use the cleaner $(...) syntax here, but it doesn't
+# work if the remote is set to a csh-like shell. Backticks work even
+# with csh.
+$detach_cmd = "git checkout \`git rev-parse HEAD\`";
+
+if (defined $ARGV[0]) {
+    $remote = shift @ARGV;
+    chomp($remote_url = `git config --get remote.${remote}.url`);
+    if ($remote_url eq "") {
+        die "git-detach: remote '$remote' not found\n";
+    } elsif ($remote_url =~ m!^ssh://([^/]*)(/.*)$!) {
+        $host = $1;
+        $dir = $2;
+        $dir =~ s/'/'\\''/g;
+        @ssh_cmd = ("ssh", $host, "cd '$dir' && $detach_cmd");
+        system @ssh_cmd;
+    } elsif ($remote_url =~ m!(/.*)$!) {
+        chdir $remote_url or die "git-detach: unable to change directory to '$remote_url': $!\n";
+        system $detach_cmd;
+    } else {
+        die "git-detach: unable to parse remote url '$remote_url' as a useful access method\n";
+    }
+} else {
+    system $detach_cmd;
