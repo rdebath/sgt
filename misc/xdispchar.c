@@ -80,6 +80,8 @@ Pixmap ourpm = None ;
 GC ourgc = None ;
 int screen, wwidth, wheight ;
 
+Atom protocols_atom, delete_window_atom, atom_atom;
+
 void init_X(void) {
     Window root ;
     int x = 0, y = 0, width = 512, height = 128 ;
@@ -163,6 +165,14 @@ void init_X(void) {
         }
     }
 
+    /* arrange to receive WM_DELETE_WINDOW if the user tries to close us */
+    protocols_atom = XInternAtom(disp, "WM_PROTOCOLS", False);
+    delete_window_atom = XInternAtom(disp, "WM_DELETE_WINDOW", False);
+    atom_atom = XInternAtom(disp, "ATOM", False);
+    XChangeProperty(disp, ourwin, protocols_atom, atom_atom, 32,
+                    PropModeReplace,
+                    (unsigned char *)&delete_window_atom, 1);
+
     /* get a graphics context */
     ourgc = XCreateGC (disp, ourwin, 0, &gcv) ;
 
@@ -175,7 +185,7 @@ void run_X(void) {
     XEvent ev ;
     int keysym;
 
-    do {
+    while (1) {
 	XNextEvent (disp, &ev) ;
 	switch (ev.type) {
 	  case KeyPress:
@@ -183,8 +193,19 @@ void run_X(void) {
 	    printf("state=%08x key=%08x keycode=%04x\n",
 		   ev.xkey.state, ev.xkey.keycode, keysym);
 	    break;
+          case ButtonPress:
+            /* we've historically always quit on a mouse click */
+            return;
+          case ClientMessage:
+            /* also quit on a window-manager close event */
+            if (ev.xclient.message_type == protocols_atom &&
+                ev.xclient.format == 32 &&
+                (Atom)ev.xclient.data.l[0] == delete_window_atom) {
+                return;
+            }
+            break;
 	}
-    } while (ev.type != ButtonPress) ;
+    }
 }
 
 void done_X(void) {
