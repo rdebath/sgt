@@ -7,6 +7,8 @@
 #include <stdarg.h>
 #include <math.h>
 
+#include <unistd.h>
+
 #include <X11/X.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
@@ -146,6 +148,20 @@ void init_X(void) {
     XSelectInput (disp, ourwin, StructureNotifyMask |
 		  SubstructureRedirectMask | ButtonPressMask |
 		  ExposureMask | KeyPressMask) ;
+
+    /* arrange to show up in xlsclients */
+    {
+        char *argv[2];
+        char *hostname, hostbuf[512];
+        argv[0] = "xdispchar";
+        argv[1] = NULL;
+        XSetCommand (disp, ourwin, argv, 1);
+        if (!gethostname(hostbuf, sizeof(hostbuf))) {
+            hostname = hostbuf;
+            XStringListToTextProperty(&hostname, 1, &textprop);
+            XSetWMClientMachine(disp, ourwin, &textprop);
+        }
+    }
 
     /* get a graphics context */
     ourgc = XCreateGC (disp, ourwin, 0, &gcv) ;
