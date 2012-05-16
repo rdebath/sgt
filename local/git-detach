@@ -20,17 +20,24 @@ if (defined $ARGV[0]) {
     chomp($remote_url = `git config --get remote.${remote}.url`);
     if ($remote_url eq "") {
         die "git-detach: remote '$remote' not found\n";
-    } elsif ($remote_url =~ m!^ssh://([^/]*)(/.*)$!) {
-        $host = $1;
-        $dir = $2;
-        $dir =~ s/'/'\\''/g;
-        @ssh_cmd = ("ssh", $host, "cd '$dir' && $detach_cmd");
-        system @ssh_cmd;
-    } elsif ($remote_url =~ m!(/.*)$!) {
-        chdir $remote_url or die "git-detach: unable to change directory to '$remote_url': $!\n";
-        system $detach_cmd;
     } else {
-        die "git-detach: unable to parse remote url '$remote_url' as a useful access method\n";
+        if ($remote_url =~ m!^ssh://([^/]*)(/.*)$!) {
+            $host = $1;
+            $dir = $2;
+            $dir =~ s/'/'\\''/g;
+            @ssh_cmd = ("ssh", $host, "cd '$dir' && $detach_cmd");
+            $remote_cmd = (join " ", map { s/'/'\\''/g; "'$_'" } @ssh_cmd);
+            print "$remote_cmd\n";
+        } elsif ($remote_url =~ m!(/.*)$!) {
+            chdir $remote_url or die "git-detach: unable to change directory to '$remote_url': $!\n";
+            $remote_cmd = $detach_cmd;
+        } else {
+            die "git-detach: unable to parse remote url '$remote_url' as a useful access method\n";
+        }
+        open REMOTE, "-|", "$remote_cmd 2>&1";
+        print "rem: $_" while <REMOTE>;
+        close REMOTE;
+        die "git-detach: remote returned exit status $?\n" if $?;
     }
 } else {
     system $detach_cmd;
