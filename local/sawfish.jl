@@ -112,6 +112,14 @@
                         (equal class "Xpdf"))
                 (window-put w 'ignore-program-position t)))))
 
+;; Sawfish 1.5.3 on Ubuntu 12.04 fails to ignore Xfce notifications
+;; for purposes of first-fit placement of other windows.
+(add-hook 'add-window-hook
+          (lambda (w)
+            (let ((class (window-class w)))
+              (when (equal class "Xfce4-notifyd")
+                (make-window-ignored w t)))))
+
 ;; ----------------------------------------------------------------------
 ;; My personalised focus handling
 
