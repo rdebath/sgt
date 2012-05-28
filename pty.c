@@ -47,14 +47,25 @@ int pty_get(char *name)
     strncpy(name, ptsname(fd), FILENAME_MAX-1);
 
     {
-	struct winsize ws;
 	struct termios ts;
 
-	if (!ioctl(0, TIOCGWINSZ, &ws))
-	    ioctl(fd, TIOCSWINSZ, &ws);
 	if (!tcgetattr(0, &ts))
 	    tcsetattr(fd, TCSANOW, &ts);
     }
 
+    pty_resize(fd);
+
     return fd;
+}
+
+/*
+ * Pass the window size through from our own terminal to the inner
+ * one.
+ */
+int pty_resize(int fd)
+{
+    struct winsize ws;
+
+    if (!ioctl(0, TIOCGWINSZ, &ws))
+        ioctl(fd, TIOCSWINSZ, &ws);
 }
