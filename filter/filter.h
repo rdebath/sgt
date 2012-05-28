@@ -9,6 +9,7 @@
 typedef struct tstate tstate;
 
 int pty_get(char *name);
+int pty_resize(int fd);
 
 /* Return values from tstate_option */
 #define OPT_UNKNOWN -1

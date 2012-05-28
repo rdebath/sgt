@@ -124,11 +124,16 @@ static void bufchain_prefix(bufchain *ch, void **data, int *len)
 
 #define LOCALBUF_LIMIT 65536
 
-int signalpipe[2];
+int sigchldpipe[2], sigwinchpipe[2];
 
 void sigchld(int sig)
 {
-    write(signalpipe[1], "C", 1);
+    write(sigchldpipe[1], "C", 1);
+}
+
+void sigwinch(int sig)
+{
+    write(sigwinchpipe[1], "W", 1);
 }
 
 struct termios oldattrs, newattrs;
@@ -270,10 +275,10 @@ int main(int argc, char **argv)
 	return 1;
 
     /*
-     * Allocate the pipe for transmitting signals back to the
+     * Allocate the pipe for transmitting SIGCHLD back to the
      * top-level select loop.
      */
-    if (pipe(signalpipe) < 0) {
+    if (pipe(sigchldpipe) < 0) {
 	perror("pipe");
 	return 1;
     }
@@ -304,7 +309,26 @@ int main(int argc, char **argv)
 	}
 	slaver = p[0];
 	masterw = p[1];
+
+        sigwinchpipe[0] = sigwinchpipe[1] = -1;
     } else {
+        /*
+         * Allocate an internal pipe for SIGWINCH, just like the
+         * SIGCHLD one above.
+         *
+         * We use two separate pipes, instead of using one pipe to
+         * which we write different bytes to indicate which signal we
+         * received, because of the theoretical risk that a signal
+         * might be missed because the pipe buffer completely fills up
+         * with bytes denoting successive occurrences of the other
+         * signal before we get round to reading any.
+         */
+        if (pipe(sigwinchpipe) < 0) {
+            perror("pipe");
+            return 1;
+        }
+        signal(SIGWINCH, sigwinch);
+
 	masterr = pty_get(ptyname);
 	masterw = dup(masterr);
 	slaver = open(ptyname, O_RDWR);
@@ -404,8 +428,12 @@ int main(int argc, char **argv)
 	twait = HUGE_VAL;
 	used_iwait = used_owait = FALSE;
 
-	FD_SET(signalpipe[0], &rset);
-	maxfd = max(signalpipe[0]+1, maxfd);
+	FD_SET(sigchldpipe[0], &rset);
+	maxfd = max(sigchldpipe[0]+1, maxfd);
+        if (sigwinchpipe[0] >= 0) {
+            FD_SET(sigwinchpipe[0], &rset);
+            maxfd = max(sigwinchpipe[0]+1, maxfd);
+        }
 
 	if (tochild_active && bufchain_size(&tochild)) {
 	    FD_SET(masterw, &wset);
@@ -554,14 +582,19 @@ int main(int argc, char **argv)
 	    } else
 		bufchain_consume(&tochild, ret);
 	}
-	if (FD_ISSET(signalpipe[0], &rset)) {
-	    ret = read(signalpipe[0], buf, 1);
+	if (FD_ISSET(sigchldpipe[0], &rset)) {
+	    ret = read(sigchldpipe[0], buf, 1);
 	    if (ret == 1 && buf[0] == 'C') {
 		int pid, code;
 		pid = wait(&code);     /* reap the exit code */
 		if (pid == childpid)
 		    exitcode = code;
 	    }
+	}
+        if (sigwinchpipe[0] >= 0 && FD_ISSET(sigwinchpipe[0], &rset)) {
+	    ret = read(sigwinchpipe[0], buf, 1);
+	    if (ret == 1 && buf[0] == 'W')
+                pty_resize(masterr);
 	}
 
 	/*
