@@ -2314,6 +2314,15 @@ const char *const deflate_error_sym[DEFLATE_NUM_ERRORS] = {
 };
 #undef A
 
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(_WIN64)
+#define WINDOWS_IO
+#endif
+
+#if defined(WINDOWS_IO) && (defined(STANDALONE) || defined(TESTMODE))
+#include <fcntl.h>
+#include <io.h>
+#endif
+
 #ifdef STANDALONE
 
 enum { DEFLATE_TYPE_AUTO = 3 };
@@ -2399,6 +2408,14 @@ int main(int argc, char **argv)
         fprintf(stderr, "unable to open '%s'\n", filename);
         return 1;
     }
+    
+#ifdef WINDOWS_IO   
+    if(_setmode(_fileno(stdout), _O_BINARY ) == -1)
+    {
+        fprintf(stderr, "Can't set stdout to binary mode\n");
+        return 1;
+    }
+#endif
 
     do {
 	ret = fread(buf, 1, sizeof(buf), fp);
@@ -2503,6 +2520,14 @@ int main(int argc, char **argv)
 
     chandle = deflate_compress_new(DEFLATE_TYPE_ZLIB);
     dhandle = deflate_decompress_new(DEFLATE_TYPE_ZLIB);
+    
+#ifdef WINDOWS_IO   
+    if(_setmode(_fileno(stdout), _O_BINARY ) == -1)
+    {
+        fprintf(stderr, "Can't set stdout to binary mode\n");
+        return 1;
+    }
+#endif
 
     do {
 	ret = fread(buf, 1, sizeof(buf), fp);
