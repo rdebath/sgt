@@ -3,6 +3,7 @@ Class: wish
 Priority: medium
 Difficulty: fun
 Content-type: text/x-html-body
+Fixed-in: 9559
 
 <p>PuTTY allows bold text to be displayed by either emboldening the
 font, or by changing the colour of the text.
@@ -24,3 +25,5 @@ appear to be an instance of this problem.
 
 <p>Patch (unreviewed, incomplete): Debian bug
 <a href="http://bugs.debian.org/193352">193352</a>
+
+<p><b>SGT, 2012-06-09</b>: Now implemented on trunk.
