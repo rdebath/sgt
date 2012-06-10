@@ -416,6 +416,11 @@ promptprefix() {
   promptspaces=`echo -n "$prompttext" | sed 's/./ /g'`
 }
 
+if test -f /etc/debian_chroot; then
+    promptfixed=" chroot:$(cat /etc/debian_chroot)"
+    promptprefix
+fi
+
 #}}}
 #{{{ registering pre-prompt commands
 
