@@ -213,12 +213,12 @@ dimension syntax:
       NNNx                   dimension as multiple of whole image width/height
 examples:
       for an A4 greetings card (use any image with about 1:sqrt(2) ratio):
-        imagepdf.py --ysplit 0 [rotate] image.png -o card.pdf
+        imagepdf.py --ysplit 2 [rotate] image.png -o card.pdf
       for an A5 greetings card (same kind of image):
-        imagepdf.py --ysplit 0 --xsplit 0,1 [rotate] image.png -o card.pdf
+        imagepdf.py --ysplit 2 --xsplit 2,1 [rotate] image.png -o card.pdf
       for two A5 greetings cards (same kind of image again, but two of them):
-        imagepdf.py --ysplit 0   --xsplit 0,1 [rotate] image1.png \\
-                    --ysplit 0,1 --xsplit 0,1 [rotate] image2.png -o card.pdf
+        imagepdf.py --ysplit 2   --xsplit 2,1 [rotate] image1.png \\
+                    --ysplit 2,1 --xsplit 2,1 [rotate] image2.png -o card.pdf
       for a batch of gift tags (use images with aspect ratio of about 2:3):
         imagepdf.py -p A4L -o tags.pdf \\
              --xsplit 5.2,0.1 -w 2in --crop --ycrop 0x,1x,2x picture1.png \\
