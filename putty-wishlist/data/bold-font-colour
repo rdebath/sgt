@@ -3,7 +3,7 @@ Class: wish
 Priority: medium
 Difficulty: fun
 Content-type: text/x-html-body
-Fixed-in: 9559
+Fixed-in: r9559 2012-06-10
 
 <p>PuTTY allows bold text to be displayed by either emboldening the
 font, or by changing the colour of the text.
