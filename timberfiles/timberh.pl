@@ -449,7 +449,7 @@ sub html_to_text {
         $line =~ s/<!--.*?-->//;
       } else {				# normal tag is terminated with >
         last if ($line !~ />/);
-        $line =~ s/^[^<]*<([^> ]*)( [^>]*)??>//;
+        $line =~ s/^[^<]*<(\/?[^> \/]+)( [^>]*)??\/?>//;
         $tag = uc($1);
         $attrib = $2;
         process_text ($text);		# process text before tag
