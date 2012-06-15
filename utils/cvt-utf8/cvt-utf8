@@ -180,12 +180,12 @@ def process_utf8(next):
                 char.append(c)
                 acc = (acc << 6) + (c & 0x3F)
                 cbytes = cbytes - 1
-            if not gotone:
-                c = next()
             if cbytes > 0:
                 output(-1, char, " (incomplete sequence)")
             else:
                 process_ucs(acc, char)
+            if not gotone:
+                c = next()
 
 def do(args):
     # Class to turn a list into a callable object that returns one
