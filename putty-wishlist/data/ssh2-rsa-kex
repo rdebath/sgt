@@ -11,3 +11,27 @@ Content-type: text/x-html-body
 exchange in SSH-2 (similar to SSH-1's key exchange, but without the
 other disadvantages of SSH-1). This might be particularly suitable for
 slow client systems.
+
+<p>
+<b>SGT, 2012-06-22</b>: Perhaps this is as good a place as any to keep
+a list of known server-side implementations.
+<ul>
+<li>
+<a href="https://bugzilla.mindrot.org/show_bug.cgi?id=1314">OpenSSH bug #1314</a>
+includes a patch which adds RSA key exchange to OpenSSH, although the
+OpenSSH maintainers decided not to integrate it in the end.
+<li>
+<a href="ftp://sparkle.rodents-montreal.org/pub/mouse/local/src/moussh">MouSSH</a>
+supports RSA key exchange. (It looks as if the FTP link here is the
+most convenient way to get MouSSH: you'll need the contents of that
+directory and several libraries in directories alongside it &#8211;
+see the <code>INSTALL</code> file for a list &#8211; and I haven't
+personally confirmed that it compiles and works.)
+<li>
+The
+<a href="http://www.proftpd.org/docs/contrib/mod_sftp.html"><code>mod_sftp</code></a>
+module for
+<a href="http://www.proftpd.org/">ProFTPD</a>
+is documented as supporting RSA key exchange. (But it looks as if you
+can't do anything except SFTP over the resulting connection.)
+</ul>
