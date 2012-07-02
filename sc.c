@@ -358,10 +358,14 @@ int main(int argc, char **argv)
             }
         }
 
-        if (recveof && recvlen == 0)
+        if (recveof == 1 && recvlen == 0) {
             close(1);
-        if (sendeof && sendlen == 0)
+            recveof = 2;               /* indicate that we've now done it */
+        }
+        if (sendeof == 1 && sendlen == 0) {
             shutdown(fd, SHUT_WR);
+            sendeof = 2;               /* indicate that we've now done it */
+        }
     }
 
     return 0;
