@@ -104,6 +104,9 @@ def longoptnoarg():
 args = sys.argv[1:]
 doingopts = True
 
+if args == []:
+    args = ["--help"]
+
 while len(args) > 0:
     arg = args.pop(0)
     if arg[0] == "-" and doingopts:
