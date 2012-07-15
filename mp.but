@@ -280,6 +280,7 @@ Like this:
 \c     finished: ;
 \c else
 \c     for (/* declaration of our choice */ ;;)
+\e          iiiiiiiiiiiiiiiiiiiiiiiiiiiiiii
 \c         if (1)
 \c             goto body;
 \c         else
@@ -293,8 +294,8 @@ Like this:
 
 So the initial \c{if (0)} is ignored and we begin executing the
 \c{for} statement, including its declaration. The construction inside
-the \c{for} should now be familiar from examples above, and its job is
-to execute the user's block and then loop back round to the \c{goto
+the \c{for} should now be familiar from the previous example: its job
+is to execute the user's block and then loop back round to the \c{goto
 finished} statement, which transfers control into the then-clause of
 the outermost \c{if}. From there, control bypasses the whole
 else-clause and drops out of the bottom. So this approach to
@@ -812,7 +813,8 @@ statement or block of our choice:
 
 Of course, whenever you use macros to extend C's syntax, the mechanism
 comes with a few extra constraints. Only a \e{proper} language
-extension would avoid doing that.
+extension, implemented in the compiler itself, would be able to avoid
+that.
 
 To begin with, though, here are some things that \e{aren't}
 limitations.
