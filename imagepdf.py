@@ -227,8 +227,8 @@ examples:
              --xsplit 5.2,3.1 -w 2in --crop --ycrop 0x,1x,2x picture4.png \\
              --xsplit 5.2,4.1 -w 2in --crop --ycrop 0x,1x,2x picture5.png
       for a DVD case (273mm x 183mm aspect ratio; spine is middle 14mm):
-        imagepdf.py -p A4L -o cover.pdf \\
-             --crop --xcrop 0x,129.5mm,133.5mm,1x pic.png
+        imagepdf.py -p A4L -o cover.pdf -w 273mm \\
+             --crop --xcrop 0x,129.5mm,143.5mm,1x pic.png
 """[1:-1] # get rid of leading/trailing newlines
                 sys.exit(0)
             else:
