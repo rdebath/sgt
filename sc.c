@@ -89,6 +89,16 @@ int make_socket(int listening, struct sockaddr *addr, socklen_t addrlen,
         struct sockaddr_storage peeraddr;
         socklen_t peerlen = sizeof(peeraddr);
         int fd2;
+        int optval;
+
+        optval = 1;
+        if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR,
+                       &optval, sizeof(optval)) < 0) {
+            if (report_errors)
+                fprintf(stderr, "sc: setsockopt(SO_REUSEADDR): %s\n",
+                        strerror(errno));
+            return -1;
+        }
 
         if (bind(fd, addr, addrlen) < 0) {
             if (report_errors)
