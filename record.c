@@ -215,6 +215,13 @@ char *translate(tstate *state, char *data, int inlen, int *outlen,
      */
     fwrite(ret, 1, *outlen, state->fp);
 
+    /*
+     * It's generally more useful if we always flush to disk, so that
+     * someone else tailing the log isn't one stdio buffer behind
+     * what's really happening.
+     */
+    fflush(state->fp);
+
     return ret;
 }
 
