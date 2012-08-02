@@ -1,0 +1,26 @@
+write start 1
+read start 1
+write end 1 returning 0
+read end 1
+write start 2a
+read start 2
+write end 2a returning 1
+write start 2b
+write end 2b returning 0
+read end 2
+write start 3pre
+write end 3pre returning 1
+read start 3
+write start 3
+write end 3 returning 0
+read end 3
+write start 4pre
+write end 4pre returning 1
+read start 4
+write start 4a
+write end 4a returning 1
+write start 4b
+write end 4b returning 0
+read end 4
+read start 5
+read end 5
