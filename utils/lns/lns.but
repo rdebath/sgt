@@ -1,10 +1,12 @@
 \cfg{man-identity}{lns}{1}{2004-11-21}{Simon Tatham}{Simon Tatham}
 
+\define{dash} \u2013{-}
+
 \title Man page for \cw{lns}
 
 \U NAME
 
-\cw{lns} - symbolic link creation utility
+\cw{lns} \dash symbolic link creation utility
 
 \U SYNOPSIS
 

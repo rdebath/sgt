@@ -1,10 +1,12 @@
 \cfg{man-identity}{buildrun}{1}{2012-08-01}{Simon Tatham}{Simon Tatham}
 
+\define{dash} \u2013{-}
+
 \title Man page for \cw{buildrun}
 
 \U NAME
 
-\cw{buildrun} - run one program after another has completed successfully
+\cw{buildrun} \dash run one program after another has completed successfully
 
 \U SYNOPSIS
 

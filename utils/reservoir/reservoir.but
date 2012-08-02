@@ -1,10 +1,12 @@
 \cfg{man-identity}{reservoir}{1}{2008-03-22}{Simon Tatham}{Simon Tatham}
 
+\define{dash} \u2013{-}
+
 \title Man page for \cw{reservoir}
 
 \U NAME
 
-\cw{reservoir} - delay stage in a pipeline
+\cw{reservoir} \dash delay stage in a pipeline
 
 \U SYNOPSIS
 
