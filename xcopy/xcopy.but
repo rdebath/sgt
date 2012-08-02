@@ -1,10 +1,12 @@
 \cfg{man-identity}{xcopy}{1}{2004-08-02}{Simon Tatham}{Simon Tatham}
 
+\define{dash} \u2013{-}
+
 \title Man page for \cw{xcopy}
 
 \U NAME
 
-\cw{xcopy} - read and write text to/from an X selection from the
+\cw{xcopy} \dash read and write text to/from an X selection from the
 command line
 
 \U SYNOPSIS

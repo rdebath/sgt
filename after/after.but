@@ -1,10 +1,12 @@
 \cfg{man-identity}{after}{1}{2008-02-20}{Simon Tatham}{Simon Tatham}
 
+\define{dash} \u2013{-}
+
 \title Man page for \c{after}
 
 \U NAME
 
-\c{after} - wait until an unrelated process has terminated
+\c{after} \dash wait until an unrelated process has terminated
 
 \U SYNOPSIS
 

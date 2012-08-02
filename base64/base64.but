@@ -1,10 +1,12 @@
 \cfg{man-identity}{base64}{1}{2004-11-20}{Simon Tatham}{Simon Tatham}
 
+\define{dash} \u2013{-}
+
 \title Man page for \cw{base64}
 
 \U NAME
 
-\cw{base64} - stand-alone encoder and decoder for base64
+\cw{base64} \dash stand-alone encoder and decoder for base64
 
 \U SYNOPSIS
 

@@ -1,10 +1,12 @@
 \cfg{man-identity}{cvt-utf8}{1}{2004-03-24}{Simon Tatham}{Simon Tatham}
 
+\define{dash} \u2013{-}
+
 \title Man page for \cw{cvt-utf8}
 
 \U NAME
 
-\cw{cvt-utf8} - convert between UTF-8 and Unicode, and analyse Unicode
+\cw{cvt-utf8} \dash convert between UTF-8 and Unicode, and analyse Unicode
 
 \U SYNOPSIS
 

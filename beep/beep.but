@@ -1,10 +1,12 @@
 \cfg{man-identity}{beep}{1}{2006-02-15}{Simon Tatham}{Simon Tatham}
 
+\define{dash} \u2013{-}
+
 \title Man page for \c{beep}
 
 \U NAME
 
-\c{beep} - produce a beeping noise, by any available method
+\c{beep} \dash produce a beeping noise, by any available method
 
 \U SYNOPSIS
 

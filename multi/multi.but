@@ -1,10 +1,12 @@
 \cfg{man-identity}{multi}{1}{2004-11-20}{Simon Tatham}{Simon Tatham}
 
+\define{dash} \u2013{-}
+
 \title Man page for \cw{multi}
 
 \U NAME
 
-\cw{multi} - bulk file rename/copy utility using Perl regexps
+\cw{multi} \dash bulk file rename/copy utility using Perl regexps
 
 \U SYNOPSIS
 

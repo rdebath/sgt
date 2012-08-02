@@ -1,10 +1,12 @@
 \cfg{man-identity}{nntpid}{1}{2004-11-21}{Simon Tatham}{Simon Tatham}
 
+\define{dash} \u2013{-}
+
 \title Man page for \cw{nntpid}
 
 \U NAME
 
-\cw{nntpid} - retrieve a single article from a news server
+\cw{nntpid} \dash retrieve a single article from a news server
 
 \U SYNOPSIS
 
