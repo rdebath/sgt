@@ -1,0 +1,176 @@
+\cfg{man-identity}{buildrun}{1}{2012-08-01}{Simon Tatham}{Simon Tatham}
+
+\title Man page for \cw{buildrun}
+
+\U NAME
+
+\cw{buildrun} - run one program after another has completed successfully
+
+\U SYNOPSIS
+
+\c buildrun -w control-directory   command1 [ argument... ]
+\e bbbbbbbb bb iiiiiiiiiiiiiiiii   iiiiiiii   iiiiiiii
+\c buildrun -r control-directory [ command2 [ argument... ] ]
+\e bbbbbbbb bb iiiiiiiiiiiiiiiii   iiiiiiii   iiiiiiii
+
+\U DESCRIPTION
+
+\cw{buildrun} is a utility which you can use to wrap two separate
+commands, and it will wait to run the second command until the first
+command is not currently running and its last run completed
+successfully. This includes waiting while the first one runs several
+times (if the first few runs fail), and also includes not waiting at
+all if it's \e{already} true that the most recent run of the first
+command was successful.
+
+You might use \cw{buildrun} in situations where you want to run two
+commands in succession, but (for one reason or another) you'd rather
+have them run in separate shell sessions and therefore you don't want
+to take the obvious approach of simply issuing a compound command
+using the shell's \cw{&&} operator.
+
+A typical scenario involves the first command being a software build
+process (a compile command, or \cw{make}, or similar), and the second
+being some attempt to run the resulting program or its test suite or a
+debugger. You might want to run your build and test commands in
+separate shell sessions for several reasons: if it's convenient to
+give them different working directories, or in order to separate the
+shell command-recall histories (so that the build terminal has all the
+commands related to editing and searching source files, and the test
+terminal has the ones related to adjusting the test environment), or
+in order to separate their output (so that successive test runs appear
+adjacent to each other in the test terminal and can be easily
+compared, while the output from build commands is available for
+checking if it's needed but doesn't keep scrolling the test output off
+the screen).
+
+To use \cw{buildrun}, you must first decide on a location for a
+\e{control directory} which the two \cw{buildrun} processes can use to
+communicate between themselves. Then, in one window, you run the
+command you want to run first (e.g. the compile operation), prefixed
+with a \cw{buildrun -w} command giving the pathname of the control
+directory. For instance, you might run
+
+\c buildrun -w /tmp/controldir make
+\e bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+
+Then, in another window, run the second command (e.g. a test or
+debugging command) prefixed with a similar \cw{buildrun -r} command,
+for example
+
+\c buildrun -r /tmp/controldir ./test.sh
+\e bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+
+The instance of \cw{buildrun} run with \cw{-w} will immediately run
+its command; the instance run with \cw{-r} will wait for the \cw{-w}
+command to complete, and then run its own command. If the first
+command fails, the \cw{buildrun -r} process will continue to sleep;
+you can then correct the problem and re-run the compile, and
+\cw{buildrun -r} will only wake up once an instance of \cw{buildrun
+-w}'s command completes successfully.
+
+If you then immediately re-run \cw{buildrun -r} without starting
+another build, it will run its command instantly without waiting. So
+you can repeat your testing or debugging, or run several different
+test runs, by simply recalling the same test command \e{including} the
+\cw{buildrun -r} prefix.
+
+(The option names \cw{-w} and \cw{-r} are intended to imply that the
+first command is writing some kind of resource, such as a compiled
+program or data file, and that the second command intends to read that
+resource and hence needs the first command to have written it
+correctly.)
+
+\U OPTIONS
+
+You must specify one of \cw{-w} and \cw{-r}.
+
+\dt \cw{-w}
+
+\dd Runs \cw{buildrun} in write mode. You must provide a command line;
+\cw{buildrun -w} will run that command, and use the control directory
+to signal to any waiting \cw{buildrun -r} instances when it has
+completed successfully.
+
+\dt \cw{-r}
+
+\dd Runs \cw{buildrun} in read mode. If a command wrapped by
+\cw{buildrun -w} is currently in progress, or if the last such command
+failed, then \cw{buildrun -r} will wait until one succeeds before
+doing anything. However, if no \cw{buildrun -w} is currently running
+and the last one completed successfully, \cw{buildrun -r} will not
+wait at all.
+
+\lcont{
+
+If a command line is provided, \cw{buildrun -r} will run that command
+after it finishes waiting. If no command line is provided,
+\cw{buildrun -r} will simply return success when it finishes waiting.
+
+}
+
+\U ARGUMENTS
+
+\dt \e{control-directory}
+
+\dd This argument is mandatory in both \cw{-w} and \cw{-r} modes. It
+must give the pathname of a directory which the two instances of
+\cw{buildrun} will use to communicate with each other.
+
+\lcont{
+
+You need not create the control directory; \cw{buildrun -w} will
+create it the first time it runs. It will also be deleted every time
+\cw{buildrun -w}'s command completes successfully, because that's how
+success is communicated to \cw{buildrun -r}. (A side effect of that is
+that if \cw{buildrun -r} is run before \e{ever} running \cw{buildrun
+-w}, it will behave as if there had been a successful \cw{-w} run.)
+
+The control directory should not be on a network-mounted filesystem,
+since network filesystems sometimes diverge from the normal Unix
+behaviour which \cw{buildrun} relies on. Using a directory in
+\cw{/tmp} is recommended.
+
+Of course, instances of \cw{buildrun} using different control
+directories will be completely independent of each other. So you can
+simultaneously run two or more pairs of commands each linked by their
+own pair of \cw{buildrun}s, and as long as each pair has a separaet
+control directory, they won't interfere with each other.
+
+}
+
+\dt \e{command} (and optional arguments)
+
+\dd The first word on \cw{buildrun}'s command line which is not an
+option or the control directory name will be treated as a command to
+be run by \cw{buildrun}, and anything following that word will be
+treated as arguments to that command. The command will be run directly
+using the \cw{execvp}(\e{3}) function, so shell syntax (pipes,
+redirections etc) is not supported. If you need your command to
+contain things like that, you can achieve it by explicitly invoking a
+shell, e.g.
+
+\lcont{
+
+\c buildrun -w sh -c '(cmd1; cmd2 | cmd3) > outfile'
+\e bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+
+In \cw{buildrun -r} mode, an alternative to doing that is simply not
+to provide a command at all, and instead tell your shell to run a
+complex command \e{after} \cw{buildrun}, e.g.
+
+\c buildrun -r && (cmd1; cmd2 | cmd3) > outfile
+\e bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+
+(This alternative is not available with \cw{buildrun -w}, since that
+has to run its command as a subprocess so that it can wait for it to
+finish and see whether it worked.)
+
+}
+
+\U LICENCE
+
+\cw{buildrun} is free software, distributed under the MIT licence.
+Type \cw{buildrun --licence} to see the full licence text.
+
+\versionid $Id$
