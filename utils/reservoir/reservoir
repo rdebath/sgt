@@ -44,7 +44,7 @@ while ($_=shift @ARGV) {
     print STDERR $usage;
     exit 0;
   } elsif ($arg eq "-version") {
-    if ('$Revision: 4876 $' =~ /Revision:\s+(\d+)/) {
+    if ('$Revision$' =~ /Revision:\s+(\d+)/) {
 	print "reservoir revision $1\n";
     } else {
 	print "reservoir: unknown revision\n";
