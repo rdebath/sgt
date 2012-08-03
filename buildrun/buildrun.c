@@ -278,7 +278,7 @@ void licence(void) {
 }
 
 void version(void) {
-#define SVN_REV "$Revision: 8227 $"
+#define SVN_REV "$Revision$"
     char rev[sizeof(SVN_REV)];
     char *p, *q;
 
