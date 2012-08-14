@@ -567,6 +567,7 @@ static struct window *new_window(struct ilist *il, int maxsize,
     w->fixed = gtk_fixed_new();
     w->area = gtk_drawing_area_new();
     w->ww = w->wh = 0;
+    w->pos = -1;
 
     w->full_screen = w->show_nametip = full_screen;
 
