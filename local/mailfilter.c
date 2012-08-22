@@ -868,11 +868,20 @@ static void scanner_cleanup_text(scanner *s, stream *st, void *vctx)
     if (!wcsncmp(ctx->firstbit, str, wcslen(str)) ||
 	!wcsncmp(ctx->firstbit + linelen + 1, str, wcslen(str)))
 	specific_msg = "This appears to be a prolific pharmacy spam.";
+    str = L"You are receiving this email because we wish you to use";
+    linelen = wcscspn(ctx->firstbit, L"\n");
+    if (!wcsncmp(ctx->firstbit, str, wcslen(str)) ||
+	!wcsncmp(ctx->firstbit + linelen + 1, str, wcslen(str)))
+	specific_msg = "This appears to be a prolific spam for varying types of business.";
     str = L"See your card as often as you wish during the next 15 days.\n";
     if (!wcsncmp(ctx->firstbit + linelen + 1, str, wcslen(str))) {
 	greetingspam |= 2;
 	if (greetingspam == 3)
 	    specific_msg = "This appears to be a prolific greetings card spam.";
+    }
+    str = L"West Union Group is searching for";
+    if (!wcsncmp(ctx->firstbit + linelen + 1, str, wcslen(str))) {
+	specific_msg = "This appears to be a prolific job offer spam.";
     }
     str = L"Adobe CS3 Master Collection for PC or MAC includes:";
     i = wcscspn(ctx->firstbit, L"\r\n");
@@ -940,10 +949,20 @@ static void scanner_cleanup_text(scanner *s, stream *st, void *vctx)
 	!wcsncmp(ctx->firstbit + linelen - stringlen, str, stringlen)) {
 	specific_msg = "This appears to be a persistent corporate-web-design spam.";
     }
+    str = L"Collectively, we focus on different sources of power, new green tech, and reusable materials.";
+    stringlen = wcslen(str);
+    linelen = wcscspn(ctx->firstbit, L"\n");
+    while (linelen > 0 && iswspace(ctx->firstbit[linelen-1]))
+	linelen--;
+    if (linelen >= stringlen &&
+	!wcsncmp(ctx->firstbit + linelen - stringlen, str, stringlen)) {
+	specific_msg = "This appears to be a prolific spam.";
+    }
 }
 
 static int agif_found = 0;
 static int dslpng_found = 0;
+static int rtf_found = 0;
 
 static void scanner_init_filename(scanner *s, stream *st, void *vctx)
 {
@@ -959,6 +978,14 @@ static void scanner_init_filename(scanner *s, stream *st, void *vctx)
 			strspn(path[i].extra->rfc822.filename+3, "0123456789"),
 			".png"))
 	    dslpng_found = 1;
+	if (path[i].type == ST_RFC822 &&
+	    !strcasecmp(path[i].extra->rfc822.content_type,
+			"application/octet-stream") &&
+	    strcasesuffix(path[i].extra->rfc822.filename,
+			  path[i].extra->rfc822.filename + 
+			  strlen(path[i].extra->rfc822.filename),
+			  ".rtf"))
+	    rtf_found = 1;
     }
 }
 static void scanner_feed_null(scanner *s, stream *st, void *vctx,
@@ -1015,6 +1042,9 @@ const char *scanner_filter(int len, const char *data)
 
     if (dslpng_found)
 	return "This looks like a drugs spam I've been seeing a lot of.";
+
+    if (rtf_found)
+	return "I'm treating main message bodies in RTF as a sign of spam.";
 
     return NULL;
 }
@@ -1131,6 +1161,90 @@ const char *process_address(const char *hdr, const char *addr)
 	if (!strcasecmp(addr, "users@brothersoft.com")) {
 	    return "I have never requested regular mail from this address and must therefore consider it spam.";
 	}
+
+	/*
+	 * 2010-01-07: one of the more persistent 'networking sites'
+	 */
+	if (!strcasecmp(addr, "admin@vkontakte.ru")) {
+	    return "I have received a lot of unwanted mail from this address and am therefore considering it a spammer.";
+	}
+
+	/*
+	 * 2010-07-28: three identical emails in quick succession
+	 * from this one make me reach for the ban button.
+	 */
+	if (!strcasecmp(addr, "info@miraclegroup.com")) {
+	    return "This address appears to be a corporate spammer of some sort.";
+	}
+
+        /*
+         * 2010-12-16: time to go through recent spam and make a list
+         * of prolific annoyances.
+         */
+        if (!strcasecmp(addr, "marketing@giveshoes.org") ||
+            !strcasecmp(addr, "mail@avgenakis.gr") ||
+            !strcasecmp(addr, "boletines@uptodown.com") ||
+            !strcasecmp(addr, "phplist@ovs-genealogy.com") ||
+            !strcasecmp(addr, "thesecondadam@charter.net") ||
+            !strcasecmp(addr, "sidandsally@id1.idrelay.com") ||
+            (at && (!strcasecmp(at+1, "hallmark.com") ||
+                    !strcasecmp(at+1, "process-news.com") ||
+                    !strcasecmp(at+1, "greenpower.msgfocus.com") ||
+                    !strcasecmp(at+1, "greenschoolrecyclingfundraiser.org")
+                ))) {
+            return "I'm currently assuming mail from this address to be spam.";
+        }
+
+        /*
+         * 2011-05-03: a sudden flood of identical 419s.
+         */
+        if (!strcasecmp(addr, "mpchristos@aol.com")) {
+            return "I've had 15 identical emails from this address already. Enough is enough.";
+        }
+
+        /*
+         * 'Davis Micro LLC'
+         */
+        if (!strcasecmp(addr, "brandsdragon@gmail.com") ||
+            !strcasecmp(addr, "davismicro@gmail.com") ||
+            !strcasecmp(addr, "everbuyingtrade@gmail.com")) {
+            return "You have been persistently spamming me since October 2010. Please stop.";
+        }
+
+        /*
+         * Select2gether
+         */
+        if (!strcasecmp(addr, "do-not-reply@select2gether.com")) {
+            return "You have been persistently spamming me since February 2011. Please stop.";
+        }
+
+        /*
+         * 2011-10-11: a prolific new newsletter I didn't subscribe
+         * to.
+         */
+        if (!strcasecmp(at+1, "thechurchreport.com")) {
+            return "I have never subscribed to this newsletter and must therefore consider it spam.";
+        }
+
+        /*
+         * 2012-05-03: a lovely birthday present of sudden prolific
+         * sales-brocure spam.
+         */
+        if (!strcasecmp(addr, "sales@oooteplomir.com")) {
+            return "I'm assuming mail from this address to be spam.";
+        }
+
+        /*
+         * 2012-07-02: combit.net have mailed me for the last time.
+         */
+        if (at && (!strcasecmp(at+1, "combit.net")))
+	    return "PR information from this domain is unsolicited and unwanted. I consider it spam.";
+
+        /*
+         * 2012-08-07: 'Pirooz', whoever that might be.
+         */
+        if (!strcmp(addr, "daryakala@gmail.com"))
+            return "This address has persistently spammed me and is blocked.";
     }
 
     if (!strcasecmp(hdr, "Reply-to")) {
@@ -1162,6 +1276,16 @@ const char *process_address(const char *hdr, const char *addr)
 	    !strcmp(addr, "alsaplayer-devel@lists.tartarus.org"))
 	    return "Anything copied to both me and the alsaplayer developers"
 	    " is unlikely to be real mail.";
+    }
+
+    if (!strcasecmp(hdr, "To")) {
+	if (!strcmp(addr, "puttkammerjens@compuserver.de") ||
+	    !strcmp(addr, "puttiphs@scg.co.th") ||
+	    !strcmp(addr, "puttfarcken@uke.de"))
+	    return "The headers make this look like spam.";
+
+        if (!strcmp(addr, "021group25@googlegroups.com"))
+	    return "I have never subscribed to any list called 021group25@googlegroups.com and so must consider messages purporting to be sent through it to be spam.";
     }
 
     return NULL;
@@ -1300,6 +1424,13 @@ const char *process_subject(const char *subject)
 	    }
 	}
     }
+
+    if (strprefix(subject, "Greetings From Mr. Tomo Sand Nori"))
+	return "Seven of these messages were quite enough, thanks.";
+
+    /* 2011-02-28: a sudden flood of these */
+    if (strprefix(subject, "Investor insights"))
+	return "This appears to be a persistent pump-and-dump spam.";
 
     return NULL;
 }
