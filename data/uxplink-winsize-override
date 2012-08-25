@@ -1,0 +1,13 @@
+Summary: Unix Plink inappropriately uses configured window size
+Class: bug
+Priority: medium
+Difficulty: fun
+Present-in: r2513 r9528
+Fixed-in: r9624
+Content-Type: text/x-html-body
+
+<p>When there are Default Settings configured, Plink on Unix will use the
+terminal height and width from there rather than querying the terminal
+itself.  This is inappropriate, since the default settings are there to
+configure the size of PuTTY's terminal windows rather than to override
+the size of the terminal Plink is running in.
