@@ -6,7 +6,7 @@ Present-in: 0.53b 2002-12-19
 Content-type: text/x-html-body
 
 <p>
-The <a href="ftp://ftp.rfc-editor.org/in-notes/rfc1738.txt">
+The <a href="http://www.rfc-editor.org/rfc/rfc4248.txt">
 <code>telnet:</code> URL scheme</a> allows for specifying a
 password to log in with.  PuTTY doesn't currently support this.
 PuTTY should at least be capable of ignoring it if it's present.
