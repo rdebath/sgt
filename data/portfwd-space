@@ -4,6 +4,7 @@ Difficulty: tricky
 Priority: medium
 Depends: config-struct
 Content-type: text/x-html-body
+Fixed-in: r9214
 
 <p>
 Pinched from the `Common error messages' section of the docs:
@@ -28,6 +29,5 @@ If you're running into this limit, you may want to consider using dynamic
 port forwarding instead.
 </blockquote>
 
-<p>
-If we implemented <a href="portfwd-range.html">`portfwd-range'</a>
-then the need to fix this would become less pressing.
+<p>This has now been corrected: PuTTY uses a dynamic structure to
+store port-forwardings.

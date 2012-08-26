@@ -4,6 +4,7 @@ Difficulty: tricky
 Priority: medium
 Depends: config-locations
 Content-type: text/x-html-body
+Fixed-in: r9214
 
 <p>
 Currently PuTTY uses a single <code>struct</code>
