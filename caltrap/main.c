@@ -91,13 +91,13 @@ int main(int argc, char **argv) {
 			 * 
 			 * else if (!strcmp(opt, "-output")) {
 			 *     if (!val)
-			 *         errs = TRUE, error(err_optnoarg, opt);
+			 *         errs = TRUE, err_optnoarg(opt);
 			 *     else
 			 *         ofile = val;
 			 * }
 			 */
 			else {
-			    errs = TRUE, error(err_nosuchopt, opt);
+			    errs = TRUE, err_nosuchopt(opt);
 			}
 		    }
 		    p = NULL;
@@ -156,7 +156,7 @@ int main(int argc, char **argv) {
 			char opt[2];
 			opt[0] = c;
 			opt[1] = '\0';
-			errs = TRUE, error(err_optnoarg, opt);
+			errs = TRUE, err_optnoarg(opt);
 		    }
 		    /*
 		     * Now c is the option and p is the parameter.
@@ -170,7 +170,7 @@ int main(int argc, char **argv) {
 		      case 't':
 			e.type = name_to_type(p);
 			if (e.type == INVALID_TYPE)
-			    fatal(err_eventtype, p);
+			    fatalerr_eventtype(p);
 			break;
 		      case 'R':
 			{
@@ -181,23 +181,23 @@ int main(int argc, char **argv) {
 				q = NULL;
 			    e.period = parse_duration(p);
 			    if (e.period == INVALID_DURATION)
-				fatal(err_duration, p);
+				fatalerr_duration(p);
 			    if (q) {
 				e.length = parse_duration(q);
 				if (e.length == INVALID_DURATION)
-				    fatal(err_duration, q);
+				    fatalerr_duration(q);
 			    } else
 				e.length = 0;
 			}
 			break;
 		      case 'S':
 			if (!parse_datetime(p, &e.sd, &e.st))
-			    fatal(err_datetime, p);
+			    fatalerr_datetime(p);
 			break;
 		      case 'E':
 		      case 'F':
 			if (!parse_datetime(p, &e.ed, &e.et))
-			    fatal(err_datetime, p);
+			    fatalerr_datetime(p);
 			break;
 		      case 'm':
 			e.description = p;
@@ -213,7 +213,7 @@ int main(int argc, char **argv) {
 			char opt[2];
 			opt[0] = c;
 			opt[1] = '\0';
-			errs = TRUE, error(err_nosuchopt, opt);
+			errs = TRUE, err_nosuchopt(opt);
 		    }
 		}
 	    }

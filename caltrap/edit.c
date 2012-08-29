@@ -10,7 +10,7 @@
 void caltrap_edit(int nargs, char **args, int nphysargs, struct entry *e)
 {
     if (nargs != 1)
-	fatal(err_editargno);
+	fatalerr_editargno();
     assert(nargs <= nphysargs);
 
     e->id = atoi(args[0]);

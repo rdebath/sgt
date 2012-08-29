@@ -14,7 +14,7 @@ void caltrap_info(int nargs, char **args, int nphysargs)
     char *dfmt, *tfmt;
 
     if (nargs != 1)
-	fatal(err_infoargno);
+	fatalerr_infoargno();
     assert(nargs <= nphysargs);
 
     id = atoi(args[0]);

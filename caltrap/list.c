@@ -345,7 +345,7 @@ void caltrap_list(int nargs, char **args, int nphysargs, int verbose)
     Date sd, ed;
 
     if (nargs > 2)
-	fatal(err_listargno);
+	fatalerr_listargno();
     assert(nargs <= nphysargs);
 
     if (nargs == 0) {
@@ -353,12 +353,12 @@ void caltrap_list(int nargs, char **args, int nphysargs, int verbose)
 	ed = sd + 14;		       /* two weeks */
     } else if (nargs == 1) {
 	if (!parse_partial_date(args[0], &sd, &ed))
-	    fatal(err_date, args[0]);
+	    fatalerr_date(args[0]);
     } else if (nargs == 2) {
 	if (!parse_partial_date(args[0], &sd, NULL))
-	    fatal(err_date, args[0]);
+	    fatalerr_date(args[0]);
 	if (!parse_partial_date(args[1], &ed, NULL))
-	    fatal(err_date, args[1]);
+	    fatalerr_date(args[1]);
 	if (sd > ed) {
 	    Date tmp = sd; sd = ed; ed = tmp;
 	}

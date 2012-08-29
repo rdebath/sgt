@@ -12,7 +12,7 @@ void caltrap_del(int nargs, char **args, int nphysargs)
     int id;
 
     if (nargs != 1)
-	fatal(err_delargno);
+	fatalerr_delargno();
     assert(nargs <= nphysargs);
 
     id = atoi(args[0]);

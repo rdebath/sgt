@@ -12,7 +12,7 @@
 void *smalloc(int size) {
     void *p = malloc(size);
     if (!p)
-	fatal(err_nomemory);
+	fatalerr_nomemory();
     return p;
 }
 
@@ -34,6 +34,6 @@ void *srealloc(void *p, int size) {
     else
 	q = malloc(size);
     if (!q)
-	fatal(err_nomemory);
+	fatalerr_nomemory();
     return q;
 }

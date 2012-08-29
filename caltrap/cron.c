@@ -49,7 +49,7 @@ static void cron_callback(void *vctx, struct entry *ent)
     if (ctx->fp == NULL) {
         ctx->fp = popen(ctx->cmd, "w");
         if (ctx->fp == NULL)
-            fatal(err_cronpipe);
+            fatalerr_cronpipe();
 
         fprintf(ctx->fp,
                 "This is an automated calendar notification"
@@ -75,12 +75,12 @@ void caltrap_cron(int nargs, char **args, int nphysargs)
     struct cron_ctx ctx;
 
     if (nargs != 2)
-	fatal(err_cronargno);
+	fatalerr_cronargno();
     assert(nargs <= nphysargs);
 
     diff = parse_duration(args[0]);
     if (diff == INVALID_DURATION)
-        fatal(err_duration, args[0]);
+        fatalerr_duration(args[0]);
 
     now(&d, &t);
     d2 = d;
