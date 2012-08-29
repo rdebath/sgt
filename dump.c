@@ -39,7 +39,7 @@ static void dump_callback(void *vctx, struct entry *ent)
 void caltrap_dump(int nargs, char **args, int nphysargs)
 {
     if (nargs > 0)
-	fatal(err_dumpargno);
+	fatalerr_dumpargno();
     assert(nargs <= nphysargs);
 
     db_dump_entries(dump_callback, NULL);
@@ -75,7 +75,7 @@ void caltrap_load(int nargs, char **args, int nphysargs)
     int is_stdin;
 
     if (nargs > 1)
-	fatal(err_loadargno);
+	fatalerr_loadargno();
     assert(nargs <= nphysargs);
 
     db_init();
@@ -103,49 +103,49 @@ void caltrap_load(int nargs, char **args, int nphysargs)
 	/* p now points to the start date */
 	ent.sd = parse_date(p);
 	if (ent.sd == INVALID_DATE)
-	    fatal(err_loadfmt);
+	    fatalerr_loadfmt();
 	p = q;
 
 	q = p; while (*q && !isspace(*q)) q++; if (*q) *q++ = '\0';
 	/* p now points to the start time */
 	ent.st = parse_time(p);
 	if (ent.st == INVALID_TIME)
-	    fatal(err_loadfmt);
+	    fatalerr_loadfmt();
 	p = q;
 
 	q = p; while (*q && !isspace(*q)) q++; if (*q) *q++ = '\0';
 	/* p now points to the end date */
 	ent.ed = parse_date(p);
 	if (ent.ed == INVALID_DATE)
-	    fatal(err_loadfmt);
+	    fatalerr_loadfmt();
 	p = q;
 
 	q = p; while (*q && !isspace(*q)) q++; if (*q) *q++ = '\0';
 	/* p now points to the end time */
 	ent.et = parse_time(p);
 	if (ent.et == INVALID_TIME)
-	    fatal(err_loadfmt);
+	    fatalerr_loadfmt();
 	p = q;
 
 	q = p; while (*q && !isspace(*q)) q++; if (*q) *q++ = '\0';
 	/* p now points to the length */
 	ent.length = parse_duration(p);
 	if (ent.length == INVALID_DURATION)
-	    fatal(err_loadfmt);
+	    fatalerr_loadfmt();
 	p = q;
 
 	q = p; while (*q && !isspace(*q)) q++; if (*q) *q++ = '\0';
 	/* p now points to the repeat period */
 	ent.period = parse_duration(p);
 	if (ent.period == INVALID_DURATION)
-	    fatal(err_loadfmt);
+	    fatalerr_loadfmt();
 	p = q;
 
 	q = p; while (*q && !isspace(*q)) q++; if (*q) *q++ = '\0';
 	/* p now points to the type */
 	ent.type = name_to_type(p);
 	if (ent.type == INVALID_TYPE)
-	    fatal(err_loadfmt);
+	    fatalerr_loadfmt();
 	p = q;
 
 	/*

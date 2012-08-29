@@ -26,7 +26,7 @@ void caltrap_add(int nargs, char **args, int nphysargs, struct entry *e)
 	e->type = T_EVENT;
 
     if (nargs < 1 || nargs > 4)
-	fatal(err_addargno);
+	fatalerr_addargno();
     assert(nargs <= nphysargs);
 
     /*
@@ -34,7 +34,7 @@ void caltrap_add(int nargs, char **args, int nphysargs, struct entry *e)
      */
     sd = parse_date(args[0]);
     if (sd == INVALID_DATE)
-	fatal(err_date, args[0]);
+	fatalerr_date(args[0]);
 
     i = 1;
 
@@ -61,7 +61,7 @@ void caltrap_add(int nargs, char **args, int nphysargs, struct entry *e)
 	if (nargs > i) {
 	    et = parse_time(args[i]);
 	    if (et == INVALID_TIME)
-		fatal(err_time, args[i]);
+		fatalerr_time(args[i]);
 	    i++;
 	    if (ed == INVALID_DATE) {
 		/*
@@ -97,7 +97,7 @@ void caltrap_add(int nargs, char **args, int nphysargs, struct entry *e)
     }
 
     if (i < nargs)
-	fatal(err_extraarg, args[i]);
+	fatalerr_extraarg(args[i]);
 
     msgp = e->description;
 

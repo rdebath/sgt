@@ -24,11 +24,11 @@ void db_init(void)
     char *err;
 
     if (stat(dbpath, &sb) == 0)
-	fatal(err_dbexists);
+	fatalerr_dbexists();
 
     db = sqlite_open(dbpath, 0666, &err);
     if (!db)
-	fatal(err_noopendb, err);
+	fatalerr_noopendb(err);
 
     sqlite_exec(db,
 		"CREATE TABLE entries ("
@@ -41,7 +41,7 @@ void db_init(void)
 		"    description TEXT);",
 		sqlite_null_callback, NULL, &err);
     if (err)
-	fatal(err_dberror, err);
+	fatalerr_dberror(err);
 
     sqlite_exec(db,
 		"CREATE TABLE freeids ("
@@ -49,13 +49,13 @@ void db_init(void)
 		"    last INTEGER);",
 		sqlite_null_callback, NULL, &err);
     if (err)
-	fatal(err_dberror, err);
+	fatalerr_dberror(err);
 
     sqlite_exec(db,
 		"INSERT INTO freeids VALUES (0, 2147483647);",
 		sqlite_null_callback, NULL, &err);
     if (err)
-	fatal(err_dberror, err);
+	fatalerr_dberror(err);
 
     sqlite_close(db);
 }
@@ -69,7 +69,7 @@ void db_begin(void)
     assert(db != NULL);
     assert(!transaction_open);
     sqlite_exec(db, "BEGIN;", sqlite_null_callback, NULL, &err);
-    if (err) fatal(err_dberror, err);
+    if (err) fatalerr_dberror(err);
     transaction_open = TRUE;
 }
 
@@ -79,7 +79,7 @@ void db_rollback(void)
     assert(db != NULL);
     assert(transaction_open);
     sqlite_exec(db, "ROLLBACK;", sqlite_null_callback, NULL, &err);
-    if (err) fatal(err_dberror, err);
+    if (err) fatalerr_dberror(err);
     transaction_open = FALSE;
 }
 
@@ -89,7 +89,7 @@ void db_commit(void)
     assert(db != NULL);
     assert(transaction_open);
     sqlite_exec(db, "COMMIT;", sqlite_null_callback, NULL, &err);
-    if (err) fatal(err_dberror, err);
+    if (err) fatalerr_dberror(err);
     transaction_open = FALSE;
 }
 
@@ -107,11 +107,11 @@ void db_open(void)
     char *err;
 
     if (stat(dbpath, &sb) < 0 && errno == ENOENT)
-	fatal(err_nodb);
+	fatalerr_nodb();
 
     db = sqlite_open(dbpath, 0666, &err);
     if (!db)
-	fatal(err_noopendb, err);
+	fatalerr_noopendb(err);
 }
 
 void db_add_entry(struct entry *ent)
@@ -139,8 +139,8 @@ void db_add_entry(struct entry *ent)
 			 " ORDER BY first"
 			 " LIMIT 1;",
 			 &table, &rows, &cols, &err);
-	if (err) fatal(err_dberror, err);
-	if (rows < 1) fatal(err_dbfull, err);
+	if (err) fatalerr_dberror(err);
+	if (rows < 1) fatalerr_dbfull();
 	assert(cols == 2);
 	ent->id = id = atoi(table[2]);
     } else {
@@ -153,8 +153,8 @@ void db_add_entry(struct entry *ent)
 				" WHERE first <= %d AND last >= %d"
 				" LIMIT 1;",
 				&table, &rows, &cols, &err, id, id);
-	if (err) fatal(err_dberror, err);
-	if (rows < 1) fatal(err_dbconsist, "reused-entry-id");
+	if (err) fatalerr_dberror(err);
+	if (rows < 1) fatalerr_dbconsist("reused-entry-id");
 	assert(cols == 2);
     }
     firstid = atoi(table[2]);
@@ -179,7 +179,7 @@ void db_add_entry(struct entry *ent)
 			   "INSERT INTO freeids VALUES ( %d, %d );",
 			   sqlite_null_callback, NULL, &err, id+1, lastid);
     }
-    if (err) fatal(err_dberror, err);
+    if (err) fatalerr_dberror(err);
 
     sqlite_exec_printf(db,
 		       "INSERT INTO entries VALUES ("
@@ -187,7 +187,7 @@ void db_add_entry(struct entry *ent)
 		       sqlite_null_callback, NULL, &err,
 		       id, sdt, edt, len, per, type_to_name(ent->type),
 		       ent->description);
-    if (err) fatal(err_dberror, err);
+    if (err) fatalerr_dberror(err);
 
     db_commit();
 
@@ -212,15 +212,15 @@ static int sqlite_list_callback(void *ctx, int argc,
     assert(argc == 7);
     ent.id = atoi(argv[0]);
     if (!parse_datetime(argv[1], &ent.sd, &ent.st))
-	fatal(err_dbconsist, "invalid-start-datetime");
+	fatalerr_dbconsist("invalid-start-datetime");
     if (!parse_datetime(argv[2], &ent.ed, &ent.et))
-	fatal(err_dbconsist, "invalid-end-datetime");
+	fatalerr_dbconsist("invalid-end-datetime");
     if ((ent.length = parse_duration(argv[3])) == INVALID_DURATION)
-	fatal(err_dbconsist, "invalid-length");
+	fatalerr_dbconsist("invalid-length");
     if ((ent.period = parse_duration(argv[4])) == INVALID_DURATION)
-	fatal(err_dbconsist, "invalid-period");
+	fatalerr_dbconsist("invalid-period");
     if ((ent.type = name_to_type(argv[5])) == INVALID_TYPE)
-	fatal(err_dbconsist, "invalid-type");
+	fatalerr_dbconsist("invalid-type");
     ent.description = argv[6];
 
     s->fn(s->ctx, &ent);
@@ -251,7 +251,7 @@ void db_list_entries(Date sd, Time st, Date ed, Time et,
 		       sqlite_list_callback, &str, &err,
 		       edt, sdt);
     if (err)
-	fatal(err_dberror, err);
+	fatalerr_dberror(err);
 
     sfree(sdt);
     sfree(edt);
@@ -285,10 +285,10 @@ void db_fetch(int id, struct entry *ent)
 		       " WHERE id = %d;",
 		       sqlite_list_callback, &str, &err, id);
     if (err)
-	fatal(err_dberror, err);
+	fatalerr_dberror(err);
 
     if (ent->id == -1)
-	fatal(err_idnotfound, id);
+	fatalerr_idnotfound(id);
 }
 
 void db_del(int id)
@@ -308,10 +308,10 @@ void db_del(int id)
     sqlite_get_table_printf(db,
 			    "SELECT id FROM entries WHERE id = %d;",
 			    &table, &rows, &cols, &err, id);
-    if (err) fatal(err_dberror, err);
+    if (err) fatalerr_dberror(err);
     sqlite_free_table(table);
     if (rows < 1)
-	fatal(err_idnotfound, id);
+	fatalerr_idnotfound(id);
 
     /*
      * Mark the ID as free in the free IDs table. This search will
@@ -323,9 +323,9 @@ void db_del(int id)
 			    " WHERE first <= %d AND last >= %d"
 			    " ORDER BY first;",
 			    &table, &rows, &cols, &err, id+1, id-1);
-    if (err) fatal(err_dberror, err);
+    if (err) fatalerr_dberror(err);
     assert(rows == 0 || cols == 2);
-    if (rows > 2) fatal(err_dbconsist, "freeids-too-many");
+    if (rows > 2) fatalerr_dbconsist("freeids-too-many");
     /*
      * Parse the returned rows back into integers. While we're at
      * it, check that no returned free ID range _already_ contains
@@ -335,7 +335,7 @@ void db_del(int id)
 	irows[i][0] = atoi(table[2*i+2]);
 	irows[i][1] = atoi(table[2*i+3]);
 	if (id >= irows[i][0] && id <= irows[i][1])
-	    fatal(err_dbconsist, "deleted-id-already-free");
+	    fatalerr_dbconsist("deleted-id-already-free");
     }
 
     /*
@@ -352,7 +352,7 @@ void db_del(int id)
 	sqlite_exec_printf(db,
 			   "INSERT INTO freeids VALUES ( %d, %d );",
 			   sqlite_null_callback, NULL, &err, id, id);
-	if (err) fatal(err_dberror, err);
+	if (err) fatalerr_dberror(err);
     } else if (rows == 2) {
 	/*
 	 * Two rows were returned. This must mean that the ID was
@@ -364,12 +364,12 @@ void db_del(int id)
 	sqlite_exec_printf(db,
 			   "DELETE FROM freeids WHERE first = %d;",
 			   sqlite_null_callback, NULL, &err, irows[1][0]);
-	if (err) fatal(err_dberror, err);
+	if (err) fatalerr_dberror(err);
 	sqlite_exec_printf(db,
 			   "UPDATE freeids SET last = %d WHERE first = %d;",
 			   sqlite_null_callback, NULL, &err,
 			   irows[1][1], irows[0][0]);
-	if (err) fatal(err_dberror, err);
+	if (err) fatalerr_dberror(err);
     } else {
 	/*
 	 * One row was returned. This means the ID is either just
@@ -382,13 +382,13 @@ void db_del(int id)
 			       "UPDATE freeids SET last=%d WHERE first = %d;",
 			       sqlite_null_callback, NULL, &err,
 			       id, irows[0][0]);
-	    if (err) fatal(err_dberror, err);
+	    if (err) fatalerr_dberror(err);
 	} else if (irows[0][0] == id + 1) {
 	    sqlite_exec_printf(db,
 			       "UPDATE freeids SET first=%d WHERE last = %d;",
 			       sqlite_null_callback, NULL, &err,
 			       id, irows[0][1]);
-	    if (err) fatal(err_dberror, err);
+	    if (err) fatalerr_dberror(err);
 	} else
 	    assert(!"This should never happen");
     }
@@ -400,7 +400,7 @@ void db_del(int id)
     sqlite_exec_printf(db,
 		       "DELETE FROM entries WHERE id = %d;",
 		       sqlite_null_callback, NULL, &err, id);
-    if (err) fatal(err_dberror, err);
+    if (err) fatalerr_dberror(err);
 
     db_commit();
 }
@@ -422,10 +422,10 @@ void db_update(struct entry *e)
     sqlite_get_table_printf(db,
 			    "SELECT id FROM entries WHERE id = %d;",
 			    &table, &rows, &cols, &err, e->id);
-    if (err) fatal(err_dberror, err);
+    if (err) fatalerr_dberror(err);
     sqlite_free_table(table);
     if (rows < 1)
-	fatal(err_idnotfound, e->id);
+	fatalerr_idnotfound(e->id);
 
     /*
      * Now do the update. Since there are lots of different pieces
@@ -439,7 +439,7 @@ void db_update(struct entry *e)
 			   "UPDATE entries SET start='%q' WHERE id = %d;",
 			   sqlite_null_callback, NULL, &err,
 			   dt, e->id);
-	if (err) fatal(err_dberror, err);
+	if (err) fatalerr_dberror(err);
 	sfree(dt);
     }
     if (e->ed != INVALID_DATE && e->et != INVALID_TIME) {
@@ -448,7 +448,7 @@ void db_update(struct entry *e)
 			   "UPDATE entries SET end='%q' WHERE id = %d;",
 			   sqlite_null_callback, NULL, &err,
 			   dt, e->id);
-	if (err) fatal(err_dberror, err);
+	if (err) fatalerr_dberror(err);
 	sfree(dt);
     }
     if (e->length != INVALID_DURATION) {
@@ -457,7 +457,7 @@ void db_update(struct entry *e)
 			   "UPDATE entries SET length='%q' WHERE id = %d;",
 			   sqlite_null_callback, NULL, &err,
 			   d, e->id);
-	if (err) fatal(err_dberror, err);
+	if (err) fatalerr_dberror(err);
 	sfree(d);
     }
     if (e->period != INVALID_DURATION) {
@@ -466,7 +466,7 @@ void db_update(struct entry *e)
 			   "UPDATE entries SET period='%q' WHERE id = %d;",
 			   sqlite_null_callback, NULL, &err,
 			   d, e->id);
-	if (err) fatal(err_dberror, err);
+	if (err) fatalerr_dberror(err);
 	sfree(d);
     }
     if (e->type != INVALID_TYPE) {
@@ -474,14 +474,14 @@ void db_update(struct entry *e)
 			   "UPDATE entries SET type='%q' WHERE id = %d;",
 			   sqlite_null_callback, NULL, &err,
 			   type_to_name(e->type), e->id);
-	if (err) fatal(err_dberror, err);
+	if (err) fatalerr_dberror(err);
     }
     if (e->description != NULL) {
 	sqlite_exec_printf(db,
 			   "UPDATE entries SET description='%q' WHERE id=%d;",
 			   sqlite_null_callback, NULL, &err,
 			   e->description, e->id);
-	if (err) fatal(err_dberror, err);
+	if (err) fatalerr_dberror(err);
     }
 
     db_commit();
@@ -501,5 +501,5 @@ void db_dump_entries(list_callback_fn_t fn, void *ctx)
 		" type, description FROM entries;",
 		sqlite_list_callback, &str, &err);
     if (err)
-	fatal(err_dberror, err);
+	fatalerr_dberror(err);
 }

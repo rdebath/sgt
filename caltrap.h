@@ -17,36 +17,58 @@
 /*
  * error.c
  */
-void fatal(int code, ...) NORETURN;
-void error(int code, ...);
-enum {
-    err_nomemory,		       /* no arguments */
-    err_optnoarg,		       /* option `-%s' requires an argument */
-    err_nosuchopt,		       /* unrecognised option `-%s' */
-    err_eventtype,		       /* unrecognised event type `%s' */
-    err_extraarg,		       /* unexpected additional argument */
-    err_addargno,		       /* `add' requires 1-4 args */
-    err_listargno,		       /* `list' requires 0-2 args */
-    err_cronargno,		       /* `cron' requires 2 args */
-    err_dumpargno,		       /* `dump' requires no args */
-    err_loadargno,		       /* `load' requires 0-1 args */
-    err_infoargno,		       /* `info' requires 1 arg */
-    err_editargno,		       /* `edit' requires 1 arg */
-    err_delargno,		       /* `delete' requires 1 arg */
-    err_loadfmt,		       /* error parsing dump file */
-    err_date,		               /* unable to parse date `%s' */
-    err_time,		               /* unable to parse time `%s' */
-    err_datetime,		       /* unable to parse date+time `%s' */
-    err_duration,		       /* unable to parse duration `%s' */
-    err_nodb,		               /* db doesn't exist, try --init */
-    err_dbexists,		       /* db _does_ exist, danger for --init */
-    err_noopendb,		       /* unable to open db */
-    err_dberror,		       /* generic db error */
-    err_dbconsist,		       /* db consistency error */
-    err_dbfull,			       /* db out of entry IDs */
-    err_cronpipe,		       /* error opening pipe for -C */
-    err_idnotfound,		       /* no entry with id %d exists in db */
-};
+/* out of memory */
+void fatalerr_nomemory(void) NORETURN;
+/* option `-%s' requires an argument */
+void err_optnoarg(const char *sp);
+/* unrecognised option `-%s' */
+void err_nosuchopt(const char *sp);
+/* unrecognised event type `%s' */
+void fatalerr_eventtype(const char *sp) NORETURN;
+/* unexpected additional argument */
+void fatalerr_extraarg(const char *sp) NORETURN;
+/* `add' requires 1-4 args */
+void fatalerr_addargno(void) NORETURN;
+/* `list' requires 0-2 args */
+void fatalerr_listargno(void) NORETURN;
+/* `cron' requires 2 args */
+void fatalerr_cronargno(void) NORETURN;
+/* `dump' requires no args */
+void fatalerr_dumpargno(void) NORETURN;
+/* `load' requires 0-1 args */
+void fatalerr_loadargno(void) NORETURN;
+/* `info' requires 1 arg */
+void fatalerr_infoargno(void) NORETURN;
+/* `edit' requires 1 arg */
+void fatalerr_editargno(void) NORETURN;
+/* `delete' requires 1 arg */
+void fatalerr_delargno(void) NORETURN;
+/* error parsing dump file */
+void fatalerr_loadfmt(void) NORETURN;
+/* unable to parse date `%s' */
+void fatalerr_date(const char *sp) NORETURN;
+/* unable to parse time `%s' */
+void fatalerr_time(const char *sp) NORETURN;
+/* unable to parse date+time `%s' */
+void fatalerr_datetime(const char *sp) NORETURN;
+/* unable to parse duration `%s' */
+void fatalerr_duration(const char *sp) NORETURN;
+/* db doesn't exist, try --init */
+void fatalerr_nodb(void) NORETURN;
+/* db _does_ exist, danger for --init */
+void fatalerr_dbexists(void) NORETURN;
+/* unable to open db */
+void fatalerr_noopendb(const char *sp) NORETURN;
+/* generic db error */
+void fatalerr_dberror(const char *sp) NORETURN;
+/* db out of entry IDs */
+void fatalerr_dbfull(void) NORETURN;
+/* db consistency error */
+void fatalerr_dbconsist(const char *sp) NORETURN;
+/* error opening pipe for -C */
+void fatalerr_cronpipe(void) NORETURN;
+/* no entry with id %d exists in db */
+void fatalerr_idnotfound(int i) NORETURN;
 
 typedef long Date;
 typedef long Time;
