@@ -36,23 +36,23 @@ void fatalerr_nomemory(void)
 
 void err_optnoarg(const char *sp)
 {
-    do_error("option `-%.200s' requires an argument", sp);
+    do_error("option `-%s' requires an argument", sp);
 }
 
 void err_nosuchopt(const char *sp)
 {
-    do_error("unrecognised option `-%.200s'", sp);
+    do_error("unrecognised option `-%s'", sp);
 }
 
 void fatalerr_eventtype(const char *sp)
 {
-    do_error("unrecognised event type `%.200s'", sp);
+    do_error("unrecognised event type `%s'", sp);
     do_fatal();
 }
 
 void fatalerr_extraarg(const char *sp)
 {
-    do_error("unexpected additional argument `%.200s'", sp);
+    do_error("unexpected additional argument `%s'", sp);
     do_fatal();
 }
 
@@ -112,50 +112,50 @@ void fatalerr_loadfmt(void)
 
 void fatalerr_date(const char *sp)
 {
-    do_error("unable to parse date `%.200s'", sp);
+    do_error("unable to parse date `%s'", sp);
     do_fatal();
 }
 
 void fatalerr_time(const char *sp)
 {
-    do_error("unable to parse time `%.200s'", sp);
+    do_error("unable to parse time `%s'", sp);
     do_fatal();
 }
 
 void fatalerr_datetime(const char *sp)
 {
-    do_error("unable to parse date and time `%.200s'", sp);
+    do_error("unable to parse date and time `%s'", sp);
     do_fatal();
 }
 
 void fatalerr_duration(const char *sp)
 {
-    do_error("unable to parse duration `%.200s'", sp);
+    do_error("unable to parse duration `%s'", sp);
     do_fatal();
 }
 
 void fatalerr_nodb(void)
 {
-    do_error("database `%.200s' does not exist; try `caltrap --init'", dbpath);
+    do_error("database `%s' does not exist; try `caltrap --init'", dbpath);
     do_fatal();
 }
 
 void fatalerr_dbexists(void)
 {
-    do_error("database `%.200s' already exists;"
+    do_error("database `%s' already exists;"
              " remove it before trying again", dbpath);
     do_fatal();
 }
 
 void fatalerr_noopendb(const char *sp)
 {
-    do_error("unable to open database `%.200s': %.200s", dbpath, sp);
+    do_error("unable to open database `%s': %s", dbpath, sp);
     do_fatal();
 }
 
 void fatalerr_dberror(const char *sp)
 {
-    do_error("database error: %.200s", sp);
+    do_error("database error: %s", sp);
     do_fatal();
 }
 
@@ -167,13 +167,13 @@ void fatalerr_dbfull(void)
 
 void fatalerr_dbconsist(const char *sp)
 {
-    do_error("database consistency check failed: %.200s", sp);
+    do_error("database consistency check failed: %s", sp);
     do_fatal();
 }
 
 void fatalerr_cronpipe(void)
 {
-    do_error("error opening pipe: %.200s", strerror(errno));
+    do_error("error opening pipe: %s", strerror(errno));
     do_fatal();
 }
 
