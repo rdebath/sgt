@@ -17,7 +17,7 @@ sub dopoly($) {
     chomp($desc = `cat ${name}.desc`);
     $img = &doimage($name); # HACK HACK HACK: sets globals $x and $y
     return "<span class=\"polyhedron\" width=\"$x\" height=\"$y\" ".
-      "data=\"$desc\">\n" .
+      "data-polyhedron=\"$desc\">\n" .
       "$img\n" .
       "</span>";
 }

@@ -518,7 +518,7 @@ function initCanvasPolyhedra() {
 	    continue;
 	canvas.setAttribute('width', span.getAttribute('width'));
 	canvas.setAttribute('height', span.getAttribute('height'));
-	var data = span.getAttribute("data");
+	var data = span.getAttribute("data-polyhedron");
 	span.parentNode.replaceChild(canvas, span);
 	var poly;
 	//if (data == null || data == undefined)
