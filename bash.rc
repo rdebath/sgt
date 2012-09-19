@@ -902,3 +902,10 @@ Histdel() {
 }
 
 #}}}
+#{{{ terminal-footling command 'tplay'
+
+tplay() {
+  (stty raw isig -echo; cat; stty sane)
+}
+
+#}}}
