@@ -33,8 +33,9 @@
 
 Config cfg;
 #define BUFLIMIT 16384
-enum { LOG_NONE, LOG_DIALOGUE, LOG_FILES };
+enum { LOG_NONE, LOG_DIALOGUE, LOG_FILES, LOG_PIPE };
 int logmode = LOG_NONE;
+char *pipecmd = NULL;
 int cindex = 0;
 
 /* ----------------------------------------------------------------------
@@ -124,7 +125,7 @@ static int socks_receive(Plug plug, int urgent, char *data, int len)
 	    pl -= thislen;
 	}
 	fflush(stdout);
-    } else if (logmode == LOG_FILES) {
+    } else if (logmode == LOG_FILES || logmode == LOG_PIPE) {
 	if (c->infp)
 	    fwrite(data, 1, len, c->infp);
     }
@@ -193,6 +194,16 @@ void ssh_send_port_open(void *vc, char *hostname, int port, char *org)
 	sprintf(fname, "sockout.%d", fileindex);
 	c->outfp = fopen(fname, "wb");
 	fileindex++;
+    } else if (logmode == LOG_PIPE) {
+	static int fileindex = 0;
+	char *command;
+	command = dupprintf("%s in %d", pipecmd, fileindex);
+	c->infp = popen(command, "w");
+	sfree(command);
+	command = dupprintf("%s out %d", pipecmd, fileindex);
+	c->outfp = popen(command, "w");
+	sfree(command);
+	fileindex++;
     }
     if ((err = sk_socket_error(c->s)) != NULL) {
 	return;			       /* FIXME: what do we do here? */
@@ -211,6 +222,11 @@ void sshfwd_close(struct ssh_channel *c)
 	    fclose(c->infp);
 	if (c->outfp)
 	    fclose(c->outfp);
+    } else if (logmode == LOG_PIPE) {
+	if (c->infp)
+	    pclose(c->infp);
+	if (c->outfp)
+	    pclose(c->outfp);
     }
     sk_close(c->s);
     sfree(c->host);
@@ -236,7 +252,7 @@ int sshfwd_write(struct ssh_channel *c, char *buf, int len)
 	    pl -= thislen;
 	}
 	fflush(stdout);
-    } else if (logmode == LOG_FILES) {
+    } else if (logmode == LOG_FILES || logmode == LOG_PIPE) {
 	if (c->outfp)
 	    fwrite(buf, 1, len, c->outfp);
     }
@@ -319,6 +335,14 @@ int main(int argc, char **argv)
 		logmode = LOG_DIALOGUE;
 	    } else if (!strcmp(p, "-f")) {
 		logmode = LOG_FILES;
+	    } else if (!strcmp(p, "-p")) {
+		logmode = LOG_PIPE;
+		if (--argc > 0) {
+		    pipecmd = *++argv;
+		} else {
+		    fprintf(stderr, "expected an argument to '-p'\n");
+		    return 1;
+		}
 	    } else if (!strcmp(p, "-g")) {
 		cfg.lport_acceptall = TRUE;
 	    }
