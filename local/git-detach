@@ -27,6 +27,12 @@ if (defined $ARGV[0]) {
             $dir =~ s/'/'\\''/g;
             @ssh_cmd = ("ssh", $host, "cd '$dir' && $detach_cmd");
             $remote_cmd = (join " ", map { s/'/'\\''/g; "'$_'" } @ssh_cmd);
+        } elsif ($remote_url =~ m!^([^/]*):(/.*)$!) {
+            $host = $1;
+            $dir = $2;
+            $dir =~ s/'/'\\''/g;
+            @ssh_cmd = ("ssh", $host, "cd '$dir' && $detach_cmd");
+            $remote_cmd = (join " ", map { s/'/'\\''/g; "'$_'" } @ssh_cmd);
         } elsif ($remote_url =~ m!(/.*)$!) {
             chdir $remote_url or die "git-detach: unable to change directory to '$remote_url': $!\n";
             $remote_cmd = $detach_cmd;
