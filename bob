@@ -238,6 +238,9 @@ try:
 	log.logmsg("Removing work directory %s" % cfg.workpath)
 	misc.rm_rf(cfg.workpath)
 
+    # Last-minute useful information: log $(revision).
+    log.logmsg("Final value of $(revision) was %s" % lexer.get_multicharvar('revision'))
+
     # And close the log file.
     log.logmsg("Build completed at " +
     time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())))
