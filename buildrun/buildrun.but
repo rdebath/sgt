@@ -136,7 +136,7 @@ behaviour which \cw{buildrun} relies on. Using a directory in
 Of course, instances of \cw{buildrun} using different control
 directories will be completely independent of each other. So you can
 simultaneously run two or more pairs of commands each linked by their
-own pair of \cw{buildrun}s, and as long as each pair has a separaet
+own pair of \cw{buildrun}s, and as long as each pair has a separate
 control directory, they won't interfere with each other.
 
 }
@@ -154,15 +154,15 @@ shell, e.g.
 
 \lcont{
 
-\c buildrun -w sh -c '(cmd1; cmd2 | cmd3) > outfile'
-\e bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+\c buildrun -w /tmp/ctldir sh -c '(cmd1; cmd2 | cmd3) > outfile'
+\e bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
 
 In \cw{buildrun -r} mode, an alternative to doing that is simply not
 to provide a command at all, and instead tell your shell to run a
 complex command \e{after} \cw{buildrun}, e.g.
 
-\c buildrun -r && (cmd1; cmd2 | cmd3) > outfile
-\e bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+\c buildrun -r /tmp/ctldir && (cmd1; cmd2 | cmd3) > outfile
+\e bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
 
 (This alternative is not available with \cw{buildrun -w}, since that
 has to run its command as a subprocess so that it can wait for it to
