@@ -10,14 +10,14 @@ BUILDDIR = build
 PREFIX = arm-linux-#
 endif
 
-IMAGEINDICES = $(shell i=1; while test $$i -le 101; do printf %03d\\n $$i; i=$$[1+i]; done)
+IMAGEINDICES = $(shell i=1; while test $$i -le 115; do printf %03d\\n $$i; i=$$[1+i]; done)
 PNGS = $(patsubst %,$(BUILDDIR)/image%.png,$(IMAGEINDICES))
 SPRITES = $(patsubst %,$(BUILDDIR)/image%.spr,$(IMAGEINDICES))
 SPRITEOBJS = $(patsubst %,$(BUILDDIR)/image%.o,$(IMAGEINDICES))
 SPRITESRCS = $(patsubst %,$(BUILDDIR)/image%.c,$(IMAGEINDICES))
 MODULES = tring almsnd display gconsts $(PLATFORMMODULE)
 
-IMAGEINDICES = $(shell bash -c 'i=1; while test $$i -le 101; do printf %03d\\n $$i; i=$$[1+i]; done')
+IMAGEINDICES = $(shell bash -c 'i=1; while test $$i -le 115; do printf %03d\\n $$i; i=$$[1+i]; done')
 PNGS = $(patsubst %,$(BUILDDIR)/image%.png,$(IMAGEINDICES))
 SPRITES = $(patsubst %,$(BUILDDIR)/image%.spr,$(IMAGEINDICES))
 SPRITEOBJS = $(patsubst %,$(BUILDDIR)/image%.o,$(IMAGEINDICES))

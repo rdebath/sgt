@@ -38,7 +38,9 @@ extern const struct sprite image081, image082, image083, image084, image085;
 extern const struct sprite image086, image087, image088, image089, image090;
 extern const struct sprite image091, image092, image093, image094, image095;
 extern const struct sprite image096, image097, image098, image099, image100;
-extern const struct sprite image101;
+extern const struct sprite image101, image102, image103, image104, image105;
+extern const struct sprite image106, image107, image108, image109, image110;
+extern const struct sprite image111, image112, image113, image114, image115;
 
 static const struct sprite *const sprites[] = {
     &image001,
@@ -142,6 +144,20 @@ static const struct sprite *const sprites[] = {
     &image099,
     &image100,
     &image101,
+    &image102,
+    &image103,
+    &image104,
+    &image105,
+    &image106,
+    &image107,
+    &image108,
+    &image109,
+    &image110,
+    &image111,
+    &image112,
+    &image113,
+    &image114,
+    &image115,
 };
 
 enum {
@@ -163,6 +179,13 @@ enum {
     ONDAY_BUTTON_FRIDAY,
     ONDAY_BUTTON_SATURDAY,
     ONDAY_BUTTON_SUNDAY,
+    ACTIVE_CONFIG_BUTTON_MONDAY,
+    ACTIVE_CONFIG_BUTTON_TUESDAY,
+    ACTIVE_CONFIG_BUTTON_WEDNESDAY,
+    ACTIVE_CONFIG_BUTTON_THURSDAY,
+    ACTIVE_CONFIG_BUTTON_FRIDAY,
+    ACTIVE_CONFIG_BUTTON_SATURDAY,
+    ACTIVE_CONFIG_BUTTON_SUNDAY,
     ACTIVE_BUTTON_SNOOZE,
     ACTIVE_BUTTON_SETUP,
     ACTIVE_BUTTON_SHUT_UP,
@@ -181,6 +204,13 @@ enum {
     OFFDAY_BUTTON_FRIDAY,
     OFFDAY_BUTTON_SATURDAY,
     OFFDAY_BUTTON_SUNDAY,
+    CONFIG_BUTTON_MONDAY,
+    CONFIG_BUTTON_TUESDAY,
+    CONFIG_BUTTON_WEDNESDAY,
+    CONFIG_BUTTON_THURSDAY,
+    CONFIG_BUTTON_FRIDAY,
+    CONFIG_BUTTON_SATURDAY,
+    CONFIG_BUTTON_SUNDAY,
     TIME_FIXED,			       /* colon in main time display */
     TIME_HM_0,
     TIME_HM_1,
@@ -332,7 +362,7 @@ int *editable_value(const struct pstate *ps, const struct lstate *ls,
 	wrap = 0;
 	break;
       case DMODE_SETDEFALARM:
-	ret = &ps->defalarmtime;
+	ret = &ls->configuring_time;
 	btn = ACTIVE_BUTTON_ALARM_TIME;
 	wrap = 1;
 	break;
@@ -554,6 +584,21 @@ int display_update(int timeofday, int dayofweek, int date,
 	 * In setup modes, display is always bright.
 	 */
 	dispdim = 0;
+        /*
+         * In default-alarm-time setting mode, we also display the
+         * day buttons at the bottom of the display, indicating which
+         * days we're currently configuring.
+         */
+        if (ls->dmode == DMODE_SETDEFALARM) {
+            for (i = 0; i < 7; i++) {
+                if (ls->configuring_days & (1 << i))
+                    PUTBUTTON(CONFIG_BUTTON_MONDAY + i,
+                              ACTIVE_CONFIG_BUTTON_MONDAY + i);
+                else
+                    PUTBUTTON(CONFIG_BUTTON_MONDAY + i,
+                              CONFIG_BUTTON_MONDAY + i);
+            }
+        }
 	break;
 
       case DMODE_SETOFFDAYS:
@@ -742,30 +787,40 @@ int increment_date(int date)
 }
 
 /*
- * Set up the default amode for a given time of day. That's
- * AMODE_OFF most of the time, except that if we're between the
- * default reset time and the default alarm time and the next
- * alarm time does not occur on an off-day, it's AMODE_CONFIRM.
+ * Set up the default amode for a given time of day. That's AMODE_OFF
+ * most of the time, except that if we're between the default reset
+ * time and the next alarm time (and the next alarm time does not
+ * occur on an off-day), it's AMODE_CONFIRM.
  */
 void default_mode(int timeofday, int dayofweek, int date,
 		  struct pstate *ps, struct lstate *ls)
 {
-    int afterreset;
-    
+    int nextalarm, nextreset, nextenabled;
+    int nextday = (dayofweek + 1) % 7;
+
     ls->amode = AMODE_OFF;
 
-    afterreset = TIMEAFTER(timeofday, ps->resettime);
-    if (afterreset < TIMEAFTER(ps->defalarmtime, ps->resettime)) {
-	/*
-	 * When's the next alarm time? It might be today or
-	 * tomorrow.
-	 */
-	if (timeofday >= ps->defalarmtime) {
-	    dayofweek = (dayofweek+1) % 7;
-	    date = increment_date(date);
-	}
-	if ((ps->offdays & (1 << dayofweek)) && !day_excluded(date))
-	    ls->amode = AMODE_CONFIRM;
+    /*
+     * Work out the next alarm time and the next reset time, either of
+     * which might be today or tomorrow. Also, decide whether the
+     * alarm is an enabled one (which it might not be due to either an
+     * off-day or an exclusion).
+     */
+    nextreset = ps->resettime;
+    if (nextreset <= timeofday)
+        nextreset += 86400;
+
+    nextalarm = ps->defalarmtime[dayofweek];
+    nextenabled = ((ps->offdays & (1 << dayofweek)) &&
+                   !day_excluded(date));
+    if (nextalarm <= timeofday) {
+        nextalarm = ps->defalarmtime[nextday] + 86400;
+        nextenabled = ((ps->offdays & (1 << nextday)) &&
+                       !day_excluded(increment_date(date)));
+    }
+
+    if (nextenabled && nextalarm < nextreset) {
+        ls->amode = AMODE_CONFIRM;
     }
 
     ls->amode_default = 1;
@@ -788,9 +843,31 @@ void event_updated_excdata(int timeofday, int dayofweek, int date,
 	default_mode(timeofday, dayofweek, date, ps, ls);
 }
 
+void set_mode(struct pstate *ps, struct lstate *ls, int mode)
+{
+    int day;
+
+    /*
+     * Do finalisation on whatever mode we're leaving.
+     */
+    switch (ls->dmode) {
+      case DMODE_SETDEFALARM:
+        for (day = 0; day < 7; day++) {
+            if (ls->configuring_days & (1 << day))
+                ps->defalarmtime[day] = ls->configuring_time;
+        }
+        break;
+    }
+
+    /*
+     * Set the new mode.
+     */
+    ls->dmode = mode;
+}
+
 void event_timeout(struct pstate *ps, struct lstate *ls)
 {
-    ls->dmode = DMODE_NORMAL;
+    set_mode(ps, ls, DMODE_NORMAL);
     ls->saved_hours_digit = -1;
 }
 
@@ -826,7 +903,8 @@ int event_timetick(int lasttimeofday, int timeofday, int dayofweek, int date,
 	if (ls->dmode != DMODE_SETSNOOZE)
 	    ls->alarm_sounding = 1;
     } else if (ls->amode != AMODE_ON &&
-	       TICKEDPAST(lasttimeofday, timeofday, ps->defalarmtime)) {
+	       TICKEDPAST(lasttimeofday, timeofday,
+                          ps->defalarmtime[dayofweek])) {
 	default_mode(timeofday, dayofweek, date, ps, ls);
     }
 
@@ -859,21 +937,23 @@ void event_button(int button, int timeofday, int dayofweek, int date,
     switch (button) {
       case NORM_BUTTON_SNOOZE:
 	ls->alarm_sounding = 0;
-	ls->dmode = DMODE_SETSNOOZE;
+	set_mode(ps, ls, DMODE_SETSNOOZE);
 	ls->snooze_time = ps->snoozeperiod;
 	set_snooze(timeofday, ls);
 	ls->saved_hours_digit = -1;
 	break;
       case NORM_BUTTON_SETUP:
-	ls->dmode = DMODE_CONFIGURE;
+	set_mode(ps, ls, DMODE_CONFIGURE);
 	break;
       case NORM_BUTTON_SHUT_UP:
 	ls->alarm_sounding = 0;
 	default_mode(timeofday, dayofweek, date, ps, ls);
 	break;
       case NORM_BUTTON_ALARM_ON:
-	ls->dmode = DMODE_SETALARM;
-	ls->alarm_time = ps->defalarmtime;
+	set_mode(ps, ls, DMODE_SETALARM);
+	ls->alarm_time = ps->defalarmtime[dayofweek];
+        if (ls->alarm_time < timeofday)
+            ls->alarm_time = ps->defalarmtime[(dayofweek + 1) % 7];
 	ls->amode = AMODE_ON;
 	ls->amode_default = 0; 
 	ls->saved_hours_digit = -1;
@@ -888,22 +968,24 @@ void event_button(int button, int timeofday, int dayofweek, int date,
 	ls->recent_touch = 0;	       /* immediately darken the display */
 	break;
       case NORM_BUTTON_ALARM_TIME:
-	ls->dmode = DMODE_SETDEFALARM;
+	set_mode(ps, ls, DMODE_SETDEFALARM);
+        ls->configuring_days = (1 << 7) - 1;
+        ls->configuring_time = ps->defalarmtime[0]; /* no sensible default */
 	ls->saved_hours_digit = -1;
 	break;
       case NORM_BUTTON_BACK:
-	ls->dmode = DMODE_NORMAL;
+	set_mode(ps, ls, DMODE_NORMAL);
 	break;
       case NORM_BUTTON_RESET_TIME:
-	ls->dmode = DMODE_SETRESET;
+	set_mode(ps, ls, DMODE_SETRESET);
 	ls->saved_hours_digit = -1;
 	break;
       case NORM_BUTTON_SNOOZE_PERIOD:
-	ls->dmode = DMODE_SETDEFSNOOZE;
+	set_mode(ps, ls, DMODE_SETDEFSNOOZE);
 	ls->saved_hours_digit = -1;
 	break;
       case NORM_BUTTON_OFF_DAYS:
-	ls->dmode = DMODE_SETOFFDAYS;
+	set_mode(ps, ls, DMODE_SETOFFDAYS);
 	break;
       case NORM_ADJUST_H10_UP:
       case NORM_ADJUST_H1_UP:
@@ -978,6 +1060,15 @@ void event_button(int button, int timeofday, int dayofweek, int date,
       case OFFDAY_BUTTON_SATURDAY:
       case OFFDAY_BUTTON_SUNDAY:
 	ps->offdays ^= 1 << (button - OFFDAY_BUTTON_MONDAY);
+	break;
+      case CONFIG_BUTTON_MONDAY:
+      case CONFIG_BUTTON_TUESDAY:
+      case CONFIG_BUTTON_WEDNESDAY:
+      case CONFIG_BUTTON_THURSDAY:
+      case CONFIG_BUTTON_FRIDAY:
+      case CONFIG_BUTTON_SATURDAY:
+      case CONFIG_BUTTON_SUNDAY:
+	ls->configuring_days ^= 1 << (button - CONFIG_BUTTON_MONDAY);
 	break;
     }
 }
