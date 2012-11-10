@@ -8,6 +8,7 @@
 #include <math.h>
 #include <time.h>
 #include <signal.h>
+#include <stdint.h>
 
 #include <sys/time.h>
 #include <sys/types.h>
@@ -25,7 +26,6 @@ char *exception_url = NULL;
 char *settings_tmpfile = NULL;
 static struct pstate last_saved = { -1, -1, -1, -1 };
 
-/* Written by using objcopy to convert binary data into an object file. */
 extern const signed short alarmsound[];
 extern const size_t alarmsound_len;
 
