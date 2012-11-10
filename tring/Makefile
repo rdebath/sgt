@@ -71,6 +71,16 @@ $(SPRITEOBJS): $(BUILDDIR)/image%.o : $(BUILDDIR)/image%.c
 $(SPRITESRCS): $(BUILDDIR)/image%.c : $(BUILDDIR)/image%.spr
 	./mkarray.pl $< $(patsubst $(BUILDDIR)/image%.spr,image%,$<) > $@
 
+ifeq ($(GTK), yes)
+test: $(BUILDDIR)/unittests
+	$(BUILDDIR)/unittests
+$(BUILDDIR)/unittests: $(subst tring.o,unittests.o,$(OBJECTS))
+	gcc -o $@ $^ -lasound -lcurl $(LIBS)
+$(BUILDDIR)/unittests.o: unittests.c
+	$(PREFIX)gcc -MM $< | sed s:^:$(BUILDDIR)/: > $(basename $@).d
+	$(PREFIX)gcc -DBUILDDIR=$(BUILDDIR) $(CCFLAGS) -c -o $@ $<
+endif
+
 clean:
 	rm -f $(BUILDDIR)/*
 
