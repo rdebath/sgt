@@ -1,57 +1,77 @@
-MODULES = tring chumby almsnd display gconsts
+ifeq ($(GTK), yes)
+PLATFORMMODULE = gtk
+BUILDDIR = gtkbuild
+PREFIX =
+CCFLAGS = -g -O0 `pkg-config --cflags gtk+-2.0`
+LIBS = `pkg-config --libs gtk+-2.0`
+else
+PLATFORMMODULE = chumby
+BUILDDIR = build
+PREFIX = arm-linux-#
+endif
 
 IMAGEINDICES = $(shell i=1; while test $$i -le 101; do printf %03d\\n $$i; i=$$[1+i]; done)
-PNGS = $(patsubst %,build/image%.png,$(IMAGEINDICES))
-SPRITES = $(patsubst %,build/image%.spr,$(IMAGEINDICES))
-SPRITEOBJS = $(patsubst %,build/image%.o,$(IMAGEINDICES))
-SPRITESRCS = $(patsubst %,build/image%.c,$(IMAGEINDICES))
+PNGS = $(patsubst %,$(BUILDDIR)/image%.png,$(IMAGEINDICES))
+SPRITES = $(patsubst %,$(BUILDDIR)/image%.spr,$(IMAGEINDICES))
+SPRITEOBJS = $(patsubst %,$(BUILDDIR)/image%.o,$(IMAGEINDICES))
+SPRITESRCS = $(patsubst %,$(BUILDDIR)/image%.c,$(IMAGEINDICES))
+MODULES = tring almsnd display gconsts $(PLATFORMMODULE)
 
-OBJECTS = $(patsubst %,build/%.o,$(MODULES)) $(SPRITEOBJS)
+IMAGEINDICES = $(shell bash -c 'i=1; while test $$i -le 101; do printf %03d\\n $$i; i=$$[1+i]; done')
+PNGS = $(patsubst %,$(BUILDDIR)/image%.png,$(IMAGEINDICES))
+SPRITES = $(patsubst %,$(BUILDDIR)/image%.spr,$(IMAGEINDICES))
+SPRITEOBJS = $(patsubst %,$(BUILDDIR)/image%.o,$(IMAGEINDICES))
 
-build/tring: $(OBJECTS)
-	arm-linux-gcc -o $@ $(OBJECTS) -lasound -lcurl
+OBJECTS = $(patsubst %,$(BUILDDIR)/%.o,$(MODULES)) $(SPRITEOBJS)
 
-build/tring.o: tring.c
-	arm-linux-gcc -MM $< | sed s:^:build/: > $(basename $@).d
-	arm-linux-gcc -c -o $@ $<
+$(BUILDDIR)/tring: $(OBJECTS)
+	$(PREFIX)gcc -o $@ $(OBJECTS) -lasound -lcurl $(LIBS)
 
-build/chumby.o: chumby.c
-	arm-linux-gcc -MM $< | sed s:^:build/: > $(basename $@).d
-	arm-linux-gcc -c -o $@ $<
+$(BUILDDIR)/tring.o: tring.c
+	$(PREFIX)gcc -MM $< | sed s:^:$(BUILDDIR)/: > $(basename $@).d
+	$(PREFIX)gcc -DBUILDDIR=$(BUILDDIR) $(CCFLAGS) -c -o $@ $<
 
-build/display.o: display.c
-	arm-linux-gcc -MM $< | sed s:^:build/: > $(basename $@).d
-	arm-linux-gcc -c -o $@ $<
+$(BUILDDIR)/chumby.o: chumby.c
+	$(PREFIX)gcc -MM $< | sed s:^:$(BUILDDIR)/: > $(basename $@).d
+	$(PREFIX)gcc -DBUILDDIR=$(BUILDDIR) $(CCFLAGS) -c -o $@ $<
 
-build/gconsts.o: build/gconsts.c
-	arm-linux-gcc -MM $< | sed s:^:build/: > $(basename $@).d
-	arm-linux-gcc -c -o $@ $<
+$(BUILDDIR)/gtk.o: gtk.c
+	$(PREFIX)gcc -MM $< | sed s:^:$(BUILDDIR)/: > $(basename $@).d
+	$(PREFIX)gcc -DBUILDDIR=$(BUILDDIR) $(CCFLAGS) -c -o $@ $<
 
-build/almsnd.o: build/almsnd.c
-	arm-linux-gcc -c -o $@ $<
+$(BUILDDIR)/almsnd.o: $(BUILDDIR)/almsnd.c
+	$(PREFIX)gcc -c -o $@ $<
 
-build/almsnd.c: build/almsnd.dat mkarray.pl
+$(BUILDDIR)/almsnd.c: $(BUILDDIR)/almsnd.dat mkarray.pl
 	./mkarray.pl $< alarmsound > $@
 
-build/almsnd.dat: build/genalarm
+$(BUILDDIR)/display.o: display.c
+	$(PREFIX)gcc -MM $< | sed s:^:$(BUILDDIR)/: > $(basename $@).d
+	$(PREFIX)gcc -DBUILDDIR=$(BUILDDIR) $(CCFLAGS) -c -o $@ $<
+
+$(BUILDDIR)/gconsts.o: $(BUILDDIR)/gconsts.c
+	$(PREFIX)gcc -MM $< | sed s:^:$(BUILDDIR)/: > $(basename $@).d
+	$(PREFIX)gcc -DBUILDDIR=$(BUILDDIR) $(CCFLAGS) -c -o $@ $<
+
+$(BUILDDIR)/almsnd.dat: $(BUILDDIR)/genalarm
 	./$< > $@
 
-build/genalarm: genalarm.c
+$(BUILDDIR)/genalarm: genalarm.c
 	gcc --std=c99 -o $@ $< -lm
 
-build/gconsts.c $(PNGS): graphics.ps
-	gs -g960x720 -r216 -sDEVICE=png16m -sOutputFile=build/image%03d.png -q -dBATCH -dNOPAUSE graphics.ps > build/gconsts.c
+$(BUILDDIR)/gconsts.c $(PNGS): graphics.ps
+	gs -g960x720 -r216 -sDEVICE=png16m -sOutputFile=$(BUILDDIR)/image%03d.png -q -dBATCH -dNOPAUSE graphics.ps > $(BUILDDIR)/gconsts.c
 
-$(SPRITES): build/image%.spr : build/image%.png mksprite.pl
+$(SPRITES): $(BUILDDIR)/image%.spr : $(BUILDDIR)/image%.png mksprite.pl
 	convert -scale 320x240 -depth 8 $< rgb:- | ./mksprite.pl > $@
 
-$(SPRITEOBJS): build/image%.o : build/image%.c
-	arm-linux-gcc -c -o $@ $<
+$(SPRITEOBJS): $(BUILDDIR)/image%.o : $(BUILDDIR)/image%.c
+	$(PREFIX)gcc -c -o $@ $<
 
-$(SPRITESRCS): build/image%.c : build/image%.spr
-	./mkarray.pl $< $(patsubst build/image%.spr,image%,$<) > $@
+$(SPRITESRCS): $(BUILDDIR)/image%.c : $(BUILDDIR)/image%.spr
+	./mkarray.pl $< $(patsubst $(BUILDDIR)/image%.spr,image%,$<) > $@
 
 clean:
-	rm -f build/*
+	rm -f $(BUILDDIR)/*
 
--include build/*.d
+-include $(BUILDDIR)/*.d

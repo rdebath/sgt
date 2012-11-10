@@ -110,6 +110,7 @@ void generate_alarm_sound(void)
 int main(void)
 {
     int i;
+    FILE *fp;
 
     generate_alarm_sound();
 
@@ -121,8 +122,7 @@ int main(void)
     /*
      * Diagnostic output as a .wav.
      */
-    {
-	FILE *fp = fopen("build/almsnd.wav", "wb");
+    if ((fp = fopen("build/almsnd.wav", "wb")) != NULL) {
 	char header[256], *p = header;
 	int j;
 
