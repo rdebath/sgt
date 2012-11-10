@@ -92,7 +92,7 @@ static const signed short *sound_playing;
 int sound_length, sound_offset;
 
 struct pollfd *pollfds;
-int npollfds_nonaudio, npollfds_audio, npollfds_both;
+int npollfds_nonaudio, npollfds_audio, npollfds_both, npollfds_curraudio;
 
 void drivers_init(void)
 {
@@ -195,6 +195,7 @@ void drivers_init(void)
     }
     pollfds[0].fd = touchscreen_fd;
     pollfds[0].events = POLLIN;
+    npollfds_curraudio = 0;
 }
 
 void update_display(int x, int y, int w, int h, pixelfn_t pix, void *ctx)
@@ -268,6 +269,7 @@ void play_sound(const signed short *samples, int nsamples, int samplerate)
 	fprintf(stderr, "snd_pcm_poll_descriptors: %s\n", snd_strerror(err));
 	return;
     }
+    npollfds_curraudio = err;
 
     snd_pcm_start(pcm);
 }
@@ -277,10 +279,9 @@ int get_event(int msec, int *x, int *y)
     int ret;
     int nfds;
 
+    nfds = npollfds_nonaudio;
     if (sound_playing)
-	nfds = npollfds_both;
-    else
-	nfds = npollfds_nonaudio;
+	nfds += npollfds_curraudio;
 
     do {
 	ret = poll(pollfds, nfds, msec);
@@ -299,7 +300,7 @@ int get_event(int msec, int *x, int *y)
 	int err;
 
 	err = snd_pcm_poll_descriptors_revents
-	    (pcm, pollfds + npollfds_nonaudio, npollfds_audio, &revents);
+	    (pcm, pollfds + npollfds_nonaudio, npollfds_curraudio, &revents);
 	if (err < 0) {
 	    fprintf(stderr, "snd_pcm_poll_descriptors_revents: %s\n",
 		    snd_strerror(err));
