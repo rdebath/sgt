@@ -30,9 +30,11 @@ int get_event(int msec, int *x, int *y);
  * offdays is a 7-bit mask, with 1=Monday and 64=Sunday. A set bit
  * indicates a potential alarm on that day; a clear bit indicates
  * the alarm is disabled.
+ *
+ * defalarmtime is a 7-element array, with 0=Monday and 6=Sunday.
  */
 struct pstate {
-    int defalarmtime;
+    int defalarmtime[7];
     int resettime;
     int snoozeperiod;
     int offdays;
@@ -65,6 +67,7 @@ struct lstate {
     int pressed_button_id;
     int saved_hours_digit;
     int network_fault;
+    int configuring_days, configuring_time;
 };
 
 #define TIMEOFDAY(h,m,s) (((h)*60+(m))*60+(s))
@@ -81,7 +84,7 @@ struct button {
     int x, y, w, h;
     int id;
 };
-#define MAXBUTTONS 16
+#define MAXBUTTONS 32
 int display_update(int timeofday, int dayofweek, int date,
 		   const struct pstate *ps, const struct lstate *ls,
 		   struct button *buttons);

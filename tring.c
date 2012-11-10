@@ -24,7 +24,7 @@ char *settings_file = NULL;
 char *exception_url = NULL;
 
 char *settings_tmpfile = NULL;
-static struct pstate last_saved = { -1, -1, -1, -1 };
+static struct pstate last_saved = { {-1,-1,-1,-1,-1,-1,-1}, -1, -1, -1 };
 
 extern const signed short alarmsound[];
 extern const size_t alarmsound_len;
@@ -64,6 +64,7 @@ static void load_settings(struct pstate *ps)
 {
     FILE *fp;
     char buf[4096];
+    int day;
 
     if (!settings_file)
 	return;
@@ -75,8 +76,15 @@ static void load_settings(struct pstate *ps)
 	unsigned h, m, s;
 
 	if (sscanf(buf, "defalarmtime %u:%u:%u", &h, &m, &s) == 3) {
-	    ps->defalarmtime = ((h*60+m)*60+s) % 86400;
-	    last_saved.defalarmtime = ps->defalarmtime;
+            /* Legacy configuration format with only one default alarm time */
+            for (day = 0; day < 7; day++) {
+                ps->defalarmtime[day] = ((h*60+m)*60+s) % 86400;
+                last_saved.defalarmtime[day] = ps->defalarmtime[day];
+            }
+	} else if (sscanf(buf, "defalarmtime %d %u:%u:%u",
+                          &day, &h, &m, &s) == 4) {
+            ps->defalarmtime[day] = ((h*60+m)*60+s) % 86400;
+            last_saved.defalarmtime[day] = ps->defalarmtime[day];
 	} else if (sscanf(buf, "resettime %u:%u:%u", &h, &m, &s) == 3) {
 	    ps->resettime = ((h*60+m)*60+s) % 86400;
 	    last_saved.resettime = ps->resettime;
@@ -95,6 +103,7 @@ static void save_settings(struct pstate *ps)
 {
     char buf[4096];
     FILE *fp;
+    int day;
 
     if (!settings_file)
 	return;
@@ -102,11 +111,15 @@ static void save_settings(struct pstate *ps)
     /*
      * Don't save the same data we last saved.
      */
-    if (ps->defalarmtime == last_saved.defalarmtime &&
-	ps->resettime == last_saved.resettime &&
-	ps->snoozeperiod == last_saved.snoozeperiod &&
-	ps->offdays == last_saved.offdays)
-	return;
+    for (day = 0; day < 7; day++)
+        if (ps->defalarmtime[day] != last_saved.defalarmtime[day])
+            goto save;
+    if (ps->resettime != last_saved.resettime ||
+	ps->snoozeperiod != last_saved.snoozeperiod ||
+	ps->offdays != last_saved.offdays)
+	goto save;
+    return;
+  save:
 
     if (!settings_tmpfile) {
 	settings_tmpfile = malloc(10 + strlen(settings_file));
@@ -119,12 +132,14 @@ static void save_settings(struct pstate *ps)
     if (!fp)
 	return;
 
-    sprintf(buf, "defalarmtime %02d:%02d:%02d\n",
-	    ps->defalarmtime / 3600, ps->defalarmtime / 60 % 60,
-	    ps->defalarmtime % 60);
-    if (fputs(buf, fp) < 0) {
-	fclose(fp);
-	return;
+    for (day = 0; day < 7; day++) {
+        sprintf(buf, "defalarmtime %d %02d:%02d:%02d\n", day,
+                ps->defalarmtime[day] / 3600, ps->defalarmtime[day] / 60 % 60,
+                ps->defalarmtime[day] % 60);
+        if (fputs(buf, fp) < 0) {
+            fclose(fp);
+            return;
+        }
     }
 
     sprintf(buf, "resettime %02d:%02d:%02d\n",
@@ -288,7 +303,7 @@ int process_excdata(char *data)
 
 int main(int argc, char **argv)
 {
-    int tod, wd, date;
+    int tod, wd, date, day;
     struct pstate aps, *ps = &aps;
     struct lstate als, *ls = &als;
     struct button buttons[MAXBUTTONS];
@@ -342,7 +357,8 @@ int main(int argc, char **argv)
      * wouldn't be able to tell whether the load-from-config
      * function was working :-)
      */
-    ps->defalarmtime = TIMEOFDAY(7,59,59);
+    for (day = 0; day < 7; day++)
+        ps->defalarmtime[day] = TIMEOFDAY(7,59,59);
     ps->resettime = TIMEOFDAY(11,59,59);
     ps->snoozeperiod = TIMEOFDAY(0,8,59);
     ps->offdays = 0x7F;

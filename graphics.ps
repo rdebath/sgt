@@ -114,6 +114,13 @@ height timeheight sub 2 div 2 index sub /ytime exch def 3{pop}repeat
 (F) 9 14 div 0.5 offdaybuttondef
 (S) 11 14 div 0.5 offdaybuttondef
 (S) 13 14 div 0.5 offdaybuttondef
+(M) 1 14 div 0 offdaybuttondef
+(T) 3 14 div 0 offdaybuttondef
+(W) 5 14 div 0 offdaybuttondef
+(T) 7 14 div 0 offdaybuttondef
+(F) 9 14 div 0 offdaybuttondef
+(S) 11 14 div 0 offdaybuttondef
+(S) 13 14 div 0 offdaybuttondef
 ] def
 
 % Compute where the adjustment arrows are going to be.
@@ -167,8 +174,8 @@ buttons 0 11 getinterval {
   showpage
 } forall
 
-% Draw unlit versions of off-day buttons.
-buttons 11 7 getinterval {
+% Draw unlit versions of off-day and configuring-day buttons.
+buttons 11 14 getinterval {
   aload pop /font exch def /texty exch def /textx exch def /t exch def
   /r exch def /b exch def /l exch def /str exch def
   newpath l b moveto l t lineto r t lineto r b lineto closepath
