@@ -26,9 +26,8 @@ char *settings_tmpfile = NULL;
 static struct pstate last_saved = { -1, -1, -1, -1 };
 
 /* Written by using objcopy to convert binary data into an object file. */
-extern const signed short _binary_build_almsnd_dat_start[];
-extern const char _binary_build_almsnd_dat_size;
-#define almsnd_len ((int)&_binary_build_almsnd_dat_size)
+extern const signed short alarmsound[];
+extern const size_t alarmsound_len;
 
 static void gettime(int *timeofday, int *dayofweek, int *date, int *mstonext)
 {
@@ -475,8 +474,8 @@ int main(int argc, char **argv)
 	if (ltod != tod) {
 	    int ret = event_timetick(ltod, tod, wd, date, ps, ls);
 	    if (ls->alarm_sounding) {
-		play_sound(_binary_build_almsnd_dat_start,
-			   almsnd_len / sizeof(signed short), 44100);
+		play_sound(alarmsound,
+                           alarmsound_len / sizeof(signed short), 44100);
 	    }
 	    if ((ret & GET_EXCEPTIONS))
 		start_excsubproc();
