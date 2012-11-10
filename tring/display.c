@@ -17,210 +17,130 @@ struct sprite {
     unsigned short pixels[0];
 };
 
-extern const struct sprite _binary_build_image001_spr_start;
-extern const struct sprite _binary_build_image002_spr_start;
-extern const struct sprite _binary_build_image003_spr_start;
-extern const struct sprite _binary_build_image004_spr_start;
-extern const struct sprite _binary_build_image005_spr_start;
-extern const struct sprite _binary_build_image006_spr_start;
-extern const struct sprite _binary_build_image007_spr_start;
-extern const struct sprite _binary_build_image008_spr_start;
-extern const struct sprite _binary_build_image009_spr_start;
-extern const struct sprite _binary_build_image010_spr_start;
-extern const struct sprite _binary_build_image011_spr_start;
-extern const struct sprite _binary_build_image012_spr_start;
-extern const struct sprite _binary_build_image013_spr_start;
-extern const struct sprite _binary_build_image014_spr_start;
-extern const struct sprite _binary_build_image015_spr_start;
-extern const struct sprite _binary_build_image016_spr_start;
-extern const struct sprite _binary_build_image017_spr_start;
-extern const struct sprite _binary_build_image018_spr_start;
-extern const struct sprite _binary_build_image019_spr_start;
-extern const struct sprite _binary_build_image020_spr_start;
-extern const struct sprite _binary_build_image021_spr_start;
-extern const struct sprite _binary_build_image022_spr_start;
-extern const struct sprite _binary_build_image023_spr_start;
-extern const struct sprite _binary_build_image024_spr_start;
-extern const struct sprite _binary_build_image025_spr_start;
-extern const struct sprite _binary_build_image026_spr_start;
-extern const struct sprite _binary_build_image027_spr_start;
-extern const struct sprite _binary_build_image028_spr_start;
-extern const struct sprite _binary_build_image029_spr_start;
-extern const struct sprite _binary_build_image030_spr_start;
-extern const struct sprite _binary_build_image031_spr_start;
-extern const struct sprite _binary_build_image032_spr_start;
-extern const struct sprite _binary_build_image033_spr_start;
-extern const struct sprite _binary_build_image034_spr_start;
-extern const struct sprite _binary_build_image035_spr_start;
-extern const struct sprite _binary_build_image036_spr_start;
-extern const struct sprite _binary_build_image037_spr_start;
-extern const struct sprite _binary_build_image038_spr_start;
-extern const struct sprite _binary_build_image039_spr_start;
-extern const struct sprite _binary_build_image040_spr_start;
-extern const struct sprite _binary_build_image041_spr_start;
-extern const struct sprite _binary_build_image042_spr_start;
-extern const struct sprite _binary_build_image043_spr_start;
-extern const struct sprite _binary_build_image044_spr_start;
-extern const struct sprite _binary_build_image045_spr_start;
-extern const struct sprite _binary_build_image046_spr_start;
-extern const struct sprite _binary_build_image047_spr_start;
-extern const struct sprite _binary_build_image048_spr_start;
-extern const struct sprite _binary_build_image049_spr_start;
-extern const struct sprite _binary_build_image050_spr_start;
-extern const struct sprite _binary_build_image051_spr_start;
-extern const struct sprite _binary_build_image052_spr_start;
-extern const struct sprite _binary_build_image053_spr_start;
-extern const struct sprite _binary_build_image054_spr_start;
-extern const struct sprite _binary_build_image055_spr_start;
-extern const struct sprite _binary_build_image056_spr_start;
-extern const struct sprite _binary_build_image057_spr_start;
-extern const struct sprite _binary_build_image058_spr_start;
-extern const struct sprite _binary_build_image059_spr_start;
-extern const struct sprite _binary_build_image060_spr_start;
-extern const struct sprite _binary_build_image061_spr_start;
-extern const struct sprite _binary_build_image062_spr_start;
-extern const struct sprite _binary_build_image063_spr_start;
-extern const struct sprite _binary_build_image064_spr_start;
-extern const struct sprite _binary_build_image065_spr_start;
-extern const struct sprite _binary_build_image066_spr_start;
-extern const struct sprite _binary_build_image067_spr_start;
-extern const struct sprite _binary_build_image068_spr_start;
-extern const struct sprite _binary_build_image069_spr_start;
-extern const struct sprite _binary_build_image070_spr_start;
-extern const struct sprite _binary_build_image071_spr_start;
-extern const struct sprite _binary_build_image072_spr_start;
-extern const struct sprite _binary_build_image073_spr_start;
-extern const struct sprite _binary_build_image074_spr_start;
-extern const struct sprite _binary_build_image075_spr_start;
-extern const struct sprite _binary_build_image076_spr_start;
-extern const struct sprite _binary_build_image077_spr_start;
-extern const struct sprite _binary_build_image078_spr_start;
-extern const struct sprite _binary_build_image079_spr_start;
-extern const struct sprite _binary_build_image080_spr_start;
-extern const struct sprite _binary_build_image081_spr_start;
-extern const struct sprite _binary_build_image082_spr_start;
-extern const struct sprite _binary_build_image083_spr_start;
-extern const struct sprite _binary_build_image084_spr_start;
-extern const struct sprite _binary_build_image085_spr_start;
-extern const struct sprite _binary_build_image086_spr_start;
-extern const struct sprite _binary_build_image087_spr_start;
-extern const struct sprite _binary_build_image088_spr_start;
-extern const struct sprite _binary_build_image089_spr_start;
-extern const struct sprite _binary_build_image090_spr_start;
-extern const struct sprite _binary_build_image091_spr_start;
-extern const struct sprite _binary_build_image092_spr_start;
-extern const struct sprite _binary_build_image093_spr_start;
-extern const struct sprite _binary_build_image094_spr_start;
-extern const struct sprite _binary_build_image095_spr_start;
-extern const struct sprite _binary_build_image096_spr_start;
-extern const struct sprite _binary_build_image097_spr_start;
-extern const struct sprite _binary_build_image098_spr_start;
-extern const struct sprite _binary_build_image099_spr_start;
-extern const struct sprite _binary_build_image100_spr_start;
-extern const struct sprite _binary_build_image101_spr_start;
+extern const struct sprite image001, image002, image003, image004, image005;
+extern const struct sprite image006, image007, image008, image009, image010;
+extern const struct sprite image011, image012, image013, image014, image015;
+extern const struct sprite image016, image017, image018, image019, image020;
+extern const struct sprite image021, image022, image023, image024, image025;
+extern const struct sprite image026, image027, image028, image029, image030;
+extern const struct sprite image031, image032, image033, image034, image035;
+extern const struct sprite image036, image037, image038, image039, image040;
+extern const struct sprite image041, image042, image043, image044, image045;
+extern const struct sprite image046, image047, image048, image049, image050;
+extern const struct sprite image051, image052, image053, image054, image055;
+extern const struct sprite image056, image057, image058, image059, image060;
+extern const struct sprite image061, image062, image063, image064, image065;
+extern const struct sprite image066, image067, image068, image069, image070;
+extern const struct sprite image071, image072, image073, image074, image075;
+extern const struct sprite image076, image077, image078, image079, image080;
+extern const struct sprite image081, image082, image083, image084, image085;
+extern const struct sprite image086, image087, image088, image089, image090;
+extern const struct sprite image091, image092, image093, image094, image095;
+extern const struct sprite image096, image097, image098, image099, image100;
+extern const struct sprite image101;
 
 static const struct sprite *const sprites[] = {
-    &_binary_build_image001_spr_start,
-    &_binary_build_image002_spr_start,
-    &_binary_build_image003_spr_start,
-    &_binary_build_image004_spr_start,
-    &_binary_build_image005_spr_start,
-    &_binary_build_image006_spr_start,
-    &_binary_build_image007_spr_start,
-    &_binary_build_image008_spr_start,
-    &_binary_build_image009_spr_start,
-    &_binary_build_image010_spr_start,
-    &_binary_build_image011_spr_start,
-    &_binary_build_image012_spr_start,
-    &_binary_build_image013_spr_start,
-    &_binary_build_image014_spr_start,
-    &_binary_build_image015_spr_start,
-    &_binary_build_image016_spr_start,
-    &_binary_build_image017_spr_start,
-    &_binary_build_image018_spr_start,
-    &_binary_build_image019_spr_start,
-    &_binary_build_image020_spr_start,
-    &_binary_build_image021_spr_start,
-    &_binary_build_image022_spr_start,
-    &_binary_build_image023_spr_start,
-    &_binary_build_image024_spr_start,
-    &_binary_build_image025_spr_start,
-    &_binary_build_image026_spr_start,
-    &_binary_build_image027_spr_start,
-    &_binary_build_image028_spr_start,
-    &_binary_build_image029_spr_start,
-    &_binary_build_image030_spr_start,
-    &_binary_build_image031_spr_start,
-    &_binary_build_image032_spr_start,
-    &_binary_build_image033_spr_start,
-    &_binary_build_image034_spr_start,
-    &_binary_build_image035_spr_start,
-    &_binary_build_image036_spr_start,
-    &_binary_build_image037_spr_start,
-    &_binary_build_image038_spr_start,
-    &_binary_build_image039_spr_start,
-    &_binary_build_image040_spr_start,
-    &_binary_build_image041_spr_start,
-    &_binary_build_image042_spr_start,
-    &_binary_build_image043_spr_start,
-    &_binary_build_image044_spr_start,
-    &_binary_build_image045_spr_start,
-    &_binary_build_image046_spr_start,
-    &_binary_build_image047_spr_start,
-    &_binary_build_image048_spr_start,
-    &_binary_build_image049_spr_start,
-    &_binary_build_image050_spr_start,
-    &_binary_build_image051_spr_start,
-    &_binary_build_image052_spr_start,
-    &_binary_build_image053_spr_start,
-    &_binary_build_image054_spr_start,
-    &_binary_build_image055_spr_start,
-    &_binary_build_image056_spr_start,
-    &_binary_build_image057_spr_start,
-    &_binary_build_image058_spr_start,
-    &_binary_build_image059_spr_start,
-    &_binary_build_image060_spr_start,
-    &_binary_build_image061_spr_start,
-    &_binary_build_image062_spr_start,
-    &_binary_build_image063_spr_start,
-    &_binary_build_image064_spr_start,
-    &_binary_build_image065_spr_start,
-    &_binary_build_image066_spr_start,
-    &_binary_build_image067_spr_start,
-    &_binary_build_image068_spr_start,
-    &_binary_build_image069_spr_start,
-    &_binary_build_image070_spr_start,
-    &_binary_build_image071_spr_start,
-    &_binary_build_image072_spr_start,
-    &_binary_build_image073_spr_start,
-    &_binary_build_image074_spr_start,
-    &_binary_build_image075_spr_start,
-    &_binary_build_image076_spr_start,
-    &_binary_build_image077_spr_start,
-    &_binary_build_image078_spr_start,
-    &_binary_build_image079_spr_start,
-    &_binary_build_image080_spr_start,
-    &_binary_build_image081_spr_start,
-    &_binary_build_image082_spr_start,
-    &_binary_build_image083_spr_start,
-    &_binary_build_image084_spr_start,
-    &_binary_build_image085_spr_start,
-    &_binary_build_image086_spr_start,
-    &_binary_build_image087_spr_start,
-    &_binary_build_image088_spr_start,
-    &_binary_build_image089_spr_start,
-    &_binary_build_image090_spr_start,
-    &_binary_build_image091_spr_start,
-    &_binary_build_image092_spr_start,
-    &_binary_build_image093_spr_start,
-    &_binary_build_image094_spr_start,
-    &_binary_build_image095_spr_start,
-    &_binary_build_image096_spr_start,
-    &_binary_build_image097_spr_start,
-    &_binary_build_image098_spr_start,
-    &_binary_build_image099_spr_start,
-    &_binary_build_image100_spr_start,
-    &_binary_build_image101_spr_start,
+    &image001,
+    &image002,
+    &image003,
+    &image004,
+    &image005,
+    &image006,
+    &image007,
+    &image008,
+    &image009,
+    &image010,
+    &image011,
+    &image012,
+    &image013,
+    &image014,
+    &image015,
+    &image016,
+    &image017,
+    &image018,
+    &image019,
+    &image020,
+    &image021,
+    &image022,
+    &image023,
+    &image024,
+    &image025,
+    &image026,
+    &image027,
+    &image028,
+    &image029,
+    &image030,
+    &image031,
+    &image032,
+    &image033,
+    &image034,
+    &image035,
+    &image036,
+    &image037,
+    &image038,
+    &image039,
+    &image040,
+    &image041,
+    &image042,
+    &image043,
+    &image044,
+    &image045,
+    &image046,
+    &image047,
+    &image048,
+    &image049,
+    &image050,
+    &image051,
+    &image052,
+    &image053,
+    &image054,
+    &image055,
+    &image056,
+    &image057,
+    &image058,
+    &image059,
+    &image060,
+    &image061,
+    &image062,
+    &image063,
+    &image064,
+    &image065,
+    &image066,
+    &image067,
+    &image068,
+    &image069,
+    &image070,
+    &image071,
+    &image072,
+    &image073,
+    &image074,
+    &image075,
+    &image076,
+    &image077,
+    &image078,
+    &image079,
+    &image080,
+    &image081,
+    &image082,
+    &image083,
+    &image084,
+    &image085,
+    &image086,
+    &image087,
+    &image088,
+    &image089,
+    &image090,
+    &image091,
+    &image092,
+    &image093,
+    &image094,
+    &image095,
+    &image096,
+    &image097,
+    &image098,
+    &image099,
+    &image100,
+    &image101,
 };
 
 enum {

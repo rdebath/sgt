@@ -4,6 +4,7 @@ IMAGEINDICES = $(shell i=1; while test $$i -le 101; do printf %03d\\n $$i; i=$$[
 PNGS = $(patsubst %,build/image%.png,$(IMAGEINDICES))
 SPRITES = $(patsubst %,build/image%.spr,$(IMAGEINDICES))
 SPRITEOBJS = $(patsubst %,build/image%.o,$(IMAGEINDICES))
+SPRITESRCS = $(patsubst %,build/image%.c,$(IMAGEINDICES))
 
 OBJECTS = $(patsubst %,build/%.o,$(MODULES)) $(SPRITEOBJS)
 
@@ -26,10 +27,11 @@ build/gconsts.o: build/gconsts.c
 	arm-linux-gcc -MM $< | sed s:^:build/: > $(basename $@).d
 	arm-linux-gcc -c -o $@ $<
 
-build/almsnd.o: build/almsnd.dat align.pl
-	arm-linux-objcopy -I binary $< \
-		--binary-architecture=arm -O elf32-littlearm $@
-	./align.pl $@
+build/almsnd.o: build/almsnd.c
+	arm-linux-gcc -c -o $@ $<
+
+build/almsnd.c: build/almsnd.dat mkarray.pl
+	./mkarray.pl $< alarmsound > $@
 
 build/almsnd.dat: build/genalarm
 	./$< > $@
@@ -43,10 +45,11 @@ build/gconsts.c $(PNGS): graphics.ps
 $(SPRITES): build/image%.spr : build/image%.png mksprite.pl
 	convert -scale 320x240 -depth 8 $< rgb:- | ./mksprite.pl > $@
 
-$(SPRITEOBJS): build/image%.o : build/image%.spr
-	arm-linux-objcopy -I binary $< \
-		--binary-architecture=arm -O elf32-littlearm $@
-	./align.pl $@
+$(SPRITEOBJS): build/image%.o : build/image%.c
+	arm-linux-gcc -c -o $@ $<
+
+$(SPRITESRCS): build/image%.c : build/image%.spr
+	./mkarray.pl $< $(patsubst build/image%.spr,image%,$<) > $@
 
 clean:
 	rm -f build/*
