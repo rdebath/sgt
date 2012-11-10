@@ -25,8 +25,16 @@ fi
 # the same HTTP request to www.chumby.com . DO NOT WANT.
 killall headphone_mgr
 
-/usr/chumby/scripts/sync_time.sh
-
+# We do time-sync our own way, since time.chumby.com seems to have
+# disappeared.
+TIMEIP=$(cat /mnt/usb/timeip)
+if test "x$TIMEIP" != "x"; then
+    (while :; do
+        rdate -s $TIMEIP 2>/dev/null
+        sleep 10
+        sleep $(expr \( \( 86400 + 10800 \) - \( $(date +%s) % 86400 \) % 86400 \))
+        done) &
+fi
 set --
 if test -f /mnt/usb/excurl; then
   set -- -u "`cat /mnt/usb/excurl`"
