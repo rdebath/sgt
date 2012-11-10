@@ -6,6 +6,7 @@
 #include <assert.h>
 #include <stddef.h>
 
+#define INTERNAL            /* check prototypes match the real ones */
 #include "tring.h"
 
 /*

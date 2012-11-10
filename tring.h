@@ -110,3 +110,11 @@ enum {
 extern int always_bright;
 
 int day_excluded(int date);
+
+#ifdef INTERNAL
+/*
+ * Functions used inside display.c and only exposed when doing unit tests.
+ */
+void default_mode(int timeofday, int dayofweek, int date,
+		  struct pstate *ps, struct lstate *ls);
+#endif /* INTERNAL */
