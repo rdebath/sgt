@@ -307,29 +307,31 @@ int get_event(int msec, int *x, int *y)
 	    sound_playing = NULL;
 	    sound_length = sound_offset = 0;
 	} else if (revents & POLLOUT) {
-	    /*
-	     * Do some sound output.
-	     */
-	    err = snd_pcm_writei(pcm, sound_playing + sound_offset,
-				 sound_length - sound_offset);
-	    if (err < 0) {
-		fprintf(stderr, "snd_pcm_writei: %s\n",
-			snd_strerror(err));
-		sound_playing = NULL;
-		sound_length = sound_offset = 0;
-	    } else {
-		sound_offset += err;
-		if (sound_offset == sound_length) {
-		    sound_playing = NULL;
-		    sound_offset = 0;
-		    sound_length = 0;
-		    /*
-		     * We could return an event here indicating
-		     * that we had successfully completed playing
-		     * a sound.
-		     */
-		}
-	    }
+            if (sound_offset == sound_length) {
+                snd_pcm_drain(pcm);
+                sound_playing = NULL;
+                sound_offset = 0;
+                sound_length = 0;
+                /*
+                 * We could return an event here indicating
+                 * that we had successfully completed playing
+                 * a sound.
+                 */
+            } else {
+                /*
+                 * Do some sound output.
+                 */
+                err = snd_pcm_writei(pcm, sound_playing + sound_offset,
+                                     sound_length - sound_offset);
+                if (err < 0) {
+                    fprintf(stderr, "snd_pcm_writei: %s\n",
+                            snd_strerror(err));
+                    sound_playing = NULL;
+                    sound_length = sound_offset = 0;
+                } else {
+                    sound_offset += err;
+                }
+            }
 	}
     }
 
