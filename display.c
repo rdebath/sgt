@@ -787,6 +787,17 @@ int increment_date(int date)
 }
 
 /*
+ * Retrieve the default alarm time for a given day, and optionally
+ * also whether the alarm is enabled on that day.
+ */
+int defalarmtime(struct pstate *ps, int dayofweek, int date, int *enabled)
+{
+    if (enabled)
+        *enabled = ((ps->offdays & (1 << dayofweek)) && !day_excluded(date));
+    return ps->defalarmtime[dayofweek];
+}
+
+/*
  * Set up the default amode for a given time of day. That's AMODE_OFF
  * most of the time, except that if we're between the default reset
  * time and the next alarm time (and the next alarm time does not
@@ -796,7 +807,6 @@ void default_mode(int timeofday, int dayofweek, int date,
 		  struct pstate *ps, struct lstate *ls)
 {
     int nextalarm, nextreset, nextenabled;
-    int nextday = (dayofweek + 1) % 7;
 
     ls->amode = AMODE_OFF;
 
@@ -810,14 +820,10 @@ void default_mode(int timeofday, int dayofweek, int date,
     if (nextreset <= timeofday)
         nextreset += 86400;
 
-    nextalarm = ps->defalarmtime[dayofweek];
-    nextenabled = ((ps->offdays & (1 << dayofweek)) &&
-                   !day_excluded(date));
-    if (nextalarm <= timeofday) {
-        nextalarm = ps->defalarmtime[nextday] + 86400;
-        nextenabled = ((ps->offdays & (1 << nextday)) &&
-                       !day_excluded(increment_date(date)));
-    }
+    nextalarm = defalarmtime(ps, dayofweek, date, &nextenabled);
+    if (nextalarm <= timeofday)
+        nextalarm = defalarmtime(ps, (dayofweek+1) % 7, date+1,
+                                 &nextenabled) + 86400;
 
     if (nextenabled && nextalarm < nextreset) {
         ls->amode = AMODE_CONFIRM;
@@ -904,7 +910,7 @@ int event_timetick(int lasttimeofday, int timeofday, int dayofweek, int date,
 	    ls->alarm_sounding = 1;
     } else if (ls->amode != AMODE_ON &&
 	       TICKEDPAST(lasttimeofday, timeofday,
-                          ps->defalarmtime[dayofweek])) {
+                          defalarmtime(ps, dayofweek, date, NULL))) {
 	default_mode(timeofday, dayofweek, date, ps, ls);
     }
 
@@ -951,9 +957,9 @@ void event_button(int button, int timeofday, int dayofweek, int date,
 	break;
       case NORM_BUTTON_ALARM_ON:
 	set_mode(ps, ls, DMODE_SETALARM);
-	ls->alarm_time = ps->defalarmtime[dayofweek];
+        ls->alarm_time = defalarmtime(ps, dayofweek, date, NULL);
         if (ls->alarm_time < timeofday)
-            ls->alarm_time = ps->defalarmtime[(dayofweek + 1) % 7];
+            ls->alarm_time = defalarmtime(ps, (dayofweek+1) % 7, date+1, NULL);
 	ls->amode = AMODE_ON;
 	ls->amode_default = 0; 
 	ls->saved_hours_digit = -1;
