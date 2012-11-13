@@ -6,9 +6,17 @@
 #define T(h,m,s) (((h)*60+(m))*60+(s))
 #define ALL(x) {x,x,x,x,x,x,x} /* all alarm times the same */
 
-int day_excluded(int date)
+void get_exception(int date, int *defalarmtime, int *enabled)
 {
-    return 0;
+    int i;
+
+    if (date == 20121116) {
+        *defalarmtime = T(14,0,0);
+        *enabled = 1;
+    } else if (date == 20121117) {
+        *defalarmtime = T(11,0,0);
+        *enabled = 0;        
+    }
 }
 int always_bright = 0;
 
@@ -417,6 +425,258 @@ int main(int argc, char **argv)
         TESTRESET(T(12,0,0), 4, AMODE_CONFIRM);
         TESTRESET(T(12,0,0), 5, AMODE_OFF); /* off-day follows */
         TESTRESET(T(12,0,0), 6, AMODE_OFF); /* another reset follows */
+#undef DEFMODE
+#undef TESTALARM
+#undef TESTRESET
+    }
+
+    /*
+     * Test the same confused configuration again, but with some of
+     * the days configured via exceptions.
+     */
+    {
+        const struct pstate cps = {
+            { T(22,0,0), T(8,0,0), T(21,0,0), T(9,0,0), T(0,30,0),
+              T(1,30,0), T(7,0,0) },
+            T(12,0,0), T(0,9,0), 47
+        };
+        const struct lstate cls = {
+            AMODE_OFF, 0, 0, 0, 0, 0, DMODE_NORMAL, 0, 0, 0, 0
+        };
+        struct pstate ps;
+        struct lstate ls;
+
+        /*
+         * Default modes at half past every hour through the week.
+         */
+#define DEFMODE(time, day, mode) do                             \
+        {                                                       \
+            ps = cps;                                           \
+            ls = cls;                                           \
+            default_mode(time, day, 20121112+day, &ps, &ls);    \
+            TEST(ls.amode == mode);                             \
+        } while (0)
+        DEFMODE(T( 0,30,0), 0, AMODE_OFF);
+        DEFMODE(T( 1,30,0), 0, AMODE_OFF);
+        DEFMODE(T( 2,30,0), 0, AMODE_OFF);
+        DEFMODE(T( 3,30,0), 0, AMODE_OFF);
+        DEFMODE(T( 4,30,0), 0, AMODE_OFF);
+        DEFMODE(T( 5,30,0), 0, AMODE_OFF);
+        DEFMODE(T( 6,30,0), 0, AMODE_OFF);
+        DEFMODE(T( 7,30,0), 0, AMODE_OFF);
+        DEFMODE(T( 8,30,0), 0, AMODE_OFF);
+        DEFMODE(T( 9,30,0), 0, AMODE_OFF);
+        DEFMODE(T(10,30,0), 0, AMODE_OFF);
+        DEFMODE(T(11,30,0), 0, AMODE_OFF);
+        /* ticked past reset time on Monday */
+        DEFMODE(T(12,30,0), 0, AMODE_CONFIRM);
+        DEFMODE(T(13,30,0), 0, AMODE_CONFIRM);
+        DEFMODE(T(14,30,0), 0, AMODE_CONFIRM);
+        DEFMODE(T(15,30,0), 0, AMODE_CONFIRM);
+        DEFMODE(T(16,30,0), 0, AMODE_CONFIRM);
+        DEFMODE(T(17,30,0), 0, AMODE_CONFIRM);
+        DEFMODE(T(18,30,0), 0, AMODE_CONFIRM);
+        DEFMODE(T(19,30,0), 0, AMODE_CONFIRM);
+        DEFMODE(T(20,30,0), 0, AMODE_CONFIRM);
+        DEFMODE(T(21,30,0), 0, AMODE_CONFIRM);
+        /* ticked past alarm time on Monday, but next alarm is before reset */
+        DEFMODE(T(22,30,0), 0, AMODE_CONFIRM);
+        DEFMODE(T(23,30,0), 0, AMODE_CONFIRM);
+        DEFMODE(T( 0,30,0), 1, AMODE_CONFIRM);
+        DEFMODE(T( 1,30,0), 1, AMODE_CONFIRM);
+        DEFMODE(T( 2,30,0), 1, AMODE_CONFIRM);
+        DEFMODE(T( 3,30,0), 1, AMODE_CONFIRM);
+        DEFMODE(T( 4,30,0), 1, AMODE_CONFIRM);
+        DEFMODE(T( 5,30,0), 1, AMODE_CONFIRM);
+        DEFMODE(T( 6,30,0), 1, AMODE_CONFIRM);
+        DEFMODE(T( 7,30,0), 1, AMODE_CONFIRM);
+        /* ticked past alarm time on Tuesday */
+        DEFMODE(T( 8,30,0), 1, AMODE_OFF);
+        DEFMODE(T( 9,30,0), 1, AMODE_OFF);
+        DEFMODE(T(10,30,0), 1, AMODE_OFF);
+        DEFMODE(T(11,30,0), 1, AMODE_OFF);
+        /* ticked past reset time on Tuesday, but next reset is before alarm */
+        DEFMODE(T(12,30,0), 1, AMODE_OFF);
+        DEFMODE(T(13,30,0), 1, AMODE_OFF);
+        DEFMODE(T(14,30,0), 1, AMODE_OFF);
+        DEFMODE(T(15,30,0), 1, AMODE_OFF);
+        DEFMODE(T(16,30,0), 1, AMODE_OFF);
+        DEFMODE(T(17,30,0), 1, AMODE_OFF);
+        DEFMODE(T(18,30,0), 1, AMODE_OFF);
+        DEFMODE(T(19,30,0), 1, AMODE_OFF);
+        DEFMODE(T(20,30,0), 1, AMODE_OFF);
+        DEFMODE(T(21,30,0), 1, AMODE_OFF);
+        DEFMODE(T(22,30,0), 1, AMODE_OFF);
+        DEFMODE(T(23,30,0), 1, AMODE_OFF);
+        DEFMODE(T( 0,30,0), 2, AMODE_OFF);
+        DEFMODE(T( 1,30,0), 2, AMODE_OFF);
+        DEFMODE(T( 2,30,0), 2, AMODE_OFF);
+        DEFMODE(T( 3,30,0), 2, AMODE_OFF);
+        DEFMODE(T( 4,30,0), 2, AMODE_OFF);
+        DEFMODE(T( 5,30,0), 2, AMODE_OFF);
+        DEFMODE(T( 6,30,0), 2, AMODE_OFF);
+        DEFMODE(T( 7,30,0), 2, AMODE_OFF);
+        DEFMODE(T( 8,30,0), 2, AMODE_OFF);
+        DEFMODE(T( 9,30,0), 2, AMODE_OFF);
+        DEFMODE(T(10,30,0), 2, AMODE_OFF);
+        DEFMODE(T(11,30,0), 2, AMODE_OFF);
+        /* ticked past reset time on Wednesday */
+        DEFMODE(T(12,30,0), 2, AMODE_CONFIRM);
+        DEFMODE(T(13,30,0), 2, AMODE_CONFIRM);
+        DEFMODE(T(14,30,0), 2, AMODE_CONFIRM);
+        DEFMODE(T(15,30,0), 2, AMODE_CONFIRM);
+        DEFMODE(T(16,30,0), 2, AMODE_CONFIRM);
+        DEFMODE(T(17,30,0), 2, AMODE_CONFIRM);
+        DEFMODE(T(18,30,0), 2, AMODE_CONFIRM);
+        DEFMODE(T(19,30,0), 2, AMODE_CONFIRM);
+        DEFMODE(T(20,30,0), 2, AMODE_CONFIRM);
+        /* ticked past alarm on Wednesday, but next alarm is before reset */
+        DEFMODE(T(21,30,0), 2, AMODE_CONFIRM);
+        DEFMODE(T(22,30,0), 2, AMODE_CONFIRM);
+        DEFMODE(T(23,30,0), 2, AMODE_CONFIRM);
+        DEFMODE(T( 0,30,0), 3, AMODE_CONFIRM);
+        DEFMODE(T( 1,30,0), 3, AMODE_CONFIRM);
+        DEFMODE(T( 2,30,0), 3, AMODE_CONFIRM);
+        DEFMODE(T( 3,30,0), 3, AMODE_CONFIRM);
+        DEFMODE(T( 4,30,0), 3, AMODE_CONFIRM);
+        DEFMODE(T( 5,30,0), 3, AMODE_CONFIRM);
+        DEFMODE(T( 6,30,0), 3, AMODE_CONFIRM);
+        DEFMODE(T( 7,30,0), 3, AMODE_CONFIRM);
+        DEFMODE(T( 8,30,0), 3, AMODE_CONFIRM);
+        /* ticked past alarm time on Thursday */
+        DEFMODE(T( 9,30,0), 3, AMODE_OFF);
+        DEFMODE(T(10,30,0), 3, AMODE_OFF);
+        DEFMODE(T(11,30,0), 3, AMODE_OFF);
+        /* ticked past reset on Thursday, but next reset is before alarm */
+        DEFMODE(T(12,30,0), 3, AMODE_OFF);
+        DEFMODE(T(13,30,0), 3, AMODE_OFF);
+        DEFMODE(T(14,30,0), 3, AMODE_OFF);
+        DEFMODE(T(15,30,0), 3, AMODE_OFF);
+        DEFMODE(T(16,30,0), 3, AMODE_OFF);
+        DEFMODE(T(17,30,0), 3, AMODE_OFF);
+        DEFMODE(T(18,30,0), 3, AMODE_OFF);
+        DEFMODE(T(19,30,0), 3, AMODE_OFF);
+        DEFMODE(T(20,30,0), 3, AMODE_OFF);
+        DEFMODE(T(21,30,0), 3, AMODE_OFF);
+        DEFMODE(T(22,30,0), 3, AMODE_OFF);
+        DEFMODE(T(23,30,0), 3, AMODE_OFF);
+        DEFMODE(T( 0,30,0), 4, AMODE_OFF);
+        DEFMODE(T( 1,30,0), 4, AMODE_OFF);
+        DEFMODE(T( 2,30,0), 4, AMODE_OFF);
+        DEFMODE(T( 3,30,0), 4, AMODE_OFF);
+        DEFMODE(T( 4,30,0), 4, AMODE_OFF);
+        DEFMODE(T( 5,30,0), 4, AMODE_OFF);
+        DEFMODE(T( 6,30,0), 4, AMODE_OFF);
+        DEFMODE(T( 7,30,0), 4, AMODE_OFF);
+        DEFMODE(T( 8,30,0), 4, AMODE_OFF);
+        DEFMODE(T( 9,30,0), 4, AMODE_OFF);
+        DEFMODE(T(10,30,0), 4, AMODE_OFF);
+        DEFMODE(T(11,30,0), 4, AMODE_OFF);
+        /* ticked past reset time on Friday */
+        DEFMODE(T(12,30,0), 4, AMODE_CONFIRM);
+        DEFMODE(T(13,30,0), 4, AMODE_CONFIRM);
+        /* ticked past alarm time on Friday */
+        DEFMODE(T(14,30,0), 4, AMODE_OFF);
+        DEFMODE(T(15,30,0), 4, AMODE_OFF);
+        DEFMODE(T(16,30,0), 4, AMODE_OFF);
+        DEFMODE(T(17,30,0), 4, AMODE_OFF);
+        DEFMODE(T(18,30,0), 4, AMODE_OFF);
+        DEFMODE(T(19,30,0), 4, AMODE_OFF);
+        DEFMODE(T(20,30,0), 4, AMODE_OFF);
+        DEFMODE(T(21,30,0), 4, AMODE_OFF);
+        DEFMODE(T(22,30,0), 4, AMODE_OFF);
+        DEFMODE(T(23,30,0), 4, AMODE_OFF);
+        DEFMODE(T( 0,30,0), 5, AMODE_OFF);
+        DEFMODE(T( 1,30,0), 5, AMODE_OFF);
+        DEFMODE(T( 2,30,0), 5, AMODE_OFF);
+        DEFMODE(T( 3,30,0), 5, AMODE_OFF);
+        DEFMODE(T( 4,30,0), 5, AMODE_OFF);
+        DEFMODE(T( 5,30,0), 5, AMODE_OFF);
+        DEFMODE(T( 6,30,0), 5, AMODE_OFF);
+        DEFMODE(T( 7,30,0), 5, AMODE_OFF);
+        DEFMODE(T( 8,30,0), 5, AMODE_OFF);
+        DEFMODE(T( 9,30,0), 5, AMODE_OFF);
+        DEFMODE(T(10,30,0), 5, AMODE_OFF);
+        /* ticked past alarm time on Saturday, but it was an off day anyway */
+        DEFMODE(T(11,30,0), 5, AMODE_OFF);
+        /* ticked past reset time on Saturday, but tomorrow's an off day */
+        DEFMODE(T(12,30,0), 5, AMODE_OFF);
+        DEFMODE(T(13,30,0), 5, AMODE_OFF);
+        DEFMODE(T(14,30,0), 5, AMODE_OFF);
+        DEFMODE(T(15,30,0), 5, AMODE_OFF);
+        DEFMODE(T(16,30,0), 5, AMODE_OFF);
+        DEFMODE(T(17,30,0), 5, AMODE_OFF);
+        DEFMODE(T(18,30,0), 5, AMODE_OFF);
+        DEFMODE(T(19,30,0), 5, AMODE_OFF);
+        DEFMODE(T(20,30,0), 5, AMODE_OFF);
+        DEFMODE(T(21,30,0), 5, AMODE_OFF);
+        DEFMODE(T(22,30,0), 5, AMODE_OFF);
+        DEFMODE(T(23,30,0), 5, AMODE_OFF);
+        DEFMODE(T( 0,30,0), 6, AMODE_OFF);
+        DEFMODE(T( 1,30,0), 6, AMODE_OFF);
+        DEFMODE(T( 2,30,0), 6, AMODE_OFF);
+        DEFMODE(T( 3,30,0), 6, AMODE_OFF);
+        DEFMODE(T( 4,30,0), 6, AMODE_OFF);
+        DEFMODE(T( 5,30,0), 6, AMODE_OFF);
+        DEFMODE(T( 6,30,0), 6, AMODE_OFF);
+        DEFMODE(T( 7,30,0), 6, AMODE_OFF);
+        /* ticked past alarm time on Sunday, but it was an off day anyway */
+        DEFMODE(T( 8,30,0), 6, AMODE_OFF);
+        DEFMODE(T( 9,30,0), 6, AMODE_OFF);
+        DEFMODE(T(10,30,0), 6, AMODE_OFF);
+        DEFMODE(T(11,30,0), 6, AMODE_OFF);
+        /* ticked past reset time on Sunday, but next reset is before alarm */
+        DEFMODE(T(12,30,0), 6, AMODE_OFF);
+        DEFMODE(T(13,30,0), 6, AMODE_OFF);
+        DEFMODE(T(14,30,0), 6, AMODE_OFF);
+        DEFMODE(T(15,30,0), 6, AMODE_OFF);
+        DEFMODE(T(16,30,0), 6, AMODE_OFF);
+        DEFMODE(T(17,30,0), 6, AMODE_OFF);
+        DEFMODE(T(18,30,0), 6, AMODE_OFF);
+        DEFMODE(T(19,30,0), 6, AMODE_OFF);
+        DEFMODE(T(20,30,0), 6, AMODE_OFF);
+        DEFMODE(T(21,30,0), 6, AMODE_OFF);
+        DEFMODE(T(22,30,0), 6, AMODE_OFF);
+        DEFMODE(T(23,30,0), 6, AMODE_OFF);
+
+        /*
+         * Test the tick-pasts of alarm and reset time on all seven days.
+         */
+#define TESTALARM(time, day, modeafter) do                              \
+        {                                                               \
+            ps = cps;                                                   \
+            ls = cls;                                                   \
+            ls.amode = AMODE_CONFIRM;                                   \
+            ls.alarm_time = ps.defalarmtime[day];                       \
+            event_timetick(time-1, time, day, 20121112+day, &ps, &ls);  \
+            TEST(ls.amode == modeafter);                                \
+        } while (0)
+        TESTALARM(T(22,0,0), 0, AMODE_CONFIRM); /* another alarm follows */
+        TESTALARM(T( 8,0,0), 1, AMODE_OFF);
+        TESTALARM(T(21,0,0), 2, AMODE_CONFIRM); /* another alarm follows */
+        TESTALARM(T( 9,0,0), 3, AMODE_OFF);
+        TESTALARM(T(14,0,0), 4, AMODE_OFF);
+        TESTALARM(T(11,0,0), 5, AMODE_OFF);
+        TESTALARM(T( 7,0,0), 6, AMODE_OFF);
+
+#define TESTRESET(time, day, modeafter) do                              \
+        {                                                               \
+            ps = cps;                                                   \
+            ls = cls;                                                   \
+            ls.amode = AMODE_OFF;                                       \
+            event_timetick(time-1, time, day, 20121112+day, &ps, &ls);  \
+            TEST(ls.amode == modeafter);                                \
+        } while (0)
+        TESTRESET(T(12,0,0), 0, AMODE_CONFIRM);
+        TESTRESET(T(12,0,0), 1, AMODE_OFF); /* another reset follows */
+        TESTRESET(T(12,0,0), 2, AMODE_CONFIRM);
+        TESTRESET(T(12,0,0), 3, AMODE_OFF); /* another reset follows */
+        TESTRESET(T(12,0,0), 4, AMODE_CONFIRM);
+        TESTRESET(T(12,0,0), 5, AMODE_OFF); /* off-day follows */
+        TESTRESET(T(12,0,0), 6, AMODE_OFF); /* another reset follows */
+#undef DEFMODE
+#undef TESTALARM
+#undef TESTRESET
     }
 
     printf("%d tests : %d passed : %d failed\n", tests, tests-fails, fails);

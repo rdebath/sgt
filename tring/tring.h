@@ -112,7 +112,7 @@ enum {
  */
 extern int always_bright;
 
-int day_excluded(int date);
+void get_exception(int date, int *defalarmtime, int *enabled);
 
 #ifdef INTERNAL
 /*
