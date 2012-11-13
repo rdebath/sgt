@@ -186,7 +186,11 @@ int subproc_started;
 sig_atomic_t subproc_status = 0;
 sigset_t sigchldset;
 #define MAXEXCEPTS 32
-int excepts[MAXEXCEPTS];
+struct alarmexception {
+    int date;
+    int newalarmtime;                  /* -1 means no change */
+    int newsetting;                    /* 0 off, 1 on, -1 means no change */
+} excepts[MAXEXCEPTS];
 int nexcepts;
 
 void sigchld(int signum)
@@ -263,28 +267,40 @@ void start_excsubproc(void)
     }
 }
 
-int day_excluded(int date)
+void get_exception(int date, int *defalarmtime, int *enabled)
 {
     int i;
 
     for (i = 0; i < nexcepts; i++)
-	if (excepts[i] == date)
-	    return 1;
-
-    return 0;
+	if (excepts[i].date == date) {
+            if (excepts[i].newalarmtime >= 0)
+                *defalarmtime = excepts[i].newalarmtime;
+            if (excepts[i].newsetting >= 0)
+                *enabled = excepts[i].newsetting;
+            return;
+        }
 }
 
 int process_excdata(char *data)
 {
-    int exc[MAXEXCEPTS];
+    struct alarmexception exc[MAXEXCEPTS];
     int nexc = 0;
     int ok = 0;
 
     while (*data) {
-	unsigned y, m, d;
+	unsigned y, m, d, H, M, S;
 
-	if (sscanf(data, "%u-%u-%u", &y, &m, &d) == 3) {
-	    exc[nexc] = 10000*y + 100*m + d;
+	if (sscanf(data, "%u-%u-%u %u:%u:%u", &y, &m, &d, &H, &M, &S) == 6) {
+	    exc[nexc].date = 10000*y + 100*m + d;
+            exc[nexc].newsetting = 1;
+            exc[nexc].newalarmtime = (H*60+M)*60+S;
+	    nexc++;
+	    if (nexc == MAXEXCEPTS)
+		break;
+        } else if (sscanf(data, "%u-%u-%u", &y, &m, &d) == 3) {
+	    exc[nexc].date = 10000*y + 100*m + d;
+            exc[nexc].newsetting = 0;
+            exc[nexc].newalarmtime = -1;
 	    nexc++;
 	    if (nexc == MAXEXCEPTS)
 		break;

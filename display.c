@@ -792,9 +792,12 @@ int increment_date(int date)
  */
 int defalarmtime(struct pstate *ps, int dayofweek, int date, int *enabled)
 {
+    int time = ps->defalarmtime[dayofweek];
+    int on = (ps->offdays & (1 << dayofweek)) != 0;
+    get_exception(date, &time, &on);
     if (enabled)
-        *enabled = ((ps->offdays & (1 << dayofweek)) && !day_excluded(date));
-    return ps->defalarmtime[dayofweek];
+        *enabled = on;
+    return time;
 }
 
 /*
