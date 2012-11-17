@@ -1,0 +1,27 @@
+Summary: Port PuTTY to Windows RT (aka Metro)
+Class: wish
+Difficulty: tricky
+Priority: medium
+Content-type: text/plain
+
+Various people have asked us for a port of PuTTY to Windows RT so that it
+could run on the "Metro" side of Windows 8 and thus on Microsoft's ARM-based
+"Surface" tablets.
+
+A WinRT port of PuTTY would be a lot of work.  The platform
+independent code would probably work mostly unmodified, but you would
+have to implement all the platform-specific parts of PuTTY (the
+networking abstraction, user input, terminal display and settings GUI)
+in terms of the WinRT API.  Not impossible, and probably easier with
+PuTTY than with many other applications, but still a lot of work.
+
+Also, all applications to work on ARM WinRT devices have to be certified
+by Microsoft and have to be `sold' through the Windows App Store.
+That's likely to be a lot of faff, and Microsoft would probably want
+to gouge some money from us for the privilege.  (Also I wouldn't bet on
+a PuTTY port passing any kind of MS certification.)
+
+It's something we'd like to see, but there's nothing imminently
+happening.  For one thing none of us has a Windows 8 box of any CPU
+persuasion at all yet!
+
