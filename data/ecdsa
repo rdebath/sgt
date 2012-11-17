@@ -1,0 +1,9 @@
+Summary: Support for ECDSA keys in PuTTY and PuTTYgen
+Class: wish
+Difficulty: tricky
+Priority: medium
+Content-type: text/plain
+
+PuTTY does not currently support ECDSA keys.  It probably should.
+The only niggle I (OSD) have is that I'm not 100% sure what the patent
+situation is.
