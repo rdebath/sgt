@@ -247,11 +247,9 @@ static struct pidset get_processes(void)
         }
 
         sprintf(filename, "/proc/%d/exe", pid);
-        if ((exe = get_link_dest(filename)) == NULL) {
-            free(cmdline);
-            free(status);
-            continue;
-        }
+        exe = get_link_dest(filename);
+        /* This may fail, if the process isn't ours, but we continue
+         * anyway. */
 
         /*
          * Now we've got all our raw data out of /proc. Process it
@@ -414,6 +412,18 @@ static int find_command(int pid_argc, const char *const *pid_argv,
     return -1;                         /* no match */
 }
 
+static int strnullcmp(const char *a, const char *b)
+{
+    /*
+     * Like strcmp, but cope with NULL inputs by making them compare
+     * identical to each other and before any non-null string.
+     */
+    if (!a || !b)
+        return (b != 0) - (a != 0);
+    else
+        return strcmp(a, b);
+}
+
 static int argcmp(const char *const *a, const char *const *b)
 {
     while (*a && *b) {
@@ -498,7 +508,7 @@ static struct pidset filter_out_forks(struct pidset in)
         if (pidset_in(&in, proc->ppid)) {
             /* The parent is in our set too. Is it similar? */
             const struct procdata *parent = get_proc(proc->ppid);
-            if (!strcmp(parent->exe, proc->exe) &&
+            if (!strnullcmp(parent->exe, proc->exe) &&
                 !argcmp(parent->argv, proc->argv)) {
                 /* Yes; don't list it. */
                 continue;
