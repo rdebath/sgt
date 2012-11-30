@@ -1,0 +1,81 @@
+\cfg{man-identity}{pid}{1}{2012-11-30}{Simon Tatham}{Simon Tatham}
+
+\define{dash} \u2013{-}
+
+\title Man page for \c{pid}
+
+\U NAME
+
+\c{pid} \dash find the pid of a running program or script
+
+\U SYNOPSIS
+
+\c pid [ -a ] command [ arg... ]
+\e bbbb   bb  iiiiiii   iii
+
+\U DESCRIPTION
+
+\cw{pid} is a program for finding the PID (process ID) of a currently
+running program. This is useful if you need to send a signal to a
+program you're running, or attach \cw{strace}(\e{1}) or a debugger to
+it, or look in its \cw{/proc} entry.
+
+\cw{pid} tries to \q{do what you meant}. If you run \cw{pid emacs}, it
+will find processes whose first command-line word is either \cw{emacs}
+or ends in \cw{/emacs} (so it will match things like
+\cw{/usr/local/bin/emacs} too). But if you run \cw{pid scriptname},
+where \cw{scriptname} is the name of a shell script or Perl script, it
+will find processes whose command line looks like \cw{sh scriptname}
+or \cw{perl -w scriptname}. If the script has forked into multiple
+processes (as shell scripts sometimes do while executing complex
+pipelines), \cw{pid} will go further and automatically narrow down to
+the parent process of the whole lot. (That's done on a \q{best guess}
+basis \dash there's no genuinely reliable way to tell if one process
+has forked from another without \cw{exec}-ing anything afterwards.)
+
+By default, \cw{pid} outputs exactly one process ID, or the word
+\cq{NONE} or \cq{MULTIPLE} if it finds no matching process or more
+than one. This is a mode suitable for use as an argument to
+\cw{strace} (which expects exactly one process ID after its \cw{-p}
+argument) or \cw{gdb} (which expects a single pid too); the \cq{NONE}
+or \cq{MULTIPLE} answers will provoke a command-line parsing error
+rather than trying to trace the wrong process or expanding to a less
+obviously wrong command line. Use the \cw{-a} option to instead make
+\cw{pid} output a full list of pids that match (e.g. if you want to
+pass them all to \cw{kill}(\e{1}).
+
+You can also provide arguments to the command you're searching for, to
+narrow your search further. For example, if you have several
+\cw{emacs} processes editing different files, \cw{pid emacs foo.c}
+will find just the one that was invoked with a particular filename on
+its command line.
+
+\U OPTIONS
+
+\dt \cw{-a}
+
+\dd Report all pids that match the search, instead of printing
+\cq{MULTIPLE} if there is more than one. This also disables the
+behaviour of filtering out apparent forks of the same script.
+
+\U BUGS
+
+\cw{pid} is currently completely specific to the Linux kernel, since
+it depends on a Linux-style \cw{/proc}. It could be enhanced to deal
+with other process-finding mechanisms, but so far this has not been
+done.
+
+The whole idea of \cw{pid} is non-rigorous, so there will undoubtedly
+be strange behaviour in corner cases of various kinds. The aim is to
+do the right thing in most common cases.
+
+The current list of programs that \cw{pid} recognises as interpreters
+for scripting languages is hardwired and there is no way to override
+it.
+
+\U LICENCE
+
+\cw{pid} is free software, distributed under the MIT licence. Type
+\cw{pid --licence} to see the full licence text.
+
+\versionid $Id$

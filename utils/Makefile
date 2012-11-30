@@ -1,4 +1,5 @@
-SUBDIRS = after base64 beep buildrun cvt-utf8 lns multi nntpid reservoir xcopy
+SUBDIRS = after base64 beep buildrun cvt-utf8 lns multi nntpid \
+          pid reservoir xcopy
 
 # for `make html' and `make release'; should be a relative path
 DESTDIR = .
