@@ -455,6 +455,23 @@ static struct pidset filter_out_self(struct pidset in)
     return ret;
 }
 
+static struct pidset filter_by_uid(struct pidset in, int uid)
+{
+    /*
+     * Return only those processes with a given uid.
+     */
+    struct pidset ret;
+    int pid;
+
+    pidset_init(&ret);
+    for (pid = pidset_first(&in); pid >= 0; pid = pidset_next(&in)) {
+        const struct procdata *proc = get_proc(pid);
+        if (proc->uid == uid)
+            pidset_add(&ret, pid);
+    }
+    return ret;
+}
+
 static struct pidset filter_by_command(struct pidset in, const char **words)
 {
     /*
@@ -527,6 +544,7 @@ static struct pidset filter_out_forks(struct pidset in)
 const char usagemsg[] =
     "usage: pid [options] <search-cmd> [<search-arg>...]\n"
     "where: -a                 report all matching pids, not just one\n"
+    "       -U                 report pids of any user, not just ours\n"
     " also: pid --version      report version number\n"
     "       pid --help         display this help text\n"
     "       pid --licence      display the (MIT) licence text\n"
@@ -587,7 +605,7 @@ int main(int argc, char **argv)
 {
     const char **searchwords;
     int nsearchwords;
-    int all = 0;
+    int all = 0, all_uids = 0;
     int doing_opts = 1;
 
     /*
@@ -606,6 +624,8 @@ int main(int argc, char **argv)
         if (doing_opts && *p == '-') {
             if (!strcmp(p, "-a") || !strcmp(p, "--all")) {
                 all = 1;
+            } else if (!strcmp(p, "-U") || !strcmp(p, "--all-uids")) {
+                all_uids = 1;
             } else if (!strcmp(p, "--version")) {
                 version();
                 return 0;
@@ -636,11 +656,14 @@ int main(int argc, char **argv)
 
     {
         struct pidset procs;
-        int pid, npids;
+        int uid, pid, npids;
         /*
          * Construct our list of processes.
          */
         procs = get_processes();
+        uid = getuid();
+        if (uid > 0 && !all_uids)
+            procs = filter_by_uid(procs, uid);
         procs = filter_out_self(procs);
         procs = filter_by_command(procs, searchwords);
         if (!all)

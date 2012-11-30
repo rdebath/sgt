@@ -10,8 +10,8 @@
 
 \U SYNOPSIS
 
-\c pid [ -a ] command [ arg... ]
-\e bbbb   bb  iiiiiii   iii
+\c pid [ options ] command [ arg... ]
+\e bbbb  iiiiiii   iiiiiii   iii
 
 \U DESCRIPTION
 
@@ -57,6 +57,12 @@ its command line.
 \dd Report all pids that match the search, instead of printing
 \cq{MULTIPLE} if there is more than one. This also disables the
 behaviour of filtering out apparent forks of the same script.
+
+\dt \cw{-U}
+
+\dd Report pids belonging to any user. By default, \cw{pid} will only
+report processes owned by the same user as the one running it (except
+when root, when it defaults to reporting everybody's).
 
 \U BUGS
 
