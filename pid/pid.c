@@ -43,7 +43,7 @@ struct pidset {
 static void pidset_init(struct pidset *p)
 {
     int i;
-    for (i = 0; i < lenof(p->procbits); i++)
+    for (i = 0; i < (int)lenof(p->procbits); i++)
         p->procbits[i] = 0L;
 }
 
@@ -64,7 +64,7 @@ static int pidset_size(const struct pidset *p)
     int word, count;
 
     count = 0;
-    for (word = 0; word < lenof(p->procbits); word++) {
+    for (word = 0; word < (int)lenof(p->procbits); word++) {
         unsigned long mask = p->procbits[word];
         while (mask > 0) {
             count += (mask & 1);
@@ -79,13 +79,13 @@ static int pidset_step(struct pidset *p)
 {
     int word = p->next / WORDBITS;
     int bit = p->next % WORDBITS;
-    while (word < lenof(p->procbits) && p->procbits[word] >> bit == 0) {
+    while (word < (int)lenof(p->procbits) && p->procbits[word] >> bit == 0) {
         word++;
         bit = 0;
         p->next = WORDBITS * word + bit;
     }
 
-    if (word >= lenof(p->procbits))
+    if (word >= (int)lenof(p->procbits))
         return -1;
 
     while (!((p->procbits[word] >> bit) & 1)) {
