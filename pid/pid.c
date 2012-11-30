@@ -351,20 +351,27 @@ static const struct procdata *get_proc(int pid)
  * Logic to pick out the set of processes we care about.
  */
 
-static int is_an_interpreter(const char *basename)
+static int is_an_interpreter(const char *basename, const char **stop_opt)
 {
     if (!strcmp(basename, "perl") ||
-        !strcmp(basename, "python") ||
-        !strcmp(basename, "ruby") ||
-        !strcmp(basename, "rep") ||
+        !strcmp(basename, "ruby")) {
+        *stop_opt = "-e";
+        return 1;
+    }
+    if (!strcmp(basename, "python") ||
         !strcmp(basename, "bash") ||
         !strcmp(basename, "sh") ||
-        !strcmp(basename, "dash") ||
-        !strcmp(basename, "lua") ||
-        !strcmp(basename, "java"))
+        !strcmp(basename, "dash")) {
+        *stop_opt = "-c";
         return 1;
-    else
-        return 0;
+    }
+    if (!strcmp(basename, "rep") ||
+        !strcmp(basename, "lua") ||
+        !strcmp(basename, "java")) {
+        *stop_opt = NULL;
+        return 1;
+    }
+    return 0;
 }
 
 static const char *find_basename(const char *path)
@@ -385,7 +392,7 @@ static const char *find_basename(const char *path)
 static int find_command(int pid_argc, const char *const *pid_argv,
                         const char *cmd)
 {
-    const char *base;
+    const char *base, *stop_opt;
 
     base = pid_argv[0];
     if (*base == '-')
@@ -397,15 +404,23 @@ static int find_command(int pid_argc, const char *const *pid_argv,
          * argv[0] matches the supplied command name.
          */
         return 0;
-    } else if (is_an_interpreter(base)) {
+    } else if (is_an_interpreter(base, &stop_opt)) {
         /*
          * argv[0] is an interpreter program of some kind. Look
          * along its command line for the program it's running,
          * and see if _that_ matches the command name.
          */
         int i = 1;
-        while (i < pid_argc && pid_argv[i][0] == '-')
-            i++;                   /* skip interpreter options */
+        while (i < pid_argc && pid_argv[i][0] == '-') {
+            /*
+             * Skip interpreter options, unless they're things which
+             * make the next non-option argument not a script name
+             * (e.g. sh -c, perl -e).
+             */
+            if (stop_opt && !strncmp(pid_argv[i], stop_opt, strlen(stop_opt)))
+                return -1;             /* no match */
+            i++;
+        }
         if (i < pid_argc && !strcmp(find_basename(pid_argv[i]), cmd))
             return i;
     }
