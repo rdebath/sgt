@@ -25,3 +25,10 @@ It's something we'd like to see, but there's nothing imminently
 happening.  For one thing none of us has a Windows 8 box of any CPU
 persuasion at all yet!
 
+(This isn't to say that the existing PuTTY cannot run on the "desktop"
+side of Windows 8 on Intel systems; as far as we know this should be
+fine. A couple of people have reported that the Windows 8 "compatibility
+wizard" or some such is flagging PuTTY as incompatible with Windows 8.
+We don't know what this is about; the same people who've reported this
+have gone on to use PuTTY regardless, without noticing any actual
+problems.)
