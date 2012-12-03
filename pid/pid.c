@@ -3,9 +3,11 @@
  *
  * Same basic idea as Debian's "pidof", in that you type 'pid command'
  * and it finds a process running that command and gives you the pid;
- * but souped up with various pragmatic features such as recognising
- * well known interpreters (so you can search for, say, 'pid
- * script.sh' as well as 'pid bash' and have it do what you meant).
+ * but differs in details, for example it will search for scripts by
+ * default rather than requiring pidof's -x option, and it will also
+ * look for command-line arguments ('pid make test') and try to find
+ * the parent process of a bunch of forks from the same shell script
+ * invocation.
  *
  * Currently tested only on Linux using /proc directly, but I've tried
  * to set it up so that the logic of what processes to choose is

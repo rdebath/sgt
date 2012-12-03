@@ -274,7 +274,14 @@ int main(int argc, char **argv)
 		fprintf(stderr, "%s: parameter `%s' unexpected\n", pname, p);
 		return 1;
 	    } else {
-		pid = atoi(p);
+                char *end;
+                errno = 0;
+		pid = strtol(p, &end, 0);
+                if (errno == ERANGE || *end || pid < 0) {
+                    fprintf(stderr, "%s: unable to parse `%s' as a pid\n",
+                            pname, p);
+                    return 1;
+                }
 	    }
 	}
     }
