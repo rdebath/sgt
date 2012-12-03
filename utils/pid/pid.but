@@ -37,12 +37,12 @@ By default, \cw{pid} outputs exactly one process ID, or the word
 \cq{NONE} or \cq{MULTIPLE} if it finds no matching process or more
 than one. This is a mode suitable for use as an argument to
 \cw{strace} (which expects exactly one process ID after its \cw{-p}
-argument) or \cw{gdb} (which expects a single pid too); the \cq{NONE}
-or \cq{MULTIPLE} answers will provoke a command-line parsing error
-rather than trying to trace the wrong process or expanding to a less
-obviously wrong command line. Use the \cw{-a} option to instead make
-\cw{pid} output a full list of pids that match (e.g. if you want to
-pass them all to \cw{kill}(\e{1}).
+argument) or \cw{gdb} or \cw{after} (which expect a single pid as an
+argument); the \cq{NONE} or \cq{MULTIPLE} answers will provoke a
+command-line parsing error rather than trying to trace the wrong
+process or expanding to a less obviously wrong command line. Use the
+\cw{-a} option to instead make \cw{pid} output a full list of pids
+that match (e.g. if you want to pass them all to \cw{kill}(\e{1}).
 
 You can also provide arguments to the command you're searching for, to
 narrow your search further. For example, if you have several
