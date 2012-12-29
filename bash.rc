@@ -167,9 +167,9 @@ bashrc_dovars() {
   # LS_COLORS: animations
   LS_COLORS=$LS_COLORS':*.mpg=01;37:*.avi=01;37:*.gl=01;37:*.dl=01;37'
   # LS_COLORS: header files
-  LS_COLORS=$LS_COLORS':*.h=00;33:*_h.s=00;33:*.pm=00;33'
+  LS_COLORS=$LS_COLORS':*.h=00;33:*_h.s=00;33:*.pm=00;33:*.hh=00;33'
   # LS_COLORS: source files
-  LS_COLORS=$LS_COLORS':*.c=01;33:*.cpp=01;33:*.m=01;33:*.py=01;33:*.s=01;33:*.pl=01;33:*.html=01;33'
+  LS_COLORS=$LS_COLORS':*.c=01;33:*.cpp=01;33:*.cc=01;33:*.m=01;33:*.py=01;33:*.s=01;33:*.pl=01;33:*.html=01;33'
   # LS_COLORS: all over bar the shouting
   export LS_COLORS
   # trn4 doesn't know screen can do xterm mouse reporting, although
