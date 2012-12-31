@@ -825,7 +825,7 @@ void default_mode(int timeofday, int dayofweek, int date,
 
     nextalarm = defalarmtime(ps, dayofweek, date, &nextenabled);
     if (nextalarm <= timeofday)
-        nextalarm = defalarmtime(ps, (dayofweek+1) % 7, date+1,
+        nextalarm = defalarmtime(ps, (dayofweek+1) % 7, increment_date(date),
                                  &nextenabled) + 86400;
 
     if (nextenabled && nextalarm < nextreset) {
