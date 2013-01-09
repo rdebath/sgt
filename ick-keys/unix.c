@@ -497,24 +497,44 @@ void sawfish_client(char *string)
     sfree(data);
 }
 
-void minimise_window(void)
+char *make_sawfish_command(char *p, int order, char *fmt)
 {
-    sawfish_client("(let ((w1 (query-pointer-window))"
-                        " (w2 (input-focus)))"
-                     " (cond ((not (null w1)) (iconify-window w1))"
-                           " ((not (null w2)) (iconify-window w2))"
-                      ")"
-                   ")");
+    int i, o;
+
+    p += sprintf(p, "(let (");
+    for (i = 0, o = order;
+         (o & FIRST_CHOICE_MASK) != END_OF_OPTIONS;
+         i++, o >>= CHOICE_SHIFT)
+        p += sprintf(p, "(w%d %s)", i,
+                     ((o & FIRST_CHOICE_MASK) == WINDOW_UNDER_MOUSE ?
+                      "(query-pointer-window)" :
+                      (o & FIRST_CHOICE_MASK) == WINDOW_WITH_FOCUS ?
+                      "(input-focus)" :
+                      "nil"));
+    p += sprintf(p, ")(cond ");
+    for (i = 0, o = order;
+         (o & FIRST_CHOICE_MASK) != END_OF_OPTIONS;
+         i++, o >>= CHOICE_SHIFT) {
+        p += sprintf(p, "((not (null w%d)) ", i);
+        p += sprintf(p, fmt, i);
+        p += sprintf(p, ")");
+    }
+    p += sprintf(p, "))");
+    return p;
 }
 
-void window_to_back(void)
+void minimise_window(int order)
 {
-    sawfish_client("(let ((w1 (query-pointer-window))"
-                        " (w2 (input-focus)))"
-                     " (cond ((not (null w1)) (lower-window w1))"
-                           " ((not (null w2)) (lower-window w2))"
-                      ")"
-                   ")");
+    char buf[1024], *p = buf;
+    p = make_sawfish_command(p, order, "(iconify-window w%d)");
+    sawfish_client(buf);
+}
+
+void window_to_back(int order)
+{
+    char buf[1024], *p = buf;
+    p = make_sawfish_command(p, order, "(lower-window w%d)");
+    sawfish_client(buf);
 }
 
 char *read_clipboard(void)

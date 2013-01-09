@@ -14,25 +14,66 @@
 
 static int in_init;
 
+static int get_window_choice_order(const char *s)
+{
+    int n, used_mask, choices, this_choice, shift;
+    const char *next;
+
+    shift = 0;
+    choices = 0;
+    used_mask = 0;
+    while (*s) {
+        n = strcspn(s, ", ");
+        next = s + n + strspn(s + n, ", ");
+        if (n == 5 && !memcmp(s, "focus", n))
+            this_choice = WINDOW_WITH_FOCUS;
+        else if (n == 5 && !memcmp(s, "mouse", n))
+            this_choice = WINDOW_UNDER_MOUSE;
+        else
+            return -1;                 /* parse error */
+        if (used_mask & (1 << this_choice))
+            return -1;                 /* another parse error */
+        used_mask |= (1 << this_choice);
+        choices |= (this_choice << shift);
+        shift += CHOICE_SHIFT;
+        s = next;
+    }
+
+    choices |= END_OF_OPTIONS << shift;
+    return choices;
+}
+
 static int kl_minimise_window(void *result, const char **sparams,
 			      const int *iparams)
 {
+    int order;
     if (in_init) {
 	error("attempt to minimise a window during initialisation");
 	return ICK_RTE_USER;
     }
-    minimise_window();
+    order = get_window_choice_order(sparams[0]);
+    if (order < 0) {
+	error("unable to parse window choice order string");
+	return ICK_RTE_USER;
+    }
+    minimise_window(order);
     return 0;
 }
 
 static int kl_window_to_back(void *result, const char **sparams,
 			     const int *iparams)
 {
+    int order;
     if (in_init) {
 	error("attempt to send a window to back during initialisation");
 	return ICK_RTE_USER;
     }
-    window_to_back();
+    order = get_window_choice_order(sparams[0]);
+    if (order < 0) {
+	error("unable to parse window choice order string");
+	return ICK_RTE_USER;
+    }
+    window_to_back(order);
     return 0;
 }
 
@@ -190,8 +231,8 @@ static void setup_lib(icklib *lib)
 {
     ick_lib_addfn(lib, "tr", "SSSS", kl_tr, NULL);
     ick_lib_addfn(lib, "subst", "SSSS", kl_subst, NULL);
-    ick_lib_addfn(lib, "minimise_window", "V", kl_minimise_window, NULL);
-    ick_lib_addfn(lib, "window_to_back", "V", kl_window_to_back, NULL);
+    ick_lib_addfn(lib, "minimise_window", "VS", kl_minimise_window, NULL);
+    ick_lib_addfn(lib, "window_to_back", "VS", kl_window_to_back, NULL);
     ick_lib_addfn(lib, "read_clipboard", "S", kl_read_clipboard, NULL);
     ick_lib_addfn(lib, "write_clipboard", "VS", kl_write_clipboard, NULL);
     ick_lib_addfn(lib, "open_url", "VS", kl_open_url, NULL);

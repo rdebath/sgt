@@ -104,38 +104,46 @@ static char *translate_error_code(DWORD error)
     return ret;
 }
 
-void minimise_window(void)
+static HWND select_window(int order)
 {
     POINT p;
     HWND w, w2;
 
     GetCursorPos(&p);
-    if ((w = WindowFromPoint(p)) != NULL) {
-	while ((w2 = GetParent(w)) != NULL)
-	    w = w2;
-    } else {
-	w = GetForegroundWindow();
-    }
+    w = NULL;
+    while (1) {
+        switch (order & FIRST_CHOICE_MASK) {
+          case END_OF_OPTIONS:
+            return NULL;
+          case WINDOW_UNDER_MOUSE:
+            if ((w = WindowFromPoint(p)) != NULL) {
+                while ((w2 = GetParent(w)) != NULL)
+                    w = w2;
+            }
+            break;
+          case WINDOW_WITH_FOCUS:
+            w = GetForegroundWindow();
+            break;
+        }
+        if (w)
+            return w;
 
+        order >>= CHOICE_SHIFT;
+    }
+}
+
+void minimise_window(int order)
+{
+    HWND w = select_window(order);
     if (w) {
 	if (SendMessage(w, WM_SYSCOMMAND, SC_MINIMIZE, -1))
 	    ShowWindow(w, SW_MINIMIZE);
     }
 }
 
-void window_to_back(void)
+void window_to_back(int order)
 {
-    POINT p;
-    HWND w, w2;
-
-    GetCursorPos(&p);
-    if ((w = WindowFromPoint(p)) != NULL) {
-	while ((w2 = GetParent(w)) != NULL)
-	    w = w2;
-    } else {
-	w = GetForegroundWindow();
-    }
-
+    HWND w = select_window(order);
     if (w)
 	SetWindowPos(w, HWND_BOTTOM, 0, 0, 0, 0,
 		     SWP_ASYNCWINDOWPOS | SWP_NOACTIVATE |
