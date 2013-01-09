@@ -192,6 +192,9 @@ static int kl_register_hotkey(void *result, const char **sparams,
 	} else if (!strncmp(key, "alt ", 4)) {
 	    key += 4;
 	    modifiers |= ALT;
+	} else if (!strncmp(key, "shift ", 6)) {
+	    key += 6;
+	    modifiers |= SHIFT;
 	} else
 	    break;
     }

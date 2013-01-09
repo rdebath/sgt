@@ -698,6 +698,8 @@ int register_hotkey(int index, int mod, const char *key,
 	modifiers |= ControlMask;
     if (mod & ALT)
 	modifiers |= Mod1Mask;
+    if (mod & SHIFT)
+	modifiers |= ShiftMask;
     XGrabKey(disp, keycode, modifiers, XDefaultRootWindow(disp),
              False, GrabModeAsync, GrabModeAsync);
     /* And the same again with Num Lock on */
