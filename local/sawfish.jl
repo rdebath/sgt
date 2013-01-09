@@ -29,6 +29,7 @@
     "Button1-Click2" 'resize-window-interactively
     "Button2-Click2" 'resize-window-interactively
     "Button3-Click2" 'resize-window-interactively
+    "Button3-C-Click" 'popup-window-menu
 )
 (unbind-keys title-keymap
     "Button1-Off" "Button2-Off" "Button3-Off"
@@ -44,6 +45,7 @@
     "Button1-Click2" 'move-window-interactively
     "Button2-Click2" 'move-window-interactively
     "Button3-Click2" 'move-window-interactively
+    "Button3-C-Click" 'popup-window-menu
 )
 (unbind-keys border-keymap
     "Button1-Off" "Button2-Off" "Button3-Off"
