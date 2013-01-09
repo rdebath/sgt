@@ -530,6 +530,22 @@ void minimise_window(int order)
     sawfish_client(buf);
 }
 
+void maximise_window(int order)
+{
+    char buf[1024], *p = buf;
+    p += sprintf(p, "(progn (require 'maximize)");
+    p = make_sawfish_command(p, order, "(maximize-window-toggle w%d)");
+    p += sprintf(p, ")");
+    sawfish_client(buf);
+}
+
+void kill_window(int order)
+{
+    char buf[1024], *p = buf;
+    p = make_sawfish_command(p, order, "(delete-window-safely w%d)");
+    sawfish_client(buf);
+}
+
 void window_to_back(int order)
 {
     char buf[1024], *p = buf;
