@@ -120,6 +120,8 @@ static HWND select_window(int order)
                 while ((w2 = GetParent(w)) != NULL)
                     w = w2;
             }
+            if (w == GetDesktopWindow() || w == GetShellWindow())
+                w = NULL;
             break;
           case WINDOW_WITH_FOCUS:
             w = GetForegroundWindow();
