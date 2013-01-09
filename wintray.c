@@ -235,6 +235,11 @@ void write_clipboard(const char *data)
     }
 }
 
+void set_unix_url_opener_command(const char *cmd)
+{
+    /* ignored on this platform */
+}
+
 void open_url(const char *url)
 {
     ShellExecute(ickkeys_hwnd, "open", url, NULL, NULL, SW_SHOWNORMAL);

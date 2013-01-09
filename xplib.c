@@ -166,6 +166,13 @@ static int kl_debug(void *result, const char **sparams,
     return 0;
 }
 
+static int kl_set_unix_url_opener(void *result, const char **sparams,
+                                  const int *iparams)
+{
+    set_unix_url_opener_command(sparams[0]);
+    return 0;
+}
+
 static int kl_register_hotkey(void *result, const char **sparams,
 			      const int *iparams)
 {
@@ -275,6 +282,8 @@ static void setup_lib(icklib *lib)
     ick_lib_addfn(lib, "spawn", "VS", kl_spawn, NULL);
     ick_lib_addfn(lib, "debug", "VS", kl_debug, NULL);
     ick_lib_addfn(lib, "register_hot_key", "VIS", kl_register_hotkey, NULL);
+    ick_lib_addfn(lib, "set_unix_url_opener", "VS",
+                  kl_set_unix_url_opener, NULL);
 }
 
 static const char **filenames = NULL;

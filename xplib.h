@@ -11,6 +11,7 @@ void unregister_all_hotkeys(void);
 int register_hotkey(int index, int modifiers, const char *key,
 		    const char *keyorig);
 void error(char *s, ...);
+void set_unix_url_opener_command(const char *);
 
 enum {
     LEFT_WINDOWS = 1,
