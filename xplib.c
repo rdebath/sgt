@@ -43,6 +43,40 @@ static int get_window_choice_order(const char *s)
     return choices;
 }
 
+static int kl_kill_window(void *result, const char **sparams,
+                          const int *iparams)
+{
+    int order;
+    if (in_init) {
+	error("attempt to kill a window during initialisation");
+	return ICK_RTE_USER;
+    }
+    order = get_window_choice_order(sparams[0]);
+    if (order < 0) {
+	error("unable to parse window choice order string");
+	return ICK_RTE_USER;
+    }
+    kill_window(order);
+    return 0;
+}
+
+static int kl_maximise_window(void *result, const char **sparams,
+			      const int *iparams)
+{
+    int order;
+    if (in_init) {
+	error("attempt to maximise-toggle a window during initialisation");
+	return ICK_RTE_USER;
+    }
+    order = get_window_choice_order(sparams[0]);
+    if (order < 0) {
+	error("unable to parse window choice order string");
+	return ICK_RTE_USER;
+    }
+    maximise_window(order);
+    return 0;
+}
+
 static int kl_minimise_window(void *result, const char **sparams,
 			      const int *iparams)
 {
@@ -231,6 +265,8 @@ static void setup_lib(icklib *lib)
 {
     ick_lib_addfn(lib, "tr", "SSSS", kl_tr, NULL);
     ick_lib_addfn(lib, "subst", "SSSS", kl_subst, NULL);
+    ick_lib_addfn(lib, "kill_window", "VS", kl_kill_window, NULL);
+    ick_lib_addfn(lib, "maximise_window", "VS", kl_maximise_window, NULL);
     ick_lib_addfn(lib, "minimise_window", "VS", kl_minimise_window, NULL);
     ick_lib_addfn(lib, "window_to_back", "VS", kl_window_to_back, NULL);
     ick_lib_addfn(lib, "read_clipboard", "S", kl_read_clipboard, NULL);

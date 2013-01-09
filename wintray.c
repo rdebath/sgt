@@ -141,6 +141,30 @@ void minimise_window(int order)
     }
 }
 
+void maximise_window(int order)
+{
+    HWND w = select_window(order);
+    if (w) {
+        /*
+         * We're actually _toggling_ maximised state here, so first we
+         * must find out whether the window is already maximised, and
+         * then we can decide what to try to turn it into.
+         */
+        WINDOWPLACEMENT wp;
+        UINT showcmd;
+        WPARAM syscmd;
+
+        if (!GetWindowPlacement(w, &wp))
+            return;
+
+        showcmd = (wp.showCmd == SW_MAXIMIZE ? SW_RESTORE : SW_MAXIMIZE);
+        syscmd  = (wp.showCmd == SW_MAXIMIZE ? SC_RESTORE : SC_MAXIMIZE);
+
+	if (SendMessage(w, WM_SYSCOMMAND, syscmd, -1))
+	    ShowWindow(w, showcmd);
+    }
+}
+
 void window_to_back(int order)
 {
     HWND w = select_window(order);
@@ -148,6 +172,13 @@ void window_to_back(int order)
 	SetWindowPos(w, HWND_BOTTOM, 0, 0, 0, 0,
 		     SWP_ASYNCWINDOWPOS | SWP_NOACTIVATE |
 		     SWP_NOMOVE | SWP_NOSIZE);
+}
+
+void kill_window(int order)
+{
+    HWND w = select_window(order);
+    if (w)
+        SendMessage(w, WM_SYSCOMMAND, SC_CLOSE, -1);
 }
 
 char *read_clipboard(void)

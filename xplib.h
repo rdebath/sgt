@@ -1,4 +1,6 @@
 void minimise_window(int);
+void kill_window(int);
+void maximise_window(int);
 void window_to_back(int);
 char *read_clipboard(void);
 void write_clipboard(const char *);
