@@ -281,10 +281,11 @@ bool keycheck(int arg, string key)
 
 void main(int arg)
 {
+    set_unix_url_opener("$HOME/adm/urllaunch.pl");
     if (keycheck(arg, "leftwindows x"))
-	minimise_window();
+	minimise_window("mouse,focus");
     if (keycheck(arg, "leftwindows z"))
-	window_to_back();
+	window_to_back("mouse,focus");
     else if (keycheck(arg, "leftwindows c"))
 	cleanclip();
     else if (keycheck(arg, "leftwindows ctrl c"))
