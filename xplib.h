@@ -1,5 +1,5 @@
-void minimise_window(void);
-void window_to_back(void);
+void minimise_window(int);
+void window_to_back(int);
 char *read_clipboard(void);
 void write_clipboard(const char *);
 void open_url(const char *);
@@ -15,6 +15,18 @@ enum {
     CTRL = 2,
     ALT = 4,
 };
+
+/*
+ * Method for storing a preference list of ways to select the active
+ * window.
+ */
+enum {
+    END_OF_OPTIONS,
+    WINDOW_UNDER_MOUSE,
+    WINDOW_WITH_FOCUS,
+};
+#define CHOICE_SHIFT 2
+#define FIRST_CHOICE_MASK ((1 << CHOICE_SHIFT) - 1)
 
 void add_config_filename(const char *filename);
 void configure(void);
