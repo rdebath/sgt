@@ -321,6 +321,10 @@ int register_hotkey(int index, int modifiers, const char *key,
 	mods |= MOD_CONTROL;
         strcat(name, "Ctrl-");
     }
+    if (modifiers & SHIFT) {
+	mods |= MOD_SHIFT;
+        strcat(name, "Shift-");
+    }
     sprintf(name + strlen(name), "%c", (char)toupper((unsigned char)key[0]));
 
     if (!RegisterHotKey(ickkeys_hwnd, id, mods,
