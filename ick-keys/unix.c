@@ -606,14 +606,25 @@ void write_clipboard(const char *buf)
     XStoreBytes(disp, seldata, seldatalen);
 }
 
+static char *opener_command = NULL;
+
+void set_unix_url_opener_command(const char *cmd)
+{
+    sfree(opener_command);
+    opener_command = dupstr(cmd);
+}
+
 void open_url(const char *url)
 {
     char *buf, *p;
     const char *q;
 
-    buf = snewn(128 + 4 * strlen(url), char);
+    if (!opener_command)
+        return;
+
+    buf = snewn(strlen(opener_command) + 4 * strlen(url) + 32, char);
     p = buf;
-    p += sprintf(p, "$HOME/adm/urllaunch.pl '");
+    p += sprintf(p, "%s '", opener_command);
     for (q = url; *q; q++) {
 	if (*q != '\'') {
 	    *p++ = *q;
