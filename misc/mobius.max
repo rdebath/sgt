@@ -28,7 +28,7 @@
  * modern Linux box equipped with Maxima, gnuplot, perl and my
  * `xcopy' program:
  * 
-maxima -b mobius.max | perl -pe 's/\\\n//sg' | tail -1 | perl -pe 'BEGIN{print "set urange [0:1]\nset vrange [0:1]\nset parametric\nset hidden\nset isosamples 30\nsplot "} s/^.*\[(.*)\].*$/$1/; s/%pi/pi/g; s:\^:**:g' | xcopy; gnuplot
+maxima -b mobius.max | perl -pe 's/\\\n//sg' | grep '%o18' | head -1 | perl -pe 'BEGIN{print "set urange [0:1]\nset vrange [0:1]\nset parametric\nset hidden\nset isosamples 30\nsplot "} s/^.*\[(.*)\].*$/$1/; s/%pi/pi/g; s:\^:**:g' | xcopy; gnuplot
  * 
  * Then hit the terminal's paste button once the gnuplot prompt
  * appears.
@@ -38,7 +38,7 @@ maxima -b mobius.max | perl -pe 's/\\\n//sg' | tail -1 | perl -pe 'BEGIN{print "
  * Construct a series of transformations which turn the unit
  * circle in the x-y plane into something which might plausibly
  * form the edge of an ordinary embedding of a Mobius strip. Each
- * transformation must a homeomorphism of R^3, and hence in
+ * transformation must be a homeomorphism of R^3, and hence in
  * particular invertible.
  *
  * The individual transformations are as follows:
