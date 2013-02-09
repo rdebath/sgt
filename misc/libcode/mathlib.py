@@ -80,6 +80,13 @@ def powerset(x, append=[]):
     else:
         return powerset(x[:-1], append) + powerset(x[:-1], [x[-1]] + append)
 
+def digitsum(n, base=10):
+     ret = 0
+     while n > 0:
+         ret += n % base
+         n /= base
+     return ret
+
 # Code to compute the nth Fibonacci number.
 #
 # We use the One True indexing for Fibonacci numbers, which is to set
