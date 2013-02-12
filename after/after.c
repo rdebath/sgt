@@ -124,6 +124,8 @@ int after_ptrace(int pid)
 	    return 127;
 	} else if (WIFEXITED(wstatus)) {
 	    return WEXITSTATUS(wstatus);
+	} else if (WIFSIGNALED(wstatus)) {
+	    return 128 + WTERMSIG(wstatus);
 	} else {
             int sig = 0;
             if (WIFSTOPPED(wstatus) && WSTOPSIG(wstatus) != SIGSTOP)
