@@ -72,7 +72,7 @@ char *pname;
  */
 #define ATTACH_TO(pid) ptrace(PTRACE_ATTACH, pid, NULL, 0)
 #define ATTACH_STR "ptrace(PTRACE_ATTACH, %d)"
-#define CONTINUE(pid) ptrace(PTRACE_CONT, pid, NULL, 0)
+#define CONTINUE(pid, sig) ptrace(PTRACE_CONT, pid, NULL, sig)
 #define CONT_STR "ptrace(PTRACE_CONT, %d)"
 
 #elif defined PT_ATTACH
@@ -82,7 +82,7 @@ char *pname;
  */
 #define ATTACH_TO(pid) ptrace(PT_ATTACH, pid, NULL, 0)
 #define ATTACH_STR "ptrace(PT_ATTACH, %d)"
-#define CONTINUE(pid) ptrace(PT_CONTINUE, pid, (caddr_t)1, 0)
+#define CONTINUE(pid, sig) ptrace(PT_CONTINUE, pid, (caddr_t)1, sig)
 #define CONT_STR "ptrace(PT_CONTINUE, %d)"
 
 #else
@@ -125,7 +125,11 @@ int after_ptrace(int pid)
 	} else if (WIFEXITED(wstatus)) {
 	    return WEXITSTATUS(wstatus);
 	} else {
-	    if (CONTINUE(pid) < 0) {
+            int sig = 0;
+            if (WIFSTOPPED(wstatus) && WSTOPSIG(wstatus) != SIGSTOP)
+                sig = WSTOPSIG(wstatus); /* redeliver signal to child */
+
+	    if (CONTINUE(pid, sig) < 0) {
 		fprintf(stderr, "%s: "CONT_STR": %.256s\n",
 			pname, pid, strerror(errno));
 		return 127;
