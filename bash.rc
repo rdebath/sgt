@@ -195,10 +195,16 @@ bashrc_dovars2() {
   foo=`type -p less`
   if [ -n "$foo" ]; then export PAGER=$foo; export LESS=-M; fi
   foo=`type -p emacs`
-  if [ -e "$foo" -a -e "${foo}client" ]; then
-    bashrc_emacsclient="${foo}client"
+  if [ -x "$foo" -a -x "${foo}client" -a -n "$DISPLAY" ]; then
+    # Under X, the 'e' command (defined below) will expect to connect
+    # to a long-running GUI emacs.
+    bashrc_emacslaunch=("${foo}client" --no-wait)
+  elif [ -x "$foo" ]; then
+    # In a command-line situation, or if emacsclient just isn't
+    # available, 'e' launches an ordinary emacs instead.
+    bashrc_emacslaunch=("${foo}")
   else
-    unset bashrc_emacsclient
+    unset bashrc_emacslaunch
   fi
   if [ ! -e "$foo" ]; then
     foo=`type -p jed`; fi
@@ -210,11 +216,12 @@ bashrc_dovars2() {
 bashrc_dovars2
 unset bashrc_dovars2
 
-if test -n "$bashrc_emacsclient" -a -x "$bashrc_emacsclient"; then
+if test "${#bashrc_emacslaunch[*]}" -gt 0; then
   e() {
     # Compilers and grep often output locations in files in the form
     # 'filename:line-number'. To facilitate pasting such a thing, we
-    # spot it here and turn it into the appropriate emacsclient rune.
+    # spot it here and turn it into the appropriate emacsclient or
+    # emacs rune.
     #
     # To work around this behaviour, you can prepend the argument
     # '+1', which will force the next argument to be treated as the
@@ -238,7 +245,7 @@ if test -n "$bashrc_emacsclient" -a -x "$bashrc_emacsclient"; then
     # It would be nice here if we could detect that a server-enabled
     # emacs was not already running, and respond by launching one in
     # the background and then retrying this command.
-    "$bashrc_emacsclient" --no-wait "$@"
+    "${bashrc_emacslaunch[@]}" "$@"
   }
 fi
 
