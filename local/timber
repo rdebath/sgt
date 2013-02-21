@@ -20,4 +20,11 @@ if test "$#" = 0; then
 else
   set -- -l timber.sl -f timber_set_only "$@"
 fi
-exec jed "$@"
+set -- jed "$@"
+case "$LANG" in
+  *UTF-8)
+    set -- csfilter ISO8859-1 -- "$@"
+    export LANG=${LANG/UTF-8/ISO8859-1}
+    ;;
+esac
+exec "$@"
