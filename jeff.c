@@ -22,6 +22,7 @@
  *   --mono-plain  process Mono messages in a text file without attributes
  *   --mbox  process an mbox mail folder
  *   --svnlog  process the output from `svn log' into individual log entries
+ *   --gitlog  process the output from `git log' into individual log entries
  * 
  * note:
  * 
@@ -183,6 +184,17 @@ int svnlog_start_line(char *line)
     }
 }
 
+int gitlog_start_line(char *line)
+{
+    /*
+     * git is really simple for this purpose: all but the header
+     * information about each commit is indented. So we just have to
+     * look for 'commit' at the start of the line, and we're done.
+     */
+    EXPECT("commit ");
+    return TRUE;
+}
+
 char *fgetline(FILE *fp)
 {
     char *ret = malloc(512);
@@ -298,6 +310,8 @@ int main(int argc, char **argv)
 		    start_line = mbox_start_line;
 		} else if (!strcmp(p, "svnlog")) {
 		    start_line = svnlog_start_line;
+		} else if (!strcmp(p, "gitlog")) {
+		    start_line = gitlog_start_line;
 		} else {
 		    fprintf(stderr, "%s: unrecognised option '--%s'\n",
 			    pname, p);
