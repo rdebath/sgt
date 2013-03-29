@@ -6,6 +6,7 @@ int main(int argc, char **argv)
     int i;
     printf("argc = %d\n", argc);
     for (i = 0; i < argc; i++)
-        printf("argv[%d] (%d chars) = '%s'\n", i, strlen(argv[i]), argv[i]);
+        printf("argv[%d] (%u chars) = '%s'\n", i,
+               (unsigned)strlen(argv[i]), argv[i]);
     return 0;
 }
