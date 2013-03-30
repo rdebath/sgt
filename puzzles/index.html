@@ -22,7 +22,8 @@ span.puzzle table p {width: 200px; }
 This page contains a collection of small computer programs which
 implement one-player puzzle games. All of them run natively on Unix
 (GTK), on Windows, and (in principle, but currently unmaintained) on
-Mac OS X; they can also be played on the web, as Java applets.
+Mac OS X. They can also be played on the web, as Java or Javascript
+applets.
 
 <p>
 I wrote this collection because I thought there should be more small
@@ -49,11 +50,18 @@ authorship of all the code; some of the puzzles below have been
 submitted by other authors.)
 
 <p>
-The thumbnail image for each game links to a Java applet so you can
-play it in your browser. Below each image is a link to the Windows
-binary for the game, and a link to the manual. For all other
-platforms, the games are provided in a single bundle, so scroll down
-to the
+Below each image are two links to versions of the puzzle you can play
+on the web. The 'java' link goes to a Java applet, which you can play
+in your browser if you have a working Java plugin. There's also a link
+marked 'js', which links to an alternative web version written in
+Javascript using <code>asm.js</code>; those versions are new as of
+March 2013 and currently only tested in Firefox 19, so please be
+patient if they don't work for you yet (but do send me feedback).
+
+<p>
+Also below each image is a link to the Windows binary for the game,
+and a link to the manual. For all other platforms, the games are
+provided in a single bundle, so scroll down to the
 <a href="#download">Download</a>
 section to get them all.
 
@@ -63,528 +71,636 @@ section to get them all.
 <span class="puzzle"><table>
 <tr><th align="center">Black Box</th></tr>
 <tr><td align="center">
-<a href="java/blackbox.html">
 <image style="margin: 0.5em" alt="" width=150 height=150 border=0 src="blackbox-web.png" />
-</a>
 </td></tr>
 <tr><td align="center" style="font-size: 70%"><code>[</code>
+<a href="java/blackbox.html">java</a>
+|
+<a href="js/blackbox.html">js</a>
+|
 <a href="doc/blackbox.html#blackbox">manual</a>
-<code>|</code>
+<code>]</code><br><code>[</code>
 <a href="blackbox.exe"><code>blackbox.exe</code></a>
 <code>]</code></td></tr>
 <tr><td align="center">Find the hidden balls in the box by bouncing laser beams off
 them.
 </td></tr></table></span>
+
 <span class="puzzle"><table>
 <tr><th align="center">Bridges</th></tr>
 <tr><td align="center">
-<a href="java/bridges.html">
 <image style="margin: 0.5em" alt="" width=150 height=150 border=0 src="bridges-web.png" />
-</a>
 </td></tr>
 <tr><td align="center" style="font-size: 70%"><code>[</code>
+<a href="java/bridges.html">java</a>
+|
+<a href="js/bridges.html">js</a>
+|
 <a href="doc/bridges.html#bridges">manual</a>
-<code>|</code>
+<code>]</code><br><code>[</code>
 <a href="bridges.exe"><code>bridges.exe</code></a>
 <code>]</code></td></tr>
 <tr><td align="center">Connect all the islands with a network of
 bridges.
 </td></tr></table></span>
+
 <span class="puzzle"><table>
 <tr><th align="center">Cube</th></tr>
 <tr><td align="center">
-<a href="java/cube.html">
 <image style="margin: 0.5em" alt="" width=150 height=150 border=0 src="cube-web.png" />
-</a>
 </td></tr>
 <tr><td align="center" style="font-size: 70%"><code>[</code>
+<a href="java/cube.html">java</a>
+|
+<a href="js/cube.html">js</a>
+|
 <a href="doc/cube.html#cube">manual</a>
-<code>|</code>
+<code>]</code><br><code>[</code>
 <a href="cube.exe"><code>cube.exe</code></a>
 <code>]</code></td></tr>
 <tr><td align="center">Pick up all the blue squares by rolling the cube over them.
 </td></tr></table></span>
+
 <span class="puzzle"><table>
 <tr><th align="center">Dominosa</th></tr>
 <tr><td align="center">
-<a href="java/dominosa.html">
 <image style="margin: 0.5em" alt="" width=150 height=150 border=0 src="dominosa-web.png" />
-</a>
 </td></tr>
 <tr><td align="center" style="font-size: 70%"><code>[</code>
+<a href="java/dominosa.html">java</a>
+|
+<a href="js/dominosa.html">js</a>
+|
 <a href="doc/dominosa.html#dominosa">manual</a>
-<code>|</code>
+<code>]</code><br><code>[</code>
 <a href="dominosa.exe"><code>dominosa.exe</code></a>
 <code>]</code></td></tr>
 <tr><td align="center">Tile the rectangle with a full set of dominoes.
 </td></tr></table></span>
+
 <span class="puzzle"><table>
 <tr><th align="center">Fifteen</th></tr>
 <tr><td align="center">
-<a href="java/fifteen.html">
 <image style="margin: 0.5em" alt="" width=150 height=150 border=0 src="fifteen-web.png" />
-</a>
 </td></tr>
 <tr><td align="center" style="font-size: 70%"><code>[</code>
+<a href="java/fifteen.html">java</a>
+|
+<a href="js/fifteen.html">js</a>
+|
 <a href="doc/fifteen.html#fifteen">manual</a>
-<code>|</code>
+<code>]</code><br><code>[</code>
 <a href="fifteen.exe"><code>fifteen.exe</code></a>
 <code>]</code></td></tr>
 <tr><td align="center">Slide the tiles around to arrange them into order.
 </td></tr></table></span>
+
 <span class="puzzle"><table>
 <tr><th align="center">Filling</th></tr>
 <tr><td align="center">
-<a href="java/filling.html">
 <image style="margin: 0.5em" alt="" width=150 height=150 border=0 src="filling-web.png" />
-</a>
 </td></tr>
 <tr><td align="center" style="font-size: 70%"><code>[</code>
+<a href="java/filling.html">java</a>
+|
+<a href="js/filling.html">js</a>
+|
 <a href="doc/filling.html#filling">manual</a>
-<code>|</code>
+<code>]</code><br><code>[</code>
 <a href="filling.exe"><code>filling.exe</code></a>
 <code>]</code></td></tr>
 <tr><td align="center">Mark every square with the area of its
 containing region.
 </td></tr></table></span>
+
 <span class="puzzle"><table>
 <tr><th align="center">Flip</th></tr>
 <tr><td align="center">
-<a href="java/flip.html">
 <image style="margin: 0.5em" alt="" width=150 height=150 border=0 src="flip-web.png" />
-</a>
 </td></tr>
 <tr><td align="center" style="font-size: 70%"><code>[</code>
+<a href="java/flip.html">java</a>
+|
+<a href="js/flip.html">js</a>
+|
 <a href="doc/flip.html#flip">manual</a>
-<code>|</code>
+<code>]</code><br><code>[</code>
 <a href="flip.exe"><code>flip.exe</code></a>
 <code>]</code></td></tr>
 <tr><td align="center">Flip groups of squares to light them all up at once.
 </td></tr></table></span>
+
 <span class="puzzle"><table>
 <tr><th align="center">Galaxies</th></tr>
 <tr><td align="center">
-<a href="java/galaxies.html">
 <image style="margin: 0.5em" alt="" width=150 height=150 border=0 src="galaxies-web.png" />
-</a>
 </td></tr>
 <tr><td align="center" style="font-size: 70%"><code>[</code>
+<a href="java/galaxies.html">java</a>
+|
+<a href="js/galaxies.html">js</a>
+|
 <a href="doc/galaxies.html#galaxies">manual</a>
-<code>|</code>
+<code>]</code><br><code>[</code>
 <a href="galaxies.exe"><code>galaxies.exe</code></a>
 <code>]</code></td></tr>
 <tr><td align="center">Divide the grid into rotationally symmetric
 regions each centred on a dot.
 </td></tr></table></span>
+
 <span class="puzzle"><table>
 <tr><th align="center">Guess</th></tr>
 <tr><td align="center">
-<a href="java/guess.html">
 <image style="margin: 0.5em" alt="" width=150 height=150 border=0 src="guess-web.png" />
-</a>
 </td></tr>
 <tr><td align="center" style="font-size: 70%"><code>[</code>
+<a href="java/guess.html">java</a>
+|
+<a href="js/guess.html">js</a>
+|
 <a href="doc/guess.html#guess">manual</a>
-<code>|</code>
+<code>]</code><br><code>[</code>
 <a href="guess.exe"><code>guess.exe</code></a>
 <code>]</code></td></tr>
 <tr><td align="center">Guess the hidden combination of colours.
 </td></tr></table></span>
+
 <span class="puzzle"><table>
 <tr><th align="center">Inertia</th></tr>
 <tr><td align="center">
-<a href="java/inertia.html">
 <image style="margin: 0.5em" alt="" width=150 height=150 border=0 src="inertia-web.png" />
-</a>
 </td></tr>
 <tr><td align="center" style="font-size: 70%"><code>[</code>
+<a href="java/inertia.html">java</a>
+|
+<a href="js/inertia.html">js</a>
+|
 <a href="doc/inertia.html#inertia">manual</a>
-<code>|</code>
+<code>]</code><br><code>[</code>
 <a href="inertia.exe"><code>inertia.exe</code></a>
 <code>]</code></td></tr>
 <tr><td align="center">Collect all the gems without running into any
 of the mines.
 </td></tr></table></span>
+
 <span class="puzzle"><table>
 <tr><th align="center">Keen</th></tr>
 <tr><td align="center">
-<a href="java/keen.html">
 <image style="margin: 0.5em" alt="" width=150 height=150 border=0 src="keen-web.png" />
-</a>
 </td></tr>
 <tr><td align="center" style="font-size: 70%"><code>[</code>
+<a href="java/keen.html">java</a>
+|
+<a href="js/keen.html">js</a>
+|
 <a href="doc/keen.html#keen">manual</a>
-<code>|</code>
+<code>]</code><br><code>[</code>
 <a href="keen.exe"><code>keen.exe</code></a>
 <code>]</code></td></tr>
 <tr><td align="center">Complete the latin square in accordance with
 the arithmetic clues.
 </td></tr></table></span>
+
 <span class="puzzle"><table>
 <tr><th align="center">Light Up</th></tr>
 <tr><td align="center">
-<a href="java/lightup.html">
 <image style="margin: 0.5em" alt="" width=150 height=150 border=0 src="lightup-web.png" />
-</a>
 </td></tr>
 <tr><td align="center" style="font-size: 70%"><code>[</code>
+<a href="java/lightup.html">java</a>
+|
+<a href="js/lightup.html">js</a>
+|
 <a href="doc/lightup.html#lightup">manual</a>
-<code>|</code>
+<code>]</code><br><code>[</code>
 <a href="lightup.exe"><code>lightup.exe</code></a>
 <code>]</code></td></tr>
 <tr><td align="center">Place bulbs to light up all the squares.
 </td></tr></table></span>
+
 <span class="puzzle"><table>
 <tr><th align="center">Loopy</th></tr>
 <tr><td align="center">
-<a href="java/loopy.html">
 <image style="margin: 0.5em" alt="" width=150 height=150 border=0 src="loopy-web.png" />
-</a>
 </td></tr>
 <tr><td align="center" style="font-size: 70%"><code>[</code>
+<a href="java/loopy.html">java</a>
+|
+<a href="js/loopy.html">js</a>
+|
 <a href="doc/loopy.html#loopy">manual</a>
-<code>|</code>
+<code>]</code><br><code>[</code>
 <a href="loopy.exe"><code>loopy.exe</code></a>
 <code>]</code></td></tr>
 <tr><td align="center">Draw a single closed loop, given clues about
 number of adjacent edges.
 </td></tr></table></span>
+
 <span class="puzzle"><table>
 <tr><th align="center">Magnets</th></tr>
 <tr><td align="center">
-<a href="java/magnets.html">
 <image style="margin: 0.5em" alt="" width=150 height=150 border=0 src="magnets-web.png" />
-</a>
 </td></tr>
 <tr><td align="center" style="font-size: 70%"><code>[</code>
+<a href="java/magnets.html">java</a>
+|
+<a href="js/magnets.html">js</a>
+|
 <a href="doc/magnets.html#magnets">manual</a>
-<code>|</code>
+<code>]</code><br><code>[</code>
 <a href="magnets.exe"><code>magnets.exe</code></a>
 <code>]</code></td></tr>
 <tr><td align="center">Place magnets to satisfy the clues and avoid
 like poles touching.
 </td></tr></table></span>
+
 <span class="puzzle"><table>
 <tr><th align="center">Map</th></tr>
 <tr><td align="center">
-<a href="java/map.html">
 <image style="margin: 0.5em" alt="" width=150 height=150 border=0 src="map-web.png" />
-</a>
 </td></tr>
 <tr><td align="center" style="font-size: 70%"><code>[</code>
+<a href="java/map.html">java</a>
+|
+<a href="js/map.html">js</a>
+|
 <a href="doc/map.html#map">manual</a>
-<code>|</code>
+<code>]</code><br><code>[</code>
 <a href="map.exe"><code>map.exe</code></a>
 <code>]</code></td></tr>
 <tr><td align="center">Colour the map so that adjacent regions are
 never the same colour.
 </td></tr></table></span>
+
 <span class="puzzle"><table>
 <tr><th align="center">Mines</th></tr>
 <tr><td align="center">
-<a href="java/mines.html">
 <image style="margin: 0.5em" alt="" width=150 height=150 border=0 src="mines-web.png" />
-</a>
 </td></tr>
 <tr><td align="center" style="font-size: 70%"><code>[</code>
+<a href="java/mines.html">java</a>
+|
+<a href="js/mines.html">js</a>
+|
 <a href="doc/mines.html#mines">manual</a>
-<code>|</code>
+<code>]</code><br><code>[</code>
 <a href="mines.exe"><code>mines.exe</code></a>
 <code>]</code></td></tr>
 <tr><td align="center">Find all the mines without treading on any of them.
 </td></tr></table></span>
+
 <span class="puzzle"><table>
 <tr><th align="center">Net</th></tr>
 <tr><td align="center">
-<a href="java/net.html">
 <image style="margin: 0.5em" alt="" width=150 height=150 border=0 src="net-web.png" />
-</a>
 </td></tr>
 <tr><td align="center" style="font-size: 70%"><code>[</code>
+<a href="java/net.html">java</a>
+|
+<a href="js/net.html">js</a>
+|
 <a href="doc/net.html#net">manual</a>
-<code>|</code>
+<code>]</code><br><code>[</code>
 <a href="netgame.exe"><code>netgame.exe</code></a>
 <code>]</code></td></tr>
 <tr><td align="center">Rotate each tile to reassemble the network.
 </td></tr></table></span>
+
 <span class="puzzle"><table>
 <tr><th align="center">Netslide</th></tr>
 <tr><td align="center">
-<a href="java/netslide.html">
 <image style="margin: 0.5em" alt="" width=150 height=150 border=0 src="netslide-web.png" />
-</a>
 </td></tr>
 <tr><td align="center" style="font-size: 70%"><code>[</code>
+<a href="java/netslide.html">java</a>
+|
+<a href="js/netslide.html">js</a>
+|
 <a href="doc/netslide.html#netslide">manual</a>
-<code>|</code>
+<code>]</code><br><code>[</code>
 <a href="netslide.exe"><code>netslide.exe</code></a>
 <code>]</code></td></tr>
 <tr><td align="center">Slide a row at a time to reassemble the
 network.
 </td></tr></table></span>
+
 <span class="puzzle"><table>
 <tr><th align="center">Pattern</th></tr>
 <tr><td align="center">
-<a href="java/pattern.html">
 <image style="margin: 0.5em" alt="" width=150 height=150 border=0 src="pattern-web.png" />
-</a>
 </td></tr>
 <tr><td align="center" style="font-size: 70%"><code>[</code>
+<a href="java/pattern.html">java</a>
+|
+<a href="js/pattern.html">js</a>
+|
 <a href="doc/pattern.html#pattern">manual</a>
-<code>|</code>
+<code>]</code><br><code>[</code>
 <a href="pattern.exe"><code>pattern.exe</code></a>
 <code>]</code></td></tr>
 <tr><td align="center">Fill in the pattern in the grid, given only the lengths
 of runs of black squares.
 </td></tr></table></span>
+
 <span class="puzzle"><table>
 <tr><th align="center">Pearl</th></tr>
 <tr><td align="center">
-<a href="java/pearl.html">
 <image style="margin: 0.5em" alt="" width=150 height=150 border=0 src="pearl-web.png" />
-</a>
 </td></tr>
 <tr><td align="center" style="font-size: 70%"><code>[</code>
+<a href="java/pearl.html">java</a>
+|
+<a href="js/pearl.html">js</a>
+|
 <a href="doc/pearl.html#pearl">manual</a>
-<code>|</code>
+<code>]</code><br><code>[</code>
 <a href="pearl.exe"><code>pearl.exe</code></a>
 <code>]</code></td></tr>
 <tr><td align="center">Draw a single closed loop, given clues about
 corner and straight squares.
 </td></tr></table></span>
+
 <span class="puzzle"><table>
 <tr><th align="center">Pegs</th></tr>
 <tr><td align="center">
-<a href="java/pegs.html">
 <image style="margin: 0.5em" alt="" width=150 height=150 border=0 src="pegs-web.png" />
-</a>
 </td></tr>
 <tr><td align="center" style="font-size: 70%"><code>[</code>
+<a href="java/pegs.html">java</a>
+|
+<a href="js/pegs.html">js</a>
+|
 <a href="doc/pegs.html#pegs">manual</a>
-<code>|</code>
+<code>]</code><br><code>[</code>
 <a href="pegs.exe"><code>pegs.exe</code></a>
 <code>]</code></td></tr>
 <tr><td align="center">Jump pegs over each other to remove all but one.
 </td></tr></table></span>
+
 <span class="puzzle"><table>
 <tr><th align="center">Range</th></tr>
 <tr><td align="center">
-<a href="java/range.html">
 <image style="margin: 0.5em" alt="" width=150 height=150 border=0 src="range-web.png" />
-</a>
 </td></tr>
 <tr><td align="center" style="font-size: 70%"><code>[</code>
+<a href="java/range.html">java</a>
+|
+<a href="js/range.html">js</a>
+|
 <a href="doc/range.html#range">manual</a>
-<code>|</code>
+<code>]</code><br><code>[</code>
 <a href="range.exe"><code>range.exe</code></a>
 <code>]</code></td></tr>
 <tr><td align="center">Place black squares to limit the visible
 distance from each numbered cell.
 </td></tr></table></span>
+
 <span class="puzzle"><table>
 <tr><th align="center">Rectangles</th></tr>
 <tr><td align="center">
-<a href="java/rect.html">
 <image style="margin: 0.5em" alt="" width=150 height=150 border=0 src="rect-web.png" />
-</a>
 </td></tr>
 <tr><td align="center" style="font-size: 70%"><code>[</code>
+<a href="java/rect.html">java</a>
+|
+<a href="js/rect.html">js</a>
+|
 <a href="doc/rectangles.html#rectangles">manual</a>
-<code>|</code>
+<code>]</code><br><code>[</code>
 <a href="rect.exe"><code>rect.exe</code></a>
 <code>]</code></td></tr>
 <tr><td align="center">Divide the grid into rectangles with areas equal to the
 numbers.
 </td></tr></table></span>
+
 <span class="puzzle"><table>
 <tr><th align="center">Same Game</th></tr>
 <tr><td align="center">
-<a href="java/samegame.html">
 <image style="margin: 0.5em" alt="" width=150 height=150 border=0 src="samegame-web.png" />
-</a>
 </td></tr>
 <tr><td align="center" style="font-size: 70%"><code>[</code>
+<a href="java/samegame.html">java</a>
+|
+<a href="js/samegame.html">js</a>
+|
 <a href="doc/samegame.html#samegame">manual</a>
-<code>|</code>
+<code>]</code><br><code>[</code>
 <a href="samegame.exe"><code>samegame.exe</code></a>
 <code>]</code></td></tr>
 <tr><td align="center">Clear the grid by removing touching groups of the same colour squares.
 </td></tr></table></span>
+
 <span class="puzzle"><table>
 <tr><th align="center">Signpost</th></tr>
 <tr><td align="center">
-<a href="java/signpost.html">
 <image style="margin: 0.5em" alt="" width=150 height=150 border=0 src="signpost-web.png" />
-</a>
 </td></tr>
 <tr><td align="center" style="font-size: 70%"><code>[</code>
+<a href="java/signpost.html">java</a>
+|
+<a href="js/signpost.html">js</a>
+|
 <a href="doc/signpost.html#signpost">manual</a>
-<code>|</code>
+<code>]</code><br><code>[</code>
 <a href="signpost.exe"><code>signpost.exe</code></a>
 <code>]</code></td></tr>
 <tr><td align="center">Connect the squares into a path following the
 arrows.
 </td></tr></table></span>
+
 <span class="puzzle"><table>
 <tr><th align="center">Singles</th></tr>
 <tr><td align="center">
-<a href="java/singles.html">
 <image style="margin: 0.5em" alt="" width=150 height=150 border=0 src="singles-web.png" />
-</a>
 </td></tr>
 <tr><td align="center" style="font-size: 70%"><code>[</code>
+<a href="java/singles.html">java</a>
+|
+<a href="js/singles.html">js</a>
+|
 <a href="doc/singles.html#singles">manual</a>
-<code>|</code>
+<code>]</code><br><code>[</code>
 <a href="singles.exe"><code>singles.exe</code></a>
 <code>]</code></td></tr>
 <tr><td align="center">Black out the right set of duplicate numbers.
 </td></tr></table></span>
+
 <span class="puzzle"><table>
 <tr><th align="center">Sixteen</th></tr>
 <tr><td align="center">
-<a href="java/sixteen.html">
 <image style="margin: 0.5em" alt="" width=150 height=150 border=0 src="sixteen-web.png" />
-</a>
 </td></tr>
 <tr><td align="center" style="font-size: 70%"><code>[</code>
+<a href="java/sixteen.html">java</a>
+|
+<a href="js/sixteen.html">js</a>
+|
 <a href="doc/sixteen.html#sixteen">manual</a>
-<code>|</code>
+<code>]</code><br><code>[</code>
 <a href="sixteen.exe"><code>sixteen.exe</code></a>
 <code>]</code></td></tr>
 <tr><td align="center">Slide a row at a time to arrange the tiles into
 order.
 </td></tr></table></span>
+
 <span class="puzzle"><table>
 <tr><th align="center">Slant</th></tr>
 <tr><td align="center">
-<a href="java/slant.html">
 <image style="margin: 0.5em" alt="" width=150 height=150 border=0 src="slant-web.png" />
-</a>
 </td></tr>
 <tr><td align="center" style="font-size: 70%"><code>[</code>
+<a href="java/slant.html">java</a>
+|
+<a href="js/slant.html">js</a>
+|
 <a href="doc/slant.html#slant">manual</a>
-<code>|</code>
+<code>]</code><br><code>[</code>
 <a href="slant.exe"><code>slant.exe</code></a>
 <code>]</code></td></tr>
 <tr><td align="center">Draw a maze of slanting lines that matches
 the clues.
 </td></tr></table></span>
+
 <span class="puzzle"><table>
 <tr><th align="center">Solo</th></tr>
 <tr><td align="center">
-<a href="java/solo.html">
 <image style="margin: 0.5em" alt="" width=150 height=150 border=0 src="solo-web.png" />
-</a>
 </td></tr>
 <tr><td align="center" style="font-size: 70%"><code>[</code>
+<a href="java/solo.html">java</a>
+|
+<a href="js/solo.html">js</a>
+|
 <a href="doc/solo.html#solo">manual</a>
-<code>|</code>
+<code>]</code><br><code>[</code>
 <a href="solo.exe"><code>solo.exe</code></a>
 <code>]</code></td></tr>
 <tr><td align="center">Fill in the grid so that each row, column and
 square block contains one of every digit.
 </td></tr></table></span>
+
 <span class="puzzle"><table>
 <tr><th align="center">Tents</th></tr>
 <tr><td align="center">
-<a href="java/tents.html">
 <image style="margin: 0.5em" alt="" width=150 height=150 border=0 src="tents-web.png" />
-</a>
 </td></tr>
 <tr><td align="center" style="font-size: 70%"><code>[</code>
+<a href="java/tents.html">java</a>
+|
+<a href="js/tents.html">js</a>
+|
 <a href="doc/tents.html#tents">manual</a>
-<code>|</code>
+<code>]</code><br><code>[</code>
 <a href="tents.exe"><code>tents.exe</code></a>
 <code>]</code></td></tr>
 <tr><td align="center">Place a tent next to each tree.
 </td></tr></table></span>
+
 <span class="puzzle"><table>
 <tr><th align="center">Towers</th></tr>
 <tr><td align="center">
-<a href="java/towers.html">
 <image style="margin: 0.5em" alt="" width=150 height=150 border=0 src="towers-web.png" />
-</a>
 </td></tr>
 <tr><td align="center" style="font-size: 70%"><code>[</code>
+<a href="java/towers.html">java</a>
+|
+<a href="js/towers.html">js</a>
+|
 <a href="doc/towers.html#towers">manual</a>
-<code>|</code>
+<code>]</code><br><code>[</code>
 <a href="towers.exe"><code>towers.exe</code></a>
 <code>]</code></td></tr>
 <tr><td align="center">Complete the latin square of towers in
 accordance with the clues.
 </td></tr></table></span>
+
 <span class="puzzle"><table>
 <tr><th align="center">Twiddle</th></tr>
 <tr><td align="center">
-<a href="java/twiddle.html">
 <image style="margin: 0.5em" alt="" width=150 height=150 border=0 src="twiddle-web.png" />
-</a>
 </td></tr>
 <tr><td align="center" style="font-size: 70%"><code>[</code>
+<a href="java/twiddle.html">java</a>
+|
+<a href="js/twiddle.html">js</a>
+|
 <a href="doc/twiddle.html#twiddle">manual</a>
-<code>|</code>
+<code>]</code><br><code>[</code>
 <a href="twiddle.exe"><code>twiddle.exe</code></a>
 <code>]</code></td></tr>
 <tr><td align="center">Rotate the tiles around themselves to arrange them into
 order.
 </td></tr></table></span>
+
 <span class="puzzle"><table>
 <tr><th align="center">Undead</th></tr>
 <tr><td align="center">
-<a href="java/undead.html">
 <image style="margin: 0.5em" alt="" width=150 height=150 border=0 src="undead-web.png" />
-</a>
 </td></tr>
 <tr><td align="center" style="font-size: 70%"><code>[</code>
+<a href="java/undead.html">java</a>
+|
+<a href="js/undead.html">js</a>
+|
 <a href="doc/undead.html#undead">manual</a>
-<code>|</code>
+<code>]</code><br><code>[</code>
 <a href="undead.exe"><code>undead.exe</code></a>
 <code>]</code></td></tr>
 <tr><td align="center">Place ghosts, vampires and zombies so that the right numbers of them can be seen in mirrors.
 </td></tr></table></span>
+
 <span class="puzzle"><table>
 <tr><th align="center">Unequal</th></tr>
 <tr><td align="center">
-<a href="java/unequal.html">
 <image style="margin: 0.5em" alt="" width=150 height=150 border=0 src="unequal-web.png" />
-</a>
 </td></tr>
 <tr><td align="center" style="font-size: 70%"><code>[</code>
+<a href="java/unequal.html">java</a>
+|
+<a href="js/unequal.html">js</a>
+|
 <a href="doc/unequal.html#unequal">manual</a>
-<code>|</code>
+<code>]</code><br><code>[</code>
 <a href="unequal.exe"><code>unequal.exe</code></a>
 <code>]</code></td></tr>
 <tr><td align="center">Complete the latin square in accordance with
 the <code>&gt;</code> signs.
 </td></tr></table></span>
+
 <span class="puzzle"><table>
 <tr><th align="center">Unruly</th></tr>
 <tr><td align="center">
-<a href="java/unruly.html">
 <image style="margin: 0.5em" alt="" width=150 height=150 border=0 src="unruly-web.png" />
-</a>
 </td></tr>
 <tr><td align="center" style="font-size: 70%"><code>[</code>
+<a href="java/unruly.html">java</a>
+|
+<a href="js/unruly.html">js</a>
+|
 <a href="doc/unruly.html#unruly">manual</a>
-<code>|</code>
+<code>]</code><br><code>[</code>
 <a href="unruly.exe"><code>unruly.exe</code></a>
 <code>]</code></td></tr>
 <tr><td align="center">Fill in the black and white grid to avoid runs of three.
 </td></tr></table></span>
+
 <span class="puzzle"><table>
 <tr><th align="center">Untangle</th></tr>
 <tr><td align="center">
-<a href="java/untangle.html">
 <image style="margin: 0.5em" alt="" width=150 height=150 border=0 src="untangle-web.png" />
-</a>
 </td></tr>
 <tr><td align="center" style="font-size: 70%"><code>[</code>
+<a href="java/untangle.html">java</a>
+|
+<a href="js/untangle.html">js</a>
+|
 <a href="doc/untangle.html#untangle">manual</a>
-<code>|</code>
+<code>]</code><br><code>[</code>
 <a href="untangle.exe"><code>untangle.exe</code></a>
 <code>]</code></td></tr>
 <tr><td align="center">Reposition the points so that the lines do not cross.
 </td></tr></table></span>
+
 </div>
 
 <h2 style="clear: both">Licence</h2>
