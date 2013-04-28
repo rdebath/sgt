@@ -1,0 +1,157 @@
+#!/usr/bin/perl
+
+# Set up a non-bare git repo so that the checked-out branch can be
+# pushed to.
+#
+# This is done by installing a git update hook which refuses pushes
+# into the checked-out branch unless the working directory can
+# _safely_ be 'reset --hard' directly to the new commit (i.e. without
+# treading on any local uncommitted changes in the index or working
+# tree, and without adding new files which exist untracked in the
+# working tree).
+#
+# The idea is that I can work in a personal repo on my desktop
+# machine, then clone it from my laptop so as to work on the go and
+# push changes back, and as long as I don't leave stuff on the desktop
+# that isn't actually part of a commit, this should Just Work (and if
+# I do do that, I get a push-time error). What I want to avoid is the
+# bzr-like behaviour implemented by the suggested post-update hook in
+# the git FAQ, in which a merge commit is constructed upstream; the
+# scripts here will give an error if that comes up. So the effect of
+# 'push' on the _repo_ should be just like normal push to a bare repo,
+# and the working copy will simply move to track the current branch
+# head.
+
+use strict;
+use warnings;
+
+my $gitdir = defined $ENV{"GIT_DIR"} ? $ENV{"GIT_DIR"} : ".";
+
+# ----------------------------------------------------------------------
+# Start by enabling pushes to the current branch in general.
+system "git", "config", "receive.denyCurrentBranch", "ignore";
+
+# ----------------------------------------------------------------------
+# Now create an update hook which disallows them in the case where
+# there's anything fragile in the working tree.
+open my $update_hook, ">", "$gitdir/.git/hooks/update";
+print $update_hook <<'EOF';
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+
+# git update hook from git-make-pushable.
+
+if (!defined $ENV{"GIT_DIR"} || $#ARGV != 2) {
+    die "Usage: GIT_DIR=<git-dir> $0 <ref> <oldrev> <newrev>\n";
+}
+
+my ($refname, $oldrev, $newrev) = @ARGV;
+my $gitdir = $ENV{"GIT_DIR"};
+
+open my $config, "-|", "git-config", "--path", "hooks.worktree";
+my $worktree = <$config>;
+close $config;
+if (defined $worktree) {
+    chomp $worktree;
+} else {
+    $worktree = "$gitdir/..";
+}
+
+open my $headfile, "<", "$gitdir/HEAD";
+my $headline = <$headfile>;
+close $headfile;
+my $curr_branch = ($headline =~ m!^ref: (.*)$! ? $1 : "");
+
+if ($refname ne $curr_branch) {
+    # allow anything not touching the current branch
+    exit 0;
+}
+
+# Now we know we're trying to update the currently checked-out branch.
+if ($newrev eq "0" x 40) {
+    die "Deleting the currently checked-out branch is confusing.\n";
+}
+
+# Files in the new commit.
+my %newfiles = ();
+{
+    open my $newtree, "-|", "git-ls-tree", "-r", "-z", "--name-only", "$newrev";
+    local $/ = "\0"; # make <$newtree> use NUL not \n as line terminator
+    while (<$newtree>) {
+        y!\0!!d; # chomp
+        $newfiles{$_} = 1;
+    }
+    close $newtree;
+}
+
+# Files in the working tree.
+{
+    $ENV{'GIT_WORK_TREE'} = $worktree;
+    open my $status, "-|", "git-status", "--porcelain";
+    while (<$status>) {
+        chomp;
+        @_ = split;
+        my $workpath = $_[$#_];
+        die "working tree is unclean ($workpath)\n"
+            if $_[0] ne "??";
+        die "push would touch untracked file $workpath\n"
+            if $newfiles{$workpath};
+    }
+    close $status;
+}
+
+exit 0;
+EOF
+close $update_hook;
+chmod 0555, "$gitdir/.git/hooks/update";
+
+# ----------------------------------------------------------------------
+# Now create a post-update hook which does the 'git reset' to actually
+# _update_ the working tree. This does very little checking, the idea
+# being that the previous hook did everything important already.
+open my $post_update_hook, ">", "$gitdir/.git/hooks/post-update";
+print $post_update_hook <<'EOF';
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+
+# git post-update hook from git-make-pushable.
+
+if (!defined $ENV{"GIT_DIR"} || $#ARGV != 0) {
+    die "Usage: GIT_DIR=<git-dir> $0 <ref>\n";
+}
+
+my ($refname) = @ARGV;
+my $gitdir = $ENV{"GIT_DIR"};
+
+open my $config, "-|", "git-config", "--path", "hooks.worktree";
+my $worktree = <$config>;
+close $config;
+if (defined $worktree) {
+    chomp $worktree;
+} else {
+    $worktree = "$gitdir/..";
+}
+
+open my $headfile, "<", "$gitdir/HEAD";
+my $headline = <$headfile>;
+close $headfile;
+my $curr_branch = ($headline =~ m!^ref: (.*)$! ? $1 : "");
+
+if ($refname ne $curr_branch) {
+    # no action needed if it isn't the current branch
+    exit 0;
+}
+
+# Now we know we've updated the currently checked-out branch.
+print STDERR "updating current working tree with pushed changes\n";
+$ENV{'GIT_WORK_TREE'} = $worktree;
+system "git", "reset", "--hard";
+
+exit 0;
+EOF
+close $post_update_hook;
+chmod 0555, "$gitdir/.git/hooks/post-update";
