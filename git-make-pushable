@@ -25,7 +25,7 @@
 use strict;
 use warnings;
 
-my $gitdir = defined $ENV{"GIT_DIR"} ? $ENV{"GIT_DIR"} : ".";
+my $gitdir = defined $ENV{"GIT_DIR"} ? $ENV{"GIT_DIR"} : ".git";
 
 # ----------------------------------------------------------------------
 # Start by enabling pushes to the current branch in general.
@@ -34,7 +34,8 @@ system "git", "config", "receive.denyCurrentBranch", "ignore";
 # ----------------------------------------------------------------------
 # Now create an update hook which disallows them in the case where
 # there's anything fragile in the working tree.
-open my $update_hook, ">", "$gitdir/.git/hooks/update";
+open my $update_hook, ">", "$gitdir/hooks/update"
+    or die "$gitdir/hooks/update: open: $!\n";
 print $update_hook <<'EOF';
 #!/usr/bin/perl
 
@@ -105,13 +106,14 @@ my %newfiles = ();
 exit 0;
 EOF
 close $update_hook;
-chmod 0555, "$gitdir/.git/hooks/update";
+chmod 0700, "$gitdir/.git/hooks/update";
 
 # ----------------------------------------------------------------------
 # Now create a post-update hook which does the 'git reset' to actually
 # _update_ the working tree. This does very little checking, the idea
 # being that the previous hook did everything important already.
-open my $post_update_hook, ">", "$gitdir/.git/hooks/post-update";
+open my $post_update_hook, ">", "$gitdir/hooks/post-update"
+    or die "$gitdir/hooks/post-update: open: $!\n";
 print $post_update_hook <<'EOF';
 #!/usr/bin/perl
 
@@ -154,4 +156,4 @@ system "git", "reset", "--hard";
 exit 0;
 EOF
 close $post_update_hook;
-chmod 0555, "$gitdir/.git/hooks/post-update";
+chmod 0700, "$gitdir/.git/hooks/post-update";
