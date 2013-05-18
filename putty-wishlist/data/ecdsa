@@ -2,8 +2,27 @@ Summary: Support for ECDSA keys in PuTTY and PuTTYgen
 Class: wish
 Difficulty: tricky
 Priority: medium
-Content-type: text/plain
+Content-type: text/x-html-body
 
-PuTTY does not currently support ECDSA keys.  It probably should.
+<p>
+<a href="http://tools.ietf.org/html/rfc5656">RFC 5656</a> defines
+elliptic-curve (ECDSA) key formats (host and user) for use with SSH-2,
+and associated ECDH key exchange methods. OpenSSH has supported these
+since 5.7.
+
+<p>
+PuTTY does not currently support these. It probably should.
+
+<p>
 The only niggle I (OSD) have is that I'm not 100% sure what the patent
-situation is.
+situation is. (Wikipedia has
+<a href="http://en.wikipedia.org/wiki/ECC_patents">some words</a> on
+the subject.)
+
+<p>
+A user reports
+<!-- comp.security.ssh 13fd429a-9909-47f9-834f-c9029f742793@googlegroups.com -->
+that the French government computing security agency
+<a href="http://www.ssi.gouv.fr/">ANSSI</a> has
+<a href="http://www.ssi.gouv.fr/IMG/pdf/NP_OpenSSH_NoteTech.pdf">recommendations</a>
+for configuring OpenSSH that prefer use of ECDSA keys.
