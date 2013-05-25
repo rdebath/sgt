@@ -1,0 +1,14 @@
+Summary: Make UTF-8 the default line character set
+Class: wish
+Difficulty: fun
+Priority: high
+
+It's 2013. Every major current Linux distribution defaults to emitting UTF-8
+in terminals. It's time for our default to change from ISO-8859-x.
+
+(The previous default isn't always ISO-8859-1, although that's what many
+people get. On Windows, we pick a line character set -- usually ISO-8859-x --
+that vaguely resembles the local Win125x codepage, for want of a better
+idea. On Unix, we look at the selected font and promote its declared
+character set, if any, to the line character set -- this option will
+continue to be available via "Use font encoding".)
