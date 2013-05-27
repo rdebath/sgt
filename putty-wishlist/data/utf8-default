@@ -2,7 +2,7 @@ Summary: Make UTF-8 the default line character set
 Class: wish
 Difficulty: fun
 Priority: high
-Fixed-in: r9843 2013-05-27
+Fixed-in: r9843 2013-05-26
 
 It's 2013. Every major current Linux distribution defaults to emitting UTF-8
 in terminals. It's time for our default to change from ISO-8859-x.
