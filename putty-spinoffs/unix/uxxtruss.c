@@ -7061,7 +7061,8 @@ int main(int argc, char **argv)
 				    set = &events_to_log;
 				else {
 				    fprintf(stderr, "xtruss: unknown keyword"
-					    " for '-e': '%.*s'\n", p-val, val);
+					    " for '-e': '%.*s'\n",
+                                            (int)(p-val), val);
 				    return 1;
 				}
 				p++;   /* skip '=' */
