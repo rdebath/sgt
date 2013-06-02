@@ -8,6 +8,14 @@
 ;;   (load (concat (getenv "HOME") "/src/local/sawfish.jl") nil t t)
 
 ;; ----------------------------------------------------------------------
+;; Function to re-run the default placement mode.
+
+(define (re-place-window w)
+  ((placement-mode (if (window-transient-p w)
+                       place-transient-mode place-window-mode)) w))
+(define-command 're-place-window re-place-window #:spec "%W")
+
+;; ----------------------------------------------------------------------
 ;; Mouse actions on window title/border
 
 ;;  - On the title bar, dragging moves the window, unless you
@@ -29,6 +37,7 @@
     "Button1-Click2" 'resize-window-interactively
     "Button2-Click2" 'resize-window-interactively
     "Button3-Click2" 'resize-window-interactively
+    "Button1-C-Click" 're-place-window
     "Button3-C-Click" 'popup-window-menu
 )
 (unbind-keys title-keymap
