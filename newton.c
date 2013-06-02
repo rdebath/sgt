@@ -206,7 +206,7 @@ static int toint(double d) {
 
 int plot(struct Params params) {
     int i, j, k;
-    Complex z, w, d, prevz;
+    Complex z, d, prevz;
     Complex overpower;
     struct Bitmap *bm;
     int icount, root;
@@ -237,7 +237,6 @@ int plot(struct Params params) {
         for (j = 0; j < params.width; j++) {
             z.i = params.y0 + (params.y1-params.y0) * i / params.height;
             z.r = params.x0 + (params.x1-params.x0) * j / params.width;
-            w = z;
             prevz = z;
 
 	    if (params.preview) {

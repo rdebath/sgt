@@ -126,7 +126,6 @@ int plot(struct Params params) {
 	
         for (j = 0; j < params.width; j++) {
 	    struct RGB c;
-	    int jmid;
 	    int c1,c2,c3;
 	    double d12, d13;
 	    int xo, xs;
@@ -148,8 +147,6 @@ int plot(struct Params params) {
 		xo = 0;
 		xs = 1;
 	    }
-
-	    jmid = ((i - yi*height) * params.side + height) / (2 * height);
 
 	    if (nxf > yf) {
 		/*
