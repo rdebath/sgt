@@ -126,8 +126,10 @@ static int socks_receive(Plug plug, int urgent, char *data, int len)
 	}
 	fflush(stdout);
     } else if (logmode == LOG_FILES || logmode == LOG_PIPE) {
-	if (c->infp)
+	if (c->infp) {
 	    fwrite(data, 1, len, c->infp);
+            fflush(c->infp);
+        }
     }
     int bufsize = pfd_send(c->clients, data, len);
     if (bufsize > BUFLIMIT)
@@ -253,8 +255,10 @@ int sshfwd_write(struct ssh_channel *c, char *buf, int len)
 	}
 	fflush(stdout);
     } else if (logmode == LOG_FILES || logmode == LOG_PIPE) {
-	if (c->outfp)
+	if (c->outfp) {
 	    fwrite(buf, 1, len, c->outfp);
+            fflush(c->outfp);
+        }
     }
     return sk_write(c->s, buf, len);
 }
@@ -345,7 +349,16 @@ int main(int argc, char **argv)
 		}
 	    } else if (!strcmp(p, "-g")) {
 		cfg.lport_acceptall = TRUE;
-	    }
+	    } else if (!strcmp(p, "--help")) {
+                printf("\
+usage: psocks [ -d | -f | -p pipe-cmd ] [ -g ] port-number\n\
+where: -d           log all connection contents to standard output\n\
+       -f           write each half-connection to a file sockin.N/sockout.N\n\
+       -p pipe-cmd  pipe each connection direction to 'pipe-cmd [in|out] N'\n\
+       -g           accept connections from anywhere, not just localhost\n\
+ also: psocks --help      display this help text\n");
+                return 0;
+            }
 	} else {
 	    socksport = atoi(p);
 	}
