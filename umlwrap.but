@@ -36,7 +36,7 @@ In addition to this basic functionality, \cw{umlwrap} also provides
 various refinements. You can permit the isolated process to write to
 specific subdirectories in the file system; you can vary the
 parameters under which it runs (uid, gid, current directory,
-environment variables). Also, if your UML kernel has \c{unionfs}
+environment variables). Also, if your UML kernel has \c{aufs}
 built in, you can overlay other directory trees on top of the root
 file system as seen by the isolated process. (This is useful if, for
 example, the binary you're trying to run is not only untrusted but
@@ -50,12 +50,11 @@ binary. By default, \cw{umlwrap} expects this to be called \c{linux}
 and expects to find it on your \cw{PATH}, but you can use the \c{-k}
 option to point it at a kernel somewhere else.
 
-If you want to use the \c{-u} option to overlay extra files on top
-of the normal file system, your kernel will need to have the
-\c{unionfs} file system compiled in. At the time of writing, this
-file system is not in the mainline kernels; it is in the \c{-mm}
-kernel series, or alternatively you can download the patch from
-\W{http://unionfs.filesystems.org/}\c{unionfs.filesystems.org}.
+If you want to use the \c{-u} option to overlay extra files on top of
+the normal file system, your kernel will need to have the \c{aufs}
+file system compiled in. At the time of writing, this file system is
+not in the mainline kernels, but you can find augmented kernel source
+trees at \W{http://aufs.sourceforge.net/}\c{aufs.sourceforge.net}.
 
 \U OPTIONS
 
@@ -212,7 +211,7 @@ subtrees will be overlaid on the root. The ones mentioned later will
 take priority, if the same pathnames exist in more than one.
 
 This option will not work if your UML kernel does not have
-\c{unionfs} compiled in.
+\c{aufs} compiled in.
 
 }
 
