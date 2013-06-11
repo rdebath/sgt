@@ -25,7 +25,7 @@ enum {
     /*
      * Inbound control connection.
      */
-    CMD_UNION,     /* Here's something to unionfs-overlay over the root */
+    CMD_UNION,     /* Here's something to union-mount over the root */
     CMD_ROOTRW,    /* The root fs, or top level of the union, should be RW */
     CMD_ROOT,      /* Here is where the root fs should be */
     CMD_WRITABLE,  /* Mount this directory writably */
