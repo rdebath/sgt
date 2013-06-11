@@ -225,7 +225,7 @@ static void control_packet(void *vctx, int type, void *data, size_t len)
 
 	    assert(p - s < 40 * ctx->nunions + 80);
 
-	    ret = mount("none", buf, "unionfs", mflags, s);
+	    ret = mount("none", buf, "aufs", mflags, s);
 	} else {
 	    s = ctx->root;
 	    ret = mount("none", buf, "hostfs", mflags, s);
