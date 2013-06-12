@@ -247,3 +247,4 @@
 (setq Crux:normal-color (get-color "#00000000c000"))
 (setq CruxSideways:normal-color Crux:normal-color)
 (setq CruxAbsent:normal-color Crux:normal-color)
+(setq EdgelessSafetyCrux:normal-color Crux:normal-color)
