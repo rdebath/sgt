@@ -480,18 +480,30 @@ bashrc_change_cd() {
 }
 
 cd() {
-  builtin cd "$@"
-  bashrc_change_cd
+  if builtin cd "$@"; then
+    bashrc_change_cd
+    return 0
+  else
+    return $?
+  fi
 }
 
 pushd() {
-  builtin pushd "$@"
-  bashrc_change_cd
+  if builtin pushd "$@"; then
+    bashrc_change_cd
+    return 0
+  else
+    return $?
+  fi
 }
 
 popd() {
-  builtin popd "$@"
-  bashrc_change_cd
+  if builtin popd "$@"; then
+    bashrc_change_cd
+    return 0
+  else
+    return $?
+  fi
 }
 
 #}}}
