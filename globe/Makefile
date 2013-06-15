@@ -21,7 +21,7 @@ icos-bw-face-pre.ps: mapbw.ps icos-faces
 icos-colour-face-pre.ps: mapcolour.ps icos-faces
 
 $(PDF): %.pdf:
-	ps2pdf $< $@
+	gs -sDEVICE=pdfwrite -sOutputFile=$@ -sPAPERSIZE=a4 -dBATCH -dNOPAUSE -q $<
 
 icos-bw-vert.pdf: icos-bw-vert-pre.ps desc.bw
 icos-colour-vert.pdf: icos-colour-vert-pre.ps desc.colour
