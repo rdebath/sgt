@@ -1,4 +1,4 @@
-#!/bin/sh 
+#!/bin/bash
 
 scale=${1-10}
 
