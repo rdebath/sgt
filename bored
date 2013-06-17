@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import os
-import popen2
+from subprocess import Popen, PIPE, STDOUT
 import sys
 import time
 import select
@@ -28,14 +28,14 @@ endtime = starttime + 30
 os.setpgrp()
 
 stuff = []
+devnull = open("/dev/null", "r")
 for command in commands:
-    p = popen2.Popen3(command + " 2>&1")
+    p = Popen(command, stdin=devnull, stdout=PIPE, stderr=STDOUT)
     if p:
-        p.tochild.close()
         stuff.append([command, p, []])
 
 while len(stuff) > 0:
-    fds = map(lambda t: t[1].fromchild, stuff) # get list of pipes
+    fds = map(lambda t: t[1].stdout, stuff) # get list of pipes
     r, w, x = select.select(fds, [], [], endtime - time.time())
 
     if len(r) == 0:
@@ -44,7 +44,7 @@ while len(stuff) > 0:
         sys.stdout.write(prefix)
         space = ""
         for t in stuff:
-            t[1].fromchild.close()
+            t[1].stdout.close()
             sys.stdout.write(space + t[0])
             space = " "
         sys.stdout.write("\n")
@@ -65,14 +65,15 @@ while len(stuff) > 0:
 
     newstuff = []
     for t in stuff:
-        if t[1].fromchild in r:
-            s = t[1].fromchild.readline()
+        if t[1].stdout in r:
+            s = t[1].stdout.readline()
             if s != "":
                 t[2].append(s)
                 newstuff.append(t)
             else:
                 # This command has terminated. Write its output.
-                t[1].fromchild.close()
+                t[1].stdout.close()
+                t[1].wait()
                 prefix = ("["+t[0]+"]" + " " * maxlen)[:maxlen]
                 if len(t[2]) > 0:
                     for s in t[2]:
