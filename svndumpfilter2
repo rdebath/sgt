@@ -87,7 +87,7 @@ import os
 import re
 import string
 import types
-import md5
+import hashlib
 from optparse import OptionParser
 
 # Quoting function which should render any string impervious to
@@ -214,7 +214,7 @@ class Lump:
 	if self.hdrdict.get("Text-delta", "false") != "true":
 	    if self.text != None:
 		self.sethdr("Text-content-length", str(len(self.text)))
-		m = md5.new()
+		m = hashlib.md5()
 		m.update(self.text)
 		self.sethdr("Text-content-md5", m.hexdigest())
 	    else:
