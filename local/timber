@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 set -- "$@" --end--
 folders=no
 while test "$1" != --end--; do
