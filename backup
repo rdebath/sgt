@@ -1,0 +1,38 @@
+#!/bin/sh
+
+# Client-side interface to the 'userv root backup*' services I tend to
+# install on machines of mine to handle backing up to USB disks.
+#
+# Usage:
+#
+#   backup next                  print the next backup disk(s) to use
+#   backup record <message>      record a message in the backup lo9g
+#   backup log                   view the backup log in a pager
+#   backup mount                 mount a disk on /backup
+#   backup umount                unmount /backup
+#   backup [anything else]       run backups
+
+case "$1" in
+    next)
+        userv root backupnext < /dev/null
+        ;;
+    record)
+        userv root backuprecord "$@" < /dev/null
+        ;;
+    log)
+        if test -t 1; then
+            userv root backuplog < /dev/null | ${PAGER:-less}
+        else
+            userv root backuplog < /dev/null
+        fi
+        ;;
+    mount)
+        userv root mount < /dev/null
+        ;;
+    umount)
+        userv root umount < /dev/null
+        ;;
+    *)
+        userv root backup "$@" < /dev/null
+        ;;
+esac
