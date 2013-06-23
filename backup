@@ -17,6 +17,7 @@ case "$1" in
         userv root backupnext < /dev/null
         ;;
     record)
+        shift
         userv root backuprecord "$@" < /dev/null
         ;;
     log)
