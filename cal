@@ -45,7 +45,7 @@ if test "$#" = 2; then
 elif test "$#" -gt 2; then
   exec $REALCAL $OPTS "$1"
 elif test "$#" = 1 && test "$1" -gt 12; then
-  exec $REALCAL $OPTS "$1"
+  exec $REALCAL -y "$1"
 elif test "$#" = 1; then
   if test "$1" -gt $[$month + 6]; then
     year=$[$year - 1]
