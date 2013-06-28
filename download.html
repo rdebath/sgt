@@ -190,14 +190,16 @@ PuTTYtel), and also the help files</b></td>
 </tr>
 </table>
 
-<!-- Special section for pre-releases. I expect to comment this whole
-section in and out depending on whether any version of PuTTY is
-currently in the pre-release stage. The wording in this introductory
-paragraph will probably want to change slightly each time - it
-mentions specific version numbers, and it also says 'contain bug fixes
-not present in the previous release' when it might in some cases want
-to say 'features'. -->
-<!-- (currently commented out, following 0.62 release
+<!-- Special section for pre-releases, part 1 of 3.
+I expect to comment this whole section in and out depending on whether
+any version of PuTTY is currently in the pre-release stage. The
+wording in this introductory paragraph will probably want to change
+slightly each time - it mentions specific version numbers, and it also
+says 'contain bug fixes not present in the previous release' when it
+might in some cases want to say 'features'.
+There are more sections like this for source code below, and a couple
+of other commented-out fragments. -->
+<!-- (currently commented out, following 0.62 release)
 <p><i>Pre-releases of 0.62</i>.
 These are snapshots of the PuTTY code which we hope will shortly
 become the 0.62 release. They do not contain all the features of the
@@ -321,7 +323,7 @@ PuTTYtel), and also the help files</b></td>
 <td><a href="http://tartarus.org/~simon/putty062pre-snapshots/sha512sums.DSA">(DSA sig)</a></td>
 </tr>
 </table>
---> <!-- End of pre-releases section. -->
+--> <!-- End of pre-releases section 1/3. -->
 
 <p><i>The latest development snapshot</i>.
 This will be built every day, automatically, from the current
@@ -471,7 +473,7 @@ These <code>.tar.gz</code> source archives should build the latest
 release version, and latest development snapshot, of PuTTY for Unix.
 
 <p>
-To build the release or pre-release source, you will need to unpack
+To build the release <!-- or pre-release --> source, you will need to unpack
 one of these archives, change into the "<code>unix</code>"
 subdirectory, and type "<code>make -f Makefile.gtk</code>". To build
 the development snapshot source, you can just do the standard thing
@@ -480,8 +482,8 @@ of <code>./configure && make</code>. See the file
 
 <p>
 (The filename of the development snapshot source archive contains the
-snapshot date, so it will change every night. The pre-release source
-archive similarly contains a revision number. These files are not
+snapshot date, so it will change every night. <!-- The pre-release source
+archive similarly contains a revision number. --> These files are not
 offered by FTP, because FTP does not support the redirect mechanism
 that implements this.)
 </p>
@@ -497,6 +499,7 @@ that implements this.)
 <td><a href="http://the.earth.li/~sgtatham/putty/latest/putty-0.62.tar.gz.RSA">(RSA sig)</a></td>
 <td><a href="http://the.earth.li/~sgtatham/putty/latest/putty-0.62.tar.gz.DSA">(DSA sig)</a></td>
 </tr>
+<!-- Special section for pre-releases, part 2/3. See comment above. -->
 <!-- commented out following 0.62 release - no current prereleases any more
 <tr>
 <td colspan=4><b>0.62 pre-release source code for Unix</b></td>
@@ -508,7 +511,7 @@ that implements this.)
 <td><a href="http://tartarus.org/~simon/putty062pre-snapshots/putty.tar.gz.RSA">(RSA sig)</a></td>
 <td><a href="http://tartarus.org/~simon/putty062pre-snapshots/putty.tar.gz.DSA">(DSA sig)</a></td>
 </tr>
--->
+--> <!-- End of pre-releases section part 2/3. -->
 <tr>
 <td colspan=4><b>Development snapshot source code for Unix</b></td>
 </tr>
@@ -539,6 +542,8 @@ PuTTY from source.
 <td><a href="http://the.earth.li/~sgtatham/putty/latest/putty-src.zip.RSA">(RSA sig)</a></td>
 <td><a href="http://the.earth.li/~sgtatham/putty/latest/putty-src.zip.DSA">(DSA sig)</a></td>
 </tr>
+<!-- Special section for pre-releases, part 3/3. See comment above. -->
+<!-- commented out following 0.62 release - no current prereleases any more
 <tr>
 <td colspan=4><b>0.62 pre-release source code for Windows</b></td>
 </tr>
@@ -549,6 +554,7 @@ PuTTY from source.
 <td><a href="http://tartarus.org/~simon/putty062pre-snapshots/putty-src.zip.RSA">(RSA sig)</a></td>
 <td><a href="http://tartarus.org/~simon/putty062pre-snapshots/putty-src.zip.DSA">(DSA sig)</a></td>
 </tr>
+--> <!-- End of pre-releases section part 3/3. -->
 <tr>
 <td colspan=4><b>Development source code for Windows</b></td>
 </tr>
