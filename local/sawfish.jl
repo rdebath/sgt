@@ -131,6 +131,14 @@
               (when (equal class "Xfce4-notifyd")
                 (make-window-ignored w t)))))
 
+;; Sawfish 1.5.3 on Ubuntu 13.04 fails to spot that windows popped up
+;; from the XFCE panel should be frameless.
+(add-hook 'add-window-hook
+          (lambda (w)
+            (let ((class (window-class w)))
+              (when (equal class "Xfce4-panel")
+                (window-put w 'type 'unframed)))))
+
 ;; ----------------------------------------------------------------------
 ;; My personalised focus handling
 
