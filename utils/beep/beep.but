@@ -10,8 +10,8 @@
 
 \U SYNOPSIS
 
-\c beep [ -v ] [ -X | -T | -S ]
-\e bbbb   bb     bb   bb   bb
+\c beep [ -v ] [ -Xkb | -X | -T | -S ]
+\e bbbb   bb     bbbb   bb   bb   bb
 
 \U DESCRIPTION
 
@@ -36,8 +36,10 @@ the case where the shell script wishing to generate a beep does not
 an X window manager.
 
 A third approach is to connect to your X display and send it a bell
-command. This does not depend on a Unix terminal device, but does
-(of course) require an X display.
+command. This does not depend on a Unix terminal device, but does (of
+course) require an X display. The X server supports two different
+methods of requesting a bell (the Xkb extension and the basic X11
+protocol), and \c{beep} will try both in turn.
 
 The \c{beep} command supports all these methods of generating a
 beep, and will try them in order until one works. Its order of
@@ -47,11 +49,18 @@ its standard output.
 
 \U OPTIONS
 
+\dt \cw{-Xkb}
+
+\dd Restricts \c{beep} to only using the Xkb extension on the X server
+to generate its beep. If there is no X server available, or it does
+not support the Xkb extension, no beep will be generated and \c{beep}
+will return failure.
+
 \dt \cw{-X}
 
-\dd Restricts \c{beep} to only using the X server to generate its
-beep. If there is no X server available, no beep will be generated
-and \c{beep} will return failure.
+\dd Restricts \c{beep} to only using the basic X11 protocol on the X
+server to generate its beep. If there is no X server available, no
+beep will be generated and \c{beep} will return failure.
 
 \dt \cw{-T}
 
