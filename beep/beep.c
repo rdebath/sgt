@@ -19,11 +19,17 @@
 const char usagemsg[] =
     "usage: beep [ -v ] ["
 #ifndef NO_X11
+#ifndef NO_XKB
+    " -Xkb |"
+#endif
     " -X |"
 #endif
     " -T | -S ]\n"
     "where: "
 #ifndef NO_X11
+#ifndef NO_XKB
+    "-Xkb   beep using the Xkb extension or not at all\n       "
+#endif
     "-X     beep using the X display or not at all\n       "
 #endif
     "-T     beep using /dev/tty or not at all\n"
@@ -85,6 +91,8 @@ void version(void) {
     }
 #ifdef NO_X11
     printf(", compiled without X11");
+#elif defined NO_XKB
+    printf(", compiled without Xkb");
 #endif
     putchar('\n');
 }
@@ -94,7 +102,9 @@ int main(int argc, char **argv) {
     char *display = NULL;
 #endif
     int verbose = 0;
-    enum { X11 = 1, TTY = 2, STDOUT = 4 } mode = X11 | TTY | STDOUT;
+    enum {
+        XKB = 1, X11 = 2, TTY = 4, STDOUT = 8
+    } mode = XKB | X11 | TTY | STDOUT;
     char errbuf[4096];
     int errlen = 0;
     int done = 0;
@@ -114,6 +124,10 @@ int main(int argc, char **argv) {
 	    display = *++argv, --argc;
         } else if (!strcmp(p, "-X")) {
             mode = X11;
+#ifndef NO_XKB
+        } else if (!strcmp(p, "-Xkb")) {
+            mode = XKB;
+#endif
         } else
 #endif
 	if (!strcmp(p, "-T")) {
@@ -141,19 +155,33 @@ int main(int argc, char **argv) {
     }
 
 #ifndef NO_X11
-    if (!done && (mode & X11)) {
+    if (!done && (mode & (XKB|X11))) {
 	Display *disp = XOpenDisplay(display);
 	if (!disp) {
 	    errlen += sprintf(errbuf+errlen,
 			      "%s: unable to open X display\n", pname);
 	} else {
-	    XBell(disp, 0);
-	    XCloseDisplay(disp);
-	    if (verbose) {
-		errlen += sprintf(errbuf+errlen,
-				  "%s: successfully beeped via X11\n", pname);
-	    }
-	    done = 1;
+#ifndef NO_XKB
+            if (!done && (mode & XKB)) {
+                if (XkbBell(disp, None, 0, NULL)) {
+                    XCloseDisplay(disp);
+                    if (verbose) {
+                        errlen += sprintf(errbuf+errlen,
+                                          "%s: successfully beeped via Xkb\n", pname);
+                    }
+                    done = 1;
+                }
+            }
+#endif
+            if (!done && (mode & X11)) {
+                XBell(disp, 0);
+                XCloseDisplay(disp);
+                if (verbose) {
+                    errlen += sprintf(errbuf+errlen,
+                                      "%s: successfully beeped via X11\n", pname);
+                }
+                done = 1;
+            }
 	}
     }
 #endif
