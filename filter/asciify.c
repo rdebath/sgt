@@ -1955,6 +1955,17 @@ if (@acs) {
                   case 0x2e3a: outptr = "-"; break; /* TWO-EM DASH */
                   case 0x2e3b: outptr = "-"; break; /* THREE-EM DASH */
                   case 0xfe58: outptr = "-"; break; /* SMALL EM DASH */
+                  case 0x00ad: outptr = "-"; break; /* SOFT HYPHEN */
+                  case 0x2010: outptr = "-"; break; /* HYPHEN */
+                  case 0x2011: outptr = "-"; break; /* NON-BREAKING HYPHEN */
+                  case 0x2043: outptr = "-"; break; /* HYPHEN BULLET */
+                  case 0x2022: outptr = "*"; break; /* BULLET */
+                  case 0x00B7: outptr = "*"; break; /* MIDDLE DOT (which I choose to consider most likely to be used as a bullet) */
+                  case 0x00A3: outptr = "GBP"; break; /* POUND SIGN (it's this or L) */
+                  case 0x00A6: outptr = "|"; break; /* BROKEN BAR */
+                  case 0x00B0: outptr = "deg"; break; /* DEGREE SIGN */
+                  case 0x00D7: outptr = "x"; break; /* MULTIPLICATION SIGN (should this be * for maths contexts, or x for 1024x768 contexts?) */
+                  case 0x00F7: outptr = "/"; break; /* DIVISION SIGN (here I have no better option, though it's a shame it doesn't match my choice for D7) */
 
                   default:
                     if (wc >= 0 && wc < 0x80) {
