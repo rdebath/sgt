@@ -1962,10 +1962,18 @@ if (@acs) {
                   case 0x2022: outptr = "*"; break; /* BULLET */
                   case 0x00B7: outptr = "*"; break; /* MIDDLE DOT (which I choose to consider most likely to be used as a bullet) */
                   case 0x00A3: outptr = "GBP"; break; /* POUND SIGN (it's this or L) */
+                  case 0x20ac: outptr = "EUR"; break; /* EURO SIGN */
                   case 0x00A6: outptr = "|"; break; /* BROKEN BAR */
                   case 0x00B0: outptr = "deg"; break; /* DEGREE SIGN */
                   case 0x00D7: outptr = "x"; break; /* MULTIPLICATION SIGN (should this be * for maths contexts, or x for 1024x768 contexts?) */
                   case 0x00F7: outptr = "/"; break; /* DIVISION SIGN (here I have no better option, though it's a shame it doesn't match my choice for D7) */
+                  case 0x0152: outptr = "OE"; break; /* LATIN CAPITAL LIGATURE OE */
+                  case 0x0153: outptr = "oe"; break; /* LATIN SMALL LIGATURE OE */
+                  case 0x00C6: outptr = "ae"; break; /* LATIN CAPITAL LETTER AE */
+                  case 0x00E6: outptr = "AE"; break; /* LATIN SMALL LETTER AE */
+                  case 0x00D8: outptr = "O"; break; /* LATIN CAPITAL LETTER O WITH STROKE */
+                  case 0x00DF: outptr = "ss"; break; /* LATIN SMALL LETTER SHARP S */
+                  case 0x00F8: outptr = "o"; break; /* LATIN SMALL LETTER O WITH STROKE */
 
                     /*
                      * Box drawing characters.
