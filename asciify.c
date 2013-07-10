@@ -113,7 +113,7 @@ char *translate(tstate *state, char *data, int inlen, int *outlen,
                 wchar_t wc = *midptr++;
                 char localbuf[10];
                 const char *outptr;
-                int len;
+                int len = 0;
 
                 switch (wc) {
                     /*
@@ -2117,15 +2117,15 @@ if (@acs) {
                   default:
                     if (wc >= 0 && wc < 0x80) {
                         localbuf[0] = (char)wc;
-                        localbuf[1] = '\0';
                         outptr = localbuf;
+                        len = 1;
                     } else {
                         snprintf(localbuf, sizeof(localbuf), "<U+%04x>", wc);
                         outptr = localbuf;
                     }
                 }
 
-                len = strlen(outptr);
+                if (!len) len = strlen(outptr);
                 retlen += len;
                 if (retsize - retlen < 128) {
                     retsize = (retsize * 3) / 2;
