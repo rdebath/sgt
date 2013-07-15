@@ -106,7 +106,7 @@ my %newfiles = ();
 exit 0;
 EOF
 close $update_hook;
-chmod 0700, "$gitdir/.git/hooks/update";
+chmod 0700, "$gitdir/hooks/update";
 
 # ----------------------------------------------------------------------
 # Now create a post-update hook which does the 'git reset' to actually
@@ -156,4 +156,4 @@ system "git", "reset", "--hard";
 exit 0;
 EOF
 close $post_update_hook;
-chmod 0700, "$gitdir/.git/hooks/post-update";
+chmod 0700, "$gitdir/hooks/post-update";
