@@ -328,7 +328,7 @@ int main(int argc, char **argv)
                 fprintf(stderr, "sc: write: %s\n", strerror(errno));
                 return 1;
             }
-            assert(sendlen > 0 && sendlen <= (size_t)ret);
+            assert(ret > 0 && ret <= (size_t)sendlen);
             sendlen -= ret;
             memmove(sendbuf, sendbuf + ret, sendlen);
         }
@@ -339,7 +339,7 @@ int main(int argc, char **argv)
                 fprintf(stderr, "sc: write: %s\n", strerror(errno));
                 return 1;
             }
-            assert(recvlen > 0 && recvlen <= (size_t)ret);
+            assert(ret > 0 && ret <= (size_t)recvlen);
             recvlen -= ret;
             memmove(recvbuf, recvbuf + ret, recvlen);
         }
