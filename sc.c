@@ -18,9 +18,9 @@
 #include <unistd.h>
 
 const char helpmsg[] =
-    "usage: sc [ options ] host port\n"
-    "   or: sc [ options ] -l port\n"
-    "   or: sc [ options ] -U path\n"
+    "usage: sc [ options ] host port [ command [args] ]\n"
+    "   or: sc [ options ] -l port [ command [args] ]\n"
+    "   or: sc [ options ] [ -l ] -U path [ command [args] ]\n"
     "where: -l                listen instead of connecting (just give port)\n"
     "       -U                Unix-domain socket (give socket pathname)\n"
     "       -u                UDP or Unix datagram socket\n"
@@ -139,6 +139,8 @@ int main(int argc, char **argv)
     char *port;
     char *pathname;
 
+    int exec = 0;
+
     int fd;
 
     char sendbuf[32768], recvbuf[32768];
@@ -233,13 +235,8 @@ int main(int argc, char **argv)
     }
 
     if (nargs > 0) {
-        /*
-         * FIXME: it would be nice at this point to fork off a
-         * subprocess connected to the other end of our stdin/stdout
-         * which runs the provided command.
-         */
-        fprintf(stderr, "sc: unexpected extra arguments\n");
-        return 1;
+        *argsout++ = NULL;         /* terminate arg list for execvp */
+        exec = 1;
     }
 
     if (unixdomain) {
@@ -284,6 +281,21 @@ int main(int argc, char **argv)
             return 1;
 
         freeaddrinfo(addrs);
+    }
+
+    if (exec) {
+        /*
+         * If we were passed a subcommand, do not run our usual select
+         * loop ferrying data between our socket and standard
+         * input/output. Instead, just exec a subcommand with the
+         * socket _on_ its standard input and output.
+         */
+        dup2(fd, 0);
+        dup2(fd, 1);
+        close(fd);
+        execvp(args[0], args);
+        fprintf(stderr, "sc: execvp: %s\n", strerror(errno));
+        return 1;
     }
 
     sendlen = recvlen = 0;
