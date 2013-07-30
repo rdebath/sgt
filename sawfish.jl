@@ -247,6 +247,19 @@
 )
 
 ;; ----------------------------------------------------------------------
+;; Add a window menu item to paste a window's title. Depends on my
+;; utility 'xcopy', because Sawfish appears to have no built-in
+;; facility to write to the X selection (though it can read it).
+(define (sgt-copy-window-title w)
+  (system (concat "echo -n '"
+                  (string-replace "'" "'\\''" (window-name w))
+                  "' | xcopy")))
+(define-command 'sgt-copy-window-title sgt-copy-window-title #:spec "%W")
+(setq window-ops-menu
+      (append window-ops-menu
+              '(() ("Copy window title" sgt-copy-window-title))))
+
+;; ----------------------------------------------------------------------
 ;; Some other miscellaneous configuration options I feel strongly
 ;; about
 
