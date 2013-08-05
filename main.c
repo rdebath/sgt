@@ -145,6 +145,7 @@ void attrsonexit(void)
 
 struct mainopts {
     int pipe;
+    int no_ctty;
     int quit;
 };
 
@@ -168,6 +169,11 @@ int option(struct mainopts *opts, struct tstate *state,
 	if (value)
 	    return OPT_SPURIOUSARG;
 	opts->pipe = TRUE;
+    } else if (shortopt == 'P') {
+	if (value)
+	    return OPT_SPURIOUSARG;
+	opts->pipe = TRUE;
+        opts->no_ctty = TRUE;
     } else if (shortopt == 'q') {
 	if (value)
 	    return OPT_SPURIOUSARG;
@@ -191,7 +197,7 @@ int main(int argc, char **argv)
     int exitcode = -1;
     pid_t childpid = -1;
 
-    opts.pipe = FALSE;
+    opts.pipe = opts.no_ctty = FALSE;
     opts.quit = FALSE;
 
     state = tstate_init();
@@ -368,7 +374,7 @@ int main(int argc, char **argv)
 	dup2(slaver, 0);
 	close(1);
 	dup2(slavew, 1);
-	if (!opts.pipe) {
+	if (!opts.pipe || opts.no_ctty) {
 	    int fd;
 	    close(2);
 	    dup2(slavew, 2);
@@ -379,7 +385,8 @@ int main(int argc, char **argv)
 		ioctl(fd, TIOCNOTTY);
 		close(fd);
 	    }
-	    ioctl(slavew, TIOCSCTTY);
+            if (!opts.pipe)
+                ioctl(slavew, TIOCSCTTY);
 	}
 	/* Close everything _else_, for tidiness. */
 	for (i = 3; i < 1024; i++)
