@@ -1,6 +1,7 @@
 Summary: Dead keys don't work on Unix
 Class: semi-bug
 Content-type: text/x-html-body
+Fixed-in: r9567 2012-06-18
 
 <p>
 We've had a number of reports that dead keys don't work in the Gtk
@@ -17,3 +18,7 @@ to support this, and/or send a patch.
 
 <p>
 (See also <a href="multi-key.html">`multi-key'</a>.)
+
+<p>
+<em>Update:</em> fixed in r9567 (with fallout addressed in r9568 and
+r9573).
