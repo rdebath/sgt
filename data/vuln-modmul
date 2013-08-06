@@ -1,0 +1,58 @@
+Summary: Vulnerability: buffer underrun in modmul can corrupt the heap
+Class: vulnerability
+Difficulty: fun
+Priority: high
+Absent-in: r571
+Present-in: 0.52 0.53 0.53b 0.54 0.55 0.56 0.57 0.58 0.59 0.60 0.61 0.62
+Fixed-in: r9977 2013-07-09 0.63
+Content-type: text/x-html-body
+
+<p>
+Many versions of PuTTY prior to 0.63 have a heap-corrupting buffer
+underrun bug in the <code>modmul</code> function which performs
+modular multiplication.
+
+<p>
+In order to get as many useful bits as possible out of each division,
+<code>modmul</code> starts by shifting the modulus left so that its
+highest set bit appears at the top of a machine word. To correct for
+that shift in the following calculation, the last thing it does is to
+shift the entire output value left by the same number of bits, reduce
+it again, and shift back down. A missing bounds check can cause it to
+allocate the array it uses to store that output value with too little
+capacity, with the effect that the bit-shifting process runs off the
+beginning of the array and corrupts data preceding it in memory.
+
+<p>
+The corrupted data will typically consist of other values involved in
+the same modular multiplication, and the heap block headers in between
+them. Since the shifted data is shifted back again immediately after
+the final modular reduction, this bug would be harmless (though still
+wrong) except for the fact that one word at the bottom of the data is
+<em>not</em> shifted back down. By choosing the inputs to
+<code>modmul</code> to have appropriate lengths relative to each
+other, that one unrestored word can be made to point at a heap block
+header.
+
+<p>
+The <code>modmul</code> function is called during validation of any
+DSA signature received by PuTTY, including during the initial key
+exchange phase. Therefore, this bug can be exploited by a malicious
+server, <em>before</em> the client has received and verified a host
+key signature. So this attack can be performed by a man-in-the-middle
+between the SSH client and server, and the normal host key protections
+against MITM attacks are bypassed. Even if you trust the server you
+<em>think</em> you are connecting to, you are not safe.
+
+<p>
+We are currently unaware of any way in which this can lead to remote
+code execution or controlled memory overwriting, since the overwritten
+heap block cannot be assigned an arbitrary value by the attacker, only
+shifted left by a chosen number of bits. However, we cannot be sure of
+that.
+
+<p>
+This bug does not affect RSA keys.
+
+<p>
+This bug was discovered by Mark Wooding.

@@ -1,0 +1,47 @@
+Summary: Vulnerability: negative string length in public-key signatures can cause integer overflow and overwrite all of memory
+Class: vulnerability
+Difficulty: fun
+Priority: high
+Absent-in: r968
+Present-in: 0.52 0.53 0.53b 0.54 0.55 0.56 0.57 0.58 0.59 0.60 0.61 0.62
+Fixed-in: r9896 2013-07-09 0.63
+Content-type: text/x-html-body
+
+<p>
+Many versions of PuTTY prior to 0.63 have an integer overflow
+vulnerability in their treatment of string length fields in public-key
+signatures.
+
+<p>
+An RSA signature blob contains a multiprecision integer stored as an
+SSH-2 string, i.e. with a 4-byte length field at the front. Setting
+this length field to 0xFFFFFFFF (-1) is mistakenly permitted by the
+signature decoding code due to a missing bounds check, and the effect
+is that PuTTY allocates zero memory to store the integer in (because
+it adds one to the length first) and then tries to write zeroes over
+4Gb of memory starting from that location.
+
+<p>
+This bug applies to any RSA signature received by PuTTY, including
+during the initial key exchange phase. Therefore, this bug can be
+exploited by a malicious server, <em>before</em> the client has
+received and verified a host key signature. So this attack can be
+performed by a man-in-the-middle between the SSH client and server,
+and the normal host key protections against MITM attacks are bypassed.
+Even if you trust the server you <em>think</em> you are connecting to,
+you are not safe.
+
+<p>
+We are unaware of any way in which this can lead to remote code
+execution, since it will typically overwrite the entire heap with
+zeroes and PuTTY is expected to crash almost immediately.
+
+<p>
+This bug does not affect DSA keys.
+
+<p>
+This bug was discovered by <a href="http://www.search-lab.hu/">SEARCH-LAB</a>
+and documented in
+<a href="http://www.search-lab.hu/advisories/secadv-20130722">their advisory</a>.
+It has been assigned CVE ID
+<a href="http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2013-4852">CVE-2013-4852</a>.

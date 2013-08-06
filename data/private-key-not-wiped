@@ -1,0 +1,67 @@
+Summary: Private keys left in memory after being used by PuTTY tools
+Class: vulnerability
+Difficulty: fun
+Priority: high
+Absent-in: r1020
+Present-in: 0.52 0.53 0.53b 0.54 0.55 0.56 0.57 0.58 0.59 0.60 0.61 0.62
+Fixed-in: r9988 2013-07-14 0.63
+Content-type: text/x-html-body
+
+<p>
+When PuTTY has sensitive data in memory and has no further need for
+it, it should wipe the data out of its memory, in case malware later
+gains access to the PuTTY process or the memory is swapped out to disk
+or written into a crash dump file. An obvious example of this is the
+password typed during SSH login; other examples include obsolete
+session keys, public-key passphrases, and the private halves of public
+keys.
+
+<p>
+After loading an RSA key, PuTTY runs the internal routine
+<code>rsa_verify()</code> to check that it makes sense. Every version
+of PuTTY since 2001, up to and including 0.62, has a bug in which
+<code>rsa_verify()</code> fails to wipe from memory two large integer
+variables containing <i>p</i>&#8722;1 and <i>q</i>&#8722;1, where
+<i>p</i> and <i>q</i> are the two primes whose product is the RSA key
+modulus. Recovering these from a PuTTY memory image would be
+sufficient to reconstruct the private half of the RSA key; so those
+versions of PuTTY would effectively store your private key in memory
+for as long as they were running.
+
+<p>
+Similar problems apply to DSA keys: PuTTY fails to free the private
+key component <i>x</i>, and also does not free the random number
+<i>k</i> that it generates when making a DSA signature, possession of
+which is sufficient to expose the private key.
+
+<p>
+This applies to every program in the PuTTY suite which loads private
+keys: PuTTY, PSCP, PSFTP and Plink. If any of those programs loads a
+private key directly (rather than getting a signature from an SSH
+agent such as Pageant) then they will have left information equivalent
+to the private key in memory for their entire run.
+
+<p>
+Pageant also had the same bug, but of course since its <em>job</em> is
+to retain decrypted private keys in memory that isn't important in
+most cases. However, if you ever told Pageant to delete a key from
+memory, it would not have properly deleted it: it would still have
+retained a copy by mistake due to this bug.
+
+<p>
+PuTTY 0.63 fixes this bug in all the tools: those variables are now
+correctly wiped from memory.
+
+<p>
+However, it is still <em>unavoidably</em> very dangerous if malicious
+software is in a position to read the memory of your PuTTY processes:
+there is still a lot of sensitive data in there which cannot be wiped
+because it's still being used, e.g. session keys. And, as mentioned
+above, Pageant retains decrypted private keys in memory for long
+periods <em>on purpose</em> if you use it. So this fix somewhat
+mitigates the risks of malicious access to your PuTTY processes'
+memory, but no fix can eliminate those risks completely.
+
+<p>
+The RSA part of this vulnerability was spotted by
+<a href="https://scan.coverity.com/">Coverity Scan</a>.
