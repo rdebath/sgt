@@ -128,3 +128,7 @@ But Num Lock is a pain -- I think I'd habe the platform code check the
 If the Meta key is down, the platform code is expected to subtract it out of
   the characters sent if it did anything:
     process_key(PK_NULL, "a", PKM_META);
+
+(Update: this idea appeared in the code in the form of term_key() in
+terminal.c in r2728; however it was never adopted in any of the
+mainstream ports, so was finally removed again in r9579.)
