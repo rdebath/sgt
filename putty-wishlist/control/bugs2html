@@ -53,7 +53,8 @@ require "./config.pl";
     # 0.62 was from a branch made just after the 0.61 release, so its
     # date and rev are those of the branch start point.
     [ "0.62", "2011-07-12", "r9213" ],
-  # [ "0.63", "YYYY-MM-DD", "rXXXX" ], : populate with trunk rev
+    [ "0.63", "2013-08-06", "r9998" ],
+  # [ "0.64", "YYYY-MM-DD", "rXXXX" ], : populate with trunk rev
 );
 
 %classdesc =
