@@ -36,7 +36,61 @@ not updating, which happens sometimes):
 For features planned for the next full release (and already available in
 the development snapshots), see the <a href="wishlist/">wishlist page</a>.
 
-<p>These features are new in beta 0.62 (released 2011-12-10):
+<p>These features are new in beta 0.63 (released 2013-08-06):
+<ul>
+<li>
+Security fix: prevent a nefarious SSH server or network attacker from
+crashing PuTTY at startup in three different ways by presenting a
+maliciously constructed public key and signature.
+<li>
+Security fix: PuTTY no longer retains the private half of users' keys
+in memory by mistake after authenticating with them.
+<li>
+Revamped the internal configuration storage system to remove all fixed
+arbitrary limits on string lengths. In particular, there should now no
+longer be an unreasonably small limit on the number of port
+forwardings PuTTY can store.
+<li>
+Port-forwarded TCP connections which close one direction before the
+other should now be reliably supported, with EOF propagated
+independently in the two directions. This also fixes some instances of
+port-forwarding data corruption (if the corruption consisted of losing
+data from the very end of the connection) and some instances of PuTTY
+failing to close when the session is over (because it wrongly thought
+a forwarding channel was still active when it was not).
+<li>
+The terminal emulation now supports <code>xterm</code>'s bracketed
+paste mode (allowing aware applications to tell the difference between
+typed and pasted text, so that e.g. editors need not apply
+inappropriate auto-indent).
+<li>
+You can now choose to display bold text by both brightening the
+foreground colour <em>and</em> changing the font, not just one or the
+other.
+<li>
+PuTTYgen will now never generate a 2047-bit key when asked for 2048
+(or more generally <i>n</i>&#8722;1 bits when asked for <i>n</i>).
+<li>
+Some updates to default settings: PuTTYgen now generates 2048-bit keys
+by default (rather than 1024), and PuTTY defaults to UTF-8 encoding
+and 2000 lines of scrollback (rather than ISO 8859-1 and 200).
+<li>
+Unix: PSCP and PSFTP now preserve the Unix file permissions, on copies
+in both directions.
+<li>
+Unix: dead keys and compose-character sequences are now supported.
+<li>
+Unix: PuTTY and pterm now permit font fallback (where glyphs not
+present in your selected font are automatically filled in from other
+fonts on the system) even if you are using a server-side X11 font
+rather than a Pango client-side one.
+<li>
+Bug fixes too numerous to list, mostly resulting from running the code
+through Coverity Scan which spotted an assortment of memory and
+resource leaks, logic errors, and crashes in various circumstances.
+</ul>
+
+<p>These features were new in beta 0.62 (released 2011-12-10):
 <ul>
 <li>
 Security fix: PuTTY no longer retains passwords in memory by mistake.
