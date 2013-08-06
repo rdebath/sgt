@@ -302,7 +302,8 @@ nest(<<EOF);
 
 <p>
 These are potential or actual vulnerabilities in the code that may
-allow an attacker to gain some level of unauthorised access.
+allow an attacker to gain some level of unauthorised access, or
+otherwise cause mischief.
 <ul>
 EOF
 
@@ -623,7 +624,8 @@ sub add_release_fixes {
                 # We add the release version in parentheses so that it's
                 # distinguishable from one in the source data.
                 my $relstr = "($rel)";
-                if (!exists($extra_fixed_h{$relstr})) {
+                if ($bugs{$bug}->{"hdrs"}->{"fixed-in"} !~ m/\b\Q$rel\E\b/
+                    and !exists($extra_fixed_h{$relstr})) {
                     $extra_fixed_h{$relstr} = 1;
                     push @extra_fixed, $relstr;
                 }
