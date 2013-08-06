@@ -1,0 +1,19 @@
+Summary: Unicode character input on Windows (for Romanian, etc)
+Class: bug
+Priority: medium
+Fixed-in: r9942 2013-07-21
+
+On Windows, some locales are such that there are keys on the keyboard
+corresponding to characters that are not in the system code page.
+PuTTY's use of ToAsciiEx() means that such characters can't easily be
+entered with PuTTY.
+
+Apparently this is a particular problem with Romanian keyboards and
+the characters
+  U+0219  LATIN SMALL LETTER S WITH COMMA BELOW
+  U+021B  LATIN SMALL LETTER T WITH COMMA BELOW
+which are standardised in ISO-8859-16, which isn't supported by
+Windows XP. It's also been suggested that Armenian and Georgian
+locales are affected.
+
+Switching to ToUnicodeEx() avoids the problem.
