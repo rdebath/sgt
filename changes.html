@@ -41,10 +41,14 @@ the development snapshots), see the <a href="wishlist/">wishlist page</a>.
 <li>
 Security fix: prevent a nefarious SSH server or network attacker from
 crashing PuTTY at startup in three different ways by presenting a
-maliciously constructed public key and signature.
+maliciously constructed public key and signature. See
+<a href="http://www.chiark.greenend.org.uk/~sgtatham/putty/wishlist/vuln-modmul.html">vuln-modmul</a>,
+<a href="http://www.chiark.greenend.org.uk/~sgtatham/putty/wishlist/vuln-signature-stringlen.html">vuln-signature-stringlen</a>,
+<a href="http://www.chiark.greenend.org.uk/~sgtatham/putty/wishlist/vuln-bignum-division-by-zero.html">vuln-bignum-division-by-zero</a>.
 <li>
 Security fix: PuTTY no longer retains the private half of users' keys
-in memory by mistake after authenticating with them.
+in memory by mistake after authenticating with them. See
+<a href="http://www.chiark.greenend.org.uk/~sgtatham/putty/wishlist/private-key-not-wiped.html">private-key-not-wiped</a>.
 <li>
 Revamped the internal configuration storage system to remove all fixed
 arbitrary limits on string lengths. In particular, there should now no
@@ -93,7 +97,8 @@ resource leaks, logic errors, and crashes in various circumstances.
 <p>These features were new in beta 0.62 (released 2011-12-10):
 <ul>
 <li>
-Security fix: PuTTY no longer retains passwords in memory by mistake.
+Security fix: PuTTY no longer retains passwords in memory by mistake. See
+<a href="http://www.chiark.greenend.org.uk/~sgtatham/putty/wishlist/password-not-wiped.html">password-not-wiped</a>.
 <li>
 Bug fix: Pageant now talks to both new-style clients (0.61 and above)
 and old-style (0.60 and below).
