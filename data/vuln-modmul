@@ -55,4 +55,5 @@ that.
 This bug does not affect RSA keys.
 
 <p>
-This bug was discovered by Mark Wooding.
+This bug was discovered by Mark Wooding. It has been assigned CVE ID
+<a href="http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2013-4206">CVE-2013-4206</a>.
