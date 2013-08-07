@@ -1,4 +1,4 @@
-Summary: Line ending conversion in PSCP and PSFTP
+Summary: Line ending conversion ("ASCII mode") in PSCP and PSFTP
 Difficulty: tricky
 Class: wish
 Priority: medium
@@ -23,6 +23,10 @@ I don't know what implementations exist.
 server to give hints to the client about whether the file is best
 opened in text or binary mode, so the operation of "get" would have to
 be manually switched by "text" and "binary" commands or similar.)
+
+<p>
+(The SCP protocol continues to have no notion of transferring a file
+in anything other than binary mode.)
 
 <p>
 For "put", should we require explicit triggering of this mechanism for local
