@@ -65,3 +65,7 @@ memory, but no fix can eliminate those risks completely.
 <p>
 The RSA part of this vulnerability was spotted by
 <a href="https://scan.coverity.com/">Coverity Scan</a>.
+
+<p>
+This bug has been assigned CVE ID
+<a href="http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2013-4208">CVE-2013-4208</a>.
