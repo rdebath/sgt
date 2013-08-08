@@ -238,12 +238,12 @@ EOF
     }
 
     nest(<<EOF);
-<h3>Fixed in $class</h3>
+<h3><a name="fixed-@{[&veranchor($class)]}">Fixed in $class</a></h3>
 <ul>
 EOF
 
     nest(<<EOF);
-<li>Security vulnerabilities
+<li><a name="fixed-vuln-@{[&veranchor($class)]}">Security vulnerabilities</a>
 <ul>
 EOF
 
@@ -254,7 +254,7 @@ EOF
     unnest("</ul>\n");
 
     nest(<<EOF);
-<li>Bugs (and semi-bugs)
+<li><a name="fixed-bug-@{[&veranchor($class)]}">Bugs (and semi-bugs)</a>
 <ul>
 EOF
 
@@ -266,7 +266,7 @@ EOF
     unnest("</ul>\n");
 
     nest(<<EOF);
-<li>Wishes
+<li><a name="fixed-wish-@{[&veranchor($class)]}">Wishes</a>
 <ul>
 EOF
 
@@ -664,6 +664,16 @@ sub classifyver {
         $name = "release " . $ver;
     }
     return $name;
+}
+
+# Given a canonical textual name as returned from &classifyver, give a
+# version of it better suited for being an anchor name.
+sub veranchor {
+    my ($ver) = @_;
+    $ver =~ s/^current snapshots/snapshots/;
+    $ver =~ s/^release /release-/;
+    $ver =~ s/^pre-release builds of /prerelease-/;
+    return $ver;
 }
 
 # Compare function for equivalence classes as returned by classifyver
