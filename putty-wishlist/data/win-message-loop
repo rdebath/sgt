@@ -1,0 +1,51 @@
+Summary: Using modal dialog boxes on Windows invokes a substandard message loop
+Class: bug
+Present-in: 0.63
+Difficulty: taxing
+Priority: medium
+Content-type: text/x-html-body
+
+<p>
+Windows PuTTY launches many of its dialog boxes using modal Windows
+API functions (<code>DialogBox</code>, <code>DialogBoxParam</code>,
+<code>GetSaveFileName</code>, <code>MessageBox</code> and so on) which
+do not return until the dialog box has been closed by the user.
+Windows implements these functions by running its own message loop,
+since it can't return to the application's top-level message loop.
+
+<p>
+Unfortunately, PuTTY's top-level message loop does important things
+other than fetching and dispatching window messages. In particular, it
+calls <code>enact_pending_netevent</code>, which is what actually does
+the work of responding to incoming data on network connections. So it
+would be better not to delegate to a subsidiary message loop we don't
+control.
+
+<p>
+For the dialog box types we invented ourselves, such as the
+Change Settings and About boxes, this requires only a structural
+change to make the Windows front end slightly more event-driven than
+it already is: we should launch the dialog box using
+<code>CreateDialog</code> rather than <code>DialogBox</code>, return
+to the main PuTTY message loop, and when the user closes the dialog
+box we should enact whatever change they requested (if any). For
+example, the current handler for <code>IDM_RECONF</code> would stop at
+the point where it calls <code>do_reconfig</code>, and all the
+subsequent code would move out into a window message handler for
+whatever message indicates the closing of the reconfiguration box.
+This won't necessarily be <em>easy</em> in every case (and will also
+require some state-tracking to ensure we don't open an endless series
+of reconfiguration boxes in parallel if the user selects Change
+Settings a second time), but it's probably feasible.
+
+<p>
+For Windows standard dialogs such as the load and save file ones,
+however, there isn't a comparably easy solution that I know of.
+<code>GetOpenFileName</code> and <code>GetSaveFileName</code> don't
+have non-modal equivalents that I know of, and as far as I can see
+neither do the horrible modern replacements based on
+<code>IFileDialog</code>. So it might be difficult to use our
+top-level message loop while one of those dialog boxes is active.
+(Unless running modal dialog API functions in a separate thread does
+what you want, perhaps? I currently have no idea whether that would
+work, though.)
