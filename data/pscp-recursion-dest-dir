@@ -1,0 +1,19 @@
+Summary: PSCP recursive copy to a new directory tries to copy all files over that dir
+Class: bug
+Priority: medium
+Difficulty: fun
+Content-type: text/x-html-body
+
+<p>
+If I try to copy a whole directory to an SFTP server using a command
+of the form <code>pscp -r srcdir desthost:destdir</code>, where
+<code>destdir</code> does not already exist on the destination host, I
+would like to end up with <code>destdir</code> existing and being an
+exact copy of <code>srcdir</code>.
+
+<p>
+Instead, what happens is that PSCP creates <code>destdir</code> but
+then tries to copy every file from <code>srcdir</code> over the top of
+it, i.e. it attempts to open <code>destdir</code> as a file repeatedly
+rather than opening <code>destdir/file1</code>,
+<code>destdir/file2</code> and so on.

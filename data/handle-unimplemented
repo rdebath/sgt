@@ -1,0 +1,47 @@
+Summary: Handle SSH2_MSG_UNIMPLEMENTED more usefully
+Class: wish
+Priority: medium
+Difficulty: fun
+Content-type: text/x-html-body
+
+<p>
+If an SSH server sends us <code>SSH2_MSG_UNIMPLEMENTED</code>, we
+currently report it as "Strange packet received: type 3" and close
+the connection. It would at the very least be better if we reported
+it as SSH2_MSG_UNIMPLEMENTED, and ideally also gave some idea of
+<em>what</em> the server had claimed not to understand.
+
+<p>
+It's not completely clear to me how far we can sensibly take this
+sort of error reporting, but we could usefully at least be prepared
+to deal with common cases. For instance, servers which don't support
+rekeying: when we initiate a rekey, we could remember the sequence
+number of the SSH2_MSG_KEXINIT we send out, and if we subsequently
+see SSH2_MSG_UNIMPLEMENTED citing that sequence number then we could
+give an error message which actually suggested a corrective measure
+to the user ("try manually enabling 'Handles SSH-2 key re-exchange
+badly' in the Connection > SSH > Bugs panel").
+
+<p>
+(In that particular case, it might even be possible to abandon the
+rekey and proceed with the rest of the connection &#8211; see
+<a href="kexinit-unimplemented.html">kexinit-unimplemented</a>
+&#8211; although I don't know if servers would in general even cope
+with that, and also I think it would be a bad idea not to at least
+warn the user of the drop in security.)
+
+<p>
+If we felt enthusiastic, we could try being more ambitious: it might
+be feasible, for instance, to keep track of <em>all</em> the message
+type codes for messages we've recently sent out. Whenever we see any
+message we can identify as the reply to some specific thing we sent,
+we can delete that and everything before it from our queue; then for
+any <code>SSH2_MSG_UNIMPLEMENTED</code>, we'll always be able to
+specify exactly what type of message the server didn't understand.
+
+<p>
+All of this, of course, assumes the server is sending out
+<code>SSH2_MSG_UNIMPLEMENTED</code> messages containing a correct
+packet sequence number. Some servers (in violation of the SSH spec) do
+not bother, and just put zero in the sequence number field when they
+send <code>SSH2_MSG_UNIMPLEMENTED</code>.
