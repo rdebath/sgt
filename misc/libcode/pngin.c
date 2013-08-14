@@ -892,6 +892,7 @@ int png_decoder_data(png_decoder *pd, const void *vdata, int len)
 		if (!pd->cdata)
 		    return PNG_ERR_OUT_OF_MEMORY;
 		pd->realcrc = crc32_update(0, pd->cname, 4);
+                pd->crc = 0;
 	    }
 	    break;
 	  case CS_DATA:
@@ -900,7 +901,6 @@ int png_decoder_data(png_decoder *pd, const void *vdata, int len)
 		pd->cstate_param = 0;
 		pd->cstate = CS_CRC;
 		pd->realcrc = crc32_update(pd->realcrc, pd->cdata, pd->clen);
-		pd->crc = 0;
 	    }
 	    break;
 	  case CS_CRC:
