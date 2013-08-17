@@ -146,7 +146,7 @@ int writemode(void)
     return status;
 }
 
-int readmode()
+int readmode(void)
 {
     pid_t pid;
     int fd, ret, status;
