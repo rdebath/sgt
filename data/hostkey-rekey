@@ -3,6 +3,7 @@ Class: bug
 Difficulty: fun
 Priority: medium
 Present-in: 0.58
+Fixed-in: r10027
 Content-type: text/x-html-body
 
 <p>
