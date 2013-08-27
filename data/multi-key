@@ -2,6 +2,7 @@ Summary: Support for Multi_Key in GTK port
 Class: semi-bug
 Priority: low
 Content-type: text/x-html-body
+Fixed-in: r9567 2012-06-18
 
 <p><tt>E1Cp2HC-0004Ni-00@chiark.greenend.org.uk</tt>:
 
@@ -18,3 +19,7 @@ an e-acute whereas in pterm I just get 'e.</pre>
 
 <p>
 (See also <a href="unix-dead-keys.html">`unix-dead-keys'</a>.)
+
+<p>
+<em>Update:</em> fixed in r9567 (with fallout addressed in r9568 and
+r9573).
