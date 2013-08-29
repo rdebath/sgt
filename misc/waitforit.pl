@@ -22,8 +22,10 @@ $time =~ /^(\d+):(\d+)(:(\d+))?$/ or do {
 # adjust month by 1 because timelocal() expects jan=0 dec=11
 $time = timelocal($sec,$min,$hour,$day,$mon-1,$year);
 
-if (time > $time) {
+if (($now = time) > $time) {
     warn "warning: selected time is already in the past\n";
+} else {
+    warn sprintf "waiting %d seconds...\n", $time - $now;
 }
 
 # Wait for that time. (Loop round out of sheer paranoia!)
