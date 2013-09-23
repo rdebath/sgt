@@ -332,9 +332,7 @@ int init_X(void) {
 	expected_type = integer_atom;
 	expected_format = 32;
     } else if (mode == CUSTOM) {
-	strtype = XInternAtom(disp, custom_seltype, True);
-	if (!strtype)
-	    error ("atom '%s' does not exist on the server", custom_seltype);
+	strtype = XInternAtom(disp, custom_seltype, False);
 	expected_format = 0;
     }
     if (use_clipboard) {
