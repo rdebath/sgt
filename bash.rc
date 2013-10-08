@@ -410,7 +410,26 @@ doPSn() {
   local sgr0=`_bashrc_tput sgr0`
   PS1='\['$colour'\]:$prompttext '$hostname';\['$sgr0'\] '
   PS2='$promptspaces    '"$spaces"
-  promptcolour=2 # green prompt by default
+  # Default prompt colour is purple, but I attempt to fall back to
+  # green in absence of 256-colour mode. A 256-colour-capable terminal
+  # should interpret the following codes (recall that the above
+  # definition of $colour prefixes a 3 to the first one) as:
+  #  - SGR 32 (ordinary green)
+  #  - SGR 38;5;93 (xterm 256-colour index 93, which is at 2,0,5 in
+  #    the RGB colour cube running from 0,0,0 to 5,5,5)
+  #  - SGR 25 (turn off blinking, which wasn't on anyway)
+  # And hopefully a non-256-colour-capable terminal will interpret it
+  # as:
+  #  - SGR 32 (ordinary green)
+  #  - SGR 38 (dunno, so ignore it)
+  #  - SGR 5 (turn on blinking)
+  #  - SGR 93 (dunno, so ignore it)
+  #  - SGR 25 (turn off blinking, which was turned on by the 5 above).
+  # One other possibility is that a non-256-colour terminal might
+  # still support the 90-97 and 100-107 SGRs for bright foreground and
+  # background colours respectively, in which case this scheme will
+  # come out as a bright yellow prompt.
+  promptcolour='2;38;5;93;25'
 }
 doPSn
 unset doPSn
