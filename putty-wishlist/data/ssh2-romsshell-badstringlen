@@ -56,7 +56,9 @@ in a "HP Proliant BL460c G7"</li>
 <li>Brocade themselves actually assigned a bug number to this
 (DEFECT000362023, "SSH server in-compatible with Putty 0.61"), and
 said "this bug is fixed in 5.1.0E or later software code." (Don't know
-whether they got Allegro to fix it, or fixed it themselves.)</li>
-</ul><li>
-<li>Adtran 3120 ("ADTRAN OS version 16.03.00.SC.E")</li>
+whether they got Allegro to fix it, or fixed it themselves. Sadly
+the version string is reportedly unchanged.)</li>
+</ul></li>
+<li>Adtran 3120 (reportedly, "ADTRAN OS version 16.03.00.SC.E" shows the
+problem but "17.07.02.00.E" does not -- SSH version strings not known)</li>
 </ul>
