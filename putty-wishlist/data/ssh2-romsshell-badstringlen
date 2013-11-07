@@ -43,7 +43,8 @@ If anyone who runs into this has some channel to contact Allegro
 out to them (we have no means of getting in contact). If the bug is
 fixed at source and the complete set of affected SSH version strings
 provided to us, we can automatically enable the workaround in PuTTY
-when appropriate.
+when appropriate (although from the patterns below, this doesn't look
+likely to be sensible).
 
 <p>
 Reported with the following servers / devices:
@@ -60,5 +61,6 @@ whether they got Allegro to fix it, or fixed it themselves. Sadly
 the version string is reportedly unchanged.)</li>
 </ul></li>
 <li>Adtran 3120 (reportedly, "ADTRAN OS version 16.03.00.SC.E" shows the
-problem but "17.07.02.00.E" does not -- SSH version strings not known)</li>
+problem but "17.07.02.00.E" does not -- both <tt>SSH-2.0-RomSShell_4.31</tt>,
+unhelpfully)</li>
 </ul>
