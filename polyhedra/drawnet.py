@@ -16,6 +16,10 @@ cmpsign = +1
 picfile = None
 adjpairs = {}
 dotabs = 1
+cmdlinescale = 1
+cmdlinex = 0
+cmdliney = 0
+cmdlinerotate = 0
 while len(args) > 0 and args[0][:1] == "-":
     a = args[0]
     args = args[1:]
@@ -24,6 +28,14 @@ while len(args) > 0 and args[0][:1] == "-":
         break
     elif a[:2] == "-s":
         firstface = a[2:]
+    elif a[:2] == "-S":
+        cmdlinescale = float(a[2:])
+    elif a[:2] == "-X":
+        cmdlinex = float(a[2:])
+    elif a[:2] == "-Y":
+        cmdliney = float(a[2:])
+    elif a[:2] == "-R":
+        cmdlinerotate = float(a[2:])
     elif a == "-R":
         cmpsign = -1
     elif a == "-f":
@@ -1067,8 +1079,11 @@ if xscale < yscale:
     scale = xscale
 else:
     scale = yscale
-psprint("288 400 translate")
+scale *= cmdlinescale
+psprint(cmdlinex + 288, cmdliney + 400, "translate")
 psprint(scale, "dup scale")
+if cmdlinerotate:
+    psprint(cmdlinerotate, "rotate")
 # Now centre the bounding box at the origin.
 psprint(-(xmax+xmin)/2, -(ymax+ymin)/2, "translate")
 psprint(0.5 / scale, "setlinewidth 1 setlinejoin 1 setlinecap")
