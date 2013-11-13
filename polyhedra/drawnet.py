@@ -52,7 +52,7 @@ while len(args) > 0 and args[0][:1] == "-":
     elif a[:2] == "-a":
         # Undocumented option which attempts to force a pair of
         # faces to be placed adjacent to one another in the net.
-        # Expects two face names separated by a colon.
+        # Expects two face names separated by a comma.
         s = a[2:]
         comma = string.find(s, ",")
         if comma <= 0 or comma == len(s)-1:
