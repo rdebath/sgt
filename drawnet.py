@@ -64,7 +64,7 @@ while len(args) > 0 and args[0][:1] == "-":
             adjpairs[f1] = adjpairs.get(f1, ()) + (f2,)
             adjpairs[f2] = adjpairs.get(f2, ()) + (f1,)
     else:
-        sys.stderr.write("ignoring unknown option \"%s\"\n", a)
+        sys.stderr.write("ignoring unknown option \"%s\"\n" % a)
 
 if len(args) > 0:
     infile = open(args[0], "r")
