@@ -1,0 +1,53 @@
+Summary: Separate dedicated utility to act as connection sharing upstream
+Class: wish
+Priority: medium
+Difficulty: tricky
+Content-type: text/x-html-body
+
+<p>
+The current PuTTY support for connection sharing works on the more or
+less ad-hoc basis that the first PuTTY or Plink to connect to a host
+becomes the 'upstream' (which manages the real SSH connection) and
+accepts connections from other PuTTY tools which automatically become
+'downstreams' (talking to the upstream rather than to the real
+server).
+
+<p>
+A downside of this structure is that whichever PuTTY is first to
+contact a given host has to remain active while it's managing any
+connections from downstreams. This isn't a completely unfamiliar
+phenomenon to power users of SSH &#8211; it's exactly analogous to
+what happens when you end the terminal session in a PuTTY which still
+has X11 or port forwardings active &#8211; but it would be nicer to
+avoid it if possible, so that all visible PuTTYs behaved more or less
+similarly.
+
+<p>
+To arrange this, we'd have to have the first PuTTY spawn a separate
+process to act as a dedicated upstream. Then the PuTTY itself would
+connect to that, once it was ready, and merely be its first downstream.
+
+<p>
+This is a tricky project, perhaps as much work again as implementing
+connection sharing in the first place. Problems include:
+
+<ul>
+<li>
+How would SSH authentication work, if it needed to be interactive? One
+option would be to delegate the <code>ssh-userauth</code> protocol to
+the primary downstream (and pass it a special protocol message
+containing the cryptographic session ID for use in signatures).
+<li>
+Similarly, what about interactive elements of the transport protocol,
+such as host key verification or warnings about insecure primitives?
+<li>
+How would the user access the dedicated upstream process, to adjust
+its behaviour or emergency-terminate it? An obvious option is to have
+it open a little GUI icon in the system tray, but what if there isn't
+a system tray available (e.g. Unix PuTTY, run in a non-GUI context)?
+There might need to be a control protocol by which downstreams could
+talk to the dedicated upstream and tell it to change things.
+<li>
+What should the new utility be called? (Working title:
+<code>pshare</code>.)
+</ul>
