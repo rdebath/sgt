@@ -2,6 +2,7 @@ Summary: Support for SSH-2: zero, or more than one, terminal per session
 Class: wish
 Priority: medium
 Difficulty: tricky
+Fixed-in: r10083
 Content-type: text/x-html-body
 
 <p>
@@ -43,3 +44,12 @@ created for <a href="no-terminal-window.html">`no-terminal-window'</a>?
 Plink can now avoid running a command (equivalent to OpenSSH's
 <code>-N</code> option, and indeed enabled by the same switch).
 (PuTTY will still put up a terminal window.)
+
+<p>
+<b>SGT, 2013-11-17</b>: now implemented a 'connection sharing' system
+configurable from the SSH panel. Instances of PuTTY can be told to
+share each other's connections where possible, in which case the first
+PuTTY to connect to a given user@host will set itself up as an
+'upstream' able to forward stuff to the server on behalf of other
+processes, and subsequent PuTTYs (and PSCPs, PSFTPs etc) will then use
+that upstream if they can rather than make their own SSH connections.

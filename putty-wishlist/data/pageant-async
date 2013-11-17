@@ -98,3 +98,14 @@ have spotted them already, and I have spent some time thinking about
 this). If this could be solved, everything else in the area of
 Pageant enhancements would be simple by comparison.
 </ul>
+
+<p>
+<b>Update, 2013-11-17</b>: now that PuTTY has grown the ability to use
+Windows named pipes for connection sharing, we now have an obviously
+sensible way of implementing this wish. I think it's now clear that
+the Right Thing is for Pageant to become a named-pipe server and speak
+the SSH agent protocol to clients connecting to its pipe. It would
+probably still have to provide the legacy Windows-message interface
+for backwards compatibility with older PuTTYs or derived works of
+PuTTY, and in that mode it would probably have to simply deny the
+existence of any key that couldn't be used without blocking.
