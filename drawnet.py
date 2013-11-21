@@ -5,10 +5,9 @@
 import sys
 import string
 import random
+import getopt
 from math import pi, asin, atan2, cos, sin, sqrt
 from crosspoint import crosspoint
-
-args = sys.argv[1:]
 
 firstface = None
 facelabels = 0
@@ -20,29 +19,39 @@ cmdlinescale = 1
 cmdlinex = 0
 cmdliney = 0
 cmdlinerotate = 0
-while len(args) > 0 and args[0][:1] == "-":
-    a = args[0]
-    args = args[1:]
 
-    if a == "--":
-        break
-    elif a[:2] == "-s":
-        firstface = a[2:]
-    elif a[:2] == "-S":
-        cmdlinescale = float(a[2:])
-    elif a[:2] == "-X":
-        cmdlinex = float(a[2:])
-    elif a[:2] == "-Y":
-        cmdliney = float(a[2:])
-    elif a[:2] == "-R":
-        cmdlinerotate = float(a[2:])
-    elif a == "-R":
+try:
+    options, args = getopt.gnu_getopt(sys.argv[1:],
+                                      's:S:X:Y:R:fTp:a:',
+                                      ['linear'])
+except getopt.GetoptError as e:
+    sys.stderr.write("drawnet.py: %s\n" % str(e))
+    sys.exit(1)
+
+for opt, val in options:
+    if opt == "-s":
+        firstface = val
+    elif opt == "-S":
+        cmdlinescale = float(val)
+    elif opt == "-X":
+        cmdlinex = float(val)
+    elif opt == "-Y":
+        cmdliney = float(val)
+    elif opt == "-R":
+        cmdlinerotate = float(val)
+    elif opt == "--linear":
+        # Undocumented option which inverts the usual condition for
+        # choosing which face to place next and where to put it. The
+        # usual condition tries to place faces as close as possible to
+        # the centre of the net, in the hope that it will end up more
+        # or less circular in shape; inverting that condition
+        # encourages nets to be long thin chains of faces.
         cmpsign = -1
-    elif a == "-f":
+    elif opt == "-f":
         facelabels = 1
-    elif a == "-T":
+    elif opt == "-T":
         dotabs = 0
-    elif a[:2] == "-p":
+    elif opt == "-p":
         # Undocumented option which allows you to specify a file
         # containing a PostScript fragment. That file is included
         # at the top of the output, and is expected to define a
@@ -60,12 +69,12 @@ while len(args) > 0 and args[0][:1] == "-":
         # which folds up to produce a polyhedron covered in a
         # projection of the original spherical image (e.g. an
         # icosahedral globe).
-        picfile = a[2:]
-    elif a[:2] == "-a":
+        picfile = val
+    elif opt == "-a":
         # Undocumented option which attempts to force a pair of
         # faces to be placed adjacent to one another in the net.
         # Expects two face names separated by a comma.
-        s = a[2:]
+        s = val
         comma = string.find(s, ",")
         if comma <= 0 or comma == len(s)-1:
             sys.stderr.write("-a option expects two face names separated"+\
@@ -76,7 +85,7 @@ while len(args) > 0 and args[0][:1] == "-":
             adjpairs[f1] = adjpairs.get(f1, ()) + (f2,)
             adjpairs[f2] = adjpairs.get(f2, ()) + (f1,)
     else:
-        sys.stderr.write("ignoring unknown option \"%s\"\n" % a)
+        assert not "Shouldn't get here"
 
 if len(args) > 0:
     infile = open(args[0], "r")
