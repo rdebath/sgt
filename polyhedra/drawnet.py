@@ -19,6 +19,7 @@ cmdlinescale = 1
 cmdlinex = 0
 cmdliney = 0
 cmdlinerotate = 0
+linewidth = 0.5
 tabcolour = "0.9 setgray"
 
 def parse_colour(col):
@@ -36,7 +37,8 @@ def parse_colour(col):
 try:
     options, args = getopt.gnu_getopt(sys.argv[1:],
                                       's:S:X:Y:R:fTp:a:',
-                                      ['linear','tabcolour=','tabcolor='])
+                                      ['linear','tabcolour=','tabcolor=',
+                                       'linewidth='])
 except getopt.GetoptError as e:
     sys.stderr.write("drawnet.py: %s\n" % str(e))
     sys.exit(1)
@@ -62,6 +64,8 @@ for opt, val in options:
         cmpsign = -1
     elif opt == "--tabcolour" or opt == "--tabcolor":
         tabcolour = parse_colour(val)
+    elif opt == "--linewidth":
+        linewidth = float(val)
     elif opt == "-f":
         facelabels = 1
     elif opt == "-T":
@@ -1110,7 +1114,7 @@ if cmdlinerotate:
     psprint(cmdlinerotate, "rotate")
 # Now centre the bounding box at the origin.
 psprint(-(xmax+xmin)/2, -(ymax+ymin)/2, "translate")
-psprint(0.5 / scale, "setlinewidth 1 setlinejoin 1 setlinecap")
+psprint(linewidth / scale, "setlinewidth 1 setlinejoin 1 setlinecap")
 # Draw the picture, if we have one.
 if picfile:
     for f in faces.keys():
