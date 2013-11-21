@@ -19,11 +19,24 @@ cmdlinescale = 1
 cmdlinex = 0
 cmdliney = 0
 cmdlinerotate = 0
+tabcolour = "0.9 setgray"
+
+def parse_colour(col):
+    if col[:1] != "#" or len(col) % 3 != 1 or \
+            col[1:].lstrip(string.hexdigits) != "":
+        sys.stderr.write("expected colours of the form #rrggbb\n")
+        sys.exit(1)
+    col = col[1:]
+    n = len(col) / 3
+    r = int(col[:n], 16) / (16.0 ** n - 1)
+    g = int(col[n:2*n], 16) / (16.0 ** n - 1)
+    b = int(col[2*n:3*n], 16) / (16.0 ** n - 1)
+    return "%f %f %f setrgbcolor" % (r, g, b)
 
 try:
     options, args = getopt.gnu_getopt(sys.argv[1:],
                                       's:S:X:Y:R:fTp:a:',
-                                      ['linear'])
+                                      ['linear','tabcolour=','tabcolor='])
 except getopt.GetoptError as e:
     sys.stderr.write("drawnet.py: %s\n" % str(e))
     sys.exit(1)
@@ -47,6 +60,8 @@ for opt, val in options:
         # or less circular in shape; inverting that condition
         # encourages nets to be long thin chains of faces.
         cmpsign = -1
+    elif opt == "--tabcolour" or opt == "--tabcolor":
+        tabcolour = parse_colour(val)
     elif opt == "-f":
         facelabels = 1
     elif opt == "-T":
@@ -1127,7 +1142,7 @@ for vid in outline:
         for x, y in tp:
             psprint(x, y, "lineto")
         psprint(vids[vid][0], vids[vid][1], "lineto")
-        psprint("closepath 0.9 setgray fill grestore")
+        psprint("closepath " + tabcolour + " fill grestore")
         for x, y in tp:
             psprint(x, y, cmd)
             cmd = "lineto"
