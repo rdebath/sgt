@@ -868,6 +868,10 @@ static void scanner_cleanup_text(scanner *s, stream *st, void *vctx)
     if (!wcsncmp(ctx->firstbit, str, wcslen(str)) ||
 	!wcsncmp(ctx->firstbit + linelen + 1, str, wcslen(str)))
 	specific_msg = "This appears to be a prolific pharmacy spam.";
+    str = L"I would like to take this time to welcome you to our hiring process";
+    if (!wcsncmp(ctx->firstbit, str, wcslen(str))) {
+	specific_msg = "This appears to be a prolific job offer spam.";
+    }
     str = L"You are receiving this email because we wish you to use";
     linelen = wcscspn(ctx->firstbit, L"\n");
     if (!wcsncmp(ctx->firstbit, str, wcslen(str)) ||
@@ -1073,6 +1077,13 @@ const char *process_address(const char *hdr, const char *addr)
 	    return "I have never subscribed to this newsletter, so "
 	    "I am forced to consider it as spam.";
 
+        /*
+         * 'Top Wellness Health'
+         */
+	if (!strcmp(addr, "newsletter@goodnews2u.info"))
+	    return "I have never subscribed to this newsletter, so "
+	    "I am forced to consider it as spam.";
+
 	/*
 	 * `tothesource'
 	 */
@@ -1245,6 +1256,32 @@ const char *process_address(const char *hdr, const char *addr)
          */
         if (!strcmp(addr, "daryakala@gmail.com"))
             return "This address has persistently spammed me and is blocked.";
+
+        /*
+         * 2012-12-04: 'phoeno' is a source of gigantic newsletters.
+         */
+        if (!strcmp(addr, "phoeno@live.com"))
+            return "Newsletters from this address are unsolicited and unwanted. I consider them spam.";
+
+        /*
+         * 2013-05-07: finally got sick of LinkedIn after I noticed
+         * that it was sending to putty@projects as well as me
+         * personally.
+         */
+        if (!strcmp(addr, "invitations@linkedin.com"))
+            return "I have blocked LinkedIn as a spammer for sending ostensibly personal invitation emails to mailing lists as well as individuals.";
+
+        if (!strcmp(at+1, "manpasand.us"))
+            return "I have received many large spam emails from this domain and am now blocking it.";
+
+        if (!strcmp(at+1, "cosmodata.eu"))
+            return "I have received many unsolicited newsletter emails from this domain and am now blocking it.";
+
+        /*
+         * 2013-11-30: same goes for Twitter, more or less.
+         */
+        if (!strcmp(addr, "connections@twitter.com"))
+            return "I have blocked Twitter as a spammer for sending repeated pestering 'invitation' emails from people I've never heard of at a far higher frequency than politeness can possibly warrant.";
     }
 
     if (!strcasecmp(hdr, "Reply-to")) {
