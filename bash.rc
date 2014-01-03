@@ -951,3 +951,46 @@ tplay() {
 }
 
 #}}}
+#{{{ reminder system
+
+# This is a bare-bones todo-list system in which I create a file
+# ~/.bash_reminders containing one-line reminders with start dates, in
+# the form '2013-12-09 10:00 Some reminder text'. The idea is that not
+# long after that date+time, the reminder text will begin being
+# printed before every shell prompt.
+#
+# Refresh cannot be guaranteed more often than once per minute.
+
+_bashrc_last_reminder_check=$((SECONDS - 120))
+bashrc_refresh_reminders() {
+    _bashrc_last_reminder_check=$SECONDS
+
+    # bash 4.2.37 has this 'printf' functionality as a shell builtin,
+    # but bash 4.1.5 does not so we fall back to a subprocess.
+    local now=$(printf '%(%Y-%m-%d %H:%M)T' -1 2>/dev/null ||
+        date "+%Y-%m-%d %H:%M")
+
+    #echo "check begins, now='$now'"
+    _bashrc_reminder_text=""
+    while read date time text; do
+        #echo "check '$now' > '$date $time' [$text]"
+        if test "$now" \< "$date $time"; then
+            #echo "no, don't enable"
+            :
+        else
+            #echo "yes, enable"
+            _bashrc_reminder_text="${_bashrc_reminder_text}${text}"$'\n'
+        fi
+    done < ~/.bash_reminders
+}
+bashrc_check_reminders() {
+    if test $((SECONDS - _bashrc_last_reminder_check)) -ge 60; then
+        bashrc_refresh_reminders
+    fi
+
+    echo -n "${_bashrc_reminder_text}"
+}
+
+bashrc_add_prompt_fn bashrc_check_reminders
+
+#}}}
