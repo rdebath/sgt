@@ -994,3 +994,11 @@ bashrc_check_reminders() {
 bashrc_add_prompt_fn bashrc_check_reminders
 
 #}}}
+#{{{ I like gitk to spawn completely in the background
+
+bashrc_background_gitk() {
+    (command gitk "$@" &)
+}
+alias gitk=bashrc_background_gitk
+
+#}}}
