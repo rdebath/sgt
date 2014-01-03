@@ -972,16 +972,18 @@ bashrc_refresh_reminders() {
 
     #echo "check begins, now='$now'"
     _bashrc_reminder_text=""
-    while read date time text; do
-        #echo "check '$now' > '$date $time' [$text]"
-        if test "$now" \< "$date $time"; then
-            #echo "no, don't enable"
-            :
-        else
-            #echo "yes, enable"
-            _bashrc_reminder_text="${_bashrc_reminder_text}${text}"$'\n'
-        fi
-    done < ~/.bash_reminders
+    if test -f ~/.bash_reminders; then
+        while read date time text; do
+            #echo "check '$now' > '$date $time' [$text]"
+            if test "$now" \< "$date $time"; then
+                #echo "no, don't enable"
+                :
+            else
+                #echo "yes, enable"
+                _bashrc_reminder_text="${_bashrc_reminder_text}${text}"$'\n'
+            fi
+        done < ~/.bash_reminders
+    fi
 }
 bashrc_check_reminders() {
     if test $((SECONDS - _bashrc_last_reminder_check)) -ge 60; then
