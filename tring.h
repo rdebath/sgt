@@ -68,6 +68,8 @@ struct lstate {
     int saved_hours_digit;
     int network_fault;
     int configuring_days, configuring_time;
+    int display_redownload_button;     /* set by front end, if it knows
+                                        * how to download exception data */
 };
 
 #define TIMEOFDAY(h,m,s) (((h)*60+(m))*60+(s))
@@ -100,9 +102,9 @@ void event_startup(int timeofday, int dayofweek, int date,
 void event_timeout(struct pstate *ps, struct lstate *ls);
 int event_timetick(int lasttimeofday, int timeofday, int dayofweek, int date,
 		   struct pstate *ps, struct lstate *ls);
-void event_button(int button, int timeofday, int dayofweek, int date,
-		  struct pstate *ps, struct lstate *ls);
-/* Flags returned from event_timetick: */
+int event_button(int button, int timeofday, int dayofweek, int date,
+                 struct pstate *ps, struct lstate *ls);
+/* Flags returned from event_timetick and event_button: */
 enum {
     GET_EXCEPTIONS = 1
 };
