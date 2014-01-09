@@ -391,6 +391,7 @@ int main(int argc, char **argv)
     ls->pressed_button_id = -1;
     ls->saved_hours_digit = -1;
     ls->network_fault = 0;
+    ls->display_redownload_button = (exception_url != NULL && excdata != NULL);
 
     curl_global_init(CURL_GLOBAL_ALL);
 
@@ -478,7 +479,9 @@ int main(int argc, char **argv)
 		/*
 		 * There was a button press. Process it.
 		 */
-		event_button(buttonid, tod, wd, date, ps, ls);
+		int ret = event_button(buttonid, tod, wd, date, ps, ls);
+                if (ret & GET_EXCEPTIONS)
+                    start_excsubproc();
 
 		/*
 		 * In modes other than DMODE_NORMAL, this extends

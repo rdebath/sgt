@@ -105,7 +105,8 @@ height timeheight sub 2 div 2 index sub /ytime exch def 3{pop}repeat
 (ALARM TIME) 0 1 normalbuttondef
 (BACK) 0.5 1 normalbuttondef
 (RESET TIME) 1 1 normalbuttondef
-(SNOOZE PERIOD) 0 0 normalbuttondef
+(SNOOZE) 0 0 normalbuttondef
+(RE-DL) 0.5 0 normalbuttondef
 (OFF DAYS) 1 0 normalbuttondef
 (M) 1 14 div 0.5 offdaybuttondef
 (T) 3 14 div 0.5 offdaybuttondef
@@ -164,7 +165,7 @@ buttons {
 } forall
 
 % Draw pressed versions of main buttons.
-buttons 0 11 getinterval {
+buttons 0 12 getinterval {
   aload pop /font exch def /texty exch def /textx exch def /t exch def
   /r exch def /b exch def /l exch def /str exch def
   newpath l b moveto l t lineto r t lineto r b lineto closepath
@@ -175,7 +176,7 @@ buttons 0 11 getinterval {
 } forall
 
 % Draw unlit versions of off-day and configuring-day buttons.
-buttons 11 14 getinterval {
+buttons 12 14 getinterval {
   aload pop /font exch def /texty exch def /textx exch def /t exch def
   /r exch def /b exch def /l exch def /str exch def
   newpath l b moveto l t lineto r t lineto r b lineto closepath

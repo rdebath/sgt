@@ -41,6 +41,7 @@ extern const struct sprite image096, image097, image098, image099, image100;
 extern const struct sprite image101, image102, image103, image104, image105;
 extern const struct sprite image106, image107, image108, image109, image110;
 extern const struct sprite image111, image112, image113, image114, image115;
+extern const struct sprite image116, image117;
 
 static const struct sprite *const sprites[] = {
     &image001,
@@ -158,6 +159,8 @@ static const struct sprite *const sprites[] = {
     &image113,
     &image114,
     &image115,
+    &image116,
+    &image117,
 };
 
 enum {
@@ -171,6 +174,7 @@ enum {
     NORM_BUTTON_BACK,		       /* "exit setup" */
     NORM_BUTTON_RESET_TIME,
     NORM_BUTTON_SNOOZE_PERIOD,
+    NORM_BUTTON_REDOWNLOAD,
     NORM_BUTTON_OFF_DAYS,
     ONDAY_BUTTON_MONDAY,
     ONDAY_BUTTON_TUESDAY,
@@ -196,6 +200,7 @@ enum {
     ACTIVE_BUTTON_BACK,		       /* "exit setup" */
     ACTIVE_BUTTON_RESET_TIME,
     ACTIVE_BUTTON_SNOOZE_PERIOD,
+    ACTIVE_BUTTON_REDOWNLOAD,
     ACTIVE_BUTTON_OFF_DAYS,
     OFFDAY_BUTTON_MONDAY,
     OFFDAY_BUTTON_TUESDAY,
@@ -500,12 +505,15 @@ int display_update(int timeofday, int dayofweek, int date,
 	if (ls->dmode == DMODE_CONFIGURE) {
 	    /*
 	     * In configure mode, always display all the configure
-	     * buttons.
+	     * buttons, except for the one that only makes sense if we
+	     * have access to downloadable exception data.
 	     */
 	    PUTPBUTTON(NORM_BUTTON_ALARM_TIME, ACTIVE_BUTTON_ALARM_TIME);
 	    PUTPBUTTON(NORM_BUTTON_BACK, ACTIVE_BUTTON_BACK);
 	    PUTPBUTTON(NORM_BUTTON_RESET_TIME, ACTIVE_BUTTON_RESET_TIME);
 	    PUTPBUTTON(NORM_BUTTON_SNOOZE_PERIOD, ACTIVE_BUTTON_SNOOZE_PERIOD);
+	    if (ls->display_redownload_button)
+                PUTPBUTTON(NORM_BUTTON_REDOWNLOAD, ACTIVE_BUTTON_REDOWNLOAD);
 	    PUTPBUTTON(NORM_BUTTON_OFF_DAYS, ACTIVE_BUTTON_OFF_DAYS);
 	    /*
 	     * In configure mode, display is always bright.
@@ -938,10 +946,11 @@ static void set_snooze(int timeofday, struct lstate *ls)
     ls->alarm_time = (timeofday + ls->snooze_time) % 86400;
 }
 
-void event_button(int button, int timeofday, int dayofweek, int date,
-		  struct pstate *ps, struct lstate *ls)
+int event_button(int button, int timeofday, int dayofweek, int date,
+                 struct pstate *ps, struct lstate *ls)
 {
     int *p, wrap, adj;
+    int ret = 0;
 
     switch (button) {
       case NORM_BUTTON_SNOOZE:
@@ -992,6 +1001,9 @@ void event_button(int button, int timeofday, int dayofweek, int date,
       case NORM_BUTTON_SNOOZE_PERIOD:
 	set_mode(ps, ls, DMODE_SETDEFSNOOZE);
 	ls->saved_hours_digit = -1;
+	break;
+      case NORM_BUTTON_REDOWNLOAD:
+        ret |= GET_EXCEPTIONS;
 	break;
       case NORM_BUTTON_OFF_DAYS:
 	set_mode(ps, ls, DMODE_SETOFFDAYS);
@@ -1080,4 +1092,5 @@ void event_button(int button, int timeofday, int dayofweek, int date,
 	ls->configuring_days ^= 1 << (button - CONFIG_BUTTON_MONDAY);
 	break;
     }
+    return ret;
 }
