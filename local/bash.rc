@@ -904,26 +904,110 @@ pfx() {
 #}}}
 #{{{ grep -n is usually what I want, even if I forget to say it
 
-# When I say 'grep' on a shell command line, I usually meant grep
-# -n, and often get annoyed by having to reissue the command with
-# -n when I realise I left it off. I considered aliasing grep to
-# grep -n, but the trouble with that is that if I'm using grep as
-# part of a complicated pipeline, I'm more likely to want the
-# standard grep behaviour.
+# When I say 'grep' on a shell command line, I often mean grep -n,
+# because I tend to want to paste the 'filename:line' prefix into -e.
+# But I don't _always_ want to add -n, because if I'm doing some
+# complicated pipeline work, the line numbers added to the front of
+# lines will break formatting.
 #
-# So here's a shell function which adds -n to the grep command line
-# but only if it isn't at either end of a pipeline. I make this a
-# shell function called by an alias, so that I can quickly restore
-# the standard functionality using '\grep', which is quicker to
-# type than 'command grep'.
+# The shell function below tries to add -n to the grep command line if
+# and only if grep will also be printing filenames, so that (by
+# default) we get 'filename:line' prefixes or no prefix.
+#
+# I make this a shell function called by an alias, so that I can
+# quickly restore the standard functionality using '\grep', which is
+# quicker to type than 'command grep'.
 grep-n() {
-  if test -t 0 -a -t 1; then
-    command grep -n "$@"
-  else
-    command grep "$@"
-  fi
+    local seenpat=false
+    local nfiles=0
+    local use_file_count=true
+    local show_filenames
+
+    local origargs=( "$@" )
+
+    while test $# -gt 0; do
+        case "$1" in
+            # Occurrence of a search pattern causes us to consider all
+            # following non-option words as filenames.
+            -e | --regexp ) shift; seenpat=true;;
+            --regexp=* ) seenpat=true;;
+            [^-]* ) if $seenpat; then
+                        nfiles=$((nfiles+1));
+                    else
+                        seenpat=true;
+                    fi;;
+
+            # '--' completely terminates option processing; the next
+            # word is the pattern (if we haven't already got one) and
+            # all subsequent words are filenames.
+            -- ) if ! $seenpat; then shift; seenpat=true; fi;
+                 nfiles=$((nfiles+$#));
+                 break;;
+
+            # We need to know if we've seen -h or -H, overriding
+            # whether filenames are expected to be displayed.
+            -H ) show_filenames=true; use_file_count=false;;
+            -h ) show_filenames=false; use_file_count=false;;
+
+            # grep options which consume the next word. Generally
+            # these have alternate forms such as -fthing or
+            # --file=thing which are self-contained; we don't need to
+            # test for those versions, only the ones that require an
+            # extra shift.
+            #
+            # An interesting special case is --color / --colour, which
+            # _can_ take an argument (e.g. --color=never) but it is
+            # _optional_, and therefore it only supports the = syntax
+            # for long-option arguments and doesn't let you put the
+            # argument in the next word. So it doesn't consume an
+            # extra word and hence doesn't have to appear in this
+            # list.
+            -f | --file | \
+            -m | --max-count | \
+            --label | \
+            --binary-files | \
+            -d | --directories | \
+            -D | --devices | \
+            --include | \
+            --exclude | \
+            --exclude-from | \
+            --exclude-dir | \
+            -B | --before-context | \
+            -A | --after-context | \
+            -C | --context ) shift;;
+        esac
+        shift
+    done
+
+    if $use_file_count; then
+        if test $nfiles -gt 1; then
+            show_filenames=true
+        else
+            show_filenames=false
+        fi
+    fi
+
+    local extraargs=
+    if $show_filenames; then
+        extraargs=-n
+    fi
+
+    command grep $extraargs "${origargs[@]}"
 }
 alias grep=grep-n
+
+# I also like -n in my 'git grep', but since at the moment I think I
+# _always_ want that to print filenames (and I think it generally
+# will), this is much simpler.
+git-grep-n() {
+    if test "x$1" = "xgrep"; then
+        shift
+        command git grep -n "$@"
+    else
+        command git "$@"
+    fi
+}
+alias git=git-grep-n
 	      
 #}}}
 #{{{ hacky commands to flail at my command history if I need to
