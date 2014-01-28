@@ -113,7 +113,7 @@ and then the caller would have to write this:
 
 The syntax \cq{int *x} declares \cw{x} to be a pointer to \cw{int}; the syntax \cq{*x} inside the function is called a \e{dereference}, and means \q{the \cw{int} value stored at the address given by \cw{x}}. The \cq{&} sign is the opposite of \cq{*}, in that it starts from an \cw{int} (or anything else) and returns a pointer value giving the address of that \cw{int}.
 
-For these purposes, there's no difference between simple types like \cw{int} and complicated user-defined structure types analogous to Java classes. If I'd written the entire example above using a structure type in place of \cw{int}, it would have looked exactly the same \dash passing a structure argument to a function in the most obvious way causes an independent copy to be made, whereas if you want the caller to be able to modify the structure then you have to pass a pointer instead, and there will be an \cq{&} visible at every call site to remind you of that.
+For these purposes, there's no difference between simple types like \cw{int} and complicated user-defined structure types analogous to Java classes. If I'd written the entire example above using a structure type in place of \cw{int}, it would have looked exactly the same \dash passing a structure argument to a function in the most obvious way causes an independent copy to be made, whereas if you want the called function to be able to modify the structure then you have to pass a pointer instead, and there will be an \cq{&} visible at every call site to remind you of that.
 
 \H{pointers-stale} Pointers can go stale
 
@@ -284,7 +284,7 @@ A better approach is to keep a pointer to the \e{end} of the string, i.e. always
 
 \C{oo} No object orientation
 
-Object orientation is pretty standard these days: most modern languages have it in some form. C does not, because it predates it.
+Object orientation is pretty standard these days: most modern languages have it in some form. C does not, because it predates that being true.
 
 The closest thing in C to a class type is a structure, which is effectively a class without any methods \dash just a collection of data items, clustered together in memory so they can be conveniently treated as a unit, but there's no support provided for defining functions that go along with that data, and also there's no direct language support for data-hiding (\cq{private} or \cq{protected}).
 
