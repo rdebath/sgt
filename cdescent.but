@@ -330,7 +330,7 @@ And finally, in \cw{main.c}, you'd include \cw{foo.h} in order to be able to cal
 \c     printf("The answer is %d\n", foo(argc, argv[0]));
 \c }
 
-(In fact, it's usually a good idea to include \cw{foo.h} in \cw{foo.c} itself as well as in other modules that need to use the functions. That way, if you make a mistake and write different argument types in the function definition in \cw{foo.c} and the declaration in \cw{foo.c}, the compiler will warn you that they don't match.)
+(In fact, it's usually a good idea to include \cw{foo.h} in \cw{foo.c} itself as well as in other modules that need to use the functions. That way, if you make a mistake and write different argument types in the function definition in \cw{foo.c} and the declaration in \cw{foo.h}, the compiler will warn you that they don't match.)
 
 \H{pp-define} \cw{#define}
 
