@@ -158,6 +158,8 @@ MEMDIAGRAM:100..115 100..103(1) 104..107(11) 108..111(121) 112..115(1331)
 
 if we suppose that our array starts at address 100 as shown in the above diagram, then the pointer variable \cw{ptr} holds the address 104 (pointing at \cw{array[1]}). If you compute \cw{ptr+1}, the resulting pointer will hold the value 108 (not 105), so that it points at the next array element \cw{array[2]}; if you compute \cw{ptr-1}, you'll get a pointer holding the value 100, pointing at \cw{array[0]}.
 
+MEMDIAGRAM:100..115 100..103(1) 104..107(11) 108..111(121) 112..115(1331) 100..100^(ptr \\261 1) 104..104^(ptr) 108..108^(ptr + 1) 112..112^(ptr + 2)
+
 Put another way: in C, a pointer to type \cw{Foo} isn't just an address where you can expect to find an object of type \cw{Foo}. It's always possible that what you can find there is one \cw{Foo} in a long sequence stuck end-to-end, so the language provides you with a convenient way to step back and forth along that sequence.
 
 Idiomatic C code will use this facility frequently. String handling code in particular (which we'll examine in more detail in \k{string}) has a strong tendency to use pointer arithmetic in preference to array indices. That is, instead of having an integer variable \cw{i} starting at zero, examining a character of the string by referring to \cw{string[i]}, and incrementing \cw{i} when you want to move on to the next character, it's more common to assign a pointer value \cw{p} to point at the start of the string, examine a character by referring to \cw{*p}, and increment \cw{p} to step on to the next character.
