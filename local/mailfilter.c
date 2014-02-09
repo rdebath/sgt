@@ -168,6 +168,7 @@ const char *japanese_filter(int len, const char *data)
  */
 
 static int greetingspam = 0;
+static int seen_201401_viruswarning = 0;
 
 /* --------------------------------------------------
  * Scanner submodule to detect animated GIFs.
@@ -893,6 +894,12 @@ static void scanner_cleanup_text(scanner *s, stream *st, void *vctx)
 	!wcsncmp(ctx->firstbit + i - wcslen(str), str, wcslen(str))) {
 	specific_msg = "This appears to be a prolific pirated-software spam.";
     }
+    str = L"Information about the mail:";
+    if (!wcsncmp(ctx->firstbit, str, wcslen(str))) {
+        seen_201401_viruswarning |= 2;
+        if (seen_201401_viruswarning == 3)
+	    specific_msg = "I am treating these virus warnings as spam because they are prolific and completely unhelpful.";
+    }
     {
 	wchar_t compressed[1024], *p;
 	const wchar_t *q;
@@ -1468,6 +1475,13 @@ const char *process_subject(const char *subject)
     /* 2011-02-28: a sudden flood of these */
     if (strprefix(subject, "Investor insights"))
 	return "This appears to be a persistent pump-and-dump spam.";
+
+    /* 2014-01-02: a new and annoying kind of pointless virus warning.
+     * Not even from backscatter - it warns me of viruses sent _to_
+     * me, and urges me to run antivirus, presumably in case I
+     * foolishly believed one it missed. */
+    if (strstr(subject, "Virus found in the mail"))
+        seen_201401_viruswarning |= 1;
 
     return NULL;
 }
