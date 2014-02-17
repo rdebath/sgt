@@ -63,7 +63,7 @@ for opt, val in options:
         # encourages nets to be long thin chains of faces.
         cmpsign = -1
     elif opt == "--tabcolour" or opt == "--tabcolor":
-        tabcolour = parse_colour(val)
+        tabcolour = None if val.lower() == "none" else parse_colour(val)
     elif opt == "--linewidth":
         linewidth = float(val)
     elif opt == "-f":
@@ -1141,12 +1141,13 @@ cmd = "moveto"
 for vid in outline:
     tp = tabpoints.get((vid0,vid), None)
     if tp != None:
-        # Shade the tab.
-        psprint("gsave newpath", vids[vid0][0], vids[vid0][1], "moveto")
-        for x, y in tp:
-            psprint(x, y, "lineto")
-        psprint(vids[vid][0], vids[vid][1], "lineto")
-        psprint("closepath " + tabcolour + " fill grestore")
+        if tabcolour is not None:
+            # Shade the tab.
+            psprint("gsave newpath", vids[vid0][0], vids[vid0][1], "moveto")
+            for x, y in tp:
+                psprint(x, y, "lineto")
+            psprint(vids[vid][0], vids[vid][1], "lineto")
+            psprint("closepath " + tabcolour + " fill grestore")
         for x, y in tp:
             psprint(x, y, cmd)
             cmd = "lineto"
