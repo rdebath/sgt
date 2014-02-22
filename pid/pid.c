@@ -369,7 +369,8 @@ static int is_an_interpreter(const char *basename, const char **stop_opt)
     }
     if (!strcmp(basename, "rep") ||
         !strcmp(basename, "lua") ||
-        !strcmp(basename, "java")) {
+        !strcmp(basename, "java") ||
+        !strcmp(basename, "wish")) {
         *stop_opt = NULL;
         return 1;
     }
