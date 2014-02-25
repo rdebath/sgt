@@ -252,7 +252,7 @@ function pdraw(canvas, poly) {
 	 * Scale and translate into canvas coordinates.
 	 */
 	ourpts.push({x: coords.ox + coords.scale * px,
-		     y: coords.oy + coords.scale * py});
+		     y: coords.oy - coords.scale * py});
     }
 
     /*
@@ -385,7 +385,7 @@ function setupPolyhedron(acanvas, apoly, adebug) {
 	var coords = canvascoords(state.canvas);
         var ecoords = eventcoords(event);
 	var mx = (ecoords.x-state.canvas.offsetLeft-coords.ox)/coords.scale * -pdistance;
-	var my = (ecoords.y-state.canvas.offsetTop-coords.oy)/coords.scale * -pdistance;
+	var my = -(ecoords.y-state.canvas.offsetTop-coords.oy)/coords.scale * -pdistance;
 	state.mousepos = {x:mx, y:my, z:1};
 	state.time = new Date().getTime();
 	state.mode = 1;
@@ -396,7 +396,7 @@ function setupPolyhedron(acanvas, apoly, adebug) {
 	    var coords = canvascoords(state.canvas);
             var ecoords = eventcoords(event);
 	    var mx = (ecoords.x-state.canvas.offsetLeft-coords.ox)/coords.scale * -pdistance;
-	    var my = (ecoords.y-state.canvas.offsetTop-coords.oy)/coords.scale * -pdistance;
+	    var my = -(ecoords.y-state.canvas.offsetTop-coords.oy)/coords.scale * -pdistance;
 	    var newmousepos = {x:mx, y:my, z:1};
 	    var dragstart = vnorm(state.mousepos);
 	    var dragend = vnorm(newmousepos);
