@@ -353,7 +353,7 @@ function eventcoords(event) {
  * polyhedron-displaying applet. This function will take care of
  * assigning mouse and timeout handlers.
  */
-function setupPolyhedron(acanvas, apoly) {
+function setupPolyhedron(acanvas, apoly, adebug) {
     /*
      * Scale the polyhedron to maximum radius 1.
      */
@@ -375,6 +375,8 @@ function setupPolyhedron(acanvas, apoly) {
 	            yx:0, yy:1, yz:0,
 	            zx:0, zy:0, zz:1};
     state.mode = 0; // 0 = stationary; 1 = dragging; 2 = spinning
+
+    var debug_element = adebug ? document.getElementById("debug") : null;
 
     /*
      * Set up mouse handlers.
@@ -408,6 +410,13 @@ function setupPolyhedron(acanvas, apoly) {
 		              yx:dragstart.x, yy:dragstart.y, yz:dragstart.z,
 		              zx:perpstart.x, zy:perpstart.y, zz:perpstart.z});
 	    state.matrix = morthog(matmul(rot, state.matrix));
+            if (debug_element !== null) {
+                var s = "Matrix: " +
+                    state.matrix.xx+" "+state.matrix.yx+" "+state.matrix.zx+" "+
+                    state.matrix.xy+" "+state.matrix.yy+" "+state.matrix.zy+" "+
+                    state.matrix.xz+" "+state.matrix.yz+" "+state.matrix.zz;
+                debug_element.innerHTML = s;
+            }
 	    draw(state);
 	    state.oldpos = state.mousepos;
 	    state.oldtime = state.time;
@@ -519,6 +528,7 @@ function initCanvasPolyhedra() {
 	canvas.setAttribute('width', span.getAttribute('width'));
 	canvas.setAttribute('height', span.getAttribute('height'));
 	var data = span.getAttribute("data-polyhedron");
+	var debug = span.getAttribute("data-debug") === "true";
 	span.parentNode.replaceChild(canvas, span);
 	var poly;
 	//if (data == null || data == undefined)
@@ -549,6 +559,6 @@ function initCanvasPolyhedra() {
 		poly.faces.push({points:facepoints, x:x, y:y, z:z});
 	    }
 	}
-	setupPolyhedron(canvas, poly);
+	setupPolyhedron(canvas, poly, debug);
     }
 }
