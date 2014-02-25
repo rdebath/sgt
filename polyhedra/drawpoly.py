@@ -6,10 +6,37 @@
 import sys
 import string
 import random
+import getopt
 from math import pi, asin, atan2, cos, sin, sqrt
 from crosspoint import crosspoint
 
-args = sys.argv[1:]
+def parse_colour(col):
+    if col[:1] != "#" or len(col) % 3 != 1 or \
+            col[1:].lstrip(string.hexdigits) != "":
+        sys.stderr.write("expected colours of the form #rrggbb\n")
+        sys.exit(1)
+    col = col[1:]
+    n = len(col) / 3
+    r = int(col[:n], 16) / (16.0 ** n - 1)
+    g = int(col[n:2*n], 16) / (16.0 ** n - 1)
+    b = int(col[2*n:3*n], 16) / (16.0 ** n - 1)
+    return "%f %f %f setrgbcolor" % (r, g, b)
+
+colour = "1 setgray"
+
+try:
+    options, args = getopt.gnu_getopt(sys.argv[1:],
+                                      'c:',
+                                      ['colour=','color='])
+except getopt.GetoptError as e:
+    sys.stderr.write("drawpoly.py: %s\n" % str(e))
+    sys.exit(1)
+
+for opt, val in options:
+    if opt in ("-c", "--colour", "--color"):
+        colour = parse_colour(val)
+    else:
+        assert not "Shouldn't get here"
 
 if len(args) > 0:
     infile = open(args[0], "r")
@@ -117,14 +144,22 @@ for key, vlist in faces.items():
         forward[key] = 1
     pass
 
-def drawface(vlist):
+def drawface(vlist, backwards, clip=False):
     psprint("newpath")
     cmd = "moveto"
     for p in vlist:
         v = pvertices[p]
         psprint("   ", v[0], v[1], cmd)
         cmd = "lineto"
-    psprint("closepath stroke")
+    psprint("closepath")
+    if clip:
+        psprint("gsave clip")
+        drawface(vlist, backwards)
+        psprint("grestore")
+    else:
+        if backwards:
+            psprint("gsave", colour, "fill", "grestore")
+        psprint("stroke")
 
 # Draw rear-facing faces in a thin line. (Since we haven't rotated
 # the polyhedron at all, rear-facing-ness is simply determined by
@@ -132,21 +167,21 @@ def drawface(vlist):
 for key, vlist in faces.items():
     if not forward[key]:
         psprint("0.001 setlinewidth 0 setgray")
-        drawface(vlist)
+        drawface(vlist, True)
 
 # Draw forward-facing faces in a very thick _white_ line (so that
 # hidden lines have gaps in to make it clear that the
 # forward-facing lines go in front).
 for key, vlist in faces.items():
     if forward[key]:
-        psprint("0.03 setlinewidth 1 setgray")
-        drawface(vlist)
+        psprint("0.03 setlinewidth", colour)
+        drawface(vlist, False, clip=True)
 
 # Draw forward-facing faces again, in a medium-thick black line.
 for key, vlist in faces.items():
     if forward[key]:
         psprint("0.01 setlinewidth 0 setgray")
-        drawface(vlist)
+        drawface(vlist, False)
 
 psprint("showpage grestore")
 psprint("%%EOF")
