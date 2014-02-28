@@ -27,6 +27,12 @@ def itostr(index):
     else:
         return "revision %s of %s" % index
 
+def verdata():
+    ret = ""
+    for (rev, repo), realrev in sorted(lastchange.items()):
+        ret = ret + "%s: %s\n" % (repr(repo), repr(realrev))
+    return ret
+
 def checkout(cfg, module, path, is_main):
     log.logmsg("Checking out module %s into path %s" % (module, path))
 

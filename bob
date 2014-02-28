@@ -241,6 +241,11 @@ try:
     # Last-minute useful information: log $(revision).
     log.logmsg("Final value of $(revision) was %s" % lexer.get_multicharvar('revision'))
 
+    # Write out .bob_ver.
+    step = "writing version file in %s" % cfg.outpath
+    with open(os.path.join(cfg.outpath, ".bob_ver"), "w") as f:
+        f.write(checkout.verdata())
+
     # And close the log file.
     log.logmsg("Build completed at " +
     time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())))
