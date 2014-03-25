@@ -25,6 +25,21 @@
 use strict;
 use warnings;
 
+my $update_server_info = 0;
+for my $arg (@ARGV) {
+    if ($arg eq "-w") {
+        # For quick-and-dirty web deployment, put a non-bare git repo
+        # in some web space and make-pushable it with the -w option.
+        # That causes the post-update hook to also run git
+        # update-server-info, with the effect that pushes to the repo
+        # will both update the live files _and_ permit pulling over
+        # dumb HTTP from the .git subdir.
+        $update_server_info = 1;
+    } else {
+        die "git-make-pushable: unrecognised option '$arg'\n";
+    }
+}
+
 my $gitdir = defined $ENV{"GIT_DIR"} ? $ENV{"GIT_DIR"} : ".git";
 
 # ----------------------------------------------------------------------
@@ -152,6 +167,17 @@ if ($refname ne $curr_branch) {
 print STDERR "updating current working tree with pushed changes\n";
 $ENV{'GIT_WORK_TREE'} = $worktree;
 system "git", "reset", "--hard";
+EOF
+
+if ($update_server_info) {
+print $post_update_hook <<'EOF';
+
+# Update the server info for raw pulls.
+system "git", "update-server-info";
+EOF
+}
+
+print $post_update_hook <<'EOF';
 
 exit 0;
 EOF
