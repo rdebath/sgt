@@ -1,0 +1,113 @@
+# -*- conf -*-
+#
+# Simon Tatham's personal list of extra compose-key sequences.
+#
+# You need to set GTK_IM_MODULE=xim in the environment for this file
+# to be honoured at all.
+
+include "%L"
+
+# Floor and ceiling brackets. The _ vs ^ in the first composed key is
+# intended to recall TeX's subscript/superscript notation, and then of
+# course the following bracket indicates whether it's opening or
+# closing.
+<Multi_key> <underscore> <parenleft> : "⌊"
+<Multi_key> <underscore> <parenright> : "⌋"
+<Multi_key> <asciicircum> <parenleft> : "⌈"
+<Multi_key> <asciicircum> <parenright> : "⌉"
+
+# Minus-plus, to go with the standard plus-minus.
+<Multi_key> <minus> <plus> : "∓"
+
+# Some equals signs.
+<Multi_key> <equal> <equal> : "≡"
+<Multi_key> <equal> <asciitilde> : "≈"
+<Multi_key> <asciitilde> <equal> : "≈"
+
+# Greek letters. I pondered several ways of doing this, but have
+# settled on a general scheme of (Compose g) followed by the first two
+# characters of the English name of the Greek letter, except for
+# omicron/omega which required the first _three_ in order not to be
+# ambiguous.
+#
+# Note that Compose m u produces U+00B5 MICRO SIGN by standard
+# configuration, whereas the below configures Compose g m u to give
+# U+03BC GREEK SMALL LETTER MU.
+
+<Multi_key> <g> <a> <l>     : "α"
+<Multi_key> <g> <b> <e>     : "β"
+<Multi_key> <g> <g> <a>     : "γ"
+<Multi_key> <g> <d> <e>     : "δ"
+<Multi_key> <g> <e> <p>     : "ε"
+<Multi_key> <g> <z> <e>     : "ζ"
+<Multi_key> <g> <e> <t>     : "η"
+<Multi_key> <g> <t> <h>     : "θ"
+<Multi_key> <g> <i> <o>     : "ι"
+<Multi_key> <g> <k> <a>     : "κ"
+<Multi_key> <g> <l> <a>     : "λ"
+<Multi_key> <g> <m> <u>     : "μ"
+<Multi_key> <g> <n> <u>     : "ν"
+<Multi_key> <g> <x> <i>     : "ξ"
+<Multi_key> <g> <o> <m> <i> : "ο"
+<Multi_key> <g> <p> <i>     : "π"
+<Multi_key> <g> <r> <h>     : "ρ"
+<Multi_key> <g> <s> <i>     : "σ"
+<Multi_key> <g> <t> <a>     : "τ"
+<Multi_key> <g> <u> <p>     : "υ"
+<Multi_key> <g> <p> <h>     : "φ"
+<Multi_key> <g> <c> <h>     : "χ"
+<Multi_key> <g> <p> <s>     : "ψ"
+<Multi_key> <g> <o> <m> <e> : "ω"
+
+<Multi_key> <g> <A> <l>     : "Α"
+<Multi_key> <g> <A> <L>     : "Α"
+<Multi_key> <g> <B> <e>     : "Β"
+<Multi_key> <g> <B> <E>     : "Β"
+<Multi_key> <g> <G> <a>     : "Γ"
+<Multi_key> <g> <G> <A>     : "Γ"
+<Multi_key> <g> <D> <e>     : "Δ"
+<Multi_key> <g> <D> <E>     : "Δ"
+<Multi_key> <g> <E> <p>     : "Ε"
+<Multi_key> <g> <E> <P>     : "Ε"
+<Multi_key> <g> <Z> <e>     : "Ζ"
+<Multi_key> <g> <Z> <E>     : "Ζ"
+<Multi_key> <g> <E> <t>     : "Η"
+<Multi_key> <g> <E> <T>     : "Η"
+<Multi_key> <g> <T> <h>     : "Θ"
+<Multi_key> <g> <T> <H>     : "Θ"
+<Multi_key> <g> <I> <o>     : "Ι"
+<Multi_key> <g> <I> <O>     : "Ι"
+<Multi_key> <g> <K> <a>     : "Κ"
+<Multi_key> <g> <K> <A>     : "Κ"
+<Multi_key> <g> <L> <a>     : "Λ"
+<Multi_key> <g> <L> <A>     : "Λ"
+<Multi_key> <g> <M> <u>     : "Μ"
+<Multi_key> <g> <M> <U>     : "Μ"
+<Multi_key> <g> <N> <u>     : "Ν"
+<Multi_key> <g> <N> <U>     : "Ν"
+<Multi_key> <g> <X> <i>     : "Ξ"
+<Multi_key> <g> <X> <I>     : "Ξ"
+<Multi_key> <g> <O> <m> <i> : "Ο"
+<Multi_key> <g> <O> <m> <I> : "Ο"
+<Multi_key> <g> <O> <M> <i> : "Ο"
+<Multi_key> <g> <O> <M> <I> : "Ο"
+<Multi_key> <g> <P> <i>     : "Π"
+<Multi_key> <g> <P> <I>     : "Π"
+<Multi_key> <g> <R> <h>     : "Ρ"
+<Multi_key> <g> <R> <H>     : "Ρ"
+<Multi_key> <g> <S> <i>     : "Σ"
+<Multi_key> <g> <S> <I>     : "Σ"
+<Multi_key> <g> <T> <a>     : "Τ"
+<Multi_key> <g> <T> <A>     : "Τ"
+<Multi_key> <g> <U> <p>     : "Υ"
+<Multi_key> <g> <U> <P>     : "Υ"
+<Multi_key> <g> <P> <h>     : "Φ"
+<Multi_key> <g> <P> <H>     : "Φ"
+<Multi_key> <g> <C> <h>     : "Χ"
+<Multi_key> <g> <C> <H>     : "Χ"
+<Multi_key> <g> <P> <s>     : "Ψ"
+<Multi_key> <g> <P> <S>     : "Ψ"
+<Multi_key> <g> <O> <m> <e> : "Ω"
+<Multi_key> <g> <O> <m> <E> : "Ω"
+<Multi_key> <g> <O> <M> <e> : "Ω"
+<Multi_key> <g> <O> <M> <E> : "Ω"
