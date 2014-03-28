@@ -24,6 +24,9 @@ include "%L"
 <Multi_key> <equal> <asciitilde> : "≈"
 <Multi_key> <asciitilde> <equal> : "≈"
 
+# Operators.
+<Multi_key> <m> <minus> : "−" # mathematical MINUS SIGN, distinct from dashes
+
 # Greek letters. I pondered several ways of doing this, but have
 # settled on a general scheme of (Compose g) followed by the first two
 # characters of the English name of the Greek letter, except for
@@ -111,3 +114,31 @@ include "%L"
 <Multi_key> <g> <O> <m> <E> : "Ω"
 <Multi_key> <g> <O> <M> <e> : "Ω"
 <Multi_key> <g> <O> <M> <E> : "Ω"
+
+# Blackboard-bold (or, as Unicode has it, 'double-struck') letters.
+<Multi_key> <bar> <A>       : "𝔸"
+<Multi_key> <bar> <B>       : "𝔹"
+<Multi_key> <bar> <C>       : "ℂ"
+<Multi_key> <bar> <D>       : "𝔻"
+<Multi_key> <bar> <E>       : "𝔼"
+<Multi_key> <bar> <F>       : "𝔽"
+<Multi_key> <bar> <G>       : "𝔾"
+<Multi_key> <bar> <H>       : "ℍ"
+<Multi_key> <bar> <I>       : "𝕀"
+<Multi_key> <bar> <J>       : "𝕁"
+<Multi_key> <bar> <K>       : "𝕂"
+<Multi_key> <bar> <L>       : "𝕃"
+<Multi_key> <bar> <M>       : "𝕄"
+<Multi_key> <bar> <N>       : "ℕ"
+<Multi_key> <bar> <O>       : "𝕆"
+<Multi_key> <bar> <P>       : "ℙ"
+<Multi_key> <bar> <Q>       : "ℚ"
+<Multi_key> <bar> <R>       : "ℝ"
+<Multi_key> <bar> <S>       : "𝕊"
+<Multi_key> <bar> <T>       : "𝕋"
+<Multi_key> <bar> <U>       : "𝕌"
+<Multi_key> <bar> <V>       : "𝕍"
+<Multi_key> <bar> <W>       : "𝕎"
+<Multi_key> <bar> <X>       : "𝕏"
+<Multi_key> <bar> <Y>       : "𝕐"
+<Multi_key> <bar> <Z>       : "ℤ"
