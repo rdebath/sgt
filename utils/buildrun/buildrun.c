@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <ctype.h>
 #include <errno.h>
 
 #include <sys/types.h>
@@ -197,7 +198,7 @@ int readmode(void)
                 return 1;
             } else if (ret > 0) {
                 fprintf(stderr, "buildrun: %s: read: unexpectedly received "
-                        "some data!\n", pipepath, strerror(errno));
+                        "some data!\n", pipepath);
                 return 1;
             }
             close(fd);
@@ -287,7 +288,7 @@ void version(void) {
     for (p = rev; *p && *p != ':'; p++);
     if (*p) {
         p++;
-        while (*p && isspace(*p)) p++;
+        while (*p && isspace((unsigned char)*p)) p++;
         for (q = p; *q && *q != '$'; q++);
         if (*q) *q = '\0';
         printf("buildrun revision %s\n", p);
