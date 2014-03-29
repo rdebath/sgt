@@ -3,12 +3,22 @@
 # Set up a Unix account the way I like it.
 # Requires this `local' directory checked out, and also `utils'.
 
+utils_install_target=install-progs
+
+while test $# -gt 0; do
+    case "$1" in
+        --without-x11) utils_install_target=install-progs-nox ;;
+        *) echo "Unrecognised option '$1'" >&2; exit 1;;
+    esac
+    shift
+done
+
 SCRIPTS="addcr cal detab findgrep mono mtribs newscript nsort remcr rot13 svnlog timber"
 
 test -r $HOME/bin || mkdir $HOME/bin
 
 cd $HOME/src/utils
-make -s install-progs PREFIX=$HOME
+make -s $utils_install_target PREFIX=$HOME
 
 cd $HOME/src/local
 
