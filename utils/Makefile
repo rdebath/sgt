@@ -1,5 +1,6 @@
-SUBDIRS = after base64 beep buildrun cvt-utf8 lns multi nntpid \
-          pid reservoir xcopy
+SUBDIRS_NOX = after base64 buildrun cvt-utf8 lns multi nntpid \
+              pid reservoir
+SUBDIRS = $(SUBDIRS_NOX) beep xcopy
 
 # for `make html' and `make release'; should be a relative path
 DESTDIR = .
@@ -16,8 +17,14 @@ IDATA = -m 0644  # flags for installing data
 all:
 	for i in $(SUBDIRS); do (cd $$i && make); done
 
+all-nox:
+	for i in $(SUBDIRS_NOX); do (cd $$i && make); done
+
 progs:
 	for i in $(SUBDIRS); do (cd $$i && make progs); done
+
+progs-nox:
+	for i in $(SUBDIRS_NOX); do (cd $$i && make progs); done
 
 man:
 	for i in $(SUBDIRS); do (cd $$i && make man); done
@@ -35,8 +42,17 @@ release:
 install:
 	for i in $(SUBDIRS); do (cd $$i && make install); done
 
+install-nox:
+	for i in $(SUBDIRS_NOX); do (cd $$i && make install); done
+
 install-progs:
 	for i in $(SUBDIRS); do (cd $$i && make install-progs); done
 
+install-progs-nox:
+	for i in $(SUBDIRS_NOX); do (cd $$i && make install-progs); done
+
 install-man:
 	for i in $(SUBDIRS); do (cd $$i && make install-man); done
+
+install-man-nox:
+	for i in $(SUBDIRS_NOX); do (cd $$i && make install-man); done
