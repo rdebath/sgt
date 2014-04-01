@@ -152,6 +152,20 @@ def ignored_filename(name):
     # So are Java class files.
     if ends_with(name, ".class"):
         return 1
+    # Ditto Mac DMGs.
+    if ends_with(name, ".dmg"):
+        # On the basis that these _should_ just be an archive format
+        # that we ought in principle to be able to recurse into
+        # (albeit a weird and filesystemish one), I tried to find out
+        # the format of these, but what I found didn't match reality.
+        #
+        # http://en.wikipedia.org/wiki/Apple_Disk_Image says that .dmg
+        # files are in UDIF format which starts with the four-byte
+        # magic number "2IMG" (or possibly "GMI2" due to endianness),
+        # but the first actual .dmg I examined had nothing of the sort
+        # and instead its first 47 bytes were all either 0x80, 0x7F or
+        # zero. So, for the moment, no idea how to read these.
+        return 1
     # And anything that matches a user-supplied pattern.
     for pat in ignored_patterns:
         if fnmatch.fnmatch(os.path.basename(name), pat):
