@@ -1,0 +1,94 @@
+Summary: Write an SSH server based on the PuTTY code
+Class: wish
+Difficulty: tricky
+Priority: low
+Content-type: text/x-html-body
+
+<p>
+A lot of the code required to support the SSH protocol is very similar
+between an SSH client and a server. The <code>ssh-connection</code>
+protocol is perfectly symmetric in principle (though in practice
+clients and servers will accept a very different range of requests and
+channel types), the mathematics of Diffie-Hellman key exchange is
+symmetric (the <em>order of messages</em> in SSH kex methods is
+asymmetric, but all the really hard work is the same on both sides),
+and although the authentication <em>protocol</em> is completely
+asymmetric the underlying primitives of public keys, signing and
+signature verification are needed by both client and server (because
+what the client needs for authentication the server needs for dealing
+with host keys, and vice versa). And of course a lot of underlying
+machinery such as dealing with multiple network connections, OS
+handles, timers and so forth is needed equally by clients and servers.
+
+<p>
+PuTTY is a code base that already knows how to implement an SSH
+client, and therefore it wouldn't be <em>too</em> much work to
+implement a server based on the same code. The kex and auth code would
+have to be significantly rewritten, and there'd probably want to be
+some splitting-up of <code>ssh.c</code> into common, client-side and
+server-side pieces, but I don't think it would be infeasible in
+principle to build a server out of the pieces of PuTTY.
+
+<p>
+I don't mean to say that it would be a good <em>general-purpose</em>
+SSH server, that you could run on your Unix (or Windows) machine to
+allow your users to log in remotely. <em>That</em> would be a much
+larger piece of work. It would need a lot of new and difficult code
+(e.g. to interact with OS authentication systems like PAM), testing
+(on assorted different kernels and OS distributions) and security
+hardening; it would be foolish to think we could trivially dash off
+something that could compete with existing well-tested mature
+offerings like the OpenSSH server. (Though we <em>could</em> at least
+make it open Unix pseudo-terminals, by reusing the pty backend from
+<code>pterm</code>.)
+
+<p>
+No, when I say "SSH server" I just mean something that's
+protocol-compatible with an SSH client: something that PuTTY (or other
+clients) could connect to successfully and go through the motions of
+kex, auth, opening channels and transferring data. My vision of such a
+program is that it would be used for stunts and testing: it would be
+highly reconfigurable, and willing to use dark corners of the SSH
+protocol which are currently hard to test.
+
+<p>
+If we had such a thing, we could use it to build an automated test
+suite for the PuTTY client code, and make it do difficult and annoying
+things so we could check the client handled them correctly. Examples
+of things it might usefully test are:
+<ul>
+<li>requiring multiple sequential authentications during userauth
+<li><code>SSH_MSG_USERAUTH_PASSWD_CHANGEREQ</code>
+<li>sending zero prompts in a keyboard-interactive request
+<li>confusingly changing the range of crypto primitives presented in a rekey
+<li>sending <code>SSH_MSG_UNIMPLEMENTED</code> at annoying moments
+<li>sending an assortment of things we don't support (channel
+requests, global requests, channel types, strange classes of extended
+data, unrecognised messages), to check that we refuse them in the
+correct way
+<li>interaction of channel closure with unanswered channel requests
+</ul>
+
+<p>
+It might also be useful as a test-bed for new protocol elements.
+
+<p>
+Another potentially interesting thing it might do would be to speak
+the simplified connection protocol used by PuTTY's connection sharing,
+so that it appeared to PuTTY clients as a sharing upstream but in fact
+was a complete server in its own right. This simplified connection
+protocol might also be useful in other specialist circumstances, e.g.
+communicating with virtualised systems which make it easy to get a
+single byte stream in and out of them but harder to do anything more
+complicated (e.g. a very locked-down User Mode Linux).
+
+<p>
+Finally, it would also make a handy debugging tool for probing the
+behaviour of other SSH <em>clients</em>, since we could make it
+produce packet logs in the same useful level of detail as PuTTY itself
+does.
+
+<p>
+None of the above constitutes a single really good reason to write
+such a server, but it's possible that between them they might add up
+to enough motivation to go to the effort. Perhaps.
