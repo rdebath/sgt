@@ -400,6 +400,18 @@ function setupPolyhedron(acanvas, apoly, adebug) {
 	    var newmousepos = {x:mx, y:my, z:1};
 	    var dragstart = vnorm(state.mousepos);
 	    var dragend = vnorm(newmousepos);
+            if (dragstart.x == dragend.x &&
+                dragstart.y == dragend.y &&
+                dragstart.z == dragend.z) {
+                /*
+                 * Exclude spurious mousemove events that 'move' the
+                 * pointer from a position to the same position,
+                 * because otherwise the subsequent cross product will
+                 * give the zero vector and everything will go
+                 * pear-shaped.
+                 */
+                return;
+            }
 	    var axis = vnorm(vcross(dragstart, dragend));
 	    var perpstart = vcross(dragstart, axis);
 	    var perpend = vcross(dragend, axis);
