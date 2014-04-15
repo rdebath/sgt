@@ -32,6 +32,7 @@ use Cwd;
 $checkoutdir = ".";
 $verbose = 0;
 $reapply = 0;
+$allrevs = 0;
 
 while (@ARGV) {
     $arg = shift @ARGV;
@@ -39,6 +40,7 @@ while (@ARGV) {
         if ($arg eq "--") { $nomoreopts = 1; next; }
         if ($1 eq "v") { $verbose = 1; next; }
         if ($1 eq "r") { $reapply = 1; next; }
+        if ($1 eq "a") { $allrevs = 1; next; }
         die "git-svnify: unrecognised option '-$1'\n";
     } else {
         $checkoutdir = $arg;
@@ -88,7 +90,9 @@ $rev = $lcrev;
 # the way. We add --no-checkout to inhibit this.
 &run("git", "svn", "clone",
      ($verbose ? () : ("-q")),
-     "--no-checkout", "-r$rev", $url, ".");
+     "--no-checkout",
+     ($allrevs ? "-rBASE:$rev" : "-r$rev"),
+     $url, ".");
 
 # --no-checkout inhibits _creation_ of the 'master' reference. So we
 # create it here, and point it at git-svn.
