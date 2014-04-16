@@ -27,6 +27,10 @@ include "%L"
 # Operators.
 <Multi_key> <m> <minus> : "−" # mathematical MINUS SIGN, distinct from dashes
 
+# Tick and cross.
+<Multi_key> <y> <y> : "✓"
+<Multi_key> <n> <n> : "✕"
+
 # Greek letters. I pondered several ways of doing this, but have
 # settled on a general scheme of (Compose g) followed by the first two
 # characters of the English name of the Greek letter, except for
