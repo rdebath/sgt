@@ -562,7 +562,7 @@ if [ -t 1 ]; then case "$TERM" in
     # that $HOME proper might be set to a symlink rather than the
     # canonical path of my home dir (e.g. on atreus).
     bashrc_compute_xtitle() {
-      bashrc_xtitle="${USER}@${bashrc_hostname}:${PWD/$bashrc_home/~}"
+      bashrc_xtitle="${USER}@${bashrc_hostname}:${PWD/$bashrc_home/\~}"
     }
     bashrc_compute_xtitle # do this _now_ ...
     bashrc_add_changedir_fn bashrc_compute_xtitle # ... and after any chdir
