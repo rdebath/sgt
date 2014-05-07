@@ -10,6 +10,14 @@
 import sys
 import math
 
+def normalise(vector):
+    vlen = math.sqrt(sum([x**2 for x in vector]))
+    return tuple([x/vlen for x in vector])
+
+def dot(v1, v2):
+    assert len(v1) == len(v2)
+    return sum([v1[i]*v2[i] for i in range(len(v1))])
+
 class polyhedron:
     def __init__(self):
         self.vertices = {}
@@ -51,8 +59,7 @@ class polyhedron:
             vprod = (-vprod[0], -vprod[1], -vprod[2])
             vlist.reverse()
         # Normalise the normal vector to unit length.
-        vplen = math.sqrt(vprod[0]**2 + vprod[1]**2 + vprod[2]**2)
-        vprod = (vprod[0]/vplen, vprod[1]/vplen, vprod[2]/vplen)
+        vprod = normalise(vprod)
         # Compute the face name.
         facename = ""
         for s in vlist:
@@ -253,6 +260,81 @@ def icosahedron():
     p.face(d, f, k)
     p.face(d, h, l)
 
+    return p
+
+def associahedron():
+    # The 5-associahedron (that is, the 3-dimensional one), realised
+    # as the secondary polytope of a regular hexagon.
+    #
+    # In other words: this is a geometric construction which
+    # considers, for each possible triangulation of the hexagon
+    # (corresponding to a vertex of the associahedron), the total area
+    # of all triangles touching each vertex of the hexagon. This
+    # assigns a point in R^6 to each associahedron vertex. It will
+    # then turn out that all of those points are in an affine
+    # 3-subspace, so we can translate and rotate them into R^3.
+    #
+    # To begin with, if we consider our hexagon to be made up of six
+    # equilateral triangles of unit area, then there are three
+    # possible triangles that can appear in triangulations of it, with
+    # areas 1, 2, 3:
+    #     _______          _____   
+    #    /|     /\        /|`.  \  
+    #   / | 2  /  \      / |  `. \ 
+    #  / 1|   /    \    /  |  3 `.\
+    #  \  |  /     /    \  |    ,'/
+    #   \ | /     /      \ |  ,' / 
+    #    \|/_____/        \|,'__/  
+    #
+    # and, up to symmetry, basically three interesting kinds of
+    # triangulation, with vertex areas marked:
+    #
+    #    3_______5        3_______4         5____1
+    #    /|     /\        /|     /\        /|`.  \
+    #   / | 2  /| \      / | 2  /  \      / |  `. \
+    # 1/ 1|   / |1 \1  1/ 1|   / 2 _\3  1/  |  3 `.\5
+    #  \  |  /  |  /    \  |  /  .' /    \  |    ,'/
+    #   \ | / 2 | /      \ | / .'  /      \ |  ,' /
+    #    \|/____|/        \|/_'__1/        \|,'__/
+    #    5       3         6      1         5    1
+    #
+    # So our points in R^6 consist of all rotations and reversals of
+    # the three vectors [1,3,5,1,3,5], [1,3,4,3,1,6] and [1,5,1,5,1,5].
+    #
+    # It's a tedious but not too hard linear algebra exercise to find
+    # a set of three mutually orthogonal unit vectors in R^6 spanning
+    # the affine space in which all of those lie. The ones I picked
+    # were these:
+    e1 = normalise([ -1,  1, -1,  1, -1,  1 ])
+    e2 = normalise([ -1, -1,  2, -1, -1,  2 ])
+    e3 = normalise([ -1,  1,  0, -1,  1,  0 ])
+    def transform(v6):
+        return (dot(e1,v6), dot(e2,v6), dot(e3,v6))
+
+    p = polyhedron()
+    a = p.vertex(*transform([5, 1, 5, 1, 5, 1])) # [-sqrt(24), 0, 0]
+    b = p.vertex(*transform([3, 1, 6, 1, 3, 4])) # [-sqrt(6), sqrt(12), 0]
+    c = p.vertex(*transform([3, 4, 3, 1, 6, 1])) # [-sqrt(6), -sqrt(3), 3]
+    d = p.vertex(*transform([6, 1, 3, 4, 3, 1])) # [-sqrt(6), -sqrt(3), -3]
+    e = p.vertex(*transform([3, 1, 5, 3, 1, 5])) # [0, sqrt(12), -2]
+    f = p.vertex(*transform([1, 3, 5, 1, 3, 5])) # [0, sqrt(12), 2]
+    g = p.vertex(*transform([1, 5, 3, 1, 5, 3])) # [0, 0, 4]
+    h = p.vertex(*transform([3, 5, 1, 3, 5, 1])) # [0, -sqrt(12), 2]
+    i = p.vertex(*transform([5, 3, 1, 5, 3, 1])) # [0, -sqrt(12), -2]
+    j = p.vertex(*transform([5, 1, 3, 5, 1, 3])) # [0, 0, -4]
+    k = p.vertex(*transform([1, 3, 4, 3, 1, 6])) # [sqrt(6), sqrt(12), 0]
+    l = p.vertex(*transform([1, 6, 1, 3, 4, 3])) # [sqrt(6), -sqrt(3), 3]
+    m = p.vertex(*transform([4, 3, 1, 6, 1, 3])) # [sqrt(6), -sqrt(3), -3]
+    n = p.vertex(*transform([1, 5, 1, 5, 1, 5])) # [sqrt(24), 0, 0]
+    p.face(a,b,f,g,c)
+    p.face(a,c,h,i,d)
+    p.face(a,d,j,e,b)
+    p.face(b,f,k,e)
+    p.face(c,g,l,h)
+    p.face(d,i,m,j)
+    p.face(n,k,f,g,l)
+    p.face(n,l,h,i,m)
+    p.face(n,m,j,e,k)
     return p
 
 def edges(p):
@@ -743,6 +825,7 @@ polyhedra = {
 "greatrhombicosidodecahedron": output(rhombi(dodecahedron, 5, 3, 1)),
 "rhombicdodecahedron": output(dual(truncate(cube, 0))),
 "rhombictriacontahedron": output(dual(truncate(dodecahedron, 0))),
+"associahedron": output(associahedron),
 "all": all,
 }
 
