@@ -16,7 +16,8 @@ MKREGULAR = \
     truncateddodecahedron \
     truncatedicosahedron \
     truncatedoctahedron \
-    truncatedtetrahedron
+    truncatedtetrahedron \
+    associahedron
 
 # Archimedean duals not generated automatically by mkregular.py.
 
