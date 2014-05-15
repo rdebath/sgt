@@ -52,13 +52,13 @@ static void pidset_init(struct pidset *p)
 static void pidset_add(struct pidset *p, int pid)
 {
     assert(pid >= 0 && pid < PIDMAX);
-    p->procbits[pid / WORDBITS] |= 1 << (pid % WORDBITS);
+    p->procbits[pid / WORDBITS] |= 1UL << (pid % WORDBITS);
 }
 
 static int pidset_in(const struct pidset *p, int pid)
 {
     assert(pid >= 0 && pid < PIDMAX);
-    return (p->procbits[pid / WORDBITS] & (1 << (pid % WORDBITS))) != 0;
+    return (p->procbits[pid / WORDBITS] & (1UL << (pid % WORDBITS))) != 0;
 }
 
 static int pidset_size(const struct pidset *p)
