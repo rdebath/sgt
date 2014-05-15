@@ -562,7 +562,31 @@ if [ -t 1 ]; then case "$TERM" in
     # that $HOME proper might be set to a symlink rather than the
     # canonical path of my home dir (e.g. on atreus).
     bashrc_compute_xtitle() {
-      bashrc_xtitle="${USER}@${bashrc_hostname}:${PWD/$bashrc_home/\~}"
+      # Use an auxiliary variable to work around a breaking change
+      # between bash 4.2 and 4.3.
+      #
+      # In 4.2, using ~ as the replacement string in bash
+      # substitutions (e.g. ${VAR/thing/~}) yielded a literal ~. But
+      # in 4.3, the replacement string gets tilde-expanded. You can
+      # suppress the expansion in 4.3 by backslashing the ~, but in
+      # 4.2 _that_ gives you a literal \~, so apparently no direct
+      # syntax works in both cases.
+      #
+      # The workaround appears to be to first set a variable to the
+      # output text you really wanted, and then interpolate that
+      # variable in the replacement string. Sigh.
+      local tilde='~'
+
+      # Also, we must split this into cases so that we substitute
+      # (say) /home/smon and /home/simon/thing but avoid wrongly
+      # modifying /home/simonzzz.
+      local pwdtext
+      case "$PWD" in
+          "$bashrc_home") pwdtext="$tilde";;
+          "$bashrc_home"/*) pwdtext="${PWD/$bashrc_home/$tilde}";;
+          *) pwdtext="$PWD";;
+      esac
+      bashrc_xtitle="${USER}@${bashrc_hostname}:${pwdtext}"
     }
     bashrc_compute_xtitle # do this _now_ ...
     bashrc_add_changedir_fn bashrc_compute_xtitle # ... and after any chdir
