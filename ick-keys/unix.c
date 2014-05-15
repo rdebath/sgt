@@ -515,7 +515,7 @@ char *make_sawfish_command(char *p, int order, char *fmt)
     for (i = 0, o = order;
          (o & FIRST_CHOICE_MASK) != END_OF_OPTIONS;
          i++, o >>= CHOICE_SHIFT) {
-        p += sprintf(p, "((not (null w%d)) ", i);
+        p += sprintf(p, "((not (or (null w%d) (desktop-window-p w%d))) ", i, i);
         p += sprintf(p, fmt, i);
         p += sprintf(p, ")");
     }
