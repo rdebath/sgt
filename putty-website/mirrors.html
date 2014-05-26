@@ -474,7 +474,8 @@ as a symlink, for better behaviour in the face of web caches.)
 <p>
 Since <code>rsync</code> is incremental, there should be no reason not
 to update frequently, although currently there's no point in doing so
-more often than once a day. In any case, we would recommend updating no
+more often than once a day, and our server does have a limit on the number 
+of rsync connections. In any case, we would recommend updating no
 less often than once a week, in order to fetch any urgent updates such
 as security bugfixes. You can also subscribe to our
 <a href="maillist.html">mailing list</a> to receive notification
