@@ -31,6 +31,10 @@ include "%L"
 <Multi_key> <y> <y> : "✓"
 <Multi_key> <n> <n> : "✕"
 
+# Superscript minus, done by the same idiom as the superscript digits,
+# permitting me to type sin⁻¹.
+<Multi_key> <asciicircum> <minus> : "⁻"
+
 # Greek letters. I pondered several ways of doing this, but have
 # settled on a general scheme of (Compose g) followed by the first two
 # characters of the English name of the Greek letter, except for
