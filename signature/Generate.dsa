@@ -1,0 +1,47 @@
+#!/usr/bin/env python
+
+import hashlib, random
+from Genprime import genprime
+
+qbits = 52
+pbits = 64
+q = genprime(2**(qbits-2), 2**(qbits-1), lambda n:2*n+1)
+p = genprime(2**(pbits-1)/(2*q), 2**(pbits)/(2*q), lambda n:2*q*n+1)
+h = 2
+while True:
+    g = pow(h, (p-1)/q, p)
+    if g != 1:
+        break
+    h += 1
+x = random.randrange(2, q-2)
+y = pow(g, x, p)
+
+m = "Simon Tatham <anakin@pobox.com>"
+H = int(hashlib.sha1(m).hexdigest(),16)
+while True:
+    k = random.randrange(2, q-2)
+    r = pow(g, k, p) % q
+    if r == 0: continue
+    s = (H + x * r) * pow(k, q-2, q) % q
+    if s == 0: continue
+    break
+
+#print "p, q, g, y = %d, %d, %d, %d" % (p, q, g, y)
+#print "x, k, H = %d, %d, %d" % (x, k, H)
+w = pow(s, q-2, q)
+u1 = H*w%q
+u2 = r*w%q
+v = (pow(g,u1,p) * pow(y,u2,p) % p) % q
+#print "r, s = %d, %d" % (r, s)
+#print "w =", w
+#print "u1 =", u1
+#print "u2 =", u2
+#print "v =", v
+
+assert v == r
+
+print """\
+import hashlib; print (lambda p,q,g,y,r,s,m: m if (lambda w:(pow(g,int(hashlib.
+ sha1(m).hexdigest(),16)*w%%q,p)*pow(y,r*w%%q,p)%%p)%%q)(pow(s,q-2,q))==r else "!"
+ )(%#x, %#x, %#x, %#x,
+ %#x, %#x, "%s")""" % (p, q, g, y, r, s, m)
