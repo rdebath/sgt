@@ -1112,3 +1112,59 @@ bashrc_background_gitk() {
 alias gitk=bashrc_background_gitk
 
 #}}}
+#{{{ Formatting stuff for printers
+
+# I gave up on a2ps because when it syntax-highlights source code it
+# does some of the highlighting by switching back to a
+# non-proportional font
+bashrc_a2ps() {
+    echo 'No, use enscript instead!' >&2
+    return 1
+}
+alias a2ps=bashrc_a2ps # alias wrapper lets me \a2ps conveniently if I have to
+
+# enscript is nicer, but of course I have a collection of standard
+# preferences for layout and headers etc, and also I really dislike
+# the default of streaming straight to lpr without giving you a chance
+# to get it wrong a few times first. Wrap it in a shell function so
+# that my usual preferences are implicit.
+bashrc_enscript() {
+    local args=("$@")
+
+    # Header with filename on the left, page number on the right, and
+    # date in the middle.
+    #
+    # %D{...} is the date of printing. You can also specify $D{...} to
+    # replace that with the mtime of the input file, but I think
+    # that's not generally likely to be what I want: things I print
+    # like this are usually so I can have them available for some
+    # specific offline event, so the date should reflect _that_, so
+    # that I can more readily identify after the fact which ones are
+    # no longer needed.
+    set -- --header '$n|%D{%a %F %T}|$%'
+
+    # Enable syntax highlighting, if the input file type is
+    # recognised.
+    set -- "$@" -E
+
+    # 2 columns per page.
+    set -- "$@" -2
+
+    # Landscape mode (so that each of those two columns is basically
+    # A5-shaped).
+    set -- "$@" -r
+
+    # Borders around the columns.
+    set -- "$@" -j
+
+    # Add a default output file of stdout, replacing the in-built
+    # default of piping straight to lpr. You can still override this,
+    # of course, by putting your own -o option on the command line of
+    # this function.
+    set -- "$@" -o -
+
+    command enscript "$@" "${args[@]}"
+}
+alias enscript=bashrc_enscript # alias wrapper as above
+
+#}}}
