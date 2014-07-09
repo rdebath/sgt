@@ -1,0 +1,42 @@
+#!/usr/bin/env python
+
+import hashlib, random
+from Genprime import genprime
+
+def invert(a, n):
+    x, xa, xn = a, 1, 0
+    y, ya, yn = n, 0, 1
+    while y != 0:
+        q = x / y
+        x, xa, xn, y, ya, yn = y, ya, yn, x-y*q, xa-ya*q, xn-yn*q
+    assert x==1
+    return xa + (n if xa<0 else 0)
+
+p = genprime(2**39, 2**40, lambda n:2*n+1)
+q = genprime(2**39, 2**40, lambda n:2*n+1)
+n = p*q
+d = 37
+phin = (p-1)*(q-1)
+e = invert(d, phin)
+assert e*d % phin == 1
+
+bitmap = [
+    0x800000c007f8000001be,
+    0x800000c600c000000003,
+    0xbba3c6c63cc1d3c77583,
+    0xeee66dcf66c3766ddd9e,
+    0xe6666cc666c3366ccdb0,
+    0xe6676cc676c3366ccdb0,
+    0xe66dccdcdcc333cccd9f,
+]
+
+values = [pow(b, e, n) for b in bitmap]
+
+assert [pow(v, d, n) for v in values] == bitmap
+
+print """\
+for k in [pow(x,%d,%#x) for x in [%#x,
+%#x, %#x, %#x,
+%#x, %#x, %#x]]:
+ print "".join([chr(32+3*((k>>x)&1))for x in range(79)]) # <anakin@pobox.com>\
+""" % ((d, n) + tuple(values))

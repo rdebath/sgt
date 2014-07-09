@@ -1,0 +1,4 @@
+import hashlib; print (lambda p,q,g,y,r,s,m: m if (lambda w:(pow(g,int(hashlib.
+ sha1(m).hexdigest(),16)*w%q,p)*pow(y,r*w%q,p)%p)%q)(pow(s,q-2,q))==r else "!"
+ )(0xb80b5dacabab6145, 0xf70027d345023, 0x7643bc4018957897, 0x11c2e5d9951130c9,
+ 0xa54d9cbe4e8ab, 0x746c50eaa1910, "Simon Tatham <anakin@pobox.com>")
