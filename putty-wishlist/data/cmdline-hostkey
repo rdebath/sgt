@@ -1,0 +1,44 @@
+Summary: Option to specify expected host key(s) on the command line
+Class: wish
+Priority: medium
+Difficulty: fun
+Content-type: text/x-html-body
+Fixed-in: r10220
+
+<p>
+When people want to run PuTTY tools in a batch-mode context, and find
+the host key verification to be inconvenient, we've always told them
+to add the right host key to the registry ahead of time, rather than
+<a href="accept-host-keys.html">asking us</a> for an option to accept
+any old key or bodging a similar thing using <code>expect</code>-type
+tools.
+
+<p>
+However, in some contexts this actually can't be done, because the
+Windows registry isn't accessible in the environment where PuTTY needs
+to run. So it would be useful to be able to specify the expected host
+key in a different way, e.g. with a command-line option.
+
+<p>
+Another use for the same facility is in the case where a round-robin
+DNS name points at multiple servers with different host keys, and the
+user wants to connect to the round-robin name and accept any of the
+host keys that might come back. We've generally advised people in this
+situation to try to arrange for all the servers to have the
+<em>same</em> host key (on the basis that if the servers are so
+interchangeable that it doesn't matter which one you connect to, then
+they must be in the same trust domain anyway and so there's no
+security risk introduced by each of them being able to spoof the
+others' SSH connections), but of course not every user is also the
+sysadmin of their servers, so some people will have to live with
+different host keys. Those users will also find PuTTY's standard host
+key policy to be unhelpful, and would probably find it more useful to
+be able to specify a list of host keys to be accepted.
+
+<p>
+<b>2014-09-09</b>: now implemented both a <code>-hostkey</code>
+command line option and a matching GUI configuration mechanism. You
+can enter either an SSH key fingerprint or an SSH-2 base64-encoded
+blob. If enabled, this option completely replaces the automated host
+key management &#8211; the registry host key store will be neither
+consulted nor updated.

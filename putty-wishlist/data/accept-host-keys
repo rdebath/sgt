@@ -7,18 +7,21 @@ Content-type: text/x-html-body
 <p>
 An option to automatically accept all SSH host keys. For some reason
 lots of people seem to think this would be a really useful feature.
-I'm sure it would be very convenient, but at the expense of
-security! The whole point of host keys is that they're the
-<em>only</em> guarantee you have that your connection hasn't been
-hijacked by an active attacker between you and the server, and that
-your data isn't being decrypted by the attacker and re-encrypted. If
-you want to schedule an automated batch job to use PSCP or Plink,
-and the interactive host key prompt is making this difficult,
-<em>add the correct host key to the registry ahead of time</em>.
-That way you still get the convenience, but without losing the
-security. We will <em>not</em> accept a command line option to turn
-off host key checking, no matter how many people have already done
-the work and send us polished production-quality patches.
+I'm sure it would be very convenient, but at the expense of security!
+The whole point of host keys is that they're the <em>only</em>
+guarantee you have that your connection hasn't been hijacked by an
+active attacker between you and the server, and that your data isn't
+being decrypted by the attacker and re-encrypted. If you want to
+schedule an automated batch job to use PSCP or Plink, and the
+interactive host key prompt is making this difficult, <em>add the
+correct host key to the registry ahead of time</em>. (<b>Update,
+2014-09-09</b>: or if the Registry isn't available, you can use the
+new <code>-hostkey</code> option to specify the right key or
+fingerprint on the command line.) That way you still get the
+convenience, but without losing the security. We will <em>not</em>
+accept a command line option to turn off host key checking, no matter
+how many people have already done the work and send us polished
+production-quality patches.
 
 <p>
 If you have host keys available in the common `known_hosts' format, we
