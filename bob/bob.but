@@ -1018,7 +1018,7 @@ the latter all-caps, and the former title-case (one initial capital
 letter and then lower case). However, that's only a suggestion;
 there's nothing stopping you from ignoring it.
 
-\k{config} lists a number of reserved variables used in the \Conf
+\K{config} lists a number of reserved variables used in the \Conf
 configuration file. This section now describes the currently defined
 reserved variables used in build scripts.
 
