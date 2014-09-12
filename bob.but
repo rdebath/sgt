@@ -101,14 +101,14 @@ top-level script, instead of just writing something ad-hoc in \c{sh}?
 
 Well, lots of little reasons really:
 
-\e{Checkout and build in one step}. It's often handy to be able to
+\s{Checkout and build in one step}. It's often handy to be able to
 check out and build in one go, instead of having to do the two steps
 of first checking the right source directory out and then running
 the build script inside it. This is doubly true if your software
 involves multiple source directories, so that even checking out in
 the first place is a job complex enough to be worth automating.
 
-\e{Version tagging}. It's handy to be able to tag all your builds
+\s{Version tagging}. It's handy to be able to tag all your builds
 with an appropriate version number and not have to think about it.
 If you do daily builds, for example, an ad-hoc checkout-and-build
 approach might require you to check out with a Subversion date tag,
@@ -117,7 +117,7 @@ in order to have the resulting binaries tagged as today's snapshot.
 A one-step checkout and build can be given that information once,
 use it in both places, and make sure it doesn't make typos.
 
-\e{Delegation}. As soon as you need several machines to help with
+\s{Delegation}. As soon as you need several machines to help with
 your build process (for example building Windows, Unix and Mac
 versions of the project), ad-hoc scripts become more difficult to
 manage. You typically need at least one script for each machine, and
@@ -128,7 +128,7 @@ out. In particular, having to split your build procedure into
 several pieces when really it's conceptually all one unit makes it
 harder to maintain.
 
-\e{Everything in its place}. Ad-hoc build scripts tend to mix
+\s{Everything in its place}. Ad-hoc build scripts tend to mix
 together details of the project and details of the build
 environment. For example, an ad-hoc build script might well contain
 commands to set its \cw{PATH} to include directories containing the
@@ -147,7 +147,7 @@ checking out your project can write their own configuration file and
 re-use your build script, and conveniently run exactly the same
 build process as you do.
 
-\e{Diligent error checking}. There's a lot that can go wrong with a
+\s{Diligent error checking}. There's a lot that can go wrong with a
 build, and you probably don't want it to do so silently. If the
 build fails, you probably want to be told about it so you can fix
 the underlying software. This goes at least double if you're running
@@ -160,7 +160,7 @@ engine \e{designed} for running builds will switch the defaults
 round so that you have to make a special effort to \e{ignore} an
 error in the rare case where you need to.
 
-\e{Ubiquitous logging}. Ad-hoc build scripts run from \c{cron} will
+\s{Ubiquitous logging}. Ad-hoc build scripts run from \c{cron} will
 often do a lot of their build commands with the \q{quiet} flags
 (\cq{svn co -q}, \cq{make -s} and so on), to avoid generating
 spurious output which would cause the build admin to be spammed with
@@ -177,7 +177,7 @@ without you having to tell it to, so that when something does go
 wrong you can be confident of having all the available information
 to figure out what.
 
-\e{Unified manual and automatic builds}. Ad-hoc build scripts are
+\s{Unified manual and automatic builds}. Ad-hoc build scripts are
 often not particularly good at adapting to different circumstances.
 For example, a daily build script which checks out using a
 Subversion date tag and then builds binaries tagged as daily source
@@ -188,7 +188,7 @@ some of the deliverables in one case or the other. A unified build
 system makes it easy to arrange for all kinds of build to be done
 the same way.
 
-\e{Unification across multiple projects}. If you work with more than
+\s{Unification across multiple projects}. If you work with more than
 one software project, you can easily end up with the ad-hoc build
 scripts working differently in all of them, so that when you
 suddenly want to build something you haven't worked with in a while,
@@ -1048,7 +1048,7 @@ worry that \cw{$(revision)} might unexpectedly acquire a trailing
 of the ways for \Name to get a source directory involve it being
 able to find a revision number for that directory.
 
-\e{Important:} \cw{$(revision)} is adjusted to give the revision
+\s{Important:} \cw{$(revision)} is adjusted to give the revision
 number corresponding to the \e{most recent change} in any source
 module checked out on the same revision number. So if you're
 checking out from the head of the repository, \cw{$(revision)} might
