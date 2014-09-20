@@ -1404,7 +1404,7 @@ int main(int argc, char **argv)
 	     * close all but one, and (b) closing tty fds doesn't
 	     * send EOF in any case so there isn't any need to.
 	     */
-	    if (!ctx->fds[i].is_tty)
+	    if (!ctx->fds[i].is_tty && ctx->fds[ctx->fds[i].first].canclose)
 		close(ctx->fds[i].fd);
 	} else {
 	    /*
