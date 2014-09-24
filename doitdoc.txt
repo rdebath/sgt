@@ -54,22 +54,13 @@ to do this will depend on your Windows C compiler. You also need to
 link against the WinSock library wsock32.dll (or ws2_32.dll; I think
 either should work).
 
-The Unix client program, `doitclient', is built from doitclient.c
-and doitlib.c. On Solaris or other systems without native socket
-support, you might need to link with `-lsocket -lnsl' or similar. On
-Linux, you should need no special libraries to build the client.
-Sample compiler command lines might be:
+The Unix client program, `doitclient', is built by the usual method:
+run `./configure' followed by `make'.
 
-  gcc -o doitclient doitclient.c doitlib.c                 # Linux
-  cc -o doitclient doitclient.c doitlib.c -lsocket -lnsl   # Solaris
-
-If the Unix compilation fails because the function `realpath' is not
-found, try compiling with -DHAVE_NO_REALPATH.
-
-Install `doitclient' somewhere on your Unix PATH. You may optionally
-want to symlink the binary to some of the alternative names `wf',
-`win', `winwait', `wcmd', `wclip', `www' and `wpath'. (What each of
-these does is explained below.)
+Once you've built `doitclient', install it somewhere on your Unix
+PATH. You may optionally want to symlink the binary to some of the
+alternative names `wf', `win', `winwait', `wcmd', `wclip', `www' and
+`wpath'. (What each of these does is explained below.)
 
 Setting up a shared secret
 --------------------------
