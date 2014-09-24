@@ -18,6 +18,9 @@ removenewlines = string.maketrans("\r\n", "  ")
 
 builddate = None
 
+Err = object() # stored in multicharvars to indicate inaccessibility
+class VarInvalid(BaseException): pass
+
 def save_vars():
     return (onecharvars.copy(), multicharvars.copy())
 
@@ -30,8 +33,13 @@ def set_onecharvar(var, val):
 def set_multicharvar(var, val):
     multicharvars[var] = val
 
+def set_multicharvar_to_err(var):
+    multicharvars[var] = Err
+
 def get_multicharvar(var, default=None):
     ret = multicharvars.get(var, default)
+    if ret is Err:
+        raise VarInvalid()
     if type(ret) == types.TupleType:
         # Function and parameter.
         ret = ret[0](ret[1])
@@ -64,6 +72,13 @@ def expand_varfunc(var, cfg):
             if misc.numeric(val):
                 return "yes"
             else:
+                return "no"
+        elif fn == "available":
+            log.logmsg("testing availability of variable `%s'" % val)
+            try:
+                get_multicharvar(val)
+                return "yes"
+            except VarInvalid:
                 return "no"
         elif fn == "builddate":
             if val != "":
@@ -99,7 +114,10 @@ def expand_varfunc(var, cfg):
     else:
         # Just look up var in our list of variables, and return its
         # value.
-        return get_multicharvar(var, "")
+        try:
+            return get_multicharvar(var, "")
+        except VarInvalid:
+            raise misc.builderr("special variable `%s' is not currently valid" % var)
 
 def internal_lex(s, terminatechars, permit_comments, cfg):
     # Lex string s until a character in `terminatechars', or

@@ -43,8 +43,11 @@ cfg.cfgfile = os.path.join(os.getenv("HOME"), name.conffile)
 cfg.builddatecache = os.path.join(os.getenv("HOME"), name.builddate_cache_dir)
 cfg.specialrev = {}
 cfg.verbose = 0
+cfg.force_git_svn = None
 
-cl = cmdline.parse_cmdline(sys.argv[1:], "olsfrdDBW")
+cl = cmdline.parse_cmdline(sys.argv[1:], "olsfrdDBWbc")
+
+Main = object() # special marker value
 
 for opt, val in cl:
     if opt == None:
@@ -57,7 +60,7 @@ for opt, val in cl:
 		val = os.path.realpath(val)
 		cfg.mainmodule = os.path.basename(val)
 		# Force the specialrev array to contain an entry for this module
-		cfg.specialrev[cfg.mainmodule] = cfg.specialrev.get(cfg.mainmodule, [None, None, None])
+		cfg.specialrev[cfg.mainmodule] = cfg.specialrev.get(cfg.mainmodule, [None]*5)
 		# And set the working-directory member of it.
 		cfg.specialrev[cfg.mainmodule][2] = val
 	    else:
@@ -116,6 +119,10 @@ for opt, val in cl:
 	cfg.remove_previous_outdir = 1
     elif opt == "--complexrev":
 	cfg.accept_complex_rev = 1
+    elif opt.replace("_", "-") == "--git-svn":
+	cfg.force_git_svn = True
+    elif opt.replace("_", "-") == "--no-git-svn":
+        cfg.force_git_svn = False
     elif opt == "-v":
 	cfg.verbose = cfg.verbose + 1
     elif opt == "--help":
@@ -133,7 +140,7 @@ for opt, val in cl:
 	    module = val[:equals]
 	    val = val[equals+1:]
 	    # Force the specialrev array to contain an entry for this module
-	    cfg.specialrev[module] = cfg.specialrev.get(module, [None, None, None])
+	    cfg.specialrev[module] = cfg.specialrev.get(module, [None]*5)
 	    # And set the revision/date member of it.
 	    cfg.specialrev[module][0] = ("rev", val)
 	else:
@@ -147,7 +154,7 @@ for opt, val in cl:
 	    module = val[:equals]
 	    val = val[equals+1:]
 	    # Force the specialrev array to contain an entry for this module
-	    cfg.specialrev[module] = cfg.specialrev.get(module, [None, None, None])
+	    cfg.specialrev[module] = cfg.specialrev.get(module, [None]*5)
 	    # And set the revision/date member of it.
 	    cfg.specialrev[module][0] = ("date", val)
 	else:
@@ -164,9 +171,37 @@ for opt, val in cl:
 	    module = val[:equals]
 	    val = val[equals+1:]
 	    # Force the specialrev array to contain an entry for this module
-	    cfg.specialrev[module] = cfg.specialrev.get(module, [None, None, None])
+	    cfg.specialrev[module] = cfg.specialrev.get(module, [None]*5)
 	    # And set the branch member of it.
 	    cfg.specialrev[module][1] = val
+    elif opt == "-b":
+	if val == None:
+	    sys.stderr.write("%s: %s expects an argument\n" % (name.name, opt))
+	    sys.exit(1)
+	equals = string.find(val, "=")
+	if equals < 0:
+            module = Main # special key in cfg.specialrev
+	else:
+	    module = val[:equals]
+	    val = val[equals+1:]
+        # Force the specialrev array to contain an entry for this module
+        cfg.specialrev[module] = cfg.specialrev.get(module, [None]*5)
+        # And set the git branch member of it.
+        cfg.specialrev[module][3] = val
+    elif opt == "-c":
+	if val == None:
+	    sys.stderr.write("%s: %s expects an argument\n" % (name.name, opt))
+	    sys.exit(1)
+	equals = string.find(val, "=")
+	if equals < 0:
+            module = Main # special key in cfg.specialrev
+	else:
+	    module = val[:equals]
+	    val = val[equals+1:]
+        # Force the specialrev array to contain an entry for this module
+        cfg.specialrev[module] = cfg.specialrev.get(module, [None]*5)
+        # And set the git commit member of it.
+        cfg.specialrev[module][4] = val
     elif opt == "-W":
 	if val == None:
 	    sys.stderr.write("%s: %s expects an argument\n" % (name.name, opt))
@@ -179,7 +214,7 @@ for opt, val in cl:
 	    module = val[:equals]
 	    val = val[equals+1:]
 	    # Force the specialrev array to contain an entry for this module
-	    cfg.specialrev[module] = cfg.specialrev.get(module, [None, None, None])
+	    cfg.specialrev[module] = cfg.specialrev.get(module, [None]*5)
 	    # And set the working-directory member of it.
 	    cfg.specialrev[module][2] = val
     else:
@@ -189,6 +224,11 @@ for opt, val in cl:
 if cfg.mainmodule == None:
     bumf.shortusage()
     sys.exit(1)
+
+if Main in cfg.specialrev:
+    # Now we know what the main module is called, move its revision
+    # configuration over into that slot.
+    cfg.specialrev[cfg.mainmodule] = cfg.specialrev[Main]
 
 if cfg.workpath == None:
     cfg.workpath = os.path.join(cfg.outpath, ".work")
@@ -242,7 +282,10 @@ try:
 	misc.rm_rf(cfg.workpath)
 
     # Last-minute useful information: log $(revision).
-    log.logmsg("Final value of $(revision) was %s" % lexer.get_multicharvar('revision'))
+    try:
+        log.logmsg("Final value of $(revision) was %s" % lexer.get_multicharvar('revision'))
+    except lexer.VarInvalid:
+        pass
 
     # Write out .bob_ver.
     step = "writing version file in %s" % cfg.outpath
