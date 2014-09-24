@@ -8,7 +8,7 @@
  * Copyright 2000-2001 Simon Tatham. All rights reserved.
  * 
  * You may copy and use this file under the terms of the MIT
- * Licence. For details, see the file LICENCE provided in the <<PROGRAMNAME>>
+ * Licence. For details, see the file LICENCE provided in the DoIt
  * distribution archive. At the time of writing, a copy of the
  * licence is also available at
  * 

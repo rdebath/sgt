@@ -1,37 +1,22 @@
 # -*- sh -*-
 # Build script for DoIt.
 
-module listener
-
-# Substitute the right program name in the non-DoIt-specific files.
-in listener do perl -i~ -pe 's/<<PROGRAMNAME>>/DoIt/g' listener.c LICENCE
+module doit
 
 # Substitute the right revision number in the README.
-in listener do perl -i~ -pe 's/<<REV>>/$(revision)/' README
+in doit do perl -i -pe 's/<<REV>>/$(revision)/' README
 
 # Build the Windows binary.
 delegate windows
-  in listener do cmd /c vcvars32 \& nmake
-  return listener/doit.exe
+  in doit do cmd /c vcvars32 \& nmake
+  return doit/doit.exe
 enddelegate
-in listener do chmod +x doit.exe
+in doit do chmod +x doit.exe
 
-# Construct a directory of symlinks for making release archives.
-in listener do mkdir doit
-in listener/doit do ln -s ../*.c .
-in listener/doit do ln -s ../*.h .
-in listener/doit do ln -s ../*.txt .
-in listener/doit do ln -s ../*.rc .
-in listener/doit do ln -s ../*.ico .
-in listener/doit do ln -s ../*.exe .
-in listener/doit do ln -s ../Makefile .
-in listener/doit do ln -s ../README .
-in listener/doit do ln -s ../LICENCE .
-
-# Zip and tar up the symlink directory.
-in listener/doit do zip -9 ../doit.zip *
-in listener do tar chzf doit.tar.gz doit
+# Zip and tar up the source directory.
+in doit do zip -9 ../doit.zip * -x Buildscr
+in . do tar --exclude=Buildscr -chzf doit.tar.gz doit
 
 # And deliver those archives.
-deliver listener/doit.zip $@
-deliver listener/doit.tar.gz $@
+deliver doit.zip $@
+deliver doit.tar.gz $@
