@@ -116,7 +116,10 @@ void *read_secret_file(char *fname, int *len) {
         return NULL;
     }
     fseek(fp, 0, SEEK_SET);
-    fread(secret, 1, secretlen, fp);
+    if (!fread(secret, 1, secretlen, fp)) {
+        perror("read");
+        return NULL;
+    }
     fclose(fp);
 
     *len = secretlen;
@@ -1105,7 +1108,7 @@ int main(int argc, char **argv)
 
             do_doit_send_str(sock, ctx, "ReadClipboard\n");
 	    if (verbose)
-		fprintf(stderr, "doit: >>> ReadClipboard\n", arg);
+		fprintf(stderr, "doit: >>> ReadClipboard\n");
 
 	    msg = do_fetch_n(sock, ctx, 4, &len);
 	    clen = GET_32BIT_MSB_FIRST(msg);
@@ -1145,7 +1148,7 @@ int main(int argc, char **argv)
 	    int size = 0;
             do_doit_send_str(sock, ctx, "WriteClipboard\n");
 	    if (verbose)
-		fprintf(stderr, "doit: >>> WriteClipboard\n", arg);
+		fprintf(stderr, "doit: >>> WriteClipboard\n");
             while (fgets(buf, sizeof(buf), stdin)) {
                 int newlinepos = strcspn(buf, "\n");
                 do_doit_send(sock, ctx, buf, newlinepos);
