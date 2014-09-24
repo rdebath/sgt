@@ -3,10 +3,15 @@
 
 module ipbt
 
-in ipbt do sed '/AC_INIT/s/rXXXX/r$(revision)/' configure.ac > tmp.ac
+set Version $(!builddate).$(vcsid)
+
+in ipbt do sed '/AC_INIT/s/6.66/$(Version)/' configure.ac > tmp.ac
 in ipbt do mv tmp.ac configure.ac
 in ipbt do ./mkauto.sh
 in ipbt do rm -rf autom4te.cache
+
+# use perl to avoid inconsistent behaviour of echo '\v'
+in ipbt do perl -e 'print "\n\\versionid ipbt version $$ARGV[0]\n"' $(Version) >> ipbt.but
 
 # Build the documentation. This also tests the automake setup to
 # ensure configure actually works; but we use a self-delegation (i.e.
@@ -21,11 +26,11 @@ delegate -
 enddelegate
 
 # Build a source archive with the right name.
-in . do ln -s ipbt ipbt-r$(revision)
-in . do tar chzvf ipbt-r$(revision).tar.gz ipbt-r$(revision)
+in . do ln -s ipbt ipbt-$(Version)
+in . do tar chzvf ipbt-$(Version).tar.gz ipbt-$(Version)
 
 # Deliver the source archive.
-deliver ipbt-r$(revision).tar.gz $@
+deliver ipbt-$(Version).tar.gz $@
 
 # And deliver the HTML man page.
 deliver ipbt/ipbt.html $@

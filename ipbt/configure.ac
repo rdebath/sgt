@@ -1,6 +1,6 @@
 # autoconf input for ipbt.
 
-AC_INIT([ipbt], [rXXXX], [anakin@pobox.com])
+AC_INIT([ipbt], [6.66], [anakin@pobox.com])
 AC_CONFIG_SRCDIR([ipbt.c])
 
 AM_INIT_AUTOMAKE(foreign)
