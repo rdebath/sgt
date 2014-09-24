@@ -4,7 +4,7 @@
 module enigma
 
 # Determine the version number.
-set Ver r$(revision)
+set Ver $(vcsid)
 ifneq $(RELEASE) "" set Ver $(RELEASE)
 
 # If this is an interim release rather than a real one, edit the
