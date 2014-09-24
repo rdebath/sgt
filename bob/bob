@@ -215,6 +215,8 @@ try:
 	if e.errno == errno.EEXIST and cfg.remove_previous_outdir:
 	    misc.rm_rf(cfg.outpath)
 	    os.mkdir(cfg.outpath)
+        else:
+            raise
 
     # And create the work directory.
     log.logmsg("Creating work directory %s" % cfg.workpath)
