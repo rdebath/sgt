@@ -76,11 +76,7 @@ while ($ARGV[0] =~ /^-(.+)$/) {
     print STDERR $usage;
     exit 0;
   } elsif ($1 eq "-version") {
-    if ('$Revision$' =~ /Revision:\s+(\d+)/) {
-	print "nntpid revision $1\n";
-    } else {
-	print "nntpid: unknown revision\n";
-    }
+    print "nntpid, unknown version\n"; #---buildsys-replace---
     exit 0;
   } elsif ($1 eq "-licence" or $1 eq "-license") {
     print $licence;

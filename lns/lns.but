@@ -245,5 +245,3 @@ you specify rather than inside it:
 
 \cw{lns} is free software, distributed under the MIT licence. Type
 \cw{lns --licence} to see the full licence text.
-
-\versionid $Id$

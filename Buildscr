@@ -3,6 +3,12 @@
 
 module utils
 
+set Version $(!builddate).$(vcsid)
+
+# use perl to avoid inconsistent behaviour of echo '\v'
+in utils do for i in */*.but; do perl -e 'use File::Basename; $$util = basename $$ARGV[1], ".but"; print "\n\\versionid $$util version $$ARGV[0]\n"' $(Version) $$i >> $$i; done
+in utils do perl -i -pe 's!unknown version!version $(Version)! if s!\s*\S*---buildsys-replace---\S*!!' */*
+
 in utils do make html release DESTDIR=..
 deliver *.html $@
 deliver *.tar.gz $@

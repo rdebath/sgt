@@ -126,22 +126,7 @@ void licence(void) {
 }
 
 void version(void) {
-#define SVN_REV "$Revision$"
-    char rev[sizeof(SVN_REV)];
-    char *p, *q;
-
-    strcpy(rev, SVN_REV);
-
-    for (p = rev; *p && *p != ':'; p++);
-    if (*p) {
-        p++;
-        while (*p && isspace(*p)) p++;
-        for (q = p; *q && *q != '$'; q++);
-        if (*q) *q = '\0';
-        printf("base64 revision %s\n", p);
-    } else {
-        printf("base64: unknown version\n");
-    }
+    printf("base64, unknown version\n"); /*---buildsys-replace---*/
 }
 
 int main(int ac, char **av) {

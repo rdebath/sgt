@@ -81,5 +81,3 @@ using \c{after} at all.
 
 \c{after} is free software, distributed under the MIT licence. Type
 \cq{after --licence} to see the full licence text.
-
-\versionid $Id$

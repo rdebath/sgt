@@ -83,5 +83,3 @@ it.
 
 \cw{pid} is free software, distributed under the MIT licence. Type
 \cw{pid --licence} to see the full licence text.
-
-\versionid $Id$
