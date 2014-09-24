@@ -33,11 +33,11 @@
 
 #include "misc.h"
 
+#define VERSION "~VERSION~"
+
 #include "bmpwrite.h"
 
 #include "cmdline.h"
-
-#define VERSION "$Revision$"
 
 /* ----------------------------------------------------------------------
  * Matrix utilities.

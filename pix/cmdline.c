@@ -190,6 +190,16 @@ void parse_cmdline(char const *programname, int argc, char **argv,
 			    done = TRUE;
 			}
 		    }
+                    if (!done) {
+                        if (!strcmp(arg, "--version")) {
+#ifdef VERSION
+                            printf("%s version %s\n", programname, VERSION);
+#else
+                            printf("%s, unknown version\n", programname);
+#endif
+                            exit(EXIT_SUCCESS);
+                        }
+                    }
 		} else if (c == options[i].shortopt) {
 		    if (options[i].arghelp) {
 			if (*val) {

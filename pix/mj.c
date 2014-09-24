@@ -33,11 +33,11 @@
 
 #include "misc.h"
 
+#define VERSION "~VERSION~"
+
 #include "cmdline.h"
 
 #include "bmpwrite.h"
-
-#define VERSION "$Revision$"
 
 /* ----------------------------------------------------------------------
  * Functions to handle complex numbers.

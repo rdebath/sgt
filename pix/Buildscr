@@ -8,6 +8,11 @@
 
 module pix
 
+# Make up a version number, and substitute it in to the source where
+# it's needed.
+set Version $(!builddate).$(vcsid)
+in pix do perl -i -pe 's/~VERSION~/$(Version)/' *.c
+
 in pix do perl standalone.pl ../
 
 deliver *.c $@
