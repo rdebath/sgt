@@ -8,3 +8,4 @@ server = name + "-delegate-server"
 server_banner = "---" + server + "---"
 
 conffile = "." + name + "/config"
+builddate_cache_dir = "." + name + "/builddates"

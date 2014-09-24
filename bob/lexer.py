@@ -3,9 +3,11 @@
 import string
 import os
 import types
+import time
 
 import misc
 import log
+import checkout
 
 whitespace = " \t"
 
@@ -13,6 +15,8 @@ onecharvars = {}
 multicharvars = {}
 
 removenewlines = string.maketrans("\r\n", "  ")
+
+builddate = None
 
 def save_vars():
     return (onecharvars.copy(), multicharvars.copy())
@@ -38,6 +42,8 @@ def unset_multicharvar(var):
         del multicharvars[var]
 
 def expand_varfunc(var, cfg):
+    global builddate
+
     # Expand a variable or function enclosed in $(...). Takes a
     # string containing the text from inside the parentheses (after
     # any further expansion has been done on that); returns a
@@ -59,6 +65,35 @@ def expand_varfunc(var, cfg):
                 return "yes"
             else:
                 return "no"
+        elif fn == "builddate":
+            if val != "":
+                raise misc.builderr("$(!builddate) expects no arguments")
+            if builddate is None:
+                # Invent a build date.
+                cachefile = os.path.join(cfg.builddatecache, cfg.mainmodule)
+                builddate = time.strftime("%Y%m%d",time.localtime(time.time()))
+                verdata = checkout.verdata()
+                new = True
+                if os.path.exists(cachefile):
+                    with open(cachefile, "r") as f:
+                        last_builddate = f.readline().rstrip("\r\n")
+                        last_verdata = f.read()
+                    if verdata == last_verdata:
+                        new = False
+                if new:
+                    try:
+                        os.mkdir(cfg.builddatecache, 0700)
+                    except OSError as e:
+                        if e.errno != os.errno.EEXIST:
+                            raise
+                    with open(cachefile + ".tmp", "w") as f:
+                        f.write(builddate + "\n" + verdata)
+                    os.rename(cachefile + ".tmp", cachefile)
+                    log.logmsg("using new build date " + builddate)
+                else:
+                    builddate = last_builddate
+                    log.logmsg("reusing last build date " + builddate)
+            return builddate
         else:
             raise misc.builderr("unexpected string function `%s'" % var)
     else:
