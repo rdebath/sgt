@@ -661,5 +661,3 @@ repeatedly).
 \q{Tweak}, a hex editor implementing this data structure, can be
 downloaded at
 \W{http://www.chiark.greenend.org.uk/~sgtatham/tweak/}\cw{http://www.chiark.greenend.org.uk/~sgtatham/tweak/}.
-
-\versionid $Id$
