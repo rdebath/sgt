@@ -72,11 +72,7 @@ while ($_=shift @ARGV) {
     print STDERR $usage;
     exit 0;
   } elsif ($1 eq "-version") {
-    if ('$Revision$' =~ /Revision:\s+(\d+)/) {
-	print "lns revision $1\n";
-    } else {
-	print "lns: unknown revision\n";
-    }
+    print "lns, unknown version\n"; #---buildsys-replace---
     exit 0;
   } elsif ($1 eq "-licence" or $1 eq "-license") {
     print $licence;

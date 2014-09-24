@@ -63,11 +63,7 @@ while ($ARGV[0] =~ /^-(.+)$/) {
     print STDERR $usage;
     exit 0;
   } elsif ($1 eq "-version") {
-    if ('$Revision$' =~ /Revision:\s+(\d+)/) {
-	print "multi revision $1\n";
-    } else {
-	print "multi: unknown revision\n";
-    }
+    print "multi, unknown version\n"; #---buildsys-replace---
     exit 0;
   } elsif ($1 eq "-licence" or $1 eq "-license") {
     print $licence;

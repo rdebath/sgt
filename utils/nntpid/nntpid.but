@@ -127,5 +127,3 @@ then \cw{nntpid} will never even look at \cw{NNTPAUTH}.
 
 \cw{nntpid} is free software, distributed under the MIT licence.
 Type \cw{nntpid --licence} to see the full licence text.
-
-\versionid $Id$

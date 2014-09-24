@@ -287,14 +287,7 @@ def licence():
     print "SOFTWARE."
 
 def version():
-    rev = "$Revision$"
-    rev = string.replace(rev, " ", "")
-    rev = string.replace(rev, "$", "")
-    revs = string.split(rev, ":")
-    if len(revs) > 1:
-        print "cvt-utf8 revision %s" % revs[1]
-    else:
-        print "cvt-utf8: unknown version"
+    print "cvt-utf8, unknown version" #---buildsys-replace---
 
 args = sys.argv[1:]
 output_analysis = 1

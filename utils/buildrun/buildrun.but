@@ -174,5 +174,3 @@ finish and see whether it worked.)
 
 \cw{buildrun} is free software, distributed under the MIT licence.
 Type \cw{buildrun --licence} to see the full licence text.
-
-\versionid $Id$

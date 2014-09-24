@@ -117,5 +117,3 @@ list:
 
 \cw{reservoir} is free software, distributed under the MIT licence. Type
 \cw{reservoir --licence} to see the full licence text.
-
-\versionid $Id$

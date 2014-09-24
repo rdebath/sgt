@@ -602,22 +602,7 @@ void licence(void) {
 }
 
 void version(void) {
-#define SVN_REV "$Revision$"
-    char rev[sizeof(SVN_REV)];
-    char *p, *q;
-
-    strcpy(rev, SVN_REV);
-
-    for (p = rev; *p && *p != ':'; p++);
-    if (*p) {
-        p++;
-        while (*p && isspace((unsigned char)*p)) p++;
-        for (q = p; *q && *q != '$'; q++);
-        if (*q) *q = '\0';
-        printf("pid revision %s\n", p);
-    } else {
-        printf("pid: unknown version\n");
-    }
+    printf("pid, unknown version\n"); /*---buildsys-replace---*/
 }
 
 int main(int argc, char **argv)
