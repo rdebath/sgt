@@ -40,6 +40,7 @@ cfg.remove_previous_outdir = 0
 cfg.accept_complex_rev = 0
 cfg.baserev = ("rev", "HEAD")
 cfg.cfgfile = os.path.join(os.getenv("HOME"), name.conffile)
+cfg.builddatecache = os.path.join(os.getenv("HOME"), name.builddate_cache_dir)
 cfg.specialrev = {}
 cfg.verbose = 0
 

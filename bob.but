@@ -964,9 +964,16 @@ expansion, so that if you have variables called \cw{FOO1} and
 write \cw{$(FOO$(N))} to fetch the value of one or other of those
 variables.
 
-If the text within the parentheses begins with an exclamation mark,
-it is treated as a call to a string-processing function provided by
-\Name. Currently there is only one such function:
+If the text within the parentheses begins with an exclamation mark, it
+is treated as a call to a special function provided by \Name.
+Otherwise, the text within the parentheses is treated as a variable
+name, and the value of that build script variable is fetched and
+substituted in place of the \cw{$(}...\cw{)} construction. A
+non-existent variable is returned as if it were the empty string.
+
+Special \Name functions differ from variables in that they can take
+arguments or have side effects (not necessarily both). The supported
+functions are:
 
 \dt \cw{$(!numeric }\e{argument}\cw{)}
 
@@ -977,10 +984,26 @@ started from a modified working copy or not (since the Subversion
 revision number of a modified working copy ends in the non-numeric
 character \cw{M}).
 
-Otherwise, the text within the parentheses is treated as a variable
-name, and the value of that build script variable is fetched and
-substituted in place of the \cw{$(}...\cw{)} construction. A
-non-existent variable is returned as if it were the empty string.
+\dt \cw{$(!builddate)}
+
+\dd Invent a date to use as a version number of this build, and return
+it in the form \cw{YYYYMMDD}.
+
+\lcont{
+
+The date chosen will be the current time when \Name is run, \e{unless}
+the previous build of the same project had exactly identical checkout
+versions of all modules, in which case the build date will be reused
+from that version. (This means that if you run automated nightly
+builds, they don't change their name and identification gratuitously
+when no source control changes were committed between two builds.)
+
+\Name will look for the information about the previous build in a
+directory called \cq{\Bareconfdir/builddates} in the current user's
+home directory. A side effect of calling the \cw{$(!builddate)}
+function is to update that directory.
+
+}
 
 See \k{script-specialvars} for a list of special variable names.
 
