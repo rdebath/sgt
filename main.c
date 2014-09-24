@@ -219,6 +219,14 @@ fileoffset_t file_size = 0, top_pos = 0, cur_pos = 0, mark_point = 0;
 
 int scrlines;
 
+void usage(FILE *fp)
+{
+    fprintf(fp,
+            "usage: %s [-f] [-l] [-e] filename\n"
+            "    or %s -D to write default tweak.rc to stdout\n",
+            pname, pname);
+}
+
 /*
  * Main program
  */
@@ -230,17 +238,25 @@ int main(int argc, char **argv) {
      */
     pname = *argv;		       /* program name */
     if (argc < 2) {
-	fprintf(stderr,
-		"usage: %s [-f] [-l] [-e] filename\n"
-		"    or %s -D to write default tweak.rc to stdout\n",
-		pname, pname);
-	return 0;
+        usage(stderr);
+	return 1;
     }
 
     while (--argc > 0) {
 	char c, *p = *++argv, *value;
 
-	if (*p == '-') {
+        if (*p == '-' && p[1] == '-') {
+            if (!strcmp(p, "--version")) {
+                printf("%s version %s\n", pname, VER);
+                return 0;
+            } else if (!strcmp(p, "--help")) {
+                usage(stdout);
+                return 0;
+            } else {
+                fprintf(stderr, "%s: unrecognised long option `%s'\n", p);
+                return 1;
+            }
+        } else if (*p == '-') {
 	    p++;
 	    while (*p) switch (c = *p++) {
 	      case 'o': case 'O':
