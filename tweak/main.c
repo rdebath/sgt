@@ -192,8 +192,8 @@ char hex[256][3];		       /* LUT: binary to hex, 1 byte */
 
 char message[512];
 
-char decstatus[] = "%s TWEAK "VER": %-18.18s %s posn=%-10"OFF"d size=%-10"OFF"d";
-char hexstatus[] = "%s TWEAK "VER": %-18.18s %s posn=0x%-8"OFF"X size=0x%-8"OFF"X";
+char decstatus[] = "%s TWEAK: %-18.18s %s posn=%-10"OFF"d size=%-10"OFF"d";
+char hexstatus[] = "%s TWEAK: %-18.18s %s posn=0x%-8"OFF"X size=0x%-8"OFF"X";
 char *statfmt = hexstatus;
 
 char last_char;
