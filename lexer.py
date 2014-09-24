@@ -42,12 +42,18 @@ def expand_varfunc(var, cfg):
     # string containing the text from inside the parentheses (after
     # any further expansion has been done on that); returns a
     # string containing the expansion.
+
     if var[0] == "!":
         # `$(!' introduces a special function.
-        if var[:9] == "!numeric ":
+        try:
+            pos = var.index(" ")
+            fn, val = var[1:pos], var[pos+1:]
+        except ValueError:
+            fn, val = var[1:], ""
+
+        if fn == "numeric":
             # The entire function call has already been lexed, so
             # don't lex it again.
-            val = var[9:]
             log.logmsg("testing numericity of `%s'" % val)
             if misc.numeric(val):
                 return "yes"
