@@ -4331,7 +4331,7 @@ blank = tmpfn()
 # ----------------------------------------------------------------------
 # End of actual glyph definitions. Now for the output layer.
 
-verstring = "$Revision$"[11:-2]
+verstring = "version unavailable"
 
 lilyglyphlist = [
 ("accent",       "scripts.sforzato",       0, 0.5,0.5, 1,0.5),
@@ -4542,7 +4542,7 @@ def writesfd(filepfx, fontname, encodingname, encodingsize, outlines, glyphlist)
     f.write("FullName: %s\n" % fontname)
     f.write("FamilyName: %s\n" % fontname)
     f.write("Copyright: No copyright is claimed on this font file.\n")
-    f.write("Version: 0.1.%s\n" % verstring)
+    f.write("Version: %s\n" % verstring)
     f.write("ItalicAngle: 0\n")
     f.write("UnderlinePosition: -100\n")
     f.write("UnderlineWidth: 50\n")
@@ -4621,7 +4621,7 @@ def writesfd(filepfx, fontname, encodingname, encodingsize, outlines, glyphlist)
     f.close()
 
 args = sys.argv[1:]
-if len(args) >= 1 and args[0][:6] == "--rev=":
+if len(args) >= 1 and args[0][:6] == "--ver=":
     verstring = args[0][6:]
     args = args[1:]
 if len(args) == 2 and args[0] == "-test":
