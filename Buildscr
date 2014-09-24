@@ -3,12 +3,14 @@
 
 module winurl
 
-# Substitute the right revision number in the README.
-in winurl do perl -i~ -pe 's/<<REV>>/$(revision)/' README
+set Version $(!builddate).$(vcsid)
+
+# Substitute the right version number in the README.
+in winurl do perl -i~ -pe 's/<<VER>>/$(Version)/' README
 
 # Build the Windows binary.
 delegate windows
-  in winurl do cmd /c vcvars32 \& nmake
+  in winurl do cmd /c vcvars32 \& nmake VER=/DVERSION=$(Version)
   return winurl/winurl.exe
 enddelegate
 in winurl do chmod +x winurl.exe
