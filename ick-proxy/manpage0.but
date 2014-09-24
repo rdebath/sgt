@@ -217,5 +217,3 @@ be less than 1024).
 \C{man-language} LANGUAGE
 
 \# now we include icklang.but
-
-\versionid $Id$

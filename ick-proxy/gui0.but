@@ -246,5 +246,3 @@ have improved.
 
 \# now we include icklang.but, and then move to gui1.but for the end
 \# of the manual.
-
-\versionid $Id$
