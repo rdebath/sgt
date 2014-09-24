@@ -37,7 +37,7 @@ def unset_multicharvar(var):
     if multicharvars.has_key(var):
         del multicharvars[var]
 
-def expand_varfunc(var):
+def expand_varfunc(var, cfg):
     # Expand a variable or function enclosed in $(...). Takes a
     # string containing the text from inside the parentheses (after
     # any further expansion has been done on that); returns a
@@ -60,7 +60,7 @@ def expand_varfunc(var):
         # value.
         return get_multicharvar(var, "")
 
-def internal_lex(s, terminatechars, permit_comments):
+def internal_lex(s, terminatechars, permit_comments, cfg):
     # Lex string s until a character in `terminatechars', or
     # end-of-string, is encountered. Return a tuple consisting of
     #  - the lexed and expanded text before the terminating character
@@ -86,10 +86,10 @@ def internal_lex(s, terminatechars, permit_comments):
             elif c2 == "(":
                 # We have a $(...) construct. Recurse to parse the
                 # stuff inside the parentheses.
-                varname, s2 = internal_lex(s[n:], ")", 0)
+                varname, s2 = internal_lex(s[n:], ")", 0, cfg)
                 if len(s2) == 0:
                     raise misc.builderr("`$(' without terminating `)'")
-                out = out + expand_varfunc(varname)
+                out = out + expand_varfunc(varname, cfg)
                 s = s2
                 n = 1  # eat the terminating paren
             elif onecharvars.has_key(c2):
@@ -102,7 +102,7 @@ def internal_lex(s, terminatechars, permit_comments):
     # If we reach here, this is the end of the string.
     return (out, "")
 
-def get_word(s):
+def get_word(s, cfg):
     # Extract one word from the start of a given string.
     # Returns a tuple containing
     #  - the expanded word, or None if there wasn't one. (Words may
@@ -124,7 +124,7 @@ def get_word(s):
         word = ""
         sep = ""
         while s[0] == '"':
-            out, s = internal_lex(s[1:], '"', 0)
+            out, s = internal_lex(s[1:], '"', 0, cfg)
             word = word + sep + out
             if s[0] != '"':
                 raise misc.builderr("unterminated double quote")
@@ -135,11 +135,11 @@ def get_word(s):
         return (word, s)
 
     # Otherwise, just scan until whitespace.
-    return internal_lex(s, whitespace, 1)
+    return internal_lex(s, whitespace, 1, cfg)
 
-def lex_all(s):
+def lex_all(s, cfg):
     # Lex the entirety of a string. Returns the lexed version.
-    ret, empty = internal_lex(s, "", 1)
+    ret, empty = internal_lex(s, "", 1, cfg)
     assert empty == ""
     return ret
 
