@@ -16,7 +16,7 @@ oldlilydir="$2"
 newlilydir="$3"
 
 rm -rf "$newlilydir"
-mkdir "$newlilydir"
+mkdir -p "$newlilydir" "$newlilydir"/fonts "$newlilydir"/fonts/type1 "$newlilydir"/fonts/svg "$newlilydir"/fonts/otf
 (cd "$oldlilydir"; find . -type d -print) | \
   perl -ne 'BEGIN{$d=shift@ARGV;}chomp; s/\.\/// and mkdir "$d/$_"' "$newlilydir"
 (cd "$oldlilydir"; find . ! -type d -print) | \
