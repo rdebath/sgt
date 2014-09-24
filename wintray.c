@@ -449,16 +449,16 @@ void showversion(char *buffer)
 {
     /*
      * This string is edited by the bob build script to show the
-     * Subversion revision number used in the checkout.
+     * version number it derived during the build.
      * 
      * At least, I hope so.
      */
-    char *revision = "~SVNREVISION~";
-    if (revision[0] == '~') {
+    char *version = "~VERSION~";
+    if (version[0] == '~') {
 	/* If not, we fall back to this. */
-	sprintf(buffer, "Unspecified revision");
+	sprintf(buffer, "Unspecified version");
     } else {
-	sprintf(buffer, "Revision %s", revision);
+	sprintf(buffer, "Version %s", version);
     }
 }
 
