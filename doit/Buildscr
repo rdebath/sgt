@@ -3,12 +3,17 @@
 
 module doit
 
+set Version $(!builddate).$(vcsid)
+
+in doit do perl -i -pe 's/6.66/$(Version)/ if /AC_INIT/' configure.ac
+in doit do ./mkauto.sh
+
 # Substitute the right revision number in the README.
-in doit do perl -i -pe 's/<<REV>>/$(revision)/' README
+in doit do perl -i -pe 's/<<VER>>/$(Version)/' README
 
 # Build the Windows binary.
 delegate windows
-  in doit do cmd /c vcvars32 \& nmake
+  in doit do cmd /c vcvars32 \& nmake /f Makefile.vc
   return doit/doit.exe
 enddelegate
 in doit do chmod +x doit.exe

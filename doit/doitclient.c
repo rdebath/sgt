@@ -516,7 +516,7 @@ char *do_path_translate(char *arg, int verbose)
 	fprintf(stderr, "doit: need to translate path \"%s\"\n", arg);
     }
 
-#ifndef HAVE_NO_REALPATH
+#ifdef HAVE_REALPATH
 #if !defined PATH_MAX && defined MAXPATHLEN
 #define PATH_MAX MAXPATHLEN
 #endif
@@ -531,7 +531,7 @@ char *do_path_translate(char *arg, int verbose)
 	    path = dupcat(dir, "/", arg, NULL);
 	    free(dir);
 	}
-#ifndef HAVE_NO_REALPATH
+#ifdef HAVE_REALPATH
     }
 #endif
 
