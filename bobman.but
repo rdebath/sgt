@@ -6,7 +6,15 @@
 
 \define{Name} \c{\Barename}
 
-\define{Bareconf} .\Barename.conf
+\define{Bareconfname} config
+
+\define{Confname} \cw{\Bareconfname}
+
+\define{Bareconfdir} .\Barename
+
+\define{Confdir} \cw{\Bareconfdir}
+
+\define{Bareconf} \Bareconfdir/\Bareconfname
 
 \define{Conf} \cw{\Bareconf}
 
