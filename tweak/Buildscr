@@ -5,7 +5,8 @@ module tweak
 
 # We need the `library' module checked out alongside this one, for
 # btree.[ch].
-checkout library library
+ifexist tweak/library in . do mv tweak/library library
+ifnexist library checkout library library
 
 # Make symlinks for those source files.
 in tweak do ln -s ../library/btree.c .
