@@ -338,15 +338,18 @@ static char *makeversion(char *buffer, char *revision)
     return p;
 }
 
-static void showversion(HWND hwnd, UINT ctrl, char *v, char *f)
+#define STR2(s) #s
+#define STR(s) STR2(s)
+
+static void showversion(HWND hwnd, UINT ctrl)
 {
     char versionbuf[80], buffer[80];
 
-    v = makeversion(versionbuf, v);
-    if (v)
-	sprintf(buffer, "%s revision %s", f, v);
-    else
-	sprintf(buffer, "%s unknown version", f);
+#ifdef VERSION
+    sprintf(buffer, "WinURL version %.50s", STR(VERSION));
+#else
+    sprintf(buffer, "WinURL unknown version");
+#endif
     SetDlgItemText(hwnd, ctrl, buffer);
 }
 
@@ -356,7 +359,7 @@ static int CALLBACK AboutProc(HWND hwnd, UINT msg,
 {
     switch (msg) {
       case WM_INITDIALOG:
-	showversion(hwnd, 102, "$Revision$", "winurl.c");
+	showversion(hwnd, 102);
 	return 1;
       case WM_COMMAND:
 	switch (LOWORD(wParam)) {
