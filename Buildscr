@@ -3,16 +3,19 @@
 
 module ick-proxy
 
+# Make up a version number, and substitute it in to the source where
+# it's needed.
+set Version $(!builddate).$(vcsid)
+in ick-proxy do perl -i -pe 's/~VERSION~/$(Version)/' *.[cm]
+
+# use perl to avoid inconsistent behaviour of echo '\v'
+in ick-proxy do perl -e 'print "\n\\versionid ick-proxy version $$ARGV[0]\n"' $(Version) >> icklang.but
+
 # Create the makefiles.
 in ick-proxy do perl mkfiles.pl
 
 # Build the documentation.
 in ick-proxy do make doc
-
-# Make up a version number, and substitute it in to the source where
-# it's needed.
-set Version $(!builddate).$(vcsid)
-in ick-proxy do perl -i -pe 's/~VERSION~/$(Version)/' *.[cm]
 
 # Make the Unix source tarball, which should contain everything out
 # of Subversion plus the ready-built makefiles and documentation.

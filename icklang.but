@@ -607,5 +607,3 @@ always.
 \c     }
 \c     return url;
 \c }
-
-\versionid $Id$
