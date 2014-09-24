@@ -204,17 +204,17 @@ NSMenuItem *newitem(NSMenu *parent, char *title, char *key,
     [tf setFont:font1];
     {
 	/*
-	 * This string is edited by the bob build script to show
-	 * the Subversion revision number used in the checkout.
+	 * This string is edited by the bob build script to show the
+	 * version number it derived during the build.
 	 * 
 	 * At least, I hope so.
 	 */
-	char *revision = "Revision ~SVNREVISION~";
-	if (revision[9] == '~') {
+	char *version = "Version ~VERSION~";
+	if (version[8] == '~') {
 	    /* If not, we fall back to this. */
-	    [tf setStringValue:[NSString stringWithUTF8String:"Unspecified revision"]];
+	    [tf setStringValue:[NSString stringWithUTF8String:"Unspecified version"]];
 	} else {
-	    [tf setStringValue:[NSString stringWithUTF8String:revision]];
+	    [tf setStringValue:[NSString stringWithUTF8String:version]];
 	}
     }
     [tf sizeToFit];
