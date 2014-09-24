@@ -13,15 +13,20 @@ in tweak do ln -s ../library/btree.c .
 in tweak do ln -s ../library/btree.h .
 
 # Determine the version number.
-set Ver r$(revision)
-ifneq $(RELEASE) "" set Ver $(RELEASE)
+set Version $(!builddate).$(vcsid)
+ifneq $(RELEASE) "" set Version $(RELEASE)
+
+# Put versionids into the docs. (Use perl to avoid inconsistent
+# behaviour of echo '\v'.)
+in tweak do perl -e 'print "\n\\versionid tweak version $$ARGV[0]\n"' $(Version) >> manpage.but
+in tweak do perl -e 'print "\n\\versionid tweak version $$ARGV[0]\n"' $(Version) >> btree.but
 
 # Fiddle with tweak.h to include the version number. Note use of $#
 # to escape a hash sign from the build script lexer.
-in tweak do perl -i~ -pe 's/(?<=$#define VER ")(?=")/$(Ver)/' tweak.h
+in tweak do perl -i~ -pe 's/(?<=$#define VER ")(?=")/$(Version)/' tweak.h
 
 # Make the release archive.
-in tweak do make release VERSION=$(Ver)
+in tweak do make release VERSION=$(Version)
 
 # And deliver it.
-deliver tweak/tweak-$(Ver).tar.gz $@
+deliver tweak/tweak-$(Version).tar.gz $@
