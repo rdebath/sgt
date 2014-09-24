@@ -7,4 +7,4 @@ name = "bob"
 server = name + "-delegate-server"
 server_banner = "---" + server + "---"
 
-conffile = "." + name + ".conf"
+conffile = "." + name + "/config"

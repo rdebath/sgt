@@ -2,7 +2,15 @@
 
 \define{Name} \c{\Barename}
 
-\define{Bareconf} .\Barename.conf
+\define{Bareconfname} config
+
+\define{Confname} \cw{\Bareconfname}
+
+\define{Bareconfdir} .\Barename
+
+\define{Confdir} \cw{\Bareconfdir}
+
+\define{Bareconf} \Bareconfdir/\Bareconfname
 
 \define{Conf} \cw{\Bareconf}
 
@@ -331,10 +339,11 @@ This section describes the configuration file read by \Name (and
 also by \Server) to obtain information specific to a particular
 build host.
 
-The configuration file, by default, is called \Conf and is found in
-the home directory of the account from which you run \Name. There is
-a command-line option \c{-f} which tells \Name to use a different
-configuration file, if you need it; see \k{cmdline-filenames}.
+The configuration file, by default, is called \Confname and is found
+in a subdirectory \Confdir of the home directory of the account from
+which you run \Name. There is a command-line option \c{-f} which tells
+\Name to use a different configuration file, if you need it; see
+\k{cmdline-filenames}.
 
 The configuration file is actually written in the same miniature
 scripting language used for the build scripts themselves. So if you
