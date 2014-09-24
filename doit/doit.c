@@ -694,41 +694,19 @@ extern int listener_wndproc(HWND hwnd, UINT message,
 }
 
 /* ======================================================================
- * The About box: show CVS revisions of doit.c, listener.c and
- * doitlib.c.
+ * The About box: show version number.
  */
 
-char *makeversion(char *buffer, char *revision)
-{
-    char *p = buffer;
-    strcpy(buffer, revision);
-    p += strcspn(p, "0123456789");
-    if (*p) {
-	p[strcspn(p, " $")] = '\0';
-    }
-    if (!*p)
-	return NULL;
-    return p;
-}
+#define STR2(s) #s
+#define STR(s) STR2(s)
 
 void showversion(int line, char *buffer)
 {
-    char versionbuf[80];
-    char *v, *f;
-    extern char doitlib_revision[], listener_revision[];
-
-    if (line == 0)
-	v = "$Revision$", f = "doit.c";
-    else if (line == 1)
-	v = doitlib_revision, f = "doitlib.c";
-    else if (line == 2)
-	v = listener_revision, f = "listener.c";
-
-    v = makeversion(versionbuf, v);
-    if (v)
-	sprintf(buffer, "%s revision %s", f, v);
-    else
-	sprintf(buffer, "%s unknown version", f);
+#ifdef VERSION
+    sprintf(buffer, "%.16s version %.80s", listener_appname, STR(VERSION));
+#else
+    sprintf(buffer, "%.16s unknown version", listener_appname);
+#endif
 }
 
 static int CALLBACK AboutProc(HWND hwnd, UINT msg,
