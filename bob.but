@@ -22,8 +22,8 @@
 
 \title \Name: a build system
 
-This is the manual for \Name: a build system based around Subversion
-and Python, written by Simon Tatham.
+This is the manual for \Name: a Python-based build system, written by
+Simon Tatham.
 
 \C{intro} Introduction
 
@@ -34,16 +34,16 @@ do, and why you might want to use it.
 
 The function of \Name is to build binaries, installers, source
 archives, documentation and other deliverable files for a piece of
-software held in a Subversion repository.
+software held in a Subversion or \cw{git} repository.
 
 At the highest level, the course of a \Name build is as follows:
 
 \b You invoke \Name and tell it to build a piece of software.
 
-\b \Name checks that software out of your Subversion repository into
-a temporary work directory. Alternatively, you can have it start by
-making a copy of a checked-out Subversion working copy you already
-have, and it will pick up local modifications from there.
+\b \Name checks that software out of your source control repository
+into a temporary work directory. Alternatively, you can have it start
+from a checked-out working copy you already have, and it will pick up
+local modifications from there.
 
 \b \Name looks for a build script inside the checked-out source
 directory and runs it. The build script, in turn, will probably
@@ -69,11 +69,12 @@ want to do, you probably don't have any need to use \Name.
 \Name has a few fundamental limitations which might make it
 unsuitable for your build needs:
 
-\b \Name expects your software to be stored in a Subversion
-repository. Even when it isn't actually checking anything out from
-that repository (if you're starting with a working copy), it expects
-to be able to run \c{svnversion} to find out what revision number
-it's working with.
+\b \Name expects your software to be stored in Subversion or \cw{git}.
+Even when it isn't actually checking anything out from an upstream
+repository (if you're starting with a local working copy), it expects
+to be able to run \c{svnversion} to find out what revision number it's
+working with, or to be able to find a \c{.git} directory to look
+things up in.
 
 \b \Name requires all the machines it runs on to have a basically
 Unix-like environment. This means that if you want to use it on
@@ -242,7 +243,7 @@ programs in order to do anything useful. This section lists the
 things you need in order to run \Name.
 
 To begin with, \Name is written in Python, so you need the Python
-interpreter installed. \Name requires Python 2.2 or higher.
+interpreter installed. \Name requires Python 2.7 or higher.
 
 \Name expects any machine it runs on to have a basically Unix-like
 environment. In particular, it needs a POSIX-like shell which
@@ -255,10 +256,10 @@ environment. (At the time of writing this, I admittedly haven't
 tested the main \Name program on Windows, but I have tested the
 delegate server, and that works.)
 
-\Name expects the Subversion client binaries (specifically \c{svn}
-and \c{svnversion}) to be on the \cw{PATH} when it runs. It also
-requires Subversion 1.2 or higher, because it uses \c{svn info -r}
-which was not present in 1.1.
+\Name expects the Subversion client binaries (specifically \c{svn} and
+\c{svnversion}), and/or \cw{git} as appropriate, to be on the
+\cw{PATH} when it runs. It also requires Subversion 1.2 or higher,
+because it uses \c{svn info -r} which was not present in 1.1.
 
 If you plan to use \Name's delegation features (running parts of the
 build on other machines), you will also need \c{tar} on your
@@ -366,12 +367,35 @@ treated literally.
 form \c{set variable value}. The variable names you might want to
 set are described in the following sections.
 
-\S{config-svnrepos} Configuring a Subversion repository
+\S{config-repos} Configuring source control repositories
 
-When you run a build command such as \cq{\Barename myproject}, the
-first thing \Name will want to do is to check out the module
-\cq{myproject} from a Subversion repository. Therefore, it needs to
-know where to find that repository.
+If you run a build command such as \cq{\Barename myproject}, rather
+than building from an existing checkout, the first thing \Name will
+want to do is to check out the module \cq{myproject} from a source
+control repository. Therefore, it needs to know what kind of
+repository, and where to find it.
+
+\Name will begin by looking for the variable \c{repostype}, which
+should be set in the configuration file. This should be set to one of
+the strings \cq{svn} and \cq{git}, indicating a Subversion or \cw{git}
+repository respectively.
+
+If you need to, you can define \c{repostype} to be conditional on the
+module name. You do this using the \c{ifeq} and \c{ifneq} commands
+(see \k{script-if} for details). \Name will read the configuration
+file once for every module it checks out, and will set the variable
+\cq{module} before reading it to indicate the name of the module it's
+trying to check out. So, for example, if you want to configure most
+projects to be checked out from Subversion but one from \cw{git}, you
+could write in your configuration file
+
+\c set repostype svn
+\c ifeq $(module) thisthing set repostype git
+
+\S1{config-svnrepos} Configuring a Subversion repository
+
+If you set \c{repostype} to \cq{svn}, then \Name will next need to
+know what Subversion repository to check out from.
 
 The variable \c{svnrepos}, set in the configuration file, tells it
 the location of the repository in which it can find its source
@@ -379,8 +403,9 @@ modules. You set it to a Subversion URL, in any form normally
 acceptable to the Subversion client. (So it can start with
 \cq{http://}, \cq{https://}, \cq{svn://}, \cq{svn+ssh://}, or any
 custom Subversion access method you've configured yourself.) For
-example, this command:
+example, these command:
 
+\c set repostype svn
 \c set svnrepos svn://svnserve.example.com/myrepos
 
 will cause the build command \cq{\Barename myproject} to attempt a
@@ -389,15 +414,9 @@ checkout using a Subversion command of the form
 \c svn export svn://svnserve.example.com/myrepos/myproject destdir
 \e                                                         eeeeeee
 
-If you work with multiple Subversion repositories, you can make this
-variable conditional on the name of the module. You do this using
-the \c{ifeq} and \c{ifneq} commands (see \k{script-if} for details).
-\Name will read the configuration file once for every module it
-checks out, and will set the variable \cq{module} before reading it
-to indicate the name of the module it's trying to check out. So, for
-example, if you get most of your source from one repository but one
-particular module comes from another one, you could write in your
-configuration file
+Similarly to the \cw{repostype} example in \k{config-repos}, if you
+work with multiple Subversion repositories, you can make the value of
+this variable conditional on the name of the module, e.g.
 
 \c set svnrepos svn://svnserve.example.com/myrepos
 \c ifeq $(module) secrets set svnrepos svn://secure.example.com/svn
@@ -405,6 +424,35 @@ configuration file
 Then all modules except the one called \cq{secrets} would be checked
 out from the public Subversion server, but the \cq{secrets} module
 would come from a private internal one.
+
+\S1{config-gitrepos} Configuring \cw{git} repositories
+
+If you set \c{repostype} to \cq{git}, then \Name will next need to
+know where to find your \cw{git} repository.
+
+One way to do this is by setting the variable \c{gitrepos} to the
+location of an actual \cw{git} repository, i.e. an argument you can
+sensibly pass to \cq{git clone}. If you use this technique, you'll
+almost certainly want to make it conditional on the module name:
+
+\c set repostype git
+\c ifeq $(module) project1 set gitrepos git://git.example.com/project1.git
+\c ifeq $(module) project2 set gitrepos git://git.another.com/project2.git
+
+because otherwise all module names will cause the same repository to
+be checked out, which was probably not what you wanted.
+
+Alternatively, if you keep a lot of \cw{git} repositories under a
+single parent directory, you can avoid the need to set \c{gitrepos}
+individually for each one, and instead set a variable \c{gitparent}:
+
+\c set repostype git
+\c set gitparent git://git.example.com/
+
+The above configuration will cause \Name to try to check out any
+module from \q{\cw{git://git.example.com/}\e{module}\cw{.git}}. If you
+don't want that \cq{.git} suffix, you can also set \cq{gitsuffix} to
+some other value, such as the empty string.
 
 \S{config-delegation} Configuring delegation
 
@@ -585,15 +633,15 @@ all.)
 
 Finally, you should of course be aware that even in the absence of
 delegation \Name is vulnerable to attacks from a malicious or
-compromised Subversion repository, since it checks out a source
-directory from that repository and immediately runs a script
-received as part of that source directory. So if you're checking out
-across a hostile network, you should be sure to use a secure method
-of access to the Subversion server (typically \cw{svn+ssh} or
-\cw{https}); and if you don't even trust the Subversion server not
-to turn malicious, then you should create a dedicated account in
-which to run \Name, limit its capabilities as much as possible, and
-never do any builds outside that account.
+compromised source control repository, since it checks out a source
+directory from that repository and immediately runs a script received
+as part of that source directory. So if you're checking out across a
+hostile network, you should be sure to use a secure method of access
+to the repository (for Subversion, typically \cw{svn+ssh} or
+\cw{https}; for \cw{git}, probably \cw{ssh://}); and if you don't even
+trust the server not to turn malicious, then you should create a
+dedicated account in which to run \Name, limit its capabilities as
+much as possible, and never do any builds outside that account.
 
 \C{cmdline} Using \Name to launch builds
 
@@ -603,15 +651,14 @@ the command line to launch a build.
 \H{cmdline-basics} Basics of invoking \Name
 
 At its simplest, \Name is invoked by simply providing the name of a
-module in your Subversion repository, using a command like
-\cq{\Barename myproject}.
+module in your Subversion repository (or a name identifying a \cw{git}
+repository), using a command like \cq{\Barename myproject}.
 
-\Name will read its configuration file \Conf (see \k{config}) to
-find the location of the Subversion repository where it can find
-that source directory; then it will check it out, run the build
-script contained inside it (see \k{script}), and produce a directory
-of deliverables called \c{build.out} and a log file called
-\c{build.log}.
+\Name will read its configuration file \Conf (see \k{config}) to find
+the type and location of the repository where it can find that source
+directory; then it will check it out, run the build script contained
+inside it (see \k{script}), and produce a directory of deliverables
+called \c{build.out} and a log file called \c{build.log}.
 
 If the output build directory \c{build.out} already exists, this is
 a fatal error and \Name will terminate without attempting a build.
@@ -678,15 +725,17 @@ are referred to by \Name as \q{modules}.
 The first non-option argument passed to \Name tells it where to find
 its \e{main} module: this is the first one checked out, and the one
 from which the build script is read and run. This argument can be
-interpreted as the name of a module to check out from a Subversion
-repository, \e{or} the name of an already checked-out working copy.
-The heuristic that distinguishes the two cases is that if the
+interpreted as the name of a module to check out from a Subversion or
+\cw{git} repository, \e{or} the name of an already checked-out working
+copy. The heuristic that distinguishes the two cases is that if the
 argument either contains a slash or starts with a period, it will be
-considered to be a directory, otherwise it is treated as a
-Subversion module name.
+considered to be a directory, otherwise it is treated as a module
+name and located via the configuration described in \k{config-repos}.
 
 \Name supports the following command-line options to adjust the
 checkout procedure further:
+
+\# FIXME! Definitely need to support some of this stuff in git.
 
 \dt \cw{-r} \e{revision}
 
@@ -713,11 +762,37 @@ tag in braces: for example, \cq{-d2007-02-06} is identical to
 exactly equivalent to the corresponding \c{-r} option with braces
 around the date.
 
+\dt \cw{-b} [\e{module}\cw{=}]\e{branch-or-tag}
+
+\dd Specifies a \cw{git} branch or tag name from which to check out a
+particular module, or the main module if \e{module} is not specified.
+
+\dt \cw{-c} [\e{module}\cw{=}]\e{commit}
+
+\dd Specifies an arbitrary \cw{git} commit from which to check out a
+particular module, or the main module if \e{module} is not specified.
+
+\lcont{
+
+The \cq{git clone} command provides no means to check out an arbitrary
+revision directly, unless a branch head or tag points at that
+revision. So if you use the \cw{-c} option, then \Name will have to do
+a full \c{git clone} of the whole repository including all its history
+and then check out the commit you asked for, which is slower than the
+shallow cloning (\cw{--depth=1}) that it usually uses.
+
+Therefore, if the revision you want to build from is a tag or a branch
+head, you should probably use the \cw{-b} option described above,
+rather than \cw{-c}. \cw{-c} will still work, but it will be slower
+and (temporarily) use more disk space.
+
+}
+
 \dt \cw{-B} \e{module}\cw{=}\e{branch}
 
 \dd Allows one Subversion source path to be substituted for another
 at the point of checkout. Typically you would use this when building
-from a branch or tag.
+from a Subversion branch or tag.
 
 \lcont{
 
@@ -764,13 +839,13 @@ the much simpler \cq{\Barename .}.
 
 \dt \cw{--complexrev}
 
-\dd When starting a build from a local working copy, \Name will
-normally consider it a fatal error if the working copy contains a
+\dd When starting a build from a local Subversion working copy, \Name
+will normally consider it a fatal error if the working copy contains a
 mix of revision numbers. (Specifically, \Name will expect the output
 of \c{svnversion} to be either a pure number, or a pure number
-followed by the letter \cw{M}.) Using \cw{--complexrev} will
-override this default and cause working copies in any state to be
-considered acceptable.
+followed by the letter \cw{M}.) Using \cw{--complexrev} will override
+this default and cause working copies in any state to be considered
+acceptable.
 
 \lcont{
 
@@ -781,6 +856,23 @@ like the \cw{M} on the end either, of course, but since the \e{whole
 point} of wanting to use a local working copy in the first place was
 so you could do a build containing your un-checked-in modifications,
 there's no avoiding the \cw{M} really.)
+
+}
+
+\dt \cw{--git-svn}, \cw{--no-git-svn}
+
+\dd When building from a \cw{git} checkout, \Name will try to
+automatically detect whether the checkout is a \cw{git-svn} mirror of
+an upstream Subversion repository, and if it thinks it is, it will
+behave as if building from Subversion rather than \cw{git} (e.g. it
+will set \cw{$(revision)} rather than \cw{$(gitcommit)}.
+
+\lcont{
+
+This auto-detection is heuristic, and may guess wrong. If you need to
+override it, you can specify \cw{--git-svn} to force \Name to treat a
+\cw{git} checkout as \cw{git-svn} based, or \cw{--no-git-svn} to force
+it to be treated as native \cw{git}.
 
 }
 
@@ -980,9 +1072,17 @@ functions are:
 \dd Returns the string \cq{yes} if the \e{argument} is composed
 entirely of digits, or \cq{no} otherwise. For example, you can test
 \cw{$(!numeric $(revision))} to determine whether your build was
-started from a modified working copy or not (since the Subversion
-revision number of a modified working copy ends in the non-numeric
-character \cw{M}).
+started from a modified Subversion working copy or not (since the
+Subversion revision number of a modified working copy ends in the
+non-numeric character \cw{M}).
+
+\dt \cw{$(!available }\e{argument}\cw{)}
+
+\dd Expects the \e{argument} to be the name of a build script
+variable. Returns the string \cq{yes} if the variable in question is
+legal to access, or \cq{no} if it is not (which can happen if it's
+related to the wrong version control system, e.g. \cw{$(revision)} in
+a \cw{git} checkout, or \cw{$(gitcommit)} in a Subversion one).
 
 \dt \cw{$(!builddate)}
 
@@ -1063,12 +1163,16 @@ working copy.
 
 \lcont{
 
-This variable is therefore not necessarily a pure number: if it came
-from a working copy, it might have an \cw{M} on the end. If \Name
-was invoked with the \cw{--complexrev} option (see
-\k{cmdline-checkout}), it might contain something more complex
-still, such as \cq{4212:4168MS}. (See the \cw{svnversion}
-documentation for more details.)
+If the main source module comes from \cw{git}, this variable is unset,
+and access to it will give a build-time error. You can check that
+before you access it by testing \cw{$(!available revision)} (see
+\k{script-dollar}).
+
+This variable is not necessarily a pure number: if it came from a
+working copy, it might have an \cw{M} on the end. If \Name was invoked
+with the \cw{--complexrev} option (see \k{cmdline-checkout}), it might
+contain something more complex still, such as \cq{4212:4168MS}. (See
+the \cw{svnversion} documentation for more details.)
 
 The revision number for each module is captured \e{once}, at the
 time of checkout. So your build script can safely modify the
@@ -1076,9 +1180,10 @@ checked-out sources if that's convenient for it, and not have to
 worry that \cw{$(revision)} might unexpectedly acquire a trailing
 \cw{M} as a result.
 
-\cw{$(revision)} is guaranteed to be defined to \e{something}. All
-of the ways for \Name to get a source directory involve it being
-able to find a revision number for that directory.
+If the checkout is from Subversion, then \cw{$(revision)} is
+guaranteed to be defined to \e{something}. All of the ways for \Name
+to get a source directory involve it being able to find a revision
+number for that directory.
 
 \s{Important:} \cw{$(revision)} is adjusted to give the revision
 number corresponding to the \e{most recent change} in any source
@@ -1101,24 +1206,58 @@ based, you can ask for \cw{$(crevision)}, described below.
 
 \dd This gives the Subversion revision number of a specific source
 module. It works exactly like \cw{$(revision)}, but you specify the
-module you are interested in.
+module you are interested in. If the module comes from \cw{git}, this
+variable is unset, and access to it will give a build-time error.
 
 \dt \cw{$(crevision)}
 
 \dd This gives the Subversion revision number \e{used to check out}
-the main source module from Subversion. The difference between
-\cw{$(revision)} and \cw{$(crevision)} is that \cw{$(crevision)}
-will always match the revision number passed in via \cw{-r}, or (if
-none was) the latest revision existing in the repository, whereas
-\cw{$(revision)} will instead report the (potentially earlier)
-revision number of the last change \e{affecting the checked-out
-files}.
+the main source module from Subversion (and, as with \cw{$(revision)},
+will give an error if that module comes from \cw{git}).
+
+\lcont{
+
+The difference between \cw{$(revision)} and \cw{$(crevision)} is that
+\cw{$(crevision)} will always match the revision number passed in via
+\cw{-r}, or (if none was) the latest revision existing in the
+repository, whereas \cw{$(revision)} will instead report the
+(potentially earlier) revision number of the last change \e{affecting
+the checked-out files}.
+
+}
 
 \dt \cw{$(crevision_}\e{module}\cw{)}
 
 \dd This gives the Subversion revision number used to check out a
 specific source module. It works exactly like \cw{$(crevision)}, but
-you specify the module you are interested in.
+you specify the module you are interested in. If the module comes from
+\cw{git}, this variable is unset, and access to it will give a
+build-time error.
+
+\dt \cw{$(gitcommit)}
+
+\dd This gives the \cw{git} commit hash identifying the version of the
+main source module, if it was checked out from \cw{git}. It will be a
+full 40-character hex number.
+
+\dt \cw{$(gitcommit_}\e{module}\cw{)}
+
+\dd This gives the \cw{git} commit hash identifying the version of a
+specific source module, if it was checked out from \cw{git}.
+
+\dt \cw{$(vcsid)}, \cw{$(vcsid_}\e{module}\cw{)}
+
+\dd This gives some information identifying a revision in source
+control, regardless of which source control system is in use. It is
+intended to be conveniently short, but not necessarily complete, so
+when \cw{git} is in use it will give a 7-character truncated commit
+hash rather than the full 40-character version.
+
+\dt \cw{$(vcsfullid)}, \cw{$(vcsfullid_}\e{module}\cw{)}
+
+\dd This is like \cw{$(vcsid)}, but with the opposite tradeoff: in
+\cw{git}, it will give the full 40-character commit hash, so its
+output is complete but not necessarily convenient.
 
 \dt \cw{$(date)}
 
@@ -1168,10 +1307,10 @@ command.
 
 \c{checkout} takes two argument words. The first is the name of a
 source module, and the second is a directory path (relative to the
-work directory) into which you want it checked out. \Name will look
-up the name of the module in your configuration file (see
-\k{config-svnrepos}) to determine what Subversion repository to
-check it out from.
+work directory) into which you want it checked out. \Name will look up
+the name of the module in your configuration file (see
+\k{config-repos}) to determine what source control repository to check
+it out from.
 
 If the \Name command line did not specify a revision number from
 which to check a module out, \Name will check out the most recent

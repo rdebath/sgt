@@ -22,7 +22,7 @@
 
 \U NAME
 
-\Name \dash Subversion-centric build system
+\Name \dash simple build system
 
 \U SYNOPSIS
 
@@ -31,7 +31,7 @@
 
 \U DESCRIPTION
 
-\Name checks source code out of Subversion and builds software
+\Name checks source code out of source control and builds software
 projects from it.
 
 For details of exactly how it does this and how to configure a
@@ -40,13 +40,13 @@ gives a brief description of the command-line syntax.
 
 \U ARGUMENTS
 
-The first non-option argument to \Name is treated as the name of
-the main source module to check out from Subversion, and the place
-to look for the build script which \Name will then run to build
-the project. Howevre, if the argument begins with a period or
-contains a slash, it will instead be treated as the name of an
-existing Subversion working directory which will be copied instead
-of checking the source out fresh.
+The first non-option argument to \Name is treated as the name of the
+main source module to check out from source control, and the place to
+look for the build script which \Name will then run to build the
+project. Howevre, if the argument begins with a period or contains a
+slash, it will instead be treated as the name of an existing working
+directory which will be copied instead of checking the source out
+fresh.
 
 Subsequent non-option arguments, if they are of the form
 \e{var}\cw{=}\e{value}, will cause the build script variable to be
@@ -86,32 +86,45 @@ host-specific configuration will be read. Default is
 
 \dt \cw{-r} \e{revision}
 
-\dd Sets the Subversion revision number to be used for all checkouts.
+\dd Sets the revision number to be used for all Subversion checkouts.
 
 \dt \cw{-r} \e{module}\cw{=}\e{revision}
 
-\dd Sets the Subversion revision number to be used for a particular
+\dd Sets the revision number to be used for a particular Subversion
 source module checkout.
 
 \dt \cw{-d} \e{date}
 
-\dd Sets the Subversion date tag to be used for all checkouts.
+\dd Sets the date tag to be used for all Subversion checkouts.
 Equivalent to \cw{-r\{}\e{date}\cw{\}}.
 
 \dt \cw{-d} \e{module}\cw{=}\e{date}
 
-\dd Sets the Subversion date tag to be used for a particular source
+\dd Sets the date tag to be used for a particular Subversion source
 module checkout. Equivalent to \cw{-r}\e{module}\cw{=\{}\e{date}\cw{\}}.
 
 \dt \cw{-B} \e{module}\cw{=}\e{branch}
 
-\dd Specifies that a particular source module should be checked out
-from a different Subversion location (i.e. a branch).
+\dd Specifies that a particular Subversion source module should be
+checked out from a different repository location (i.e. a branch).
+
+\dt \cw{-b} [\e{module}\cw{=}]\e{branch-or-tag}
+
+\dd Specifies a \cw{git} branch or tag name from which to check out a
+particular module, or the main module if \e{module} is not specified.
+
+\dt \cw{-c} [\e{module}\cw{=}]\e{commit}
+
+\dd Specifies an arbitrary \cw{git} commit from which to check out a
+particular module, or the main module if \e{module} is not specified.
+(This option is a superset of \cw{-b}, but pays for its greater
+generality by being slower, so \cw{-b} is still recommended where
+applicable.)
 
 \dt \cw{-W} \e{module}\cw{=}\e{workdir}
 
 \dd Specifies that a particular source module should be copied from
-a working directory instead of being checked out from Subversion.
+a working directory instead of being checked out from source control.
 
 \dt \cw{-D} \e{var}[\cw{=}\e{value}]
 
@@ -129,6 +142,13 @@ complete.
 
 \dd Stop \Name from producing an error message if asked to build
 from a Subversion working copy with a switched or multiple revision.
+
+
+\dt \cw{--git-svn}, \cw{--no-git-svn}
+
+\dd Override \Name's auto-detection of repositories created by
+\cw{git-svn}, and force it to treat a \cw{git} checkout as
+semantically Subversion or as native \cw{git} respectively.
 
 \dt \cw{-v}
 
