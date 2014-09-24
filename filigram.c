@@ -32,11 +32,11 @@
 
 #include "misc.h"
 
+#define VERSION "~VERSION~"
+
 #include "bmpwrite.h"
 
 #include "cmdline.h"
-
-#define VERSION "$Revision$"
 
 /* ----------------------------------------------------------------------
  * Function prototypes and structure type predeclarations.
