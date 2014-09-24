@@ -146,5 +146,3 @@ from a Subversion working copy with a switched or multiple revision.
 
 \Name is free software, distributed under the MIT licence. Type
 \c{\Barename --licence} to see the full licence text.
-
-\versionid $Id$
