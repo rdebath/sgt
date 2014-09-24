@@ -34,6 +34,7 @@
 #include <netdb.h>
 
 #include "doit.h"
+#include "config.h"
 
 char *dupstr(char *s)
 {
@@ -473,36 +474,16 @@ void help(void)
 	puts(help[i]);
 }
 
-char *makeversion(char *buffer, char *revision)
-{
-    char *p = buffer;
-    strcpy(buffer, revision);
-    p += strcspn(p, "0123456789");
-    if (*p) {
-	p[strcspn(p, " $")] = '\0';
-    }
-    if (!*p)
-	return NULL;
-    return p;
-}
-
 void showversion(void)
 {
     char versionbuf[80];
     char *v;
-    extern char doitlib_revision[];
 
-    v = makeversion(versionbuf, "$Revision$");
-    if (v)
-	printf("doitclient revision %s", v);
-    else
-	printf("doitclient unknown version");
-
-    v = makeversion(versionbuf, doitlib_revision);
-    if (v)
-	printf(" (doitlib revision %s)\n", v);
-    else
-	printf("\n");
+#ifdef PACKAGE_VERSION
+    printf("doitclient version %s\n", PACKAGE_VERSION);
+#else
+    printf("doitclient unknown version\n");
+#endif
 }
 
 /*

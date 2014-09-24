@@ -20,8 +20,6 @@
 
 #include "doit.h"
 
-char doitlib_revision[] = "$Revision$";
-
 typedef unsigned int uint32;
 
 /*{{{ SHA-1 implementation */

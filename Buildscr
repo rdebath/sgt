@@ -13,7 +13,7 @@ in doit do perl -i -pe 's/<<VER>>/$(Version)/' README
 
 # Build the Windows binary.
 delegate windows
-  in doit do cmd /c vcvars32 \& nmake /f Makefile.vc
+  in doit do cmd /c vcvars32 \& nmake /f Makefile.vc VER=/DVERSION=$(Version)
   return doit/doit.exe
 enddelegate
 in doit do chmod +x doit.exe
