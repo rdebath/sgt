@@ -86,7 +86,7 @@ static int pipefdread(int fd) {
 NSMenu *newmenu(const char *title)
 {
     return [[[NSMenu allocWithZone:[NSMenu menuZone]]
-	     initWithTitle:[NSString stringWithCString:title]]
+	     initWithTitle:[NSString stringWithUTF8String:title]]
 	    autorelease];
 }
 
@@ -96,7 +96,7 @@ NSMenu *newsubmenu(NSMenu *parent, const char *title)
     NSMenu *child;
 
     item = [[[NSMenuItem allocWithZone:[NSMenu menuZone]]
-	     initWithTitle:[NSString stringWithCString:title]
+	     initWithTitle:[NSString stringWithUTF8String:title]
 	     action:NULL
 	     keyEquivalent:@""]
 	    autorelease];
@@ -126,9 +126,9 @@ id initnewitem(NSMenuItem *item, NSMenu *parent, const char *title,
 	    key++;
     }
 
-    item = [[item initWithTitle:[NSString stringWithCString:title]
+    item = [[item initWithTitle:[NSString stringWithUTF8String:title]
 	     action:NULL
-	     keyEquivalent:[NSString stringWithCString:key]]
+	     keyEquivalent:[NSString stringWithUTF8String:key]]
 	    autorelease];
 
     if (*key)
@@ -212,9 +212,9 @@ NSMenuItem *newitem(NSMenu *parent, char *title, char *key,
 	char *revision = "Revision ~SVNREVISION~";
 	if (revision[9] == '~') {
 	    /* If not, we fall back to this. */
-	    [tf setStringValue:[NSString stringWithCString:"Unspecified revision"]];
+	    [tf setStringValue:[NSString stringWithUTF8String:"Unspecified revision"]];
 	} else {
-	    [tf setStringValue:[NSString stringWithCString:revision]];
+	    [tf setStringValue:[NSString stringWithUTF8String:revision]];
 	}
     }
     [tf sizeToFit];
