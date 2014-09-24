@@ -190,5 +190,3 @@ among those features are Unicode and \c{xterm} 256-colour mode.
 
 \cw{ipbt} is free software, distributed under the MIT licence. Type
 \cw{ipbt --licence} to see the full licence text.
-
-\versionid $Id$

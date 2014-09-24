@@ -83,23 +83,11 @@ void licence(void) {
 }
 
 void version(void) {
-#define SVN_REV "$Revision$"
-    char rev[sizeof(SVN_REV)];
-    char *p, *q;
-
-    strcpy(rev, SVN_REV);
-
-    for (p = rev; *p && *p != ':'; p++);
-    if (*p) {
-        p++;
-        while (*p && isspace((unsigned char)*p)) p++;
-        for (q = p; *q && !isspace((unsigned char)*q) && *q != '$'; q++);
-        if (*q) *q = '\0';
-        printf("ipbt revision %s", p);
-    } else {
-        printf("ipbt: unknown version");
-    }
-    putchar('\n');
+#ifdef PACKAGE_VERSION
+    printf("ipbt version %s\n", PACKAGE_VERSION);
+#else
+    printf("ipbt: unknown version\n");
+#endif
 }
 
 int curses_active;
