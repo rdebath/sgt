@@ -35,7 +35,7 @@ def run_script_line(s, is_config, cfg):
     while s[-1:] == "\r" or s[-1:] == "\n":
         s = s[:-1]
 
-    w, sr = lexer.get_word(s)
+    w, sr = lexer.get_word(s, cfg)
 
     if w == None or w == "":
         return # no command on this line
@@ -45,27 +45,27 @@ def run_script_line(s, is_config, cfg):
         log.logscript(s)
 
     if w == "ifeq" or w == "ifneq":
-        w1, sr = lexer.get_word(sr)
-        w2, sr = lexer.get_word(sr)
+        w1, sr = lexer.get_word(sr, cfg)
+        w2, sr = lexer.get_word(sr, cfg)
         log.logmsg("testing string equality of `%s' and `%s'" % (w1, w2))
         if (w1 == w2) != (w == "ifeq"):
             return # condition not taken
-        w, sr = lexer.get_word(sr) # now read the main command
+        w, sr = lexer.get_word(sr, cfg) # now read the main command
     if w == "ifexist" or w == "ifnexist":
         if is_config:
             raise misc.builderr("`%s' command invalid in config file" % w)
         if not cfg.seen_module:
             raise misc.builderr("`%s' command seen before `module' command" % w)
-        w1, sr = lexer.get_word(sr)
+        w1, sr = lexer.get_word(sr, cfg)
         log.logmsg("testing existence of `%s'" % w1)
         if (os.path.exists(os.path.join(cfg.workpath,w1))!=0) != (w=="ifexist"):
             return # condition not taken
-        w, sr = lexer.get_word(sr) # now read the main command
+        w, sr = lexer.get_word(sr, cfg) # now read the main command
 
     if w == "set":
         # Set a variable.
-        var, val = lexer.get_word(sr)
-        val = lexer.lex_all(lexer.trim(val))
+        var, val = lexer.get_word(sr, cfg)
+        val = lexer.lex_all(lexer.trim(val), cfg)
         if not is_config:
             log.logmsg("Setting variable `%s' to value `%s'" % (var,val))
         lexer.set_multicharvar(var, val)
@@ -76,11 +76,11 @@ def run_script_line(s, is_config, cfg):
             raise misc.builderr("`%s' command seen before `module' command" % w)
         if delegatefps != None and w != "in":
             raise misc.builderr("`in-dest' command invalid during delegation" % w)
-        dir, sr = lexer.get_word(sr)
-        do, sr = lexer.get_word(sr)
+        dir, sr = lexer.get_word(sr, cfg)
+        do, sr = lexer.get_word(sr, cfg)
         if do != "do":
             raise misc.builderr("expected `do' after `%s'" % w)
-        cmd = lexer.lex_all(lexer.trim(sr))
+        cmd = lexer.lex_all(lexer.trim(sr), cfg)
         if delegatefps != None:
             log.logmsg("Running command on delegate server: " + cmd)
             # Instead of running the command locally, send it to
@@ -148,13 +148,13 @@ def run_script_line(s, is_config, cfg):
             raise misc.builderr("`%s' command invalid in config file" % w)
         if not cfg.seen_module:
             raise misc.builderr("`%s' command seen before `module' command" % w)
-        srcpath, sr = lexer.get_word(sr)
+        srcpath, sr = lexer.get_word(sr, cfg)
         sr = lexer.trim(sr)
         nfiles = 0
         for srcfile in glob.glob(os.path.join(cfg.workpath, srcpath)):
             save = lexer.save_vars()
             lexer.set_onecharvar("@", os.path.basename(srcfile))
-            dstfile, sx = lexer.get_word(sr)
+            dstfile, sx = lexer.get_word(sr, cfg)
             lexer.restore_vars(save)
             dstfile = os.path.join(cfg.outpath, dstfile)
             log.logmsg("Delivering `%s' to `%s'" % (srcfile, dstfile))
@@ -172,8 +172,8 @@ def run_script_line(s, is_config, cfg):
             raise misc.builderr("`%s' command invalid in config file" % w)
         if not cfg.seen_module:
             raise misc.builderr("`%s' command seen before `module' command" % w)
-        module, sr = lexer.get_word(sr)
-        destdir, sr = lexer.get_word(sr)
+        module, sr = lexer.get_word(sr, cfg)
+        destdir, sr = lexer.get_word(sr, cfg)
         if module == None or destdir == None:
             raise misc.builderr("`checkout' command expects two parameters")
         destdir = os.path.join(cfg.workpath, destdir)
@@ -181,7 +181,7 @@ def run_script_line(s, is_config, cfg):
     elif w == "module":
         if is_config:
             raise misc.builderr("`%s' command invalid in config file" % w)
-        newmodule, sr = lexer.get_word(sr)
+        newmodule, sr = lexer.get_word(sr, cfg)
         if newmodule == None:
             raise misc.builderr("`module' command expects a parameter")
         srcdir = os.path.join(cfg.workpath, cfg.mainmodule)
@@ -198,7 +198,7 @@ def run_script_line(s, is_config, cfg):
             raise misc.builderr("`%s' command invalid in config file" % w)
         if not cfg.seen_module:
             raise misc.builderr("`%s' command seen before `module' command" % w)
-        hosttype, sr = lexer.get_word(sr)
+        hosttype, sr = lexer.get_word(sr, cfg)
         if hosttype == None:
             raise misc.builderr("expected a host type after `delegate'")
         if delegatefps != None:
@@ -273,7 +273,7 @@ def run_script_line(s, is_config, cfg):
         # command character "R", then a glob pattern; we then
         # repeatedly read a filename and file contents until we
         # receive zero filename length.
-        pattern, sr = lexer.get_word(sr)
+        pattern, sr = lexer.get_word(sr, cfg)
         if pattern == None:
             raise misc.builderr("expected a file name after `return'")
         delegatefps[0].write("R" + struct.pack(">L", len(pattern)) + pattern)
