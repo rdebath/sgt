@@ -1205,6 +1205,20 @@ The remainder of the line is interpreted as a \e{non-word string}
 special within it; that non-word string is the value to which the
 variable is set.
 
+\S{script-read} The \c{read} command: reading a script variable from a
+file
+
+The \c{read} command allows you to set a build script variable to the
+contents of a file. It takes two argument words, which are
+respectively the name of the variable to set and the name of the file
+relative to the top-level build directory.
+
+The file's entire contents will be written into the variable, with
+trailing newlines removed if they are present. However, if the file
+contains more than one line of text, the \e{internal} newlines will
+not be stripped, so beware! It probably makes sense to use this for
+one-line files.
+
 \S{script-in} The \c{in} command: actually performing build actions
 
 The \c{in} command is the one used to actually do most of the work

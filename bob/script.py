@@ -69,6 +69,19 @@ def run_script_line(s, is_config, cfg):
         if not is_config:
             log.logmsg("Setting variable `%s' to value `%s'" % (var,val))
         lexer.set_multicharvar(var, val)
+    elif w == "read":
+        # Set a variable by reading from a file.
+        var, sr = lexer.get_word(sr, cfg)
+        filename, sr = lexer.get_word(sr, cfg)
+        filename = os.path.join(cfg.workpath, filename)
+        if not is_config:
+            log.logmsg("Reading file `%s'" % (filename))
+        with open(filename, "r") as f:
+            val = f.read()
+        val = val.rstrip("\r\n")
+        if not is_config:
+            log.logmsg("Setting variable `%s' to value `%s'" % (var,val))
+        lexer.set_multicharvar(var, val)
     elif w == "in" or w == "in-dest":
         if is_config:
             raise misc.builderr("`%s' command invalid in config file" % w)
