@@ -3,14 +3,20 @@
 
 module tweak
 
-# We need the `library' module checked out alongside this one, for
-# btree.[ch].
-ifexist tweak/library in . do mv tweak/library library
-ifnexist library checkout library library
-
-# Make symlinks for those source files.
-in tweak do ln -s ../library/btree.c .
-in tweak do ln -s ../library/btree.h .
+# For historical reasons relating to the way the SVN repository for
+# Tweak used to be organised, the files btree.c and btree.h might be
+# in several locations: already in the 'tweak' module, in a 'library'
+# subdirectory of that, or in a separate 'library' source control
+# module. Be prepared to cope with any of those possibilities.
+set need_library no
+ifnexist tweak/btree.c set need_library yes
+ifnexist tweak/btree.h set need_library yes
+set library_separate no
+ifnexist tweak/library set library_separate yes
+ifeq "$(need_library) $(library_separate)" "yes no" in . do mv tweak/library library
+ifeq "$(need_library) $(library_separate)" "yes yes" checkout library library
+ifnexist tweak/btree.c in tweak do ln -s ../library/btree.c .
+ifnexist tweak/btree.h in tweak do ln -s ../library/btree.h .
 
 # Determine the version number.
 set Version $(!builddate).$(vcsid)
