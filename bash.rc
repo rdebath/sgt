@@ -1185,3 +1185,27 @@ bashrc_enscript() {
 alias enscript=bashrc_enscript # alias wrapper as above
 
 #}}}
+#{{{ Some Cygwin stuff
+
+case "$(uname -s)" in
+    CYGWIN*)
+
+        # The Windows cmd.exe 'start' command, which opens an
+        # arbitrary file or program or directory in its default
+        # Windowsy way, is quite handy, and I'd like to have it in
+        # Cygwin bash as well - but it's even handier if it will cope
+        # with a Cygwin-style path to the file/program/directory you
+        # want to open.
+        start() {
+            case "$1" in
+                /*)
+                    local cmd=$(cygpath -w "$1");
+                    shift;
+                    set -- "$cmd" "$@";;
+            esac
+            cmd /c start "$@";
+        }
+
+esac
+
+#}}}
