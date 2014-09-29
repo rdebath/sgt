@@ -218,26 +218,43 @@ unset bashrc_dovars2
 
 if test "${#bashrc_emacslaunch[*]}" -gt 0; then
   e() {
+    local suffix suffix2 rest
     # Compilers and grep often output locations in files in the form
-    # 'filename:line-number'. To facilitate pasting such a thing, we
-    # spot it here and turn it into the appropriate emacsclient or
-    # emacs rune.
+    # 'filename:line-number', and occasionally even
+    # 'filename:line-number:column-number'. To facilitate pasting such
+    # a thing, we spot it here and turn it into the appropriate
+    # emacsclient or emacs rune.
     #
     # To work around this behaviour, you can prepend the argument
     # '+1', which will force the next argument to be treated as the
     # filename even if it ends in :digits.
-    local suffix
     case "$1" in
-        *:*)
-            # We have at least one colon in the string. Look at the
-            # stuff to the right of the rightmost one.
+        *:*:*)
+            # We have at least two colons in the string. Look at the
+            # stuff to the right of the rightmost two.
             suffix=${1##*:}
+            rest=${1%:*}
+            suffix2=${rest##*:}
+            rest=${rest%:*}
+            case "$suffix$suffix2" in
+                *[^0-9]*) ;;
+                *)
+                    # Both suffixes are made of nothing but digits.
+                    # We've found a line and column number.
+                    set -- "+$suffix2:$suffix" "$rest"
+            esac
+            ;;
+        *:*)
+            # We have exactly one colon in the string. Look at the
+            # stuff to the right of it.
+            suffix=${1##*:}
+            rest=${1%:*}
             case "$suffix" in
                 *[^0-9]*) ;;
                 *)
                     # The suffix is made of nothing but digits. We've
-                    # found a line number!
-                    set -- "+$suffix" "${1%:*}"
+                    # found a line number, but no column.
+                    set -- "+$suffix" "$rest"
             esac
             ;;
     esac
