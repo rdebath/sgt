@@ -2129,6 +2129,10 @@ int deflate_decompress_data(deflate_decompress_ctx *dctx,
 	    debug(("recv: dist %d\n", code));
 	    if (code == -1)
 		goto finished;
+            if (code >= 30) {
+		error = DEFLATE_ERR_BADDISTCODE;
+                goto finished;
+            }
 	    dctx->state = GOTDISTSYM;
 	    dctx->sym = code;
 	    break;
