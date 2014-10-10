@@ -2,7 +2,7 @@ Summary: Reducing window width shouldn't lose information
 Class: wish
 Difficulty: fun
 Priority: low
-Fixed-in: r10208 2014-07-24
+Fixed-in: r10210 2014-07-25
 Content-type: text/x-html-body
 
 <p>
