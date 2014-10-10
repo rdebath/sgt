@@ -1,0 +1,34 @@
+Summary: Cannot use dynamic port-forwarding with specific IP protocol in saved session
+Class: bug
+Absent-in: 0.62
+Present-in: 0.63
+Fixed-in: r10031 2013-08-23
+Content-type: text/x-html-body
+
+<p>
+In PuTTY 0.63 (but not older or newer releases), it's not possible to
+create a saved session with a dynamic SOCKS tunnel bound to a specific
+protocol (IPv4 or IPv6).
+
+<p>
+A dynamic port forwarding setting in a PuTTY session saved in 0.62 or
+before can fail to work in 0.63, if it explicitly specifies 'IPv4'
+or 'IPv6', with a message like 'Service lookup failed for source port
+"D8080"' in the Event Log.
+
+<p>
+Also, creating a fresh dynamic tunnel specifying IPv4/IPv6 and saving
+it in a session with 0.63 yields a saved session with a non-working
+tunnel (here you'd see 'Service lookup failed for source port "L8080"'
+in the Event Log). The tunnel only works as specified if the session
+is launched immediately after it is configured (but even then you see
+the nonsense string "DL8080" in the settings dialog).
+
+<p>
+Dynamic tunnels with the 'Auto' protocol setting (the default) are not
+affected by any of this.
+
+<p>
+After installing a fixed version of PuTTY, any affected sessions that
+were originally created with 0.63 will need to have the relevant
+dynamic tunnels removed, re-added, and re-saved.
