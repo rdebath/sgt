@@ -1,0 +1,10 @@
+Summary: Port to Gtk+-3 toolkit on Unix
+Class: wish
+Difficulty: tricky
+Priority: low
+
+The Unix port might need to support Gtk3 at some point. (Currently
+it uses Gtk2.)
+
+We would likely require that the source still be compilable against
+Gtk2.
