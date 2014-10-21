@@ -1,0 +1,45 @@
+Summary: Trouble when SSH channel closed with outstanding requests
+Class: semi-bug
+Difficulty: taxing
+Fixed-in: r10200 2014-07-07
+Content-type: text/x-html-body
+
+<p>
+There's been a long-standing problem with closing channels within an
+SSH session due to a longstanding ambiguity in the SSH-2 specification
+about what happens to CHANNEL_REQUESTs that are outstanding at the
+point a channel is closed, and a consequent variance in behaviour
+among SSH implementations. This leads to a small probability of
+trouble each time a channel is closed when connected to certain
+servers, which shows up particularly when forwarding X connections or
+browser traffic.
+
+<p>
+A discussion on the IETF SSH protocol implementers' list in April 2014
+yielded a consensus (that channel closure cancels outstanding channel
+requests). As of this change, PuTTY implements and expects the
+consensus behaviour, and has a bug-compatibility mode 'Replies to
+channel requests after channel close' for servers that implement the
+other common behaviour (such as
+<a href="https://bugzilla.mindrot.org/show_bug.cgi?id=1818">OpenSSH prior to 6.7</a>).
+
+<p>
+In versions of PuTTY prior to 0.63, this confusion could lead to
+symptoms such as PuTTY closing connections with messages like
+"Disconnected: Received SSH2_MSG_CHANNEL_FAILURE for nonexistent
+channel 257" when connecting to servers like OpenSSH prior to 6.7.
+
+<p>
+PuTTY's behaviour changed in 0.63, in pursuit of
+<a href="half-closed">`half-closed'</a>; it held off sending
+CHANNEL_CLOSE itself until it had seen responses to all its
+outstanding channel requests. Unfortunately this could lead to hangs
+when talking to servers implementing what is now the consensus
+behaviour (such as Dropbear).
+
+<p>
+Since the situation arises mostly with the 
+<a href="http://tartarus.org/~simon/putty-snapshots/htmldoc/AppendixF.html#sshnames-channel">`winadj' messages</a>
+PuTTY has sent <a href="flow-control">since 0.61</a>, a partial
+workaround for PuTTY 0.61, 0.62, and 0.63 is to set the "Chokes on
+PuTTY's SSH-2 'winadj' requests" bug-compatibility mode.
