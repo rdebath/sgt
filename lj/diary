@@ -372,7 +372,7 @@ class output:
 		    strtext = strtext + i[1]
 		elif i[0] == NL:
 		    strtext = strtext + " "
-	    self.html = self.html + "<lj-cut text=\"" + self.htmlsafe(strtext) + "\">"
+	    self.html = self.html + "<cut text=\"" + self.htmlsafe(strtext) + "\">"
 
     def finish(self):
 	# Strip off a trailing </p>, which is not required by LJ
