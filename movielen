@@ -19,9 +19,11 @@ for file in "$@"; do
             perl -ne '/^ID_VIDEO_HEIGHT=(.*)$/ and print "$1\n"'`
         TRES=`mplayer -vo null -ao null -frames 0 -identify "$file" 2>&1 | \
             perl -ne '/^ID_VIDEO_FPS=(.*)$/ and print "$1\n"'`
-        perl -e 'printf "%s: %dx%d, %gfps, %g sec (%d:%02d)\n", $ARGV[0], $ARGV[2], $ARGV[3], $ARGV[4], $ARGV[1], ' \
-             -e 'int($ARGV[1])/60, int($ARGV[1])%60' "$file" "$LENGTH" \
-	     "$XRES" "$YRES" "$TRES"
+        SIZE=`stat -c %s "$file"`
+        perl -e 'printf "%s: %dx%d, %gfps, %g sec (%d:%02d), %.2fMBps\n", ' \
+             -e '$ARGV[0], $ARGV[2], $ARGV[3], $ARGV[4], $ARGV[1],' \
+             -e 'int($ARGV[1])/60, int($ARGV[1])%60, $ARGV[5]*8e-6/$ARGV[1]' \
+             "$file" "$LENGTH" "$XRES" "$YRES" "$TRES" "$SIZE"
       else
         perl -e 'printf "%s: %g sec (%d:%02d)\n", $ARGV[0], $ARGV[1], ' \
              -e 'int($ARGV[1])/60, int($ARGV[1])%60' "$file" "$LENGTH"
