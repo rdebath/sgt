@@ -241,6 +241,23 @@ you specify rather than inside it:
 \c $ lns -rF subdir subdir-mirror
 \e   bbbbbbbbbbbbbbbbbbbbbbbbbbbb
 
+\U LIMITATIONS
+
+Because \cw{lns} attempts to guess what you probably wanted the exact
+text of your symlinks to be, it will not let you control that text
+with complete precision.
+
+For example, it might be important to you that your symlink contains
+a path that indirects through another symlink, so that it behaves
+correctly when the latter symlink changes. Or you might specifically
+need a symlink of the form \cw{../../foo/bar} instead of \cw{../bar},
+so that when the link gets moved from the \cw{foo} directory into
+another one, the link will continue to point to some particular file.
+
+In situations where the precise link text is important to you,
+\cw{lns} is probably not the tool for the job, and you should revert
+to using \cw{ln -s}.
+
 \U LICENCE
 
 \cw{lns} is free software, distributed under the MIT licence. Type
