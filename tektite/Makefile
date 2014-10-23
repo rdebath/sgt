@@ -1,8 +1,10 @@
-all: tektite.fon tektitec.fon \
-     tektite.pcf.Z tektite.pcf.gz \
-     tektiteu.pcf.Z tektiteu.pcf.gz \
-     tektite8.pcf.Z tektite8.pcf.gz \
-     tektiteu8.pcf.Z tektiteu8.pcf.gz
+ALL = tektite.fon tektitec.fon \
+      tektite.pcf.Z tektite.pcf.gz \
+      tektiteu.pcf.Z tektiteu.pcf.gz \
+      tektite8.pcf.Z tektite8.pcf.gz \
+      tektiteu8.pcf.Z tektiteu8.pcf.gz
+
+all: $(ALL)
 
 tektite.pcf.gz: tektite.bdf
 	bdftopcf < tektite.bdf | gzip -9 > tektite.pcf.gz
@@ -35,4 +37,4 @@ tektitec.fon: tektitec.fd
 	../winfont/mkwinfont -o tektitec.fon tektitec.fd
 
 clean:
-	rm -f *.fon tektite8.bdf tektite.bdf
+	rm -f $(ALL) tektite8.bdf tektite.bdf
