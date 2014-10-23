@@ -1176,6 +1176,8 @@ def rdinput(file):
 		    o.special("&#215;", "x")
 		elif tok[1] == "R":
 		    o.special("&#174;", "(R)")
+		elif tok[1] == "pi":
+		    o.special("&#960;", "pi")
 		elif tok[1] == "br":
 		    tok2 = t.curr()
 		    # Skip line break just before end of paragraph.
