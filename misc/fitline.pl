@@ -31,7 +31,7 @@ while ($ARGV[0] =~ /^-/) {
 @sxny = (0) x ($order+1);
 
 while (<>) {
-    split;
+    @_ = split;
     if (2 == scalar @_) {
 	$x = $_[0];
 	$y = $_[1];
