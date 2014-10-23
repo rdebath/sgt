@@ -161,13 +161,34 @@ def pdfgetline(f, chomp=0):
         s = s + "\n"
     return s
 
+def binary_decode(s):
+    "Decode a number stored as a variable-length string of big-endian bytes."
+    ret = 0
+    for c in s:
+        ret = ret * 256 + ord(c)
+    return ret
+
 def fetchobj(f, xoff, number, gen, printout=0):
     offset = None
     xrefoff = xoff
     while 1:
         f.seek(xrefoff)
         s = pdfgetline(f, 1)
-        fassert(s == "xref", "expected 'xref' keyword in xref section")
+        if s != "xref":
+            xrefobj, xrefstream = fetchobj_offset(f, xrefoff, "")
+            fieldlens = map(int, xrefobj[3]["/W"])
+            recordlen = sum(fieldlens)
+            streamoffset = recordlen * number
+            fields = []
+            for fieldlen in fieldlens:
+                fields.append(binary_decode(xrefstream[streamoffset:streamoffset+fieldlen]))
+                streamoffset = streamoffset + fieldlen
+            # PDF 1.7 spec, section 7.5.8.3. Type 0 means the object
+            # is absent completely; type 2 means it's in a format we
+            # can't (yet) speak.
+            fassert(fields[0] == 1, "object %d had a compressed reference stream type field of %d (expected 1)" % (number, fields[0]))
+            offset = fields[1]
+            break
         while 1:
             s = pdfgetline(f, 1)
             ss = string.split(s)
@@ -198,7 +219,7 @@ def fetchobj(f, xoff, number, gen, printout=0):
                 break
         parsed = pdfparse(lexed)
         if number == -1:
-            return parsed
+            return parsed, None
         fassert(type(parsed[0]) == types.DictType, "expected dictionary in trailer")
         # Now look backwards to find the previous xref section.
         prevstr = parsed[0].get("/Prev", "")
@@ -214,10 +235,14 @@ def fetchobj(f, xoff, number, gen, printout=0):
         sys.exit(1)
 
     # Now we know the object offset. Read and display the object.
+    return fetchobj_offset(f, offset, printout)
+
+def fetchobj_offset(f, offset, printout):
     f.seek(offset)
     d = ""
     lexed = []
     donestream = 0
+    streamdata = None
     while 1:
         s = pdfgetline(f, 0)
         if s == "": break
@@ -234,7 +259,7 @@ def fetchobj(f, xoff, number, gen, printout=0):
             streamlen = parsed[-2]["/Length"]
             if type(streamlen) == types.TupleType:
                 offset = f.tell()
-                otherparsed = fetchobj(f, xoff, streamlen[0], streamlen[1])
+                otherparsed, _ = fetchobj(f, xoff, streamlen[0], streamlen[1])
                 streamlen = otherparsed[3]
                 f.seek(offset)
             streamlen = string.atoi(streamlen)
@@ -253,7 +278,7 @@ def fetchobj(f, xoff, number, gen, printout=0):
             if printout: sys.stdout.write("\n")
             break
     parsed = pdfparse(lexed)
-    return parsed
+    return parsed, streamdata
 
 def objnumbers(f, xoff):
     ret = []
@@ -368,20 +393,20 @@ if len(linelist)<=3 or linelist[-3]!="startxref" or linelist[-1]!="%%EOF":
 xrefoff = string.atoi(linelist[-2])
 
 if number < 0:
-    trailer = fetchobj(f, xrefoff, -1, -1)
+    trailer, _ = fetchobj(f, xrefoff, -1, -1)
     fassert(type(trailer[0]) == types.DictType, "expected dictionary in trailer")
     number, gen = trailer[0]["/Root"]
 
 if mode == "page":
     page = page - 1 # PDF pages are traditionally numbered from one
     # Look down the /Pages tree for a particular page number.
-    catalog = fetchobj(f, xrefoff, number, gen)
+    catalog, _ = fetchobj(f, xrefoff, number, gen)
     fassert(type(catalog[3]) == types.DictType, "expected dictionary in Catalog object")
     pagekids = [catalog[3]["/Pages"]]
     while 1:
         obj = None
         for i in pagekids:
-            pages = fetchobj(f, xrefoff, i[0], i[1])
+            pages, _ = fetchobj(f, xrefoff, i[0], i[1])
             fassert(type(pages[3]) == types.DictType, "expected dictionary in Pages/Page object")
             if pages[3]["/Type"] == "/Pages":
                 count = string.atoi(pages[3]["/Count"])
@@ -401,10 +426,10 @@ if mode == "page":
 
 if mode == "pagecount":
     # Find the root of the /Pages tree and get its /Count field.
-    catalog = fetchobj(f, xrefoff, number, gen)
+    catalog, _ = fetchobj(f, xrefoff, number, gen)
     fassert(type(catalog[3]) == types.DictType, "expected dictionary in Catalog object")
     pagetop = catalog[3]["/Pages"]
-    pagetopobj = fetchobj(f, xrefoff, pagetop[0], pagetop[1])
+    pagetopobj, _ = fetchobj(f, xrefoff, pagetop[0], pagetop[1])
     print pagetopobj[3]["/Count"]
 
 if mode == "obj":
